@@ -1,0 +1,1 @@
+CPPFLAGS=-g CFLAGS=-g FCFLAGS="-g -fno-whole-file" ../scafacos_fcs/configure --prefix=$HOME/workspace/scafacos/install $@

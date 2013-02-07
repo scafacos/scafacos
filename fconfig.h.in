@@ -1,0 +1,67 @@
+! fconfig.h.in.  Written manually, not generated.
+! This contains only defines needed for Fortran.
+
+! Define if `use ifport' is needed for functions like `rand'.
+#undef NEED_USE_IFPORT
+
+! The size of `int *', as computed by sizeof.
+#undef SIZEOF_INT_P
+
+! Fortran type that matches a C pointer.
+#define FCS_PTR integer*SIZEOF_INT_P
+
+! Define to the MPI datatype that corresponds to the floating type to use for
+! FCS.
+#undef FCS_MPI_REAL
+
+! Define to the MPI datatype that corresponds to the integer type to use for
+! FCS.
+#undef FCS_MPI_INTEGER
+
+! Define to the Fortran floating type to use for FCS.
+#undef fcs_real
+
+! Define to the Fortran integer type to use for FCS.
+#undef fcs_integer
+
+! Define to the kind of fcs_real.
+#undef fcs_real_kind
+
+! Define to the kind of fcs_integer.
+#undef fcs_integer_kind
+
+! Define to the ISO C kind of fcs_real.
+#undef fcs_real_kind_isoc
+
+! Define to the ISO C kind of fcs_integer.
+#undef fcs_integer_kind_isoc
+
+! Whether solver method direct is enabled.
+#undef FCS_ENABLE_DIRECT
+
+! Whether solver method pepc is enabled.
+#undef FCS_ENABLE_PEPC
+
+! Whether solver method pp3mg_pmg is enabled.
+#undef FCS_ENABLE_PP3MG_PMG
+
+!Whether solver method mmm1d is enabled.
+#undef FCS_ENABLE_MMM1D
+
+! Whether solver method fmm is enabled.
+#undef FCS_ENABLE_FMM
+
+! Whether solver method p2nfft is enabled.
+#undef FCS_ENABLE_P2NFFT
+
+! Whether solver method p3m is enabled.
+#undef FCS_ENABLE_P3M
+
+! Whether solver method vmg is enabled.
+#undef FCS_ENABLE_VMG
+
+! Define if info output is enabled.
+#undef FCS_ENABLE_INFO
+
+! Define if debug output is enabled.
+#undef FCS_ENABLE_DEBUG

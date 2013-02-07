@@ -1,0 +1,21 @@
+#!/bin/bash
+#SBATCH --job-name="a1-mpi-bench"
+#SBATCH --nodes=2
+#SBATCH --time-min=0:30:00
+
+set -ex
+
+export DEBUG=0
+
+#export XT_SYMMETRIC_HEAP_SIZE=2000M
+
+export NODES=2
+export PPN=1
+
+export OMP_NUM_THREADS=1
+
+cd ${SLURM_SUBMIT_DIR}
+
+aprun -n ${NODES} -N ${PPN} passive-target-get.x > passive-target-get.log.${SLURM_JOB_ID} 
+aprun -n ${NODES} -N ${PPN} passive-target-put.x > passive-target-put.log.${SLURM_JOB_ID} 
+aprun -n ${NODES} -N ${PPN} passive-target-acc.x > passive-target-acc.log.${SLURM_JOB_ID} 

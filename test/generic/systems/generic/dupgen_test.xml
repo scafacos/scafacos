@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<!DOCTYPE scafacos_test SYSTEM '../scafacos_test.dtd'>
+<scafacos_test description="Testing particle duplication." name="duplicate_test">
+  <configuration box_a="1.0 0.0 0.0" box_b="0.0 1.0 0.0" box_c="0.0 0.0 1.0" epsilon="metallic" periodicity="0 0 0">
+    <generate ntotal="100">
+      <positions type="random" shape="box"/>
+      <charges type="const" value="1.0"/>
+    </generate>
+  </configuration>
+  <configuration box_a="1.0 0.0 0.0" box_b="0.0 1.0 0.0" box_c="0.0 0.0 1.0" epsilon="metallic" periodicity="1 1 1">
+    <generate ntotal="100">
+      <positions type="random" shape="box"/>
+      <charges type="const" value="1.0"/>
+    </generate>
+  </configuration>
+  <configuration box_a="1.0 0.0 0.0" box_b="0.0 1.0 0.0" box_c="0.0 0.0 1.0" epsilon="metallic" periodicity="0 0 0">
+    <duplicate times="2 2 2">
+      <generate ntotal="100">
+        <positions type="random" shape="box"/>
+        <charges type="const" value="1.0"/>
+      </generate>
+    </duplicate>
+  </configuration>
+  <configuration box_a="1.0 0.0 0.0" box_b="0.0 1.0 0.0" box_c="0.0 0.0 1.0" epsilon="metallic" periodicity="1 1 1">
+    <duplicate times="2 2 2">
+      <generate ntotal="100">
+        <positions type="random" shape="box"/>
+        <charges type="const" value="1.0"/>
+      </generate>
+    </duplicate>
+  </configuration>
+</scafacos_test>

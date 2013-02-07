@@ -1,0 +1,4 @@
+#! /bin/sh
+# Setup autotools infrastructure for the SVN tree.
+# This file is not distributed and is only needed for developers.
+autoreconf --verbose --install --force

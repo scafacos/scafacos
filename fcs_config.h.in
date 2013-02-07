@@ -1,0 +1,58 @@
+/* fcs_config.h.in.  Public config header for ScaFaCoS FCS.  */
+
+/* Whether solver method direct is enabled. */
+#undef FCS_ENABLE_DIRECT
+
+/* Whether solver method fmm is enabled. */
+#undef FCS_ENABLE_FMM
+
+/* Whether solver method nfft is enabled. */
+#undef FCS_ENABLE_P2NFFT
+
+/* Whether solver method p3m is enabled. */
+#undef FCS_ENABLE_P3M
+
+/* Whether solver method pepc is enabled. */
+#undef FCS_ENABLE_PEPC
+
+/* Whether solver method pp3mg_pmg is enabled. */
+#undef FCS_ENABLE_PP3MG_PMG
+
+/* Whether solver method vmg is enabled. */
+#undef FCS_ENABLE_VMG
+
+/* Whether solver method memd is enabled */
+#undef FCS_ENABLE_MEMD
+
+/* Define to the length modifier that corresponds to the floating type to use
+   for FCS. */
+#undef FCS_LMOD_FLOAT
+
+/* Define to the length modifier that corresponds to the integer type to use
+   for FCS. */
+#undef FCS_LMOD_INT
+
+/* Define to the MPI datatype that corresponds to the floating type to use for
+   FCS. */
+#undef FCS_MPI_FLOAT
+
+/* Define to the MPI datatype that corresponds to the integer type to use for
+   FCS. */
+#undef FCS_MPI_INT
+
+/* Define to the floating type to use for FCS. */
+#undef fcs_float
+
+/* Define to the integer type to use for FCS. */
+#undef fcs_int
+
+/* Define to a macro mangling the given C identifier (in lower and upper
+   case), which must not contain underscores, for linking with Fortran. */
+#ifndef FC_FUNC
+#undef FC_FUNC
+#endif
+
+/* As FC_FUNC, but for C identifiers containing underscores. */
+#ifndef FC_FUNC_
+#undef FC_FUNC_
+#endif

@@ -1,0 +1,16 @@
+# Rules common for the subdirectories with many generated files.
+
+# Get Fortran compile rules that include preprocessing.
+include $(top_srcdir)/build-aux/fortran-rules.am
+
+# Find modules from the src directory.
+FCCPPFLAGS = $(FC_MODINC)$(top_builddir)/src
+
+AM_FCFLAGS = $(FC_INTEGER_SIZE_8) $(FC_NO_RANGE_CHECK) 
+#$(FC_FIXEDFORM)
+
+# All objects depend on the fmmkinds module.
+*.$(OBJEXT): $(top_builddir)/src/fmmkinds.$(FC_MODEXT)
+
+# Stub rule in case the compiler does not produce a module file.
+$(top_builddir)/src/fmmkinds.$(FC_MODEXT):

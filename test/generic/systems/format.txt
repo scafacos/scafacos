@@ -1,0 +1,70 @@
+The ScaFaCoS XML Testcase format
+--------------------------------
+Time-stamp: <2011-11-10 17:38 olenz>
+
+Element: 
+  <scafacos_test>
+Description:
+  Top level element
+Attributes:
+  name: Text 
+    Name of the testcase
+  description: Text
+    One-line description of the testcase
+  reference_method: Text
+    The method that was used to compute the reference forces and
+    potentials in the testcase.
+  error_field: Float 
+    Estimated maximal error of the reference field values.
+  error_potential: Float
+    Estimated maximal error of the reference potential values.
+Child elements:
+  <configuration>*
+
+Element:
+  <configuration>
+Description:
+  A single configuration. A testcase may contain several
+  configurations.
+Attributes:
+  offset: Float[3]
+    Offset of the system box.
+    If the system is not periodic, this value is ignored.
+  box_a, box_b, box_c: Float[3]
+    Unitcell vectors of the system. 
+    If the system is not periodic in the given dimension, this value
+    is ignored.
+  periodicity: Bool[3]
+    Periodicity of the configuration.
+    Whether or not the system is periodic in the given direction.
+  epsilon: Float | "metallic"
+    The value of the dielectric permitivity of the boundary of the
+    system. If it is infinite (metallic boundary conditions), use
+    "metallic".
+Child elements:
+  <particle>*
+
+Element:
+  <particle>
+Description:
+  A single particle. A configuration contains several particles.
+Attributes:
+  position: Float[3]
+    Position of the particle.
+    Note that in the periodic case the position does *not* have to be
+    in the central image.
+  q: Float
+    Charge of the particle.
+    A value of 0.0 just means that it does not carry a charge, still
+    the potential and field is to be computed at the position.
+  potential: Float
+    Reference potential at the position of the particle.
+    The potential should have been computed with the method
+    scafacos_test.reference_method to a level of accuracy defined by
+    scafacos_test.error_potential.
+  field: Float[3]
+    Reference field at the position of the particle.
+    The field should have been computed with the method
+    scafacos_test.reference_method to a level of accuracy defined by
+    scafacos_test.error_field.
+  

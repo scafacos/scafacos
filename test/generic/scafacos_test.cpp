@@ -1,0 +1,777 @@
+/*
+  Copyright (C) 2011,2012 Olaf Lenz, Michael Hofmann
+  
+  This file is part of ScaFaCoS.
+  
+  ScaFaCoS is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Lesser Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  ScaFaCoS is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Lesser Public License for more details.
+  
+  You should have received a copy of the GNU Lesser Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+*/
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <iostream>
+#include <iomanip>
+#include <cstring>
+#include <cstdlib>
+#include <cmath>
+#include <unistd.h>
+#include <mpi.h>
+
+#include "fcs.h"
+#include "common/fcs-common/FCSCommon.h"
+#include "common/gridsort/gridsort.h"
+
+#include "common.hpp"
+#include "Testcase.hpp"
+#include "Integration.hpp"
+
+
+using namespace std;
+
+
+void usage(char** argv, int argc, int c) {
+  cout << "Call: " << argv[0];
+  for (int i = 1; i < argc; ++i)
+    cout << " " << argv[i];
+  cout << endl;
+  cout << "Usage: " << argv[0] << " [OPTIONS] METHOD FILE" << endl;
+  cout << "  OPTIONS:" << endl;
+  cout << "    -o OUTFILE write new testcase file using references from the used method" << endl;
+  cout << "    -k         keep duplication/generation information in the new testcase file" << endl
+       << "               (only useful together with -o option)" << endl;
+  cout << "    -b         write particle data in a machine-dependent binary format to a" << endl
+       << "               separate file (basename of OUTFILE with 'bin' suffix, only useful" << endl
+       << "               together with -o option)" << endl;
+  cout << "    -p         write particle data in a portable format to a separate" << endl
+       << "               file (basename of OUTFILE with 'dat' suffix, only useful" << endl
+       << "               together with -o option)" << endl;
+  cout << "    -d DUP     duplicate a given periodic system in each periodic dimension, DUP" << endl
+       << "               can be a single value X or three values XxYxZ (i.e., one for each" << endl
+       << "               dimension), default value DUP=1 is equivalent to no duplication" << endl;
+  cout << "    -m MODE    use decomposition mode MODE=atomistic|all_on_master|random|domain" << endl
+       << "               (overrides file settings)" << endl;
+  cout << "    -c CONF    use CONF for setting additional method configuration parameters" << endl;
+  cout << "    -i ITER    perform ITER number of runs with each configuration" << endl;
+  cout << "    -r RES     compute results only for RES of the given particles, RES can be" << endl
+       << "               an absolute integer number of particles (without '.') or a" << endl
+       << "               fractional number (with '.') relative to the given particles" << endl
+       << "               (default value RES=1.0 is equivalent to all particles)" << endl;
+  cout << "    -t S       perform integration with S time steps (run METHOD S+1 times)" << endl;
+  cout << "    -g CONF    use CONF as integration configuration string"   << endl;
+  cout << "  METHOD:";
+#ifdef FCS_ENABLE_DIRECT
+  cout << " direct";
+#endif
+#ifdef FCS_ENABLE_EWALD
+  cout << " ewald";
+#endif
+#ifdef FCS_ENABLE_FMM
+  cout << " fmm";
+#endif
+#ifdef FCS_ENABLE_MEMD
+  cout << " memd";
+#endif
+#ifdef FCS_ENABLE_MMM1D
+  cout << " mmm1d";
+#endif
+#ifdef FCS_ENABLE_MMM2D
+  cout << " mmm2d";
+#endif
+#ifdef FCS_ENABLE_P2NFFT
+  cout << " p2nfft";
+#endif
+#ifdef FCS_ENABLE_P3M
+  cout << " p3m";
+#endif
+#ifdef FCS_ENABLE_PEPC
+  cout << " pepc";
+#endif
+#ifdef FCS_ENABLE_PP3MG_PMG
+  cout << " pp3mg_pmg";
+#endif
+#ifdef FCS_ENABLE_VMG
+  cout << " vmg";
+#endif
+  cout << " OR none" << endl;
+  cout << "  FILE: XML file describing the system configuration";
+#ifdef HAVE_ZLIB_H
+  cout << " (can be gzipped!)";
+#endif
+  cout << endl;
+
+  exit(2);
+}
+
+// MPI parameters
+MPI_Comm communicator;
+int comm_rank, comm_size;
+
+// current configuration
+Configuration *current_config;
+
+static struct {
+  char infilename[MAX_FILENAME_LENGTH];
+
+  bool have_outfile, have_binfile, have_portable_file;
+  char outfilename[MAX_FILENAME_LENGTH], binfilename[MAX_FILENAME_LENGTH], portable_filename[MAX_FILENAME_LENGTH];
+  bool keep_dupgen;
+
+  fcs_int periodic_duplications[3];
+  fcs_int decomposition;
+  bool abort_on_error;
+
+  bool have_method;
+
+  // Which method
+  char method[MAX_METHOD_LENGTH];
+  
+  // Configuration string
+  char conf[MAX_CONF_LENGTH];
+  
+  // Number of iterations
+  fcs_int iterations;
+
+  // For how many particles results should be computed (0.1 = 10%).
+  fcs_float result_particles;
+
+  // Integrate or not, number of time steps (t steps = t+1 computations), and integration configuration string
+  fcs_int integrate, time_steps;
+  char integration_conf[MAX_CONF_LENGTH];
+
+} global_params = { "", false, false, false, "", "", "", false, {1, 1, 1}, -1, true, false, "none", "", 1, -1.0, 0, 0, "" };
+
+// FCS Handle
+FCS fcs;
+
+// dipole corrections
+fcs_float field_correction[3];
+fcs_float energy_correction;
+
+// total energy
+fcs_float total_energy;
+
+bool check_result(FCSResult result, bool force_abort = false) {
+  if (result) {
+    cout << "ERROR: Caught error on task " << comm_rank << "!" << endl;
+    fcsResult_printResult(result);
+    fcsResult_destroy(result);
+    if (force_abort || global_params.abort_on_error)
+      MPI_Abort(communicator, 1);
+    else
+      cout << "WARNING: Continuing after error!" << endl;
+    return false;
+  }
+  return true;
+}
+
+// Command line parsing on master
+void parse_commandline(int argc, char* argv[]) {
+  int c;
+  char dup0[32], *dup1 = NULL, *dup2 = NULL;
+
+  while ((c = getopt (argc, argv, "o:bpkd:m:c:i:r:t:g:")) != -1) {
+    switch (c) {
+    case 'o':
+      strncpy(global_params.outfilename, optarg, MAX_FILENAME_LENGTH);
+      global_params.have_outfile = true;
+      break;
+    case 'b':
+      global_params.have_binfile = true;
+      break;
+    case 'p':
+      global_params.have_portable_file = true;
+      break;
+    case 'k':
+      global_params.keep_dupgen = true;
+      break;
+    case 'd':
+      strncpy(dup0, optarg, sizeof(dup0));
+      if ((dup1 = strchr(dup0, 'x'))) {
+        *dup1 = 0; ++dup1;
+        if ((dup2 = strchr(dup1, 'x'))) {
+          *dup2 = 0; ++dup2;
+        }
+      }
+      global_params.periodic_duplications[0] = global_params.periodic_duplications[1] = global_params.periodic_duplications[2] = (strlen(dup0) > 0)?atoi(dup0):1;
+      if (dup1)
+      {
+        global_params.periodic_duplications[1] = (strlen(dup1) > 0)?atoi(dup1):1;
+        global_params.periodic_duplications[2] = (dup2 && strlen(dup2) > 0)?atoi(dup2):1;
+      }
+      break;
+    case 'm':
+#define STRCMP_FRONT(_s_, _t_) strncmp((_s_), (_t_), z_min(strlen(_s_), strlen(_t_)))
+      if (STRCMP_FRONT("all_on_master", optarg) == 0)
+        global_params.decomposition = DECOMPOSE_ALL_ON_MASTER;
+      else if (STRCMP_FRONT("atomistic", optarg) == 0)
+        global_params.decomposition = DECOMPOSE_ATOMISTIC;
+      else if (STRCMP_FRONT("random", optarg) == 0)
+        global_params.decomposition = DECOMPOSE_RANDOM;
+      else if (STRCMP_FRONT("domain", optarg) == 0)
+        global_params.decomposition = DECOMPOSE_DOMAIN;
+      else
+        cout << "WARNING: ignoring unknown decomposition mode '" << optarg << "'" << endl;
+      break;
+#undef STRCMP_FRONT
+    case 'c':
+      strncpy(global_params.conf, optarg, MAX_CONF_LENGTH);
+      break;
+    case 'i':
+      global_params.iterations = atoi(optarg);
+      break;
+    case 'r':
+      global_params.result_particles = fabs(atof(optarg));
+      if (strchr(optarg, '.')) global_params.result_particles *= -1;
+      break;
+    case 't':
+      global_params.integrate = 1;
+      global_params.time_steps = atoi(optarg);
+      break;
+    case 'g':
+      strncpy(global_params.integration_conf, optarg, MAX_CONF_LENGTH);
+      break;
+    default:
+      usage(argv, argc, c);
+    }
+  }
+
+  if (global_params.have_outfile && (global_params.have_binfile || global_params.have_portable_file))
+  {
+    // determine basename of output filename and append .bin suffix to create binary filename
+    char *s = strrchr(global_params.outfilename, '/');
+    if (s == NULL) s = global_params.outfilename;
+    s = strchr(s, '.');
+    snprintf(global_params.binfilename, MAX_FILENAME_LENGTH, "%.*s.bin", (int) (strlen(global_params.outfilename) - ((s)?strlen(s):0)), global_params.outfilename);
+    snprintf(global_params.portable_filename, MAX_FILENAME_LENGTH, "%.*s.dat", (int) (strlen(global_params.outfilename) - ((s)?strlen(s):0)), global_params.outfilename);
+  }
+
+  if (optind >= argc-1) usage(argv, argc, '-');
+  strncpy(global_params.method, argv[optind], MAX_METHOD_LENGTH);
+  strncpy(global_params.infilename, argv[optind+1], MAX_FILENAME_LENGTH);
+}
+
+// broadcast global parameters
+void broadcast_global_parameters() {
+  MPI_Bcast(&global_params, sizeof(global_params), MPI_BYTE, MASTER_RANK, communicator);
+}
+
+typedef struct
+{
+  fcs_int total_nparticles, nparticles;
+  fcs_float *positions, *charges, *field, *potentials;
+
+  fcs_int *shuffles;
+
+  fcs_int total_in_nparticles, in_nparticles;
+  fcs_float *in_positions, *in_charges;
+
+} particles_t;
+
+void prepare_particles(particles_t *parts)
+{
+  fcs_int result_nparticles, total_result_nparticles;
+
+  if (global_params.result_particles < 0) total_result_nparticles = round((fcs_float) current_config->decomp_total_nparticles * -global_params.result_particles);
+  else total_result_nparticles = global_params.result_particles;
+  
+  if (total_result_nparticles > current_config->decomp_total_nparticles) total_result_nparticles = current_config->decomp_total_nparticles;
+
+  fcs_int decomp_prefix = 0;
+  MPI_Exscan(&current_config->decomp_nparticles, &decomp_prefix, 1, FCS_MPI_INT, MPI_SUM, communicator);
+
+  result_nparticles = round((fcs_float) total_result_nparticles * (decomp_prefix + current_config->decomp_nparticles) / (fcs_float) current_config->decomp_total_nparticles)
+                    - round((fcs_float) total_result_nparticles * decomp_prefix / (fcs_float) current_config->decomp_total_nparticles);
+
+  parts->shuffles = 0;
+
+  if (result_nparticles < current_config->decomp_nparticles)
+  {
+    parts->shuffles = new fcs_int[result_nparticles];
+
+    for (fcs_int i = 0; i < result_nparticles; ++i)
+    {
+      parts->shuffles[i] = random() % (current_config->decomp_nparticles - i);
+
+      swap<fcs_float, 3>(current_config->decomp_positions + 3 * i, current_config->decomp_positions + 3 * parts->shuffles[i]);
+      swap<fcs_float, 1>(current_config->decomp_charges + i, current_config->decomp_charges + parts->shuffles[i]);
+      swap<fcs_float, 3>(current_config->decomp_field + 3 * i, current_config->decomp_field + 3 * parts->shuffles[i]);
+      swap<fcs_float, 1>(current_config->decomp_potentials + i, current_config->decomp_potentials + parts->shuffles[i]);
+    }
+  }
+
+  parts->total_nparticles = total_result_nparticles;
+  parts->nparticles = result_nparticles;
+
+  parts->positions = current_config->decomp_positions;
+  parts->charges = current_config->decomp_charges;
+  parts->field = current_config->decomp_field;
+  parts->potentials = current_config->decomp_potentials;
+
+  parts->total_in_nparticles = current_config->decomp_total_nparticles - parts->total_nparticles;
+  parts->in_nparticles = current_config->decomp_nparticles - parts->nparticles;
+
+  parts->in_positions = parts->positions + 3 * parts->nparticles;
+  parts->in_charges = parts->charges + parts->nparticles;
+
+/*  cout << "IN: " << parts->total_nparticles << " / " << parts->total_in_nparticles << endl;
+  for (fcs_int i = 0; i < current_config->decomp_nparticles; ++i)
+  {
+    cout << i << ":"
+         << "  " << current_config->decomp_positions[3 * i + 0] << ", " << current_config->decomp_positions[3 * i + 1] << ", " << current_config->decomp_positions[3 * i + 2]
+         << "  " << current_config->decomp_charges[i]
+         << "  " << current_config->decomp_field[3 * i + 0] << ", " << current_config->decomp_field[3 * i + 1] << ", " << current_config->decomp_field[3 * i + 2]
+         << "  " << current_config->decomp_potentials[i]
+         << endl;
+  }*/
+}
+
+void unprepare_particles(particles_t *parts)
+{
+/*  cout << "OUT: " << parts->total_nparticles << " / " << parts->total_in_nparticles << endl;
+  for (fcs_int i = 0; i < current_config->decomp_nparticles; ++i)
+  {
+    cout << i << ":"
+         << "  " << current_config->decomp_positions[3 * i + 0] << ", " << current_config->decomp_positions[3 * i + 1] << ", " << current_config->decomp_positions[3 * i + 2]
+         << "  " << current_config->decomp_charges[i]
+         << "  " << current_config->decomp_field[3 * i + 0] << ", " << current_config->decomp_field[3 * i + 1] << ", " << current_config->decomp_field[3 * i + 2]
+         << "  " << current_config->decomp_potentials[i]
+         << endl;
+  }*/
+
+  if (parts->shuffles)
+  {
+    fcs_int result_nparticles = parts->nparticles;
+
+    for (fcs_int i = result_nparticles - 1; i >= 0; --i)
+    {
+      swap<fcs_float, 3>(current_config->decomp_positions + 3 * parts->shuffles[i], current_config->decomp_positions + 3 * i);
+      swap<fcs_float, 1>(current_config->decomp_charges + parts->shuffles[i], current_config->decomp_charges + i);
+      swap<fcs_float, 3>(current_config->decomp_field + 3 * parts->shuffles[i], current_config->decomp_field + 3 * i);
+      swap<fcs_float, 1>(current_config->decomp_potentials + parts->shuffles[i], current_config->decomp_potentials + i);
+    }
+
+    delete[] parts->shuffles;
+    parts->shuffles = 0;
+  }
+}
+
+void run_method(particles_t *parts) {
+  // Set up method
+  // * with default parameters
+  // * with optimized parameters
+
+  FCSResult result;
+  double before, after;
+  double tune_time, run_time, run_time_sum;
+  fcs_float* positions;
+  fcs_float* charges;
+
+  MASTER(cout << "  Setting basic parameters..." << endl);
+  INFO_MASTER(cout << "    total number of particles: " << parts->total_nparticles + parts->total_in_nparticles << " (" << parts->total_in_nparticles << " input-only particles)" << endl);
+  result = fcs_common_set(fcs, (fcs_get_near_field_flag(fcs) == 0)?0:1,
+    current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity, 
+    parts->total_nparticles);
+  if (!check_result(result)) return;
+
+  // Compute dipole moment
+//  result = fcs_compute_dipole_correction(fcs, parts->total_nparticles + parts->total_in_nparticles,
+    result = fcs_compute_dipole_correction(fcs, parts->nparticles,
+    parts->positions, parts->charges, current_config->params.epsilon, 
+    field_correction, &energy_correction);
+  MASTER(cout << "    Dipole correction:" << endl);
+  MASTER(cout << "      field_correction=" \
+         << field_correction[0] << " " 
+         << field_correction[1] << " " 
+         << field_correction[2] << endl);
+  MASTER(cout << "      energy_correction=" << energy_correction << endl);
+  if (!check_result(result)) return;
+
+  // Wrap positions
+  fcs_wrap_positions(parts->nparticles + parts->in_nparticles, parts->positions, current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity);
+
+#ifdef FCS_ENABLE_DIRECT
+  if (fcs_get_method(fcs) == FCS_DIRECT)
+  {
+    INFO_MASTER(cout << "    additional input-only particles for direct solver: " << parts->total_in_nparticles << endl);
+    fcs_direct_set_in_particles(fcs, parts->in_nparticles, parts->in_positions, parts->in_charges);
+  }
+#endif
+
+  /* arrays to hold copies of positions and charges, as they may be changed by the method */
+  positions = (fcs_float*)malloc(3*parts->nparticles*sizeof(fcs_float));
+  charges = (fcs_float*)malloc(parts->nparticles*sizeof(fcs_float));
+
+  // Tune and time method
+  MASTER(cout << "  Tuning method..." << endl);
+  MPI_Barrier(communicator);
+  before = MPI_Wtime();
+  /* create copies of the positions and charges, as fcs_run may modify it */
+  memcpy(positions, parts->positions, 3*parts->nparticles*sizeof(fcs_float));
+  memcpy(charges, parts->charges, parts->nparticles*sizeof(fcs_float));
+  result = fcs_tune(fcs, parts->nparticles, parts->nparticles, parts->positions, parts->charges);
+  if (!check_result(result)) return;
+  MPI_Barrier(communicator);
+  after = MPI_Wtime();
+  tune_time = after - before;
+  MASTER(cout << "    Time: " << scientific << tune_time << endl);
+  
+  // Run and time method
+  MASTER(cout << "  Running method..." << endl);
+  DEBUG(cout << comm_rank << ": local number of particles: " << parts->nparticles << "(" << parts->in_nparticles << " input-only)" << endl);
+
+  run_time_sum = 0;
+
+
+  for (fcs_int i = 0; i < global_params.iterations; ++i)
+  {
+    MPI_Barrier(communicator);
+    /* create copies of the positions and charges, as fcs_run may modify it */
+    memcpy(positions, parts->positions, 3*parts->nparticles*sizeof(fcs_float));
+    memcpy(charges, parts->charges, parts->nparticles*sizeof(fcs_float));
+    before = MPI_Wtime();
+    result = fcs_run(fcs, parts->nparticles, parts->nparticles,
+                     positions, charges, 
+                     parts->field, parts->potentials);
+    if (!check_result(result)) return;
+    MPI_Barrier(communicator);
+    after = MPI_Wtime();
+    run_time = after - before;
+    MASTER(cout << "    #" << i << " time: " << scientific << run_time << endl);
+
+    run_time_sum += run_time;
+  }
+
+  free(positions);
+  free(charges);
+  MASTER(cout << "    Average time: " << scientific << run_time_sum / global_params.iterations  << endl);
+
+  current_config->have_result_values[0] = 1;  // have potentials results
+  current_config->have_result_values[1] = 1;  // have field results
+
+/*  for (fcs_int i = 0; i < parts->nparticles; ++i)
+    cout << i << ": " << parts->positions[3 * i + 0] << ", "
+                      << parts->positions[3 * i + 1] << ", "
+                      << parts->positions[3 * i + 2] << "  " << parts->charges[i] << "  "
+                      << parts->field[3 * i + 0] << ", "
+                      << parts->field[3 * i + 1] << ", "
+                      << parts->field[3 * i + 2] << "  " << parts->potentials[i] << endl;*/
+
+  fcs_float local_energy = 0.0;
+
+  for (fcs_int pid = 0; pid < parts->nparticles; pid++) {
+    // apply dipole correction to the fields
+    parts->field[3*pid] += field_correction[0];
+    parts->field[3*pid+1] += field_correction[1];
+    parts->field[3*pid+2] += field_correction[2];
+
+    local_energy += 0.5 * parts->charges[pid] * parts->potentials[pid];
+  }
+
+  // Compute total energy and apply dipole correction (on master)
+  MPI_Reduce(&local_energy, &total_energy, 1, FCS_MPI_FLOAT, 
+    MPI_SUM, 0, communicator);
+
+  if (comm_rank == MASTER_RANK)
+    total_energy += energy_correction;
+}
+
+void no_method() {
+  total_energy = 0;
+
+  current_config->have_result_values[0] = 0;  // no potentials results
+  current_config->have_result_values[1] = 0;  // no field results
+}
+
+double determine_total_energy(fcs_int nparticles, fcs_float *charges, fcs_float *potentials)
+{
+  fcs_float local, total;
+  
+
+  local = 0;
+
+  for (fcs_int i = 0; i < nparticles; i++) local += 0.5 * charges[i] * potentials[i];
+
+  // Compute total energy
+  MPI_Allreduce(&local, &total, 1, FCS_MPI_FLOAT, MPI_SUM, communicator);
+
+  return total;
+}
+
+void run_integration(particles_t *parts)
+{
+  integration_t integ;
+
+  fcs_float *v_cur, *f_old, *f_cur, e;
+  FCSResult result;
+  fcs_int r = 0;
+
+
+  MASTER(cout << "  Integration with " << global_params.time_steps << " time step(s)" << endl);
+
+  v_cur = new fcs_float[3 * parts->nparticles];
+  f_old = new fcs_float[3 * parts->nparticles];
+  f_cur = parts->field;
+
+  /* setup integration parameters */
+  integ_setup(&integ, global_params.time_steps, global_params.integration_conf);
+
+  integ_system_setup(&integ, current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity);
+
+  MASTER(
+    integ_print_settings(&integ);
+  );
+
+  /* init integration (incl. velocity and field values) */
+  integ_init(&integ, parts->nparticles, v_cur, f_cur);
+
+  if (fcs != FCS_NULL)
+  {
+    /* init method */
+    result = fcs_common_set(fcs, (fcs_get_near_field_flag(fcs) == 0)?0:1,
+      current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity, parts->total_nparticles);
+    if (!check_result(result)) return;
+
+    /* tune method */
+    result = fcs_tune(fcs, parts->nparticles, parts->nparticles, parts->positions, parts->charges);
+    if (!check_result(result)) return;
+
+  } else
+  {
+    for (fcs_int i = 0; i < parts->nparticles; ++i) parts->field[3 * i + 0] = parts->field[3 * i + 1] = parts->field[3 * i + 2] = parts->potentials[i] = 0.0;
+  }
+
+  MASTER(cout << "  Initial step" << endl);
+
+  while (1)
+  {
+    /* store previous field values */
+    for (fcs_int i = 0; i < 3 * parts->nparticles; ++i) f_old[i] = f_cur[i];
+
+    if (fcs != FCS_NULL)
+    {
+      MASTER(cout << "    Run method..." << endl);
+      result = fcs_run(fcs, parts->nparticles, parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+      if (!check_result(result)) return;
+    }
+
+    if (r > 0)
+    {
+      MASTER(cout << "    Update velocities..." << endl);
+      integ_update_velocities(&integ, parts->nparticles, v_cur, f_old, f_cur);
+    }
+
+    MASTER(cout << "    Determine total energy..." << endl);
+    e = determine_total_energy(parts->nparticles, parts->charges, parts->potentials);
+    MASTER(cout << "      total energy = " << e << endl);
+
+    if (r >= global_params.time_steps) break;
+
+    ++r;
+
+    MASTER(cout << "  Time-step #" << r << endl);
+
+    MASTER(cout << "    Update positions..." << endl);
+    integ_update_positions(&integ, parts->nparticles, parts->positions, v_cur, f_cur);
+
+    integ_correct_positions(&integ, parts->nparticles, parts->positions);
+    fcs_set_box_a(fcs, integ.box_a);
+    fcs_set_box_b(fcs, integ.box_b);
+    fcs_set_box_c(fcs, integ.box_c);
+    fcs_set_offset(fcs, integ.offset);
+
+    integ_correct_positions(&integ, parts->nparticles, parts->positions);
+  }
+
+  delete[] v_cur;
+  delete[] f_old;
+}
+
+int main(int argc, char* argv[]) {
+  // The testcase
+  Testcase *testcase = 0;
+
+  MPI_Init(&argc, &argv);
+
+  communicator = MPI_COMM_WORLD;
+
+  MPI_Comm_rank(communicator,&comm_rank);
+  MPI_Comm_size(communicator,&comm_size);
+
+  MASTER(cout << "Running generic test with " << comm_size << " processes" << endl);
+
+  if (comm_rank == MASTER_RANK) {
+    parse_commandline(argc, argv);
+
+    if (strcasecmp(global_params.method, "none") == 0) global_params.have_method = false;
+    else global_params.have_method = true;
+  }
+
+  srandom((comm_rank + 1) * 2501);
+
+  global_params.abort_on_error = false;
+
+  broadcast_global_parameters();
+
+  testcase = new Testcase();
+
+  if (comm_rank == MASTER_RANK) {
+    // Read testcase data on master
+    try {
+      testcase->read_file(global_params.infilename, global_params.periodic_duplications, global_params.decomposition);
+    } catch (ParserError &er) {
+      cout << "ERROR: " << er.what() << endl;
+      MPI_Abort(communicator, 1);
+    }
+  }
+
+  testcase->broadcast_config(MASTER_RANK, communicator);
+
+  FCSResult result;
+
+  if (global_params.have_method) {
+    MASTER(cout << "Initializing FCS, method " << global_params.method << "..." << endl);
+    result = fcs_init(&fcs, global_params.method, communicator);
+    check_result(result, true);
+
+    testcase->error_field = 1.0;
+    testcase->error_potential = 1.0;
+    testcase->reference_method = global_params.method;
+
+  } else {
+    MASTER(cout << "No method chosen!" << endl);
+    fcs = FCS_NULL;
+  }
+
+  MASTER(cout << "Setting method configuration parameters..." << endl);
+  MASTER(cout << "  Config parameters:" << endl);
+  const char *xml_method_conf = testcase->get_method_config();
+  MASTER(cout << "    XML file: " << xml_method_conf << endl);
+  if (strlen(xml_method_conf) > 0)
+  {
+    result = fcs_parser(fcs, xml_method_conf, FCS_TRUE);
+    check_result(result, (fcsResult_getReturnCode(result) != FCS_WRONG_ARGUMENT));
+  }
+  MASTER(cout << "    Command line: " << global_params.conf << endl);
+  if (strlen(global_params.conf) > 0)
+  {
+    result = fcs_parser(fcs, global_params.conf, FCS_FALSE);
+    check_result(result, true);
+  }
+
+  fcs_int config_count = 0;
+
+  vector<Configuration*>::iterator config;
+
+  if (comm_rank == MASTER_RANK) config = testcase->configurations.begin();
+
+  // Loop over configurations
+  while (1) {
+
+    // Check whether we have another configuration
+    fcs_int quit_loop = 0;
+    if (comm_rank == MASTER_RANK && config == testcase->configurations.end()) quit_loop = 1;
+    MPI_Bcast(&quit_loop, 1, FCS_MPI_INT, MASTER_RANK, communicator);
+
+    if (quit_loop) break;
+
+    // Create new configuration on non-root processes
+    if (comm_rank != MASTER_RANK)
+    {
+      testcase->configurations.push_back(new Configuration());
+      config = testcase->configurations.end() - 1;
+    }
+    
+    current_config = *config;
+
+    // Broadcast configuration parameters
+    current_config->broadcast_config();
+
+    MASTER(cout << "Processing configuration " << config_count << "..." << endl);
+
+    // Distribute particles
+    current_config->decompose_particles();
+
+    particles_t parts;
+    prepare_particles(&parts);
+
+    if (global_params.integrate) run_integration(&parts);
+    else
+    {
+      // Run method or do nothing
+      if (global_params.have_method) run_method(&parts);
+      else no_method();
+    }
+
+    unprepare_particles(&parts);
+
+    // Gather resulting potentials and fields to master
+    current_config->gather_particles();
+
+    // Compute errors
+    errors_t err;
+    bool have_errors = current_config->compute_errors(&err);
+
+    // output the errors on the master node
+    if (comm_rank == MASTER_RANK)
+      if (have_errors) print_errors(&err, "  ");
+
+    if (global_params.have_outfile) {
+      // Write the computed data as new references into the testcase
+      if (current_config->have_result_values[0])
+        memcpy(current_config->dup_input_potentials, current_config->result_potentials, current_config->dup_input_nparticles*sizeof(fcs_float));
+      if (current_config->have_result_values[1])
+        memcpy(current_config->dup_input_field, current_config->result_field, current_config->dup_input_nparticles*3*sizeof(fcs_float));
+    }
+
+    // Free particles
+    current_config->free_decomp_particles();
+
+    // proceed to the next configuration
+    config++;
+    config_count++;
+  }
+
+  if (global_params.have_method) {
+    MASTER(cout << "Destroying FCS ..." << endl);
+    result = fcs_destroy(fcs);
+    check_result(result, true);
+  }
+
+  if (global_params.have_outfile) {
+    if (comm_rank == MASTER_RANK)
+    {
+      cout << "New reference data: method: " << testcase->reference_method
+           << ", potential error: " << testcase->error_potential << ", field error: " << testcase->error_field << endl;
+    }
+
+    // delete existing binary file
+    if (global_params.have_binfile) MPI_File_delete(global_params.binfilename, MPI_INFO_NULL);
+
+    // delete existing portable file
+    if (global_params.have_portable_file) MPI_File_delete(global_params.portable_filename, MPI_INFO_NULL);
+
+    // called by all processes so that we can write out all particles of all processes
+    testcase->write_file(global_params.outfilename,
+      global_params.have_binfile?global_params.binfilename:NULL,
+      global_params.have_portable_file?global_params.portable_filename:NULL,
+      global_params.keep_dupgen);
+  }
+
+  delete testcase;
+
+  MPI_Finalize();
+
+  MASTER(cout << "Done." << endl);
+}

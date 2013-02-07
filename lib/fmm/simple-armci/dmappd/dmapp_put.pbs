@@ -1,0 +1,13 @@
+#!/bin/bash
+#PBS -N dmapp_put
+#PBS -l mppwidth=2
+#PBS -l mppnppn=2
+#PBS -l walltime=0:30:00
+#PBS -joe
+#PBS -V
+
+export XT_SYMMETRIC_HEAP_SIZE=2000M
+
+cd ${PBS_O_WORKDIR}
+
+aprun -n 2 -N 2 ./dmapp_put.x

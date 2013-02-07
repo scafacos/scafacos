@@ -1,0 +1,23 @@
+TODO list for conversion to autotools
+-------------------------------------
+
+- we deal with Fortran 90/Fortran 2003 <-> C calling conventions
+  through the AC_FC_WRAPPERS autoconf macro and its FC_FUNC/FC_FUNC_
+  preprocessor macros.  However, we either need to hide this in a
+  non-public header, or document how packages using scafacos can
+  make use of this.
+
+- implement automatic Fortran module dependency tracking?
+
+- Allow to optionally build without Fortran 2003 support.  Some
+  cluster systems have proprietary connects with old MPI implementations
+  that are not easily upgradeable to support all needed MPI.
+
+- the test suite helpers (test/defs.in) should provide methods to
+  extract simulation results and validate them, compare errors, etc.
+
+- add method specific options to top-level configure (via empty AC_ARG_ENABLE)
+
+- clean AX_FFTW3 macro: remove --with-fftw3-options?
+
+- use axes_extra_prefixes macro?

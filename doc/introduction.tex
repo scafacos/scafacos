@@ -1,0 +1,177 @@
+\chapter{Introduction}
+\label{cha:introduction}
+
+\todo[inline]{Fix introduction}
+
+\section{What ScaFaCoS Computes}
+
+\subsection{Fully Non-Periodic Boundary Conditions}
+In this part we apply our fast summation algorithm to a system
+of $M$ charged particles located at source nodes $\mathbf x_l\in \R^3$ with charge $q_l\in\R$.
+We are interested in the evaluation of the electrostatic potential $\phi$ at target node $\mathbf x_j\in \R^3$,
+\begin{equation}\label{eq:potential_0dp}
+ \phi (\mathbf x_j) = \underset{l \neq j}{\sum_{l=1}^{M}} \dfrac{q_l}{\left\| \mathbf x_j - \mathbf x_l \right\|_2},
+ \quad j=1,\hdots,M,
+\end{equation}
+and the electrostatic fields $\mathbf E$ evaluated at position $\mathbf x_j\in \R^3$,
+\begin{equation}\label{eq:fields_0dp}
+   \mathbf E(\mathbf x_j)
+   = - \underset{l\neq j}{\sum_{l=1}^{M}} q_l \frac{\mathbf x_j - \mathbf x_l}{\|\mathbf x_j - \mathbf x_l \|_2^3},
+   \quad j=1,\hdots,M.
+\end{equation}
+Furthermore we are interested in the computation of the total electrostatic potential energy
+\begin{equation*}
+  U := \frac{1}{2} \sum\limits_{j = 1}^{M} q_j \phi(\mathbf x_j),
+\end{equation*}
+which can be evaluated straightforward after the computation of the potentials $\phi(\mathbf x_j), j=1,\hdots,M$.
+\todo{Virial}
+
+\subsection{Fully Periodic Systems}
+We consider a system of charged particles coupled via the Coulomb potential, a cubic simulation box with
+edge length $B$, containing $M$ charged particles, each with a charge $q_l\in\R$, located at $\mathbf x_l\in [0,B)^3$.
+Periodic boundary conditions in a system without cut-off is represented by replicating the simulation
+box in all directions of space.
+The electrostatic potential $\phi$ at $\mathbf y\in [0,B)^3$, can be written as a lattice sum,
+see \cite[Chapter 12]{FrSm02} and \cite{Sut06},
+\begin{equation}\label{eq:potential_3dp}
+  \phi(\mathbf x_j)
+  = \sum_{\mathbf r\in \mathbb Z^3} \underset{ l\neq j \,{\rm for}\, \mathbf r= \mathbf 0}{\sum_{l=1}^M}
+    \frac{q_l}{\|\mathbf x_j -\mathbf x_l +\mathbf r B\|_2}\,,
+    \quad j=1,\hdots,M
+\end{equation}
+and the electrostatic field $\mathbf E$ evaluated at position $\mathbf x_j\in [0,B)^3$ is given by
+\begin{equation}\label{eq:fields_3dp}
+  \mathbf E(\mathbf x_j)
+  = - \sum_{\mathbf r\in \mathbb Z^3}
+    \underset{ l\neq j \,{\rm for}\, \mathbf r= \mathbf 0}{\sum_{l=1}^M}
+    q_l \frac{\mathbf x_j -\mathbf x_l +\mathbf r B}{\|\mathbf x_j -\mathbf x_l +\mathbf r B \|_2^3},
+    \quad j=1,\hdots,M\, ,
+\end{equation}
+Furthermore we are interested in the computation of the total electrostatic potential energy
+\begin{equation*}
+  U := \frac{1}{2} \sum\limits_{j = 1}^{M} q_j \phi(\mathbf x_j),
+\end{equation*}
+which can be evaluated straightforward after the computation
+of the potentials $\phi(\mathbf x_j)$, $j=1,\hdots,M$ like in the non-periodic case.
+\todo{Virial}
+
+
+
+
+\section{Acknowledgements}
+
+This is a network project of German research groups working on a
+unified parallel library for various methods to solve electrostatic
+(and gravitational) problems in large particle simulations. The
+project is financed by the German Ministry of Education and Science
+(BMBF) under contract number 01 IH 08001 A-D.  Main focus of the
+project is to provide methods for electrostatic problems and to
+implement efficient parallel methods in order to scale up to thousands
+of processors.  \fcs is supported within the period 01/01/2009 -
+31/12/2011.
+
+
+\section{Licensing}
+
+This library is open source software.  It comes with parts that are
+distributed under the GNU General Public License (GPL) and parts that
+are distributed under the GNU Lesser General Public License (LGPL).
+Please refer to the documentation of the individual solver methods for
+details.  The toplevel configure script provides a switch
+\texttt{--enable-lgpl} that only builds methods which will allow
+distribution under the LGPL.
+
+
+\section{Requirements}
+\label{sec:requirements}
+\index{requirements|main}
+
+The following libraries and tools are required to be able to compile
+and use \fcs:
+
+\begin{description}
+\item[MPI] \index{MPI} As \fcs is parallel software, you will need a
+  working MPI environment that implements at least the MPI standard
+  version 1.2.
+  \todo{Is MPI 1.2 really enough?}
+\item[C99 compiler] \index{C99} The C-code of \fcs uses the C99
+  standard, therefore a compiler that is able to compile C99 code must
+  be available. We do not know of any recent platform that does not
+  provide a C99 compiler.
+\item[C++ compiler] \index{C++} Some methods (\eg VMG) require a C++
+  compiler.
+\item[Fortran 2003 compiler] \index{Fortran 2003} The Fortran code of
+  some methods (\eg FMM) does require a Fortran 2003 compiler.
+\item[FFTW] \index{FFTW} Some solver methods (\eg P$^3$M and P2NFFT)
+  need the FFTW library version 3.3.0 or later
+  \footnote{\url{http://www.fftw.org/}} for Fourier transforms.  For
+  P2NFFT, the MPI interface of FFTW3 has to be available. You do
+  not only need the library itself, but also the header files.
+  Depending on the operating system, these may come in separate
+  development packages (\eg \texttt{fftw3-dev}).
+  \todo{FFTW3 is part of the library}
+\end{description}
+
+\section{Feature Matrix}
+\label{sec:feature_matrix}
+\index{feature matrix|main}
+
+  \begin{table}[htbp]
+    \begin{minipage}{\textwidth}
+      \centering
+      \begin{tabular}{|l||*{10}{c|}}
+        \hline
+        &
+        \rotatebox{90}{\textbf{FMM}} &
+        \rotatebox{90}{\textbf{MEMD}} &
+        \rotatebox{90}{\textbf{MMM*D}} &
+        \rotatebox{90}{\textbf{P2NFFT}} &
+        \rotatebox{90}{\textbf{P3M}} &
+        \rotatebox{90}{\textbf{PEPC}} &
+        \rotatebox{90}{\textbf{PP3MG}} &
+        \rotatebox{90}{\textbf{VMG}} &
+        \rotatebox{90}{\textbf{Direct}} &
+        \rotatebox{90}{\textbf{Ewald}}
+        \\
+        \hline
+        \hline
+
+        \textbf{3D-periodic} &
+        + & + & -- & + & + & +                                     & +        & + & + & + \\
+        \hspace{2em}\textbf{non-cubic, cuboid} &
+        -- & -- &   & + & + & +\footnote{untested}                 & +        & ? & + & + \\
+        \hspace{2em}\textbf{non-cubic, non-cuboid} &
+        ? & ? &   & -- & ? & +\footnote{untested}                   & ?        & ? & ? & ? \\
+        \hspace{2em}\textbf{Virials} &
+        ? & -- &   & ?\footnote{diagonal approximation} & ? & --\footnote{implementation planned}   & (scalar) & ? & ? & -- \\
+        \hline
+
+        \textbf{Nonperiodic} &
+        + & -- & -- & + & -- & +                                   & --        & ? & + & -- \\
+        \hspace{2em}\textbf{non-cubic} &
+        -- &   &   & --\footnote{implementation planned} &   & +                                     &          & ? & + &   \\
+        \hspace{2em}\textbf{Virials} &
+        + &   &   & + &   & --\footnote{implementation planned}    &          & ? & + &   \\
+        \hline
+
+        \textbf{Partially periodic} &
+        + & -- & + & --\footnote{implementation planned} & -- & +\footnote{untested}                & --        & ? & + & -- \\
+        \hline
+
+        \textbf{Tunable accuracy} &
+        + & -- & + & + & + & --                                    & --        & -- & -- & + \\
+        \hline
+
+        \textbf{Delegate near-field} &
+        -- & -- & ? & + & + & --                                   & ?        & ? & -- & -- \\
+        \hline
+
+      \end{tabular}
+    \end{minipage}
+    \caption{Overview of the features of the different solvers.}
+  \end{table}
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: ug.tex
+%%% End: 
+

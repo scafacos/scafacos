@@ -1,0 +1,22 @@
+#!/bin/sh
+#set -xv
+
+test ! -f join.list && exit 1
+
+cat join.list | while read file ; do
+  _ifs="$IFS"
+  IFS=""
+  output=
+  cat $file | while read line ; do
+    if test "${line#! FILE:}" != "$line" ; then
+      output=yes
+      echo "! STARTFILE: $file"
+    else
+      if test "x$output" = "xyes" ; then
+        echo "$line"
+      fi
+    fi 
+  done
+  echo "! ENDFILE: $file"
+  IFS="$_ifs"
+done

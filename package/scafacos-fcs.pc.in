@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: @PACKAGE_NAME@
+Description: Fast Coulomb Solver library
+URL: @PACKAGE_URL@
+Requires:
+Version: @VERSION@
+Libs: -L${libdir} @SCAFACOS_PC_LIBS@
+Libs.private:
+Cflags: -I${includedir}

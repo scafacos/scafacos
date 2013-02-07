@@ -1,0 +1,134 @@
+This folder contains the already implemented parts of the (new) interface
+At first it will be the C-interface, with the FORTRAN interface done,
+when the C-interface is fully functional.
+
+Already implemented are:
+
+name		status		description
+
+FCSDefinitions	in progress 	containing the global definitions for the library (e.g. return codes, fcs_int, fcs_float, etc.)
+FCSHandle	in progress	the combined struct for storing the universally needed data, as well as the solver-specific data
+FCSOutput	in progress	the struct containing the output data (positions, forces, charges, virial)
+FCSResult	in progress	the struct containing error code, error location, error message
+FCSInterface	in progress	the actual interface with (partial) implementations of fcs_init, fcs_tune und fcs_run as well as internal interface functions for each solver
+interface_test	in progress	small test program to test the already implemented functions / structures
+
+Current state:
+
+25.02.:
+
+FCSHandle, FCSResult and FCSOutput can be created and destroyed (as tested in interface_test)
+FCSHandle: needs to be enlarged in order to be able to contain every data each solver wants to save from run to run
+FCSHandle: getter / setter functions for each future component
+FCSInterface: fcs_run and fcs_tune must be implemented, as well as the solver-specific functions, e.g. fcs_fmm_init() or fcs_pp3mg_run()
+(next step)
+
+28.02.:
+
+FCSHandle:	
+		-	output function added
+		-	periodicity added
+		-	checking routines implemented to be called before fcs_tune / fcs_run , which check, if all necessary data has been entered into the FCSHandle-object
+		-	renamed "fcsHandle_obligatory_set" to "fcsHandle_common_set" (method to set all data needed for fcs_tune at once)
+FCSResult:	
+		-	output routine modified (formatted output)
+FCSOutput:	
+		-	setter functions added, that later should be called from fcs_run and other sources
+		-	potentials added
+		-	removed charges
+		-	element "currently_allocated_particles" added, which should be used to show which size the internal arrays have (at first run should be identical to local_max_particles used in fcs_tune)
+		-	changed forces to field values at sites of particles
+interface_test:	
+		-	testing program upgraded accordingly (tests now fcs_init and fcsHandle_common_set as well as fcsHandle_output)
+
+
+point of discussion:	what should be done if the solver should perform near field computations:
+				a) only potentials and field data return
+				b) positions returned in FCSOutput-object
+				c) positions in input data will be overwritten
+
+next steps:
+		-	implementation of rudimentary fcs_tune / fcs_run
+
+02.03.:
+
+generally:
+		-	removed memory leaks (forgot to destroy FCSResult objects ...)
+FCSDefinitions:	
+		-	added new return states:
+			o	FCS_LOGICAL_ERROR 	-> 	if parameters violate logical conditions, e.g. value > max_value
+			o	FCS_MISSING_ELEMENT	->	if parameters essential for a solver / function call is not set (e.g. missing box vector, when fcs_tune is called)
+		-	introduced macros to be used by user when setting fmm parameters
+			o	FCS_FMM_STANDARD_ERROR instead of 0
+			o	FCS_FMM_CUSTOM_RELATIVE instead of 1
+			o	FCS_FMM_CUSTOM_ABSOLUTE instead of 2
+FCSHandle:
+		-	added output of solver-specific parameters (only fmm now)
+		-	changed setter functions to copy values, if internal pointer is not NULL
+		-	initialising every internal pointer with NULL (to make sure they are NULL when checked and not used)
+FCSInterface:	
+		-	added FFM init function
+		-	added stub functions for init, tune and run methods
+		-	made solver-specific init, tune and run methods static in FCSInterface.c so that the user has to call fcs_init, fcs_tune or fcs_run and cannot avoid the use of these functions
+		-	removed FCSOutput* from the argument list of fcs_tune because within fcs_tune no value contained in FCSOutput should be calculated or created (if mistaken, I will change it)
+
+next step (from 07.03. onwards):
+		-	implementation of pepc / pp3mg init, tune and run functions
+
+18.03.:
+generally:
+		-	replaced return values "fcsResult_create(FCS_SUCCESS,...) with NULL, as agreed on in Stuttgart
+		-	implemented int value for method choice, as suggested by M.Hofmann in his mail from 04.03.2011
+
+FCSHandle:
+		-	replaced pointer components by 'real' components, as suggested by M.Hofmann in his mail from 04.03.2011
+FCSOutput:
+		-	introduced a "fcsOutput_update" function to enable fcs_run to change the virial, potentials and field values
+		-	introduced a "fcsOutput_print" function which prints the number of particles on local processor, maximum allocated size of arrays in FCSOutput-object as well as virial, potentials and field values
+FCSInterface:
+		-	began work on interface for pp3mg
+test program:
+		-	implemented new features (fcsOutput_print) to check if memory is freed correctly (should be, checked with totalview memory debugger)
+
+21.03.:
+generally:
+		-	included change suggested by M.Hofmann in his mail from 20.03.2011
+			-	seperate files for method-specific routines included
+			-	no deallocation of memory given by calling program (box_a, box_b, box_c, periodicity in FCSHandle)
+			-	double need to supply method and communicator corrected (also added communicator to fcsHandle_common_set, which was missing!)
+			-	parameters local_particles and max_local_particles are given to method-specific tune-/run-routines
+FCSInterface:
+		-	call to fcsHandle_init_check was added which was previously forgotten
+		-	setting data in fcs_init was removed, according to idea that all data should be entered into the FCSHandle object before fcs_init is called so that first initializations from methods can be done in this step
+
+22.03.:
+FCSHandle:
+		-	added method-specific structures for the storage of method-specific parameters (suggested by M.Hofmann / 20.03.2011)
+		-	finally added all getter-/setter-functions for all known method-specific parameters (pepc,pp3mg,fmm) as well as collective setup functions to set all of these parameters at once
+		-	method_context as void* included, can be used by each method to store data but memory management has to be done by each method itself!
+fcs_*:		
+		-	added specific destroy functions (can be used for the memory management of method_context)
+
+25.03.:
+generally:
+		-	exchanged fcs_double by fcs_float due to definitions by configure
+FCSHandle:
+		-	included parser for string based input (format open to discussion!)
+
+28.03.:
+FCSHandle:
+		-	completed parser with fmm variables
+
+30.03.:
+FCSHandle:
+FCSInterface:
+		-	preparations made to be able to switch off (and forbid compilation of) single solvers
+
+01.04.:
+generally:
+		-	implemented division of public / private parts of the interface (added *_p.h files for the public part and put them together into 'fcs.h')
+		- 	added missing define for the 30.03. change (switches for solvers), should be complete now
+
+05.04.:
+generally:
+		-	began work on the Fortran interface (FCSDefinitions.f90, FCSResult.f90, test.f90), as before, test is a small program with which the functionality of the existing Fortran interface can be checked (like fcs_interfacetest.c)

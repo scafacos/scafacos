@@ -1,0 +1,5 @@
+
+- implement checks
+- ipnfft.h depends on pnfft.h, include declaration of PX, PNX with configure into both headers 
+- update pnfft.f.in, since it is just copied from PFFT
+- start to use the TODO file for PNFFT development

@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH --job-name="ping-pong-mpi-2"
+#SBATCH --nodes=8
+#SBATCH --ntasks-per-node=12
+#SBATCH --time-min=0:30:00
+
+set -ex
+
+export DEBUG=0
+
+#export XT_SYMMETRIC_HEAP_SIZE=2000M
+
+export PROCS=96
+export PPN=12
+
+export OMP_NUM_THREADS=1
+
+cd ${SLURM_SUBMIT_DIR}
+
+aprun -n ${NODES} -N ${PPN} ping-pong-mpi-2.x > ping-pong-mpi-2.log.${SLURM_JOB_ID} 

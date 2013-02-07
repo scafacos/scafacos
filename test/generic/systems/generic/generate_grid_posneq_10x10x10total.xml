@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<!DOCTYPE scafacos_test SYSTEM "../scafacos_test.dtd">
+<scafacos_test description="Testing particle generation." name="generate_test">
+  <configuration box_a="10.0 0.0 0.0" box_b="0.0 10.0 0.0" box_c="0.0 0.0 10.0" epsilon="metallic" periodicity="1 1 1" decomposition="atomistic">
+    <generate ntotal="10 10 10">
+      <positions type="grid"/>
+      <charges type="alternate" value="1.0 -1.0"/>
+      <potentials type="alternate" value="-1.7475645946331821906362120355443974034851614366247417581528253507 1.7475645946331821906362120355443974034851614366247417581528253507"/>
+      <field type="const" value="0 0 0"/>
+    </generate>
+  </configuration>
+</scafacos_test>

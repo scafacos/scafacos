@@ -1,0 +1,625 @@
+\chapter{P2NFFT -- Particle-Particle NFFT}
+\label{cha:p2nfft}
+
+\solvertoindex{P2NFFT}
+\solvertoindex{Particle-Particle NFFT}
+
+\def\alp{13}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: ug.tex
+%%% End: 
+
+
+P2NFFT is a common framework for almost all FFT based fast Coulomb solvers.
+The computation of Coulomb interactions is split into a short range interaction (near field) and
+a long range interaction (far field).
+For sake of simplicity, we describe the idea of P2NFFT only for the one-dimensional case.
+In addition, we do not stress all the details, that arise from the difference between periodic and
+non-periodic boundary conditions. More detailed descriptions of the algorithms can be found in \cite{PiPo10}.
+
+\section{Description of the Method}
+
+As usual, we assume $M$ charges $q_l$ at position $r_l$. The potentials $\phi_j$ at position $r_j$
+are given by
+\begin{equation*}
+  \phi_j
+  =
+  \sideset{}{^\prime}\sum_{l=1}^M
+    q_l\frac{1}{r_{jl}}
+  \,,
+\end{equation*}
+and the Electrostatic fields $E_j$ at position $r_j$ are given by
+\begin{equation*}
+  E_j
+  =
+  \sideset{}{^\prime}\sum_{l=1}^M
+    q_l\nabla\frac{1}{r_{jl}}
+  =
+  \sideset{}{^\prime}\sum_{l=1}^M
+    q_l \frac{r_l}{r_{jl}}
+  \,.
+\end{equation*}
+Hereby, the distance between two particles at positions $r_j$ and $r_l$ is given by $r_{jl}:=|r_j-r_l|$.
+
+\subsection{Periodic boundary conditions}
+In this section we present a straightforward method, that accelerates the traditional Ewald
+summation technique by NFFT. This combination was first presented in \cite{HeLa06} and
+is very similar to the FFT-accelerated Ewald sums, namely, the so-called
+particle-particle particle-mesh (P$^3$M), particle-mesh Ewald (PME) and smooth particle-mesh
+Ewald (SPME), see also \cite{DeHo98a}.
+Additionally we will see, that the accelerated Ewald summation can be reinterpreted
+into a method very similar to our fastsum Algorithm~\ref{algo:fastsum}.
+
+
+In order to overcome this increase in time we apply the NFFT for the calculation of the
+reciprocal-space potential  $\phi^{\rm reci}$ and we obtain a method similar as our fast summation method.
+To this end, we compute the Fourier transformed charge density
+\begin{equation*}
+ S(\mathbf k) = \sum_{l=1}^M q_l {\rm e}^{+2\pi {\rm i} \mathbf k \mathbf x_l/B}
+\end{equation*}
+by NFFT$^\adj$ and after truncation of the sum \eqref{eq:ewald_reci} we obtain by NFFT
+\begin{equation*}
+ \phi^{\rm reci}(\mathbf x_j) \approx
+ \frac{1}{\pi B} \sum_{\mathbf k\in I_{\mathbf N}\setminus\{\mathbf 0\}}
+ \frac{{\rm e}^{-\pi^2 \|\mathbf k\|_2^2/(\alpha B)^2}}{\|\mathbf k\|_2^2}
+ S(\mathbf k){\rm e}^{-2\pi {\rm i} \mathbf k \mathbf x_j/B}\, .
+\end{equation*}
+
+
+
+
+
+\subsection{Calculation of the Potentials}
+
+\begin{figure}[htb]
+  \centering
+  \beginmypgfhack{p2nfft_ewald_split}
+%   \beginpgfgraphicnamed{p2nfft_ewald_split}
+  \begin{tikzpicture}
+    \node (plot_one_over_r) [right]{
+      \begin{tikzpicture}
+        \begin{axis}[tiny, xmin=0, xmax=0.5, ymin=0, ymax=17]
+          \addplot gnuplot [id=erf,mark=none,domain=0:0.5, samples = 101, very thick, black]{(x==0) ? 100 : 1/x};
+        \end{axis}
+      \end{tikzpicture}
+    };
+    \node (plot_equals) at (plot_one_over_r.east) [right]{=};
+    \node (plot_erfc) at (plot_equals.east) [right]{
+      \begin{tikzpicture}
+        \begin{axis}[tiny, xmin=0, xmax=0.5, ymin=0, ymax=17]
+          \addplot gnuplot [id=erf,mark=none,domain=0:0.5, samples = 101, very thick, black]{(x==0) ? 100 : 1/x};
+          \addplot gnuplot [id=erf,mark=none,domain=0:0.5, samples = 101, very thick, blue]{(x==0) ? 100 : erfc(x*\alp)/x};
+        \end{axis}
+%         \node [xshift=8ex, yshift=9ex] {\tiny$\alpha=\alp$};
+      \end{tikzpicture}
+    };
+    \node (plot_plus) at (plot_erfc.east) [right]{+};
+    \node (plot_erf) at (plot_plus.east) [right]{
+      \begin{tikzpicture}
+        \begin{axis}[tiny, xmin=0, xmax=0.5, ymin=0, ymax=17]
+          \addplot gnuplot [id=erf,mark=none,domain=0:0.5, samples = 101, very thick, black]{(x==0) ? 100 : 1/x};
+          \addplot gnuplot [id=erf,mark=none,domain=0:0.5, samples = 101, very thick, red]{(x==0) ? 2*\alp/sqrt(pi) : erf(x*\alp)/x};
+        \end{axis}
+%         \node [xshift=8ex, yshift=9ex] {\tiny$\alpha=\alp$};
+      \end{tikzpicture}
+    };
+    \node (eqn_one_over_r) at (plot_one_over_r.north) [above]{
+      $\tfrac{1}{r}$
+    };
+    \node (eqn_erfc) at (plot_erfc.north) [above]{
+      \color{blue}$\tfrac{1}{r} - R(r)$
+    };
+    \node (eqn_erf) at (plot_erf.north) [above]{
+      \color{red}$R(r)$
+    };
+    \node (eqn_equals) at (plot_equals.north) [above=7ex]{=};
+    \node (eqn_plus) at (plot_plus.north) [above=7ex]{+};
+  \end{tikzpicture}
+  \endmypgfhack
+%   \endpgfgraphicnamed
+  \caption{Splitting of Coulomb potential into near field (blue) and far field (red).}
+\end{figure}
+
+\begin{equation*}
+  \phi(r_j)
+  =
+  \sideset{}{^\prime}\sum_{l=1}^M
+    \frac{q_l}{r_{jl}}
+  =
+  R(0) + \sideset{}{^\prime}\sum_{l=1}^M
+    q_l \left( \frac{1}{r_{jl}} - R(r_{jl}) \right)
+  - \sum_{l=1}^M
+    q_l R(r_{jl})
+  \,,\quad j=1,\hdots,M
+\end{equation*}
+
+
+
+\begin{equation*}
+  R(r)
+  \approx
+    \sum_{k=-N/2}^{N/2-1} \hat R_k \eim{kr}
+\end{equation*}
+
+\begin{equation*}
+  \sum_{l=1}^M
+    q_l R(r_{jl})
+  \approx
+  \sum_{l=1}^M q_l
+    \sum_{k=-N/2}^{N/2-1} \hat R_k \eim{kr_{jl}}
+  =
+  \sum_{k=-N/2}^{N/2-1} \hat R_k
+    \left(
+      \sum_{l=1}^M q_l \eip{kr_l}
+    \right)
+    \eim{kr_j}
+\end{equation*}
+
+Near field interactions are computed with the ScaFaCoS near field solver, but can also be redirected to any other the near field solver.
+
+Far field interactions are computed via convolution in Fourier space.
+With the appropriate choice of window functions and convolutions in Fourier space,
+P2NFFT becomes the P3M (default for fully periodic boundaries), the NFFT based fast summation (default for fully non-periodic boundaries)
+or almost any other FFT based fast Coulomb solver like PME, SPME, Gaussian split Ewald or plain Ewald summation.
+Note, that an uniform particle distribution is required in order to achieve the typical $\mathcal{O}(N\log N)$ scaling.
+
+\subsection{Calculation of the Electrostatic Fields}
+
+\subsection{Calculation of the Virial}
+
+
+
+
+
+
+\newpage
+\section{Features}
+
+\begin{description}
+\item[Periodicity:] Only fully periodic and fully non-periodic boundaries are supported.
+\item[Box shape:] Only cubic box shape is supported.
+\item[Autotuning:] For fully periodic boundaries, the parameters can be automatically tuned when a
+  required tolerance in the absolute rms field error is provided. For fully non-periodic boundaries,
+  the parameters are more or less intelligently guessed when a required tolerance in the absolute
+  potential error is provided.  
+\item[Delegate near-field:] Yes.
+\item[Virial:] Yes for fully non-periodic boundaries. For fully periodic boundaries we only compute an approximation of
+  the diagonal of the virial tensor, \ie, all entries of the diagonal are set equal to one third of the total energy.
+\end{description}
+
+\section{Solver-specific Parameters}
+The tolerance parameters are common to all ScaFaCoS solvers. At the moment P2NFFT only supports automatic parameter tuning for the following tolerance types.
+\begin{itemize}
+  \item \verb!tolerance_type! -
+    The type of error that we want to check for. Allowed values are \verb!FCS_TOLERANCE_TYPE_FIELD! (absolute rms error in the fields)
+    for fully periodic boundaries and \verb!FCS_TOLERANCE_TYPE_POTENTIAL! (absolute rms error in the potentials) for non-periodic boundaries.
+  \item \verb!tolerance! -
+    The allowed tolerance of the error. Type of the error is given by \verb!tolerance_type!. If the required tolerance can't be achieved
+    with the given parameters, P2NFFT aborts with an error message.
+\end{itemize}
+
+In addition, P2NFFT offers the following parameters, which can be adjusted by the P2NFFT-specific functions described in the next section.
+Alternatively, you can use the ScaFaCoS test program together with the optional command line argument \verb!-c! and a comma separated list
+of parameter settings, e.g., use
+\begin{verbatim}
+./scafacos_test p2nfft systems/3d-periodic/cloud_wall.xml.gz \
+-c tolerance_field,1e-4,p2nfft_r_cut,4.5,pnfft_N,16,16,16,pfft_patience,0
+\end{verbatim}
+in order to run the test program with a near field cut off range of $4.5$ and a sloppy planned FFT of size $16\times 16 \times 16$ up to tolerance $10^{-4}$ in the fields.
+\begin{itemize}
+  \item \verb!p2nfft_r_cut! -
+    Absolute cutoff distance of the near field. Can be
+    automatically tuned. Feasible values are in the order of the mean
+    free path between the two nearest charges.
+    \verb!p2nfft_r_cut! has to be less than half the
+    smallest simulation box length.  When \verb!p2nfft_r_cut! is chosen too
+    small, the errors of the algorithm become large, the required
+    accuracy might not be achieved, or the grid has to be chosen very
+    large, which will slow down the algorithm.  When \verb!p2nfft_r_cut! is
+    chosen too large, the algorithm might become slow as most
+    computation is done in the near field region.
+    This parameter corresponds to \verb!r_cut! of the P3M solver.
+  \item \verb!p2nfft_epsI! -
+    Relative cutoff distance of the near field. P2NFFT scales the original box size into a cube of side length 1.
+    For fully periodic boundary conditions this corresponds to a simple scaling by the box size. However, the scaling is more complicated if non-periodic
+    boundary conditions are involved. Application of the same scaling factor on \verb!r_cut! gives \verb!epsI!.
+  \item \verb!p2nfft_alpha! -
+    Ewald splitting parameter. Can be automatically tuned.
+    This parameter corresponds to \verb!alpha! of the P3M solver.
+  \item \verb!p2nfft_cao! -
+    Charge assignment order. Can be automatically tuned. This parameter mostly corresponds to \verb!cao! of the P3M solver.
+    However, note that this is only a wrapper that sets \verb!pnfft_m! to the value \verb!(p2nfft_cao+1)/2! (division rounded down).
+    Therefore, P2NFFT will always use an even charge assignment order.
+  \item \verb!p2nfft_intpol_order! -
+    P2NFFT uses interpolation tables to speed up the repeated computation of the near field correction. The order of interpolation is given by \verb!intpol_order!.
+    Feasible values are $-2$ (approximation of the error function according to \cite[eq.~(7.1.26)]{AbSt72}, which yields an error of $1.5\times 10^{-7}$),
+    $-1$ (direct evaluation of the error function), $0$ (constant interpolation), $1$ (linear interpolation), $2$ (quadratic interpolation) and $3$ (cubic interpolation).
+    Default value is $3$.
+  \item \verb!p2nfft_reg! -
+    Choose between the two regularization methods for non-periodic boundaries. Feasible values are \verb!2ptaylor! (Regularization with 2-point-Taylor polynomials)
+    and \verb!cg! (Fourier coefficients have been precomputed via CG iteration). Default is \verb!cg!
+  \item \verb!p2nfft_p! -
+    The degree of the two-point-Taylor polynomial. This parameter only takes affect, if regularization \verb!2ptaylor! has been enabled.
+    Feasible values are any integers between $1$ and $16$. Default value is $7$.
+  \item \verb!p2nfft_virial! -
+    Decide if the computation of the virial should be included in P2NFFT.
+    Feasible values are $0$ (disable virial computation), or any other integer (enable virial computation).
+    Default value is $0$ (disable virial computation).
+  \item \verb!p2nfft_ignore_tolerance! -
+    On default, P2NFFT aborts with an error message, if the required error tolerance can not be reached.
+    This flag disables the check for accuracy and gives the possibility to run P2NFFT
+    with any set of parameters. It is intended for very experienced users that tune all parameters manually.
+    Default value is $0$ (abort if tolerance check fails). Any other value disables the tolerance check.
+\end{itemize}
+
+\subsection{PNFFT-specific Parameters}
+\begin{itemize}
+  \item \verb!pnfft_N! (acronym: \verb!p2nfft_grid!) -
+    Size of the FFT grid. Can be automatically tuned.
+    Feasible values are in the order of $M^{1/3}$, \ie, one
+    grid point for each particle. The grid size may be any positive integer, but powers of
+    two are recommended. The larger the grid, the smaller the
+    error, but also the higher the memory and computational requirements
+    of the algorithm.
+    This parameter corresponds to the FFT grid size (\verb!grid!) of the P3M solver.
+  \item \verb!pnfft_n! (acronym: \verb!p2nfft_oversampled_grid!) -
+    Size of the oversampled FFT grid. Can be automatically tuned.
+    Especially for non-periodic boundaries it is necessary to introduce oversampling to reduce the aliasing error.
+    Feasible values are any integer $\verb!n! \ge \verb!N!$. Default value is
+    \verb!N! for fully periodic boundaries and 2\verb!N! for fully non-periodic
+    boundaries.
+  \item \verb!pnfft_window! (alternative: \verb!pnfft_window_name!) -
+    NFFT window function. Feasible values are $0$ (Kaiser-Bessel window), $1$ (Gaussian window),
+    $2$ (B-spline window), $3$ (Sine Cardinal window - Fourier transform of the B-spline window) and $4$
+    (window function based on the modified Bessel function of first kind - Fourier transform of the Kaiser-Bessel window).
+    Default value is $2$ (B-spline). Recommended values are $0$ (Kaiser-Bessel) for fully non-periodic boundaries and $2$ (B-spline) for fully periodic boundaries.
+  \item \verb!pnfft_window_name! (alternative: \verb!pnfft_window!) -
+    Name of the NFFT window function. Feasible values are \verb!kaiser! (Kaiser-Bessel window), \verb!gaussian! (Gaussian window),
+    \verb!bspline! (B-spline window), \verb!sinc! (Sine Cardinal window - Fourier transform of the B-spline window) and \verb!bessel_i0!
+    (window function based on the modified Bessel function of first kind - Fourier transform of the Kaiser-Bessel window).
+    Default value is \verb!bspline!. Recommended values are \verb!kaiser! for fully non-periodic boundaries and \verb!bspline! for fully periodic boundaries.
+  \item \verb!pnfft_m! (see also: \verb!p2nfft_cao!) -
+    Real space cutoff of the window function. The number of grid points that are influenced
+    by a charged particle. Can be automatically tuned. Allowed values are any positive integers.
+    In most cases \verb!m! is chosen between $1$ (low precision) and $16$ (very high precision).\\
+    {\bfseries Note: Due to historical reasons, this parameter corresponds to one half of the charge assignment order
+    (\verb!cao!) of the P3M solver!}
+  \item \verb!pnfft_intpol_order! -
+    PNFFT uses interpolation tables to speed up the repeated evaluation of the window functions. The integer \verb!pnfft_intpol_order! gives the interpolation order.
+    Feasible values are $-1$ (direct evaluation of window function without interpolation), $0$, (constant interpolation), $1$ (linear interpolation), $2$ (quadratic interpolation) and $3$ (cubic interpolation).
+    Default value is $3$ (cubic interpolation).
+  \item \verb!pnfft_pre_phi_hat! -
+    Flag to enable precomputed Fourier coefficients for faster computation of the diagonal matrix in the NFFT algorithm.
+    Feasible values are $0$ (turn off pre-computation), or any other integer \verb!pnfft_pre_phi_hat!$\ne0$ (enable pre-computation).
+    Default value is $1$ (enable pre-computation).
+  \item \verb!pnfft_fg_psi! -
+    Set PNFFT flag \verb!PNFFT_FG_PSI!. Only Gaussian window function we can use Fast Gaussian Gridding in order to speed up the evaluation of the window function.
+    Feasible values are $0$ (switch Fast Gaussian gridding off), or any other integer \verb!pnfft_fg_psi!$\ne0$ (use Gaussian gridding).
+    Default value is $0$ (since B-Spline is the default window function).
+  \item \verb!pnfft_fft_in_place! -
+    Set PNFFT flag \verb!PNFFT_FFT_IN_PLACE!. This causes the PNFFT planner to use in-place-FFTs, which saves about half of the memory for FFT but may sacrifices some performance.
+    Feasible values are $0$ (call out-of-place FFTs), or any other integer \verb!pnfft_fft_in_place!$\ne0$ (call in-place-FFTs).
+    Default value is \verb!pnfft_fft_in_place!$=0$ (call out-of-place FFTs).
+  \item \verb!pnfft_sort_nodes! -
+    Set PNFFT flag \verb!PNFFT_SORT_NODES!. Chooses whether to call a local sort before the interpolation step. This may result in better cache locality.
+    Feasible values are $0$ (omit local sort), or any other integer \verb!pnfft_sort_nodes!$\ne0$ (sort before interpolation).
+    Default value is \verb!pnfft_sort_nodes!$=0$ (omit local sort).
+  \item \verb!pnfft_interlaced! -
+    Set PNFFT flag \verb!PNFFT_INTERLACED!. Chooses whether PNFFT uses interlacing. This gives better accuracy at the price of more operations.
+    Feasible values are $0$ (omit interlacing), or any other integer \verb!pnfft_interlaced!$\ne0$ (enable interlacing).
+    Default value is \verb!pnfft_interlaced!$=0$ (omit interlacing).
+  \item \verb!pnfft_grad_ik! -
+    Set PNFFT flag \verb!PNFFT_GRAD_IK!. Chooses whether PNFFT computes the gradient through multiplication with $-2\pi\textrm{i}\mathbf{k}$ in Fourier space.
+    This gives better accuracy in comparison to analytic differentiation at the price of more operations. Especially, we have to call four backward FFTs (instead of one for analytic differentiation).
+    Feasible values are $0$ (use analytic differentiation), or any other integer \verb!pnfft_grad_ik!$\ne0$ (use Fourier space differentiation).
+    Default value is \verb!pnfft_grad_ik!$=0$ (use analytic differentiation).
+  \item \verb!pnfft_pre_psi! -
+    Set PNFFT flag \verb!PNFFT_PRE_PSI!. Tensor product based precomputation of the window function. This option reduces the amount of repeated evaluations of the window function at the cost of
+    $6(2m+1)M$ floats (or $3(2m+1)M$ floats if the gradient is not needed).
+    Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
+    Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_psi!$\ne0$ (switch on precomputation).
+    Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_full_psi!.
+  \item \verb!pnfft_pre_fg_psi! -
+    Set PNFFT flags \verb!PNFFT_FG_PSI! and \verb!PNFFT_PRE_PSI!, i.e., use Fast Gaussian Gridding for tensor product based precomputation.
+    Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
+    Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_fg_psi!$\ne0$ (switch on precomputation).
+    Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_full_psi!.
+  \item \verb!pnfft_pre_full_psi! -
+    Set PNFFT flag \verb!PNFFT_PRE_FULL_PSI!. Full precomputation of the window function. This option reduces the amount of repeated evaluations of the window function at the cost of
+    $4(2m+1)^3M$ floats (or $(2m+1)^3M$ floats if the gradient is not needed).
+    Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
+    Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_psi!$\ne0$ (switch on precomputation).
+    Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_full_psi!.
+  \item \verb!pnfft_pre_full_fg_psi! -
+    Set PNFFT flags \verb!PNFFT_FULL_FG_PSI! and \verb!PNFFT_PRE_FULL_PSI!, i.e., use Fast Gaussian Gridding for full window function precomputation.
+    Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
+    Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_full_fg_psi!$\ne0$ (switch on precomputation).
+    Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_psi!.
+  \item \verb!pnfft_real_f! -
+    Set PNFFT flag \verb!PNFFT_REAL_F!. Normally, PNFFT works on complex valued inputs. This flag enables some optimizations for real valued inputs, e.g., substituting complex additions and multiplications with real ones.
+    However, this comes at the price of strided memory access and does not always improve performance.
+    Feasible values are $0$ (use complex operations), or any other integer \verb!pnfft_real_f!$\ne0$ (use real operations where possible).
+    Default value is \verb!pnfft_real_f!$=0$ (use complex operations).
+\end{itemize}
+
+\subsection{PFFT-specific Parameters}
+\begin{itemize}
+  \item \verb!pfft_patience! -
+    Similar to FFTW, the PFFT library splits the computation of parallel FFT into a more or less time consuming planning step and a fast execution step.
+    The time spent for planning can be adjusted by the \verb!pfft_patience! flag. Feasible values are $0$ (plan PFFT with \verb!PFFT_ESTIMATE!), $1$ (plan PFFT with \verb!PFFT_MEASURE!),
+    $2$ (plan PFFT with \verb!PFFT_PATIENT!) and $3$ (plan PFFT with \verb!PFFT_EXHAUSTIVE!). All other values raise an error. Default value is $1$ (\verb!PFFT_MEASURE!).
+  \item \verb!pfft_tune! -
+    The PFFT library uses FFTW for computing serial FFTs combined with serial transpositions. Sometimes its better to perform the FFT and transposition in two separate steps,
+    but the FFTW planner does not recognize. For value \verb!pfft_tune!$=0$ PFFT uses the FFTW plan as it is. For any other value, PFFT calls an additional planner in order to decide
+    if performance gets better when the local FFT and transposition is performed in two separate steps. For large local array sizes this tuning gets very time consuming.
+    Default value is $0$ (tuning turned off).
+  \item \verb!pfft_preserve_input! -
+    PFFT can chose between a larger set of algorithms, if it is allowed to overwrite the input array.
+    Feasible values are $0$ (PFFT is allowed to destroy input), or any other integer \verb!pfft_preserve_input!$\ne0$ (PFFT is not allowed to destroy input).
+    Default value is $0$ (PFFT is allowed to destroy input).
+\end{itemize}
+
+
+\section{Solver-specific Functions}
+\begin{itemize}
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_r_cut(FCS handle, fcs_float r_cut);
+FCSResult fcs_p2nfft_get_r_cut(FCS handle, fcs_float* r_cut);
+FCSResult fcs_p2nfft_set_r_cut_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve absolute near field cutoff radius.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_epsI(FCS handle, fcs_float eps_I);
+FCSResult fcs_p2nfft_get_epsI(FCS handle, fcs_float* eps_I);
+FCSResult fcs_p2nfft_set_epsI_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve relative near field cutoff radius.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_alpha(FCS handle, fcs_float alpha);
+FCSResult fcs_p2nfft_get_alpha(FCS handle, fcs_float* alpha);
+FCSResult fcs_p2nfft_set_alpha_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve Ewald splitting parameter.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_interpolation_order(
+    FCS handle, fcs_int intpol_order);
+FCSResult fcs_p2nfft_get_interpolation_order(
+    FCS handle, fcs_int* intpol_order);
+\end{alltt}
+    Set/retrieve interpolation order of near field correction (optional, default = 3).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_regularization(FCS handle, fcs_int reg);
+FCSResult fcs_p2nfft_get_regularization(FCS handle, fcs_int* reg);
+FCSResult fcs_p2nfft_set_regularization_by_name(
+    FCS handle, char* reg_name);
+\end{alltt}
+    Set/retrieve the near field regularization by number or name (default = 0).
+    Feasible values are 0 (\verb!"cg"!) and 1 (\verb!"2ptaylor"!).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_p(FCS handle, fcs_int p);
+FCSResult fcs_p2nfft_get_p(FCS handle, fcs_int* p);
+FCSResult fcs_p2nfft_set_p_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve polynomial degree of two-point-Taylor regularization.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_require_virial(
+    FCS handle, fcs_int require_virial);
+\end{alltt}
+    Enable virial computation (optional, default = 0).
+\begin{alltt}
+FCSResult fcs_p2nfft_get_virial(FCS handle, fcs_float* virial);
+\end{alltt}
+    Retrieve virial (optional, default)
+\begin{alltt}
+FCSResult fcs_p2nfft_virial_is_active(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Check if virial computation is enabled.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_ignore_tolerance(
+    FCS handle, fcs_int set_ignore_tolerance);
+FCSResult fcs_p2nfft_get_ignore_tolerance(
+    FCS handle, fcs_int* set_ignore_tolerance);
+\end{alltt}
+    Set/retrieve flag for disabling the accuracy check (default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_grid(
+    FCS handle, fcs_int N0, fcs_int N1, fcs_int N2);
+FCSResult fcs_p2nfft_get_grid(
+    FCS handle, fcs_int* N0, fcs_int* N1, fcs_int* N2);
+FCSResult fcs_p2nfft_set_grid_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve FFT grid size.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_oversampled_grid(
+    FCS handle, fcs_int n0, fcs_int n1, fcs_int n2);
+FCSResult fcs_p2nfft_get_oversampled_grid(
+    FCS handle, fcs_int* n0, fcs_int* n1, fcs_int* n2);
+FCSResult fcs_p2nfft_set_oversampled_grid_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve oversampled FFT grid size.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_cao(FCS handle, fcs_int cao);
+FCSResult fcs_p2nfft_get_cao(FCS handle, fcs_int* cao);
+FCSResult fcs_p2nfft_set_cao_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve real space cutoff of window function.
+\end{itemize}
+
+\subsection{PNFFT-specific Functions}
+\begin{itemize}
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_N(
+    FCS handle, fcs_int N0, fcs_int N1, fcs_int N2);
+FCSResult fcs_p2nfft_get_pnfft_N(
+    FCS handle, fcs_int* N0, fcs_int* N1, fcs_int* N2);
+FCSResult fcs_p2nfft_set_pnfft_N_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve FFT grid size.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_n(
+    FCS handle, fcs_int n0, fcs_int n1, fcs_int n2);
+FCSResult fcs_p2nfft_get_pnfft_n(
+    FCS handle, fcs_int* n0, fcs_int* n1, fcs_int* n2);
+FCSResult fcs_p2nfft_set_pnfft_n_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve oversampled FFT grid size.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_window(
+    FCS handle, fcs_int window);
+FCSResult fcs_p2nfft_get_pnfft_window(
+    FCS handle, fcs_int* window);
+FCSResult fcs_p2nfft_set_pnfft_window_by_name(
+    FCS handle, char* window_name );
+\end{alltt}
+    Set/retrieve \verb!pnfft_window! by number or name. (optional, default = 1).
+    Feasible values are 0 (\verb!"gaussian"!), 1 (\verb!"bspline"!), 2 (\verb!"sinc"!), 3 (\verb!"kaiser"!) and 4 (\verb!"bessel_i0"!).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_m(FCS handle, fcs_int m);
+FCSResult fcs_p2nfft_get_pnfft_m(FCS handle, fcs_int* m);
+FCSResult fcs_p2nfft_set_pnfft_m_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve real space cutoff of window function.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_interpolation_order(
+    FCS handle, fcs_int intpol_order);
+FCSResult fcs_p2nfft_get_pnfft_interpolation_order(
+    FCS handle, fcs_int* intpol_order);
+\end{alltt}
+    Set/retrieve \verb!pnfft_intpol_order! (optional, default = 3).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_pre_phi_hat(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_pre_phi_hat(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pnfft_pre_phi_hat! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_fg_psi(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_fg_psi(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pnfft_fg_psi! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_fft_in_place(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_fft_in_place(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pnfft_fft_in_place! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_sort_nodes(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_sort_nodes(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pnfft_sort_nodes! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_interlaced(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_interlaced(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pnfft_interlaced! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_grad_ik(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_grad_ik(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pnfft_grad_ik! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_pre_psi(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_pre_psi(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pnfft_pre_psi! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_pre_fg_psi(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_pre_fg_psi(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pnfft_pre_fg_psi! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_pre_full_psi(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_pre_full_psi(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pnfft_pre_full_psi! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_pre_full_fg_psi(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_pre_full_fg_psi(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pnfft_pre_full_fg_psi! (optional, default = 0).
+\end{itemize}
+
+\subsection{PFFT-specific Functions}
+\begin{itemize}
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pfft_patience(
+    FCS handle, fcs_int pfft_patience_flag);
+FCSResult fcs_p2nfft_get_pfft_patience(
+    FCS handle, fcs_int* pfft_patience_flag);
+FCSResult fcs_p2nfft_set_pfft_patience_by_name(
+    FCS handle, char* patience_name );
+\end{alltt}
+    Set/retrieve flag \verb!pfft_patience! by number or name (optional, default = 1).
+    Feasible values are 0 (\verb!estimate!), 1 (\verb!measure!), 2 (\verb!patient!) and 3 (\verb!exhaustive!).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pfft_preserve_input(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pfft_preserve_input(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pfft_preserve_input! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pfft_tune(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pfft_tune(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pfft_tune! (optional, default = 0).
+\end{itemize}
+
+
+
+
+

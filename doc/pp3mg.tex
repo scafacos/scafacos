@@ -1,0 +1,45 @@
+\chapter{PP3MG -- NameExpanded}
+\label{cha:pp3mg}
+
+\solvertoindex{pp3mg}
+\solvertoindex{NameExpanded}
+\index{Multigrid}
+
+PP3MG implements a multigrid method solver. The particle charges are
+interpolated to a regular grid. The long-range part is then solved via
+solving the Poisson equation, using finite difference/finite volume
+discretization. The short-range part is computed directly.
+
+\begin{verbatim}
+Parameters:
+
+  - too many, too poorly documented
+    rather use meaningful defaults, or values already known in the handle
+
+Box Shape / Periodicity
+
+  - open or mixed boundaries:  is this supported? for what boxes?
+  - periodic boundaries:       only rectangular or cubic boxes?
+
+Can Delegate Nearfield to MD:  currently not
+
+Bugs / Missing Features:
+
+  - remove superfluous parameters like periodicity or mpi_dims;
+    these are already known in the handle
+  - provide meaningful defaults for parameters like mesh sizes or
+    workspace size
+  - document what the remaining parameters mean, and give rules
+    how to choose reasonable values
+  - crashes - doesn't appear to work at present, except for 8 atom
+    sample in unit cube
+  - excessive use of pow function - this is slow
+  - should use solution of previos MD step as start for the iteration
+
+\end{verbatim}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: ug.tex
+%%% End: 
+

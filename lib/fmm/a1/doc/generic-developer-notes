@@ -1,0 +1,17 @@
+----------
+TODO list 
+----------
+
+API and ADL level:
+
+- Implement Group creation and management code
+- Create runtime parameter struct for generic parameters like node rank, which is currently in the device layer
+
+ADL level:
+
+- Handle same-process copies using memcpy
+- Implement Multi ops using nonblocking operations
+
+A1U level:
+
+- implement same-address-space version of all calls with memcpy etc.

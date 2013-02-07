@@ -1,0 +1,219 @@
+% Copyright (C) 2011, 2012 The ScaFaCoS project
+%  
+% This file is part of ScaFaCoS.
+%   
+% ScaFaCoS is free software: you can redistribute it and/or modify it
+% under the terms of the GNU Lesser Public License as published by the
+% Free Software Foundation, either version 3 of the License, or (at your
+% option) any later version.
+%  
+% ScaFaCoS is distributed in the hope that it will be useful, but
+% WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser Public License for more details.
+%  
+% You should have received a copy of the GNU Lesser Public License
+% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%
+\documentclass[
+paper=a4,                       % paper size
+fontsize=11pt,                  % font size
+twoside,                        % two sided
+footsepline,                    % add a line to separate the footer
+headsepline,                    % add a line to separate the header
+headinclude=false,              % header does not belong to the text
+footinclude=false,              % footer does not belong to the text
+pagesize,                       % set the pagesize in a DVI document
+bibliography=totocnumbered,     % add the bibliography to the TOC
+toc=index,                    % add the index to the TOC
+open=right,                      % start a new chapter on the right page
+%,DIV12
+%,draft
+]{scrreprt}
+
+\usepackage[draft]{varioref}    % defines \vref
+\usepackage[colorlinks]{hyperref}           % automatically creates links when
+                                % using pdflatex, defines \url
+\usepackage{ifpdf}              % defines \ifpdf
+\usepackage{graphicx}           % handles graphics
+\usepackage{makeidx}            % creates the index
+\usepackage{color}              % use colors
+
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+
+\usepackage{calc}               % compute length
+\usepackage{ifthen}             % provide ifthen
+\usepackage{xspace}
+\usepackage[numbers, sectionbib]{natbib}
+\usepackage{nicefrac}
+\usepackage{longtable}
+\usepackage{listings}
+\usepackage{tikz}
+% \usetikzlibrary{calc,scopes,shapes,fit}
+\usepackage{alltt}
+\usepackage{paralist}
+\usepackage{csquotes}
+
+% \usepackage{pgfplots}
+% \pgfplotsset{compat=newest}
+% \pgfrealjobname{manual}
+
+%% if pgf/tikz is not installed,
+%% comment \usepackage{tikz}, comment \usepackage{pgfplots} and
+%% uncomment the following lines
+% \long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{%
+%   \begingroup
+%   \setbox1=\hbox{\includegraphics{figures/#1}}%
+%   \openin1=#1.dpth
+%   \ifeof1 \box1
+%   \else
+%     \read1 to\pgfincludeexternalgraphicsdp \closein1
+%     \dimen0=\pgfincludeexternalgraphicsdp\relax
+%     \hbox{\lower\dimen0 \box1 }%
+%   \fi
+%   \endgroup
+% }
+
+%% This hack enables the inclusion of exported pfg-pictures from subdirectory ./figures/.
+%% Use a command like 'pdflatex -shell-escape --jobname p2nfft_ewald_split manual.tex'
+%% to externalize graphics and move them into directory ./figures/.
+%% Uncomment the following line before 'svn ci':
+\def\enablemypgfhack{1}
+\long\def\beginmypgfhack#1#2\endmypgfhack{%
+  \ifx\enablemypgfhack\undefined
+    \beginpgfgraphicnamed{#1}#2\endpgfgraphicnamed
+  \else
+    \includegraphics{figures/#1}
+  \fi
+}
+
+
+% For building the distribution docs, disable todo boxes.
+%\usepackage[disable]{todonotes}
+\usepackage{todonotes}
+
+\usepackage{placeins}
+
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.75}
+
+% required so that we can set index numbers bold
+% \index{Some example|main}
+\newcommand*{\main}[1]{\textbf{\hyperpage{#1}}}
+\newcommand*{\mainul}[1]{\underline{\textbf{\hyperpage{#1}}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%% New Commands and Environments %%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\fcs}{\mbox{\textsf{ScaFaCoS}}\xspace}
+\newcommand{\ie}{\textit{i.e.}\xspace}
+\newcommand{\eg}{\textit{e.g.}\xspace}
+\newcommand{\etal}{\textit{et al.}\xspace}
+
+\newcommand{\solvertoindex}[1]{
+  \index{#1|main}
+  \index{Solver!#1|main}
+}
+
+\newcommand{\functiontoindex}[1]{
+  \index{Functions!#1|main}
+}
+
+\newcommand{\ufunctiontoindex}[1]{
+  \index{Functions!#1|mainul}
+}
+
+
+\newcommand{\N}{\ensuremath{\mathbb{N}}}
+\newcommand{\T}{\ensuremath{\mathbb{T}}}
+\renewcommand{\S}{\ensuremath{\mathbb{S}}}
+\newcommand{\NZ}{\ensuremath{\mathbb{N}_{0}}}
+\newcommand{\Z}{\ensuremath{\mathbb{Z}}}
+\newcommand{\Q}{\ensuremath{\mathbb{Q}}}
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\C}{\ensuremath{\mathbb{C}}}
+\newcommand{\cO}{{\cal O}}
+\newcommand{\cK}{{\cal K}}
+
+\newcommand{\e}{\mbox{\rm{e}}}
+\newcommand{\im}{\mbox{\scriptsize\rm{i}}}
+\newcommand{\eip}[1]{\e^{+2\pi\im #1}}
+\newcommand{\eim}[1]{\e^{-2\pi\im #1}}
+\newcommand{\adj}{{\vdash \hspace*{-1.72mm} \dashv}}
+
+
+\makeindex
+\begin{document}
+
+%% LOGO
+% For a logo to come
+% \titlehead{
+%   \begin{center}
+%     \includegraphics[width=5cm]{logo/transparentbg}
+%   \end{center}
+% }
+
+%\subject{}
+\title{\fcs Manual}
+\author{}
+\date{\today}
+\maketitle
+
+\setcounter{tocdepth}{1}
+\tableofcontents
+\pdfbookmark{Contents}{toc}
+
+\listoftodos
+\pdfbookmark{Todo List}{todo}
+
+\part{User's Guide}
+\input{introduction}
+\input{compilation}
+\input{interface}
+\input{fmm} 
+\input{memd}
+\input{mmm1d}
+\input{mmm2d}
+\input{ewald}
+\input{p2nfft}
+\input{p3m}
+\input{pepc}
+\input{pp3mg}
+\input{vmg}
+\input{direct}
+\input{functionlist}
+
+\part{Developer's Guide}
+\input{buildsystem}
+\input{implementation}
+\input{tests}
+
+
+
+%% BIBTEX
+\part{Bibliography}
+\bibliographystyle{plainnat}
+\bibliography{bibliography}
+
+\part{Index}
+\cleardoublepage
+\pdfbookmark[0]{List of Tables}{lot}
+\listoftables
+\cleardoublepage
+\pdfbookmark[0]{List of Figures}{lof}
+\listoffigures
+\cleardoublepage
+%\pdfbookmark[-1]{Index}{index}
+\printindex
+
+
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

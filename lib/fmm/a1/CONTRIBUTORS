@@ -1,0 +1,54 @@
+This is a list of people who have contributed to this project in one form or another.
+Similar to MADNESS, we choose to acknowledge contributions of information as well as
+source code.  Contributors not affiliated with or responsible for the content or quality
+of this project are denoted "N/A" for their active dates.
+
+===========================================
+
+Jeff R. Hammond (jhammond@alcf.anl.gov)
+Leadership Computing Facility
+Argonne National Laboratory
+Active: July 2010 - present
+Contributions: API design, asking dumb questions
+
+===========================================
+
+Sreeram Potluri (potluri@cse.ohio-state.edu)
+Leadership Computing Facility
+Argonne National Laboratory
+Active: July 2010 - present
+Contributions: DCMF port, initial design of almost everything
+
+Permanent address: Ohio State University
+
+===========================================
+
+Pavan Balaji (balaji@mcs.anl.gov)
+Math and Computer Science Division
+Argonne National Laboratory
+Active: July 2010 - present
+Contributions: build system, MPICH-like design
+
+===========================================
+
+Kazutomo Yoshii (kazutomo@mcs.anl.gov)
+Math and Computer Science Division
+Argonne National Laboratory
+Active: N/A
+Contributions: tick counter assembly, valuable information regarding BG/P CNK.
+
+===========================================
+
+Michael Blocksome (blocksom@us.ibm.com)
+IBM Rochester
+Active: N/A
+Contributions: numerous suggestions and clarifications about ARMCIX, DCMF, BG/P network, etc.
+
+===========================================
+
+Brian Smith (smithbr@us.ibm.com) 
+IBM Rochester
+Active: N/A
+Contributions: numerous suggestions and clarifications about ARMCIX, DCMF, BG/P network, etc.
+
+===========================================

@@ -1,0 +1,38 @@
+\chapter{Ewald}
+\label{cha:ewald}
+
+\solvertoindex{Ewald}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: ug.tex
+%%% End: 
+
+The well-known Ewald formula for the computation of \eqref{eq:ewald_potential} splits the
+electrostatic potential $\phi$ into the following parts
+\begin{equation}\label{eq:ewald}
+ \phi = \phi^{\rm real} + \phi^{\rm reci}  + \phi^{\rm self}  + \phi^{\rm dipo},
+\end{equation}
+where the contribution from real space $ \phi^{\rm real}$, reciprocal space $\phi^{\rm reci}$,
+the self-energy $\phi^{\rm self}$ and the dipole correction $\phi^{\rm dipo}$ are given by
+\begin{eqnarray}
+  \phi^{\rm real}(\mathbf x_j)
+  &=& \nonumber
+    \sum_{\mathbf r\in \mathbb Z^3}
+    \underset{ l\neq j \,{\rm for}\, \mathbf r= \mathbf 0}{\sum_{l=1}^M}
+    q_l\frac{{\rm erfc}(\alpha \|\mathbf x_j -\mathbf x_l +\mathbf r B\|_2)}{\|\mathbf x_j -\mathbf x_l +\mathbf r B\|_2},\\
+  \phi^{\rm reci}(\mathbf x_j)
+  &=& \label{eq:ewald_reci}
+    \frac{1}{\pi B} \sum_{\mathbf k\in \mathbb Z^3\setminus\{\mathbf 0\}}
+    \frac{{\rm e}^{-\pi^2 \|\mathbf k\|_2^2/(\alpha B)^2}}{\|\mathbf k\|_2^2}
+    \sum_{l=1}^M q_l {\rm e}^{-2\pi {\rm i} \mathbf k (\mathbf x_j -\mathbf x_l)/B}\, ,\\
+  \phi^{\rm self} (\mathbf x_j)
+  &=&
+    -2 q_j \frac{\alpha}{\sqrt{\pi}}\; ,\nonumber  \\
+  \widetilde\phi^{\rm dipo}
+  &=&
+    \frac{2\pi}{3V}\bigg(\sum_{l=1}^Mq_{l}\mathbf x_{l}\bigg)^{2}\; .\nonumber %\label{eq:E_dipol_part}
+\end{eqnarray}
+Thereby, the complementary error function is defined by $\textrm{erfc}(z) =
+\frac{2}{\sqrt{\pi}}\int_z^\infty {\rm e}^{-t^2} {\rm d}t$.
+Choosing optimal parameters, Ewald summation scales as ${\cal O}(M^{3/2})$ \cite{kolafa92a}.

@@ -1,0 +1,235 @@
+\chapter{PEPC -- Pretty Efficient Parallel Coulomb Solver}
+\label{cha:pepc}
+
+\newcommand{\pepccite}[1]{\mbox{[PEPC-#1]}}
+\newcommand{\algO}[1]{\ensuremath{\mathcal{O}(#1)}}
+
+\solvertoindex{PEPC}
+\solvertoindex{Pretty Efficient Parallel Coulomb Solver}
+
+Implementation of a highly scalable parallel Barnes-Hut-Treecode for
+open and (mixed) periodic boundary conditions
+
+The oct-tree method was originally introduced by Josh~Barnes and Piet~Hut 
+in the mid 1980s to speed up astrophysical N-body simulations with long 
+range interactions\pepccite{1}. Their idea was to use successively 
+larger multipole-groupings of distant particles to reduce the 
+computational effort in the force calculation from the usual
+\algO{N^2}~operations needed for brute-force summation to a more amenable 
+\algO{N\log N}. Though mathematically less elegant than the 
+Fast~Multipole~Method (see Section~\ref{cha:fmm}), the Barnes-Hut 
+algorithm is well suited to dynamic, nonlinear problems and can be 
+combined with multiple-timestep integrators.
+
+The PEPC project\pepccite{2},\pepccite{3} (Pretty Efficient Parallel Coulomb Solver) is 
+a public tree code that has been developed at J\"ulich Supercomputing Centre 
+since the early 2000s. It is a non-recursive version of the Barnes-Hut 
+algorithm, using a level-by-level approach to both tree construction 
+and traversals. 
+
+The parallel version is a hybrid MPI/PThreads implementation of the 
+Warren-Salmon 'Hashed Oct-Tree' scheme, including several variations 
+of the tree traversal routine - the most challenging component in terms of scalability.
+
+\section*{Common capabilities}
+     
+\begin{description}
+  
+\item[Periodicity:]
+  Open, periodic, or mixed boundaries are supported. The box shape is not limited 
+  by the chosen periodicity. The potential and field contribution of periodic boundaries are
+  computed using a fast converging renormalization approach borrowed from the FMM,
+  see \pepccite{4} for details.
+
+\item[Box shape:] Any (triclinic) box shape is supported.
+  
+\item[Tolerances:] No.
+  
+\item[Delegate near-field:] No.
+  
+\item[Virial:] Not implemented yet. \todo{Reimplement virial computation, see earlier version of pepc in ScaFaCoS}
+  
+\end{description}
+
+\section*{Additional capabilities}
+
+\begin{description}
+  \item[Potential:] Internally, PEPC uses a Plummer potential $\frac{1}{\sqrt{r^2+\varepsilon^2}}$, 
+    which in the case $\varepsilon = 0$ is identical to the Coulomb potential $\frac{1}{r}$. Using
+    $\varepsilon > 0$, the pole at $r\rightarrow0$ can be smoothed to reduce numerical heating during
+    dynamic simulations. 
+
+    The value of $\varepsilon$ can be modified by setting the method-specific parameter \texttt{pepc\_epsilon}.
+
+  \item[Load Balancing:] \todo{notes on PEPCs load balancing}
+
+  \item[SMT Parallelization:] \todo{notes on SMT and PEPC}
+\end{description}
+
+
+
+\section*{Solver-specific parameters}
+
+\begin{description}
+  \item[\texttt{pepc\_epsilon}:] Cutoff parameter of internally used Plummer potential 
+	$\frac{1}{\sqrt{r^2+\varepsilon^2}}$, see above.
+	
+	\begin{tabular}{ll}
+	   \textit{Data type:}         & \texttt{fcs\_float} \\
+	   \textit{Default value:}     & \texttt{pepc\_epsilon = 0.0}, i.e. Coulomb interaction. \\
+	   \textit{Value range value:} & \texttt{pepc\_epsilon $\geq$ 0.0}
+	\end{tabular}
+
+  \item[\texttt{pepc\_theta}:] Barnes-Hut Multipole acceptance parameter. Smaller values for 
+	\texttt{pepc\_theta} lead to higher precision but also longer runtime. A value of
+	\texttt{pepc\_theta=0.0} corresponds to the direct \algO{N^2} summation, usual values 
+	are in the range of \texttt{0.1 $<$ pepc\_theta $\leq$ 0.6}.
+
+	\begin{tabular}{ll}
+	   \textit{Data type:}         & \texttt{fcs\_float} \\
+	   \textit{Default value:}     & \texttt{pepc\_theta = 0.6} \\
+	   \textit{Value range value:} & \texttt{pepc\_theta $\geq$ 0.0}
+	\end{tabular}
+
+
+  \item[\texttt{pepc\_num\_walk\_threads}:] Number of threads to use during force computation in 
+	addition to the communicator thread. This should usually correspond the the number of
+	available compute cores per compute node (i.e. per MPI rank).
+
+	When setting this value on Blue~Gene/P to 4, which is optimal, the environment variable
+	\texttt{BG\_APPTHREADDEPTH=2} has to be set to allow the communicator thread and one worker
+	thread to share one core. - Otherwise, they would block each other. Hence, run your 
+	executable using \texttt{mpirun -mode SMP -env BG\_APPTHREADDEPTH=2 -np \#nodes ./exectuable}.
+
+	\begin{tabular}{ll}
+	   \textit{Data type:}         & \texttt{fcs\_int} \\
+	   \textit{Default value:}     & \texttt{pepc\_num\_walk\_threads = 3} \\
+	   \textit{Value range value:} & \texttt{pepc\_num\_walk\_threads $\geq$ 1}
+	\end{tabular}
+
+  \item[\texttt{pepc\_dipole\_correction}:] Logical flag to enable/disable the extrinsic-to-intrinsic
+	dipole correction for periodic systems as explained in \pepccite{5}, eqns (19, 20).
+
+	If \texttt{pepc\_dipole\_correction $=$ 0}, dipole correction is disabled, otherwise it is enabled.
+
+	\begin{tabular}{ll}
+	   \textit{Data type:}         & \texttt{fcs\_int} \\
+	   \textit{Default value:}     & \texttt{pepc\_dipole\_correction = 1}, i.e. activate dipole correction.\\
+	   \textit{Value range value:} & \texttt{pepc\_dipole\_correction $\geq$ 0}
+	\end{tabular}
+
+  \item[\texttt{pepc\_load\_balancing}:] PEPC includs a sophisticated load balancing scheme, that uses
+	the number of interactions per particle from a previous timestep to estimate and distribute the
+	expected work in the current computation. This can improve the algorithms performance by more than $10\%$,
+	but demands, that the frontend application does not reorder or redistribute the particles between 
+	different calls to \texttt{fcs\_run()}.
+
+	If \texttt{pepc\_load\_balancing $=$ 0}, the load balancing scheme is disabled, otherwise it is enabled.
+
+	\begin{tabular}{ll}
+	   \textit{Data type:}         & \texttt{fcs\_int} \\
+	   \textit{Default value:}     & \texttt{pepc\_load\_balancing = 0} \\
+	   \textit{Value range value:} & \texttt{pepc\_load\_balancing $\geq$ 0}
+	\end{tabular}
+
+  \item[\texttt{pepc\_npm}:] \todo{document and explain pepc\_npm, i.e. np\_mult}
+
+	\begin{tabular}{ll}
+	   \textit{Data type:}         & \texttt{fcs\_float} \\
+	   \textit{Default value:}     & \texttt{pepc\_npm = -45} \\
+	   \textit{Value range value:} & \texttt{$-\infty < \text{\texttt{pepc\_npm}} < \infty$}
+	\end{tabular}
+\end{description}
+
+
+\section*{Solver specific functions}
+
+\begin{itemize}
+
+\item
+  \begin{alltt}
+    fcs_pepc_set_epsilon(FCS handle, fcs_float epsilon)
+    fcs_pepc_get_epsilon(FCS handle, fcs_float* epsilon)
+  \end{alltt}
+  Set/Retrieve the value for \texttt{pepc\_epsilon}.
+
+\item
+  \begin{alltt}
+    fcs_pepc_set_theta(FCS handle, fcs_float theta)
+    fcs_pepc_get_theta(FCS handle, fcs_float* theta)
+  \end{alltt}
+  Set/Retrieve the value for \texttt{pepc\_theta}.
+
+\item
+  \begin{alltt}
+    fcs_pepc_set_debuglevel(FCS handle, fcs_int level)
+    fcs_pepc_get_debuglevel(FCS handle, fcs_int* level)
+  \end{alltt}
+  Set/Retrieve the value for PEPCs internal debug-level bitmask.
+  This is only intended for development purposes. 
+  See file \texttt{lib/pepc/src/module\_debug.f90} for details.
+
+\item
+  \begin{alltt}
+    fcs_pepc_set_num_walk_threads(FCS handle, fcs_int num_walk_threads)
+    fcs_pepc_get_num_walk_threads(FCS handle, fcs_int* num_walk_threads)
+  \end{alltt}
+  Set/Retrieve the value for \texttt{pepc\_num\_walk\_threads}.
+
+\item
+  \begin{alltt}
+    fcs_pepc_set_load_balancing(FCS handle, fcs_int load_balancing)
+    fcs_pepc_get_load_balancing(FCS handle, fcs_int* load_balancing)
+  \end{alltt}
+  Set/Retrieve the value for \texttt{pepc\_load\_balancing}.
+
+\item
+  \begin{alltt}
+    fcs_pepc_set_dipole_correction(FCS handle, fcs_int dipole_correction)
+    fcs_pepc_get_dipole_correction(FCS handle, fcs_int* dipole_correction)
+  \end{alltt}
+  Set/Retrieve the value for \texttt{pepc\_dipole\_correction}.
+
+\item
+  \begin{alltt}
+    fcs_pepc_set_npm(FCS handle, fcs_float npm)
+    fcs_pepc_set_npm(FCS handle, fcs_float* npm)
+  \end{alltt}
+  Set/Retrieve the value for \texttt{pepc\_npm}.
+  
+\end{itemize}
+
+\section*{Known bugs or missing features}
+\todo{PEPCs known bugs and or features}
+\begin{itemize}
+  \item virial is not computed at all in pepc (functionality was lost during transition from old version to pepc-2.0 $\longrightarrow$ should be copied from old code)
+  \item 1D-, 2D-periodicity still needs to be tested.
+  \item Warns that non-cubic systems are experimental.\\
+      The following requirements must be satisfied in any case:
+      \begin{itemize}
+        \item box must be approximately rectangular
+        \item box edges in periodic directions must not be significantly shorter than the longest edge
+        \item \todo{quantify these requirements}
+        \item \todo{warn only once on one process, if box is non-cubic}
+      \end{itemize}
+  \item How to compute the virial for periodic boundaries?
+\end{itemize}
+
+\paragraph{References}
+\todo[inline]{move PEPC citations to bibliography}
+\begin{footnotesize}
+\begin{itemize}
+  \item[PEPC-1] Nature \textbf{324}, 446 (1986), \url{http://dx.doi.org/10.1038/324446a0}
+  \item[PEPC-2] CPC \textbf{183}, 880--889, \url{http://dx.doi.org/10.1016/j.cpc.2011.12.013}
+  \item[PEPC-3] PEPC web page, \url{http://www.fz-juelich.de/ias/jsc/pepc}
+  \item[PEPC-4] J. Chem. Phys. \textbf{121}, 2886 (2004), \url{http://link.aip.org/link/doi/10.1063/1.1771634}
+  \item[PEPC-5] J. Chem. Phys. \textbf{107}, 10131 (1997), \url{http://link.aip.org/link/doi/10.1063/1.474150}
+\end{itemize}
+\end{footnotesize}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: ug.tex
+%%% End: 
+

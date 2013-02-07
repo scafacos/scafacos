@@ -1,0 +1,809 @@
+<benchmarks>
+<!-- 
+********************
+** Ewald
+********************
+-->
+
+<!-- 
+********************
+** FMM 
+********************
+-->
+  <timings
+      method="FMM"
+      charges="8100"
+      tolerance="1e-3">
+    <data>
+      4096	 
+      2048	0.213 
+      1024	0.119  
+      512	0.099    
+      256	0.078 
+      128	0.056
+      64	0.047  
+      32	0.024  
+      16	0.017   
+      8	 	0.018
+      4	 	0.029
+      2	 	0.054
+      1	 	0.096     
+    </data>
+  </timings>
+
+  <timings
+      method="FMM"
+      charges="8100"
+      tolerance="1e-5">
+    <data>
+      4096	 
+      2048	0.411  
+      1024	0.205 
+      512	0.119  
+      256	0.074  
+      128	0.054  
+      64	0.046  
+      32	0.031 
+      16	0.029  
+      8	 	0.040 
+      4	 	0.069
+      2	 	0.123
+      1	 	0.222      
+    </data>
+  </timings>
+
+  <timings
+      method="FMM"
+      charges="102900"
+      tolerance="1e-3">
+    <data>
+      4096	 
+      2048	  0.223
+      1024	  0.142 
+      512	  0.132 
+      256	  0.098 
+      128	  0.083 
+      64	  0.086  
+      32	  0.086 
+      16	  0.124 
+      8	 	  0.211
+      4	 	  0.413
+      2	 	  0.775
+      1	 	  1.491        
+    </data>
+  </timings>
+
+  <timings
+      method="FMM"
+      charges="102900"
+      tolerance="1e-5">
+    <data>
+      4096	 
+      2048	0.214 
+      1024	0.157  
+      512	0.147  
+      256	0.120  
+      128	0.117  
+      64	0.137  
+      32	0.176  
+      16	0.282  
+      8	 	0.489
+      4	 	0.917
+      2	 	1.748
+      1	 	3.413          
+    </data>
+  </timings>
+
+  <timings
+      method="FMM"
+      charges="1012500"
+      tolerance="1e-3">
+    <data>
+      4096	 
+      2048	  0.228
+      1024	  0.172 
+      512	  0.186 
+      256	  0.172 
+      128	  0.211 
+      64	  0.316 
+      32	  0.522 
+      16	  0.974 
+      8	 	  1.881
+      4	 	  3.652 
+      2	 	  6.942 
+      1	 	  13.641           
+    </data>
+  </timings>
+
+  <timings
+      method="FMM"
+      charges="1012500"
+      tolerance="1e-5">
+    <data>
+      4096	 
+      2048	  0.261
+      1024	  0.217 
+      512	  0.256 
+      256	  0.294 
+      128	  0.426 
+      64	  0.698
+      32	  1.254 
+      16	  2.402 
+      8	 	  4.596
+      4	 	  8.878 
+      2	 	  17.111   
+      1	 	  33.921       
+    </data>
+  </timings>
+
+<!-- 
+********************
+** PEPC
+********************
+-->
+  <timings
+      method="PEPC"
+      charges="8100"
+      tolerance="1e-3">
+    <data>
+      4096	 
+      2048	 
+      1024	  
+      512	    
+      256	3.442697e-01 
+      128	4.424203e-01
+      64	  
+      32	  
+      16	   
+      8	 	
+      4	 	
+      2	 	
+      1	 	     
+    </data>
+  </timings>
+
+  <timings
+      method="PEPC"
+      charges="8100"
+      tolerance="1e-5">
+    <data>
+      4096	 
+      2048	  
+      1024	 
+      512	  
+      256	  
+      128	1.075908e+00  
+      64	  
+      32	 
+      16	  
+      8	 	 
+      4	 	
+      2	 	
+      1	 	      
+    </data>
+  </timings>
+  
+<!-- 
+********************
+** P2NFFT
+********************
+-->
+
+  <timings
+      method="P2NFFT"
+      charges="8100"
+      tolerance="1e-3">
+    <data>
+      4096	 1.390275e+00
+      2048	 7.205749e-01
+      1024	 3.567388e-01
+      512	 3.316648e-01
+      256	 9.148216e-02
+      128	 7.898402e-02
+      64	 3.938699e-02
+      32	 3.610206e-02
+      16	 3.927588e-02
+      8	 5.151701e-02
+      4	 8.659506e-02
+      2	 1.359479e-01
+      1	 2.390289e-01
+    </data>
+  </timings>
+
+  <timings
+      method="P2NFFT"
+      charges="8100"
+      tolerance="1e-5">
+    <data>
+      4096	 1.527145e+00
+      2048	 7.407000e-01
+      1024	 4.456391e-01
+      512	 2.191792e-01
+      256	 1.139660e-01
+      128	 6.804991e-02
+      64	 6.431699e-02
+      32	 4.223990e-02
+      16	 4.755998e-02
+      8	 7.046819e-02
+      4	 1.217291e-01
+      2	 2.054708e-01
+      1	 3.718421e-01
+    </data>
+  </timings>
+
+  <timings
+      method="P2NFFT"
+      charges="102900"
+      tolerance="1e-3">
+    <data>
+      4096	 1.426955e+00
+      2048	 6.575768e-01
+      1024	 3.334639e-01
+      512	 1.718791e-01
+      256	 9.049296e-02
+      128	 7.314801e-02
+      64	 8.338094e-02
+      32	 1.264000e-01
+      16	 2.328529e-01
+      8	 4.240730e-01
+      4	 8.072500e-01
+      2	 1.433892e+00
+      1	 2.758846e+00
+    </data>
+  </timings>
+
+  <timings
+      method="P2NFFT"
+      charges="102900"
+      tolerance="1e-5">
+    <data>
+      4096	 1.451607e+00
+      2048	 5.760071e-01
+      1024	 3.606539e-01
+      512	 1.815410e-01
+      256	 1.055710e-01
+      128	 1.012709e-01
+      64	 1.353569e-01
+      32	 2.214849e-01
+      16	 4.072111e-01
+      8	 7.703869e-01
+      4	 1.488988e+00
+      2	 2.739701e+00
+      1	 5.254162e+00
+    </data>
+  </timings>
+
+  <timings
+      method="P2NFFT"
+      charges="1012500"
+      tolerance="1e-3">
+    <data>
+      4096	 1.293856e+00
+      2048	 7.551548e-01
+      1024	 3.664300e-01
+      512	 3.141558e-01
+      256	 2.252350e-01
+      128	 3.011940e-01
+      64	 5.365570e-01
+      32	 1.024077e+00
+      16	 1.989123e+00
+      8	 3.917491e+00
+      4	 7.858253e+00
+      2	 1.548057e+01
+      1	 3.259604e+01
+    </data>
+  </timings>
+
+  <timings
+      method="P2NFFT"
+      charges="1012500"
+      tolerance="1e-5">
+    <data>
+      4096	 1.285603e+00
+      2048	 7.051740e-01
+      1024	 5.997019e-01
+      512	 3.684981e-01
+      256	 3.396299e-01
+      128	 5.269990e-01
+      64	 9.806509e-01
+      32	 1.862477e+00
+      16	 3.612226e+00
+      8	 7.025891e+00
+      4	 1.390030e+01
+      2	 2.622708e+01
+      1	 5.261275e+01
+    </data>
+  </timings>
+
+
+<!-- 
+********************
+** P3M
+********************
+-->
+  <timings
+      method="P3M"
+      charges="102900"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,2e-4
+    </parameters>
+    <tuned-parameters>
+r_cut=4.481387, grid=128, cao=5, alpha=0.639184
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    1.464425e-04
+          abs_max_field_error =    5.763636e-04
+      abs_rms_potential_error =    1.184391e-04
+      abs_max_potential_error =    3.190859e-04
+             abs_energy_error =    1.750504e+00
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    3.409608e-05
+          rel_max_field_error =    1.341942e-04
+      rel_rms_potential_error =    5.497415e-05
+      rel_max_potential_error =    1.481055e-04
+             rel_energy_error =    3.426482e-05
+    </errors>
+    <data>
+      4096	3.934813e-02
+      2048	4.415703e-02
+      1024	1.902699e-02
+      512	1.544619e-02
+      256	2.026391e-02
+      128	3.399611e-02
+      64	6.587386e-02
+      32	1.079750e-01
+      16	2.066040e-01
+      8	 	4.047430e-01
+      4	 	7.749732e-01
+      2	 	1.546903e+00
+      1	 	2.939212e+00
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
+      charges="1012500"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,4e-4
+    </parameters>
+    <tuned-parameters>
+r_cut=4.48139 cao=4 grid=(256, 256, 256) alpha=0.611589
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 1012500 of 1012500 particles)
+          abs_rms_field_error =    4.642217e-04
+          abs_max_field_error =    1.245372e-03
+      abs_rms_potential_error =    1.248811e-04
+      abs_max_potential_error =    3.571835e-04
+             abs_energy_error =    3.744299e+01
+
+  RELATIVE ERRORS (from 1012500 of 1012500 particles)
+          rel_rms_field_error =    1.080856e-04
+          rel_max_field_error =    2.899623e-04
+      rel_rms_potential_error =    5.796350e-05
+      rel_max_potential_error =    1.657865e-04
+             rel_energy_error =    7.448628e-05
+    </errors>
+    <data>
+      4096	
+      2048	
+      1024	
+      512	
+      256	
+      128	
+      64	
+      32	
+      16	1.397070e+00
+      8	 	2.775590e+00
+      4	 	5.393900e+00
+      2	 	1.043167e+01
+      1	 	2.018307e+01
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
+      charges="9830400"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,8e-4
+    </parameters>
+    <tuned-parameters>
+r_cut=4.48139 cao=4 grid=(512, 512, 512) alpha=0.588367
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 1012500 of 1012500 particles)
+          abs_rms_field_error =    5.309335e-04
+          abs_max_field_error =    2.176915e-03
+      abs_rms_potential_error =    2.097222e-04
+      abs_max_potential_error =    5.362942e-04
+             abs_energy_error =    6.991420e+01
+
+  RELATIVE ERRORS (from 1012500 of 1012500 particles)
+          rel_rms_field_error =    1.236209e-04
+          rel_max_field_error =    5.068662e-04
+      rel_rms_potential_error =    9.734047e-05
+      rel_max_potential_error =    2.489156e-04
+             rel_energy_error =    1.390821e-04
+    </errors>
+    <data>
+      4096	7.329798e-02
+      2048	9.141684e-02
+      1024	9.497690e-02
+      512	2.247040e-01
+      256	3.371050e-01
+      128	6.829538e-01
+      64	1.287490e+00
+      32	2.509546e+00
+      16	4.775781e+00
+      8         9.384810e+00
+      4	 	1.807034e+01
+      2
+      1
+    </data>
+  </timings>
+
+<!--  <timings
+      method="P3M"
+      charges="9830400"
+      tolerance="1e-5">
+    <parameters>
+-c tolerance_field,5e-5
+    </parameters>
+    <tuned-parameters>
+r_cut=4.481387, grid=512, cao=7, alpha=0.691075
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 9830400 of 9830400 particles)
+          abs_rms_field_error =    3.299826e-05
+          abs_max_field_error =    1.260274e-04
+      abs_rms_potential_error =    1.494430e-05
+      abs_max_potential_error =    7.167015e-05
+             abs_energy_error =    3.928042e+01
+
+  RELATIVE ERRORS (from 9830400 of 9830400 particles)
+          rel_rms_field_error =    7.682877e-06
+          rel_max_field_error =    2.934255e-05
+      rel_rms_potential_error =    6.936561e-06
+      rel_max_potential_error =    3.326649e-05
+             rel_energy_error =    8.048329e-06
+    </errors>
+    <data>
+      4096	
+      2048	
+      1024	
+      512	
+      256	
+      128	
+      64	
+      32	
+      16	
+      8         
+      4	 	
+      2
+      1
+    </data>
+  </timings>-->
+
+<!-- 
+********************
+** PP3MG
+********************
+-->
+
+  <timings
+      method="PP3MG"
+      charges="8100"
+      tolerance="1e-3">
+    <parameters>
+-c pp3mg_cells_x,64,pp3mg_cells_y,64,pp3mg_cells_z,64,pp3mg_ghosts,7
+    </parameters>
+    <tuned-parameters>
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 8100 of 8100 particles)
+    </errors>
+    <data>
+      512	 5.594516e-02
+      256	 5.334997e-02
+      128	 4.384208e-02
+      64	 8.161497e-02
+      32	 8.740592e-02
+      16	 1.541960e-01
+      8	 2.850389e-01
+      4	 5.491879e-01
+      2	 1.079983e+00
+      1	 2.137809e+00
+    </data>
+  </timings>
+
+  <timings
+      method="PP3MG"
+      charges="1012500"
+      tolerance="1e-3">
+    <parameters>
+-c pp3mg_cells_x,256,pp3mg_cells_y,256,pp3mg_cells_z,256,pp3mg_ghosts,6,pp3mg_degree,5
+    </parameters>
+    <tuned-parameters>
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 1012500 of 1012500 particles)
+    </errors>
+    <data>
+      4096	 6.867311e-01
+      2048	 4.256940e-01
+      1024	 3.521311e-01
+      512	 4.796519e-01
+      256	 8.737121e-01
+      128	 1.676389e+00
+      64	 3.322553e+00
+      32	 6.453062e+00
+      16	 1.287914e+01
+      8	 2.544201e+01
+      4	 5.118039e+01
+      2	 1.008648e+02
+      1	 2.005089e+02
+    </data>
+  </timings>
+
+
+<!-- 
+********************
+** VMG
+********************
+-->
+
+  <timings
+      method="VMG"
+      charges="8100"
+      tolerance="1e-3">
+    <data>
+      64	7.614183e-02
+      32	3.725100e-02
+      16	4.876304e-02
+      8	8.438611e-02
+      4	1.622651e-01
+      2	3.129370e-01
+      1	6.131768e-01
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="8100"
+      tolerance="1e-5">
+    <data>
+      64	4.278572e-01
+      32	5.831800e-01
+      16	1.092978e+00
+      8	1.944902e+00
+      4	3.904173e+00
+      2	7.206616e+00
+      1	1.403589e+01
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="102900"
+      tolerance="1e-3">
+    <data>
+      512	1.217771e-01
+      256	1.421061e-01
+      128	1.772790e-01
+      64	2.277529e-01
+      32	2.947650e-01
+      16	5.430009e-01
+      8	1.057066e+00
+      4	2.245258e+00
+      2	4.369457e+00
+      1	8.345983e+00
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="102900"
+      tolerance="1e-4">
+    <data>
+      1	2.532620e+01
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="102900"
+      tolerance="1e-5">
+    <data>
+      512	5.899661e-01
+      256	9.758449e-01
+      128	1.740839e+00
+      64	3.255549e+00
+      32	5.781497e+00
+      16	1.134749e+01
+      8	2.209653e+01
+      4	4.412432e+01
+      2	8.628723e+01
+      1	1.628516e+02
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="1012500"
+      tolerance="1e-3">
+    <data>
+      4096	2.604780e-01
+      2048	2.064478e-01
+      1024	2.440441e-01
+      512	3.288870e-01
+      256	5.075970e-01
+      128	8.494859e-01
+      64	1.528203e+00
+      32	2.749908e+00
+      16	5.404441e+00
+      8	1.074981e+01
+      4	2.180957e+01
+      2	4.306613e+01
+      1	8.597817e+01
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="1012500"
+      tolerance="1e-5">
+    <data>
+      4096	7.709570e-01
+      2048	1.214702e+00
+      1024	2.094130e+00
+      512	3.641708e+00
+      256	7.171477e+00
+      128	1.403486e+01
+      64	2.748879e+01
+      32	5.308415e+01
+      16	1.050825e+02
+      8	2.080853e+02
+      4	4.183897e+02
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="9830400"
+      tolerance="1e-3">
+    <data>
+      4096	4.608610e-01
+      2048	6.752589e-01
+      1024	1.104605e+00
+      512	2.017963e+00
+      256	3.833677e+00
+      128	7.502505e+00
+      64	1.429385e+01
+      32	2.826105e+01
+      16	5.754167e+01
+      8	1.124891e+02
+      4	2.374747e+02
+      2	4.562857e+02
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="9830400"
+      tolerance="1e-5">
+    <data>
+      4096	4.185229e+00
+      2048	8.293396e+00
+      1024	1.616000e+01
+      512	3.184239e+01
+      256	6.235759e+01
+      128	1.244283e+02
+      64	2.478298e+02
+      32	4.917656e+02
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="102900000"
+      tolerance="1e-3">
+    <data>
+      4096	3.177691e+00
+      2048	5.730313e+00
+      1024	1.103348e+01
+      512	2.193640e+01
+      256	4.276226e+01
+      128	8.768883e+01
+      64	1.665048e+02
+      32	3.476377e+02
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="1012500000"
+      tolerance="1e-3">
+    <data>
+      4096	3.170660e+01
+      2048	6.092076e+01
+      1024	1.189207e+02
+      512	2.354823e+02
+      256	4.877968e+02
+    </data>
+  </timings>
+
+<!-- 
+********************
+** MEMD
+********************
+-->
+  <timings
+      method="MEMD"
+      charges="8100"
+      tolerance="1e-3">
+    <data>
+      4096	 
+      2048	 
+      1024	 
+      512	0.30508742
+      256	0.23044491
+      128	0.14075782
+      64	0.10020873
+      32	0.06084741
+      16	0.04102486
+      8	 	0.05519472
+      4	 	0.07494881
+      2	 	0.15099436
+      1	 	0.27256572
+    </data>
+  </timings>
+
+  <timings
+      method="MEMD"
+      charges="102900"
+      tolerance="1e-3">
+    <data>
+      4096	 
+      2048	  
+      1024	  
+      512	  0.70391992
+      256	  0.49794554
+      128	  0.35833814
+      64	  0.27286451
+      32	  0.17903251
+      16	  0.1461579
+      8	 	  0.25338238
+      4	 	  0.60546764
+      2	 	  1.0917131
+      1	 	  1.9964056
+    </data>
+  </timings>
+
+  <timings
+      method="MEMD"
+      charges="1012500"
+      tolerance="1e-3">
+    <data>
+      4096	 
+      2048	  
+      1024	  
+      512	  0.3227586
+      256	  0.26720243
+      128	  0.50821462
+      64	  0.70524352
+      32	  0.90687887
+      16	  2.12437397
+      8	 	  3.36823193
+      4	 	  7.29346144
+      2	 	  14.58132491
+      1	 	  33.30773744
+    </data>
+  </timings>
+
+
+</benchmarks>

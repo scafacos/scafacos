@@ -1,0 +1,98 @@
+\chapter{direct -- Direct summation}
+\label{cha:direct}
+
+\solvertoindex{direct}
+\solvertoindex{Direct Summation}
+
+The direct solver implemented within the ScaFaCoS library performs a direct summation of the pair-wise interactions between all given particles.
+The parallel computations use the given distribution of particles among parallel MPI processes (i.e., no additional redistribution for improving the load-balancing is performed).
+Let $p$ be the number of parallel MPI processes.
+After each process has computed the interactions between its local particles, $p-1$ steps are performed to compute interactions with all non-local particles.
+In each step, each process receives the particles of the preceding process, computes the interactions with its local particles, and sends to the previously received particles to the succeeding process.
+
+\section*{Common capabilities}
+
+\begin{description}
+
+  \item[Periodicity:]
+Open, periodic, or mixed boundaries are supported.
+The box shape is not limited by the chosen periodicity.
+Periodic boundaries are computed by placing a number of periodic images of the particle system around the given particle system.
+The number of images to use in each (periodic) dimensions can be specified with \texttt{fcs\_direct\_set\_periodic\_images}.
+
+  \item[Box shape:] Any (triclinic) box shape is supported.
+  
+  \item[Tolerances:] No.
+
+  \item[Delegate near-field:] No.
+
+  \item[Virial:] ?
+
+\end{description}
+
+\section*{Additional capabilities}
+
+\begin{description}
+
+  \item[Cutoff:]
+\texttt{fcs\_direct\_set\_cutoff} can be used to specify a cutoff range that limits the computation of interactions.
+If the cutoff range is 0, then all interactions are considered.
+If the cutoff range is greater than 0, then only interactions inside the cufoff range are considered.
+If the cutoff range is less than 0, then only interactions outside the (positive) cufoff range are considered.
+If the cutoff range is greater than 0, then \texttt{fcs\_direct\_set\_cutoff\_with\_near} can be used to enable the ScaFaCoS internal near-field solver module instead of the direct solver.
+
+\end{description}
+
+\section*{Solver specific functions}
+
+\begin{itemize}
+
+  \item
+\begin{alltt}
+fcs\_direct\_set\_cutoff(FCS handle, fcs_float cutoff);
+\end{alltt}
+Set the current cutoff range (optional, default = 0).
+
+  \item
+\begin{alltt}
+fcs_direct_get_cutoff(FCS handle, fcs_float *cutoff);
+\end{alltt}
+Retrieve the current cutoff range.
+
+  \item
+\begin{alltt}
+fcs_direct_set_periodic_images(FCS handle, fcs_int *periodic_images);
+\end{alltt}
+Set the number of periodic images to use for computations with periodic boundaries (optional, default = \{ 1, 1, 1 \}).
+
+  \item
+\begin{alltt}
+fcs_direct_get_periodic_images(FCS handle, fcs_int *periodic_images);
+\end{alltt}
+Retrieve the number of periodic images used for computations with periodic boundaries.
+
+  \item
+\begin{alltt}
+fcs_direct_set_cutoff_with_near(FCS handle, fcs_bool cutoff_with_near);
+\end{alltt}
+Enable the near-field solver module (instead of the direct solver) to be used for computations with a cutoff range.
+
+  \item
+\begin{alltt}
+fcs_direct_get_cutoff_with_near(FCS handle, fcs_bool *cutoff_with_near);
+\end{alltt}
+Retrieve whether the near-field solver module is used for computations with a cutoff range.
+
+\end{itemize}
+
+\section*{Known bugs or missing features}
+
+\begin{itemize}
+  \item Periodic boundaries still need to be tested.
+  \item How to compute the virial for periodic boundaries?
+\end{itemize}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: ug.tex
+%%% End: 

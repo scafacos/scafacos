@@ -1,0 +1,51 @@
+There are two strategies for implementing one-sided on top of MPI:
+1. using MPI passive-target RMA
+2. using MPI send/recv and a data-server/CHT approach
+
+It is expected that MPI RMA will have better latency but the performance 
+of of the CHT implementation will be more reliable on networks where MPI
+RMA is a poor match (Ethernet/Myrinet).  Because the CHT approach requires
+MPI_THREAD_MULTIPLE or MPI_THREAD_SERIALIZED with A1-based locking,
+an implementation which implements the MPI-2 standard properly is required.
+We resist the urge to consider an implementation based upon MPI_Comm_spawn
+(as ARMCI does) or one which can use only an MPI-1 implementation because
+MPICH2 supports exactly those networks which we have no intention of 
+supporting using the low-level API (e.g. TCP/IP and MX).
+
+The implementation of A1 using MPI send/recv+CHT is not unlike the
+implementation DDI (GAMESS) or SIAL (ACESIII) except that we expose
+the entire address space of a process (unlike DDI) and passive-target
+progress will always be made (unlike SIAL, although this matters little
+for how it is used).
+
+The CHT implementation of A1 works as follows:
+- each process pthread_creates a CHT which spins in a loop of MPI_Recv 
+  calls with source = MPI_ANY_SOURCE and a series of tags corresponding
+  to various A1 operations.  The incoming messages from main processes
+  contain the A1 operation type and the address to be acted upon.
+  (NOTE: need to think about how to do non-contiguous in a non-stupid way.)
+- main processes probably need to invoke A1 Put and PutAcc operations 
+  with MPI_Ssend to ensure CHT will post the appropriate MPI_Recv in time.
+- when tag = A1_PUT, MPI_Recv is posted for the appropriate address
+- when tag = A1_ACC, a buffer is allocated for the incoming data, then
+  MPI_Recv is called, then the accumulate takes place
+- when tag = A1_GET, MPI_Send transfers the data to the receiver
+  (NOTE: consider what happens if we use MPI_Isend instead)
+- when tag = A1_RMW, the incoming payload contains the address of the 
+  counter to be updated as well as the way to update it with, hence
+  it can be incremented atomically immediately and the previous value
+  sent to the invoking process, who will have posted an MPI_Recv for
+  this data.
+  
+Deadlock is a serious issue in the CHT approach.  For example, self-communication
+(i.e. A1_Put where target=me) will obviously deadlock if the implementation
+uses blocking MPI calls, which might be just fine for all other targets.  More
+subtle deadlock issues may arise, hence extensive testing is required to
+ensure the MPID implementation of A1 is valid.  The best way to avoid
+self-communication deadlock is to avoid the MPI layer altogether and 
+use direct-access inside of a critical section in the main process. 
+
+We might have increase latency by calling MPI_Prove before the MPI_Recv for
+the control message in order to prevent deadlocking inside of MPI_Recv.  It
+does not seem prudent to use MPI_Irecv since this will lead to even more 
+overhead.

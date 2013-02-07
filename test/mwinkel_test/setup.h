@@ -1,0 +1,14 @@
+#define NUMMETHODS 8
+#define NUMPARTICLES_DEFAULT 100
+#define METHOD_DEFAULT 0
+#define SETUP_DEFAULT SETUP_TRIVIAL
+#define NUMSETUPS 3
+
+#define MAXPARTS(a) (((a) * 120) / 100)
+
+#define MAX_PART_PRINT 10
+
+#define SETUP_TRIVIAL 0
+#define SETUP_NACL    1
+#define SETUP_SiO2    2
+

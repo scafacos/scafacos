@@ -1,0 +1,113 @@
+Author: Toni Volkmer
+
+gendata
+=======
+This is a small tool for creating different distributions in 3D.
+Output is to stdout, error messages to stderr;
+each line consists of the x,y,z components and the charge q,
+each one separated by white space.
+
+usage: ./gendata distribution_name number_of_particles [parameters]
+
+charge_type
+-----------
+0: Uniformly random charges in {-1,1} where sum(q_i) = 0.
+1: All charges +1.
+
+
+Supported distributions:
+
+hammersley_cube
+---------------
+parameter: charge_type
+Hammersley distribution with p_1=2, p_2=3 created within the cube [0,1]^3.
+
+hammersley_ball
+---------------
+parameter: charge_type
+Hammersley distribution with p_1=2, p_2=3 created within the cube [-1,1]^3 and
+transformed to coordinates within the ball
+(x-0.5)^2 + (x-0.5)y^2 + (z-0.5)^2 <= (0.5)^2.
+Uniformly random charges in {-1,1} where sum(q_i) = 0.
+
+hammersley_two_balls
+--------------------
+parameters: charge_type n2_rel_to_n1 dist_rel_to_r1
+Hammersley distribution with with p_1=2, p_2=3 and
+(n * (1-n2_rel_to_n1)) particles created within the cube [-1,1]^3 and
+transformed to coordinates within the ball
+(x-0.5)^2 + (x-0.5)y^2 + (z-0.5)^2 <= (0.5)^2.
+Then a second ball with the same density like the first one is created with 
+(n * n2_rel_to_n1) particles. The distance between the centers of the
+two balls is specified relative to the radius of the first ball.
+Afterwards the distribution is shifted and scaled to [0,1]^3.
+
+hammersley_sphere
+-----------------
+parameter: charge_type
+Hammersley distribution with p_1=2 created within the square [-1,1]^2 and
+transformed to coordinates on the sphere
+(x-0.5)^2 + (x-0.5)y^2 + (z-0.5)^2 = (0.5)^2.
+
+hammersley_circle
+-----------------
+parameter: charge_type
+Hammersley distribution with p_1=2 created within the square [-1,1]^2 and
+transformed to coordinates within the ball
+(x-0.5)^2 + (x-0.5)y^2 <= (0.5)^2, z = 0.5.
+
+hammersley_sphere
+-----------------
+parameter: charge_type
+Hammersley distribution with p_1=2 created within the square [-1,1]^2 and
+transformed to coordinates on the sphere
+(x-0.5)^2 + (x-0.5)y^2 + (z-0.5)^2 = (0.5)^2.
+
+hammersley_square
+-----------------
+parameter: charge_type
+Hammersley distribution with p_1=2 created within the square
+(x,y) = [0,1]^2, z = 0.5.
+
+halton_ellipsoid
+----------------
+parameters: charge_type a b c
+Halton distribution with p_1=2, p_2=3, p_3=5 created within the ellipsoid
+(x/a)^2 + (y/b)^2 + (z/c)^2 <= (0.5)^2.
+Afterwards the distribution is shifted and scaled to [0,1]^3 while keeping the
+aspect ratio. The ellipsoid is centered within [0,1]^3.
+
+halton_cylinder
+---------------
+parameters: charge_type ratio_radius_length
+Halton distribution with p_1=2, p_2=3, p_3=5 created within the
+cylinder 0 <= x <= length, (y-0.5)^2 + (z-0.5)^2 <= (radius)^2,
+where ratio_radius_length = radius/length.
+Afterwards the distribution is shifted and scaled to [0,1]^3 while keeping the
+aspect ratio. The cylinder is centered within [0,1]^3.
+
+grid_face_centered_cube
+-----------------------
+parameter: charge_type
+Face-centered grid with at least n particles within the cube [0,1]^3.
+The actual number of particles will be 4 * ceil( (n/4)^(1/3) )^3.
+
+grid_body_centered_cube
+-----------------------
+parameter: charge_type
+Body-centered grid with at least n particles created within the cube [0,1]^3.
+The actual number of particles will be 2 * ceil( (n/2)^(1/3) )^3.
+
+grid_nacl_cube
+--------------
+NaCl cube created within the cube[0,1]^3.
+Alternating charge {-1,1}.
+
+plummer_ball
+------------
+parameter: charge_type
+Plummer distribution with the distribution function
+f(x) = 3.75 / (1+(x/0.2)^2)^2.5
+The distribution is shifted and scaled to [0,1]^3 while keeping the aspect
+ratio.
+

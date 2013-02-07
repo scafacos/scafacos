@@ -1,0 +1,52 @@
+! fcs_fconfig.h.in.  Public Fortran config header for ScaFaCoS FCS.
+! Written manually, not generated.  This contains only defines for Fortran.
+
+! Define to the MPI datatype that corresponds to the floating type to use for
+! FCS.
+#undef FCS_MPI_REAL
+
+! Define to the MPI datatype that corresponds to the integer type to use for
+! FCS.
+#undef FCS_MPI_INTEGER
+
+! Define to the Fortran floating type to use for FCS.
+#undef fcs_real
+
+! Define to the Fortran integer type to use for FCS.
+#undef fcs_integer
+
+! Define to the Fortran floating kind to use for FCS.
+#undef fcs_real_kind
+
+! Define to the Fortran integer kind to use for FCS.
+#undef fcs_integer_kind
+
+! Define to the Fortran floating kind to use for FCS (for C compatibility).
+#undef fcs_real_kind_isoc
+
+! Define to the Fortran integer kind to use for FCS (for C compatibility).
+#undef fcs_integer_kind_isoc
+
+! Whether solver method direct is enabled.
+#undef FCS_ENABLE_DIRECT
+
+! Whether solver method fmm is enabled.
+#undef FCS_ENABLE_FMM
+
+! Whether solver method mmm1d is enabled.
+#undef FCS_ENABLE_MMM1D
+
+! Whether solver method pepc is enabled.
+#undef FCS_ENABLE_PEPC
+
+! Whether solver method pp3mg_pmg is enabled.
+#undef FCS_ENABLE_PP3MG_PMG
+
+! Whether solver method nfft is enabled.
+#undef FCS_ENABLE_P2NFFT
+
+! Whether solver method p3m is enabled.
+#undef FCS_ENABLE_P3M
+
+! Whether solver method vmg is enabled.
+#undef FCS_ENABLE_VMG

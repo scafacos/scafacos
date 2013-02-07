@@ -1,0 +1,604 @@
+pbc 10.0 10.0 10.0
+atom 0:299 radius 1.0 name O type 0
+
+atom 0 name S radius 0.1
+atom 1 name O radius 0.1
+atom 2 name S radius 0.1
+atom 3 name O radius 0.1
+atom 4 name S radius 0.1
+atom 5 name O radius 0.1
+atom 6 name S radius 0.1
+atom 7 name O radius 0.1
+atom 8 name S radius 0.1
+atom 9 name O radius 0.1
+atom 10 name S radius 0.1
+atom 11 name O radius 0.1
+atom 12 name S radius 0.1
+atom 13 name O radius 0.1
+atom 14 name S radius 0.1
+atom 15 name O radius 0.1
+atom 16 name S radius 0.1
+atom 17 name O radius 0.1
+atom 18 name S radius 0.1
+atom 19 name O radius 0.1
+atom 20 name S radius 0.1
+atom 21 name O radius 0.1
+atom 22 name S radius 0.1
+atom 23 name O radius 0.1
+atom 24 name S radius 0.1
+atom 25 name O radius 0.1
+atom 26 name S radius 0.1
+atom 27 name O radius 0.1
+atom 28 name S radius 0.1
+atom 29 name O radius 0.1
+atom 30 name S radius 0.1
+atom 31 name O radius 0.1
+atom 32 name S radius 0.1
+atom 33 name O radius 0.1
+atom 34 name S radius 0.1
+atom 35 name O radius 0.1
+atom 36 name S radius 0.1
+atom 37 name O radius 0.1
+atom 38 name S radius 0.1
+atom 39 name O radius 0.1
+atom 40 name S radius 0.1
+atom 41 name O radius 0.1
+atom 42 name S radius 0.1
+atom 43 name O radius 0.1
+atom 44 name S radius 0.1
+atom 45 name O radius 0.1
+atom 46 name S radius 0.1
+atom 47 name O radius 0.1
+atom 48 name S radius 0.1
+atom 49 name O radius 0.1
+atom 50 name S radius 0.1
+atom 51 name O radius 0.1
+atom 52 name S radius 0.1
+atom 53 name O radius 0.1
+atom 54 name S radius 0.1
+atom 55 name O radius 0.1
+atom 56 name S radius 0.1
+atom 57 name O radius 0.1
+atom 58 name S radius 0.1
+atom 59 name O radius 0.1
+atom 60 name S radius 0.1
+atom 61 name O radius 0.1
+atom 62 name S radius 0.1
+atom 63 name O radius 0.1
+atom 64 name S radius 0.1
+atom 65 name O radius 0.1
+atom 66 name S radius 0.1
+atom 67 name O radius 0.1
+atom 68 name S radius 0.1
+atom 69 name O radius 0.1
+atom 70 name S radius 0.1
+atom 71 name O radius 0.1
+atom 72 name S radius 0.1
+atom 73 name O radius 0.1
+atom 74 name S radius 0.1
+atom 75 name O radius 0.1
+atom 76 name S radius 0.1
+atom 77 name O radius 0.1
+atom 78 name S radius 0.1
+atom 79 name O radius 0.1
+atom 80 name S radius 0.1
+atom 81 name O radius 0.1
+atom 82 name S radius 0.1
+atom 83 name O radius 0.1
+atom 84 name S radius 0.1
+atom 85 name O radius 0.1
+atom 86 name S radius 0.1
+atom 87 name O radius 0.1
+atom 88 name S radius 0.1
+atom 89 name O radius 0.1
+atom 90 name S radius 0.1
+atom 91 name O radius 0.1
+atom 92 name S radius 0.1
+atom 93 name O radius 0.1
+atom 94 name S radius 0.1
+atom 95 name O radius 0.1
+atom 96 name S radius 0.1
+atom 97 name O radius 0.1
+atom 98 name S radius 0.1
+atom 99 name O radius 0.1
+atom 100 name S radius 0.1
+atom 101 name O radius 0.1
+atom 102 name S radius 0.1
+atom 103 name O radius 0.1
+atom 104 name S radius 0.1
+atom 105 name O radius 0.1
+atom 106 name S radius 0.1
+atom 107 name O radius 0.1
+atom 108 name S radius 0.1
+atom 109 name O radius 0.1
+atom 110 name S radius 0.1
+atom 111 name O radius 0.1
+atom 112 name S radius 0.1
+atom 113 name O radius 0.1
+atom 114 name S radius 0.1
+atom 115 name O radius 0.1
+atom 116 name S radius 0.1
+atom 117 name O radius 0.1
+atom 118 name S radius 0.1
+atom 119 name O radius 0.1
+atom 120 name S radius 0.1
+atom 121 name O radius 0.1
+atom 122 name S radius 0.1
+atom 123 name O radius 0.1
+atom 124 name S radius 0.1
+atom 125 name O radius 0.1
+atom 126 name S radius 0.1
+atom 127 name O radius 0.1
+atom 128 name S radius 0.1
+atom 129 name O radius 0.1
+atom 130 name S radius 0.1
+atom 131 name O radius 0.1
+atom 132 name S radius 0.1
+atom 133 name O radius 0.1
+atom 134 name S radius 0.1
+atom 135 name O radius 0.1
+atom 136 name S radius 0.1
+atom 137 name O radius 0.1
+atom 138 name S radius 0.1
+atom 139 name O radius 0.1
+atom 140 name S radius 0.1
+atom 141 name O radius 0.1
+atom 142 name S radius 0.1
+atom 143 name O radius 0.1
+atom 144 name S radius 0.1
+atom 145 name O radius 0.1
+atom 146 name S radius 0.1
+atom 147 name O radius 0.1
+atom 148 name S radius 0.1
+atom 149 name O radius 0.1
+atom 150 name S radius 0.1
+atom 151 name O radius 0.1
+atom 152 name S radius 0.1
+atom 153 name O radius 0.1
+atom 154 name S radius 0.1
+atom 155 name O radius 0.1
+atom 156 name S radius 0.1
+atom 157 name O radius 0.1
+atom 158 name S radius 0.1
+atom 159 name O radius 0.1
+atom 160 name S radius 0.1
+atom 161 name O radius 0.1
+atom 162 name S radius 0.1
+atom 163 name O radius 0.1
+atom 164 name S radius 0.1
+atom 165 name O radius 0.1
+atom 166 name S radius 0.1
+atom 167 name O radius 0.1
+atom 168 name S radius 0.1
+atom 169 name O radius 0.1
+atom 170 name S radius 0.1
+atom 171 name O radius 0.1
+atom 172 name S radius 0.1
+atom 173 name O radius 0.1
+atom 174 name S radius 0.1
+atom 175 name O radius 0.1
+atom 176 name S radius 0.1
+atom 177 name O radius 0.1
+atom 178 name S radius 0.1
+atom 179 name O radius 0.1
+atom 180 name S radius 0.1
+atom 181 name O radius 0.1
+atom 182 name S radius 0.1
+atom 183 name O radius 0.1
+atom 184 name S radius 0.1
+atom 185 name O radius 0.1
+atom 186 name S radius 0.1
+atom 187 name O radius 0.1
+atom 188 name S radius 0.1
+atom 189 name O radius 0.1
+atom 190 name S radius 0.1
+atom 191 name O radius 0.1
+atom 192 name S radius 0.1
+atom 193 name O radius 0.1
+atom 194 name S radius 0.1
+atom 195 name O radius 0.1
+atom 196 name S radius 0.1
+atom 197 name O radius 0.1
+atom 198 name S radius 0.1
+atom 199 name O radius 0.1
+atom 200 name S radius 0.1
+atom 201 name O radius 0.1
+atom 202 name S radius 0.1
+atom 203 name O radius 0.1
+atom 204 name S radius 0.1
+atom 205 name O radius 0.1
+atom 206 name S radius 0.1
+atom 207 name O radius 0.1
+atom 208 name S radius 0.1
+atom 209 name O radius 0.1
+atom 210 name S radius 0.1
+atom 211 name O radius 0.1
+atom 212 name S radius 0.1
+atom 213 name O radius 0.1
+atom 214 name S radius 0.1
+atom 215 name O radius 0.1
+atom 216 name S radius 0.1
+atom 217 name O radius 0.1
+atom 218 name S radius 0.1
+atom 219 name O radius 0.1
+atom 220 name S radius 0.1
+atom 221 name O radius 0.1
+atom 222 name S radius 0.1
+atom 223 name O radius 0.1
+atom 224 name S radius 0.1
+atom 225 name O radius 0.1
+atom 226 name S radius 0.1
+atom 227 name O radius 0.1
+atom 228 name S radius 0.1
+atom 229 name O radius 0.1
+atom 230 name S radius 0.1
+atom 231 name O radius 0.1
+atom 232 name S radius 0.1
+atom 233 name O radius 0.1
+atom 234 name S radius 0.1
+atom 235 name O radius 0.1
+atom 236 name S radius 0.1
+atom 237 name O radius 0.1
+atom 238 name S radius 0.1
+atom 239 name O radius 0.1
+atom 240 name S radius 0.1
+atom 241 name O radius 0.1
+atom 242 name S radius 0.1
+atom 243 name O radius 0.1
+atom 244 name S radius 0.1
+atom 245 name O radius 0.1
+atom 246 name S radius 0.1
+atom 247 name O radius 0.1
+atom 248 name S radius 0.1
+atom 249 name O radius 0.1
+atom 250 name S radius 0.1
+atom 251 name O radius 0.1
+atom 252 name S radius 0.1
+atom 253 name O radius 0.1
+atom 254 name S radius 0.1
+atom 255 name O radius 0.1
+atom 256 name S radius 0.1
+atom 257 name O radius 0.1
+atom 258 name S radius 0.1
+atom 259 name O radius 0.1
+atom 260 name S radius 0.1
+atom 261 name O radius 0.1
+atom 262 name S radius 0.1
+atom 263 name O radius 0.1
+atom 264 name S radius 0.1
+atom 265 name O radius 0.1
+atom 266 name S radius 0.1
+atom 267 name O radius 0.1
+atom 268 name S radius 0.1
+atom 269 name O radius 0.1
+atom 270 name S radius 0.1
+atom 271 name O radius 0.1
+atom 272 name S radius 0.1
+atom 273 name O radius 0.1
+atom 274 name S radius 0.1
+atom 275 name O radius 0.1
+atom 276 name S radius 0.1
+atom 277 name O radius 0.1
+atom 278 name S radius 0.1
+atom 279 name O radius 0.1
+atom 280 name S radius 0.1
+atom 281 name O radius 0.1
+atom 282 name S radius 0.1
+atom 283 name O radius 0.1
+atom 284 name S radius 0.1
+atom 285 name O radius 0.1
+atom 286 name S radius 0.1
+atom 287 name O radius 0.1
+atom 288 name S radius 0.1
+atom 289 name O radius 0.1
+atom 290 name S radius 0.1
+atom 291 name O radius 0.1
+atom 292 name S radius 0.1
+atom 293 name O radius 0.1
+atom 294 name S radius 0.1
+atom 295 name O radius 0.1
+atom 296 name S radius 0.1
+atom 297 name O radius 0.1
+atom 298 name S radius 0.1
+timestep ordered
+0.0 0.0 4.50
+0.0 0.0 5.5
+0.0 1.0 4.5
+0.0 1.0 5.5
+0.0 2.0 4.5
+0.0 2.0 5.5
+0.0 3.0 4.5
+0.0 3.0 5.5
+0.0 4.0 4.5
+0.0 4.0 5.5
+0.0 5.0 4.5
+0.0 5.0 5.5
+0.0 6.0 4.5
+0.0 6.0 5.5
+0.0 7.0 4.5
+0.0 7.0 5.5
+0.0 8.0 4.5
+0.0 8.0 5.5
+0.0 9.0 4.5
+0.0 9.0 5.5
+1.0 0.0 4.5
+1.0 0.0 5.5
+1.0 1.0 4.5
+1.0 1.0 5.5
+1.0 2.0 4.5
+1.0 2.0 5.5
+1.0 3.0 4.5
+1.0 3.0 5.5
+1.0 4.0 4.5
+1.0 4.0 5.5
+1.0 5.0 4.5
+1.0 5.0 5.5
+1.0 6.0 4.5
+1.0 6.0 5.5
+1.0 7.0 4.5
+1.0 7.0 5.5
+1.0 8.0 4.5
+1.0 8.0 5.5
+1.0 9.0 4.5
+1.0 9.0 5.5
+2.0 0.0 4.5
+2.0 0.0 5.5
+2.0 1.0 4.5
+2.0 1.0 5.5
+2.0 2.0 4.5
+2.0 2.0 5.5
+2.0 3.0 4.5
+2.0 3.0 5.5
+2.0 4.0 4.5
+2.0 4.0 5.5
+2.0 5.0 4.5
+2.0 5.0 5.5
+2.0 6.0 4.5
+2.0 6.0 5.5
+2.0 7.0 4.5
+2.0 7.0 5.5
+2.0 8.0 4.5
+2.0 8.0 5.5
+2.0 9.0 4.5
+2.0 9.0 5.5
+3.0 0.0 4.5
+3.0 0.0 5.5
+3.0 1.0 4.5
+3.0 1.0 5.5
+3.0 2.0 4.5
+3.0 2.0 5.5
+3.0 3.0 4.5
+3.0 3.0 5.5
+3.0 4.0 4.5
+3.0 4.0 5.5
+3.0 5.0 4.5
+3.0 5.0 5.5
+3.0 6.0 4.5
+3.0 6.0 5.5
+3.0 7.0 4.5
+3.0 7.0 5.5
+3.0 8.0 4.5
+3.0 8.0 5.5
+3.0 9.0 4.5
+3.0 9.0 5.5
+4.0 0.0 4.5
+4.0 0.0 5.5
+4.0 1.0 4.5
+4.0 1.0 5.5
+4.0 2.0 4.5
+4.0 2.0 5.5
+4.0 3.0 4.5
+4.0 3.0 5.5
+4.0 4.0 4.5
+4.0 4.0 5.5
+4.0 5.0 4.5
+4.0 5.0 5.5
+4.0 6.0 4.5
+4.0 6.0 5.5
+4.0 7.0 4.5
+4.0 7.0 5.5
+4.0 8.0 4.5
+4.0 8.0 5.5
+4.0 9.0 4.5
+4.0 9.0 5.5
+5.0 0.0 4.5
+5.0 0.0 5.5
+5.0 1.0 4.5
+5.0 1.0 5.5
+5.0 2.0 4.5
+5.0 2.0 5.5
+5.0 3.0 4.5
+5.0 3.0 5.5
+5.0 4.0 4.5
+5.0 4.0 5.5
+5.0 5.0 4.5
+5.0 5.0 5.5
+5.0 6.0 4.5
+5.0 6.0 5.5
+5.0 7.0 4.5
+5.0 7.0 5.5
+5.0 8.0 4.5
+5.0 8.0 5.5
+5.0 9.0 4.5
+5.0 9.0 5.5
+6.0 0.0 4.5
+6.0 0.0 5.5
+6.0 1.0 4.5
+6.0 1.0 5.5
+6.0 2.0 4.5
+6.0 2.0 5.5
+6.0 3.0 4.5
+6.0 3.0 5.5
+6.0 4.0 4.5
+6.0 4.0 5.5
+6.0 5.0 4.5
+6.0 5.0 5.5
+6.0 6.0 4.5
+6.0 6.0 5.5
+6.0 7.0 4.5
+6.0 7.0 5.5
+6.0 8.0 4.5
+6.0 8.0 5.5
+6.0 9.0 4.5
+6.0 9.0 5.5
+7.0 0.0 4.5
+7.0 0.0 5.5
+7.0 1.0 4.5
+7.0 1.0 5.5
+7.0 2.0 4.5
+7.0 2.0 5.5
+7.0 3.0 4.5
+7.0 3.0 5.5
+7.0 4.0 4.5
+7.0 4.0 5.5
+7.0 5.0 4.5
+7.0 5.0 5.5
+7.0 6.0 4.5
+7.0 6.0 5.5
+7.0 7.0 4.5
+7.0 7.0 5.5
+7.0 8.0 4.5
+7.0 8.0 5.5
+7.0 9.0 4.5
+7.0 9.0 5.5
+8.0 0.0 4.5
+8.0 0.0 5.5
+8.0 1.0 4.5
+8.0 1.0 5.5
+8.0 2.0 4.5
+8.0 2.0 5.5
+8.0 3.0 4.5
+8.0 3.0 5.5
+8.0 4.0 4.5
+8.0 4.0 5.5
+8.0 5.0 4.5
+8.0 5.0 5.5
+8.0 6.0 4.5
+8.0 6.0 5.5
+8.0 7.0 4.5
+8.0 7.0 5.5
+8.0 8.0 4.5
+8.0 8.0 5.5
+8.0 9.0 4.5
+8.0 9.0 5.5
+9.0 0.0 4.5
+9.0 0.0 5.5
+9.0 1.0 4.5
+9.0 1.0 5.5
+9.0 2.0 4.5
+9.0 2.0 5.5
+9.0 3.0 4.5
+9.0 3.0 5.5
+9.0 4.0 4.5
+9.0 4.0 5.5
+9.0 5.0 4.5
+9.0 5.0 5.5
+9.0 6.0 4.5
+9.0 6.0 5.5
+9.0 7.0 4.5
+9.0 7.0 5.5
+9.0 8.0 4.5
+9.0 8.0 5.5
+9.0 9.0 4.5
+9.0 9.0 5.5
+9.28495 2.13839 8.88019
+4.99281 4.17459 9.83905
+4.91265 6.89408 2.39989
+4.43647 3.68895 8.86086
+0.659075 7.07271 0.179131
+7.791 3.40021 0.969703
+1.18008 3.63874 7.28751
+8.51522 5.24681 6.37702
+4.24226 9.60726 3.16084
+8.43745 8.23344 9.2883
+8.48509 8.84988 9.43407
+2.81127 8.9903 0.00909212
+6.38283 6.20858 9.92482
+4.59962 5.7925 7.52571
+7.03797 7.09336 8.15957
+6.68103 8.04734 7.95661
+2.531 8.47145 1.6209
+6.71915 8.79876 9.59581
+4.96758 0.0381298 0.827927
+9.22955 1.04572 0.84722
+2.3224 2.57084 8.07306
+1.94283 3.17375 3.92051
+2.34735 1.91295 1.29127
+3.33928 3.30688 0.892089
+1.19738 4.40402 8.70835
+7.44541 4.94803 8.28211
+5.93272 1.18886 1.56518
+8.50709 8.70343 1.24939
+5.54016 3.38865 8.61698
+9.47644 0.573085 3.05941
+9.39695 4.46542 1.84205
+3.52268 5.60212 0.333999
+3.69009 9.40954 6.10446
+3.96836 6.15307 7.57803
+2.02535 0.0418407 3.21642
+2.97488 8.79711 8.33242
+2.4122 1.79458 3.04173
+9.72355 3.67773 1.52435
+8.55216 6.1623 1.53201
+4.98973 2.41459 9.84381
+8.8901 5.9006 1.97649
+9.09932 2.23783 1.42554
+6.70722 8.21769 1.21953
+6.83768 0.84508 3.25165
+0.222115 3.07945 0.51825
+0.503918 9.34932 6.25278
+0.803159 8.7017 9.46211
+4.88636 5.00147 9.65639
+1.62258 0.767285 9.63596
+2.70143 3.01111 7.74859
+4.41574 5.31824 0.538729
+1.64724 5.18097 3.59205
+2.33672 3.21408 6.6081
+7.46603 1.53668 9.09844
+3.61269 8.44556 6.99789
+6.95465 6.83045 9.31002
+5.91831 9.01549 3.4626
+6.56503 8.42229 3.27105
+4.50822 9.59753 3.47025
+4.17357 5.27384 7.34774
+7.70968 6.5292 3.54779
+4.7977 4.94239 6.24947
+9.24016 9.36994 6.71263
+7.36888 8.75922 0.52403
+9.92895 5.87551 6.21586
+3.86308 6.71601 9.69083
+8.90048 0.298719 0.573852
+6.58753 6.67768 1.83984
+8.672 0.367497 2.21864
+3.44519 3.30359 6.52249
+7.24717 3.25113 3.41567
+9.53447 5.81336 1.79208
+1.01722 6.42534 0.715
+3.58808 4.92392 7.00979
+1.21399 3.56951 6.34505
+3.50336 0.942722 2.76989
+9.45475 6.06299 0.659023
+3.44464 4.03075 6.20179
+0.949331 5.40183 8.51385
+6.41118 2.62135 2.31132
+3.58837 9.78355 7.04966
+9.2267 3.19593 2.10384
+1.83092 2.35627 3.93061
+4.97203 4.92287 1.8049
+7.4097 4.757 8.604
+0.746575 7.69038 0.89134
+8.54862 6.59135 2.18888
+2.18747 4.82994 0.761718
+5.71622 2.51116 6.85522
+6.95554 1.83187 8.31157
+7.31818 6.60081 2.63208
+0.744495 2.73429 9.86022
+5.1573 8.70962 2.53418
+2.40385 1.54057 1.9297
+3.42609 2.25856 2.28437
+6.66173 3.70851 9.70052
+7.88966 1.4343 8.91223
+3.91118 5.22253 6.29642
+9.17618 3.98313 9.82158
+4.95424 5.93521 1.3652
+

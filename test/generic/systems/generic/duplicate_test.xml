@@ -1,0 +1,50 @@
+<?xml version="1.0" ?>
+<!DOCTYPE scafacos_test SYSTEM '../scafacos_test.dtd'>
+<scafacos_test description="Testing particle duplication." name="duplicate_test">
+  <configuration box_a="1.0 0.0 0.0" box_b="0.0 1.0 0.0" box_c="0.0 0.0 1.0" epsilon="metallic" periodicity="1 1 1" decomposition="all_on_master">
+    <particle position="0.25 0.25 0.25" q=" 1.0"/>
+    <particle position="0.25 0.25 0.75" q="-1.0"/>
+    <particle position="0.25 0.75 0.25" q="-1.0"/>
+    <particle position="0.25 0.75 0.75" q=" 1.0"/>
+    <particle position="0.75 0.25 0.25" q="-1.0"/>
+    <particle position="0.75 0.25 0.75" q=" 1.0"/>
+    <particle position="0.75 0.75 0.25" q=" 1.0"/>
+    <particle position="0.75 0.75 0.75" q="-1.0"/>
+  </configuration>
+  <configuration box_a="1.0 0.0 0.0" box_b="0.0 1.0 0.0" box_c="0.0 0.0 1.0" epsilon="metallic" periodicity="1 1 1" decomposition="atomistic">
+    <duplicate times="2 2 2" rescale="1">
+      <particle position="0.25 0.25 0.25" q=" 1.0"/>
+      <particle position="0.25 0.25 0.75" q="-1.0"/>
+      <particle position="0.25 0.75 0.25" q="-1.0"/>
+      <particle position="0.25 0.75 0.75" q=" 1.0"/>
+      <particle position="0.75 0.25 0.25" q="-1.0"/>
+      <particle position="0.75 0.25 0.75" q=" 1.0"/>
+      <particle position="0.75 0.75 0.25" q=" 1.0"/>
+      <particle position="0.75 0.75 0.75" q="-1.0"/>
+    </duplicate>
+  </configuration>
+  <configuration box_a="1.0 0.0 0.0" box_b="0.0 1.0 0.0" box_c="0.0 0.0 1.0" epsilon="metallic" periodicity="1 1 1" decomposition="random">
+    <duplicate times="3 3 3" rescale="1">
+      <particle position="0.25 0.25 0.25" q=" 1.0"/>
+      <particle position="0.25 0.25 0.75" q="-1.0"/>
+      <particle position="0.25 0.75 0.25" q="-1.0"/>
+      <particle position="0.25 0.75 0.75" q=" 1.0"/>
+      <particle position="0.75 0.25 0.25" q="-1.0"/>
+      <particle position="0.75 0.25 0.75" q=" 1.0"/>
+      <particle position="0.75 0.75 0.25" q=" 1.0"/>
+      <particle position="0.75 0.75 0.75" q="-1.0"/>
+    </duplicate>
+  </configuration>
+  <configuration box_a="1.0 0.0 0.0" box_b="0.0 1.0 0.0" box_c="0.0 0.0 1.0" epsilon="metallic" periodicity="1 1 1" decomposition="domain">
+    <duplicate times="4 4 4" rescale="1">
+      <particle position="0.25 0.25 0.25" q=" 1.0"/>
+      <particle position="0.25 0.25 0.75" q="-1.0"/>
+      <particle position="0.25 0.75 0.25" q="-1.0"/>
+      <particle position="0.25 0.75 0.75" q=" 1.0"/>
+      <particle position="0.75 0.25 0.25" q="-1.0"/>
+      <particle position="0.75 0.25 0.75" q=" 1.0"/>
+      <particle position="0.75 0.75 0.25" q=" 1.0"/>
+      <particle position="0.75 0.75 0.75" q="-1.0"/>
+    </duplicate>
+  </configuration>
+</scafacos_test>

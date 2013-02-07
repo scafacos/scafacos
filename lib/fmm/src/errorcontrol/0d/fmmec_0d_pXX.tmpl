@@ -1,0 +1,14 @@
+#include "fmm_c.h"
+
+#if FMM_ERRORCONTROL_STAGE > 0
+#  if FMM_MAXNMULTIPOLES > BBB
+   const fmm_float_t fmmec_0d_pAAA[] = {
+#  include "include/fmmec_0d_pAAA.h"
+   };
+
+   const fmm_float_t *get_fmmec_0d_pAAA()
+   {
+     return fmmec_0d_pAAA;
+   }
+#  endif
+#endif

@@ -1,0 +1,16 @@
+
+PNFFT 1.0.3-alpha
+
+* Added several new windows (Kaiser-Bessel, Sinc, Bspline, BesselI0).
+* Added support for single and long double precision.
+
+
+PNFFT 1.0.2-alpha
+
+* Adopted interface according to PFFT-1.0.4-alpha release.
+
+
+PNFFT 1.0.1-alpha
+
+* Added configure script.
+* First release.

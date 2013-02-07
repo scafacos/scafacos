@@ -1,0 +1,10 @@
+ToDo
+----
+Time-stamp: <2012-04-27 18:29 olenz>
+
+* fft.[ch]: fft_destroy() (put into p3m_destroy())
+* Tune rcut
+* Tune for only cao or only grid
+* Test/tune non-cubic system
+* Make node_grid configurable
+

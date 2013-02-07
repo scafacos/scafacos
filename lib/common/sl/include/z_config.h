@@ -1,0 +1,67 @@
+/*
+ *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  
+ *  This file is part of ScaFaCoS.
+ *  
+ *  ScaFaCoS is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  ScaFaCoS is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser Public License for more details.
+ *  
+ *  You should have received a copy of the GNU Lesser Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  
+
+ *  
+ *  SL - Sorting Library, michael <dot> hofmann <at> informatik <dot> tu-chemnitz <dot> de
+ */
+
+
+#ifndef __Z_CONFIG_H__
+#define __Z_CONFIG_H__
+
+
+#ifndef HAVE_CONFIG_H
+
+
+/* features of the GNU C Compiler */
+#ifdef __GNUC__
+# ifdef __STDC_VERSION__
+#  define HAVE_ROUND
+# else
+#  define HAVE_RANDOM
+#  define HAVE_SRANDOM
+# endif
+#endif
+
+
+#ifdef __bgp__
+# define HAVE_SPI_KERNEL_INTERFACE_H
+# define HAVE_COMMON_BGP_PERSONALITY_H
+# define HAVE_COMMON_BGP_PERSONALITY_INLINES_H
+# define HAVE__BGP_PERSONALITY_T
+#endif
+
+
+#ifdef __bgq__
+# define HAVE_MPIX_H
+# define HAVE_MPIX_HARDWARE_T
+#endif
+
+
+#endif /* HAVE_CONFIG_H */
+
+
+#if !defined(HAVE_MPI_IN_PLACE) && !defined(IGNORE_MPI_IN_PLACE)
+# if defined(MPI_VERSION) && (MPI_VERSION >= 2)
+#  define HAVE_MPI_IN_PLACE
+# endif
+#endif
+
+
+#endif

@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<!DOCTYPE scafacos_test  SYSTEM '../scafacos_test.dtd'>
+<scafacos_test description="Testing particle generation." name="generate_test">
+  <configuration box_a="10.0 0.0 0.0" box_b="0.0 10.0 0.0" box_c="0.0 0.0 10.0" epsilon="metallic" periodicity="0 0 0" decomposition="atomistic">
+    <generate nlocal="100">
+      <positions type="random" shape="box"/>
+      <charges type="const" value="1.0"/>
+    </generate>
+    <generate ntotal="200">
+      <positions type="random" shape="box"/>
+      <charges type="const" value="1.0"/>
+    </generate>
+    <generate ntotal="10">
+      <positions type="hammersley" shape="box"/>
+      <charges type="const" value="1.0"/>
+    </generate>
+    <generate ntotal="10">
+      <positions type="halton" shape="box"/>
+      <charges type="const" value="1.0"/>
+    </generate>
+  </configuration>
+</scafacos_test>

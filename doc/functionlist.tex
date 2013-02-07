@@ -1,0 +1,448 @@
+\chapter{List of Functions}
+\label{cha:appendix_function_list}
+
+This chapter lists all the functions within the ScaFaCoS interface, which can be used by the user to manipulate the library.
+
+\section{Mandatory Functions}
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily]
+/* C */
+FCSResult fcs_init(FCS handle, char* method, MPI_Comm comm);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily]
+! Fortran
+function fcs_init(handle,method,comm)
+type(c_ptr)                                 :: handle
+char                                        :: method(*)
+integer(kind = c_int)                       :: comm
+type(c_ptr)                                 :: fcs_init
+\end{lstlisting}
+\caption{Function call: fcs\_init}
+\label{fig:fcs_init}
+\ufunctiontoindex{fcs\_init}
+\end{figure}
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_common_set(FCS handle, fcs_int short_range_flag, fcs_float* box_a, fcs_float* box_b, fcs_float* box_c, fcs_float* offset, fcs_int* periodicity, fcs_int total_particles);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_common_set(handle,short_range_flag,box_a,box_b,box_c,offset,periodicity,total_particles)
+type(c_ptr)                                 ::  handle
+logical                                     ::  short_range_flag
+real(kind = fcs_real_kind_isoc)             ::  box_a(3)
+real(kind = fcs_real_kind_isoc)             ::  box_b(3)
+real(kind = fcs_real_kind_isoc)             ::  box_c(3)
+real(kind = fcs_real_kind_isoc)             ::  offset(3)
+logical                                     ::  periodicity(3)
+integer(kind = fcs_integer_kind_isoc)       ::  total_parts
+type(c_ptr)                                 ::  fcs_common_set
+\end{lstlisting}
+\caption{Function call: fcs\_common\_set}
+\label{fig:fcs_common_set}
+\ufunctiontoindex{fcs\_common\_set}
+\end{figure}
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_tune (FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_tune(handle,n_locp,n_maxlocp,positions,charges)
+type(c_ptr), value                          :: handle
+integer(kind = fcs_integer_kind_isoc),value :: n_locp
+integer(kind = fcs_integer_kind_isoc),value :: n_maxlocp
+real(kind = fcs_real_kind_isoc)             :: positions(3*n_locp)
+real(kind = fcs_real_kind_isoc)             :: charges(n_locp)
+type(c_ptr)                                 :: fcs_tune
+\end{lstlisting}
+\caption{Function call: fcs\_tune}
+\label{fig:fcs_tune}
+\ufunctiontoindex{fcs\_tune}
+\end{figure}
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_run (FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_run(handle,n_locp,n_maxlocp,positions,charges,field,potential)
+type(c_ptr), value                          :: handle
+integer(kind = fcs_integer_kind_isoc),value :: n_locp
+integer(kind = fcs_integer_kind_isoc),value :: n_maxlocp
+real(kind = fcs_real_kind_isoc)             :: positions(3*n_locp)
+real(kind = fcs_real_kind_isoc)             :: charges(n_locp)
+real(kind = fcs_real_kind_isoc)             :: field(3*n_locp)
+real(kind = fcs_real_kind_isoc)             :: potential(n_locp)
+type(c_ptr)                                 :: fcs_run
+\end{lstlisting}
+\caption{Function call: fcs\_run}
+\label{fig:fcs_run}
+\ufunctiontoindex{fcs\_run}
+\end{figure}
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_destroy (FCS handle);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_destroy(handle)
+type(c_ptr), value                          :: handle
+type(c_ptr)                                 :: fcs_run
+\end{lstlisting}
+\caption{Function call: fcs\_destroy}
+\label{fig:fcs_destroy}
+\ufunctiontoindex{fcs\_destroy}
+\end{figure}
+\FloatBarrier
+\section{Generic Functions}
+
+\FloatBarrier
+\subsection{Errorhandling}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+fcs_int fcsResult_getReturnCode (FCSResult err);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcsResult_getReturnCode(res)
+type(c_ptr)                            ::  res
+integer(kind = fcs_integer_kind_isoc)  ::  fcsResult_getReturnCode
+\end{lstlisting}
+\caption{Function call: fcsResult\_getReturnCode}
+\label{fig:fcsResult_getReturnCode}
+\ufunctiontoindex{fcsResult\_getReturnCode}
+\end{figure}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+const char* fcsResult_getErrorMessage (FCSResult err);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcsResult_getErrorMessage(res)
+type(c_ptr)                                     ::  res
+character(kind = c_char, len = MESSAGE_LENGTH)  ::  fcsResult_getErrorMessage
+\end{lstlisting}
+\caption{Function call: fcsResult\_getErrorMessage}
+\label{fig:fcsResult_getErrorMessage}
+\ufunctiontoindex{fcsResult\_getErrorMessage}
+\end{figure}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+const char* fcsResult_getErrorSource (FCSResult err);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcsResult_getErrorSource(res)
+type(c_ptr)                                     ::  res
+character(kind = c_char, len = MESSAGE_LENGTH)  ::  fcsResult_getErrorSource
+\end{lstlisting}
+\caption{Function call: fcsResult\_getErrorSource}
+\label{fig:fcsResult_getErrorSource}
+\ufunctiontoindex{fcsResult\_getErrorSource}
+\end{figure}
+
+\FloatBarrier
+\subsection{Getters and Setters}
+
+
+
+\FloatBarrier
+\subsection{Near Field Computations}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_compute_near_field (FCS handle, fcs_float dist, fcs_float *field);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_compute_near_field(handle,dist,field)
+type(c_ptr)                                     ::  handle
+real(kind = fcs_real_kind_isoc)                 ::  dist
+real(kind = fcs_real_kind_isoc), dimension(3)   ::  field
+type(c_ptr)                                     ::  fcs_compute_near_field
+\end{lstlisting}
+\caption{Function call: fcs\_compute\_near\_field}
+\label{fig:fcs_compute_near_field}
+\ufunctiontoindex{fcs\_compute\_near\_field}
+\end{figure}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_compute_near_potential (FCS handle, fcs_float dist, fcs_float *pot);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_compute_near_potential(handle,dist,pot)
+type(c_ptr)                                     ::  handle
+real(kind = fcs_real_kind_isoc)                 ::  dist
+real(kind = fcs_real_kind_isoc)                 ::  pot
+type(c_ptr)                                     ::  fcs_compute_near_potential
+\end{lstlisting}
+\caption{Function call: fcs\_compute\_near\_potential}
+\label{fig:fcs_compute_near_potential}
+\ufunctiontoindex{fcs\_compute\_near\_potential}
+\end{figure}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_compute_near (FCS handle, fcs_float dist, fcs_float *pot, fcs_float *field);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_compute_near(handle,dist,pot,field)
+type(c_ptr)                                     ::  handle
+real(kind = fcs_real_kind_isoc)                 ::  dist
+real(kind = fcs_real_kind_isoc)                 ::  pot
+real(kind = fcs_real_kind_isoc), dimension(3)   ::  field
+type(c_ptr)                                     ::  fcs_compute_near
+\end{lstlisting}
+\caption{Function call: fcs\_compute\_near}
+\label{fig:fcs_compute_near}
+\ufunctiontoindex{fcs\_compute\_near}
+\end{figure}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_method_has_near (FCS handle, fcs_int *has_near);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_method_has_near(handle,has_near)
+type(c_ptr)                                     ::  handle
+real(kind = fcs_real_kind_isoc)                 ::  dist
+real(kind = fcs_real_kind_isoc), dimension(3)   ::  field
+type(c_ptr)                                     ::  fcs_compute_near_field
+\end{lstlisting}
+\caption{Function call: fcs\_method\_has\_near}
+\label{fig:fcs_method_has_near}
+\ufunctiontoindex{fcs\_method\_has\_near}
+\end{figure}
+
+\todo{fcs\_method\_has\_near fehlt!}
+
+\FloatBarrier
+\subsection{Output}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+void fcs_printHandle (FCS handle);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+subroutine fcs_printHandle(handle)
+type(c_ptr)                                     ::  handle
+\end{lstlisting}
+\caption{Function call: fcs\_printHandle}
+\label{fig:fcs_printHandle}
+\ufunctiontoindex{fcs\_printHandle}
+\end{figure}
+
+
+\FloatBarrier
+\subsection{Parser}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_parser (FCS handle, const char* parse_string);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_printHandle(handle,parse_string)
+type(c_ptr)                                     ::  handle
+character(kind = c_char, len = *)               ::  parse_string
+type(c_ptr)                                     ::  fcs_parser
+\end{lstlisting}
+\caption{Function call: fcs\_parser}
+\label{fig:fcs_parser}
+\ufunctiontoindex{fcs\_parser}
+\end{figure}
+
+\FloatBarrier
+\subsection{Virial}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_require_virial (FCS handle, fcs_int flag);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_require_virial(handle,flag)
+type(c_ptr)                                     ::  handle
+logical                                         ::  dist
+type(c_ptr)                                     ::  fcs_require_virial
+\end{lstlisting}
+\caption{Function call: fcs\_require\_virial}
+\label{fig:fcs_require_virial}
+\ufunctiontoindex{fcs\_require\_virial}
+\end{figure}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_get_virial (FCS handle, fcs_float* virial);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_get_virial(handle,virial)
+type(c_ptr)                                     ::  handle
+real(kind = fcs_real_kind_isoc), dimension(9)   ::  dist
+type(c_ptr)                                     ::  fcs_require_virial
+\end{lstlisting}
+\caption{Function call: fcs\_get\_virial}
+\label{fig:fcs_get_virial}
+\ufunctiontoindex{fcs\_get\_virial}
+\end{figure}
+
+\FloatBarrier
+\section{Direct Solver specific Functions}
+
+
+\FloatBarrier
+\subsection{Getters and Setters}
+
+\FloatBarrier
+\section{Ewald Solver specific Functions}
+
+
+\FloatBarrier
+\subsection{Getters and Setters}
+
+\FloatBarrier
+\section{FMM Solver specific Functions}
+
+
+\FloatBarrier
+\subsection{Getters and Setters}
+
+\FloatBarrier
+\section{MEMD Solver specific Functions}
+
+
+\FloatBarrier
+\subsection{Getters and Setters}
+
+\FloatBarrier
+\section{MMM1D Solver specific Functions}
+
+
+\FloatBarrier
+\subsection{Getters and Setters}
+
+\FloatBarrier
+\section{MMM2D Solver specific Functions}
+
+
+\FloatBarrier
+\subsection{Getters and Setters}
+
+\FloatBarrier
+\section{PEPC Solver specific Functions}
+
+
+\FloatBarrier
+\subsection{Getters and Setters}
+
+\FloatBarrier
+\section{PP3MG Solver specific Functions}
+
+
+\FloatBarrier
+\subsection{Getters and Setters}
+
+\FloatBarrier
+\section{P2NFFT Solver specific Functions}
+
+
+\FloatBarrier
+\subsection{Getters and Setters}
+
+\FloatBarrier
+\section{P3M Solver specific Functions}
+
+\FloatBarrier
+\subsection{Getters and Setters}
+
+\FloatBarrier
+\subsection{Near Field Computations}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_p3m_compute_near_field (FCS handle, fcs_float dist, fcs_float *field);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_p3m_compute_near_field(handle,dist,field)
+type(c_ptr)                                     ::  handle
+real(kind = fcs_real_kind_isoc)                 ::  dist
+real(kind = fcs_real_kind_isoc), dimension(3)   ::  field
+type(c_ptr)                                     ::  fcs_p3m_compute_near_field
+\end{lstlisting}
+\caption{Function call: fcs\_p3m\_compute\_near\_field}
+\label{fig:fcs_p3m_compute_near_field}
+\ufunctiontoindex{fcs\_p3m\_compute\_near\_field}
+\end{figure}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_p3m_compute_near_potential (FCS handle, fcs_float dist, fcs_float *pot);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_p3m_compute_near_potential(handle,dist,pot)
+type(c_ptr)                                     ::  handle
+real(kind = fcs_real_kind_isoc)                 ::  dist
+real(kind = fcs_real_kind_isoc)                 ::  pot
+type(c_ptr)                                     ::  fcs_p3m_compute_near_potential
+\end{lstlisting}
+\caption{Function call: fcs\_p3m\_compute\_near\_potential}
+\label{fig:fcs_p3m_compute_near_potential}
+\ufunctiontoindex{fcs\_p3m\_compute\_near\_potential}
+\end{figure}
+
+\begin{figure}[htb]
+\begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+/* C */
+FCSResult fcs_p3m_compute_near (FCS handle, fcs_float dist, fcs_float *pot, fcs_float *field);
+\end{lstlisting}
+\begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
+! Fortran
+function fcs_p3m_compute_near(handle,dist,pot,field)
+type(c_ptr)                                     ::  handle
+real(kind = fcs_real_kind_isoc)                 ::  dist
+real(kind = fcs_real_kind_isoc)                 ::  pot
+real(kind = fcs_real_kind_isoc), dimension(3)   ::  field
+type(c_ptr)                                     ::  fcs_p3m_compute_near
+\end{lstlisting}
+\caption{Function call: fcs\_p3m\_compute\_near}
+\label{fig:fcs_p3m_compute_near}
+\ufunctiontoindex{fcs\_p3m\_compute\_near}
+\end{figure}
+
+\FloatBarrier
+\section{VMG Solver specific Functions}
+
+\FloatBarrier
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: ug.tex
+%%% End: 

@@ -1,0 +1,2 @@
+# Blue Gene/P at ALCF:
+./configure CC=mpixlc_r CFLAGS='-g -O0' --prefix=$PWD/install-dir --host=powerpc-bgp-linux --with-spi-include=/bgsys/drivers/ppcfloor/arch/include --with-spi-lib=/bgsys/drivers/ppcfloor/runtime/SPI  

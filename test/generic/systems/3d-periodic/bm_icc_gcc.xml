@@ -1,0 +1,131 @@
+<benchmarks>
+  <timings
+      method="P3M-ik, gcc"
+      charges="102900"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,2e-4
+    </parameters>
+    <tuned-parameters>
+r_cut=4.481387, grid=128, cao=5, alpha=0.639184
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    1.464425e-04
+          abs_max_field_error =    5.763636e-04
+      abs_rms_potential_error =    1.184391e-04
+      abs_max_potential_error =    3.190859e-04
+             abs_energy_error =    1.750504e+00
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    3.409608e-05
+          rel_max_field_error =    1.341942e-04
+      rel_rms_potential_error =    5.497415e-05
+      rel_max_potential_error =    1.481055e-04
+             rel_energy_error =    3.426482e-05
+    </errors>
+    <data>
+      4096	3.934813e-02
+      2048	4.415703e-02
+      1024	1.902699e-02
+      512	1.544619e-02
+      256	2.026391e-02
+      128	3.399611e-02
+      64	6.587386e-02
+      32	1.079750e-01
+      16	2.066040e-01
+      8	 	4.047430e-01
+      4	 	7.749732e-01
+      2	 	1.546903e+00
+      1	 	2.939212e+00
+    </data>
+  </timings>
+
+  <timings
+      method="P3M-adi, gcc"
+      charges="102900"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,1e-3
+    </parameters>
+    <tuned-parameters>
+r_cut=4.481390, grid=64, cao=4, alpha=0.573076
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    2.827248e-03
+          abs_max_field_error =    6.713180e-03
+      abs_rms_potential_error =    9.626099e-04
+      abs_max_potential_error =    2.901049e-03
+             abs_energy_error =    2.622363e+01
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    6.583797e-04
+          rel_max_field_error =    1.563294e-03
+      rel_rms_potential_error =    4.468844e-04
+      rel_max_potential_error =    1.346790e-03
+             rel_energy_error =    5.133082e-04
+
+             total_energy_ref =    5.108749e+04
+                 total_energy =    5.106127e+04
+    </errors>
+    <data>
+      4096      2.077341e-01
+      2048	1.420672e-01
+      1024	1.069316e-01
+      512	6.213078e-02
+      256	3.825893e-02
+      128	2.997890e-02
+      64	4.008021e-02
+      32	6.003847e-02
+      16	1.062964e-01
+      8	 	1.942862e-01
+      4	 	3.653916e-01
+      2	 	7.041888e-01
+      1	 	1.338435e+00
+    </data>
+  </timings>
+
+  <timings
+      method="P3M-adi, icc"
+      charges="102900"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,1e-3
+    </parameters>
+    <tuned-parameters>
+r_cut=4.481390, grid=64, cao=4, alpha=0.573076
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    2.827248e-03
+          abs_max_field_error =    6.713180e-03
+      abs_rms_potential_error =    9.626099e-04
+      abs_max_potential_error =    2.901049e-03
+             abs_energy_error =    2.622363e+01
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    6.583797e-04
+          rel_max_field_error =    1.563294e-03
+      rel_rms_potential_error =    4.468844e-04
+      rel_max_potential_error =    1.346790e-03
+             rel_energy_error =    5.133082e-04
+
+             total_energy_ref =    5.108749e+04
+                 total_energy =    5.106127e+04
+    </errors>
+    <data>
+      512	1.002311e-01
+      256	4.931817e-02
+      128	3.499112e-02 
+      64	4.064398e-02
+      32	5.763350e-02
+      16	9.848361e-02
+      8	 	1.782836e-01
+      4	 	3.379151e-01
+      2	 	6.530642e-01
+      1	 	1.231009e+00
+    </data>
+  </timings>
+
+</benchmarks>

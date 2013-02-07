@@ -1,0 +1,104 @@
+\chapter{Compling and installing \fcs}
+\label{cha:compiling}
+
+\index{Compilation}
+\index{Installation}
+\index{SVN}
+
+\todo[inline]{\LaTeX this code}
+\begin{verbatim}
+0) If you are building the code from the SVN tree, read README-SVN first.
+
+1) Compile:
+   a) Run './configure' with suitable options.  See below for common setups.
+      You can pass '--enable-fcs-solvers=...' to enable all or only some solvers.
+      You can pass '--disable-fcs-SOLVER' to disable a particular solver, e.g.,
+      '--disable-fcs-vmg'.
+      You can have build trees separate from the source tree, e.g.:
+        mkdir ../build-debug
+        cd ../build-debug
+        ../scafacos_fcs/configure -C CFLAGS=-g FCFLAGS=-g [...]
+      See './configure --help' and './configure --help=recursive' for all
+      supported options.
+      The -C aka. --config-cache option greatly speeds up configuring all the
+      subdirectories.
+   b) Run 'make'.  Parallel make should work.
+
+2) run test-programs:
+   a) Run 'make check'.  This tries to be smart about finding out how to
+      start MPI jobs on your system.  If the chosen method is wrong, you
+      might have to edit test/defs.in and/or rerun configure with an argument
+      of MPIEXEC=... set to the MPI invocation program on your system.
+
+If that doesn't work, then you can alternatively do the following:
+
+   b_1) cd test/c (if you are a c-programmer) or
+   b_2) cd test/fortran (if you intend to use fortran)
+   c) choose a method you want to run
+   d) $mpi_call_on_my_machine ./test_$method ../inp_data/$method/$method_conf.in
+
+3) Sources of the fcs-interface are located in $INSTALL_DIR/src
+
+4) Sources of the ScaFaCos methods can be found in INSTALL_DIR/lib
+
+5) Optionally run 'make install' to install the library and header files.
+
+6) To find out compiler and linker flags to use in packages linking against FCS,
+   you can use
+      pkg-config --cflags scafacos-fcs
+      pkg-config --libs scafacos-fcs
+
+   if you have the pkg-config package installed.
+
+Configure setups for common systems
+===================================
+
+Generally, if you set both MPICC and CC, or MPICXX and CXX, or MPIFC and FC,
+you may need to ensure that compatible compiler drivers are used.
+
+You may want to add -C to cache configure test results; this speeds up the
+recursive configure scripts.
+
+GNU/Linux
+---------
+It should work to use one of
+
+  ./configure
+  ./configure FCFLAGS=-fno-underscoring
+
+depending on which ABI you need to maintain with respect to other Fortran code.
+If you are using gfortran, you need version 4.3 or newer for Fortran 2003 support.
+
+
+BlueGene
+--------
+The following alternative configurations should work (the --build and --host
+arguments ensure configure enables cross-compilation mode):
+
+  ./configure --build=powerpc64-bgp-linux-gnu --host=powerpc-ibm-linux \
+     MPICC=mpixlc_r MPIFC=mpixlf2003_r MPICXX=mpixlcxx_r CFLAGS='-qfullpath -O2' \
+     FCFLAGS='-qfullpath -qarch=450 -qtune=450 -qxlf2003=nostopexcept -O3 -qipa -qipa=inline=key2addr'
+
+  ./configure --build=powerpc64-bgp-linux-gnu --host=powerpc-ibm-linux \
+     MPICC=mpixlc_r MPIFC=mpixlf2003_r MPICXX=mpixlcxx_r \
+     CFLAGS='-g -qfullpath -qdbxextra -qcheck' FCFLAGS='-g -qfullpath'
+
+  ./configure --build=powerpc64-bgp-linux-gnu --host=powerpc-ibm-linux \
+     MPICC=mpixlc_r MPICXX=mpixlcxx_r MPIFC=mpixlf2003_r \
+     CPPFLAGS='-I/bgsys/drivers/ppcfloor/comm/include -I/bgsys/drivers/ppcfloor/arch/include' \
+     CFLAGS='-O3 -g -qmaxmem=-1 -qarch=450 -qtune=450' \
+     FCFLAGS='-O3 -g -qmaxmem=-1 -I/bgsys/drivers/ppcfloor/include -qarch=450 -qtune=450' \
+     LDFLAGS='-L/bgsys/drivers/ppcfloor/lib -L/bgsys/local/lapack/lib -L/bgsys/local/lib' \
+     BLAS_LIBS='-lesslbg -lxlf90_r'
+
+Juropa
+------
+
+Building with the Intel compiler suite should work:
+
+  ./configure MPICC=mpicc MPICXX=mpicxx MPIFC=mpif90
+\end{verbatim}
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: ug.tex
+%%% End: 

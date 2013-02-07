@@ -1,0 +1,223 @@
+/*
+  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+  
+  This file is part of ScaFaCoS.
+  
+  ScaFaCoS is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Lesser Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  ScaFaCoS is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Lesser Public License for more details.
+  
+  You should have received a copy of the GNU Lesser Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+#ifndef __GRIDSORT_H__
+#define __GRIDSORT_H__
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#include <mpi.h>
+
+
+/**
+ * @brief gridsort index type
+ */
+typedef long long fcs_gridsort_index_t;
+
+/**
+ * @brief gridsort object structure
+ */
+typedef struct _fcs_gridsort_t
+{
+  fcs_float box_base[3], box_a[3], box_b[3], box_c[3];
+  fcs_int periodicity[3];
+
+  fcs_float lower_bounds[3], upper_bounds[3];
+
+  fcs_int local_nzslices, ghost_nzslices, max_ghost_nzslices;
+
+  fcs_int noriginal_particles;
+  fcs_float *original_positions, *original_charges;
+
+  fcs_int nsorted_particles;
+  fcs_float *sorted_positions, *sorted_charges;
+  fcs_gridsort_index_t *sorted_indices;
+
+  fcs_int nsorted_real_particles, nsorted_ghost_particles;
+
+  fcs_float sub_box_base[3], sub_box_a[3], sub_box_b[3], sub_box_c[3];
+
+} fcs_gridsort_t;
+
+
+#define GRIDSORT_GHOST_BASE              0x8000000000000000LL
+
+#define GRIDSORT_IS_GHOST(_x_)           ((_x_) < 0)
+
+#define GRIDSORT_PERIODIC_BITS           10
+#define GRIDSORT_PERIODIC_CONST(_v_)     (_v_##LL)
+#define GRIDSORT_PERIODIC_MASK           ((GRIDSORT_PERIODIC_CONST(1) << GRIDSORT_PERIODIC_BITS) - GRIDSORT_PERIODIC_CONST(1))
+#define GRIDSORT_PERIODIC_SET(_v_, _x_)  (((fcs_gridsort_index_t) (_v_)) << ((_x_) * GRIDSORT_PERIODIC_BITS))
+#define GRIDSORT_PERIODIC_GET(_v_, _x_)  (((_v_) >> ((_x_) * GRIDSORT_PERIODIC_BITS)) & GRIDSORT_PERIODIC_MASK)
+
+
+/**
+ * @brief create gridsort object
+ * @param gs fcs_gridsort_t* gridsort object
+ */
+void fcs_gridsort_create(fcs_gridsort_t *gs);
+
+/**
+ * @brief destroy gridsort object
+ * @param gs fcs_gridsort_t* gridsort object
+ */
+void fcs_gridsort_destroy(fcs_gridsort_t *gs);
+
+/**
+ * @brief set particle system properties
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param box_base fcs_float* origin of the system box
+ * @param box_a fcs_float* 1st base vector of the system box
+ * @param box_b fcs_float* 2nd base vector of the system box
+ * @param box_c fcs_float* 3rd base vector of the system box
+ * @param periodicity fcs_int* periodicity of the system, if NULL then periodicities of the (cartesian) communicator are used
+ */
+void fcs_gridsort_set_system(fcs_gridsort_t *gs, fcs_float *box_base, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_int *periodicity);
+
+/**
+ * @brief set lower and upper bounds of the local process within in the grid
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param lower_bounds fcs_float* lower bound of the local process within the grid in each dimension
+ * @param upper_bounds fcs_float* upper bound of the local process within the grid in each dimension
+ */
+void fcs_gridsort_set_bounds(fcs_gridsort_t *gs, fcs_float *lower_bounds, fcs_float *upper_bounds);
+
+/**
+ * @brief set number of zslices per process and the number of ghost zslices
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param local_nzslices fcs_int local number of zslices on each process
+ * @param ghost_nzslices fcs_int number of zslices used to create ghost particles
+ */
+void fcs_gridsort_set_zslices(fcs_gridsort_t *gs, fcs_int local_nzslices, fcs_int ghost_nzslices);
+
+/**
+ * @brief set information of particles to sort
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param nparticles fcs_int local number of particles
+ * @param positions fcs_float* array of local particle positions
+ * @param charges fcs_float* array of local particle charges
+ */
+void fcs_gridsort_set_particles(fcs_gridsort_t *gs, fcs_int nparticles, fcs_float *positions, fcs_float *charges);
+
+/**
+ * @brief get information of sorted particles
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param nparticles fcs_int* pointer to local number of particles (NULL if not required)
+ * @param positions fcs_float** pointer to local array of particle positions (NULL if not required)
+ * @param charges fcs_float** pointer to local array of particle charges (NULL if not required)
+ * @param indices fcs_gridsort_index_t** pointer to local array of particle indices (NULL if not required)
+ */
+void fcs_gridsort_get_sorted_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_float **positions, fcs_float **charges, fcs_gridsort_index_t **indices);
+
+/**
+ * @brief get information of real (non-ghost) particles after sorting and separating (with fcs_gridsort_separate_ghosts)
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param nparticles fcs_int* pointer to real number of particles (NULL if not required)
+ * @param positions fcs_float** pointer to real array of particle positions (NULL if not required)
+ * @param charges fcs_float** pointer to real array of particle charges (NULL if not required)
+ * @param indices fcs_gridsort_index_t** real pointer to array of prickle indices (NULL if not required)
+ */
+void fcs_gridsort_get_real_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_float **positions, fcs_float **charges, fcs_gridsort_index_t **indices);
+
+/**
+ * @brief get information of ghost particles after sorting and separating (with fcs_gridsort_separate_ghosts)
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param nparticles fcs_int* pointer to ghost number of particles (NULL if not required)
+ * @param positions fcs_float** pointer to ghost array of particle positions (NULL if not required)
+ * @param charges fcs_float** pointer to ghost array of particle charges (NULL if not required)
+ * @param indices fcs_gridsort_index_t** ghost pointer to array of prickle indices (NULL if not required)
+ */
+void fcs_gridsort_get_ghost_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_float **positions, fcs_float **charges, fcs_gridsort_index_t **indices);
+
+/**
+ * @brief sort particles to the process grid and create ghost particles
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param ghost_range fcs_float range around process borders where ghost particles should be created
+ * @param comm MPI_Comm Cartesian communicator specifying the process grid
+ */
+fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI_Comm comm);
+
+/**
+ * @brief separate real (non-ghost) and ghost particles after sorting
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param real_nparticles fcs_int* pointer to real number of particles
+ * @param ghost_nparticles fcs_int* pointer to ghost number of particles
+ */
+void fcs_gridsort_separate_ghosts(fcs_gridsort_t *gs, fcs_int *real_nparticles, fcs_int *ghost_nparticles);
+
+/**
+ * @brief separate all particles (real and ghosts) according to their z-coordinate into equidistant slices, the slices are ordered according to their z coordinates, the number of local and ghost slices has to be set with fcs_gridsort_set_zslices
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param zslices_low_ghost_nparticles fcs_int* pointer to an array to return the number of ghost particles in each lower slice (can be NULL, if not NULL, then the array has to be large enough to hold ghost_nzslices entries, see fcs_gridsort_set_zslices)
+ * @param zslices_real_nparticles fcs_int* pointer to an array to return the number of real particles in each slice (can be NULL, if not NULL, then the array has to be large enough to hold local_nzslices entries, see fcs_gridsort_set_zslices)
+ * @param zslices_high_ghost_nparticles fcs_int* pointer to an array to return the number of ghost particles in each lower slice (can be NULL, if not NULL, then the array has to be large enough to hold ghost_nzslices entries, see fcs_gridsort_set_zslices)
+ */
+void fcs_gridsort_separate_zslices(fcs_gridsort_t *gs, fcs_int *zslices_low_ghost_nparticles, fcs_int *zslices_real_nparticles, fcs_int *zslices_high_ghost_nparticles);
+
+/**
+ * @brief sort particles randomly
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param comm MPI_Comm communicator
+ */
+fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm);
+
+/**
+ * @brief unfold positions of ghost particles created at periodic boundaries
+ * @param nparticles fcs_int local number of particles
+ * @param indices fcs_gridsort_index_t* array of local particle indices
+ * @param positions fcs_float* array of local particle positions
+ * @param box_a fcs_float* 1st base vector of the system box
+ * @param box_b fcs_float* 2nd base vector of the system box
+ * @param box_c fcs_float* 3rd base vector of the system box
+ */
+void fcs_gridsort_unfold_periodic_particles(fcs_int nparticles, fcs_gridsort_index_t *indices, fcs_float *positions, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c);
+ 
+/**
+ * @brief sort particle information back into their original order
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param sorted_field fcs_float* array of field values to sort (can be NULL)
+ * @param sorted_potentials fcs_float* array of potential values to sort (can be NULL)
+ * @param original_field fcs_float* array to store sorted field values (can be NULL)
+ * @param original_potentials fcs_float* array to store sorted potential values (can be NULL)
+ * @param set_values fcs_int set (if set_values is non-zero) or add (if set_values is zero) field and potential values to the given arrays
+ * @param comm MPI_Comm communicator to use
+ */
+fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
+                                   fcs_float *sorted_field, fcs_float *sorted_potentials,
+                                   fcs_float *original_field, fcs_float *original_potentials,
+                                   fcs_int set_values, MPI_Comm comm);
+
+/**
+ * @brief free arrays allocated by fcs_gridsort_sort_forward (all arrays returned by getters become invalid)
+ * @param gs fcs_gridsort_t* gridsort object
+ */
+void fcs_gridsort_free(fcs_gridsort_t *gs);
+
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif /* __GRIDSORT_H__ */

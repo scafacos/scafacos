@@ -1,0 +1,8 @@
+This is the library ScaFaCoS ("Scalable Fast Coulomb Solver").
+
+ScaFaCoS is a parallel library for solving the Coulomb problem. It
+provides various state-of-the-art methods with a common interface.
+
+The User's Guide of the ScaFaCoS library is found in the file 
+
+  doc/manual.pdf

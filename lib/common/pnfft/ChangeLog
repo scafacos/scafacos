@@ -1,0 +1,31 @@
+2011-10-04  Michael Pippig  <michael.pippig@mathematik.tu-chemnitz.de>
+
+	* kernel/ndft-parallel.c: correct sign of gradient PNFFT
+
+2011-09-28  Michael Pippig  <michael.pippig@mathematik.tu-chemnitz.de>
+
+	* multiple files: add support for gradient PNFFT
+
+2011-09-27  Michael Pippig  <michael.pippig@mathematik.tu-chemnitz.de>
+
+	* pnfft.h, timer.c, configure.ac: ommit usage of restrict keyword
+
+2011-04-08  Michael Pippig  <michael.pippig@mathematik.tu-chemnitz.de>
+
+	* configure.ac: removed commented lines
+
+2011-04-07  Michael Pippig  <michael.pippig@mathematik.tu-chemnitz.de>
+
+	* Finished autotools for PNFFT
+	* m4/ax_lib_fftw3.m4: fixed bug while trying libfcs_fftw3_threads
+	* m4/ax_lib_pfft.m4:  fixed several bugs
+
+	* api/pnfft.h: fixed included headers
+
+	* api/pnfft.h: corrected GPL headers in all files
+
+2011-04-06  Michael Pippig  <michael.pippig@mathematik.tu-chemnitz.de>
+
+	* First setup of autotools for PNFFT, bootstrap.sh works 
+
+

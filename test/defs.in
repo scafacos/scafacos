@@ -1,0 +1,129 @@
+#! /bin/sh
+
+if test "x$IGNORE_RUNCHECKS" != xyes ; then
+  test "x$RUNCHECKS" = xno && exit 0
+fi
+
+# Helper script for more or less portable MPI process startup,
+# to be sourced by the test scripts.
+
+MPIEXEC='@MPIEXEC@'
+MPIEXEC_MINUS_N='@MPIEXEC_MINUS_N@'
+
+# start_mpi_job [OPTIONS].. PROGRAM [PROGRAM-OPTIONS]..
+# Available options:
+#   -np NPROC     start a total number of NPROC processes
+#   -nodes NNODES allocate NNODES
+#   -ppn PPN      use PPN processes per node
+# If you specify all three options -np -nodes -ppn, the
+# relation NPROC = NNODES * PPN must hold.
+start_mpi_job ()
+{
+  nproc=
+  nnodes=
+  ppn=
+  for args
+  do
+    case $1 in
+      -np)
+        nproc=$2
+       	shift ;;
+      -nodes)
+        nnodes=$2
+       	shift ;;
+      -ppn)
+        ppn=$2
+       	shift ;;
+      *)
+        break ;;
+    esac
+    shift
+  done
+
+  # Compute missing arguments.
+  case $nproc:$nnodes:$ppn in
+    ::)   nproc=1 nnodes=1 ppn=1 ;;
+    ?*::) nnodes=$nproc ppn=1 ;;
+    :?*:) nproc=$nnodes ppn=1 ;;
+    ::?*) nproc=$ppn nnodes=1 ;;
+    ?*:?*:) ppn=$((nproc / nnodes)) ;;
+    ?*::*?) nnodes=$((nproc / ppn));;
+    :?*:?*) nproc=$((nnodes * ppn));;
+    ?*:?*:?*)
+      if test $((ppn * nnodes)) -ne $nproc; then
+	echo "number of processes $nproc does not equal $nnodes nodes times $ppn procs per node" >&2
+	return 1
+      fi
+      ;;
+  esac
+
+  # Now implement the different per-system methods for testing.
+  # Try to keep a general method as catch-all at the end, and add special cases before.
+  # For very system-specific cases, match against domain names to avoid breaking
+  # unrelated systems.
+  case $MPIEXEC:`hostname`:`(hostname -d || domainname) 2>/dev/null` in
+  msub:*:juropa | */msub:*:juropa)		# JUROPA
+   # On JUROPA, bump ppn up to 8 if we can.
+   while test $ppn -le 4 && test $nnodes -gt 1
+   do
+     ppn=$((ppn * 2))
+     nnodes=$((nnodes / 2))
+   done
+
+   jobscript=mpi_job.$$
+   cat >"$jobscript" <<EOF
+#!/bin/sh -x
+#MSUB -l nodes=$nnodes:ppn=$ppn
+#MSUB -l walltime=0:10:00
+#MSUB -e `pwd`/mpi_job.$$.stderr.txt
+#MSUB -o `pwd`/mpi_job.$$.stdout.txt
+### start of jobscript
+
+cd \$PBS_O_WORKDIR
+echo "workdir: \$PBS_O_WORKDIR"
+echo "running on $nproc cpus ..."
+mpiexec -np $nproc $*
+EOF
+   # -K waits for job to complete.
+   msub -K "$jobscript"
+   ret=$?
+   rm -f "$jobscript"
+   return $?
+   ;;
+
+  qsub:*:himalaya | */qsub:*:himalaya)		# Himalaya
+   jobscript=mpi_job.$$
+   cat >"$jobscript" <<EOF
+#!/bin/sh -x
+#PBS -m ae
+#PBS -M `id -un`@`hostname -f`
+#PBS -d `pwd`
+#PBS -l mem=300mb
+#PBS -q quad
+#PBS -l nodes=$nnodes:ppn=$ppn
+#PBS -l walltime=0:10:00
+#PBS -e `pwd`/mpi_job.$$.stderr.txt
+#PBS -o `pwd`/mpi_job.$$.stdout.txt
+### start of jobscript
+
+echo "running on $nproc cpus ..."
+mpirun --mca btl mx,sm,self --bind-to-core -np $nproc $*
+EOF
+   qsub "$jobscript"
+   ret=$?
+   rm -f "$jobscript"
+   return $?
+   ;;
+
+  *:*:*)				# Others (Jugene, workstations with MPICH, ...)
+    if test -n "$nproc" && test -n "$MPIEXEC_MINUS_N"; then
+      $MPIEXEC $MPIEXEC_MINUS_N$nproc "$@"
+      ret=$?
+    else
+      $MPIEXEC "$@"
+      ret=$?
+    fi
+    return $ret
+    ;;
+  esac
+}

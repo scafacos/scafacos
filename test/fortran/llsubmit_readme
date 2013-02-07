@@ -1,0 +1,8 @@
+#submit batch-script
+llsubmit test_pp3mg.ll
+
+# view status
+ llq -u username
+
+#cancel job execution
+llcancel jugene$jobid

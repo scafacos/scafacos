@@ -1,0 +1,49 @@
+\chapter{FMM -- Fast Multipole Method}
+\label{cha:fmm}
+
+\begin{verbatim}
+Parameters
+
+  - absrel: absolute or relative energy errors 
+       0 = relative energy error 10^{-3} (default) 
+       1 = absolute energy error deltaE 
+       2 = relative energy error deltaE 
+
+  - deltaE: relative or absolute energy error, depending on absrel
+       absrel = 1: absolute total energy error 
+       absrel = 2: relative energy error, 10^{-1}...10^{-14}
+
+  - dipole_correction: type of dipole correction to use (explain!)
+      currently ignored (not handed over by interface)
+      -1 = no dipole correction
+       0 = standard dipole correction
+       1 = dipole correction activated
+       default value?
+
+Box Shape / Periodicity
+
+  - open boundaries:               full support for any box shape
+
+  - periodic or mixed boundaries:  support limited to cubic boxes;
+                                   however, for mixed boundaries, 
+                                   edges in non-periodic directions 
+                                   may be shorter than periodic edges
+
+Can Delegate Nearfield to MD:  no
+
+Bugs / Missing Features
+
+  - only backup version of virial tensor with periodic boundaries
+  - can we lift the requirements for periodic or mixed boundaries
+    to approximately cubic boxes, like for PEPC?
+  - does not compile with Intel compiler
+\end{verbatim}
+
+\solvertoindex{Fast Multipole Method}
+\solvertoindex{FMM}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: ug.tex
+%%% End: 
+

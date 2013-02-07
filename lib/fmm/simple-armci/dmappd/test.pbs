@@ -1,0 +1,18 @@
+#!/bin/bash
+#PBS -N test_dmapp
+#PBS -l mppwidth=2
+#PBS -l mppnppn=1
+#PBS -l walltime=0:30:00
+#PBS -joe
+#PBS -V
+####PBS -q debug
+
+export XT_SYMMETRIC_HEAP_SIZE=2000M
+
+cd ${PBS_O_WORKDIR}
+
+#aprun -n 2 -N 1 ./test_dmapp_amo.x
+#aprun -n 2 -N 1 ./test_dmapp_get.x
+#aprun -n 2 -N 1 ./test_dmapp_put.x
+aprun -n 2 -N 1 ./test_dmapp_get_bw.x
+aprun -n 2 -N 1 ./test_dmapp_put_bw.x

@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: PNFFT
+Description: Parallel nonequispaced fast Fourier transform library
+Version: @VERSION@
+Requires: fftw3.3alpha1, pfft1.0.3alpha
+Libs: -L${libdir} -lpnfft
+Cflags: -I${includedir}

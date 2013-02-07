@@ -1,0 +1,55 @@
+<!ELEMENT scafacos_test (method?, configuration*) >
+<!ELEMENT method (param*) >
+<!ELEMENT param EMPTY >
+<!ELEMENT configuration (duplicate | generate* | particle*) >
+<!ELEMENT duplicate (particle*) >
+<!ELEMENT particle EMPTY >
+<!ELEMENT generate (positions, charges, potentials?, field?) >
+<!ELEMENT positions EMPTY >
+<!ELEMENT charges EMPTY >
+<!ELEMENT potentials EMPTY >
+<!ELEMENT field EMPTY >
+
+<!ATTLIST scafacos_test name CDATA #REQUIRED>
+<!ATTLIST scafacos_test description CDATA #REQUIRED>
+<!ATTLIST scafacos_test reference_method CDATA #IMPLIED>
+<!ATTLIST scafacos_test error_potential CDATA "1.0">
+<!ATTLIST scafacos_test error_field CDATA "1.0">
+
+<!ATTLIST param name CDATA #REQUIRED>
+<!ATTLIST param value CDATA #IMPLIED>
+<!ATTLIST param value0 CDATA #IMPLIED>
+<!ATTLIST param value1 CDATA #IMPLIED>
+<!ATTLIST param value2 CDATA #IMPLIED>
+
+<!ATTLIST configuration offset CDATA #IMPLIED>
+<!ATTLIST configuration box_a CDATA #IMPLIED>
+<!ATTLIST configuration box_b CDATA #IMPLIED>
+<!ATTLIST configuration box_c CDATA #IMPLIED>
+<!ATTLIST configuration periodicity CDATA #IMPLIED>
+<!ATTLIST configuration epsilon CDATA #IMPLIED>
+<!ATTLIST configuration decomposition CDATA #IMPLIED>
+
+<!ATTLIST duplicate times CDATA #REQUIRED>
+<!ATTLIST duplicate rescale CDATA "1">
+
+<!ATTLIST particle position CDATA #REQUIRED>
+<!ATTLIST particle q CDATA "0.0">
+<!ATTLIST particle potential CDATA #IMPLIED>
+<!ATTLIST particle field CDATA #IMPLIED>
+<!ATTLIST particle node CDATA #IMPLIED>
+
+<!ATTLIST generate nlocal CDATA #IMPLIED>
+<!ATTLIST generate ntotal CDATA #IMPLIED>
+
+<!ATTLIST positions type CDATA #REQUIRED>
+<!ATTLIST positions shape CDATA #IMPLIED>
+
+<!ATTLIST charges type CDATA #REQUIRED>
+<!ATTLIST charges value CDATA "1.0">
+
+<!ATTLIST potentials type CDATA #REQUIRED>
+<!ATTLIST potentials value CDATA "0.0">
+
+<!ATTLIST field type CDATA #REQUIRED>
+<!ATTLIST field value CDATA "0.0 0.0 0.0">

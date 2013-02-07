@@ -1,0 +1,1964 @@
+/*
+ * Copyright (C) 2011-2013 Michael Pippig
+ * Copyright (C) 2012 Alexander Köwitsch
+ * Copyright (C) 2011 Sebastian Banert
+ * Copyright (C) 2011 Olaf Lenz
+ * Copyright (C) 2010,2011 The ESPResSo project
+ * Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010 
+ *   Max-Planck-Institute for Polymer Research, Theory Group
+ *
+ * This file is part of ScaFaCoS.
+ * 
+ * ScaFaCoS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * ScaFaCoS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *	
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "tune.h"
+#include "types.h"
+
+#if FCS_P2NFFT_NONCUBIC_TEST
+#include "tune_0dp_noncubic.h"
+#endif
+#if FCS_P2NFFT_MIXED_PERIODICITY_TEST
+#include "tune_2dp.h"
+#endif
+
+#include "utils.h"
+#include "constants.h"
+#include "FCSCommon.h"
+
+#include "kernels.h"
+#include "regularization.h"
+#include "cg_cos_coeff.h"
+#include "cg_cos_err.h"
+
+#define FCS_P2NFFT_DEBUG_TUNING 0
+#define FCS_P2NFFT_EXIT_AFTER_TUNING 0
+#define FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE 0
+#define FCS_P2NFFT_ENABLE_TUNING_BUG 0
+
+/* FORWARD DECLARATIONS OF STATIC FUNCTIONS */
+#if FCS_ENABLE_INFO 
+static void print_command_line_arguments(
+    ifcs_p2nfft_data_struct *d, fcs_int verbose);
+#endif
+static void init_near_interpolation_table_potential_3dp(
+    fcs_int num_nodes,
+    fcs_float r_cut, fcs_float alpha,
+    fcs_float *table);
+static void init_near_interpolation_table_force_3dp(
+    fcs_int num_nodes,
+    fcs_float r_cut, fcs_float alpha,
+    fcs_float *table);
+
+static void init_near_interpolation_table_potential_0dp(
+    fcs_int num_nodes,
+    fcs_float epsI, fcs_int p, fcs_float box_scale,
+    const fcs_float *taylor2p_coeff,
+    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_float *table);
+static void init_far_interpolation_table_potential_0dp(
+    fcs_int num_nodes,
+    fcs_float epsB, fcs_int p,
+    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_float *table);
+static void init_near_interpolation_table_force_0dp(
+    fcs_int num_nodes,
+    fcs_float epsI, fcs_int p, fcs_float box_scale,
+    const fcs_float *taylor2p_derive_coeff,
+    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_float *table);
+static fcs_int max_i(fcs_int a, fcs_int b);
+static fcs_int calc_interpolation_num_nodes(
+    fcs_int interpolation_order, fcs_float eps);
+static fcs_float evaluate_cos_polynomial_1d(
+   fcs_float x, fcs_int N, fcs_float *coeff);
+static fcs_float evaluate_sin_polynomial_1d(
+   fcs_float x, fcs_int N, fcs_float *coeff);
+
+static void init_pnfft(
+    FCS_PNFFT(plan) *ths, int dim, const ptrdiff_t *N, const ptrdiff_t *n,
+    const fcs_float *x_max, int m,
+    unsigned pnfft_flags, fcs_int pnfft_intpol_order, fcs_int pnfft_window,
+    unsigned pfft_flags, fcs_int pfft_patience,
+    MPI_Comm cart_comm_pnfft);
+static int pnfft_is_up_to_date(
+    const FCS_PNFFT(plan) ths, int dim, const ptrdiff_t *N, const ptrdiff_t *n,
+    const fcs_float *x_max, int m, unsigned pnfft_flags, unsigned pfft_flags);
+
+static void default_tolerance_type(
+    fcs_int *periodicity,
+    fcs_int *tolerance_type, fcs_float *tolerance);
+static FCSResult check_tolerance(
+    fcs_int *periodicity, fcs_int tolerance_type, fcs_float tolerance);
+
+static fcs_float p2nfft_real_space_error(
+    fcs_int N, fcs_float sum_q2, fcs_float box_l[3],
+    fcs_float r_cut, fcs_float alpha);
+static fcs_float p2nfft_tune_alpha(
+    fcs_int sum_qpart, fcs_float sum_q2, fcs_float box_l[3],
+    fcs_float r_cut, ptrdiff_t grid[3], fcs_int cao, fcs_float tolerance_field);
+static fcs_float p2nfft_get_accuracy(
+    fcs_int sum_qpart, fcs_float sum_q2, fcs_float box_l[3],
+    fcs_float r_cut, ptrdiff_t grid[3], fcs_int cao, fcs_float tolerance_field,
+    fcs_float alpha, fcs_int interlaced,
+    fcs_float *rs_err, fcs_float *ks_err);
+static fcs_float p2nfft_k_space_error(
+    fcs_int N, fcs_float sum_q2, fcs_float box_l[3], ptrdiff_t grid[3],
+    fcs_float alpha, fcs_int cao, fcs_int interlaced);
+static fcs_float p2nfft_k_space_error_sum1(
+    fcs_int n, fcs_float grid_i, fcs_int cao);
+static void p2nfft_k_space_error_sum2_ad(
+    fcs_int nx, fcs_int ny, fcs_int nz,
+    ptrdiff_t grid[3], fcs_float grid_i[3],
+    fcs_int cao, fcs_float alpha_L_i, 
+    fcs_float *alias1, fcs_float *alias2);
+void p2nfft_k_space_error_sum2_adi(
+    fcs_int nx, fcs_int ny, fcs_int nz,
+    ptrdiff_t grid[3], fcs_float grid_i[3],
+    fcs_int cao, fcs_float alpha_L_i,
+    fcs_float *alias1, fcs_float *alias2,
+    fcs_float *alias3, fcs_float *alias4,
+    fcs_float *alias5, fcs_float *alias6);
+static fcs_float p2nfft_k_space_error_approx(
+    fcs_int N, fcs_float sum_q2,
+    fcs_float box_l[3], ptrdiff_t grid[3],
+    fcs_float alpha, fcs_int cao);
+#if FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE
+static fcs_float p2nfft_k_space_error_general_window(
+    fcs_int num_part, fcs_float sum_q2,
+    const fcs_float box_l[3], const ptrdiff_t N[3],
+    fcs_float alpha, fcs_int m,
+    unsigned window_flag,
+    MPI_Comm comm);
+static fcs_float compute_alias_k(
+    FCS_PNFFT(plan) *wind_param, fcs_float alpha, const fcs_float box_l[3],
+    const ptrdiff_t N[3], const ptrdiff_t k[3]);
+
+#endif
+
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_nonperiodic(
+    const ptrdiff_t *N, fcs_float epsI, fcs_float epsB, fcs_float box_scale,
+    fcs_int interpolation_order, fcs_int interpolation_num_nodes,
+    const fcs_float *near_interpolation_table_potential,
+    const fcs_float *far_interpolation_table_potential,
+    MPI_Comm comm_cart);
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_periodic(
+    const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
+    fcs_float *box_l, fcs_float alpha);
+
+
+FCSResult ifcs_p2nfft_tune(
+    void *rd, fcs_int *periodicity,
+    fcs_int local_particles,
+    fcs_float *positions, fcs_float *charges,
+    fcs_float *box_l, fcs_int short_range_flag
+    )
+{
+  /* redirect to implemetation of noncubic case */
+#if FCS_P2NFFT_NONCUBIC_TEST
+  return ifcs_p2nfft_tune_0dp_noncubic(
+      rd, periodicity, local_particles, positions, charges,
+      box_l, short_range_flag);
+#endif
+  /* redirect to test implemetation of 2d-periodic case */
+#if FCS_P2NFFT_MIXED_PERIODICITY_TEST
+  return ifcs_p2nfft_tune_2dp(
+      rd, periodicity, local_particles, positions, charges,
+      box_l, short_range_flag);
+#endif
+
+  fcs_float box_size = box_l[0];
+
+  int comm_rank;
+  const char* fnc_name = "ifcs_p2nfft_tune";
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+  fcs_int local_needs_retune = d->needs_retune;
+  fcs_int i, num_particles;
+  fcs_float sum_q, sum_q2, sum_q_abs, avg_dist, error=0;
+  FCSResult result;
+
+#if FCS_P2NFFT_DEBUG_RETUNE
+  if(local_needs_retune)
+    fprintf(stderr, "\n!!! begin checks: local_needs_retune = %d !!!\n\n", local_needs_retune);
+#endif
+
+  /* Check consistency of user defined near field radius */
+  if( !d->tune_epsI && !d->tune_r_cut )
+    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Nearfield radius was set in scaled ('epsI') and non-scaled ('r_cut') version. Choose one of them.");
+
+  MPI_Comm_rank(d->cart_comm_3d, &comm_rank);
+  FCS_P2NFFT_INIT_TIMING(d->cart_comm_3d);
+  FCS_P2NFFT_START_TIMING();
+
+  d->short_range_flag = short_range_flag;
+
+  /* Retune if total number of particles changed */
+  MPI_Allreduce(&local_particles, &num_particles, 1, FCS_MPI_INT, MPI_SUM, d->cart_comm_3d);
+  if (num_particles != d->num_nodes) {
+#if FCS_P2NFFT_DEBUG_RETUNE
+    fprintf(stderr, "num_nodes retune, num_particles = %d, d->num_nodes = %d\n", num_particles, d->num_nodes);
+#endif
+    d->num_nodes = num_particles;
+    local_needs_retune = 1;
+  }
+
+  /* Retune if periodicity changed */
+  for(int t=0; t<3; t++){
+    if((periodicity[t] == 0) != (d->periodicity[t] == 0)){
+#if FCS_P2NFFT_DEBUG_RETUNE
+      fprintf(stderr, "periodicity[%d] = %d, d->periodicity[%d] = %d\n", periodicity[t], t, d->periodicity[t], t);
+#endif
+      local_needs_retune = 1;
+    }
+    d->periodicity[t] = periodicity[t];
+  }
+  d->use_ewald = periodicity[0] && periodicity[1] && periodicity[2];  
+
+  /* Now, after the periodicity is clear, we can set the default tolerance type. */
+  default_tolerance_type(d->periodicity,
+      &d->tolerance_type, &d->tolerance);
+
+  /* Check if P2NFFT can handle the tolerance type */
+  result = check_tolerance(d->periodicity, d->tolerance_type, d->tolerance);
+  if(result != NULL) return result;
+
+  /* Calculate the sum of all charges
+   * (pbc need neutral system) */
+  fcs_float local_sum_q = 0;
+  for (i = 0; i < local_particles; ++i)
+    local_sum_q += charges[i];
+  MPI_Allreduce(&local_sum_q, &sum_q, 1, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
+//   if (!fcs_float_is_equal(sum_q, d->sum_q)) {
+  if (sum_q - d->sum_q > 1e-5) {
+#if FCS_P2NFFT_DEBUG_RETUNE
+    fprintf(stderr, "sum_q = %e, d->sum_q = %e\n", sum_q, d->sum_q);
+#endif
+    d->sum_q = sum_q;
+    local_needs_retune = 1;
+  }
+  
+  if (!fcs_float_is_zero(d->sum_q))
+    d->bg_charge = d->sum_q / d->num_nodes;
+  else
+    d->bg_charge = 0.0;
+
+  /* Calculate the sum of the squares of all charges
+   * (needed for the error formulae) */
+  fcs_float local_sum_q2 = 0;
+  for (i = 0; i < local_particles; ++i)
+    local_sum_q2 += FCS_P2NFFT_SQR(charges[i] - d->bg_charge);
+  MPI_Allreduce(&local_sum_q2, &sum_q2, 1, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
+//   if (!fcs_float_is_equal(sum_q2, d->sum_q2)) {
+  if (sum_q2 - d->sum_q2 > 1e-5) {
+#if FCS_P2NFFT_DEBUG_RETUNE
+    fprintf(stderr, "sum_q2 retune, sum_q2 = %e, d->sum_q2 = %e\n", sum_q2, d->sum_q2);
+#endif
+    d->sum_q2 = sum_q2;
+    local_needs_retune = 1;
+  }
+
+  /* Calculate the sum of the absolute values of all charges
+   * (needed for the error formulae) */
+  fcs_float local_sum_q_abs = 0;
+  for (i = 0; i < local_particles; ++i)
+    local_sum_q_abs += fabs(charges[i] - d->bg_charge);
+  MPI_Allreduce(&local_sum_q_abs, &sum_q_abs, 1, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
+//   if (!fcs_float_is_equal(sum_q_abs, d->sum_q_abs)) {
+//     d->sum_q_abs = sum_q_abs;
+//     local_needs_retune = 1;
+//   }
+
+  if (!fcs_float_is_equal(d->box_size, box_size)) {
+#if FCS_P2NFFT_DEBUG_RETUNE
+    fprintf(stderr, "Boxsize retune, box_Size = %e, d->box_size = %e\n", box_size, d->box_size);
+#endif
+    d->box_size = box_size;
+    local_needs_retune = 1;
+  }
+ 
+  for(fcs_int t=0; t<3; t++)
+    d->box_l[t] = box_l[t];
+
+  /* FIXME: number of charged particles may be smaller then number of all particles */
+  d->sum_qpart = num_particles;
+
+  /* compute the average distance between two charges  */
+  avg_dist = fcs_pow((d->box_l[0]*d->box_l[1]*d->box_l[2]) / d->sum_qpart, 0.33333);
+
+#if FCS_P2NFFT_DEBUG_RETUNE
+  if(local_needs_retune)
+    fprintf(stderr, "\n!!! end checks: local_needs_retune = %d !!!\n\n", local_needs_retune);
+#endif
+
+  /* synchronize retuning on all processes */
+  MPI_Allreduce(&local_needs_retune, &d->needs_retune, 1, FCS_MPI_INT, MPI_MAX, d->cart_comm_3d);
+
+  if (d->needs_retune) {
+    if(d->use_ewald){
+      fcs_float ks_error, rs_error;
+      /* PNFFT calculates with real space cutoff 2*m+2
+       * Therefore m is one smaller then the P3M cao. */
+//      fcs_int cao = d->m + 1;
+      fcs_int cao = 2*d->m;
+
+      /* use full torus for periodic case */
+      for(int t=0; t<3; t++)
+        d->x_max[t] = 0.5;
+     
+      if(d->tune_r_cut){
+        if(d->tune_epsI){
+          /* set r_cut to 3 times the average distance between charges */
+          d->r_cut = 3.0 * avg_dist;
+          if (d->r_cut > d->box_size)
+            d->r_cut = d->box_size;
+        } else
+          d->r_cut = d->epsI * d->box_size;
+        d->one_over_r_cut = 1.0/d->r_cut;
+      }
+
+      /* shift and scale box into [-0.5,0.5)^3 */
+      d->box_shift = d->box_size / 2.0;
+      d->box_scale = 1.0;
+      for(int t=0; t<3; t++){
+        d->box_scales[t] = d->box_l[t];
+        d->box_shifts[t] = d->box_l[t] / 2.0;
+      }
+
+      /* set normalized near field radius */
+      d->epsI = d->r_cut / d->box_scale;
+      
+      /* Tune alpha for fixed N and m. */
+      if(!d->tune_N && !d->tune_m){
+        if(d->tune_alpha)
+          d->alpha = p2nfft_tune_alpha(
+              d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao, d->tolerance);
+        
+        /* User specified N and cao. Therefore we do not necessarily need the error calculation. */
+        if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE){
+          error = p2nfft_get_accuracy(
+              d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao,
+              d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED,
+              &rs_error, &ks_error);
+
+          /* Return error, if tuning of alpha failed. */
+          if(error > d->tolerance)
+            return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy (Did not find feasible Ewald splitting parameter 'alpha').");
+        } else {
+          /* calculation of real space error is fast */
+          rs_error = p2nfft_real_space_error(d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->alpha);
+          /* Set error and ks_error to senseless value to indicate that user did not want to calculate the errors. */
+          error = ks_error = -1.0;
+        }
+      } else {
+        if(d->tune_m)
+          cao = FCS_P2NFFT_MAXCAO;
+     
+        /* tune the grid size N */
+        if(d->tune_N){
+          for (i = FCS_P2NFFT_MINGRID; i <= FCS_P2NFFT_MAXGRID; i *= 2) {
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG  || FCS_P2NFFT_DEBUG_TUNING
+            if(!comm_rank) printf("P2NFFT_INFO: Trying grid size %" FCS_LMOD_INT "d.\n", i);
+#endif
+            d->N[0] = i;
+            d->N[1] = 2*fcs_ceil(d->N[0]*d->box_l[1]/(d->box_l[0]*2.0));
+            d->N[2] = 2*fcs_ceil(d->N[0]*d->box_l[2]/(d->box_l[0]*2.0));
+            if(d->tune_alpha)
+              d->alpha = p2nfft_tune_alpha(
+                  d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao, d->tolerance);
+            error = p2nfft_get_accuracy(
+                d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao,
+                d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED,
+                &rs_error, &ks_error);
+#if FCS_P2NFFT_DEBUG_TUNING
+            if(!comm_rank) printf("P2NFFT_DEBUG_TUNING: error = %e, rs_error = %e, ks_error = %e, tolerance = %e.\n",
+                error, rs_error, ks_error, d->tolerance);
+#endif
+            if (error < d->tolerance) break;
+          }
+
+          /* Return error, if tuning of N failed. */
+          if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE)
+            if(error > d->tolerance)
+              return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy (Did not find feasible gridsize 'N').");
+        }
+
+        /* tune m, only if we found a feasible gridsize N */
+        if(d->tune_m){
+          for (cao = 1; cao <= FCS_P2NFFT_MAXCAO; ++cao) {
+            if(d->tune_alpha)
+              d->alpha = p2nfft_tune_alpha(
+                  d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao, d->tolerance);
+            error = p2nfft_get_accuracy(
+                d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao,
+                d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED,
+                &rs_error, &ks_error);
+            if (error < d->tolerance) break;
+          }
+
+          /* Return error, if tuning of m failed. */
+          if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE)
+            if(error > d->tolerance)
+              return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy (Did not find feasible charge assignment order 'm').");
+        }
+      }
+     
+      /* Return error, if accuracy tuning failed. */
+      if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE)
+        if(error > d->tolerance)
+          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy.");
+
+#if FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE
+      if(!comm_rank)
+        printf("\n\nP2NFFT_INFO: P3M Tuning results in N = %td, cao = %d, alpha = %e\n", d->N[0], cao, d->alpha);
+
+      if(!comm_rank)
+        printf("P2NFFT_INFO: P3M: k space error: %e\n", ks_error);
+
+      if(!comm_rank)
+        printf("P2NFFT_INFO: P2NFFT: k space error via new error estimate: %e, m = %d\n", 
+            p2nfft_k_space_error_general_window(d->sum_qpart, d->sum_q2, d->box_l, d->N, d->alpha, (cao+1)/2, d->pnfft_window_flag, d->cart_comm_3d), (cao+1)/2);
+#endif
+
+      /* P3M tuning works with cao==2*m */
+      d->m = (cao+1)/2;
+
+      /* default oversampling equals 1 in 3d-periodic case */
+      if(d->tune_n){
+        for(int t=0; t<3; t++)
+          d->n[t] = d->N[t];
+      } else {
+        /* check user defined oversampling */
+        for(int t=0; t<3; t++)
+          if(d->N[t] > d->n[t] )
+            return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize is not allowed to be smaller than normal gridsize.");
+      }
+      
+#if FCS_ENABLE_INFO
+      if(!comm_rank)
+        printf("P2NFFT_INFO: Approximate real space error: %" FCS_LMOD_FLOAT "e, k space error: %" FCS_LMOD_FLOAT "e\n",
+            rs_error, ks_error);
+      if(!comm_rank)
+        printf("P2NFFT_INFO: Tuned alpha: %" FCS_LMOD_FLOAT "f, leading to an error of %" FCS_LMOD_FLOAT "e.\n",
+            d->alpha, error);
+      if(!comm_rank)
+        printf("P2NFFT_INFO: Tuned N: %td, n = [%td, %td, %td], tuned m: %" FCS_LMOD_INT "d, r_cut: %" FCS_LMOD_FLOAT "f, epsI: %" FCS_LMOD_FLOAT "f.\n",
+            d->N[0], d->n[0], d->n[1], d->n[2], d->m, d->r_cut, d->epsI);
+#endif
+
+      /* Initialize the tables for near field interpolation */
+      /*   accuracy of 1e-16 needs 14000 interpolation nodes */
+      /*   accuracy of 1e-17 needs 24896 interpolation nodes */
+      d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
+
+      if(d->near_interpolation_table_potential != NULL)
+        free(d->near_interpolation_table_potential);
+      if(d->near_interpolation_table_force != NULL)
+        free(d->near_interpolation_table_force);
+
+      if(d->interpolation_num_nodes){
+        d->near_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
+        init_near_interpolation_table_potential_3dp(
+            d->interpolation_num_nodes,
+            d->r_cut, d->alpha, 
+            d->near_interpolation_table_potential);
+
+        d->near_interpolation_table_force = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
+        init_near_interpolation_table_force_3dp(
+            d->interpolation_num_nodes,
+            d->r_cut, d->alpha,
+            d->near_interpolation_table_force);
+      }
+
+    } else {
+      /********************/
+      /* nonperiodic case */
+      /********************/
+
+      fcs_int m;
+
+      if(d->regularization == FCS_P2NFFT_REG_TAYLOR2P){
+        /* TODO: implement parameter tuning for 2-point-Taylor regularization 
+         * Question: Do we need it? Afaik, CG-approximation is better for all cases. */
+  
+        /*****************************************************************/
+        /* example result of 2-point-Taylor parameter estimator:         */
+        /* % eps_I = 0.062500;  N = 64;                                  */
+        /* error = 2.782434e-03                                          */      
+        /*****************************************************************/
+        m = 4;
+  
+        if(d->tune_p)
+          d->p = 7;
+  
+        if(d->tune_N)
+          for(int t=0; t<3; t++)
+            d->N[t] = 64;
+ 
+        if(d->tune_epsI){
+          d->log2epsI = 5;  //  1.0/16 == 4.0/64
+          d->epsI = fcs_pow(0.5, d->log2epsI);
+        }
+  
+        d->log2epsB = d->log2epsI;
+        d->epsB = d->epsI;
+  
+        /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
+        for(int t=0; t<3; t++){
+          d->box_scales[t] = d->box_l[t] * sqrt(3) / (0.5 - d->epsB);
+          d->box_shifts[t] = d->box_l[t] / 2.0;
+        }
+        d->box_shift = d->box_shifts[0];
+        d->box_scale = d->box_scales[0];
+  
+        /* initialize coefficients of 2 point Taylor polynomials */
+        if(d->taylor2p_coeff != NULL)
+          free(d->taylor2p_coeff);
+        d->taylor2p_coeff = (fcs_float*) malloc(sizeof(fcs_float)*(d->p));
+        ifcs_p2nfft_load_taylor2p_coefficients(d->epsI, d->p, d->taylor2p_coeff);
+  
+        if(d->taylor2p_derive_coeff != NULL)
+          free(d->taylor2p_derive_coeff);
+        d->taylor2p_derive_coeff = (fcs_float*) malloc(sizeof(fcs_float)*(d->p-1));
+        ifcs_p2nfft_load_taylor2p_derive_coefficients(d->epsI, d->p, d->taylor2p_derive_coeff);
+
+      } else if(d->regularization == FCS_P2NFFT_REG_CG) {
+        /*********************/
+        /* CG regularization */
+        /*********************/
+
+        /* Update these values, if new CG-coefficients have been added */
+        fcs_int N_min=8, N_max=4096;
+        fcs_int log2epsI_min=3, log2epsI_max=11; /* 1/8=0.125, ..., 1/128=0.0078125 */
+       
+        if(d->tune_epsI){
+          if(d->tune_r_cut){
+            /* set epsI to 2 times the average distance between charges */
+            d->epsI = 2.0 * avg_dist/d->box_size;
+  
+            /* good choice for reqiured_accuracy == 1e3 with hammersley_ball_pos_1e4 */
+            d->epsI = 0.5 * avg_dist/d->box_size;
+          } else { /* user defined r_cut, now scale it into unit cube */
+            /* invert r_cut = box_scale * epsI, where box_scale depends on epsI */
+            d->epsI = d->r_cut / 2.0 / (d->box_size * sqrt(3) + 1);
+          }
+        }
+  
+        /* compute the biggest value of type 2^-log2epsI below epsI */
+        d->log2epsI = lrint(floor( -log(d->epsI)/log(2.0) ));
+  
+        /* use maximum/minimum possible epsI */
+        if(d->log2epsI < log2epsI_min)
+          d->log2epsI = log2epsI_min;
+        if(d->log2epsI > log2epsI_max)
+          d->log2epsI = log2epsI_max;
+  
+        d->epsI = fcs_pow(0.5, d->log2epsI);
+  
+        /* CG-approximationt always uses epsI == epsB */
+        d->epsB = d->epsI;
+        
+        /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
+        for(int t=0; t<3; t++){
+          d->box_scales[t] = d->box_l[t] * sqrt(3) / (0.5 - d->epsB);
+          d->box_shifts[t] = d->box_l[t] / 2.0;
+        }
+        d->box_shift = d->box_shifts[0];
+        d->box_scale = d->box_scales[0];
+
+        if(d->tune_N){
+          fcs_int N;
+          for(N=N_min; N<=N_max; N*=2){
+            d->N_cg_cos = N/2;
+            error = ifcs_p2nfft_get_cg_cos_err(d->N_cg_cos, d->log2epsI,
+              &m, &d->p);
+
+#if FCS_P2NFFT_DEBUG_TUNING
+            if(!comm_rank){
+              printf("P2NFFT_INFO: Trying grid size %d.\n", N);
+              if(error < 0.0) 
+                printf("P2NFFT_DEBUG_TUNING: No CG approximation available.\n");
+              else
+                printf("P2NFFT_DEBUG_TUNING: error = %e, sum_q_abs = %e, accuracy = %e, tolerance = %e.\n",
+                    error, sum_q_abs, error * sum_q_abs * sqrt(2.0 / (d->box_scale*d->box_scale*d->box_scale)), d->tolerance);
+            }
+#endif
+
+            /* TODO: find better error estimate */
+            if( !(error < 0.0) )
+              if (error * sum_q_abs * sqrt(2.0 / (d->box_scale*d->box_scale*d->box_scale)) < d->tolerance) break;
+//             if( !(error < 0.0) )
+//               if (3.0*error < d->tolerance) break;
+          }
+    
+          /* Return error, if accuracy tuning failed. */
+          if(N==2*N_max)
+            if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE)
+              return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy.");
+  
+          /* We found the minimal N. */
+          d->N[0] = d->N[1] = d->N[2] = N;
+  
+        }
+  
+        /* initialize cg-regularization */
+        d->N_cg_cos = d->N[0]/2;
+        if(d->cg_cos_coeff != NULL)
+          free(d->cg_cos_coeff);
+        
+        d->cg_cos_coeff = (fcs_float*) malloc(sizeof(fcs_float)*d->N_cg_cos);
+        int missed_coeff = ifcs_p2nfft_load_cg_cos_coeff(d->N_cg_cos, d->log2epsI,
+            &m, &d->p, d->cg_cos_coeff);
+
+        if(missed_coeff)
+          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Did not find an appropriate CG approximation.");
+
+      } else
+        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown regularization flag. Choose either FCS_P2NFFT_REG_TAYLOR2P or FCS_P2NFFT_REG_CG.");
+
+      if(d->tune_m)
+        d->m = m;
+
+      /* set unscaled near field radius */
+      d->r_cut = d->epsI * d->box_scale;
+      d->one_over_r_cut = 1.0/d->r_cut;
+
+      /* default oversampling equals 2 in nonperiodic case */
+      if(d->tune_n){
+        for(int t=0; t<3; t++)
+          d->n[t] = 2.0 * d->N[t];
+      } else {
+        /* check user defined oversampling */
+        for(int t=0; t<3; t++)
+          if(d->N[t] > d->n[t] )
+            return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize 'n' is not allowed to be smaller than normal gridsize 'N'.");
+      }
+
+      /* TODO: Optimize m for the field error. */
+      /* Force calculation needs increased real space cutoff m in comparison to potential calculation */
+//       d->m += 1;
+
+      /* Initialize the tables for near field interpolation */
+      /*   accuracy of 1e-16 needs 14000 interpolation nodes */
+      /*   accuracy of 1e-17 needs 24896 interpolation nodes */
+      if(d->interpolation_order < 0)
+        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "No support of direct evaluation for CG approximtation. Choose non-negative interpolation order!");
+      d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
+//       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
+
+      if(d->near_interpolation_table_potential != NULL)
+        free(d->near_interpolation_table_potential);
+      if(d->far_interpolation_table_potential != NULL)
+        free(d->far_interpolation_table_potential);
+      if(d->near_interpolation_table_force != NULL)
+        free(d->near_interpolation_table_force);
+
+      if(d->interpolation_num_nodes){
+        d->near_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
+        init_near_interpolation_table_potential_0dp(
+            d->interpolation_num_nodes,
+            d->epsI, d->p, d->box_scale,
+            d->taylor2p_coeff,
+            d->N_cg_cos, d->cg_cos_coeff,
+            d->near_interpolation_table_potential);
+
+        d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
+        init_far_interpolation_table_potential_0dp(
+            d->interpolation_num_nodes,
+            d->epsB, d->p,
+            d->N_cg_cos, d->cg_cos_coeff,
+            d->far_interpolation_table_potential);
+
+        d->near_interpolation_table_force = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
+        init_near_interpolation_table_force_0dp(
+            d->interpolation_num_nodes,
+            d->epsI, d->p, d->box_scale,
+            d->taylor2p_derive_coeff,
+            d->N_cg_cos, d->cg_cos_coeff,
+            d->near_interpolation_table_force);
+      }
+
+//      for(int t=0; t<3; t++)
+//        d->x_max[t] = 0.5;
+      for(int t=0; t<3; t++)
+        d->x_max[t] = 0.5 * d->box_size / d->box_scale;
+     
+#if FCS_ENABLE_INFO 
+     if(!comm_rank){
+       printf("P2NFFT_INFO: Tuned parameters: N = %td, n = %td, m = %" FCS_LMOD_INT "d, p = %" FCS_LMOD_INT "d, rcut = %" FCS_LMOD_FLOAT "f, epsI = %" FCS_LMOD_FLOAT "f, interpolation nodes = %" FCS_LMOD_INT "d, cg_err_3d = %" FCS_LMOD_FLOAT "e, tolerance = %" FCS_LMOD_FLOAT "e\n",
+           d->N[0], d->n[0], d->m, d->p, d->r_cut, d->epsI, d->interpolation_num_nodes, error, d->tolerance);
+       printf("P2NFFT_INFO: General error bound (best for non-alternating charges): cg_err_3d * sum_q_abs = %" FCS_LMOD_FLOAT "e\n",
+           error*sum_q_abs);
+       printf("P2NFFT_INFO: Stochastical error bound for alternating charges: cg_err_3d * sum_q_abs / sqrt(M) = %" FCS_LMOD_FLOAT "e\n",
+           error*sum_q_abs/sqrt(d->num_nodes));
+       printf("P2NFFT_INFO: Test of new Stochastical error bound for near field error: cg_err_3d * sum_q2 / sqrt(M*V) = %" FCS_LMOD_FLOAT "e\n",
+           error * d->sum_q2/sqrt(d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2]));
+       printf("P2NFFT_INFO: Test of new Stochastical error bound for near plus far field error: cg_err_3d * sqrt( sum_q2*sum_q2 / (M*V) + 1 ) = %" FCS_LMOD_FLOAT "e\n",
+           error * sqrt(d->sum_q2*d->sum_q2/(d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2]) + 1));
+       printf("P2NFFT_INFO: Test of new Stochastical error bound for near plus far field error: cg_err_3d * sum_q2 * sqrt(3 / (M*V)) = %" FCS_LMOD_FLOAT "e\n",
+           error * sum_q2 * sqrt(3.0 / (d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2])) );
+       printf("P2NFFT_INFO: General error bound (depending on box scale=%" FCS_LMOD_FLOAT "e): cg_err_3d * sum_q_abs * sqrt(2.0/V_scale) = %" FCS_LMOD_FLOAT "e\n",
+           d->box_scale, error*sum_q_abs * sqrt(2.0 / (d->box_scale*d->box_scale*d->box_scale) ));
+     }
+#endif
+    }
+
+#if FCS_P2NFFT_EXIT_AFTER_TUNING
+    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "End of tuning.");
+#endif
+
+    /* calculate local data distribution according to PNFFT:
+     * local_N, local_N_start, lower_border, upper_border */
+    FCS_PNFFT(local_size_guru)(3, d->N, d->n, d->x_max, d->m, d->cart_comm_pnfft,
+        d->local_N, d->local_N_start, d->lower_border, d->upper_border);
+    
+    /* shift and scale decomposition of the torus with box lengths */
+    for(int t=0; t<3; t++){
+      /* scale from [-x_t_max,x_t_max)_{t=0}^2 to [-L_t/2,L_t/2)_{t=0}^2 */
+      d->lower_border[t] *= d->box_scales[t];
+      d->upper_border[t] *= d->box_scales[t];
+
+      /* shift from [-L/2,L/2) to [0,L) */
+      d->lower_border[t] += d->box_shifts[t];
+      d->upper_border[t] += d->box_shifts[t];
+
+      /* local borders may be out of range because of box shift and scaling */
+      if(d->lower_border[t] < 0)
+        d->lower_border[t] = 0;
+      if(d->upper_border[t] < 0)
+        d->upper_border[t] = 0;
+      if(d->lower_border[t] > d->box_l[t])
+        d->lower_border[t] = d->box_l[t];
+      if(d->upper_border[t] > d->box_l[t])
+        d->upper_border[t] = d->box_l[t];
+    }
+
+    /* precompute Fourier coefficients for convolution */
+    if(d->use_ewald)
+      d->regkern_hat = malloc_and_precompute_regkern_hat_periodic(
+          d->local_N, d->local_N_start, d->box_l, d->alpha);
+    else
+      d->regkern_hat = malloc_and_precompute_regkern_hat_nonperiodic(
+          d->N, d->epsI, d->epsB, d->box_scale,
+          d->interpolation_order, d->interpolation_num_nodes, 
+          d->near_interpolation_table_potential,
+          d->far_interpolation_table_potential,
+          d->cart_comm_pnfft); 
+  }
+  /* Finish timing of parameter tuning */
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Parameter tuning");
+
+  /* Initialize the plan for the PNFFT */
+  init_pnfft(&d->pnfft, 3, d->N, d->n, d->x_max, d->m, d->pnfft_flags, d->pnfft_interpolation_order, d->pnfft_window,
+      d->pfft_flags, d->pfft_patience, d->cart_comm_pnfft);
+
+#if FCS_ENABLE_INFO 
+  /* Print the command line arguments that recreate this plan. */
+  if(d->needs_retune){
+    if(!comm_rank) printf("P2NFFT_INFO: CMD ARGS: -c ");
+    print_command_line_arguments(d, 0);
+    if(!comm_rank) printf("P2NFFT_INFO: ALL CMD ARGS: -c ");
+    print_command_line_arguments(d, 1);
+  }
+#endif
+
+  d->needs_retune = 0;
+
+  /* Check if gridsize is too small to run with this number of processes. */
+  int count=0;
+  for(int t=0; t<3; t++)
+    if(d->N[t] < d->np[t]) count++;
+
+  if(count>0){
+#if FCS_P2NFFT_DEBUG_RETUNE
+    printf("P2NFFT_DEBUG: d->N = [%td, %td, %td], d->np = [%d, %d, %d]\n", d->N[0], d->N[1], d->N[2], d->np[0], d->np[1], d->np[2]);
+#endif
+    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Procmesh too large for this gridsize.");
+  }
+
+  return NULL;
+}
+
+#if FCS_ENABLE_INFO 
+/* For verbose == 0 only print the user defined parameters. 
+ * For verbose != 0 print also the parameters which where determined by the tuning. */
+static void print_command_line_arguments(
+    ifcs_p2nfft_data_struct *d, fcs_int verbose
+    )
+{
+  int comm_rank;
+  MPI_Comm_rank(d->cart_comm_3d, &comm_rank);
+ 
+  /* print full set of command line arguments */ 
+  if(!comm_rank){
+    if(verbose || !fcs_float_is_zero(d->tolerance - FCS_P2NFFT_DEFAULT_TOLERANCE)){
+      switch(d->tolerance_type){
+        case FCS_TOLERANCE_TYPE_ENERGY:
+          printf("tolerance_energy,"); break;
+        case FCS_TOLERANCE_TYPE_POTENTIAL:
+          printf("tolerance_potential,"); break;
+        case FCS_TOLERANCE_TYPE_FIELD:
+          printf("tolerance_field,"); break;
+        case FCS_TOLERANCE_TYPE_ENERGY_REL:
+          printf("tolerance_energy_rel,"); break;
+        case FCS_TOLERANCE_TYPE_POTENTIAL_REL:
+          printf("tolerance_potential_rel,"); break;
+        case FCS_TOLERANCE_TYPE_FIELD_REL:
+          printf("tolerance_field_rel,"); break;
+      }
+      printf("%" FCS_LMOD_FLOAT "f,", d->tolerance);
+    }
+
+    /* print P2NFFT specific parameters */
+    if(verbose || !d->tune_epsI || !d->tune_r_cut)
+      printf("p2nfft_r_cut,%" FCS_LMOD_FLOAT "f,", d->r_cut);
+    if(verbose || !d->tune_epsI || !d->tune_r_cut)
+      printf("p2nfft_epsI,%" FCS_LMOD_FLOAT "f,", d->epsI);
+    if(verbose || !d->tune_alpha)
+      printf("p2nfft_alpha,%" FCS_LMOD_FLOAT "f,", d->alpha);
+    if(verbose || d->interpolation_order != 3)
+      printf("p2nfft_intpol_order,%" FCS_LMOD_INT "d,", d->interpolation_order);
+    if(verbose || (d->regularization == FCS_P2NFFT_REG_CG) ){
+      printf("p2nfft_reg_name,");
+      if(d->regularization == FCS_P2NFFT_REG_CG)
+        printf("cg,");
+      else if(d->regularization == FCS_P2NFFT_REG_TAYLOR2P)
+        printf("taylor2p,");
+    }
+    if(verbose || !d->tune_p)
+      printf("p2nfft_p,%" FCS_LMOD_INT "d,", d->p);
+    if(verbose || (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) )
+      printf("p2nfft_ignore_tolerance,%" FCS_LMOD_INT "d,", (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) ? 1 : 0);
+    if(verbose || (d->virial != NULL) )
+      printf("p2nfft_virial,%" FCS_LMOD_INT "d,", (d->virial != NULL) ? 1 : 0);
+
+    /* print PNFFT specific parameters */
+    if(verbose || !d->tune_N)
+      printf("pnfft_N,%td,%td,%td,", d->N[0], d->N[1], d->N[2]);
+    if(verbose || !d->tune_n)
+      printf("pnfft_n,%td,%td,%td,", d->n[0], d->n[1], d->n[2]);
+    if(verbose || (d->pnfft_window != FCS_P2NFFT_DEFAULT_PNFFT_WINDOW) ){
+      printf("pnfft_window_name,");
+      switch(d->pnfft_window){
+        case 0: printf("gaussian,"); break;
+        case 1: printf("bspline,"); break;
+        case 2: printf("sinc,"); break;
+        case 3: printf("kaiser,"); break;
+        case 4: printf("bessel_i0,"); break;
+        default: printf("failure,");
+      }
+    }
+    if(verbose || !d->tune_m)
+      printf("pnfft_m,%" FCS_LMOD_INT "d,", d->m);
+    if(verbose || d->pnfft_interpolation_order != 3)
+      printf("pnfft_intpol_order,%" FCS_LMOD_INT "d,", d->pnfft_interpolation_order);
+    if(verbose || (d->pnfft_flags & PNFFT_PRE_PHI_HAT) )
+      printf("pnfft_pre_phi_hat,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_PRE_PHI_HAT) ? 1 : 0);
+    if(verbose || (d->pnfft_flags & PNFFT_FFT_IN_PLACE) )
+      printf("pnfft_fft_in_place,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_FFT_IN_PLACE) ? 1 : 0);
+    if(verbose || (d->pnfft_flags & PNFFT_SORT_NODES) )
+      printf("pnfft_sort_nodes,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_SORT_NODES) ? 1 : 0);
+    if(verbose || (d->pnfft_flags & PNFFT_INTERLACED) )
+      printf("pnfft_interlaced,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_INTERLACED) ? 1 : 0);
+    if(verbose || (d->pnfft_flags & PNFFT_REAL_F) )
+      printf("pnfft_real_f,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_REAL_F) ? 1 : 0);
+    if(d->pnfft_flags & PNFFT_GRAD_IK)
+      printf("pnfft_grad_ik,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_GRAD_IK) ? 1 : 0);
+    else if(d->pnfft_flags & PNFFT_GRAD_NONE)
+      printf("pnfft_grad_none,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_GRAD_NONE) ? 1 : 0);
+    else if(verbose)
+      printf("pnfft_grad_ad,1,");
+
+    /* print PFFT specific parameters */
+    if(verbose || (d->pfft_patience != FCS_P2NFFT_DEFAULT_PFFT_PATIENCE) ){
+      printf("pfft_patience_name,");
+      switch(d->pfft_patience){
+        case 0 : printf("estimate,"); break;
+        case 1 : printf("measure,"); break;
+        case 2 : printf("patient,"); break;
+        case 3 : printf("exhaustive,"); break;
+        default: printf("failure,");
+      }
+    }
+    if(verbose || (d->pfft_flags & PFFT_TUNE) )
+      printf("pfft_tune,%" FCS_LMOD_INT "d,", (d->pfft_flags & PFFT_TUNE) ? 1 : 0);
+    if(verbose || (d->pfft_flags & PFFT_PRESERVE_INPUT) )
+      printf("pfft_preserve_input,%" FCS_LMOD_INT "d,", (d->pfft_flags & PFFT_PRESERVE_INPUT) ? 1 : 0);
+
+    printf("\n");
+  }
+}
+#endif
+
+static void init_near_interpolation_table_potential_3dp(
+    fcs_int num_nodes,
+    fcs_float r_cut, fcs_float alpha,
+    fcs_float *table
+    )
+{
+  fcs_float r;
+
+  for(fcs_int k=0; k<num_nodes+3; k++){
+    r = r_cut * (fcs_float) k / num_nodes;
+    if (fcs_float_is_zero(r))
+      table[k] = 2 * alpha * FCS_P2NFFT_1OVERSQRTPI;
+    else
+      table[k] = erf(alpha * r)/r;
+  }
+}
+
+static void init_near_interpolation_table_potential_0dp(
+    fcs_int num_nodes,
+    fcs_float epsI, fcs_int p, fcs_float box_scale,
+    const fcs_float *taylor2p_coeff,
+    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_float *table
+    )
+{
+  if(cos_coeff != NULL){
+    for(fcs_int k=0; k<num_nodes+3; k++)
+      table[k] = evaluate_cos_polynomial_1d(
+          epsI * (fcs_float) k / num_nodes, N_cos, cos_coeff) / box_scale;
+  } else if(taylor2p_coeff != NULL) {
+    for(fcs_int k=0; k<num_nodes+3; k++)
+      table[k] = ifcs_p2nfft_nearfield_correction_taylor2p(
+          epsI * (fcs_float) k / num_nodes, p, taylor2p_coeff) / box_scale;
+  }
+}
+
+static void init_far_interpolation_table_potential_0dp(
+    fcs_int num_nodes,
+    fcs_float epsB, fcs_int p,
+    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_float *table
+    )
+{
+  if(cos_coeff != NULL){
+    for(fcs_int k=0; k<num_nodes+3; k++)
+      table[k] = evaluate_cos_polynomial_1d(
+          0.5 - epsB + epsB * (fcs_float) k / num_nodes, N_cos, cos_coeff);
+  } else { /* use 2pTaylor regkernel */
+    /* Since we only evaluate regkernel in [0.5-epsB, 0.5] we can savely set epsI = epsB */
+    for(fcs_int k=0; k<num_nodes+3; k++)
+      table[k] = ifcs_p2nfft_regkernel(
+          ifcs_p2nfft_one_over_modulus, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, 0, epsB, epsB);
+  }
+}
+
+static void init_near_interpolation_table_force_3dp(
+    fcs_int num_nodes,
+    fcs_float r_cut, fcs_float alpha,
+    fcs_float *table
+    )
+{
+  fcs_float r;
+
+  for(fcs_int k=0; k<num_nodes+3; k++){
+    r = r_cut * (fcs_float) k / num_nodes;
+    if (fcs_float_is_zero(r))
+      table[k] = 0;
+    else
+      table[k] = (-erf(alpha * r)/r
+          + 2.0*alpha*FCS_P2NFFT_1OVERSQRTPI * fcs_exp(- alpha*alpha * r*r)
+        ) / r;
+  }
+}
+
+static void init_near_interpolation_table_force_0dp(
+    fcs_int num_nodes,
+    fcs_float epsI, fcs_int p, fcs_float box_scale,
+    const fcs_float *taylor2p_derive_coeff,
+    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_float *table
+    )
+{
+  fcs_float *sin_coeff;
+
+  if(cos_coeff != NULL){
+    sin_coeff = (fcs_float*) malloc(sizeof(fcs_float)*N_cos);
+    for(fcs_int k=0; k<N_cos; k++)
+      sin_coeff[k] = -2 * FCS_P2NFFT_PI * k * cos_coeff[k] / (box_scale*box_scale);
+    for(fcs_int k=0; k<num_nodes+3; k++)
+      table[k] = evaluate_sin_polynomial_1d(
+          epsI * (fcs_float) k / num_nodes, N_cos, sin_coeff);
+    free(sin_coeff);
+  } else if(taylor2p_derive_coeff != NULL) {
+    for(fcs_int k=0; k<num_nodes+3; k++)
+      table[k] = ifcs_p2nfft_nearfield_correction_taylor2p_derive(
+          epsI * (fcs_float) k / num_nodes, p, taylor2p_derive_coeff) / (box_scale*box_scale);
+  }
+}
+
+static fcs_float evaluate_cos_polynomial_1d(
+   fcs_float x, fcs_int N, fcs_float *coeff
+   )
+{
+  fcs_float value=0;
+
+  for(int k=0; k<N; k++)
+    value += coeff[k] * cos(2*FCS_P2NFFT_PI*k*x);
+
+  return value;
+}
+
+static fcs_float evaluate_sin_polynomial_1d(
+   fcs_float x, fcs_int N, fcs_float *coeff
+   )
+{
+  fcs_float value=0;
+
+  for(int k=0; k<N; k++)
+    value += coeff[k] * sin(2*FCS_P2NFFT_PI*k*x);
+
+  return value;
+}
+
+static fcs_int max_i(fcs_int a, fcs_int b)
+{
+  return a >= b ? a : b;
+}
+
+/* eps is the relative error */
+static fcs_int calc_interpolation_num_nodes(
+    fcs_int interpolation_order, fcs_float eps
+    )
+{
+  /* use interpolation order 3 as default case */
+  switch(interpolation_order){
+    case 0: return (fcs_int) 100000; /* TODO: Compute correct number of nodes by error estimate */
+    case 1: return (fcs_int) fcs_ceil(1.7/fcs_pow(eps,1.0/2.0));
+    case 2: return (fcs_int) fcs_ceil(2.2/fcs_pow(eps,1.0/3.0));
+    case 3: return max_i(10, (fcs_int) fcs_ceil(1.4/fcs_pow(eps,1.0/4.0)));
+    default: return 0; /* no interpolation */
+  }
+}
+
+static void init_pnfft(
+    FCS_PNFFT(plan) *ths, int dim, const ptrdiff_t *N, const ptrdiff_t *n,
+    const fcs_float *x_max, int m,
+    unsigned pnfft_flags, fcs_int pnfft_intpol_order, fcs_int pnfft_window,
+    unsigned pfft_flags, fcs_int pfft_patience,
+    MPI_Comm cart_comm_pnfft
+    )
+{
+  ptrdiff_t no_particles = 0;
+
+#if FCS_ENABLE_INFO
+  int myrank;
+  MPI_Comm_rank(cart_comm_pnfft, &myrank);
+#endif
+
+  switch(pnfft_window){
+    case 0: pnfft_flags |= PNFFT_WINDOW_GAUSSIAN; break;
+    case 1: pnfft_flags |= PNFFT_WINDOW_BSPLINE; break;
+    case 2: pnfft_flags |= PNFFT_WINDOW_SINC_POWER; break;
+    case 3: pnfft_flags |= PNFFT_WINDOW_KAISER_BESSEL; break;
+    case 4: pnfft_flags |= PNFFT_WINDOW_BESSEL_I0; break;
+  }
+
+  switch(pnfft_intpol_order){
+    case 0: pnfft_flags |= PNFFT_PRE_CONST_PSI; break;
+    case 1: pnfft_flags |= PNFFT_PRE_LIN_PSI; break;
+    case 2: pnfft_flags |= PNFFT_PRE_QUAD_PSI; break;
+    case 3: pnfft_flags |= PNFFT_PRE_KUB_PSI; break;
+  }
+
+  switch(pfft_patience){
+    case 0: pfft_flags |= PFFT_ESTIMATE; break;
+    case 1: pfft_flags |= PFFT_MEASURE; break;
+    case 2: pfft_flags |= PFFT_PATIENT; break;
+    case 3: pfft_flags |= PFFT_EXHAUSTIVE; break;
+    default: pfft_flags |= PFFT_MEASURE; break;
+  }
+
+  /* return if nothing to do */
+  if( pnfft_is_up_to_date(*ths, dim, N, n, x_max, m, pnfft_flags, pfft_flags) )
+    return;
+#if FCS_P2NFFT_DEBUG_RETUNE
+  else
+    fprintf(stderr, "\n!!! pnfft_is_up_to_date fails !!!\n\n");
+#endif
+
+
+#if FCS_ENABLE_INFO
+  if(!myrank){
+    if(pnfft_flags & PNFFT_WINDOW_GAUSSIAN)
+      printf("P2NFFT_INFO: Window function: gaussian (-c pnfft_window_name,gaussian)\n");
+    else if(pnfft_flags & PNFFT_WINDOW_BSPLINE)
+      printf("P2NFFT_INFO: Window function: bspline (-c pnfft_window_name,bspline)\n");
+    else if(pnfft_flags & PNFFT_WINDOW_SINC_POWER)
+      printf("P2NFFT_INFO: Window function: sinc power (-c pnfft_window_name,sinc)\n");
+    else if(pnfft_flags & PNFFT_WINDOW_BESSEL_I0)
+      printf("P2NFFT_INFO: Window function: bessel_i0 (-c pnfft_window_name,bessel_i0)\n");
+    else
+      printf("P2NFFT_INFO: Window function: kaiser-bessel (-c pnfft_window_name,kaiser)\n");
+
+    if(pnfft_flags & PNFFT_FFT_IN_PLACE)
+      printf("P2NFFT_INFO: inplace FFT: yes (-c pnfft_fft_in_place,1)\n");
+    else
+      printf("P2NFFT_INFO: inplace FFT: no (-c pnfft_fft_in_place,0)\n");
+  
+    if(pnfft_intpol_order < 0)
+      printf("P2NFFT_INFO: Interpolation order: direct evaluation of window function (-c pnfft_intpol_order,-1)\n");
+    else
+      printf("P2NFFT_INFO: Interpolation order: %" FCS_LMOD_INT "d (-c pnfft_intpol_order,%" FCS_LMOD_INT "d)\n", pnfft_intpol_order, pnfft_intpol_order);
+  }
+#endif
+#if FCS_ENABLE_INFO
+  if(!myrank){
+    printf("PNFFT_INIT: N = [%td, %td, %td]\n", N[0], N[1], N[2]);
+    printf("PNFFT_INIT: n = [%td, %td, %td]\n", n[0], n[1], n[2]);
+    printf("PNFFT_INIT: m = %" FCS_LMOD_INT "d\n", m);
+    printf("PNFFT_INIT: pfft_flags = %u\n", pfft_flags);
+    printf("PNFFT_INIT: pnfft_flags = %u\n", pnfft_flags);
+    printf("PNFFT_INIT: x_max = [%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]\n", x_max[0], x_max[1], x_max[2]);
+  }
+#endif
+
+  /* Start timing of PNFFT tuning */
+  FCS_P2NFFT_INIT_TIMING(cart_comm_pnfft);
+  FCS_P2NFFT_START_TIMING();
+  
+  /* finalize, if memory has been already allocated */
+  if(*ths != NULL)
+    FCS_PNFFT(finalize)(*ths, PNFFT_FREE_F_HAT| PNFFT_FREE_F| PNFFT_FREE_X| PNFFT_FREE_GRAD_F);
+
+  /* call PNFFT planer */
+  *ths = FCS_PNFFT(init_guru)(dim, N, n, x_max, no_particles, m, pnfft_flags, pfft_flags, cart_comm_pnfft);
+  
+  /* Finish timing of PNFFT tuning */
+  FCS_P2NFFT_FINISH_TIMING(cart_comm_pnfft, "PNFFT tuning");
+}
+  
+
+/* scale epsI and epsB according to box_size == 1 */
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_nonperiodic(
+    const ptrdiff_t *N, fcs_float epsI, fcs_float epsB, fcs_float box_scale,
+    fcs_int interpolation_order, fcs_int interpolation_num_nodes,
+    const fcs_float *near_interpolation_table_potential,
+    const fcs_float *far_interpolation_table_potential,
+    MPI_Comm comm_cart
+    )
+{
+  ptrdiff_t howmany = 1, alloc_local, m;
+  ptrdiff_t local_Ni[3], local_Ni_start[3], local_No[3], local_No_start[3];
+  fcs_float x0, x1, x2, xnorm, scale = 1.0, twiddle, twiddle_k0, twiddle_k1, twiddle_k2;
+  FCS_PFFT(plan) pfft;
+  fcs_pnfft_complex *regkern_hat;
+
+  alloc_local = FCS_PFFT(local_size_many_dft)(3, N, N, N, howmany,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, PFFT_TRANSPOSED_OUT,
+      local_Ni, local_Ni_start, local_No, local_No_start);
+
+  regkern_hat = FCS_PFFT(alloc_complex)(alloc_local);
+  
+  pfft = FCS_PFFT(plan_many_dft)(3, N, N, N, howmany,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, regkern_hat, regkern_hat, comm_cart,
+      PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_ESTIMATE);
+//       PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT| PFFT_ESTIMATE);
+
+  for(int t=0; t<3; t++)
+    scale *= 1.0 / N[t];
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  int myrank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  C csum;
+  C csum_global;
+  csum = 0.0;
+#endif
+ 
+  /* shift FFT output via twiddle factors on the input */ 
+  m=0;
+  twiddle_k0 = (local_Ni_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
+  for(ptrdiff_t k0 = local_Ni_start[0]; k0 < local_Ni_start[0] + local_Ni[0]; k0++, twiddle_k0 *= -1.0){
+    x0 = (fcs_float) k0 / N[0] - 0.5;
+    twiddle_k1 = (local_Ni_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
+    for(ptrdiff_t k1 = local_Ni_start[1]; k1 < local_Ni_start[1] + local_Ni[1]; k1++, twiddle_k1 *= -1.0){
+      x1 = (fcs_float) k1 / N[1] - 0.5;
+      twiddle_k2 = (local_Ni_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
+      for(ptrdiff_t k2 = local_Ni_start[2]; k2 < local_Ni_start[2] + local_Ni[2]; k2++, twiddle_k2 *= -1.0, m++){
+        x2 = (fcs_float) k2 / N[2] - 0.5;
+        xnorm = sqrt(x0*x0+x1*x1+x2*x2);
+        twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
+
+        /* constant continuation outside the ball with radius 0.5 */
+        xnorm = (xnorm < 0.5) ? xnorm : 0.5;
+
+        /* calculate near and farfield regularization via interpolation */
+        if(xnorm < epsI)
+          regkern_hat[m] = box_scale * ifcs_p2nfft_interpolation(
+              xnorm, 1.0/epsI, interpolation_order, interpolation_num_nodes, near_interpolation_table_potential);
+        else if(xnorm < 0.5-epsB)
+          regkern_hat[m] = 1.0/xnorm;
+        else
+          regkern_hat[m] = ifcs_p2nfft_interpolation(
+              xnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, interpolation_num_nodes, far_interpolation_table_potential);
+        
+        regkern_hat[m] *= scale * twiddle;
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+#endif
+      
+        /* Other nearfield correction for CG-approximation */
+//         if( (cg_cos_coeff != NULL) && (xnorm < epsI) )
+//           regkern_hat[m] = scale * evaluate_cos_polynomial_1d(xnorm, N_cos, cg_cos_coeff) * twiddle;
+//         else
+//           regkern_hat[m] = scale * ifcs_p2nfft_regkernel(ifcs_p2nfft_one_over_modulus, xnorm, p, 0, epsI, epsB) * twiddle;
+      }
+    }
+  }
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+    MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    if (myrank == 0) fprintf(stderr, "sum of regkernel: %e + I* %e\n", creal(csum_global), cimag(csum_global));
+#endif
+    
+  FCS_PFFT(execute)(pfft);
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+    csum = 0.0;
+#endif
+
+  /* take care of transposed order N1 x N2 x N0 */
+  /* shift FFT input via twiddle factors on the output */
+  m=0;
+  twiddle_k1 = (local_No_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
+  for(ptrdiff_t k1 = 0; k1 < local_No[1]; k1++, twiddle_k1 *= -1.0){
+    twiddle_k2 = (local_No_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
+    for(ptrdiff_t k2 = 0; k2 < local_No[2]; k2++, twiddle_k2 *= -1.0){
+      twiddle_k0 = (local_No_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
+      for(ptrdiff_t k0 = 0; k0 < local_No[0]; k0++, twiddle_k0 *= -1.0, m++){
+        twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
+        regkern_hat[m] *= twiddle;
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+        csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+#endif
+      }
+    }
+  }
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  if (myrank == 0) fprintf(stderr, "sum of regkernel_hat: %e + I* %e\n", creal(csum_global), cimag(csum_global));
+#endif
+  
+  FCS_PFFT(destroy_plan)(pfft);
+
+  return regkern_hat;
+}
+
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_periodic(
+    const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
+    fcs_float *box_l, fcs_float alpha
+    )
+{
+  ptrdiff_t m, k0, k1, k2, alloc_local = 1;
+  fcs_float ksqnorm;
+  fcs_pnfft_complex *regkern_hat;
+ 
+  for(int t=0; t<3; t++)
+    alloc_local *= local_N[t];
+  regkern_hat = FCS_PFFT(alloc_complex)(alloc_local);
+  
+  m = 0;
+  for(k1=local_N_start[1]; k1 < local_N_start[1] + local_N[1]; k1++){
+    for(k2=local_N_start[2]; k2 < local_N_start[2] + local_N[2]; k2++){
+      for(k0=local_N_start[0]; k0 < local_N_start[0] + local_N[0]; k0++, m++){
+        ksqnorm = k0*(fcs_float)k0/(box_l[0]*box_l[0])  + k1*(fcs_float)k1/(box_l[1]*box_l[1])  + k2*(fcs_float)k2/(box_l[2]*box_l[2]);
+        if ((k0 == 0) && (k1 == 0) && (k2 == 0))
+          regkern_hat[m] = 0;
+        else
+          regkern_hat[m] = fcs_exp(-FCS_P2NFFT_PISQR * ksqnorm/(alpha*alpha))/ksqnorm;
+      }
+    }
+  }
+  
+  return regkern_hat;
+}
+
+
+
+
+
+static int pnfft_is_up_to_date(
+    const FCS_PNFFT(plan) ths, int dim, const ptrdiff_t *N, const ptrdiff_t *n,
+    const fcs_float *x_max, int m, unsigned pnfft_flags, unsigned pfft_flags
+    )
+{
+  int plan_d, plan_m;
+  ptrdiff_t *plan_N, *plan_n;
+  fcs_float *plan_x_max;
+  unsigned plan_pnfft_flags, plan_pfft_flags;
+
+#if FCS_P2NFFT_DEBUG_RETUNE
+    fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date: ths==%p\n", ths);
+#endif
+
+  /* plan is uninitialized */
+  if( ths == NULL )
+    return 0;
+
+  plan_d = FCS_PNFFT(get_d)(ths);
+  plan_m = FCS_PNFFT(get_m)(ths);
+  plan_N = FCS_PNFFT(get_N)(ths);
+  plan_n = FCS_PNFFT(get_n)(ths);
+  plan_x_max = FCS_PNFFT(get_x_max)(ths);
+  plan_pnfft_flags = FCS_PNFFT(get_pnfft_flags)(ths);
+  plan_pfft_flags = FCS_PNFFT(get_pfft_flags)(ths);
+
+#if FCS_P2NFFT_DEBUG_RETUNE
+  fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date: plan_d = %" FCS_LMOD_INT "d, dim = %" FCS_LMOD_INT "d, plan_m = %" FCS_LMOD_INT "d, m = %" FCS_LMOD_INT "d\n", plan_d, dim, plan_m, m);
+#endif
+
+  /* check values of d, m */
+  if( plan_d != dim
+      || plan_m != m
+    )
+    return 0;
+
+#if FCS_P2NFFT_DEBUG_RETUNE
+  fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date: plan_N = [%td, %td, %td], N = [%td, %td, %td]\n", plan_N[0], plan_N[1], plan_N[2], N[0], N[1], N[2]);
+  fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date: plan_n = [%td, %td, %td], n = [%td, %td, %td]\n", plan_n[0], plan_n[1], plan_n[2], n[0], n[1], n[2]);
+  fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date: plan_x_max = [%f, %f, %f], x_max = [%f, %f, %f]\n", plan_x_max[0], plan_x_max[1], plan_x_max[2], x_max[0], x_max[1], x_max[2]);
+#endif
+
+  /* check values of N, n, x_max */
+  for(int t=0; t<dim; t++)
+    if( plan_N[t] != N[t]
+        || plan_n[t] != n[t]
+        || !fcs_float_is_zero(plan_x_max[t] - x_max[t])
+      )
+      return 0;
+
+#if FCS_P2NFFT_DEBUG_RETUNE
+  fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date: plan_pnfft_flags = %u, pnfft_flags = %u\n", plan_pnfft_flags, pnfft_flags);
+#endif
+
+  /* remove flags that do not imply retuning */
+  plan_pnfft_flags &= ~(PNFFT_MALLOC_X| PNFFT_MALLOC_F| PNFFT_MALLOC_GRAD_F);
+
+  /* check PNFFT flags */
+  if(plan_pnfft_flags != pnfft_flags)
+    return 0;
+
+#if FCS_P2NFFT_DEBUG_RETUNE
+  fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date: plan_pfft_flags = %u, pfft_flags = %u\n", plan_pfft_flags, pfft_flags);
+#endif
+
+  /* check PFFT flags */
+  if(plan_pfft_flags != pfft_flags)
+    return 0;
+
+  return 1;  
+}
+
+static void default_tolerance_type(
+    fcs_int *periodicity,
+    fcs_int *tolerance_type, fcs_float *tolerance
+    )
+{
+  if(periodicity[0] && periodicity[1] && periodicity[2]){
+    if(*tolerance < 0.0)
+      *tolerance = FCS_P2NFFT_DEFAULT_TOLERANCE;
+    if(*tolerance_type == FCS_TOLERANCE_TYPE_UNDEFINED)
+      *tolerance_type = FCS_TOLERANCE_TYPE_FIELD;
+  } else if(!periodicity[0] && !periodicity[1] && !periodicity[2]){
+    if(*tolerance < 0.0)
+      *tolerance = FCS_P2NFFT_DEFAULT_TOLERANCE;
+    if(*tolerance_type == FCS_TOLERANCE_TYPE_UNDEFINED)
+      *tolerance_type = FCS_TOLERANCE_TYPE_POTENTIAL;
+  }
+}
+
+static FCSResult check_tolerance(
+    fcs_int *periodicity, fcs_int tolerance_type, fcs_float tolerance
+    )
+{
+  char* fnc_name = "check_tolerance";
+
+  if( (tolerance_type == FCS_TOLERANCE_TYPE_ENERGY)
+      || (tolerance_type == FCS_TOLERANCE_TYPE_ENERGY_REL)
+      || (tolerance_type == FCS_TOLERANCE_TYPE_POTENTIAL_REL)
+      || (tolerance_type == FCS_TOLERANCE_TYPE_FIELD_REL) )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT does not support this kind of tolerance.");
+
+  if(tolerance_type == FCS_TOLERANCE_TYPE_POTENTIAL)
+    if( periodicity[0] || periodicity[1] || periodicity[2] )
+      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_POTENTIAL only for non-periodic boundary conditions. Use FCS_TOLERANCE_FIELD instead.");
+
+  if(tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
+    if( !periodicity[0] || !periodicity[1] || !periodicity[2] )
+      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_FIELD only for 3d-periodic boundary conditions. Use FCS_TOLERANCE_POTENTIAL instead.");
+
+  if(tolerance < 0.0)
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"Tolerance must be non-negative.");
+
+  return NULL;
+}
+
+
+
+
+
+
+
+
+
+/* Calculates the real space contribution to the rms error in the force
+ * (as described by Kolafa and Perram).
+ * \param N the number of charged particles in the system.
+ * \param sum_q2 the sum of square of charges in the system
+ * \param box_l fcs_float[3] system size
+ * \param r_cut the P2NFFT cutoff
+ * \param alpha the P2NFFT alpha (Ewald splitting parameter)
+ * \return the real space error
+ */
+static fcs_float p2nfft_real_space_error(
+    fcs_int N, fcs_float sum_q2, fcs_float box_l[3],
+    fcs_float r_cut, fcs_float alpha
+    )
+{
+  return (2.0*sum_q2*fcs_exp(-FCS_P2NFFT_SQR(r_cut*alpha))) / (fcs_sqrt((fcs_float)N*r_cut*box_l[0]*box_l[1]*box_l[2]));
+}
+
+/* Get the error for this combination of parameters and tune alpha if
+ * required. In fact, the real space error is tuned such that it
+ * contributes half of the total error, and then the Fourier space
+ * error is calculated. Returns the achieved error and the optimal
+ * alpha.
+ */
+static fcs_float p2nfft_tune_alpha(
+    fcs_int sum_qpart, fcs_float sum_q2, fcs_float box_l[3],
+    fcs_float r_cut, ptrdiff_t grid[3], fcs_int cao, fcs_float tolerance_field
+    )
+{
+  fcs_float alpha, rs_err; 
+  
+  /* calc the maximal real space error for the setting (i.e., set alpha to 0) */
+  rs_err = p2nfft_real_space_error(sum_qpart, sum_q2, box_l, r_cut, 0.0);
+
+  if(FCS_P2NFFT_SQRT2 * rs_err > tolerance_field) {
+    /* assume rs_err = ks_err -> rs_err = accuracy/sqrt(2.0) -> alpha */
+    alpha = fcs_sqrt(fcs_log(FCS_P2NFFT_SQRT2 * rs_err/tolerance_field)) / r_cut;
+  } else {
+    /* even alpha=0 is ok, however, we cannot choose it since it kills the k-space error formula.
+     * Anyways, this is very likely NOT the optimal solution */
+    alpha = 0.1 / box_l[0];
+  }
+
+  return alpha;
+}
+
+static fcs_float p2nfft_get_accuracy(
+    fcs_int sum_qpart, fcs_float sum_q2, fcs_float box_l[3],
+    fcs_float r_cut, ptrdiff_t grid[3], fcs_int cao, fcs_float tolerance_field,
+    fcs_float alpha, fcs_int interlaced,
+    fcs_float *rs_err, fcs_float *ks_err
+    )
+{
+  /* calculate real space and k space error for this alpha */
+  *rs_err = p2nfft_real_space_error(sum_qpart, sum_q2, box_l, r_cut, alpha);
+
+  fcs_int full_estimate = 0;
+  for(fcs_int t = 0; t < 3 && !full_estimate; t++){
+    fcs_float alpha_h = alpha * box_l[t] / grid[t];
+    full_estimate = alpha_h > FCS_P2NFFT_FULL_ESTIMATE_ALPHA_H_THRESHOLD;
+  }
+  
+//full_estimate=0;
+
+  if (full_estimate)
+    *ks_err = p2nfft_k_space_error(sum_qpart, sum_q2, box_l, grid, alpha, cao, interlaced);
+  else
+    *ks_err = p2nfft_k_space_error_approx(sum_qpart, sum_q2, box_l, grid, alpha, cao);
+
+  return fcs_sqrt(FCS_P2NFFT_SQR(*rs_err)+FCS_P2NFFT_SQR(*ks_err));
+}
+
+/* Calculate the analytic expression of the error estimate for the
+ * P2NFFT method in the book of Hockney and Eastwood (Eqn. 8.23) in
+ * order to obtain the rms error in the force for a system of N
+ * randomly distributed particles in a cubic box (k space part).
+ * \param grid     number of grid points in one direction.
+ * \param cao      charge assignment order.
+ * \param n_c_part number of charged particles in the system.
+ * \param sum_q2   sum of square of charges in the system
+ * \param alpha    ewald splitting parameter.
+ * \return reciprocal (k) space error
+*/
+static fcs_float p2nfft_k_space_error(
+    fcs_int N, fcs_float sum_q2,
+    fcs_float box_l[3], ptrdiff_t grid[3],
+    fcs_float alpha, fcs_int cao,
+    fcs_int interlaced
+    )
+{
+  fcs_float he_q = 0.0;
+  fcs_float grid_i[3] = {1.0/grid[0], 1.0/grid[1], 1.0/grid[2]};
+  /* @todo Handle non-cubic case  */
+  fcs_float alpha_L_i = 1./(alpha*box_l[0]);
+
+#if FCS_P2NFFT_DEBUG_TUNING
+  fprintf(stderr, "P2NFFT_DEBUG_TUNING: N = %d, grid_i = [%f, %f, %f], alpha_L_i = %f\n",
+      N, grid_i[0], grid_i[1], grid_i[2], alpha_L_i);
+#endif
+
+  if(interlaced){
+    for (fcs_int nx=-grid[0]/2; nx<grid[0]/2; nx++) {
+      for (fcs_int ny=-grid[1]/2; ny<grid[1]/2; ny++) {
+        for (fcs_int nz=-grid[2]/2; nz<grid[2]/2; nz++) {
+          if((nx!=0) || (ny!=0) || (nz!=0)) {
+
+            fcs_float alias1, alias2, alias3, alias4, alias5, alias6;
+            fcs_float d;
+    
+            p2nfft_k_space_error_sum2_adi(nx,ny,nz,grid,grid_i,cao,alpha_L_i,&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
+            d = alias1 - FCS_P2NFFT_SQR(alias2) / (0.5*(alias3*alias4 + alias5*alias6));
+    
+            if(d > 0.0)
+              he_q += d;
+          }
+        }
+      }
+    }
+  } else {
+    for (fcs_int nx=-grid[0]/2; nx<grid[0]/2; nx++) {
+      fcs_float ctan_x = p2nfft_k_space_error_sum1(nx,grid_i[0],cao);
+      for (fcs_int ny=-grid[1]/2; ny<grid[1]/2; ny++) {
+        fcs_float ctan_y = ctan_x * p2nfft_k_space_error_sum1(ny,grid_i[1],cao);
+        for (fcs_int nz=-grid[2]/2; nz<grid[2]/2; nz++) {
+          if((nx!=0) || (ny!=0) || (nz!=0)) {
+            fcs_float n2 = FCS_P2NFFT_SQR(nx) + FCS_P2NFFT_SQR(ny) + FCS_P2NFFT_SQR(nz);
+            fcs_float cs = p2nfft_k_space_error_sum1(nz,grid_i[2],cao)*ctan_y;
+            fcs_float alias1, alias2;
+            p2nfft_k_space_error_sum2_ad(nx,ny,nz,grid,grid_i,cao,alpha_L_i,&alias1,&alias2);
+            fcs_float d = alias1  -  FCS_P2NFFT_SQR(alias2/cs) / n2;
+            /* at high precisions, d can become negative due to extinction;
+               also, don't take values that have no significant digits left*/
+            if (d > 0.0 && (!fcs_float_is_zero(fcs_fabs(d/alias1))))
+              he_q += d;
+  // if( (nx==1) && (ny==0) && (nz==0) )
+  //   fprintf(stderr, "P3M: k = [%d, %d, %d], N = [%td, %td, %td], alias_k = %e, alias1 = %e, alias2 = %e, cs = %e, n2 = %e, alias_minus = %e, ctan_x = %.16e, ctan_y = %e, ctan_z = %e\n",
+  //       nx, ny, nz, grid[0], grid[1], grid[2], d, alias1, alias2, cs, n2, FCS_P2NFFT_SQR(alias2/cs) / n2, ctan_x, ctan_y/ctan_x, cs/ctan_y);
+          }
+        }
+      }
+    }
+  }
+
+#if FCS_P2NFFT_DEBUG_TUNING
+  fprintf(stderr, "P2NFFT_DEBUG_TUNING: P3M: he_q = %e\n", he_q);
+#endif
+
+#if FCS_P2NFFT_ENABLE_TUNING_BUG
+  return 2.0*sum_q2*fcs_sqrt(he_q/(fcs_float)N) / (box_l[1]*box_l[2]);
+#else
+  if(interlaced){
+    return 2.0*sum_q2*fcs_sqrt( he_q / (fcs_float)N ) / fcs_pow(box_l[0]*box_l[1]*box_l[2], 2.0/3.0);
+  } else {
+    /* Where does the factor 2.0 come from? */
+    return 2.0*sum_q2*fcs_sqrt( he_q / (fcs_float)N / (box_l[0]*box_l[1]*box_l[2]) );
+  }
+#endif
+}
+
+/* One of the aliasing sums used by \ref p2nfft_k_space_error.
+ * (fortunately the one which is most important (because it converges
+ * most slowly, since it is not damped exponentially)) can be
+ * calculated analytically. The result (which depends on the order of
+ * the spline interpolation) can be written as an even trigonometric
+ * polynomial. The results are tabulated here (The employed formula
+ * is Eqn. 7.66 in the book of Hockney and Eastwood). */
+static fcs_float p2nfft_k_space_error_sum1(
+    fcs_int n, fcs_float grid_i, fcs_int cao
+    )
+{
+  fcs_float c, res=0.0;
+  c = FCS_P2NFFT_SQR(cos(FCS_P2NFFT_PI*grid_i*(fcs_float)n));
+  
+  switch (cao) {
+    case 1 : { 
+      res = 1; 
+      break; }
+    case 2 : { 
+      res = (1.0+c*2.0)/3.0; 
+      break; }
+    case 3 : { 
+      res = (2.0+c*(11.0+c*2.0))/15.0; 
+      break; }
+    case 4 : { 
+      res = (17.0+c*(180.0+c*(114.0+c*4.0)))/315.0; 
+      break; }
+    case 5 : { 
+      res = (62.0+c*(1072.0+c*(1452.0+c*(247.0+c*2.0))))/2835.0; 
+      break; }
+    case 6 : { 
+      res = (1382.0+c*(35396.0+c*(83021.0+c*(34096.0+c*(2026.0+c*4.0)))))/155925.0; 
+      break; }
+    case 7 : { 
+      res = (21844.0+c*(776661.0+c*(2801040.0+c*(2123860.0+c*(349500.0+c*(8166.0+c*4.0))))))/6081075.0; 
+      break; }
+    default : {
+      fprintf(stderr,"INTERNAL_ERROR: The value %" FCS_LMOD_INT "d for the interpolation order should not occur!\n", cao);
+      exit(1);
+    }
+  }
+  
+  return res;
+}
+
+
+/* aliasing sum used by \ref p2nfft_k_space_error. */
+static void p2nfft_k_space_error_sum2_ad(
+    fcs_int nx, fcs_int ny, fcs_int nz,
+    ptrdiff_t grid[3], fcs_float grid_i[3],
+    fcs_int cao, fcs_float alpha_L_i,
+    fcs_float *alias1, fcs_float *alias2
+    )
+{
+  fcs_float prefactor = FCS_P2NFFT_SQR(FCS_P2NFFT_PI*alpha_L_i);
+
+  *alias1 = *alias2 = 0.0;
+  for (fcs_int mx=-FCS_P2NFFT_BRILLOUIN; mx<=FCS_P2NFFT_BRILLOUIN; mx++) {
+    fcs_float nmx = nx + mx * (fcs_float)grid[0];
+    fcs_float fnmx = grid_i[0] * nmx;
+    for (fcs_int my=-FCS_P2NFFT_BRILLOUIN; my<=FCS_P2NFFT_BRILLOUIN; my++) {
+      fcs_float nmy = ny + my * (fcs_float)grid[1];
+      fcs_float fnmy = grid_i[1] * nmy;
+      for (fcs_int mz=-FCS_P2NFFT_BRILLOUIN; mz<=FCS_P2NFFT_BRILLOUIN; mz++) {
+	fcs_float nmz = nz + mz * (fcs_float)grid[2];
+	fcs_float fnmz = grid_i[2] * nmz;
+
+	fcs_float nm2 = FCS_P2NFFT_SQR(nmx) + FCS_P2NFFT_SQR(nmy) + FCS_P2NFFT_SQR(nmz);
+	fcs_float ex = fcs_exp(-prefactor*nm2);
+	
+	fcs_float U2 = fcs_pow(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*cao);
+	
+	*alias1 += ex*ex / nm2;
+	*alias2 += U2 * ex * (nx*nmx + ny*nmy + nz*nmz) / nm2;
+      }
+    }
+  }
+}
+
+#undef FCS_P2NFFT_BRILLOUIN
+#define FCS_P2NFFT_BRILLOUIN 1 
+
+/** aliasing sum used by \ref ifcs_p3m_k_space_error. */
+void p2nfft_k_space_error_sum2_adi(
+    fcs_int nx, fcs_int ny, fcs_int nz,
+    ptrdiff_t grid[3], fcs_float grid_i[3],
+    fcs_int cao, fcs_float alpha_L_i,
+    fcs_float *alias1, fcs_float *alias2,
+    fcs_float *alias3, fcs_float *alias4,
+    fcs_float *alias5, fcs_float *alias6
+    )
+{
+  fcs_float prefactor = FCS_P2NFFT_SQR(FCS_P2NFFT_PI*alpha_L_i);
+
+  *alias1 = *alias2 = *alias3 = *alias4 = *alias5 = *alias6 = 0.0;
+  for (fcs_int mx=-FCS_P2NFFT_BRILLOUIN; mx<=FCS_P2NFFT_BRILLOUIN; mx++) {
+    fcs_float nmx = nx + mx * (fcs_float)grid[0];
+    fcs_float fnmx = grid_i[0] * nmx;
+    for (fcs_int my=-FCS_P2NFFT_BRILLOUIN; my<=FCS_P2NFFT_BRILLOUIN; my++) {
+      fcs_float nmy = ny + my * (fcs_float)grid[1];
+      fcs_float fnmy = grid_i[1] * nmy;
+      for (fcs_int mz=-FCS_P2NFFT_BRILLOUIN; mz<=FCS_P2NFFT_BRILLOUIN; mz++) {
+	fcs_float nmz = nz + mz * (fcs_float)grid[2];
+	fcs_float fnmz = grid_i[2] * nmz;
+
+	fcs_float nm2 = FCS_P2NFFT_SQR(nmx) + FCS_P2NFFT_SQR(nmy) + FCS_P2NFFT_SQR(nmz);
+	fcs_float ex = fcs_exp(-prefactor*nm2);
+	
+	fcs_float U2 = fcs_pow(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*cao);
+	
+	*alias1 += ex*ex / nm2;
+	*alias2 += U2 * ex;
+	*alias3 += U2 * nm2;
+	*alias4 += U2;
+
+        if (((mx+my+mz)%2)==0) {					//even term
+	  *alias5 += U2 * nm2;
+	  *alias6 += U2;
+	} else {						//odd term: minus sign!
+	  *alias5 -= U2 * nm2;
+	  *alias6 -= U2;
+	}
+      }
+    }
+  }
+}
+
+#undef FCS_P2NFFT_BRILLOUIN
+#define FCS_P2NFFT_BRILLOUIN 0 
+
+
+/* Calculate the analytical approximation for the k-space part of the
+ * error (Eq. 38 in Deserno, Holm; JCP 109,18; 1998). */
+static fcs_float p2nfft_k_space_error_approx(
+    fcs_int N, fcs_float sum_q2,
+    fcs_float box_l[3], ptrdiff_t grid[3],
+    fcs_float alpha, fcs_int cao
+    )
+{
+  /* grid spacing */
+  /* TODO: non-cubic case*/ //noncubic hier noch was zu tun?
+  fcs_float h = box_l[0]/grid[0];
+  fcs_float ha = h*alpha;
+
+  /* compute the sum in eq. 38 */
+  fcs_float sum;
+  switch (cao) {
+    case 1:
+      sum = 2./3.; 
+      break;
+    case 2:
+      sum = 5./294.*fcs_pow(ha,2) + 1./50.; 
+      break;
+    case 3:
+      sum = 
+        21./3872.*fcs_pow(ha, 4) + 7./1440.*fcs_pow(ha,2) + 
+        1./588.;
+      break;
+    case 4:
+      sum = 
+        143./28800.*fcs_pow(ha, 6) + 
+        7601./2271360.*fcs_pow(ha, 4) + 3./1936.*fcs_pow(ha,2) + 1./4320.;
+      break;
+    case 5:
+      sum = 
+        106640677./11737571328.*fcs_pow(ha,8) + 517231./106536960.*fcs_pow(ha, 6) + 
+        143./69120.*fcs_pow(ha, 4) + 7601./13628160.*fcs_pow(ha,2) + 
+        1./23232.;
+      break;
+    case 6:
+      sum = 
+        326190917./11700633600.*fcs_pow(ha,10) + 
+        733191589./59609088000.*fcs_pow(ha,8) + 9694607./2095994880.*fcs_pow(ha, 6) + 
+        47021./35512320.*fcs_pow(ha, 4) + 13./57600.*fcs_pow(ha,2) + 
+        691./68140800.;
+      break;
+    case 7:
+      sum =
+        4887769399./37838389248.*fcs_pow(ha,12) + 1755948832039./36229939200000.*fcs_pow(ha,10) + 
+        25091609./1560084480.*fcs_pow(ha,8) + 56399353./12773376000.*fcs_pow(ha, 6) + 
+        745739./838397952.*fcs_pow(ha, 4) + 3617./35512320.*fcs_pow(ha,2) + 
+        1./345600.;
+      break;
+    default: 
+      fprintf(stderr,"INTERNAL_ERROR: p2nfft_analytical_k_space_error_sum: Charge assignment order of %" FCS_LMOD_INT "d should not occur!\n", cao);
+      exit(1);
+  };
+
+#if FCS_P2NFFT_ENABLE_TUNING_BUG
+  return 
+    sum_q2 / (box_l[0]*box_l[0] + box_l[1]*box_l[1] + box_l[2]*box_l[2]) *
+    fcs_pow(h*alpha, cao) * 
+    sqrt(alpha*box_l[0]/N*sqrt(2.0*FCS_P2NFFT_PI)*sum);
+#else
+  return 
+    sum_q2 / (box_l[0]*box_l[0]) *
+    fcs_pow(h*alpha, cao) * 
+    sqrt(alpha*box_l[0]/N*sqrt(2.0*FCS_P2NFFT_PI)*sum);
+#endif
+}
+
+
+
+
+#if FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE //hier wird nur mit der 3. Boxlänge gearbeitet?
+static fcs_float p2nfft_k_space_error_general_window(
+    fcs_int num_part, fcs_float sum_q2,
+    const fcs_float box_l[3], const ptrdiff_t N[3],
+    fcs_float alpha, fcs_int m,
+    unsigned window_flag,
+    MPI_Comm comm
+    )
+{
+  /* some dummy variables, since we want to use PNFFT data decomposition */
+  ptrdiff_t local_N[3], local_N_start[3];
+  ptrdiff_t local_M = 1;
+  fcs_float lower_border[3], upper_border[3];
+  fcs_float x_max[3] = {0.5, 0.5, 0.5};
+  /* PNFFT calculates with real space cutoff 2*m+2
+   * Therefore m is one smaller then the P3M cao. */
+  FCS_PNFFT(plan) pnfft;
+
+  fcs_float alias_k, alias_sum, local_alias_sum = 0.0;
+  ptrdiff_t k[3];
+
+  FCS_PNFFT(local_size_guru)(3, N, N, x_max, m, comm,
+      local_N, local_N_start, lower_border, upper_border);
+
+  /* Fast initialize of PNFFT, since we want to get the inverse Fourier coefficients.
+   * Do not allocate arrays and do not tune PFFT */
+  FCS_PNFFT(init_guru)(&pnfft, 3, N, N, x_max, local_M, m,
+      window_flag, PFFT_ESTIMATE, comm);
+
+  for(k[0]=local_N_start[0]; k[0]<local_N_start[0]+local_N[0]; k[0]++){
+    for(k[1]=local_N_start[1]; k[1]<local_N_start[1]+local_N[1]; k[1]++){
+      for(k[2]=local_N_start[2]; k[2]<local_N_start[2]+local_N[2]; k[2]++){
+        alias_k = compute_alias_k(&pnfft, alpha, box_l, N, k);
+        /* at high precisions, d can become negative due to extinction;
+           also, don't take values that have no significant digits left*/
+        if(alias_k > 0.0)
+          local_alias_sum += alias_k;
+// if( (k[0]==1) && (k[1]==0) && (k[2]==0) )
+//   fprintf(stderr, "P2NFFT: k = [%td, %td, %td], N= [%td, %td, %td], alias_k = %e\n", k[0], k[1], k[2], N[0], N[1], N[2], alias_k);
+      }
+    }
+  }
+
+  FCS_PNFFT(finalize)(&pnfft, 0);
+
+  MPI_Allreduce(&local_alias_sum, &alias_sum, 1, FCS_MPI_FLOAT, MPI_SUM, comm);
+
+  fprintf(stderr, "P2NFFT_DEBUG_TUNING: local_alias_sum = %e\n", local_alias_sum);
+  fprintf(stderr, "P2NFFT_DEBUG_TUNING: alias_sum = %e\n", alias_sum);
+
+#if FCS_P2NFFT_ENABLE_TUNING_BUG
+  return 2.0*sum_q2*sqrt(alias_sum/(fcs_float)num_part) / (box_l[1]*box_l[2]);
+#else
+  /* Where does the factor 2.0 come from? */
+  return 2.0*sum_q2*sqrt( alias_sum / (fcs_float)num_part / (box_l[0]*box_l[1]*box_l[2]) );
+#endif
+}
+
+static fcs_float compute_alias_k(
+    FCS_PNFFT(plan) *wind_param, fcs_float alpha, const fcs_float box_l[3],
+    const ptrdiff_t N[3], const ptrdiff_t k[3]
+    )
+{
+  const fcs_int r = 10;
+  fcs_int s[3];
+
+  for(fcs_int t=0; t<3; t++)
+    s[t] = 4;
+
+  fcs_float alias_k, alias_D2, alias_R2, alias_U2, alias_DU2R;
+  fcs_float km0, km1, km2, kk, kkm0, kkm1, kkm2, kmkm0, kmkm1, kmkm2;
+  fcs_float Wkm0, Wkm1, Wkm2, Wkm, Ekm0, Ekm1, Ekm2;
+  fcs_float sum_Wkm[3], km;
+  fcs_float p[3];
+ 
+  if((k[0]==0) && (k[1]==0) && (k[2]==0))
+    return 0;
+
+  for(fcs_int t=0; t<3; t++)
+    p[t] = FCS_P2NFFT_SQR( FCS_P2NFFT_PI/(alpha*box_l[t]) );
+
+  alias_R2 = alias_DU2R = 0.0;
+  for(fcs_int m0=-r; m0<=r; m0++){
+    km0 = (fcs_float) k[0]+m0*N[0];
+    kkm0 = k[0]*km0;
+    kmkm0 = km0*km0;
+    Wkm0 = FCS_PNFFT(phi_hat)(wind_param, 0, km0);
+    Ekm0 = fcs_exp(-p[0]*km0*km0);
+    for(fcs_int m1=-r; m1<=r; m1++){
+      km1 = (fcs_float) k[1]+m1*N[1];
+      kkm1 = kkm0 + k[1]*km1;
+      kmkm1 = kmkm0 + km1*km1;
+      Wkm1 = Wkm0*FCS_PNFFT(phi_hat)(wind_param, 1, km1);
+      Ekm1 = Ekm0*fcs_exp(-p[1]*km1*km1);
+      for(fcs_int m2=-r; m2<=r; m2++){
+        km2 = (fcs_float) k[2]+m2*N[2];
+        kkm2 = kkm1 + k[2]*km2;
+        kmkm2 = (fcs_float) k[2]+m2*N[2]; 
+        kmkm2 = kmkm1 + km2*km2;
+        Wkm2 = Wkm1*FCS_PNFFT(phi_hat)(wind_param, 2, km2);
+        Ekm2 = Ekm1*fcs_exp(-p[2]*km2*km2);
+
+        alias_DU2R += Wkm2*Wkm2 * Ekm2 * kkm2/kmkm2;
+        alias_R2   += Ekm2*Ekm2 / kmkm2;
+      }
+    }
+  } 
+
+  for(fcs_int t=0; t<3; t++){
+    sum_Wkm[t] = 0.0;
+    for(fcs_int m=-s[t]; m<=s[t]; m++){
+      km = (fcs_float) k[t]+m*N[t]; 
+      Wkm = FCS_PNFFT(phi_hat)(wind_param, t, km);
+      sum_Wkm[t] += Wkm*Wkm;
+    }
+  }
+
+  alias_U2 = 1.0;
+  for(fcs_int t=0; t<3; t++)
+    alias_U2 *= sum_Wkm[t];  
+
+ if( (k[0]==1) && (k[1]==0) && (k[2]==0) ){
+   fcs_int t=0;
+   for(fcs_int m=-s[t]; m<=s[t]; m++){
+       fcs_int kmi = k[t]+m*N[t];
+       Wkm = FCS_PNFFT(phi_hat)(wind_param, t, kmi);
+       // fprintf(stderr, "P2NFFT: Sinc^(%d)(Pi*(%f)/(%td)) = %e\n", wind_param->m, km, N[0], Wkm);
+       fprintf(stderr, "P2NFFT: Phi_hat(m=%d, N=%td, k=%d) = %e\n", wind_param->m, N[0], kmi, Wkm);
+   }
+ 
+   fprintf(stderr, "P2NFFT: k = [%td, %td, %td], sum_Wkm = [%e, %e, %e]\n",
+       k[0], k[1], k[2], sum_Wkm[0], sum_Wkm[1], sum_Wkm[2]);
+ }
+
+ if( (k[0]==1) && (k[1]==0) && (k[2]==0) ){
+   fcs_int t=0;
+   for(fcs_int m=-N[t]-5; m<=N[t]+5; m++){
+       fcs_int kmi = k[t]+m;
+       Wkm = FCS_PNFFT(phi_hat)(wind_param, t, kmi);
+       // fprintf(stderr, "P2NFFT: Sinc^(%d)(Pi*(%f)/(%td)) = %e\n", wind_param->m, km, N[0], Wkm);
+       fprintf(stderr, "P2NFFT: Check Phi_hat(m=%d, N=%td, k=%d) = %e\n", wind_param->m, N[0], kmi, Wkm);
+   }
+
+   for(fcs_int m=-N[t]-5; m<=N[t]+5; m++){
+       fcs_int kmi = k[t]+m;
+       fprintf(stderr, "P2NFFT: Check DPsi(m=%d, N=%td, x=%f) = %e\n",
+           wind_param->m, N[0], (fcs_float)kmi/N[0], FCS_PNFFT(dpsi)(wind_param, t, (fcs_float)kmi/N[0]));
+   }
+ 
+   for(fcs_int m=-N[t]-5; m<=N[t]+5; m++){
+       fcs_int kmi = k[t]+m;
+       fprintf(stderr, "P2NFFT: Check Psi(m=%d, N=%td, x=%f) = %e\n",
+           wind_param->m, N[0], (fcs_float)kmi/N[0], FCS_PNFFT(psi)(wind_param, t, (fcs_float)kmi/N[0]));
+   }
+ fprintf(stderr, "P2NFFT: Check DPsi(m=%d, N=%td, x=%f) = %e\n",
+     wind_param->m, N[0], 0.3, FCS_PNFFT(dpsi)(wind_param, 0, 0.3));
+ fprintf(stderr, "P2NFFT: Check DPsi(m=%d, N=%td, x=%f) = %e\n",
+     wind_param->m, N[0], 0.33, FCS_PNFFT(dpsi)(wind_param, 0, 0.33));
+ fprintf(stderr, "P2NFFT: Check DPsi(m=%d, N=%td, x=%f) = %e\n",
+     wind_param->m, N[0], 0.374, FCS_PNFFT(dpsi)(wind_param, 0, 0.374));
+ }
+  
+  kk = k[0]*(fcs_float)k[0] + k[1]*(fcs_float)k[1] + k[2]*(fcs_float)k[2];
+  alias_D2 = kk;
+  
+  alias_k = alias_R2 - alias_DU2R*alias_DU2R / (alias_D2*alias_U2*alias_U2);
+
+//   if(alias_k > 1e-2){
+//     fprintf(stderr, "k = [%td, %td, %td], alias_R2 = %e, alias_D2 = %e, alias_U2 = %e, alias_DU2R = %e\n",
+//         k[0], k[1], k[2], alias_R2, alias_D2, alias_U2, alias_DU2R);
+//     fprintf(stderr, "alias_k = %e\n", alias_k);
+//   }
+
+// if( (k[1]==0) && (k[2]==0) )
+//   fprintf(stderr, "P2NFFT: k = [%td, %td, %td], alias_DU2R = %e, alias_U2 = %.16e, alias_D2 = %e, alias1 = %e, alias_minus = %e\n",
+//       k[0], k[1], k[2], alias_DU2R, alias_U2, alias_D2, alias_R2, alias_DU2R*alias_DU2R / (alias_D2*alias_U2*alias_U2));
+
+  return alias_k;
+}
+#endif
+

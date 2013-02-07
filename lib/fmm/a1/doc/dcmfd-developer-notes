@@ -1,0 +1,85 @@
+-----------------------
+* Threads and Locking *
+-----------------------
+
+The A1 library has been designed to be thread safe, when helper thread or interrupts are enabled or when the user has specified a 
+A1_THREAD_MULTIPLE as the thread level. A global (DCMF) lock is acquired on entry into any of any A1D function. 
+The lock is given up of exit of the function or when waiting on communication progress, thus allowing the helper 
+thread (CHT) to acquire the lock and hit advance (DCMF_Messager_advance). When the helper thread is not present, 
+the lock is retained and the main thread hits advance until the required communication progress is achieved.
+
+None of the A1DI functions should acquire the lock since these functions are called from within the A1D functions or from inside 
+a DCMF Callback at which point the lock would have already been acquired. 
+
+------------------------------------------
+* CHT, Interrupts and DCMF Thread levels *
+------------------------------------------
+
+When CHT is enabled, we use our own global lock using BGP Atomics. So, we configure DCMF in THREAD_SERIALIZED mode as only one 
+thread will be making a DCMF call at any point of time. 
+
+Initially, I had implemented a test-and-set lock using the BGP Atomics but this appeared to be causing a lot of contention. On Jeff's 
+suggestion I replaced this with test-test-and-set lock and this seems to be a perfect fit with almost zero contention.
+However, this scheme has an issue when there in no CHT delay (the time for which CHT waits between lock cycles). The main 
+thread never gets the lock leading to starvation. Introducing a CHT delay of around 70 cycles solves this (default is set to 200 
+on the conservative side). One has to keep in mind that this delay required can change from system to system. This parameter 
+can be modified using a run-time parameter, A1_CHT_PAUSE_CYCLES.
+
+--------------------------------
+* Request pool and Handle pool *
+--------------------------------
+
+I have implemented DCMF request pool and A1 handle pool separately as a single handle can have multiple requests 
+associated with it (aggregate requests and non-contiguous direct operations). Both the pools are implemented as 
+singly linked lists. They are popped off the head in 
+the Get_handle and Get_request functions and are tracked using callbacks. They are returned to the pool once the 
+local callback in complete. The issued requests/handles are not tracked in any other way. This places a restriction of 
+requiring a local callback on every DCMF operation posted (one exception is non-contiguous direct operations where 
+a callback on the last operation will suffice). When the request/handle pools are dry, A1 waits on advance until there 
+is a free request/handle available. 
+
+----------
+TODO list 
+----------
+
+done - Introduce API and functions to initialize handle (Application should initialize A1 handles before using 
+  them)
+done - Use enable_cht as the option name for CHT
+done - Modify locking macros to switch between Bgp_Atomics for CHT (THREAD_SINGLE) and DCMF_CS for Interrupts. 
+done - Evaluate lock contention using bgp_atomics and see if contention varies with the processor assignment for
+       CHT
+done -  Implement shared counters using atomics.
+        Note: Atomics not required, more testing is required
+done - Implement Vector operations - over simple Put/Get/Accumulate
+done - Implement operation hand-off for non-contiguous ops. Is it required regular ops for flow control?
+- Evaluate memory contention with CHT core-assignment
+done - Verify functionality of Non-blocking operations and evaluate bandwidth performance.
+- Make cht/interrupts a configure time option. 
+- Optimize accumulate operations using all the floating point registers in double hummer (Kaz' suggestion)
+- Add logic for a scale-free flush design.
+- Implement AllReduce and Reduce using DCMF collectives taking groups into consideration (detecting topology)
+- Implement mutexes, lock and unlock 
+
+------------
+FIXED ISSUES
+------------
+CRITICAL - FIXED
+1) Packing function assumes the largest contiguous chunk to be smaller than the size of the buffer given. This
+may not be true in all cases. 
+
+Fixed in checkin 252
+RESOLUTION: This asumption is correct. We should not be packing if the that was not the case. I have added a check in the 
+dcmfd_param.c to see if the packet sizes are less than the packing limits. If that is is true, they are set to the packing limits.
+One more change was to add the size of the header to the chunk size when checking if it is greater than the packing limit. 
+
+2) In the buffer pool code, if requested buffer is larger than the buffer pool limit, it needs to be allocated
+and returned. Currently it spins waiting for a buffer.
+
+Fixed in checkin 252
+RESOLUTION: Check if the buffer requested is largest one available in the pool. Return a newly allocated buffer.
+
+
+-------------
+KNOWN ISSUES
+-------------
+

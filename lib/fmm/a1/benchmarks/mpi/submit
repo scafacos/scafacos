@@ -1,0 +1,10 @@
+#!/bin/bash
+
+qsub="cqsub -p Catalyst -t 20 -m smp -n 2"
+files=`/bin/ls *.x`
+
+for file in ${files} ; do
+    echo ${qsub} ${file}
+done
+
+

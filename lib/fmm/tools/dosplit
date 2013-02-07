@@ -1,0 +1,57 @@
+#!/bin/sh
+#set -xv
+
+file=$1
+
+filename=
+
+prepend=header.txt
+
+rm -f join.list
+
+_ifs="$IFS"
+IFS=""
+
+lineno=0
+
+cat $file | while read line ; do
+  lineno=$((lineno+1))
+  IFS="$_ifs"
+  if test "${line#*STARTFILE}" != "$line" ; then
+    if test -n "$filename" ; then
+      echo "ERROR line $lineno: nutzt bereits STARTFILE $filename, ENDFILE vergessen?"
+      exit 1
+    fi
+    filename="${line#*STARTFILE: }"
+    f="${filename##*/}"
+    dirname="${filename%$f}"
+    echo "dirname: $dirname"
+    if test "$filename" != "$dirname" && test -n "$dirname" ; then
+      mkdir -p $dirname
+    fi
+    echo "$filename" >> join.list
+    rm -f $filename
+    test -f $prepend && cat $prepend >> $filename
+    echo "! FILE: $filename" >> $filename
+  elif test "${line#*ENDFILE}" != "$line" ; then
+    if test ! -n "$filename" ; then
+      echo "ERROR line $lineno: neues ENDFILE ohne vorheriges STARTFILE"
+      exit 1
+    fi
+    filename=
+  else
+    if test -n "$filename" ; then
+      echo "$line" >> $filename
+    else
+      if test -n "$line" ; then
+        xxx=`echo $line | while read xxx ; do test -n "$xxx" && echo "YES" ; done`
+        test -n "$xxx" && echo "ERROR line $lineno: Text zwischen ENDFILE und STARTFILE gefunden!"
+      fi
+    fi
+  fi
+  _ifs="$IFS"
+  IFS=""
+done
+
+_ifs="$IFS"
+IFS=""
