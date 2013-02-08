@@ -30,8 +30,6 @@
 #define PNFFT_ENABLE_CALC_INTPOL_NODES 0
 #define USE_EWALD_SPLITTING_FUNCTION_AS_WINDOW 0
 #define PNFFT_TUNE_LOOP_ADJ_B 0
-/* TODO: implement fast bspline for bigger m */
-#define PNFFT_USE_FAST_BSPLINE_FOR_SMALL_M 1
 
 static void loop_over_particles_adj(
     PNX(plan) ths, INT *local_no_start, INT *local_ngc, INT *gcells_below,
@@ -209,17 +207,74 @@ static INT max_I(INT a, INT b)
   return a >= b ? a : b;
 }
 
-static INT calc_intpol_num_nodes(
-    int intpol_order, R eps
+static R derivative_bound_guess(
+    int intpol_order
     )
 {
   /* use interpolation order 3 as default case */
   switch(intpol_order){
-    case 0: return (INT) 100000; /* I chose any high number. TODO: Compute number of nodes from error estimate.  */
-    case 1: return (INT) pnfft_ceil(1.7/pnfft_pow(eps,1.0/2.0));
-    case 2: return (INT) pnfft_ceil(2.2/pnfft_pow(eps,1.0/3.0));
-    default: return max_I(10, (INT) pnfft_ceil(1.4/pnfft_pow(eps,1.0/4.0)));
+    case 0: return 2;
+    case 1: return 1.7;
+    case 2: return 2.2;
+    default: return 1.4;
   }
+}
+
+
+static R get_derivative_bound(
+    PNX(plan) ths, intpol_order
+    )
+{
+  /* TODO: implement bound for sinc, kaiser, bessel_i0 and gaussian */
+  if(ths->pnfft_flags & PNFFT_WINDOW_BSPLINE)
+    return PNX(derivative_bound_bspline)(intpol_order, 2*ths->m);
+  else
+    return derivative_bound_guess(intpol_order);
+}
+
+static INT calc_intpol_num_nodes(
+    PNX(plan) ths, int intpol_order, R eps, R r, unsigned *err
+    )
+{
+  R N, c, M, M_pot, M_force;
+  *err=0;
+
+  /* define constants from Taylor expansion */
+  switch(intpol_order){
+    case 0: c = 1.0; break;
+    case 1: c = 1.0/8.0; break;
+    case 2: c = fcs_sqrt(3)/9.0; break;
+    case 3: c = 3.0/128.0; break;
+    default: return 0; /* no interpolation */
+  }
+   
+  /* Compute the max. value of the regularization derivative one order higher
+   * than the interpolation order. This gives the rest term of the taylor expansion. */ 
+  M_pot   = get_derivative_bound(ths, interpolation_order+1);
+  M_force = get_derivative_bound(ths, interpolation_order+2);
+
+  /* We use the same number of interpolation nodes for potentials and forces.
+   * Be sure, that accuracy is fulfilled for both. */
+  M = (M_force > M_pot) ? M_force : M_pot;
+
+  N = r * pnfft_pow(c*M/pnfft_fabs(eps-PNFFT_EPSILON) , 1.0 / (1.0 + intpol_order) ); 
+
+  /* Set maximum number of nodes to avoid overflows during conversion to int. */
+  if(N>1e7){
+    *err=1;
+    N = 1e7;
+  }
+
+  /* Return the number of nodes needed for interpolation of the interval [0,1/m] */
+  N /= 2*ths->m;
+  
+  /* At least use 4 interpolation points per interval. */
+  if(N<2) N = 2.0;
+
+  /* Compute next power of two >= N to optimize memory access */
+  N = pnfft_pow( 2.0, pnfft_ceil(pnfft_log(N)/pnfft_log(2)) );
+
+  return (fcs_int) N;
 }
 #endif
 
@@ -238,11 +293,10 @@ static void init_intpol_table_psi(
    * This equivalent to f[-order/2], ... , f[(order+1)/2]
    * with integer division. */
   INT ind=0;
-  /* start with -m for k==0, wihle all the other cases start with -m-1 */
   for(INT k=0; k<num_nodes_per_interval; k++)
     for(INT c=0; c<cutoff; c++)
       for(INT i=-intpol_order/2; i<=(intpol_order+1)/2; i++)
-        table[ind++] = PNX(psi)(wind_param, dim, (-m   + (R)(-k+i)/num_nodes_per_interval + c)/n);
+        table[ind++] = PNX(psi)(wind_param, dim, (-m + (R)(-k+i)/num_nodes_per_interval + c)/n);
 }
 
 static void init_intpol_table_dpsi(
@@ -1032,7 +1086,8 @@ static void pre_tensor_intpol(
 
   for(int t=0; t<d; t++){
     R dist = n[t]*x[t] - floor_nx[t];
-    INT k = (INT) (dist * intpol_num_nodes) * cutoff * (intpol_order+1);
+    INT k = (INT) pnfft_floor(dist * intpol_num_nodes) * cutoff * (intpol_order+1);
+    R dist_k = 1.0 + pnfft_floor(intpol_num_nodes*dist) - intpol_num_nodes*dist;
     switch(intpol_order){
       case 0 :
         for(int s=0; s<cutoff; s++, k++)
@@ -1040,15 +1095,15 @@ static void pre_tensor_intpol(
         break;
       case 1 :
         for(int s=0; s<cutoff; s++, k+=2)
-          pre_psi[cutoff*t+s] = pnfft_intpol_lin(k, dist, intpol_tables_psi[t]);
+          pre_psi[cutoff*t+s] = pnfft_intpol_lin(k, dist_k, intpol_tables_psi[t]);
         break;
       case 2 :
         for(int s=0; s<cutoff; s++, k+=3)
-          pre_psi[cutoff*t+s] = pnfft_intpol_quad(k, dist, intpol_tables_psi[t]);
+          pre_psi[cutoff*t+s] = pnfft_intpol_quad(k, dist_k, intpol_tables_psi[t]);
         break;
       default:
         for(int s=0; s<cutoff; s++, k+=4)
-          pre_psi[cutoff*t+s] = pnfft_intpol_kub(k, dist, intpol_tables_psi[t]);
+          pre_psi[cutoff*t+s] = pnfft_intpol_kub(k, dist_k, intpol_tables_psi[t]);
     }
   }
 }
@@ -1158,9 +1213,7 @@ static void pre_psi_tensor_bspline(
 {
   const int d=3;
 
-#if PNFFT_USE_FAST_BSPLINE_FOR_SMALL_M
   if(m<9){
-    /* TODO: implement fast bspline for cao > 7 */
     for(int t=0; t<d; t++){
       /* Bspline is shifted by m */
       R dist = floor_nx[t]  - n[t]*x[t] + 0.5; 
@@ -1170,7 +1223,6 @@ static void pre_psi_tensor_bspline(
     }
     return;
   }
-#endif
 
   for(int t=0; t<d; t++){
     /* Bspline is shifted by m */
@@ -1311,9 +1363,7 @@ static void pre_dpsi_tensor_bspline(
 {
   const int d=3;
 
-#if PNFFT_USE_FAST_BSPLINE_FOR_SMALL_M
   if(m<9){
-    /* TODO: implement fast bspline for cao > 7 */
     for(int t=0; t<d; t++){
       /* Bspline is shifted by m */
       R dist = floor_nx[t] - n[t]*x[t] + 0.5;
@@ -1323,7 +1373,6 @@ static void pre_dpsi_tensor_bspline(
     }
     return;
   }
-#endif
 
   for(int t=0; t<d; t++){
     /* Bspline is shifted by m */

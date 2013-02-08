@@ -84,6 +84,8 @@ static void init_near_interpolation_table_force_0dp(
 static fcs_int max_i(fcs_int a, fcs_int b);
 static fcs_int calc_interpolation_num_nodes(
     fcs_int interpolation_order, fcs_float eps);
+static fcs_int calc_interpolation_num_nodes_erf(
+    fcs_int interpolation_order, fcs_float eps, fcs_float alpha, fcs_float r, unsigned *err);
 static fcs_float evaluate_cos_polynomial_1d(
    fcs_float x, fcs_int N, fcs_float *coeff);
 static fcs_float evaluate_sin_polynomial_1d(
@@ -462,7 +464,11 @@ FCSResult ifcs_p2nfft_tune(
       /* Initialize the tables for near field interpolation */
       /*   accuracy of 1e-16 needs 14000 interpolation nodes */
       /*   accuracy of 1e-17 needs 24896 interpolation nodes */
-      d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
+//       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
+      unsigned err=0;
+      d->interpolation_num_nodes = calc_interpolation_num_nodes_erf(d->interpolation_order, 0.1*d->tolerance, d->alpha, d->r_cut, &err);
+      if(err)
+        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Number of nodes needed for interpolation exeedes 1e7. Try to use a higher interpolation order or less accuracy.");
 
       if(d->near_interpolation_table_potential != NULL)
         free(d->near_interpolation_table_potential);
@@ -656,8 +662,8 @@ FCSResult ifcs_p2nfft_tune(
       /*   accuracy of 1e-17 needs 24896 interpolation nodes */
       if(d->interpolation_order < 0)
         return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "No support of direct evaluation for CG approximtation. Choose non-negative interpolation order!");
-      d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
-//       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
+//       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
+      d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
 
       if(d->near_interpolation_table_potential != NULL)
         free(d->near_interpolation_table_potential);
@@ -1031,12 +1037,30 @@ static fcs_int max_i(fcs_int a, fcs_int b)
   return a >= b ? a : b;
 }
 
-/* eps is the relative error */
+/* Gives the maximum absolute value of the derivative D[Erf[alpha*x]/x, {x,order}] */
+static fcs_float get_derivative_bound_erf(
+    fcs_int order, fcs_float alpha
+    )
+{
+  fcs_float val=0.0;
+
+  /* We computed the maximum absolute value numerically on the intervall [0,10]. */
+  switch(order){
+    case 0: val = 1.13; break;
+    case 1: val = 0.43; break;
+    case 2: val = 0.76; break;
+    case 3: val = 1.06; break;
+    case 4: val = 2.71; break;
+    case 5: val = 6.01; break;
+  }
+
+  return alpha * val;
+}
+
 static fcs_int calc_interpolation_num_nodes(
     fcs_int interpolation_order, fcs_float eps
     )
 {
-  /* use interpolation order 3 as default case */
   switch(interpolation_order){
     case 0: return (fcs_int) 100000; /* TODO: Compute correct number of nodes by error estimate */
     case 1: return (fcs_int) fcs_ceil(1.7/fcs_pow(eps,1.0/2.0));
@@ -1044,6 +1068,49 @@ static fcs_int calc_interpolation_num_nodes(
     case 3: return max_i(10, (fcs_int) fcs_ceil(1.4/fcs_pow(eps,1.0/4.0)));
     default: return 0; /* no interpolation */
   }
+}
+
+
+/* Here, we calculate the minimum number of nodes that are necessary to guarantee 
+ * the relative error 'eps' during the interpolation on the interval [0,r],
+ * see 'Methods of Shape-Preserving Spline-Approximation' by B.I.Kvasov, 2000. */
+static fcs_int calc_interpolation_num_nodes_erf(
+    fcs_int interpolation_order, fcs_float eps, fcs_float alpha, fcs_float r, unsigned *err
+    )
+{
+  fcs_float N, c, M, M_pot, M_force;
+  *err=0;
+
+  /* define constants from Taylor expansion */
+  switch(interpolation_order){
+    case 0: c = 1.0; break;
+    case 1: c = 1.0/8.0; break;
+    case 2: c = fcs_sqrt(3)/9.0; break;
+    case 3: c = 3.0/128.0; break;
+    default: return 0; /* no interpolation */
+  }
+   
+  /* Compute the max. value of the regularization derivative one order higher
+   * than the interpolation order. This gives the rest term of the taylor expansion. */ 
+  M_pot   = get_derivative_bound_erf(interpolation_order+1, alpha);
+  M_force = get_derivative_bound_erf(interpolation_order+2, alpha);
+
+  /* We use the same number of interpolation nodes for potentials and forces.
+   * Be sure, that accuracy is fulfilled for both. */
+  M = (M_force > M_pot) ? M_force : M_pot;
+
+  N = r * fcs_pow(c*M/fcs_fabs(eps-FCS_P2NFFT_EPS) , 1.0 / (1.0 + interpolation_order) ); 
+
+  /* At least use 16 interpolation points. */
+  if(N<16) N = 16.0;
+
+  /* Set maximum number of nodes to avoid overflows during conversion to int. */
+  if(N>1e7){
+    *err=1;
+    N = 1e7;
+  }
+
+  return (fcs_int) fcs_ceil(N);
 }
 
 static void init_pnfft(

@@ -2,8 +2,9 @@
 
 import os
 import subprocess
+from scipy.optimize import minimize_scalar
 
-def compute_error(window, alpha):
+def compute_error(alpha):
     """Compute the fast summation error for given alpha."""
 
     tmp_file="tmp_output.txt"
@@ -41,18 +42,18 @@ def compute_error(window, alpha):
 
 # testcase="cloud_wall_8100"
 testcase="cloud_wall_102900"
-N0=str(64)
+N0=str(256)
 N=N0+","+N0+","+N0
 n=N
-m="2"
-rcut="3.7"
+m="4"
+rcut="7.0"
 interlaced="1"
 p2nfft_intpol_order="-1"
 pnfft_intpol_order="-1"
 patience="estimate"
 
-# windows=['gaussian']
-windows=['bspline']
+windows=['gaussian']
+# windows=['bspline']
 
 for window in windows:
     pot_file="data_pot_" + window + ".txt"
@@ -63,50 +64,8 @@ for window in windows:
       with open(fname, 'w') as f:
         f.write('# ' + window + '\n')
 
-    al = 0.0
-    au = 10.0
-    fal = compute_error(window, al)
-    fau = compute_error(window, au)
-
-    for i in range(20):
-      # calculate ml=(2*al+au)/3
-      ml = (2.0*al+au) / 3.0
-      fml = compute_error(window, ml);
-    
-      # calculate mu=(al+2*au)/3
-      mu = (al+2.0*au) / 3.0
-      fmu = compute_error(window, mu)
-
-#       print("al = " + str(al) + ", fal = " + str(fal))
-#       print("ml = " + str(ml) + ", fml = " + str(fml))
-#       print("mu = " + str(mu) + ", fmu = " + str(fmu))
-#       print("au = " + str(au) + ", fau = " + str(fau))
-
-      if fml < fmu :
-        au=mu
-        fau=fmu
-      elif fml > fmu :
-        al = ml
-        fal = fml
-      else :
-        au=mu
-        fau=fmu
-        al=ml
-        fal=fml
-
-#       print("new al = " + str(al) + ", fal = " + str(fal))
-#       print("new ml = " + str(ml) + ", fml = " + str(fml))
-#       print("new mu = " + str(mu) + ", fmu = " + str(fmu))
-#       print("new au = " + str(au) + ", fau = " + str(fau))
-
-    print("al = " + str(al) + ", fal = " + str(fal))
-    print("ml = " + str(ml) + ", fml = " + str(fml))
-    print("mu = " + str(mu) + ", fmu = " + str(fmu))
-    print("au = " + str(au) + ", fau = " + str(fau))
-
-    
-#    error = compute_error(window, 3)
-#    print("Das ist der Fehler:", error)
+    res = minimize_scalar(compute_error, bracket=(0, 10), method='brent', tol=1e-3)
+    print[res.x]
 
 
 

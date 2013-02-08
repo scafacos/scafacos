@@ -385,7 +385,7 @@ void PNX(assign_f_and_grad_f_r2r_pre_full_psi)(
 
 
 
-/** linear spline interpolation in near field with even windows */
+/** constant spline interpolation */
 static inline R pnfft_intpol_const(
     int k, const R *table
     )
@@ -393,7 +393,7 @@ static inline R pnfft_intpol_const(
   return table[k];
 }
 
-/** linear spline interpolation in near field with even windows */
+/** linear spline interpolation */
 static inline R pnfft_intpol_lin(
     int k, R dist, const R *table
     )
@@ -403,33 +403,32 @@ static inline R pnfft_intpol_lin(
   return f1*(1.0-dist) + f2*dist;
 }
 
-/** quadratic spline interpolation in near field with even windows */
+/** quadratic spline interpolation */
 static inline R pnfft_intpol_quad(
     int k, R dist, const R *table
     )
 {
-  R c1,c2,c3;
-  R f0,f1,f2;
+  R c0,c1,c2,f0,f1,f2;
   f0=table[k]; f1=table[k+1]; f2=table[k+2];
+  c0=dist+1.0;
   c1=dist;
-  c2=dist+1.0;
-  c3=dist-1.0;
-  return (0.5*f0*c1*c3-f1*c2*c3+0.5*f2*c2*c1);
+  c2=dist-1.0;
+  return (0.5*f0*c1*c2-c0*f1*c2+0.5*c0*c1*f2);
 }
 
-/** cubic spline interpolation in near field with even windows */
+/** cubic spline interpolation */
 static inline R pnfft_intpol_kub(
     int k, R dist, const R *table
     )
 {
-  R c1,c2,c3,c4;
+  R c0,c1,c2,c3;
   R f0,f1,f2,f3;
   f0=table[k]; f1=table[k+1]; f2=table[k+2]; f3=table[k+3];
+  c0=dist+1.0;
   c1=dist;
-  c2=dist+1.0;
-  c3=dist-1.0;
-  c4=dist-2.0;
-  return(-f0*c1*c3*c4+3.0*f1*c2*c3*c4-3.0*f2*c2*c1*c4+f3*c2*c1*c3)/6.0;
+  c2=dist-1.0;
+  c3=dist-2.0;
+  return(-f0*c1*c2*c3+3.0*c0*f1*c2*c3-3.0*c0*c1*f2*c3+c0*c1*c2*f3)/6.0;
 }
 
 #endif /* __IPNFFT_H__ */

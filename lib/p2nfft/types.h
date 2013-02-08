@@ -26,6 +26,7 @@
 #endif
 #include <complex.h>
 #include "pnfft.h"
+#include <float.h>
 
 #define FCS_P2NFFT_DEBUG 0
 #define FCS_P2NFFT_DEBUG_RETUNE 0
@@ -42,14 +43,17 @@
 typedef pnfft_complex fcs_pnfft_complex;
 # define FCS_PNFFT(name)  PNFFT_MANGLE_DOUBLE(name)
 # define FCS_PFFT(name)   PFFT_MANGLE_DOUBLE(name)
+# define FCS_P2NFFT_EPS   DBL_EPSILON
 #elif defined(FCS_FLOAT_IS_FLOAT)
 typedef pnfftf_complex fcs_pnfft_complex;
 # define FCS_PNFFT(name)  PNFFT_MANGLE_FLOAT(name)
 # define FCS_PFFT(name)   PFFT_MANGLE_FLOAT(name)
+# define FCS_P2NFFT_EPS   FLT_EPSILON
 #elif defined(FCS_FLOAT_IS_LONG_DOUBLE)
 typedef pnfftl_complex fcs_pnfft_complex;
 # define FCS_PNFFT(name)  PNFFT_MANGLE_LONG_DOUBLE(name)
 # define FCS_PFFT(name)   PFFT_MANGLE_LONG_DOUBLE(name)
+# define FCS_P2NFFT_EPS   LDBL_EPSILON
 #else
 # error "fcs_float is neither double, float nor long double"
 #endif

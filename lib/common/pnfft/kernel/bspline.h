@@ -30,6 +30,8 @@ R PNX(fast_bspline)(
     int i, R x, int cao_value);
 R PNX(fast_bspline_d)(
     int i, R x, int cao_value);
+R PNX(derivative_bound_bspline)(
+    int order, int p);
 
 
 #endif
