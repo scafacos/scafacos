@@ -131,7 +131,8 @@ def read(filename):
                       print "cores = %d not found in list." % cores
                 # find minimal number of cores with a defined time
                 mincoresix = 0
-                while numpy.isnan(timing_array[ixcha,ixtol,mincoresix]): mincoresix += 1
+                while mincoresix < timing_array.shape[2]-1 and \
+                  numpy.isnan(timing_array[ixcha,ixtol,mincoresix]): mincoresix += 1
                 # compute estimated 1-core-time
                 est_serial_time = timing_array[ixcha,ixtol,mincoresix] * all_cores[mincoresix]
 
@@ -147,7 +148,8 @@ def read(filename):
 
     return all_charges, all_tolerances, all_cores, timing, speedup, efficiency
 
-def plot_against_cores(testcase, charges, tolerance):
+def plot_against_cores(testcase, charges, tolerance, 
+                       plot_timing=True, plot_speedup=False, plot_efficiency=True):
     all_charges, all_tolerances, all_cores, \
         timing, speedup, efficiency = \
         read(testcase)
@@ -161,45 +163,50 @@ def plot_against_cores(testcase, charges, tolerance):
 
     title_s = "Testcase %s (%d charges, tolerance %1.0e)" % (testcase, charges, tolerance)
 
-    legends = []
-
     methods = timing.keys()
     methods.sort()
     
     rawdata      = numpy.zeros([len(all_cores), len(methods)+1])
     rawdata[:,0] = all_cores
+
+    figures = []
     
-    plt.figure('Timings')
-    plt.suptitle(title_s)
-    for method in methods:
-        data = timing[method]
-        if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
-            plt.loglog(all_cores, data[ixcha,ixtol,:], 'o-', label=method)
-    plt.legend()
-    plt.xlabel('#cores')
-    plt.ylabel('Time [s]')
+    if plot_timing:
+        fig = plt.figure('Timings ' + title_s)
+        figures.append(fig)
+        for method in methods:
+            data = timing[method]
+            if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
+                plt.loglog(all_cores, data[ixcha,ixtol,:], 'o-', label=method)
+        plt.legend()
+        plt.xlabel('#cores')
+        plt.ylabel('Time [s]')
     
-    plt.figure('Speedup')
-    plt.suptitle(title_s)
-    plt.loglog(all_cores, all_cores, '-')
-    for method in methods:
-        data = speedup[method]
-        if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
-            plt.loglog(all_cores, data[ixcha,ixtol,:], 'o-', label=method)
-    plt.axes().set_aspect('equal', 'datalim')
-    plt.legend()
-    plt.xlabel('#cores')
-    plt.ylabel('Speedup')
-                    
-    plt.figure('Efficiency')
-    plt.suptitle(title_s)
-    for method in methods:
-        data = efficiency[method]
-        if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
-            plt.semilogx(all_cores, data[ixcha,ixtol,:], 'o-', label=method)
-    plt.legend()
-    plt.xlabel('#cores')
-    plt.ylabel('Efficiency')
+    if plot_speedup:
+        fig = plt.figure('Speedup ' + title_s)
+        figures.append(fig)
+        plt.loglog(all_cores, all_cores, '-')
+        for method in methods:
+            data = speedup[method]
+            if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
+                plt.loglog(all_cores, data[ixcha,ixtol,:], 'o-', label=method)
+        plt.axes().set_aspect('equal', 'datalim')
+        plt.legend()
+        plt.xlabel('#cores')
+        plt.ylabel('Speedup')
+
+    if plot_efficiency:
+        fig = plt.figure('Efficiency ' + title_s)
+        figures.append(fig)
+        for method in methods:
+            data = efficiency[method]
+            if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
+                plt.semilogx(all_cores, data[ixcha,ixtol,:], 'o-', label=method)
+        plt.legend()
+        plt.xlabel('#cores')
+        plt.ylabel('Efficiency')
+
+    return figures
 
 def plot_against_charges(testcase, cores, tolerance):
     all_charges, all_tolerances, all_cores, \

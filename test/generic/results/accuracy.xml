@@ -556,6 +556,142 @@ pnfft_interlaced,1,p2nfft_ignore_tolerance,1,pnfft_N,128,128,128,p2nfft_intpol_o
 ********************
 -->
 
+  <timings
+      method="P3M"
+      charges="102900"
+      tolerance="1e-2">
+    <parameters>
+-c tolerance_field,6e-3
+    </parameters>
+    <tuned-parameters>
+r_cut=4.481387, grid=64, cao=3, alpha=0.489078
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    1.278616e-02
+          abs_max_field_error =    2.412276e-02
+      abs_rms_potential_error =    2.555043e-03
+      abs_max_potential_error =    7.565989e-03
+             abs_energy_error =    6.045333e+01
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    2.979191e-03
+          rel_max_field_error =    5.620632e-03
+      rel_rms_potential_error =    1.185538e-03
+      rel_max_potential_error =    3.510613e-03
+             rel_energy_error =    1.183329e-03
+    </errors>
+    <data>
+      1	 	1.179702e+00
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
+      charges="102900"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,1e-3
+    </parameters>
+    <tuned-parameters>
+r_cut=4.481387, grid=64, cao=4, alpha=0.573076
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    2.827256e-03
+          abs_max_field_error =    6.713199e-03
+      abs_rms_potential_error =    9.626185e-04
+      abs_max_potential_error =    2.901062e-03
+             abs_energy_error =    2.622403e+01
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    6.583814e-04
+          rel_max_field_error =    1.563299e-03
+      rel_rms_potential_error =    4.468884e-04
+      rel_max_potential_error =    1.346796e-03
+             rel_energy_error =    5.133160e-04
+    </errors>
+    <data>
+      1	 	1.240991e+00
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
+      charges="102900"
+      tolerance="1e-4">
+    <parameters>
+-c tolerance_field,2e-4
+    </parameters>
+    <tuned-parameters>
+r_cut=4.48139 cao=5 grid=(128, 128, 128) alpha=0.639184
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    1.464017e-04
+          abs_max_field_error =    5.764062e-04
+      abs_rms_potential_error =    5.579947e-05
+      abs_max_potential_error =    1.412017e-04
+             abs_energy_error =    1.844174e+00
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    3.408658e-05
+          rel_max_field_error =    1.342041e-04
+      rel_rms_potential_error =    2.589960e-05
+      rel_max_potential_error =    6.553948e-05
+             rel_energy_error =    3.609834e-05
+    </errors>
+    <data>
+      1	 	2.316370e+00
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
+      charges="102900"
+      tolerance="1e-5">
+    <parameters>
+-c tolerance_field,1e-5
+    </parameters>
+    <tuned-parameters>
+r_cut=4.48139 cao=5 grid=(256, 256, 256) alpha=0.74681
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    7.755264e-06
+          abs_max_field_error =    2.503430e-05
+      abs_rms_potential_error =    1.561733e-05
+      abs_max_potential_error =    3.794275e-05
+             abs_energy_error =    1.013528e-01
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    1.805630e-06
+          rel_max_field_error =    5.828646e-06
+      rel_rms_potential_error =    7.248938e-06
+      rel_max_potential_error =    1.761151e-05
+             rel_energy_error =    1.983906e-06
+    </errors>
+    <data>
+      1	 	1.030640e+01
+    </data>
+  </timings>
+
+<!--  <timings
+      method="P3M"
+      charges="102900"
+      tolerance="1e-6">
+    <parameters>
+-c tolerance_field,1e-5
+    </parameters>
+    <tuned-parameters>
+    </tuned-parameters>
+    <errors>
+    </errors>
+    <data>
+      1	 	
+    </data>
+  </timings>-->
+
 <!-- 
 ********************
 ** PP3MG

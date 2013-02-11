@@ -73,6 +73,7 @@ void ifcs_p3m_prepare(ifcs_p3m_data_struct *d, fcs_int max_charges) {
   d->send_grid = (fcs_float *) realloc(d->send_grid, sizeof(fcs_float)*d->sm.max);
   d->recv_grid = (fcs_float *) realloc(d->recv_grid, sizeof(fcs_float)*d->sm.max);
 
+  P3M_INFO(printf("    Interpolating charge assignement function...\n"));
   ifcs_p3m_interpolate_charge_assignment_function(d);
   
   /* position offset for calc. of first gridpoint */
@@ -80,6 +81,7 @@ void ifcs_p3m_prepare(ifcs_p3m_data_struct *d, fcs_int max_charges) {
   P3M_DEBUG(printf("    pos_shift = %" FCS_LMOD_FLOAT "f\n",d->pos_shift)); 
  
   /* FFT */
+  P3M_INFO(printf("    Preparing FFTs...\n"));
   ifcs_fft_prepare(&d->fft, &d->comm, 
 	      &d->rs_grid, &d->ks_grid,
 	      d->local_grid.dim,d->local_grid.margin,
@@ -88,6 +90,7 @@ void ifcs_p3m_prepare(ifcs_p3m_data_struct *d, fcs_int max_charges) {
   
   /* k-space part */
   ifcs_p3m_calc_differential_operator(d);
+  P3M_INFO(printf("    Calculating influence function...\n"));
 #if !defined(P3M_INTERLACE) && defined(P3M_IK)
   ifcs_p3m_calc_influence_function_ik(d);
 #elif defined(P3M_INTERLACE) && defined(P3M_IK)

@@ -153,7 +153,7 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
   const char* fnc_name="ifcs_p3m_tuneit";
   fcs_int grid1d;
   const fcs_int grid1d_min = 4;
-  const fcs_int grid1d_max = 512;
+  const fcs_int grid1d_max = 1024;
   #ifdef P3M_AD
   const fcs_int cao_min = 2;
   #else

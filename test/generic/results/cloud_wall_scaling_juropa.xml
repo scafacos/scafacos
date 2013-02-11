@@ -323,43 +323,160 @@
 -->
   <timings
       method="P3M"
+      charges="8100"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,6e-3
+    </parameters>
+    <tuned-parameters>
+r_cut=4.48139 cao=3 grid=(32, 32, 32) alpha=0.489078
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 8100 of 8100 particles)
+          abs_rms_field_error =    1.095916e-02
+          abs_max_field_error =    2.229927e-02
+      abs_rms_potential_error =    2.118408e-03
+      abs_max_potential_error =    5.616018e-03
+             abs_energy_error =    5.418482e+00
+
+  RELATIVE ERRORS (from 8100 of 8100 particles)
+          rel_rms_field_error =    2.552862e-03
+          rel_max_field_error =    5.194465e-03
+      rel_rms_potential_error =    9.828489e-04
+      rel_max_potential_error =    2.605587e-03
+             rel_energy_error =    1.347390e-03
+    </errors>
+    <data>
+      128	5.940914e-03
+      64	5.141973e-03
+      32	6.624937e-03
+      16	1.046610e-02
+      8	 	1.777697e-02
+      4	 	3.047919e-02
+      2	 	5.535984e-02
+      1	 	1.055539e-01
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
+      charges="8100"
+      tolerance="1e-5">
+    <parameters>
+-c tolerance_field,4e-5
+    </parameters>
+    <tuned-parameters>
+r_cut=4.48139 cao=6 grid=(64, 64, 64) alpha=0.699068
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 8100 of 8100 particles)
+          abs_rms_field_error =    2.839843e-05
+          abs_max_field_error =    1.068007e-04
+      abs_rms_potential_error =    7.802914e-06
+      abs_max_potential_error =    2.414818e-05
+             abs_energy_error =    1.802151e-02
+
+  RELATIVE ERRORS (from 8100 of 8100 particles)
+          rel_rms_field_error =    6.611918e-06
+          rel_max_field_error =    2.486608e-05
+      rel_rms_potential_error =    3.621799e-06
+      rel_max_potential_error =    1.120862e-05
+             rel_energy_error =    4.481331e-06
+    </errors>
+    <data>
+      256	8.840084e-03
+      128	8.154869e-03
+      64	7.062912e-03
+      32	9.999990e-03
+      16	1.611400e-02
+      8		2.821302e-02
+      4		5.374694e-02
+      2		1.075459e-01
+      1		1.986330e-01
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
       charges="102900"
       tolerance="1e-3">
     <parameters>
--c tolerance_field,2e-4
+-c tolerance_field,1e-3
     </parameters>
     <tuned-parameters>
-r_cut=4.481387, grid=128, cao=5, alpha=0.639184
+r_cut=4.48139 cao=4 grid=(64, 64, 64) alpha=0.573076
     </tuned-parameters>
     <errors>
   ABSOLUTE ERRORS (from 102900 of 102900 particles)
-          abs_rms_field_error =    1.464425e-04
-          abs_max_field_error =    5.763636e-04
-      abs_rms_potential_error =    1.184391e-04
-      abs_max_potential_error =    3.190859e-04
-             abs_energy_error =    1.750504e+00
+          abs_rms_field_error =    2.827248e-03
+          abs_max_field_error =    6.713180e-03
+      abs_rms_potential_error =    9.626099e-04
+      abs_max_potential_error =    2.901049e-03
+             abs_energy_error =    2.622363e+01
 
   RELATIVE ERRORS (from 102900 of 102900 particles)
-          rel_rms_field_error =    3.409608e-05
-          rel_max_field_error =    1.341942e-04
-      rel_rms_potential_error =    5.497415e-05
-      rel_max_potential_error =    1.481055e-04
-             rel_energy_error =    3.426482e-05
+          rel_rms_field_error =    6.583797e-04
+          rel_max_field_error =    1.563294e-03
+      rel_rms_potential_error =    4.468844e-04
+      rel_max_potential_error =    1.346790e-03
+             rel_energy_error =    5.133082e-04
     </errors>
     <data>
-      4096	3.934813e-02
-      2048	4.415703e-02
-      1024	1.902699e-02
-      512	1.544619e-02
-      256	2.026391e-02
-      128	3.399611e-02
-      64	6.587386e-02
-      32	1.079750e-01
-      16	2.066040e-01
-      8	 	4.047430e-01
-      4	 	7.749732e-01
-      2	 	1.546903e+00
-      1	 	2.939212e+00
+      4096	6.270409e-02
+      2048	6.557703e-02
+      1024	1.342702e-02
+      512	1.665115e-02
+      256	1.183009e-02
+      128	1.876307e-02
+      64	3.019905e-02
+      32	5.442405e-02
+      16	9.844398e-02
+      8	 	1.797309e-01
+      4	 	3.356769e-01
+      2	 	6.501591e-01
+      1	 	1.239377e+00
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
+      charges="102900"
+      tolerance="1e-5">
+    <parameters>
+-c tolerance_field,1e-5
+    </parameters>
+    <tuned-parameters>
+r_cut=4.48139 cao=5 grid=(256, 256, 256) alpha=0.74681
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    7.755264e-06
+          abs_max_field_error =    2.503430e-05
+      abs_rms_potential_error =    1.561733e-05
+      abs_max_potential_error =    3.794275e-05
+             abs_energy_error =    1.013528e-01
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    1.805630e-06
+          rel_max_field_error =    5.828646e-06
+      rel_rms_potential_error =    7.248938e-06
+      rel_max_potential_error =    1.761151e-05
+             rel_energy_error =    1.983906e-06
+    </errors>
+    <data>
+      4096	
+      2048	1.190009e-01
+      1024	5.090213e-02
+      512	3.794503e-02
+      256	3.842187e-02
+      128	7.753110e-02
+      64	1.659760e-01
+      32	3.121979e-01
+      16	6.406581e-01
+      8	 	1.462895e+00
+      4	 	2.804020e+00
+      2	 	5.387087e+00
+      1	 	1.022274e+01
     </data>
   </timings>
 
@@ -389,19 +506,58 @@ r_cut=4.48139 cao=4 grid=(256, 256, 256) alpha=0.611589
              rel_energy_error =    7.448628e-05
     </errors>
     <data>
-      4096	
-      2048	
-      1024	
-      512	
-      256	
-      128	
-      64	
-      32	
-      16	1.397070e+00
-      8	 	2.775590e+00
-      4	 	5.393900e+00
-      2	 	1.043167e+01
-      1	 	2.018307e+01
+      4096	4.001594e-02
+      2048	9.000492e-02
+      1024	3.847599e-02
+      512	7.025194e-02
+      256	1.433709e-01
+      128	1.721230e-01
+      64	3.387311e-01
+      32	7.502301e-01
+      16	1.329285e+00
+      8	 	2.825308e+00
+      4	 	5.481146e+00
+      2	 	1.054918e+01
+      1	 	2.034410e+01
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
+      charges="1012500"
+      tolerance="1e-5">
+    <parameters>
+-c tolerance_field,1e-6
+    </parameters>
+    <tuned-parameters>
+r_cut=4.48139 cao=7 grid=(512, 512, 512) alpha=0.819987
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 1012500 of 1012500 particles)
+          abs_rms_field_error =    8.085698e-05
+          abs_max_field_error =    1.789453e-03
+      abs_rms_potential_error =    2.865937e-05
+      abs_max_potential_error =    1.353825e-04
+             abs_energy_error =    4.687619e-02
+
+  RELATIVE ERRORS (from 1012500 of 1012500 particles)
+          rel_rms_field_error =    1.882563e-05
+          rel_max_field_error =    4.166319e-04
+      rel_rms_potential_error =    1.330254e-05
+      rel_max_potential_error =    6.283920e-05
+             rel_energy_error =    9.325198e-08
+    </errors>
+    <data>
+      2048	1.042571e-01
+      1024	1.209462e-01
+      512	2.217309e-01
+      256	3.517098e-01
+      128	6.848152e-01
+      64	1.516010e+00
+      32	3.321668e+00
+      16	6.328679e+00
+      8	 	1.252334e+01
+      4	 	2.377666e+01
     </data>
   </timings>
 
@@ -410,84 +566,41 @@ r_cut=4.48139 cao=4 grid=(256, 256, 256) alpha=0.611589
       charges="9830400"
       tolerance="1e-3">
     <parameters>
--c tolerance_field,8e-4
+-c tolerance_field,4e-4
     </parameters>
     <tuned-parameters>
-r_cut=4.48139 cao=4 grid=(512, 512, 512) alpha=0.588367
-    </tuned-parameters>
-    <errors>
-  ABSOLUTE ERRORS (from 1012500 of 1012500 particles)
-          abs_rms_field_error =    5.309335e-04
-          abs_max_field_error =    2.176915e-03
-      abs_rms_potential_error =    2.097222e-04
-      abs_max_potential_error =    5.362942e-04
-             abs_energy_error =    6.991420e+01
-
-  RELATIVE ERRORS (from 1012500 of 1012500 particles)
-          rel_rms_field_error =    1.236209e-04
-          rel_max_field_error =    5.068662e-04
-      rel_rms_potential_error =    9.734047e-05
-      rel_max_potential_error =    2.489156e-04
-             rel_energy_error =    1.390821e-04
-    </errors>
-    <data>
-      4096	7.329798e-02
-      2048	9.141684e-02
-      1024	9.497690e-02
-      512	2.247040e-01
-      256	3.371050e-01
-      128	6.829538e-01
-      64	1.287490e+00
-      32	2.509546e+00
-      16	4.775781e+00
-      8         9.384810e+00
-      4	 	1.807034e+01
-      2
-      1
-    </data>
-  </timings>
-
-<!--  <timings
-      method="P3M"
-      charges="9830400"
-      tolerance="1e-5">
-    <parameters>
--c tolerance_field,5e-5
-    </parameters>
-    <tuned-parameters>
-r_cut=4.481387, grid=512, cao=7, alpha=0.691075
+r_cut=4.48139 cao=5 grid=(512, 512, 512) alpha=0.611589
     </tuned-parameters>
     <errors>
   ABSOLUTE ERRORS (from 9830400 of 9830400 particles)
-          abs_rms_field_error =    3.299826e-05
-          abs_max_field_error =    1.260274e-04
-      abs_rms_potential_error =    1.494430e-05
-      abs_max_potential_error =    7.167015e-05
-             abs_energy_error =    3.928042e+01
+          abs_rms_field_error =    3.105090e-04
+          abs_max_field_error =    1.194153e-03
+      abs_rms_potential_error =    1.140370e-04
+      abs_max_potential_error =    2.309604e-04
+             abs_energy_error =    3.948808e+02
 
   RELATIVE ERRORS (from 9830400 of 9830400 particles)
-          rel_rms_field_error =    7.682877e-06
-          rel_max_field_error =    2.934255e-05
-      rel_rms_potential_error =    6.936561e-06
-      rel_max_potential_error =    3.326649e-05
-             rel_energy_error =    8.048329e-06
+          rel_rms_field_error =    7.229705e-05
+          rel_max_field_error =    2.780395e-04
+      rel_rms_potential_error =    5.293002e-05
+      rel_max_potential_error =    1.071998e-04
+             rel_energy_error =    8.090877e-05
     </errors>
     <data>
       4096	
-      2048	
-      1024	
-      512	
-      256	
-      128	
-      64	
-      32	
-      16	
-      8         
-      4	 	
-      2
-      1
+      2048	1.682639e-01
+      1024	3.407700e-01
+      512	4.435771e-01
+      256	8.053250e-01
+      128	1.596410e+00
+      64	3.197155e+00
+      32	6.672026e+00
+      16	1.303684e+01
+      8	 	2.570227e+01
+      4	 	5.154461e+01
     </data>
-  </timings>-->
+  </timings>
+
 
 <!-- 
 ********************
