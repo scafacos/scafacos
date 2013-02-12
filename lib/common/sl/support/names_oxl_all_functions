@@ -17,6 +17,7 @@ binning_radix_finalize
 binning_radix_post
 elements_alloc
 elements_free
+elements_realloc
 elements_alloca
 elements_freea
 elements_alloc_from_blocks
@@ -92,6 +93,8 @@ mergep_heap_int_idx
 mergep_heap_idx
 mergep_heap_unpack_idx
 mergep_heap_unpack_idxonly
+permute_generic_db
+permute_generic_ip
 sl_search_sequential_lt
 sl_search_sequential_le
 sl_search_sequential_gt
@@ -176,7 +179,11 @@ sn_even
 sn_batcher
 sn_bitonic
 sn_connected
-split_generic_count
+split_generic_db
+split_generic_ip
+split_generic_count_db
+split_generic_count_ip
+split_generic_rearrange_db
 split_generic_rearrange_ip
 splitter_reset
 splitx_radix

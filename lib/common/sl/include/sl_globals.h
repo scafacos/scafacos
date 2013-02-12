@@ -54,6 +54,7 @@ extern const slint_t default_me_sendrecv_replace_mpi_maxsize;
 extern const double default_meas_t[];
 extern const slint_t default_meas_max_nprocs;
 extern const slint_t default_meas_packed;
+extern const double default_meas_overalloc;
 extern const slint_t default_mea_packed;
 extern const slint_t default_mea_db_packed;
 extern const slint_t default_mea_ip_packed;

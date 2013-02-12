@@ -873,10 +873,16 @@ enum rti_tid
 
 
 
-typedef back_fp_sl_int_type_c back_fp_spint_t;
+#define back_fp_SPEC_TLOC
 
-typedef back_fp_spint_t back_fp_spec_elem_index_t;
+typedef back_fp_sl_int_type_c back_fp_spec_int_t;
 
+typedef int back_fp_spec_proc_t;
+
+#define back_fp_SPEC_LOC_NONE   -1
+#define back_fp_SPEC_PROC_NONE  MPI_PROC_NULL
+
+typedef void *spec_tloc_data_t;
 typedef void *back_fp_spec_tproc_data_t;
 
 struct back_fp__elements_t;
@@ -885,9 +891,7 @@ typedef struct back_fp__elements_t *back_fp_spec_elem_buf_t;
 
 typedef struct back_fp__elements_t back_fp_spec_elem_t;
 
-
-#define back_fp_SPEC_PROC_NULL  MPI_PROC_NULL
-
+typedef back_fp_sl_int_type_c back_fp_spec_elem_index_t;
 
 #define back_fp_spec_elem_set_n(_e_, _n_)     back_fp_elem_set_size((_e_), (_n_))
 #define back_fp_spec_elem_get_n(_e_)          back_fp_elem_get_size((_e_))
@@ -908,20 +912,17 @@ typedef struct back_fp__elements_t back_fp_spec_elem_t;
 
 
 
-/* sp_macro back_fp_SPEC_PROC_NULL */
-
-
 /* tproc count */
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROC_COUNT_DB */
 #define back_fp_SPEC_DECLARE_TPROC_COUNT_DB \
-  struct { back_fp_spint_t i, p; } spec0cd;
+  struct { back_fp_spec_elem_index_t i; back_fp_spec_proc_t p; } spec0cd;
 
 /* sp_macro back_fp_SPEC_DO_TPROC_COUNT_DB */
 #define back_fp_SPEC_DO_TPROC_COUNT_DB(_tp_, _tpd_, _b_, _cs_)  do { \
   for (spec0cd.i = 0; spec0cd.i < back_fp_spec_elem_get_n(_b_); ++spec0cd.i) { \
     spec0cd.p = (_tp_)(back_fp_spec_elem_get_buf(_b_), spec0cd.i, _tpd_); \
-    if (spec0cd.p == back_fp_SPEC_PROC_NULL) continue; \
+    if (spec0cd.p == back_fp_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec0cd.p]; \
   } } while (0)
 
@@ -935,14 +936,14 @@ _s_ void _name_##_tproc_count_db(back_fp_spec_elem_t *s, back_fp_spec_tproc_data
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROC_COUNT_IP */
 #define back_fp_SPEC_DECLARE_TPROC_COUNT_IP \
-  struct { back_fp_spint_t i, p, t; } spec0ci;
+  struct { back_fp_spec_elem_index_t i, t; back_fp_spec_proc_t p; } spec0ci;
 
 /* sp_macro back_fp_SPEC_DO_TPROC_COUNT_IP */
 #define back_fp_SPEC_DO_TPROC_COUNT_IP(_tp_, _tpd_, _b_, _cs_)  do { \
   spec0ci.t = 0; \
   for (spec0ci.i = 0; spec0ci.i < back_fp_spec_elem_get_n(_b_); ++spec0ci.i) { \
     spec0ci.p = (_tp_)(back_fp_spec_elem_get_buf(_b_), spec0ci.i, _tpd_); \
-    if (spec0ci.p == back_fp_SPEC_PROC_NULL) continue; \
+    if (spec0ci.p == back_fp_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec0ci.p]; \
     if (spec0ci.t < spec0ci.i) back_fp_spec_elem_copy_at((_b_), spec0ci.i, (_b_), spec0ci.t); \
     ++spec0ci.t; \
@@ -963,13 +964,13 @@ _s_ void _name_##_tproc_count_ip(back_fp_spec_elem_t *s, back_fp_spec_tproc_data
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROC_MOD_COUNT_DB */
 #define back_fp_SPEC_DECLARE_TPROC_MOD_COUNT_DB \
-  struct { back_fp_spint_t i, p; } spec1cd;
+  struct { back_fp_spec_elem_index_t i; back_fp_spec_proc_t p; } spec1cd;
 
 /* sp_macro back_fp_SPEC_DO_TPROC_MOD_COUNT_DB */
 #define back_fp_SPEC_DO_TPROC_MOD_COUNT_DB(_tp_, _tpd_, _b_, _cs_)  do { \
   for (spec1cd.i = 0; spec1cd.i < back_fp_spec_elem_get_n(_b_); ++spec1cd.i) { \
     spec1cd.p = (_tp_)(back_fp_spec_elem_get_buf(_b_), spec1cd.i, _tpd_, NULL); \
-    if (spec1cd.p == back_fp_SPEC_PROC_NULL) continue; \
+    if (spec1cd.p == back_fp_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec1cd.p]; \
   } } while (0)
 
@@ -983,14 +984,14 @@ _s_ void _name_##_tproc_mod_count_db(back_fp_spec_elem_t *s, back_fp_spec_tproc_
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROC_MOD_COUNT_IP */
 #define back_fp_SPEC_DECLARE_TPROC_MOD_COUNT_IP \
-  struct { back_fp_spint_t i, p, t; } spec1ci;
+  struct { back_fp_spec_elem_index_t i, t; back_fp_spec_proc_t p; } spec1ci;
 
 /* sp_macro back_fp_SPEC_DO_TPROC_MOD_COUNT_IP */
 #define back_fp_SPEC_DO_TPROC_MOD_COUNT_IP(_tp_, _tpd_, _b_, _cs_)  do { \
   spec1ci.t = 0; \
   for (spec1ci.i = 0; spec1ci.i < back_fp_spec_elem_get_n(_b_); ++spec1ci.i) { \
     spec1ci.p = (_tp_)(back_fp_spec_elem_get_buf(_b_), spec1ci.i, _tpd_, NULL); \
-    if (spec1ci.p == back_fp_SPEC_PROC_NULL) continue; \
+    if (spec1ci.p == back_fp_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec1ci.p]; \
     if (spec1ci.t < spec1ci.i) back_fp_spec_elem_copy_at((_b_), spec1ci.i, (_b_), spec1ci.t); \
     ++spec1ci.t; \
@@ -1011,7 +1012,7 @@ _s_ void _name_##_tproc_mod_count_ip(back_fp_spec_elem_t *s, back_fp_spec_tproc_
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROCS_COUNT_DB */
 #define back_fp_SPEC_DECLARE_TPROCS_COUNT_DB \
-  struct { back_fp_spint_t i, j, n; } spec2cd;
+  struct { back_fp_spec_elem_index_t i; back_fp_spec_int_t j, n; } spec2cd;
 
 /* sp_macro back_fp_SPEC_DO_TPROCS_COUNT_DB */
 #define back_fp_SPEC_DO_TPROCS_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -1022,7 +1023,7 @@ _s_ void _name_##_tproc_mod_count_ip(back_fp_spec_elem_t *s, back_fp_spec_tproc_
 
 /* sp_macro back_fp_SPEC_FUNC_TPROCS_COUNT_DB */
 #define back_fp_SPEC_FUNC_TPROCS_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_count_db(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_count_db(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts, back_fp_spec_proc_t *procs) \
 { \
   back_fp_SPEC_DECLARE_TPROCS_COUNT_DB \
   back_fp_SPEC_DO_TPROCS_COUNT_DB(_tp_, tproc_data, s, counts, procs); \
@@ -1030,7 +1031,7 @@ _s_ void _name_##_tprocs_count_db(back_fp_spec_elem_t *s, back_fp_spec_tproc_dat
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROCS_COUNT_IP */
 #define back_fp_SPEC_DECLARE_TPROCS_COUNT_IP \
-  struct { back_fp_spint_t i, j, n, t; } spec2ci;
+  struct { back_fp_spec_elem_index_t i, t; back_fp_spec_int_t j, n; } spec2ci;
 
 /* sp_macro back_fp_SPEC_DO_TPROCS_COUNT_IP */
 #define back_fp_SPEC_DO_TPROCS_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -1047,7 +1048,7 @@ _s_ void _name_##_tprocs_count_db(back_fp_spec_elem_t *s, back_fp_spec_tproc_dat
 
 /* sp_macro back_fp_SPEC_FUNC_TPROCS_COUNT_IP */
 #define back_fp_SPEC_FUNC_TPROCS_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_count_ip(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_count_ip(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts, back_fp_spec_proc_t *procs) \
 { \
   back_fp_SPEC_DECLARE_TPROCS_COUNT_IP \
   back_fp_SPEC_DO_TPROCS_COUNT_IP(_tp_, tproc_data, s, counts, procs); \
@@ -1058,7 +1059,7 @@ _s_ void _name_##_tprocs_count_ip(back_fp_spec_elem_t *s, back_fp_spec_tproc_dat
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROCS_MOD_COUNT_DB */
 #define back_fp_SPEC_DECLARE_TPROCS_MOD_COUNT_DB \
-  struct { back_fp_spint_t i, j, n; } spec3cd;
+  struct { back_fp_spec_elem_index_t i; back_fp_spec_int_t j, n; } spec3cd;
 
 /* sp_macro back_fp_SPEC_DO_TPROCS_MOD_COUNT_DB */
 #define back_fp_SPEC_DO_TPROCS_MOD_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -1070,7 +1071,7 @@ _s_ void _name_##_tprocs_count_ip(back_fp_spec_elem_t *s, back_fp_spec_tproc_dat
 
 /* sp_macro back_fp_SPEC_FUNC_TPROCS_MOD_COUNT_DB */
 #define back_fp_SPEC_FUNC_TPROCS_MOD_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_count_db(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_mod_count_db(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts, back_fp_spec_proc_t *procs) \
 { \
   back_fp_SPEC_DECLARE_TPROCS_MOD_COUNT_DB \
   back_fp_SPEC_DO_TPROCS_MOD_COUNT_DB(_tp_, tproc_data, s, counts, procs); \
@@ -1078,7 +1079,7 @@ _s_ void _name_##_tprocs_mod_count_db(back_fp_spec_elem_t *s, back_fp_spec_tproc
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROCS_MOD_COUNT_IP */
 #define back_fp_SPEC_DECLARE_TPROCS_MOD_COUNT_IP \
-  struct { back_fp_spint_t i, j, n, t; } spec3ci;
+  struct { back_fp_spec_elem_index_t i, t; back_fp_spec_int_t j, n; } spec3ci;
 
 /* sp_macro back_fp_SPEC_DO_TPROCS_MOD_COUNT_IP */
 #define back_fp_SPEC_DO_TPROCS_MOD_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -1095,7 +1096,7 @@ _s_ void _name_##_tprocs_mod_count_db(back_fp_spec_elem_t *s, back_fp_spec_tproc
 
 /* sp_macro back_fp_SPEC_FUNC_TPROCS_MOD_COUNT_IP */
 #define back_fp_SPEC_FUNC_TPROCS_MOD_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_count_ip(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_mod_count_ip(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts, back_fp_spec_proc_t *procs) \
 { \
   back_fp_SPEC_DECLARE_TPROCS_MOD_COUNT_IP \
   back_fp_SPEC_DO_TPROCS_MOD_COUNT_IP(_tp_, tproc_data, s, counts, procs); \
@@ -1106,13 +1107,13 @@ _s_ void _name_##_tprocs_mod_count_ip(back_fp_spec_elem_t *s, back_fp_spec_tproc
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROC_REARRANGE_DB */
 #define back_fp_SPEC_DECLARE_TPROC_REARRANGE_DB \
-  struct { back_fp_spint_t i, p; } spec0d;
+  struct { back_fp_spec_elem_index_t i; back_fp_spec_proc_t p; } spec0d;
 
 /* sp_macro back_fp_SPEC_DO_TPROC_REARRANGE_DB */
 #define back_fp_SPEC_DO_TPROC_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_)  do { \
   for (spec0d.i = 0; spec0d.i < back_fp_spec_elem_get_n(_sb_); ++spec0d.i) { \
     spec0d.p = (_tp_)(back_fp_spec_elem_get_buf(_sb_), spec0d.i, _tpd_); \
-    if (spec0d.p == back_fp_SPEC_PROC_NULL) continue; \
+    if (spec0d.p == back_fp_SPEC_PROC_NONE) continue; \
     back_fp_spec_elem_copy_at((_sb_), spec0d.i, (_db_), (_ds_)[spec0d.p]); \
     ++(_ds_)[spec0d.p]; \
   } } while (0)
@@ -1127,7 +1128,7 @@ _s_ void _name_##_tproc_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_elem_t
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROC_REARRANGE_IP */
 #define back_fp_SPEC_DECLARE_TPROC_REARRANGE_IP \
-  struct { back_fp_spint_t e, i, j, p, np; } spec0i;
+  struct { back_fp_spec_elem_index_t e, i, j; back_fp_spec_proc_t p, np; } spec0i;
 
 /* sp_macro back_fp_SPEC_DO_TPROC_REARRANGE_IP */
 #define back_fp_SPEC_DO_TPROC_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_)  do { \
@@ -1148,7 +1149,7 @@ _s_ void _name_##_tproc_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_elem_t
 
 /* sp_macro back_fp_SPEC_FUNC_TPROC_REARRANGE_IP */
 #define back_fp_SPEC_FUNC_TPROC_REARRANGE_IP(_name_, _tp_, _s_) \
-_s_ void _name_##_tproc_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, int n) \
+_s_ void _name_##_tproc_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, back_fp_spec_int_t n) \
 { \
   back_fp_SPEC_DECLARE_TPROC_REARRANGE_IP \
   back_fp_SPEC_DO_TPROC_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n); \
@@ -1159,21 +1160,21 @@ _s_ void _name_##_tproc_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_t
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROC_MOD_REARRANGE_DB */
 #define back_fp_SPEC_DECLARE_TPROC_MOD_REARRANGE_DB \
-  struct { back_fp_spint_t i, p; } spec1d;
+  struct { back_fp_spec_elem_index_t i; back_fp_spec_proc_t p; } spec1d;
 
 /* sp_macro back_fp_SPEC_DO_TPROC_MOD_REARRANGE_DB */
 #define back_fp_SPEC_DO_TPROC_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ib_)  do { \
   if (_ib_) { \
     for (spec1d.i = 0; spec1d.i < back_fp_spec_elem_get_n(_sb_); ++spec1d.i) { \
       spec1d.p = (_tp_)(back_fp_spec_elem_get_buf(_sb_), spec1d.i, _tpd_, back_fp_spec_elem_get_buf(_ib_)); \
-      if (spec1d.p == back_fp_SPEC_PROC_NULL) continue; \
+      if (spec1d.p == back_fp_SPEC_PROC_NONE) continue; \
       back_fp_spec_elem_copy_at((_ib_), 0, (_db_), (_ds_)[spec1d.p]); \
       ++(_ds_)[spec1d.p]; \
     } \
   } else { \
     for (spec1d.i = 0; spec1d.i < back_fp_spec_elem_get_n(_sb_); ++spec1d.i) { \
       spec1d.p = (_tp_)(back_fp_spec_elem_get_buf(_sb_), spec1d.i, _tpd_, NULL); \
-      if (spec1d.p == back_fp_SPEC_PROC_NULL) continue; \
+      if (spec1d.p == back_fp_SPEC_PROC_NONE) continue; \
       back_fp_spec_elem_copy_at((_sb_), spec1d.i, (_db_), (_ds_)[spec1d.p]); \
       ++(_ds_)[spec1d.p]; \
     } \
@@ -1189,7 +1190,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_el
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP */
 #define back_fp_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP \
-  struct { back_fp_spint_t e, i, j, p, np; } spec1i;
+  struct { back_fp_spec_elem_index_t e, i, j; back_fp_spec_proc_t p, np; } spec1i;
 
 /* sp_macro back_fp_SPEC_DO_TPROC_MOD_REARRANGE_IP */
 #define back_fp_SPEC_DO_TPROC_MOD_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ib_)  do { \
@@ -1201,7 +1202,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_el
         spec1i.p = (_tp_)(back_fp_spec_elem_get_buf(_b_), spec1i.j, _tpd_, back_fp_spec_elem_get_buf(_ib_)); \
         back_fp_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
         while (spec1i.p != spec1i.i) { \
-          spec1i.np = (_tp_)(back_fp_spec_elem_get_buf(_b_), (_ds_)[spec1i.p], _tpd_, (_ib_)); \
+          spec1i.np = (_tp_)(back_fp_spec_elem_get_buf(_b_), (_ds_)[spec1i.p], _tpd_, back_fp_spec_elem_get_buf(_ib_)); \
           if (spec1i.np != spec1i.p) { \
             back_fp_spec_elem_copy_at((_b_), spec1i.j, (_b_), (_ds_)[spec1i.p]); \
             back_fp_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
@@ -1231,7 +1232,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_el
 
 /* sp_macro back_fp_SPEC_FUNC_TPROC_MOD_REARRANGE_IP */
 #define back_fp_SPEC_FUNC_TPROC_MOD_REARRANGE_IP(_name_, _tp_, _s_) \
-_s_ void _name_##_tproc_mod_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, back_fp_spec_elem_t *mod) \
+_s_ void _name_##_tproc_mod_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, back_fp_spec_int_t n, back_fp_spec_elem_t *mod) \
 { \
   back_fp_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP \
   back_fp_SPEC_DO_TPROC_MOD_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n, mod); \
@@ -1242,7 +1243,7 @@ _s_ void _name_##_tproc_mod_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_el
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROCS_REARRANGE_DB */
 #define back_fp_SPEC_DECLARE_TPROCS_REARRANGE_DB \
-  struct { back_fp_spint_t i, j, n; } spec2d;
+  struct { back_fp_spec_elem_index_t i; back_fp_spec_int_t j, n; } spec2d;
 
 /* sp_macro back_fp_SPEC_DO_TPROCS_REARRANGE_DB */
 #define back_fp_SPEC_DO_TPROCS_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_)  do { \
@@ -1256,7 +1257,7 @@ _s_ void _name_##_tproc_mod_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_el
 
 /* sp_macro back_fp_SPEC_FUNC_TPROCS_REARRANGE_DB */
 #define back_fp_SPEC_FUNC_TPROCS_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs, int *procs) \
+_s_ void _name_##_tprocs_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs, back_fp_spec_proc_t *procs) \
 { \
   back_fp_SPEC_DECLARE_TPROCS_REARRANGE_DB \
   back_fp_SPEC_DO_TPROCS_REARRANGE_DB(_tp_, tproc_data, s, d, displs, procs); \
@@ -1264,7 +1265,7 @@ _s_ void _name_##_tprocs_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_elem_
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROCS_REARRANGE_IP */
 #define back_fp_SPEC_DECLARE_TPROCS_REARRANGE_IP \
-  struct { back_fp_spint_t e, i, j, n, f, fe, fc, l, le, lc, o; } spec2i;
+  struct { back_fp_spec_elem_index_t e, j, fe, fc, le, lc; back_fp_spec_int_t i, n, f, l, o; } spec2i;
 
 /* sp_macro back_fp_SPEC_DO_TPROCS_REARRANGE_IP */
 #define back_fp_SPEC_DO_TPROCS_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ps_)  do { \
@@ -1306,7 +1307,7 @@ _s_ void _name_##_tprocs_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_elem_
 
 /* sp_macro back_fp_SPEC_FUNC_TPROCS_REARRANGE_IP */
 #define back_fp_SPEC_FUNC_TPROCS_REARRANGE_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs) \
+_s_ void _name_##_tprocs_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, back_fp_spec_int_t n, back_fp_spec_proc_t *procs) \
 { \
   back_fp_SPEC_DECLARE_TPROCS_REARRANGE_IP \
   back_fp_SPEC_DO_TPROCS_REARRANGE_IP(_tp_, tproc_data, s, d, displs, counts, n, procs); \
@@ -1317,7 +1318,7 @@ _s_ void _name_##_tprocs_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB */
 #define back_fp_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB \
-  struct { back_fp_spint_t i, j, n; } spec3d;
+  struct { back_fp_spec_elem_index_t i; back_fp_spec_int_t j, n; } spec3d;
 
 /* sp_macro back_fp_SPEC_DO_TPROCS_MOD_REARRANGE_DB */
 #define back_fp_SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_, _ib_)  do { \
@@ -1341,7 +1342,7 @@ _s_ void _name_##_tprocs_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_
 
 /* sp_macro back_fp_SPEC_FUNC_TPROCS_MOD_REARRANGE_DB */
 #define back_fp_SPEC_FUNC_TPROCS_MOD_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs, int *procs, back_fp_spec_elem_t *mod) \
+_s_ void _name_##_tprocs_mod_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs, back_fp_spec_proc_t *procs, back_fp_spec_elem_t *mod) \
 { \
   back_fp_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB \
   back_fp_SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, tproc_data, s, d, displs, procs, mod); \
@@ -1349,7 +1350,7 @@ _s_ void _name_##_tprocs_mod_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_e
 
 /* sp_macro back_fp_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP */
 #define back_fp_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP \
-  struct { back_fp_spint_t e, i, j, n, o, f, fe, fc, l, le, lc; } spec3i;
+  struct { back_fp_spec_elem_index_t e, j, fe, fc, le, lc; back_fp_spec_int_t i, n, f, l, o; } spec3i;
 
 /* sp_macro back_fp_SPEC_DO_TPROCS_MOD_REARRANGE_IP */
 #define back_fp_SPEC_DO_TPROCS_MOD_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ps_, _ib_)  do { \
@@ -1429,7 +1430,7 @@ _s_ void _name_##_tprocs_mod_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_e
 
 /* sp_macro back_fp_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP */
 #define back_fp_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs, back_fp_spec_elem_t *mod) \
+_s_ void _name_##_tprocs_mod_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, back_fp_spec_int_t n, back_fp_spec_proc_t *procs, back_fp_spec_elem_t *mod) \
 { \
   back_fp_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP \
   back_fp_SPEC_DO_TPROCS_MOD_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n, procs, mod); \
@@ -1475,31 +1476,186 @@ _s_ void _name_##_tprocs_mod_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_e
 
 
 /* sp_type back_fp_spec_tproc_f back_fp_spec_tproc_count_f back_fp_spec_tproc_rearrange_db_f back_fp_spec_tproc_rearrange_ip_f */
-typedef int back_fp_spec_tproc_f(back_fp_spec_elem_buf_t b, back_fp_spec_elem_index_t x, back_fp_spec_tproc_data_t tproc_data);
+typedef back_fp_spec_proc_t back_fp_spec_tproc_f(back_fp_spec_elem_buf_t b, back_fp_spec_elem_index_t x, back_fp_spec_tproc_data_t tproc_data);
 typedef void back_fp_spec_tproc_count_f(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts);
 typedef void back_fp_spec_tproc_rearrange_db_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs);
-typedef void back_fp_spec_tproc_rearrange_ip_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, int n);
+typedef void back_fp_spec_tproc_rearrange_ip_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, back_fp_spec_int_t n);
 
 /* sp_type back_fp_spec_tproc_mod_f back_fp_spec_tproc_mod_count_f back_fp_spec_tproc_mod_rearrange_db_f back_fp_spec_tproc_mod_rearrange_ip_f */
-typedef int back_fp_spec_tproc_mod_f(back_fp_spec_elem_buf_t b, back_fp_spec_elem_index_t x, back_fp_spec_tproc_data_t tproc_data, back_fp_spec_elem_buf_t mod);
+typedef back_fp_spec_proc_t back_fp_spec_tproc_mod_f(back_fp_spec_elem_buf_t b, back_fp_spec_elem_index_t x, back_fp_spec_tproc_data_t tproc_data, back_fp_spec_elem_buf_t mod);
 typedef void back_fp_spec_tproc_mod_count_f(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts);
 typedef void back_fp_spec_tproc_mod_rearrange_db_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs, back_fp_spec_elem_t *mod);
-typedef void back_fp_spec_tproc_mod_rearrange_ip_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, back_fp_spec_elem_t *mod);
+typedef void back_fp_spec_tproc_mod_rearrange_ip_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, back_fp_spec_int_t n, back_fp_spec_elem_t *mod);
 
 /* sp_type back_fp_spec_tprocs_f back_fp_spec_tprocs_count_f back_fp_spec_tprocs_rearrange_db_f back_fp_spec_tprocs_rearrange_ip_f */
-typedef int back_fp_spec_tprocs_f(back_fp_spec_elem_buf_t b, back_fp_spec_elem_index_t x, back_fp_spec_tproc_data_t tproc_data, int *procs);
-typedef void back_fp_spec_tprocs_count_f(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *procs, int *counts);
-typedef void back_fp_spec_tprocs_rearrange_db_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs, int *procs);
-typedef void back_fp_spec_tprocs_rearrange_ip_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs);
+typedef back_fp_spec_int_t back_fp_spec_tprocs_f(back_fp_spec_elem_buf_t b, back_fp_spec_elem_index_t x, back_fp_spec_tproc_data_t tproc_data, back_fp_spec_proc_t *procs);
+typedef void back_fp_spec_tprocs_count_f(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts, back_fp_spec_proc_t *procs);
+typedef void back_fp_spec_tprocs_rearrange_db_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs, back_fp_spec_proc_t *procs);
+typedef void back_fp_spec_tprocs_rearrange_ip_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, back_fp_spec_int_t n, back_fp_spec_proc_t *procs);
 
 /* sp_type back_fp_spec_tprocs_mod_f back_fp_spec_tprocs_mod_count_f back_fp_spec_tprocs_mod_rearrange_db_f back_fp_spec_tprocs_mod_rearrange_ip_f */
-typedef int back_fp_spec_tprocs_mod_f(back_fp_spec_elem_buf_t b, back_fp_spec_elem_index_t x, back_fp_spec_tproc_data_t tproc_data, int *procs, back_fp_spec_elem_buf_t mod);
-typedef void back_fp_spec_tprocs_mod_count_f(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *procs, int *counts);
-typedef void back_fp_spec_tprocs_mod_rearrange_db_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs, int *procs, back_fp_spec_elem_t *mod);
-typedef void back_fp_spec_tprocs_mod_rearrange_ip_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs, back_fp_spec_elem_t *mod);
+typedef back_fp_spec_int_t back_fp_spec_tprocs_mod_f(back_fp_spec_elem_buf_t b, back_fp_spec_elem_index_t x, back_fp_spec_tproc_data_t tproc_data, back_fp_spec_proc_t *procs, back_fp_spec_elem_buf_t mod);
+typedef void back_fp_spec_tprocs_mod_count_f(back_fp_spec_elem_t *s, back_fp_spec_tproc_data_t tproc_data, int *counts, back_fp_spec_proc_t *procs);
+typedef void back_fp_spec_tprocs_mod_rearrange_db_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, back_fp_spec_tproc_data_t tproc_data, int *displs, back_fp_spec_proc_t *procs, back_fp_spec_elem_t *mod);
+typedef void back_fp_spec_tprocs_mod_rearrange_ip_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, back_fp_spec_tproc_data_t tproc_data, int *displs, int *counts, back_fp_spec_int_t n, back_fp_spec_proc_t *procs, back_fp_spec_elem_t *mod);
 
 /* sp_type back_fp_spec_tproc_reset_f */
 typedef void back_fp_spec_tproc_reset_f(back_fp_spec_tproc_data_t tproc_data);
+
+
+/* enable tloc features */
+#ifdef back_fp_SPEC_TLOC
+
+/* sp_macro back_fp_SPEC_TLOC back_fp_SPEC_LOC_NONE */
+
+
+/* tloc rearrange */
+
+/* sp_macro back_fp_SPEC_DECLARE_TLOC_REARRANGE_DB */
+#define back_fp_SPEC_DECLARE_TLOC_REARRANGE_DB \
+  struct { back_fp_spec_int_t i, p; } spec0d;
+
+/* sp_macro back_fp_SPEC_DO_TLOC_REARRANGE_DB */
+#define back_fp_SPEC_DO_TLOC_REARRANGE_DB(_tl_, _tld_, _sb_, _db_)  do { \
+  for (spec0d.i = 0; spec0d.i < back_fp_spec_elem_get_n(_sb_); ++spec0d.i) { \
+    spec0d.p = (_tl_)(back_fp_spec_elem_get_buf(_sb_), spec0d.i, _tld_); \
+    if (spec0d.p == back_fp_SPEC_LOC_NONE) continue; \
+    back_fp_spec_elem_copy_at((_sb_), spec0d.i, (_db_), spec0d.p); \
+  } } while (0)
+
+/* sp_macro back_fp_SPEC_FUNC_TLOC_REARRANGE_DB */
+#define back_fp_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
+_s_ void _name_##_tloc_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, spec_tloc_data_t tloc_data) \
+{ \
+  back_fp_SPEC_DECLARE_TLOC_REARRANGE_DB \
+  back_fp_SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
+}
+
+/* sp_macro back_fp_SPEC_DECLARE_TLOC_REARRANGE_IP */
+#define back_fp_SPEC_DECLARE_TLOC_REARRANGE_IP \
+  struct { back_fp_spec_int_t i, p, np; } spec0i;
+
+/* sp_macro back_fp_SPEC_DO_TLOC_REARRANGE_IP */
+#define back_fp_SPEC_DO_TLOC_REARRANGE_IP(_tl_, _tld_, _b_, _xb_)  do { \
+  for (spec0i.i = 0; spec0i.i < back_fp_spec_elem_get_n(_b_); ++spec0i.i) { \
+    spec0i.p = (_tl_)(back_fp_spec_elem_get_buf(_b_), spec0i.i, _tld_); \
+    if (spec0i.p == back_fp_SPEC_LOC_NONE) continue; \
+    while (spec0i.i != spec0i.p) { \
+      spec0i.np = (_tl_)(back_fp_spec_elem_get_buf(_b_), spec0i.p, _tld_); \
+      if (spec0i.np == back_fp_SPEC_LOC_NONE) { back_fp_spec_elem_copy_at((_b_), spec0i.i, (_b_), spec0i.p); break; } \
+      back_fp_spec_elem_exchange_at((_b_), spec0i.i, (_b_), spec0i.p, (_xb_)); \
+      spec0i.p = spec0i.np; \
+    } \
+  } } while (0)
+
+/* sp_macro back_fp_SPEC_FUNC_TLOC_REARRANGE_IP */
+#define back_fp_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
+_s_ void _name_##_tloc_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, spec_tloc_data_t tloc_data) \
+{ \
+  back_fp_SPEC_DECLARE_TLOC_REARRANGE_IP \
+  back_fp_SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
+}
+
+
+/* tloc_mod_mod rearrange */
+
+/* sp_macro back_fp_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB */
+#define back_fp_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
+  struct { back_fp_spec_int_t i, p; } spec1d;
+
+/* sp_macro back_fp_SPEC_DO_TLOC_MOD_REARRANGE_DB */
+#define back_fp_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, _tld_, _sb_, _db_, _ib_)  do { \
+  if (_ib_) { \
+    for (spec1d.i = 0; spec1d.i < back_fp_spec_elem_get_n(_sb_); ++spec1d.i) { \
+      spec1d.p = (_tl_)(back_fp_spec_elem_get_buf(_sb_), spec1d.i, _tld_, back_fp_spec_elem_get_buf(_ib_)); \
+      if (spec1d.p == back_fp_SPEC_LOC_NONE) continue; \
+      back_fp_spec_elem_copy_at((_ib_), 0, (_db_), spec1d.p); \
+    } \
+  } else { \
+    for (spec1d.i = 0; spec1d.i < back_fp_spec_elem_get_n(_sb_); ++spec1d.i) { \
+      spec1d.p = (_tl_)(back_fp_spec_elem_get_buf(_sb_), spec1d.i, _tld_, NULL); \
+      if (spec1d.p == back_fp_SPEC_LOC_NONE) continue; \
+      back_fp_spec_elem_copy_at((_sb_), spec1d.i, (_db_), spec1d.p); \
+    } \
+  } } while (0) 
+
+/* sp_macro back_fp_SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
+#define back_fp_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
+_s_ void _name_##_tloc_mod_rearrange_db(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, spec_tloc_data_t tloc_data, back_fp_spec_elem_t *mod) \
+{ \
+  back_fp_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
+  back_fp_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
+}
+
+/* sp_macro back_fp_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP */
+#define back_fp_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
+  struct { back_fp_spec_int_t i, p, np; } spec1i;
+
+/* sp_macro back_fp_SPEC_DO_TLOC_MOD_REARRANGE_IP */
+#define back_fp_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, _tld_, _b_, _xb_, _ib_)  do { \
+  if (_ib_) { \
+    for (spec1i.i = 0; spec1i.i < back_fp_spec_elem_get_n(_b_); ++spec1i.i) { \
+      spec1i.p = (_tl_)(back_fp_spec_elem_get_buf(_b_), spec1i.i, _tld_, back_fp_spec_elem_get_buf(_ib_)); \
+      if (spec1i.p == back_fp_SPEC_LOC_NONE) continue; \
+      while (spec1i.i != spec1i.p) { \
+        spec1i.np = (_tl_)(back_fp_spec_elem_get_buf(_b_), spec1i.p, _tld_, back_fp_spec_elem_get_buf(_xb_)); \
+        if (spec1i.np == back_fp_SPEC_LOC_NONE) break; \
+        back_fp_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.p); \
+        back_fp_spec_elem_copy_at((_xb_), 0, (_ib_), 0); \
+        spec1i.p = spec1i.np; \
+      } \
+      back_fp_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.i); \
+    } \
+  } else { \
+    for (spec1i.i = 0; spec1i.i < back_fp_spec_elem_get_n(_b_); ++spec1i.i) { \
+      spec1i.p = (_tl_)(back_fp_spec_elem_get_buf(_b_), spec1i.i, _tld_, NULL); \
+      if (spec1i.p == back_fp_SPEC_LOC_NONE) continue; \
+      while (spec1i.i != spec1i.p) { \
+        spec1i.np = (_tl_)(back_fp_spec_elem_get_buf(_b_), spec1i.p, _tld_, NULL); \
+        if (spec1i.np == back_fp_SPEC_LOC_NONE) { back_fp_spec_elem_copy_at((_b_), spec1i.i, (_b_), spec1i.p); break; } \
+        back_fp_spec_elem_exchange_at((_b_), spec1i.i, (_b_), spec1i.p, (_xb_)); \
+        spec1i.p = spec1i.np; \
+      } \
+    } \
+ } } while (0) 
+
+/* sp_macro back_fp_SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
+#define back_fp_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
+_s_ void _name_##_tloc_mod_rearrange_ip(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, spec_tloc_data_t tloc_data, back_fp_spec_elem_t *mod) \
+{ \
+  back_fp_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
+  back_fp_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
+}
+
+/* sp_macro back_fp_SPEC_DEFINE_TLOC */
+#define back_fp_SPEC_DEFINE_TLOC(_name_, _tl_, _s_...) \
+  back_fp_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_) \
+  back_fp_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_)
+
+/* sp_macro back_fp_SPEC_DEFINE_TLOC_MOD */
+#define back_fp_SPEC_DEFINE_TLOC_MOD(_name_, _tl_, _s_...) \
+  back_fp_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_) \
+  back_fp_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_)
+
+/* sp_macro back_fp_SPEC_EXT_PARAM_TLOC back_fp_SPEC_EXT_PARAM_TLOC_NULL back_fp_SPEC_EXT_PARAM_TLOC_MOD back_fp_SPEC_EXT_PARAM_TLOC_MOD_NULL */
+#define back_fp_SPEC_EXT_PARAM_TLOC(_name_)      _name_##_tloc_rearrange_db, _name_##_tloc_rearrange_ip
+#define back_fp_SPEC_EXT_PARAM_TLOC_NULL         NULL, NULL
+#define back_fp_SPEC_EXT_PARAM_TLOC_MOD(_name_)  _name_##_tloc_mod_rearrange_db, _name_##_tloc_mod_rearrange_ip
+#define back_fp_SPEC_EXT_PARAM_TLOC_MOD_NULL     NULL, NULL
+
+
+/* sp_type back_fp_spec_tloc_f back_fp_spec_tloc_rearrange_db_f back_fp_spec_tloc_rearrange_ip_f */
+typedef back_fp_spec_elem_index_t back_fp_spec_tloc_f(back_fp_spec_elem_buf_t b, back_fp_spec_elem_index_t x, spec_tloc_data_t tloc_data);
+typedef void back_fp_spec_tloc_rearrange_db_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, spec_tloc_data_t tloc_data);
+typedef void back_fp_spec_tloc_rearrange_ip_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, spec_tloc_data_t tloc_data);
+
+/* sp_type back_fp_spec_tloc_mod_f back_fp_spec_tloc_mod_rearrange_db_f back_fp_spec_tloc_mod_rearrange_ip_f */
+typedef back_fp_spec_elem_index_t back_fp_spec_tloc_mod_f(back_fp_spec_elem_buf_t b, back_fp_spec_elem_index_t x, spec_tloc_data_t tloc_data, back_fp_spec_elem_buf_t mod);
+typedef void back_fp_spec_tloc_mod_rearrange_db_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *d, spec_tloc_data_t tloc_data, back_fp_spec_elem_t *mod);
+typedef void back_fp_spec_tloc_mod_rearrange_ip_f(back_fp_spec_elem_t *s, back_fp_spec_elem_t *x, spec_tloc_data_t tloc_data, back_fp_spec_elem_t *mod);
+
+
+#endif /* back_fp_SPEC_TLOC */
 
 
 
@@ -1988,20 +2144,98 @@ typedef back_fp_slint_t (*back_fp_sortnet_f)(back_fp_slint_t size, back_fp_slint
 typedef back_fp_slint_t (*back_fp_merge2x_f)(back_fp_elements_t *s0, back_fp_elements_t *s1, back_fp_elements_t *sx);
 typedef back_fp_slint_t (*back_fp_merge2X_f)(back_fp_elements_t *s0, back_fp_elements_t *s1, back_fp_elements_t *sx, back_fp_elements_t *t);
 
-/* sl_type back_fp__tproc_t back_fp_tproc_t */
-typedef struct back_fp__tproc_t *back_fp_tproc_t;
+/* sl_type back_fp__permute_generic_t back_fp_permute_generic_t */
+typedef struct back_fp__permute_generic_t
+{
+  int type;
+
+  back_fp_spec_tloc_f *tloc;
+  back_fp_spec_tloc_rearrange_db_f *tloc_rearrange_db;
+  back_fp_spec_tloc_rearrange_ip_f *tloc_rearrange_ip;
+
+  back_fp_spec_tloc_mod_f *tloc_mod;
+  back_fp_spec_tloc_mod_rearrange_db_f *tloc_mod_rearrange_db;
+  back_fp_spec_tloc_mod_rearrange_ip_f *tloc_mod_rearrange_ip;
+
+} back_fp_permute_generic_t;
+
+/* sl_macro back_fp_PERMUTE_GENERIC_DEFINE_TLOC back_fp_PERMUTE_GENERIC_INIT_TLOC back_fp_PERMUTE_GENERIC_INIT_EXT_TLOC */
+#define back_fp_PERMUTE_GENERIC_DEFINE_TLOC(_tl_, _s_...)      back_fp_SPEC_DEFINE_TLOC(_tl_, _tl_, _s_)
+#define back_fp_PERMUTE_GENERIC_INIT_TLOC(_tl_)                { 1, _tl_, back_fp_SPEC_EXT_PARAM_TLOC_NULL,  NULL, back_fp_SPEC_EXT_PARAM_TLOC_MOD_NULL }
+#define back_fp_PERMUTE_GENERIC_INIT_EXT_TLOC(_tl_)            { 1, _tl_, back_fp_SPEC_EXT_PARAM_TLOC(_tl_), NULL, back_fp_SPEC_EXT_PARAM_TLOC_MOD_NULL }
+
+/* sl_macro back_fp_PERMUTE_GENERIC_DEFINE_TLOC_MOD back_fp_PERMUTE_GENERIC_INIT_TLOC_MOD back_fp_PERMUTE_GENERIC_INIT_EXT_TLOC_MOD */
+#define back_fp_PERMUTE_GENERIC_DEFINE_TLOC_MOD(_tl_, _s_...)  back_fp_SPEC_DEFINE_TLOC_MOD(_tl_, _tl_, _s_)
+#define back_fp_PERMUTE_GENERIC_INIT_TLOC_MOD(_tl_)            { 2, NULL, back_fp_SPEC_EXT_PARAM_TLOC_MOD_NULL, _tl_, back_fp_SPEC_EXT_PARAM_TLOC_MOD_NULL }
+#define back_fp_PERMUTE_GENERIC_INIT_EXT_TLOC_MOD(_tl_)        { 2, NULL, back_fp_SPEC_EXT_PARAM_TLOC_MOD_NULL, _tl_, back_fp_SPEC_EXT_PARAM_TLOC_MOD(_tl_) }
+
+/* sl_type back_fp__split_generic_t back_fp_split_generic_t */
+typedef struct back_fp__split_generic_t
+{
+  int type;
+
+  back_fp_spec_tproc_f *tproc;
+  back_fp_spec_tproc_count_f *tproc_count_db, *tproc_count_ip;
+  back_fp_spec_tproc_rearrange_db_f *tproc_rearrange_db;
+  back_fp_spec_tproc_rearrange_ip_f *tproc_rearrange_ip;
+
+  back_fp_spec_tproc_mod_f *tproc_mod;
+  back_fp_spec_tproc_mod_count_f *tproc_mod_count_db, *tproc_mod_count_ip;
+  back_fp_spec_tproc_mod_rearrange_db_f *tproc_mod_rearrange_db;
+  back_fp_spec_tproc_mod_rearrange_ip_f *tproc_mod_rearrange_ip;
+
+  back_fp_spec_tprocs_f *tprocs;
+  back_fp_spec_tprocs_count_f *tprocs_count_db, *tprocs_count_ip;
+  back_fp_spec_tprocs_rearrange_db_f *tprocs_rearrange_db;
+  back_fp_spec_tprocs_rearrange_ip_f *tprocs_rearrange_ip;
+
+  back_fp_spec_tprocs_mod_f *tprocs_mod;
+  back_fp_spec_tprocs_mod_count_f *tprocs_mod_count_db, *tprocs_mod_count_ip;
+  back_fp_spec_tprocs_mod_rearrange_db_f *tprocs_mod_rearrange_db;
+  back_fp_spec_tprocs_mod_rearrange_ip_f *tprocs_mod_rearrange_ip;
+
+  back_fp_spec_tproc_reset_f *reset;
+
+} back_fp_split_generic_t;
+
+/* sl_macro back_fp_SPLIT_GENERIC_DEFINE_TPROC back_fp_SPLIT_GENERIC_INIT_TPROC back_fp_SPLIT_GENERIC_INIT_EXT_TPROC */
+#define back_fp_SPLIT_GENERIC_DEFINE_TPROC(_tp_, _s_...)         back_fp_SPEC_DEFINE_TPROC(_tp_, _tp_, _s_)
+#define back_fp_SPLIT_GENERIC_INIT_TPROC(_tp_, _r_...)           { 1, _tp_, back_fp_SPEC_EXT_PARAM_TPROC_NULL,  NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROCS_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define back_fp_SPLIT_GENERIC_INIT_EXT_TPROC(_tp_, _r_...)       { 1, _tp_, back_fp_SPEC_EXT_PARAM_TPROC(_tp_), NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROCS_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+
+/* sl_macro back_fp_SPLIT_GENERIC_DEFINE_TPROC_MOD back_fp_SPLIT_GENERIC_INIT_TPROC_MOD back_fp_SPLIT_GENERIC_INIT_EXT_TPROC_MOD */
+#define back_fp_SPLIT_GENERIC_DEFINE_TPROC_MOD(_tp_, _s_...)     back_fp_SPEC_DEFINE_TPROC_MOD(_tp_, _tp_, _s_)
+#define back_fp_SPLIT_GENERIC_INIT_TPROC_MOD(_tp_, _r_...)       { 2, NULL, back_fp_SPEC_EXT_PARAM_TPROC_NULL, _tp_, back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL,  NULL, back_fp_SPEC_EXT_PARAM_TPROCS_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define back_fp_SPLIT_GENERIC_INIT_EXT_TPROC_MOD(_tp_, _r_...)   { 2, NULL, back_fp_SPEC_EXT_PARAM_TPROC_NULL, _tp_, back_fp_SPEC_EXT_PARAM_TPROC_MOD(_tp_), NULL, back_fp_SPEC_EXT_PARAM_TPROCS_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+
+/* sl_macro back_fp_SPLIT_GENERIC_DEFINE_TPROCS back_fp_SPLIT_GENERIC_INIT_TPROCS back_fp_SPLIT_GENERIC_INIT_EXT_TPROCS */
+#define back_fp_SPLIT_GENERIC_DEFINE_TPROCS(_tp_, _s_...)        back_fp_SPEC_DEFINE_TPROCS(_tp_, _tp_, _s_)
+#define back_fp_SPLIT_GENERIC_INIT_TPROCS(_tp_, _r_...)          { 3, NULL, back_fp_SPEC_EXT_PARAM_TPROC_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, _tp_, back_fp_SPEC_EXT_PARAM_TPROCS_NULL,  NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define back_fp_SPLIT_GENERIC_INIT_EXT_TPROCS(_tp_, _r_...)      { 3, NULL, back_fp_SPEC_EXT_PARAM_TPROC_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, _tp_, back_fp_SPEC_EXT_PARAM_TPROCS(_tp_), NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+
+/* sl_macro back_fp_SPLIT_GENERIC_DEFINE_TPROCS_MOD back_fp_SPLIT_GENERIC_INIT_TPROCS_MOD back_fp_SPLIT_GENERIC_INIT_EXT_TPROCS_MOD */
+#define back_fp_SPLIT_GENERIC_DEFINE_TPROCS_MOD(_tp_, _s_...)    back_fp_SPEC_DEFINE_TPROCS_MOD(_tp_, _tp_, _s_)
+#define back_fp_SPLIT_GENERIC_INIT_TPROCS_MOD(_tp_, _r_...)      { 4, NULL, back_fp_SPEC_EXT_PARAM_TPROC_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROCS_NULL,  _tp_, back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define back_fp_SPLIT_GENERIC_INIT_EXT_TPROCS_MOD(_tp_, _r_...)  { 4, NULL, back_fp_SPEC_EXT_PARAM_TPROC_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, back_fp_SPEC_EXT_PARAM_TPROCS_NULL,  _tp_, back_fp_SPEC_EXT_PARAM_TPROCS_MOD(_tp_), _r_ }
+
+/* sl_type back_fp_tloc_f back_fp_tloc_mod_f */
+typedef back_fp_slint_t back_fp_tloc_f(back_fp_elements_t *b, back_fp_slint_t x, void *tloc_data);
+typedef back_fp_slint_t back_fp_tloc_mod_f(back_fp_elements_t *b, back_fp_slint_t x, void *tloc_data, back_fp_elements_t *mod);
 
 /* sl_type back_fp_tproc_f back_fp_tproc_mod_f back_fp_tprocs_f back_fp_tprocs_mod_f */
 typedef int back_fp_tproc_f(back_fp_elements_t *b, back_fp_slint_t x, void *tproc_data);
 typedef int back_fp_tproc_mod_f(back_fp_elements_t *b, back_fp_slint_t x, void *tproc_data, back_fp_elements_t *mod);
-typedef int back_fp_tprocs_f(back_fp_elements_t *b, back_fp_slint_t x, void *tproc_data, int *procs);
-typedef int back_fp_tprocs_mod_f(back_fp_elements_t *b, back_fp_slint_t x, void *tproc_data, int *procs, back_fp_elements_t *mod);
+typedef back_fp_slint_t back_fp_tprocs_f(back_fp_elements_t *b, back_fp_slint_t x, void *tproc_data, int *procs);
+typedef back_fp_slint_t back_fp_tprocs_mod_f(back_fp_elements_t *b, back_fp_slint_t x, void *tproc_data, int *procs, back_fp_elements_t *mod);
 
 /* sl_type back_fp_tproc_reset_f */
 typedef void back_fp_tproc_reset_f(void *tproc_data);
 
 /* sl_macro back_fp_TPROC_RESET_NULL */
 #define back_fp_TPROC_RESET_NULL  NULL
+
+/* sl_type back_fp__tproc_t back_fp_tproc_t */
+typedef struct back_fp__tproc_t *back_fp_tproc_t;
 
 /* sl_type back_fp__tproc_exdef back_fp_tproc_exdef */
 typedef struct back_fp__tproc_exdef {
@@ -2031,19 +2265,19 @@ typedef struct back_fp__tproc_exdef {
 /* sl_macro back_fp_TPROC_EXDEF_DEFINE_TPROC back_fp_TPROC_EXDEF_DEFINE_TPROC_MOD back_fp_TPROC_EXDEF_DEFINE_TPROCS back_fp_TPROC_EXDEF_DEFINE_TPROCS_MOD */
 #define back_fp_TPROC_EXDEF_DEFINE_TPROC(_name_, _tp_, _s_...) \
   back_fp_SPEC_DEFINE_TPROC(_name_, _tp_, _s_) \
-  const struct back_fp__tproc_exdef _##_name_ = { 1, back_fp_SPEC_EXT_PARAM_TPROC(_name_), back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, back_fp_SPEC_EXT_PARAM_TPROCS_NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+  _s_ const struct back_fp__tproc_exdef _##_name_ = { 1, back_fp_SPEC_EXT_PARAM_TPROC(_name_), back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, back_fp_SPEC_EXT_PARAM_TPROCS_NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
 #define back_fp_TPROC_EXDEF_DEFINE_TPROC_MOD(_name_, _tp_, _s_...) \
   back_fp_SPEC_DEFINE_TPROC_MOD(_name_, _tp_, _s_) \
-  const struct back_fp__tproc_exdef _##_name_ = { 2, back_fp_SPEC_EXT_PARAM_TPROC_NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD(_name_), back_fp_SPEC_EXT_PARAM_TPROCS_NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+  _s_ const struct back_fp__tproc_exdef _##_name_ = { 2, back_fp_SPEC_EXT_PARAM_TPROC_NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD(_name_), back_fp_SPEC_EXT_PARAM_TPROCS_NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
 #define back_fp_TPROC_EXDEF_DEFINE_TPROCS(_name_, _tp_, _s_...) \
   back_fp_SPEC_DEFINE_TPROCS(_name_, _tp_, _s_) \
-  const struct back_fp__tproc_exdef _##_name_ = { 3, back_fp_SPEC_EXT_PARAM_TPROC_NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, back_fp_SPEC_EXT_PARAM_TPROCS(_name_), back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+  _s_ const struct back_fp__tproc_exdef _##_name_ = { 3, back_fp_SPEC_EXT_PARAM_TPROC_NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, back_fp_SPEC_EXT_PARAM_TPROCS(_name_), back_fp_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
 #define back_fp_TPROC_EXDEF_DEFINE_TPROCS_MOD(_name_, _tp_, _s_...) \
   back_fp_SPEC_DEFINE_TPROCS_MOD(_name_, _tp_, _s_) \
-  const struct back_fp__tproc_exdef _##_name_ = { 4, back_fp_SPEC_EXT_PARAM_TPROC_NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, back_fp_SPEC_EXT_PARAM_TPROCS_NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
+  _s_ const struct back_fp__tproc_exdef _##_name_ = { 4, back_fp_SPEC_EXT_PARAM_TPROC_NULL, back_fp_SPEC_EXT_PARAM_TPROC_MOD_NULL, back_fp_SPEC_EXT_PARAM_TPROCS_NULL, back_fp_SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
 
 
 /* deprecated, sl_type back_fp_k2c_func back_fp_pivot_func back_fp_sn_func back_fp_m2x_func back_fp_m2X_func */
@@ -2462,6 +2696,7 @@ back_fp_slint_t sendrecv_replace_mpi_maxsize;
 double t[2];
 back_fp_slint_t max_nprocs;
 back_fp_slint_t packed;
+double overalloc;
   } meas;
 #endif
 #ifdef SL_USE_MPI
@@ -2640,6 +2875,7 @@ extern const back_fp_slint_t back_fp_default_me_sendrecv_replace_mpi_maxsize;
 extern const double back_fp_default_meas_t[];
 extern const back_fp_slint_t back_fp_default_meas_max_nprocs;
 extern const back_fp_slint_t back_fp_default_meas_packed;
+extern const double back_fp_default_meas_overalloc;
 extern const back_fp_slint_t back_fp_default_mea_packed;
 extern const back_fp_slint_t back_fp_default_mea_db_packed;
 extern const back_fp_slint_t back_fp_default_mea_ip_packed;
@@ -2703,6 +2939,7 @@ back_fp_slint_t SL_PROTO(back_fp_binning_radix_finalize)(back_fp_binning_t *bm, 
 back_fp_slint_t SL_PROTO(back_fp_binning_radix_post)(back_fp_binning_t *bm);
 back_fp_slint_t SL_PROTO(back_fp_elements_alloc)(back_fp_elements_t *s, back_fp_slint_t nelements, slcint_t components);
 back_fp_slint_t SL_PROTO(back_fp_elements_free)(back_fp_elements_t *s);
+back_fp_slint_t SL_PROTO(back_fp_elements_realloc)(back_fp_elements_t *s, back_fp_slint_t nelements, slcint_t components);
 back_fp_slint_t SL_PROTO(back_fp_elements_alloca)(back_fp_elements_t *s, back_fp_slint_t nelements, slcint_t components);
 back_fp_slint_t SL_PROTO(back_fp_elements_freea)(back_fp_elements_t *s);
 back_fp_slint_t SL_PROTO(back_fp_elements_alloc_from_blocks)(back_fp_elements_t *s, back_fp_slint_t nblocks, void **blocks, back_fp_slint_t *blocksizes, back_fp_slint_t alignment, back_fp_slint_t nmax, slcint_t components);
@@ -2777,6 +3014,8 @@ back_fp_slint_t SL_PROTO(back_fp_mergep_heap_int_idx)(back_fp_elements_t *s, bac
 back_fp_slint_t SL_PROTO(back_fp_mergep_heap_idx)(back_fp_elements_t *s, back_fp_elements_t *d, back_fp_slint_t p, back_fp_slindex_t *displs, back_fp_slindex_t *counts);
 back_fp_slint_t SL_PROTO(back_fp_mergep_heap_unpack_idx)(back_fp_packed_elements_t *s, back_fp_elements_t *d, back_fp_slint_t p, back_fp_slindex_t *displs, back_fp_slindex_t *counts);
 back_fp_slint_t SL_PROTO(back_fp_mergep_heap_unpack_idxonly)(back_fp_packed_elements_t *s, back_fp_elements_t *d, back_fp_slint_t p, back_fp_slindex_t *displs, back_fp_slindex_t *counts);
+back_fp_slint_t SL_PROTO(back_fp_permute_generic_db)(back_fp_elements_t *s, back_fp_elements_t *d, back_fp_permute_generic_t *pg, void *pg_data);
+back_fp_slint_t SL_PROTO(back_fp_permute_generic_ip)(back_fp_elements_t *s, back_fp_elements_t *x, back_fp_permute_generic_t *pg, void *pg_data);
 back_fp_slint SL_PROTO(back_fp_sl_search_sequential_lt)(back_fp_elements_t *s, back_fp_slpkey_t k);
 back_fp_slint SL_PROTO(back_fp_sl_search_sequential_le)(back_fp_elements_t *s, back_fp_slpkey_t k);
 back_fp_slint SL_PROTO(back_fp_sl_search_sequential_gt)(back_fp_elements_t *s, back_fp_slpkey_t k);
@@ -2845,8 +3084,12 @@ back_fp_slint SL_PROTO(back_fp_sn_even)(back_fp_slint size, back_fp_slint rank, 
 back_fp_slint SL_PROTO(back_fp_sn_batcher)(back_fp_slint size, back_fp_slint rank, back_fp_slint stage, void *snp, back_fp_slint *up);
 back_fp_slint SL_PROTO(back_fp_sn_bitonic)(back_fp_slint size, back_fp_slint rank, back_fp_slint stage, void *snp, back_fp_slint *up);
 back_fp_slint SL_PROTO(back_fp_sn_connected)(back_fp_slint size, back_fp_slint rank, back_fp_slint stage, void *snp, back_fp_slint *up);
-back_fp_slint_t SL_PROTO(back_fp_split_generic_count)(back_fp_elements_t *s, back_fp_tproc_f tp, void *tp_data, int *counts);
-back_fp_slint_t SL_PROTO(back_fp_split_generic_rearrange_ip)(back_fp_elements_t *s, back_fp_elements_t *sx, back_fp_tproc_f tp, void *tp_data, int *displs, int *counts, int n);
+back_fp_slint_t SL_PROTO(back_fp_split_generic_db)(back_fp_elements_t *s, back_fp_elements_t *d, back_fp_split_generic_t *sg, void *sg_data, back_fp_slint_t n);
+back_fp_slint_t SL_PROTO(back_fp_split_generic_ip)(back_fp_elements_t *s, back_fp_elements_t *d, back_fp_split_generic_t *sg, void *sg_data, back_fp_slint_t n);
+back_fp_slint_t SL_PROTO(back_fp_split_generic_count_db)(back_fp_elements_t *s, back_fp_split_generic_t *sg, void *sg_data, int *counts, back_fp_slint_t n);
+back_fp_slint_t SL_PROTO(back_fp_split_generic_count_ip)(back_fp_elements_t *s, back_fp_split_generic_t *sg, void *sg_data, int *counts, back_fp_slint_t n);
+back_fp_slint_t SL_PROTO(back_fp_split_generic_rearrange_db)(back_fp_elements_t *s, back_fp_elements_t *d, back_fp_split_generic_t *sg, void *sg_data, int *counts, back_fp_slint_t n);
+back_fp_slint_t SL_PROTO(back_fp_split_generic_rearrange_ip)(back_fp_elements_t *s, back_fp_elements_t *d, back_fp_split_generic_t *sg, void *sg_data, int *counts, int *displs, back_fp_slint_t n);
 back_fp_slint_t SL_PROTO(back_fp_splitter_reset)(back_fp_splitter_t *sp);
 back_fp_slint_t SL_PROTO(back_fp_splitx_radix)(back_fp_elements_t *s, back_fp_elements_t *sx, back_fp_slint_t nclasses, back_fp_slint_t shl, back_fp_slint_t *counts);
 back_fp_slint SL_PROTO(back_fp_split2_lt_ge)(back_fp_elements_t *s, back_fp_slkey_pure_t *k, back_fp_elements_t *t);

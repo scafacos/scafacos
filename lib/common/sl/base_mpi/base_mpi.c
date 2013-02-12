@@ -967,6 +967,7 @@ slint_t mpi_elements_sendrecv_replace(elements_t *s, int count, int dest, int se
 const double default_meas_t[2] = { 0 };     /* sl_global sl_context sl_var default_meas_t */
 const slint_t default_meas_max_nprocs = 8;  /* sl_global sl_context sl_var default_meas_max_nprocs */
 const slint_t default_meas_packed = 0;      /* sl_global sl_context sl_var default_meas_packed */
+const double default_meas_overalloc = 0;    /* sl_global sl_context sl_var default_meas_overalloc */
 /* sl_endif sl_context CONTEXT_END meas */
 
 

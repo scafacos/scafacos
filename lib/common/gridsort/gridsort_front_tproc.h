@@ -64,7 +64,7 @@
 #ifndef DUPLICATE
 static int GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x, void *data)
 #else
-static int GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x, void *data, int *procs, forw_elements_t *sd)
+static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x, void *data, int *procs, forw_elements_t *sd)
 #endif
 {
   void **data_ptrs = data;

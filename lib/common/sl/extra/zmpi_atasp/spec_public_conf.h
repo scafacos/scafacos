@@ -30,15 +30,16 @@
 # include "config.h"
 #endif
 
-
 #ifdef HAVE_ZMPI_LOCAL_H
 # include "zmpi_local.h"
 #endif
 
 
-typedef long spint_t;
+typedef int spec_int_t;
 
-typedef int spec_elem_index_t;
+typedef int spec_proc_t;
+
+#define SPEC_PROC_NONE  MPI_PROC_NULL
 
 typedef void *spec_tproc_data_t;
 
@@ -56,9 +57,7 @@ typedef struct
 
 } spec_elem_t;
 
-
-#define SPEC_PROC_NULL  MPI_PROC_NULL
-
+typedef long spec_elem_index_t;
 
 #define spec_elem_set_n(_e_, _n_)     (_e_)->count = (_n_)
 #define spec_elem_get_n(_e_)          (_e_)->count

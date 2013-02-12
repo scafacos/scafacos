@@ -26,20 +26,17 @@
 #define __SPEC_PUBLIC_H__
 
 
-/* sp_macro SPEC_PROC_NULL */
-
-
 /* tproc count */
 
 /* sp_macro SPEC_DECLARE_TPROC_COUNT_DB */
 #define SPEC_DECLARE_TPROC_COUNT_DB \
-  struct { spint_t i, p; } spec0cd;
+  struct { spec_elem_index_t i; spec_proc_t p; } spec0cd;
 
 /* sp_macro SPEC_DO_TPROC_COUNT_DB */
 #define SPEC_DO_TPROC_COUNT_DB(_tp_, _tpd_, _b_, _cs_)  do { \
   for (spec0cd.i = 0; spec0cd.i < spec_elem_get_n(_b_); ++spec0cd.i) { \
     spec0cd.p = (_tp_)(spec_elem_get_buf(_b_), spec0cd.i, _tpd_); \
-    if (spec0cd.p == SPEC_PROC_NULL) continue; \
+    if (spec0cd.p == SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec0cd.p]; \
   } } while (0)
 
@@ -53,14 +50,14 @@ _s_ void _name_##_tproc_count_db(spec_elem_t *s, spec_tproc_data_t tproc_data, i
 
 /* sp_macro SPEC_DECLARE_TPROC_COUNT_IP */
 #define SPEC_DECLARE_TPROC_COUNT_IP \
-  struct { spint_t i, p, t; } spec0ci;
+  struct { spec_elem_index_t i, t; spec_proc_t p; } spec0ci;
 
 /* sp_macro SPEC_DO_TPROC_COUNT_IP */
 #define SPEC_DO_TPROC_COUNT_IP(_tp_, _tpd_, _b_, _cs_)  do { \
   spec0ci.t = 0; \
   for (spec0ci.i = 0; spec0ci.i < spec_elem_get_n(_b_); ++spec0ci.i) { \
     spec0ci.p = (_tp_)(spec_elem_get_buf(_b_), spec0ci.i, _tpd_); \
-    if (spec0ci.p == SPEC_PROC_NULL) continue; \
+    if (spec0ci.p == SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec0ci.p]; \
     if (spec0ci.t < spec0ci.i) spec_elem_copy_at((_b_), spec0ci.i, (_b_), spec0ci.t); \
     ++spec0ci.t; \
@@ -81,13 +78,13 @@ _s_ void _name_##_tproc_count_ip(spec_elem_t *s, spec_tproc_data_t tproc_data, i
 
 /* sp_macro SPEC_DECLARE_TPROC_MOD_COUNT_DB */
 #define SPEC_DECLARE_TPROC_MOD_COUNT_DB \
-  struct { spint_t i, p; } spec1cd;
+  struct { spec_elem_index_t i; spec_proc_t p; } spec1cd;
 
 /* sp_macro SPEC_DO_TPROC_MOD_COUNT_DB */
 #define SPEC_DO_TPROC_MOD_COUNT_DB(_tp_, _tpd_, _b_, _cs_)  do { \
   for (spec1cd.i = 0; spec1cd.i < spec_elem_get_n(_b_); ++spec1cd.i) { \
     spec1cd.p = (_tp_)(spec_elem_get_buf(_b_), spec1cd.i, _tpd_, NULL); \
-    if (spec1cd.p == SPEC_PROC_NULL) continue; \
+    if (spec1cd.p == SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec1cd.p]; \
   } } while (0)
 
@@ -101,14 +98,14 @@ _s_ void _name_##_tproc_mod_count_db(spec_elem_t *s, spec_tproc_data_t tproc_dat
 
 /* sp_macro SPEC_DECLARE_TPROC_MOD_COUNT_IP */
 #define SPEC_DECLARE_TPROC_MOD_COUNT_IP \
-  struct { spint_t i, p, t; } spec1ci;
+  struct { spec_elem_index_t i, t; spec_proc_t p; } spec1ci;
 
 /* sp_macro SPEC_DO_TPROC_MOD_COUNT_IP */
 #define SPEC_DO_TPROC_MOD_COUNT_IP(_tp_, _tpd_, _b_, _cs_)  do { \
   spec1ci.t = 0; \
   for (spec1ci.i = 0; spec1ci.i < spec_elem_get_n(_b_); ++spec1ci.i) { \
     spec1ci.p = (_tp_)(spec_elem_get_buf(_b_), spec1ci.i, _tpd_, NULL); \
-    if (spec1ci.p == SPEC_PROC_NULL) continue; \
+    if (spec1ci.p == SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec1ci.p]; \
     if (spec1ci.t < spec1ci.i) spec_elem_copy_at((_b_), spec1ci.i, (_b_), spec1ci.t); \
     ++spec1ci.t; \
@@ -129,7 +126,7 @@ _s_ void _name_##_tproc_mod_count_ip(spec_elem_t *s, spec_tproc_data_t tproc_dat
 
 /* sp_macro SPEC_DECLARE_TPROCS_COUNT_DB */
 #define SPEC_DECLARE_TPROCS_COUNT_DB \
-  struct { spint_t i, j, n; } spec2cd;
+  struct { spec_elem_index_t i; spec_int_t j, n; } spec2cd;
 
 /* sp_macro SPEC_DO_TPROCS_COUNT_DB */
 #define SPEC_DO_TPROCS_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -140,7 +137,7 @@ _s_ void _name_##_tproc_mod_count_ip(spec_elem_t *s, spec_tproc_data_t tproc_dat
 
 /* sp_macro SPEC_FUNC_TPROCS_COUNT_DB */
 #define SPEC_FUNC_TPROCS_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_count_db(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_count_db(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts, spec_proc_t *procs) \
 { \
   SPEC_DECLARE_TPROCS_COUNT_DB \
   SPEC_DO_TPROCS_COUNT_DB(_tp_, tproc_data, s, counts, procs); \
@@ -148,7 +145,7 @@ _s_ void _name_##_tprocs_count_db(spec_elem_t *s, spec_tproc_data_t tproc_data, 
 
 /* sp_macro SPEC_DECLARE_TPROCS_COUNT_IP */
 #define SPEC_DECLARE_TPROCS_COUNT_IP \
-  struct { spint_t i, j, n, t; } spec2ci;
+  struct { spec_elem_index_t i, t; spec_int_t j, n; } spec2ci;
 
 /* sp_macro SPEC_DO_TPROCS_COUNT_IP */
 #define SPEC_DO_TPROCS_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -165,7 +162,7 @@ _s_ void _name_##_tprocs_count_db(spec_elem_t *s, spec_tproc_data_t tproc_data, 
 
 /* sp_macro SPEC_FUNC_TPROCS_COUNT_IP */
 #define SPEC_FUNC_TPROCS_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_count_ip(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_count_ip(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts, spec_proc_t *procs) \
 { \
   SPEC_DECLARE_TPROCS_COUNT_IP \
   SPEC_DO_TPROCS_COUNT_IP(_tp_, tproc_data, s, counts, procs); \
@@ -176,7 +173,7 @@ _s_ void _name_##_tprocs_count_ip(spec_elem_t *s, spec_tproc_data_t tproc_data, 
 
 /* sp_macro SPEC_DECLARE_TPROCS_MOD_COUNT_DB */
 #define SPEC_DECLARE_TPROCS_MOD_COUNT_DB \
-  struct { spint_t i, j, n; } spec3cd;
+  struct { spec_elem_index_t i; spec_int_t j, n; } spec3cd;
 
 /* sp_macro SPEC_DO_TPROCS_MOD_COUNT_DB */
 #define SPEC_DO_TPROCS_MOD_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -188,7 +185,7 @@ _s_ void _name_##_tprocs_count_ip(spec_elem_t *s, spec_tproc_data_t tproc_data, 
 
 /* sp_macro SPEC_FUNC_TPROCS_MOD_COUNT_DB */
 #define SPEC_FUNC_TPROCS_MOD_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_count_db(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_mod_count_db(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts, spec_proc_t *procs) \
 { \
   SPEC_DECLARE_TPROCS_MOD_COUNT_DB \
   SPEC_DO_TPROCS_MOD_COUNT_DB(_tp_, tproc_data, s, counts, procs); \
@@ -196,7 +193,7 @@ _s_ void _name_##_tprocs_mod_count_db(spec_elem_t *s, spec_tproc_data_t tproc_da
 
 /* sp_macro SPEC_DECLARE_TPROCS_MOD_COUNT_IP */
 #define SPEC_DECLARE_TPROCS_MOD_COUNT_IP \
-  struct { spint_t i, j, n, t; } spec3ci;
+  struct { spec_elem_index_t i, t; spec_int_t j, n; } spec3ci;
 
 /* sp_macro SPEC_DO_TPROCS_MOD_COUNT_IP */
 #define SPEC_DO_TPROCS_MOD_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -213,7 +210,7 @@ _s_ void _name_##_tprocs_mod_count_db(spec_elem_t *s, spec_tproc_data_t tproc_da
 
 /* sp_macro SPEC_FUNC_TPROCS_MOD_COUNT_IP */
 #define SPEC_FUNC_TPROCS_MOD_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_count_ip(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_mod_count_ip(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts, spec_proc_t *procs) \
 { \
   SPEC_DECLARE_TPROCS_MOD_COUNT_IP \
   SPEC_DO_TPROCS_MOD_COUNT_IP(_tp_, tproc_data, s, counts, procs); \
@@ -224,13 +221,13 @@ _s_ void _name_##_tprocs_mod_count_ip(spec_elem_t *s, spec_tproc_data_t tproc_da
 
 /* sp_macro SPEC_DECLARE_TPROC_REARRANGE_DB */
 #define SPEC_DECLARE_TPROC_REARRANGE_DB \
-  struct { spint_t i, p; } spec0d;
+  struct { spec_elem_index_t i; spec_proc_t p; } spec0d;
 
 /* sp_macro SPEC_DO_TPROC_REARRANGE_DB */
 #define SPEC_DO_TPROC_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_)  do { \
   for (spec0d.i = 0; spec0d.i < spec_elem_get_n(_sb_); ++spec0d.i) { \
     spec0d.p = (_tp_)(spec_elem_get_buf(_sb_), spec0d.i, _tpd_); \
-    if (spec0d.p == SPEC_PROC_NULL) continue; \
+    if (spec0d.p == SPEC_PROC_NONE) continue; \
     spec_elem_copy_at((_sb_), spec0d.i, (_db_), (_ds_)[spec0d.p]); \
     ++(_ds_)[spec0d.p]; \
   } } while (0)
@@ -245,7 +242,7 @@ _s_ void _name_##_tproc_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tproc_
 
 /* sp_macro SPEC_DECLARE_TPROC_REARRANGE_IP */
 #define SPEC_DECLARE_TPROC_REARRANGE_IP \
-  struct { spint_t e, i, j, p, np; } spec0i;
+  struct { spec_elem_index_t e, i, j; spec_proc_t p, np; } spec0i;
 
 /* sp_macro SPEC_DO_TPROC_REARRANGE_IP */
 #define SPEC_DO_TPROC_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_)  do { \
@@ -266,7 +263,7 @@ _s_ void _name_##_tproc_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tproc_
 
 /* sp_macro SPEC_FUNC_TPROC_REARRANGE_IP */
 #define SPEC_FUNC_TPROC_REARRANGE_IP(_name_, _tp_, _s_) \
-_s_ void _name_##_tproc_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, int n) \
+_s_ void _name_##_tproc_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, spec_int_t n) \
 { \
   SPEC_DECLARE_TPROC_REARRANGE_IP \
   SPEC_DO_TPROC_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n); \
@@ -277,21 +274,21 @@ _s_ void _name_##_tproc_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_tproc_
 
 /* sp_macro SPEC_DECLARE_TPROC_MOD_REARRANGE_DB */
 #define SPEC_DECLARE_TPROC_MOD_REARRANGE_DB \
-  struct { spint_t i, p; } spec1d;
+  struct { spec_elem_index_t i; spec_proc_t p; } spec1d;
 
 /* sp_macro SPEC_DO_TPROC_MOD_REARRANGE_DB */
 #define SPEC_DO_TPROC_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ib_)  do { \
   if (_ib_) { \
     for (spec1d.i = 0; spec1d.i < spec_elem_get_n(_sb_); ++spec1d.i) { \
       spec1d.p = (_tp_)(spec_elem_get_buf(_sb_), spec1d.i, _tpd_, spec_elem_get_buf(_ib_)); \
-      if (spec1d.p == SPEC_PROC_NULL) continue; \
+      if (spec1d.p == SPEC_PROC_NONE) continue; \
       spec_elem_copy_at((_ib_), 0, (_db_), (_ds_)[spec1d.p]); \
       ++(_ds_)[spec1d.p]; \
     } \
   } else { \
     for (spec1d.i = 0; spec1d.i < spec_elem_get_n(_sb_); ++spec1d.i) { \
       spec1d.p = (_tp_)(spec_elem_get_buf(_sb_), spec1d.i, _tpd_, NULL); \
-      if (spec1d.p == SPEC_PROC_NULL) continue; \
+      if (spec1d.p == SPEC_PROC_NONE) continue; \
       spec_elem_copy_at((_sb_), spec1d.i, (_db_), (_ds_)[spec1d.p]); \
       ++(_ds_)[spec1d.p]; \
     } \
@@ -307,7 +304,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tp
 
 /* sp_macro SPEC_DECLARE_TPROC_MOD_REARRANGE_IP */
 #define SPEC_DECLARE_TPROC_MOD_REARRANGE_IP \
-  struct { spint_t e, i, j, p, np; } spec1i;
+  struct { spec_elem_index_t e, i, j; spec_proc_t p, np; } spec1i;
 
 /* sp_macro SPEC_DO_TPROC_MOD_REARRANGE_IP */
 #define SPEC_DO_TPROC_MOD_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ib_)  do { \
@@ -319,7 +316,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tp
         spec1i.p = (_tp_)(spec_elem_get_buf(_b_), spec1i.j, _tpd_, spec_elem_get_buf(_ib_)); \
         spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
         while (spec1i.p != spec1i.i) { \
-          spec1i.np = (_tp_)(spec_elem_get_buf(_b_), (_ds_)[spec1i.p], _tpd_, (_ib_)); \
+          spec1i.np = (_tp_)(spec_elem_get_buf(_b_), (_ds_)[spec1i.p], _tpd_, spec_elem_get_buf(_ib_)); \
           if (spec1i.np != spec1i.p) { \
             spec_elem_copy_at((_b_), spec1i.j, (_b_), (_ds_)[spec1i.p]); \
             spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
@@ -349,7 +346,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tp
 
 /* sp_macro SPEC_FUNC_TPROC_MOD_REARRANGE_IP */
 #define SPEC_FUNC_TPROC_MOD_REARRANGE_IP(_name_, _tp_, _s_) \
-_s_ void _name_##_tproc_mod_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, int n, spec_elem_t *mod) \
+_s_ void _name_##_tproc_mod_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, spec_int_t n, spec_elem_t *mod) \
 { \
   SPEC_DECLARE_TPROC_MOD_REARRANGE_IP \
   SPEC_DO_TPROC_MOD_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n, mod); \
@@ -360,7 +357,7 @@ _s_ void _name_##_tproc_mod_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_tp
 
 /* sp_macro SPEC_DECLARE_TPROCS_REARRANGE_DB */
 #define SPEC_DECLARE_TPROCS_REARRANGE_DB \
-  struct { spint_t i, j, n; } spec2d;
+  struct { spec_elem_index_t i; spec_int_t j, n; } spec2d;
 
 /* sp_macro SPEC_DO_TPROCS_REARRANGE_DB */
 #define SPEC_DO_TPROCS_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_)  do { \
@@ -374,7 +371,7 @@ _s_ void _name_##_tproc_mod_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_tp
 
 /* sp_macro SPEC_FUNC_TPROCS_REARRANGE_DB */
 #define SPEC_FUNC_TPROCS_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs, int *procs) \
+_s_ void _name_##_tprocs_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs, spec_proc_t *procs) \
 { \
   SPEC_DECLARE_TPROCS_REARRANGE_DB \
   SPEC_DO_TPROCS_REARRANGE_DB(_tp_, tproc_data, s, d, displs, procs); \
@@ -382,7 +379,7 @@ _s_ void _name_##_tprocs_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tproc
 
 /* sp_macro SPEC_DECLARE_TPROCS_REARRANGE_IP */
 #define SPEC_DECLARE_TPROCS_REARRANGE_IP \
-  struct { spint_t e, i, j, n, f, fe, fc, l, le, lc, o; } spec2i;
+  struct { spec_elem_index_t e, j, fe, fc, le, lc; spec_int_t i, n, f, l, o; } spec2i;
 
 /* sp_macro SPEC_DO_TPROCS_REARRANGE_IP */
 #define SPEC_DO_TPROCS_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ps_)  do { \
@@ -424,7 +421,7 @@ _s_ void _name_##_tprocs_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tproc
 
 /* sp_macro SPEC_FUNC_TPROCS_REARRANGE_IP */
 #define SPEC_FUNC_TPROCS_REARRANGE_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_rearrange_ip(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs) \
+_s_ void _name_##_tprocs_rearrange_ip(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs, int *counts, spec_int_t n, spec_proc_t *procs) \
 { \
   SPEC_DECLARE_TPROCS_REARRANGE_IP \
   SPEC_DO_TPROCS_REARRANGE_IP(_tp_, tproc_data, s, d, displs, counts, n, procs); \
@@ -435,7 +432,7 @@ _s_ void _name_##_tprocs_rearrange_ip(spec_elem_t *s, spec_elem_t *d, spec_tproc
 
 /* sp_macro SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB */
 #define SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB \
-  struct { spint_t i, j, n; } spec3d;
+  struct { spec_elem_index_t i; spec_int_t j, n; } spec3d;
 
 /* sp_macro SPEC_DO_TPROCS_MOD_REARRANGE_DB */
 #define SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_, _ib_)  do { \
@@ -459,7 +456,7 @@ _s_ void _name_##_tprocs_rearrange_ip(spec_elem_t *s, spec_elem_t *d, spec_tproc
 
 /* sp_macro SPEC_FUNC_TPROCS_MOD_REARRANGE_DB */
 #define SPEC_FUNC_TPROCS_MOD_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs, int *procs, spec_elem_t *mod) \
+_s_ void _name_##_tprocs_mod_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs, spec_proc_t *procs, spec_elem_t *mod) \
 { \
   SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB \
   SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, tproc_data, s, d, displs, procs, mod); \
@@ -467,7 +464,7 @@ _s_ void _name_##_tprocs_mod_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_t
 
 /* sp_macro SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP */
 #define SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP \
-  struct { spint_t e, i, j, n, o, f, fe, fc, l, le, lc; } spec3i;
+  struct { spec_elem_index_t e, j, fe, fc, le, lc; spec_int_t i, n, f, l, o; } spec3i;
 
 /* sp_macro SPEC_DO_TPROCS_MOD_REARRANGE_IP */
 #define SPEC_DO_TPROCS_MOD_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ps_, _ib_)  do { \
@@ -547,7 +544,7 @@ _s_ void _name_##_tprocs_mod_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_t
 
 /* sp_macro SPEC_FUNC_TPROCS_MOD_REARRANGE_IP */
 #define SPEC_FUNC_TPROCS_MOD_REARRANGE_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs, spec_elem_t *mod) \
+_s_ void _name_##_tprocs_mod_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, spec_int_t n, spec_proc_t *procs, spec_elem_t *mod) \
 { \
   SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP \
   SPEC_DO_TPROCS_MOD_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n, procs, mod); \
@@ -593,31 +590,186 @@ _s_ void _name_##_tprocs_mod_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_t
 
 
 /* sp_type spec_tproc_f spec_tproc_count_f spec_tproc_rearrange_db_f spec_tproc_rearrange_ip_f */
-typedef int spec_tproc_f(spec_elem_buf_t b, spec_elem_index_t x, spec_tproc_data_t tproc_data);
+typedef spec_proc_t spec_tproc_f(spec_elem_buf_t b, spec_elem_index_t x, spec_tproc_data_t tproc_data);
 typedef void spec_tproc_count_f(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts);
 typedef void spec_tproc_rearrange_db_f(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs);
-typedef void spec_tproc_rearrange_ip_f(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, int n);
+typedef void spec_tproc_rearrange_ip_f(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, spec_int_t n);
 
 /* sp_type spec_tproc_mod_f spec_tproc_mod_count_f spec_tproc_mod_rearrange_db_f spec_tproc_mod_rearrange_ip_f */
-typedef int spec_tproc_mod_f(spec_elem_buf_t b, spec_elem_index_t x, spec_tproc_data_t tproc_data, spec_elem_buf_t mod);
+typedef spec_proc_t spec_tproc_mod_f(spec_elem_buf_t b, spec_elem_index_t x, spec_tproc_data_t tproc_data, spec_elem_buf_t mod);
 typedef void spec_tproc_mod_count_f(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts);
 typedef void spec_tproc_mod_rearrange_db_f(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs, spec_elem_t *mod);
-typedef void spec_tproc_mod_rearrange_ip_f(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, int n, spec_elem_t *mod);
+typedef void spec_tproc_mod_rearrange_ip_f(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, spec_int_t n, spec_elem_t *mod);
 
 /* sp_type spec_tprocs_f spec_tprocs_count_f spec_tprocs_rearrange_db_f spec_tprocs_rearrange_ip_f */
-typedef int spec_tprocs_f(spec_elem_buf_t b, spec_elem_index_t x, spec_tproc_data_t tproc_data, int *procs);
-typedef void spec_tprocs_count_f(spec_elem_t *s, spec_tproc_data_t tproc_data, int *procs, int *counts);
-typedef void spec_tprocs_rearrange_db_f(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs, int *procs);
-typedef void spec_tprocs_rearrange_ip_f(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs);
+typedef spec_int_t spec_tprocs_f(spec_elem_buf_t b, spec_elem_index_t x, spec_tproc_data_t tproc_data, spec_proc_t *procs);
+typedef void spec_tprocs_count_f(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts, spec_proc_t *procs);
+typedef void spec_tprocs_rearrange_db_f(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs, spec_proc_t *procs);
+typedef void spec_tprocs_rearrange_ip_f(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, spec_int_t n, spec_proc_t *procs);
 
 /* sp_type spec_tprocs_mod_f spec_tprocs_mod_count_f spec_tprocs_mod_rearrange_db_f spec_tprocs_mod_rearrange_ip_f */
-typedef int spec_tprocs_mod_f(spec_elem_buf_t b, spec_elem_index_t x, spec_tproc_data_t tproc_data, int *procs, spec_elem_buf_t mod);
-typedef void spec_tprocs_mod_count_f(spec_elem_t *s, spec_tproc_data_t tproc_data, int *procs, int *counts);
-typedef void spec_tprocs_mod_rearrange_db_f(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs, int *procs, spec_elem_t *mod);
-typedef void spec_tprocs_mod_rearrange_ip_f(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs, spec_elem_t *mod);
+typedef spec_int_t spec_tprocs_mod_f(spec_elem_buf_t b, spec_elem_index_t x, spec_tproc_data_t tproc_data, spec_proc_t *procs, spec_elem_buf_t mod);
+typedef void spec_tprocs_mod_count_f(spec_elem_t *s, spec_tproc_data_t tproc_data, int *counts, spec_proc_t *procs);
+typedef void spec_tprocs_mod_rearrange_db_f(spec_elem_t *s, spec_elem_t *d, spec_tproc_data_t tproc_data, int *displs, spec_proc_t *procs, spec_elem_t *mod);
+typedef void spec_tprocs_mod_rearrange_ip_f(spec_elem_t *s, spec_elem_t *x, spec_tproc_data_t tproc_data, int *displs, int *counts, spec_int_t n, spec_proc_t *procs, spec_elem_t *mod);
 
 /* sp_type spec_tproc_reset_f */
 typedef void spec_tproc_reset_f(spec_tproc_data_t tproc_data);
+
+
+/* enable tloc features */
+#ifdef SPEC_TLOC
+
+/* sp_macro SPEC_TLOC SPEC_LOC_NONE */
+
+
+/* tloc rearrange */
+
+/* sp_macro SPEC_DECLARE_TLOC_REARRANGE_DB */
+#define SPEC_DECLARE_TLOC_REARRANGE_DB \
+  struct { spec_int_t i, p; } spec0d;
+
+/* sp_macro SPEC_DO_TLOC_REARRANGE_DB */
+#define SPEC_DO_TLOC_REARRANGE_DB(_tl_, _tld_, _sb_, _db_)  do { \
+  for (spec0d.i = 0; spec0d.i < spec_elem_get_n(_sb_); ++spec0d.i) { \
+    spec0d.p = (_tl_)(spec_elem_get_buf(_sb_), spec0d.i, _tld_); \
+    if (spec0d.p == SPEC_LOC_NONE) continue; \
+    spec_elem_copy_at((_sb_), spec0d.i, (_db_), spec0d.p); \
+  } } while (0)
+
+/* sp_macro SPEC_FUNC_TLOC_REARRANGE_DB */
+#define SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
+_s_ void _name_##_tloc_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tloc_data_t tloc_data) \
+{ \
+  SPEC_DECLARE_TLOC_REARRANGE_DB \
+  SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
+}
+
+/* sp_macro SPEC_DECLARE_TLOC_REARRANGE_IP */
+#define SPEC_DECLARE_TLOC_REARRANGE_IP \
+  struct { spec_int_t i, p, np; } spec0i;
+
+/* sp_macro SPEC_DO_TLOC_REARRANGE_IP */
+#define SPEC_DO_TLOC_REARRANGE_IP(_tl_, _tld_, _b_, _xb_)  do { \
+  for (spec0i.i = 0; spec0i.i < spec_elem_get_n(_b_); ++spec0i.i) { \
+    spec0i.p = (_tl_)(spec_elem_get_buf(_b_), spec0i.i, _tld_); \
+    if (spec0i.p == SPEC_LOC_NONE) continue; \
+    while (spec0i.i != spec0i.p) { \
+      spec0i.np = (_tl_)(spec_elem_get_buf(_b_), spec0i.p, _tld_); \
+      if (spec0i.np == SPEC_LOC_NONE) { spec_elem_copy_at((_b_), spec0i.i, (_b_), spec0i.p); break; } \
+      spec_elem_exchange_at((_b_), spec0i.i, (_b_), spec0i.p, (_xb_)); \
+      spec0i.p = spec0i.np; \
+    } \
+  } } while (0)
+
+/* sp_macro SPEC_FUNC_TLOC_REARRANGE_IP */
+#define SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
+_s_ void _name_##_tloc_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_tloc_data_t tloc_data) \
+{ \
+  SPEC_DECLARE_TLOC_REARRANGE_IP \
+  SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
+}
+
+
+/* tloc_mod_mod rearrange */
+
+/* sp_macro SPEC_DECLARE_TLOC_MOD_REARRANGE_DB */
+#define SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
+  struct { spec_int_t i, p; } spec1d;
+
+/* sp_macro SPEC_DO_TLOC_MOD_REARRANGE_DB */
+#define SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, _tld_, _sb_, _db_, _ib_)  do { \
+  if (_ib_) { \
+    for (spec1d.i = 0; spec1d.i < spec_elem_get_n(_sb_); ++spec1d.i) { \
+      spec1d.p = (_tl_)(spec_elem_get_buf(_sb_), spec1d.i, _tld_, spec_elem_get_buf(_ib_)); \
+      if (spec1d.p == SPEC_LOC_NONE) continue; \
+      spec_elem_copy_at((_ib_), 0, (_db_), spec1d.p); \
+    } \
+  } else { \
+    for (spec1d.i = 0; spec1d.i < spec_elem_get_n(_sb_); ++spec1d.i) { \
+      spec1d.p = (_tl_)(spec_elem_get_buf(_sb_), spec1d.i, _tld_, NULL); \
+      if (spec1d.p == SPEC_LOC_NONE) continue; \
+      spec_elem_copy_at((_sb_), spec1d.i, (_db_), spec1d.p); \
+    } \
+  } } while (0) 
+
+/* sp_macro SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
+#define SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
+_s_ void _name_##_tloc_mod_rearrange_db(spec_elem_t *s, spec_elem_t *d, spec_tloc_data_t tloc_data, spec_elem_t *mod) \
+{ \
+  SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
+  SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
+}
+
+/* sp_macro SPEC_DECLARE_TLOC_MOD_REARRANGE_IP */
+#define SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
+  struct { spec_int_t i, p, np; } spec1i;
+
+/* sp_macro SPEC_DO_TLOC_MOD_REARRANGE_IP */
+#define SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, _tld_, _b_, _xb_, _ib_)  do { \
+  if (_ib_) { \
+    for (spec1i.i = 0; spec1i.i < spec_elem_get_n(_b_); ++spec1i.i) { \
+      spec1i.p = (_tl_)(spec_elem_get_buf(_b_), spec1i.i, _tld_, spec_elem_get_buf(_ib_)); \
+      if (spec1i.p == SPEC_LOC_NONE) continue; \
+      while (spec1i.i != spec1i.p) { \
+        spec1i.np = (_tl_)(spec_elem_get_buf(_b_), spec1i.p, _tld_, spec_elem_get_buf(_xb_)); \
+        if (spec1i.np == SPEC_LOC_NONE) break; \
+        spec_elem_copy_at((_ib_), 0, (_b_), spec1i.p); \
+        spec_elem_copy_at((_xb_), 0, (_ib_), 0); \
+        spec1i.p = spec1i.np; \
+      } \
+      spec_elem_copy_at((_ib_), 0, (_b_), spec1i.i); \
+    } \
+  } else { \
+    for (spec1i.i = 0; spec1i.i < spec_elem_get_n(_b_); ++spec1i.i) { \
+      spec1i.p = (_tl_)(spec_elem_get_buf(_b_), spec1i.i, _tld_, NULL); \
+      if (spec1i.p == SPEC_LOC_NONE) continue; \
+      while (spec1i.i != spec1i.p) { \
+        spec1i.np = (_tl_)(spec_elem_get_buf(_b_), spec1i.p, _tld_, NULL); \
+        if (spec1i.np == SPEC_LOC_NONE) { spec_elem_copy_at((_b_), spec1i.i, (_b_), spec1i.p); break; } \
+        spec_elem_exchange_at((_b_), spec1i.i, (_b_), spec1i.p, (_xb_)); \
+        spec1i.p = spec1i.np; \
+      } \
+    } \
+ } } while (0) 
+
+/* sp_macro SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
+#define SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
+_s_ void _name_##_tloc_mod_rearrange_ip(spec_elem_t *s, spec_elem_t *x, spec_tloc_data_t tloc_data, spec_elem_t *mod) \
+{ \
+  SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
+  SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
+}
+
+/* sp_macro SPEC_DEFINE_TLOC */
+#define SPEC_DEFINE_TLOC(_name_, _tl_, _s_...) \
+  SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_) \
+  SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_)
+
+/* sp_macro SPEC_DEFINE_TLOC_MOD */
+#define SPEC_DEFINE_TLOC_MOD(_name_, _tl_, _s_...) \
+  SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_) \
+  SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_)
+
+/* sp_macro SPEC_EXT_PARAM_TLOC SPEC_EXT_PARAM_TLOC_NULL SPEC_EXT_PARAM_TLOC_MOD SPEC_EXT_PARAM_TLOC_MOD_NULL */
+#define SPEC_EXT_PARAM_TLOC(_name_)      _name_##_tloc_rearrange_db, _name_##_tloc_rearrange_ip
+#define SPEC_EXT_PARAM_TLOC_NULL         NULL, NULL
+#define SPEC_EXT_PARAM_TLOC_MOD(_name_)  _name_##_tloc_mod_rearrange_db, _name_##_tloc_mod_rearrange_ip
+#define SPEC_EXT_PARAM_TLOC_MOD_NULL     NULL, NULL
+
+
+/* sp_type spec_tloc_f spec_tloc_rearrange_db_f spec_tloc_rearrange_ip_f */
+typedef spec_elem_index_t spec_tloc_f(spec_elem_buf_t b, spec_elem_index_t x, spec_tloc_data_t tloc_data);
+typedef void spec_tloc_rearrange_db_f(spec_elem_t *s, spec_elem_t *d, spec_tloc_data_t tloc_data);
+typedef void spec_tloc_rearrange_ip_f(spec_elem_t *s, spec_elem_t *x, spec_tloc_data_t tloc_data);
+
+/* sp_type spec_tloc_mod_f spec_tloc_mod_rearrange_db_f spec_tloc_mod_rearrange_ip_f */
+typedef spec_elem_index_t spec_tloc_mod_f(spec_elem_buf_t b, spec_elem_index_t x, spec_tloc_data_t tloc_data, spec_elem_buf_t mod);
+typedef void spec_tloc_mod_rearrange_db_f(spec_elem_t *s, spec_elem_t *d, spec_tloc_data_t tloc_data, spec_elem_t *mod);
+typedef void spec_tloc_mod_rearrange_ip_f(spec_elem_t *s, spec_elem_t *x, spec_tloc_data_t tloc_data, spec_elem_t *mod);
+
+
+#endif /* SPEC_TLOC */
 
 
 #endif /* __SPEC_PUBLIC_H__ */

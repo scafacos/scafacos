@@ -66,6 +66,7 @@ MPI_DATATYPE_NULL
  { 0 },
  8,
  0,
+ 0,
   },
 #endif
 #ifdef SL_USE_MPI

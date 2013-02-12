@@ -226,12 +226,21 @@ extern FILE *z_notice_fstream, *z_error_fstream, *z_debug_fstream;
 #include <stdlib.h>
 
 #ifndef z_alloc_hook
-# define z_alloc_hook_func(_n_, _s_, _p_, _fi_, _li_, _fu_)  (_p_)
+# define z_alloc_hook_func(_n_, _s_, _r_, _fi_, _li_, _fu_)  (_r_)
 #else
-inline static void *z_alloc_hook_func(z_int_t n, z_int_t s, void *p, const char *fi, int li, const char *fu)
+inline static void *z_alloc_hook_func(z_int_t n, z_int_t s, void *r, const char *fi, int li, const char *fu)
 {
-  z_alloc_hook(n, s, p, fi, li, fu);
-  return p;
+  z_alloc_hook(n, s, r, fi, li, fu);
+  return r;
+}
+#endif
+#ifndef z_realloc_hook_func
+# define z_realloc_hook_func(_p_, _n_, _s_, _r_, _fi_, _li_, _fu_)  (_r_)
+#else
+inline static void *z_realloc_hook_func(void *p, z_int_t n, z_int_t s, void *r, const char *fi, int li, const char *fu)
+{
+  z_realloc_hook(p, n, s, r, fi, li, fu);
+  return r;
 }
 #endif
 #ifndef z_free_hook
@@ -239,11 +248,13 @@ inline static void *z_alloc_hook_func(z_int_t n, z_int_t s, void *p, const char 
 #endif
 
 #ifdef Z_ALLOC_DEBUG
-# define z_alloc(_n_, _s_)  z_alloc_hook_func((z_int_t) _n_, (z_int_t) _s_, calloc((_n_), (_s_)), __FILE__, __LINE__, __func__)
-# define z_free(_p_)        Z_MOP(z_free_hook(_p_); free(_p_); _p_ = NULL;)
+# define z_alloc(_n_, _s_)         z_alloc_hook_func((z_int_t) _n_, (z_int_t) _s_, calloc((_n_), (_s_)), __FILE__, __LINE__, __func__)
+# define z_realloc(_p_, _n_, _s_)  z_realloc_hook_func(_p_, (z_int_t) _n_, (z_int_t) _s_, realloc(_p_, (_n_) * (_s_)), __FILE__, __LINE__, __func__)
+# define z_free(_p_)               Z_MOP(z_free_hook(_p_); free(_p_); _p_ = NULL;)
 #else
-# define z_alloc(_n_, _s_)  z_alloc_hook_func((z_int_t) _n_, (z_int_t) _s_, malloc((_n_) * (_s_)), __FILE__, __LINE__, __func__)
-# define z_free(_p_)        Z_MOP(z_free_hook(_p_); free(_p_);)
+# define z_alloc(_n_, _s_)         z_alloc_hook_func((z_int_t) _n_, (z_int_t) _s_, malloc((_n_) * (_s_)), __FILE__, __LINE__, __func__)
+# define z_realloc(_p_, _n_, _s_)  z_realloc_hook_func(_p_, (z_int_t) _n_, (z_int_t) _s_, realloc(_p_, (_n_) * (_s_)), __FILE__, __LINE__, __func__)
+# define z_free(_p_)               Z_MOP(z_free_hook(_p_); free(_p_);)
 #endif
 
 #ifndef z_alloca_hook

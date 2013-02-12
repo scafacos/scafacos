@@ -63,6 +63,12 @@
 #endif
 #define TIMING_PRINT_PREFIX  "GRIDSORT_TIMING: "
 
+#define GRIDSORT_INDEX_GET_PROC(_x_)  (((_x_) >= 0)?((_x_) >> 32):-1)
+#define GRIDSORT_INDEX_GET_POS(_x_)   (((_x_) >= 0)?((_x_) & 0x00000000FFFFFFFFLL):-1)
+
+#define GRIDSORT_INDEX_STR         "(%lld,%lld)"
+#define GRIDSORT_INDEX_PARAM(_x_)  GRIDSORT_INDEX_GET_PROC(_x_), GRIDSORT_INDEX_GET_POS(_x_)
+
 /*#define PRINT_FORWARD_SORTED*/
 
 #define DO_TIMING_SYNC
@@ -636,8 +642,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
     return -1;
   }
 
-  if (with_bounds)
-  if (with_triclinic)
+  if (with_bounds && with_triclinic)
   {
     fprintf(stderr, "ERROR: box shape ([%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f] x [%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f]"
       " x [%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f]) not supported when using lower and upper bounds for gridsort\n",

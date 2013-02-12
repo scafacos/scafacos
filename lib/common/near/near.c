@@ -484,7 +484,7 @@ static void sort_into_boxes(fcs_int nlocal, box_t *boxes, fcs_float *positions, 
     near____elem_set_size(&s3, nlocal);
     near____elem_set_max_size(&s3, nlocal);
     near____elem_set_keys(&s3, boxes);
-    near____elem_set_data(&s3, positions, charges, indices, potentials);
+    near____elem_set_data(&s3, positions, charges, indices);
 
     near____elements_alloc(&sx3, s3.size, SLCM_ALL);
 

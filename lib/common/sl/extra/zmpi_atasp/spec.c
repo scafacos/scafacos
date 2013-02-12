@@ -33,17 +33,20 @@
 /*#define SPEC_PRINT*/
 
 
-#if 0
+/*#define DUMMY_TEST*/
+
+#ifdef DUMMY_TEST
+
 static int dummy_spec_tproc(spec_elem_buf_t b, spec_elem_index_t x, spec_tproc_data_t tproc_data)
 {
-  return SPEC_PROC_NULL;
+  return SPEC_PROC_NONE;
 }
 
 SPEC_DEFINE_TPROC(dummy, dummy_spec_tproc);
 
 static int dummy_spec_tproc_mod(spec_elem_buf_t b, spec_elem_index_t x, spec_tproc_data_t tproc_data, spec_elem_buf_t mod)
 {
-  return SPEC_PROC_NULL;
+  return SPEC_PROC_NONE;
 }
 
 SPEC_DEFINE_TPROC_MOD(dummy, dummy_spec_tproc_mod);
@@ -61,6 +64,7 @@ static int dummy_spec_tprocs_mod(spec_elem_buf_t b, spec_elem_index_t x, spec_tp
 }
 
 SPEC_DEFINE_TPROCS_MOD(dummy, dummy_spec_tprocs_mod);
+
 #endif
 
 
@@ -70,7 +74,7 @@ spint_t spec_alltoallv_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spe
 
   spint_t i;
 
-  int *procs = NULL;
+  spec_proc_t *procs = NULL;
   int *scounts, *sdispls, *rcounts, *rdispls;
 
   spint_t tprocs_max;
@@ -120,7 +124,7 @@ spint_t spec_alltoallv_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spe
     sd = NULL;
   }
 
-  if (tprocs_max) procs = z_alloca(tprocs_max, sizeof(int));
+  if (tprocs_max) procs = z_alloca(tprocs_max, sizeof(spec_proc_t));
 
   if (tproc->tproc_mod || tproc->tprocs_mod)
   {
@@ -342,7 +346,7 @@ spint_t spec_alltoallv_ip(spec_elem_t *b, spec_elem_t *xb, spec_tproc_t tproc, s
 
   spint_t i;
 
-  int *procs = NULL;
+  spec_proc_t *procs = NULL;
   int *scounts, *sdispls, *rcounts, *rdispls;
 
   spint_t tprocs_max;
@@ -397,7 +401,7 @@ spint_t spec_alltoallv_ip(spec_elem_t *b, spec_elem_t *xb, spec_tproc_t tproc, s
     sd = NULL;
   }
 
-  if (tprocs_max) procs = z_alloca(tprocs_max, sizeof(int));
+  if (tprocs_max) procs = z_alloca(tprocs_max, sizeof(spec_proc_t));
 
   if (tproc->tproc_mod || tproc->tprocs_mod)
   {
@@ -894,7 +898,7 @@ spint_t spec_tproc_set_reset(spec_tproc_t *tproc, spec_tproc_reset_f *reset) /* 
 
 #ifdef SPEC_PROCLIST
 
-void spec_make_recv_proclist(spint_t nsend_procs, int *send_procs, spint_t *nrecv_procs, int **recv_procs, int size, int rank, MPI_Comm comm) /* sp_func spec_make_recv_proclist */
+void spec_make_recv_proclist(spint_t nsend_procs, sproc_t *send_procs, spint_t *nrecv_procs, sproc_t **recv_procs, int size, int rank, MPI_Comm comm) /* sp_func spec_make_recv_proclist */
 {
   spint_t i, j;
   int *s, *r;
@@ -911,7 +915,7 @@ void spec_make_recv_proclist(spint_t nsend_procs, int *send_procs, spint_t *nrec
   for (j = 0, i = 0; i < size; ++i) j += r[i];
 
   *nrecv_procs = j;
-  *recv_procs = z_alloc(*nrecv_procs, sizeof(int));
+  *recv_procs = z_alloc(*nrecv_procs, sizeof(sproc_t));
 
   for (j = 0, i = 0; i < size; ++i)
   if (r[i])
@@ -924,7 +928,7 @@ void spec_make_recv_proclist(spint_t nsend_procs, int *send_procs, spint_t *nrec
 }
 
 
-spint_t spec_tproc_set_proclist(spec_tproc_t *tproc, spint_t nsend_procs, int *send_procs, spint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm) /* sp_func spec_tproc_set_proclist */
+spint_t spec_tproc_set_proclist(spec_tproc_t *tproc, spint_t nsend_procs, sproc_t *send_procs, spint_t nrecv_procs, sproc_t *recv_procs, int size, int rank, MPI_Comm comm) /* sp_func spec_tproc_set_proclist */
 {
   spint_t i;
 
@@ -939,7 +943,7 @@ spint_t spec_tproc_set_proclist(spec_tproc_t *tproc, spint_t nsend_procs, int *s
   if (nsend_procs >= 0)
   {
     (*tproc)->nsend_procs = nsend_procs;
-    (*tproc)->send_procs = z_alloc(nsend_procs, sizeof(int));
+    (*tproc)->send_procs = z_alloc(nsend_procs, sizeof(sproc_t));
 
     for (i = 0; i < nsend_procs; ++i) (*tproc)->send_procs[i] = send_procs[i];
   }
@@ -947,7 +951,7 @@ spint_t spec_tproc_set_proclist(spec_tproc_t *tproc, spint_t nsend_procs, int *s
   if (nrecv_procs >= 0)
   {
     (*tproc)->nrecv_procs = nrecv_procs;
-    (*tproc)->recv_procs = z_alloc(nrecv_procs, sizeof(int));
+    (*tproc)->recv_procs = z_alloc(nrecv_procs, sizeof(sproc_t));
 
     for (i = 0; i < nrecv_procs; ++i) (*tproc)->recv_procs[i] = recv_procs[i];
 
@@ -958,13 +962,13 @@ spint_t spec_tproc_set_proclist(spec_tproc_t *tproc, spint_t nsend_procs, int *s
     spec_make_recv_proclist(nsend_procs, send_procs, &(*tproc)->nrecv_procs, &(*tproc)->recv_procs, size, rank, comm);
   }
   
-/*  printf("%d: send_procs (%d) = ", rank, (int) (*tproc)->nsend_procs);
-  for (i = 0; i < (*tproc)->nsend_procs; ++i) printf("  %d", (*tproc)->send_procs[i]);
+  printf("%d: send_procs (%" spint_fmt ") = ", rank, (*tproc)->nsend_procs);
+  for (i = 0; i < (*tproc)->nsend_procs; ++i) printf("  %" sproc_fmt, (*tproc)->send_procs[i]);
   printf("\n");
   
-  printf("%d: recv_procs (%d) = ", rank, (int) (*tproc)->nrecv_procs);
-  for (i = 0; i < (*tproc)->nrecv_procs; ++i) printf("  %d", (*tproc)->recv_procs[i]);
-  printf("\n");*/
+  printf("%d: recv_procs (%" spint_fmt ") = ", rank, (*tproc)->nrecv_procs);
+  for (i = 0; i < (*tproc)->nrecv_procs; ++i) printf("  %" sproc_fmt, (*tproc)->recv_procs[i]);
+  printf("\n");
   
   return SPEC_EXIT_SUCCESS;
 }
@@ -975,7 +979,7 @@ spint_t spec_tproc_set_proclist(spec_tproc_t *tproc, spint_t nsend_procs, int *s
 spint_t spec_print(spec_tproc_t *tproc, spec_tproc_data_t tproc_data, spec_elem_t *b) /* sp_func spec_print */
 {
   spint_t i, j, n;
-  int p, *procs = NULL;
+  spec_proc_t p, *procs = NULL;
 
   spint_t tprocs_max, tprocs_mod;
   spec_elem_t sd;
@@ -995,7 +999,7 @@ spint_t spec_print(spec_tproc_t *tproc, spec_tproc_data_t tproc_data, spec_elem_
 
   if (tprocs_max)
   {
-    procs = z_alloca(tprocs_max, sizeof(int));
+    procs = z_alloca(tprocs_max, sizeof(spec_proc_t));
 
     if ((*tproc)->tprocs_mod) spec_elem_alloc_buf(&sd, tprocs_max);
   }
@@ -1009,7 +1013,7 @@ spint_t spec_print(spec_tproc_t *tproc, spec_tproc_data_t tproc_data, spec_elem_
     for (i = 0; i < spec_elem_get_n(b); ++i)
     {
       p = (*tproc)->tproc(spec_elem_get_buf(b), i, tproc_data);
-      printf("%" spint_fmt ": %d\n", i, p);
+      printf("%" spint_fmt ": %" spec_proc_fmt "\n", i, p);
     }
 
   } else if ((*tproc)->tprocs)
@@ -1018,7 +1022,7 @@ spint_t spec_print(spec_tproc_t *tproc, spec_tproc_data_t tproc_data, spec_elem_
     {
       n = (*tproc)->tprocs(spec_elem_get_buf(b), i, tproc_data, procs);
       printf("%" spint_fmt ":", i);
-      for (j = 0; j < n; ++j) printf(" %d", procs[j]);
+      for (j = 0; j < n; ++j) printf(" %" spec_proc_fmt, procs[j]);
       printf("\n");
     }
 
@@ -1028,7 +1032,7 @@ spint_t spec_print(spec_tproc_t *tproc, spec_tproc_data_t tproc_data, spec_elem_
     {
       n = (*tproc)->tprocs_mod(spec_elem_get_buf(b), i, tproc_data, procs, (tprocs_mod)?&sd:NULL);
       printf("%" spint_fmt ":", i);
-      for (j = 0; j < n; ++j) printf(" %d", procs[j]);
+      for (j = 0; j < n; ++j) printf(" %" spec_proc_fmt, procs[j]);
       printf("\n");
     }
   }

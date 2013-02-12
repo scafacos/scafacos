@@ -26,10 +26,16 @@
 #define __SPEC_PUBLIC_CONF_H__
 
 
-typedef sl_int_type_c spint_t;
+#define SPEC_TLOC
 
-typedef spint_t spec_elem_index_t;
+typedef sl_int_type_c spec_int_t;
 
+typedef int spec_proc_t;
+
+#define SPEC_LOC_NONE   -1
+#define SPEC_PROC_NONE  MPI_PROC_NULL
+
+typedef void *spec_tloc_data_t;
 typedef void *spec_tproc_data_t;
 
 struct _elements_t;
@@ -38,9 +44,7 @@ typedef struct _elements_t *spec_elem_buf_t;
 
 typedef struct _elements_t spec_elem_t;
 
-
-#define SPEC_PROC_NULL  MPI_PROC_NULL
-
+typedef sl_int_type_c spec_elem_index_t;
 
 #define spec_elem_set_n(_e_, _n_)     elem_set_size((_e_), (_n_))
 #define spec_elem_get_n(_e_)          elem_get_size((_e_))

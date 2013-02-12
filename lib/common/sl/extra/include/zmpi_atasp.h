@@ -33,15 +33,16 @@
 # include "config.h"
 #endif
 
-
 #ifdef HAVE_ZMPI_LOCAL_H
 # include "zmpi_local.h"
 #endif
 
 
-typedef long zmpi_spint_t;
+typedef int zmpi_spec_int_t;
 
-typedef int zmpi_spec_elem_index_t;
+typedef int zmpi_spec_proc_t;
+
+#define zmpi_SPEC_PROC_NONE  MPI_PROC_NULL
 
 typedef void *zmpi_spec_tproc_data_t;
 
@@ -59,9 +60,7 @@ typedef struct
 
 } zmpi_spec_elem_t;
 
-
-#define zmpi_SPEC_PROC_NULL  MPI_PROC_NULL
-
+typedef long zmpi_spec_elem_index_t;
 
 #define zmpi_spec_elem_set_n(_e_, _n_)     (_e_)->count = (_n_)
 #define zmpi_spec_elem_get_n(_e_)          (_e_)->count
@@ -85,20 +84,17 @@ typedef struct
 
 
 
-/* sp_macro zmpi_SPEC_PROC_NULL */
-
-
 /* tproc count */
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROC_COUNT_DB */
 #define zmpi_SPEC_DECLARE_TPROC_COUNT_DB \
-  struct { zmpi_spint_t i, p; } spec0cd;
+  struct { zmpi_spec_elem_index_t i; zmpi_spec_proc_t p; } spec0cd;
 
 /* sp_macro zmpi_SPEC_DO_TPROC_COUNT_DB */
 #define zmpi_SPEC_DO_TPROC_COUNT_DB(_tp_, _tpd_, _b_, _cs_)  do { \
   for (spec0cd.i = 0; spec0cd.i < zmpi_spec_elem_get_n(_b_); ++spec0cd.i) { \
     spec0cd.p = (_tp_)(zmpi_spec_elem_get_buf(_b_), spec0cd.i, _tpd_); \
-    if (spec0cd.p == zmpi_SPEC_PROC_NULL) continue; \
+    if (spec0cd.p == zmpi_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec0cd.p]; \
   } } while (0)
 
@@ -112,14 +108,14 @@ _s_ void _name_##_tproc_count_db(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tpr
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROC_COUNT_IP */
 #define zmpi_SPEC_DECLARE_TPROC_COUNT_IP \
-  struct { zmpi_spint_t i, p, t; } spec0ci;
+  struct { zmpi_spec_elem_index_t i, t; zmpi_spec_proc_t p; } spec0ci;
 
 /* sp_macro zmpi_SPEC_DO_TPROC_COUNT_IP */
 #define zmpi_SPEC_DO_TPROC_COUNT_IP(_tp_, _tpd_, _b_, _cs_)  do { \
   spec0ci.t = 0; \
   for (spec0ci.i = 0; spec0ci.i < zmpi_spec_elem_get_n(_b_); ++spec0ci.i) { \
     spec0ci.p = (_tp_)(zmpi_spec_elem_get_buf(_b_), spec0ci.i, _tpd_); \
-    if (spec0ci.p == zmpi_SPEC_PROC_NULL) continue; \
+    if (spec0ci.p == zmpi_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec0ci.p]; \
     if (spec0ci.t < spec0ci.i) zmpi_spec_elem_copy_at((_b_), spec0ci.i, (_b_), spec0ci.t); \
     ++spec0ci.t; \
@@ -140,13 +136,13 @@ _s_ void _name_##_tproc_count_ip(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tpr
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROC_MOD_COUNT_DB */
 #define zmpi_SPEC_DECLARE_TPROC_MOD_COUNT_DB \
-  struct { zmpi_spint_t i, p; } spec1cd;
+  struct { zmpi_spec_elem_index_t i; zmpi_spec_proc_t p; } spec1cd;
 
 /* sp_macro zmpi_SPEC_DO_TPROC_MOD_COUNT_DB */
 #define zmpi_SPEC_DO_TPROC_MOD_COUNT_DB(_tp_, _tpd_, _b_, _cs_)  do { \
   for (spec1cd.i = 0; spec1cd.i < zmpi_spec_elem_get_n(_b_); ++spec1cd.i) { \
     spec1cd.p = (_tp_)(zmpi_spec_elem_get_buf(_b_), spec1cd.i, _tpd_, NULL); \
-    if (spec1cd.p == zmpi_SPEC_PROC_NULL) continue; \
+    if (spec1cd.p == zmpi_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec1cd.p]; \
   } } while (0)
 
@@ -160,14 +156,14 @@ _s_ void _name_##_tproc_mod_count_db(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROC_MOD_COUNT_IP */
 #define zmpi_SPEC_DECLARE_TPROC_MOD_COUNT_IP \
-  struct { zmpi_spint_t i, p, t; } spec1ci;
+  struct { zmpi_spec_elem_index_t i, t; zmpi_spec_proc_t p; } spec1ci;
 
 /* sp_macro zmpi_SPEC_DO_TPROC_MOD_COUNT_IP */
 #define zmpi_SPEC_DO_TPROC_MOD_COUNT_IP(_tp_, _tpd_, _b_, _cs_)  do { \
   spec1ci.t = 0; \
   for (spec1ci.i = 0; spec1ci.i < zmpi_spec_elem_get_n(_b_); ++spec1ci.i) { \
     spec1ci.p = (_tp_)(zmpi_spec_elem_get_buf(_b_), spec1ci.i, _tpd_, NULL); \
-    if (spec1ci.p == zmpi_SPEC_PROC_NULL) continue; \
+    if (spec1ci.p == zmpi_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec1ci.p]; \
     if (spec1ci.t < spec1ci.i) zmpi_spec_elem_copy_at((_b_), spec1ci.i, (_b_), spec1ci.t); \
     ++spec1ci.t; \
@@ -188,7 +184,7 @@ _s_ void _name_##_tproc_mod_count_ip(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROCS_COUNT_DB */
 #define zmpi_SPEC_DECLARE_TPROCS_COUNT_DB \
-  struct { zmpi_spint_t i, j, n; } spec2cd;
+  struct { zmpi_spec_elem_index_t i; zmpi_spec_int_t j, n; } spec2cd;
 
 /* sp_macro zmpi_SPEC_DO_TPROCS_COUNT_DB */
 #define zmpi_SPEC_DO_TPROCS_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -199,7 +195,7 @@ _s_ void _name_##_tproc_mod_count_ip(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t
 
 /* sp_macro zmpi_SPEC_FUNC_TPROCS_COUNT_DB */
 #define zmpi_SPEC_FUNC_TPROCS_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_count_db(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_count_db(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts, zmpi_spec_proc_t *procs) \
 { \
   zmpi_SPEC_DECLARE_TPROCS_COUNT_DB \
   zmpi_SPEC_DO_TPROCS_COUNT_DB(_tp_, tproc_data, s, counts, procs); \
@@ -207,7 +203,7 @@ _s_ void _name_##_tprocs_count_db(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tp
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROCS_COUNT_IP */
 #define zmpi_SPEC_DECLARE_TPROCS_COUNT_IP \
-  struct { zmpi_spint_t i, j, n, t; } spec2ci;
+  struct { zmpi_spec_elem_index_t i, t; zmpi_spec_int_t j, n; } spec2ci;
 
 /* sp_macro zmpi_SPEC_DO_TPROCS_COUNT_IP */
 #define zmpi_SPEC_DO_TPROCS_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -224,7 +220,7 @@ _s_ void _name_##_tprocs_count_db(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tp
 
 /* sp_macro zmpi_SPEC_FUNC_TPROCS_COUNT_IP */
 #define zmpi_SPEC_FUNC_TPROCS_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_count_ip(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_count_ip(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts, zmpi_spec_proc_t *procs) \
 { \
   zmpi_SPEC_DECLARE_TPROCS_COUNT_IP \
   zmpi_SPEC_DO_TPROCS_COUNT_IP(_tp_, tproc_data, s, counts, procs); \
@@ -235,7 +231,7 @@ _s_ void _name_##_tprocs_count_ip(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tp
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROCS_MOD_COUNT_DB */
 #define zmpi_SPEC_DECLARE_TPROCS_MOD_COUNT_DB \
-  struct { zmpi_spint_t i, j, n; } spec3cd;
+  struct { zmpi_spec_elem_index_t i; zmpi_spec_int_t j, n; } spec3cd;
 
 /* sp_macro zmpi_SPEC_DO_TPROCS_MOD_COUNT_DB */
 #define zmpi_SPEC_DO_TPROCS_MOD_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -247,7 +243,7 @@ _s_ void _name_##_tprocs_count_ip(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tp
 
 /* sp_macro zmpi_SPEC_FUNC_TPROCS_MOD_COUNT_DB */
 #define zmpi_SPEC_FUNC_TPROCS_MOD_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_count_db(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_mod_count_db(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts, zmpi_spec_proc_t *procs) \
 { \
   zmpi_SPEC_DECLARE_TPROCS_MOD_COUNT_DB \
   zmpi_SPEC_DO_TPROCS_MOD_COUNT_DB(_tp_, tproc_data, s, counts, procs); \
@@ -255,7 +251,7 @@ _s_ void _name_##_tprocs_mod_count_db(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROCS_MOD_COUNT_IP */
 #define zmpi_SPEC_DECLARE_TPROCS_MOD_COUNT_IP \
-  struct { zmpi_spint_t i, j, n, t; } spec3ci;
+  struct { zmpi_spec_elem_index_t i, t; zmpi_spec_int_t j, n; } spec3ci;
 
 /* sp_macro zmpi_SPEC_DO_TPROCS_MOD_COUNT_IP */
 #define zmpi_SPEC_DO_TPROCS_MOD_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -272,7 +268,7 @@ _s_ void _name_##_tprocs_mod_count_db(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_
 
 /* sp_macro zmpi_SPEC_FUNC_TPROCS_MOD_COUNT_IP */
 #define zmpi_SPEC_FUNC_TPROCS_MOD_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_count_ip(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_mod_count_ip(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts, zmpi_spec_proc_t *procs) \
 { \
   zmpi_SPEC_DECLARE_TPROCS_MOD_COUNT_IP \
   zmpi_SPEC_DO_TPROCS_MOD_COUNT_IP(_tp_, tproc_data, s, counts, procs); \
@@ -283,13 +279,13 @@ _s_ void _name_##_tprocs_mod_count_ip(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROC_REARRANGE_DB */
 #define zmpi_SPEC_DECLARE_TPROC_REARRANGE_DB \
-  struct { zmpi_spint_t i, p; } spec0d;
+  struct { zmpi_spec_elem_index_t i; zmpi_spec_proc_t p; } spec0d;
 
 /* sp_macro zmpi_SPEC_DO_TPROC_REARRANGE_DB */
 #define zmpi_SPEC_DO_TPROC_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_)  do { \
   for (spec0d.i = 0; spec0d.i < zmpi_spec_elem_get_n(_sb_); ++spec0d.i) { \
     spec0d.p = (_tp_)(zmpi_spec_elem_get_buf(_sb_), spec0d.i, _tpd_); \
-    if (spec0d.p == zmpi_SPEC_PROC_NULL) continue; \
+    if (spec0d.p == zmpi_SPEC_PROC_NONE) continue; \
     zmpi_spec_elem_copy_at((_sb_), spec0d.i, (_db_), (_ds_)[spec0d.p]); \
     ++(_ds_)[spec0d.p]; \
   } } while (0)
@@ -304,7 +300,7 @@ _s_ void _name_##_tproc_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, z
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROC_REARRANGE_IP */
 #define zmpi_SPEC_DECLARE_TPROC_REARRANGE_IP \
-  struct { zmpi_spint_t e, i, j, p, np; } spec0i;
+  struct { zmpi_spec_elem_index_t e, i, j; zmpi_spec_proc_t p, np; } spec0i;
 
 /* sp_macro zmpi_SPEC_DO_TPROC_REARRANGE_IP */
 #define zmpi_SPEC_DO_TPROC_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_)  do { \
@@ -325,7 +321,7 @@ _s_ void _name_##_tproc_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, z
 
 /* sp_macro zmpi_SPEC_FUNC_TPROC_REARRANGE_IP */
 #define zmpi_SPEC_FUNC_TPROC_REARRANGE_IP(_name_, _tp_, _s_) \
-_s_ void _name_##_tproc_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, int n) \
+_s_ void _name_##_tproc_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, zmpi_spec_int_t n) \
 { \
   zmpi_SPEC_DECLARE_TPROC_REARRANGE_IP \
   zmpi_SPEC_DO_TPROC_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n); \
@@ -336,21 +332,21 @@ _s_ void _name_##_tproc_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, z
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROC_MOD_REARRANGE_DB */
 #define zmpi_SPEC_DECLARE_TPROC_MOD_REARRANGE_DB \
-  struct { zmpi_spint_t i, p; } spec1d;
+  struct { zmpi_spec_elem_index_t i; zmpi_spec_proc_t p; } spec1d;
 
 /* sp_macro zmpi_SPEC_DO_TPROC_MOD_REARRANGE_DB */
 #define zmpi_SPEC_DO_TPROC_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ib_)  do { \
   if (_ib_) { \
     for (spec1d.i = 0; spec1d.i < zmpi_spec_elem_get_n(_sb_); ++spec1d.i) { \
       spec1d.p = (_tp_)(zmpi_spec_elem_get_buf(_sb_), spec1d.i, _tpd_, zmpi_spec_elem_get_buf(_ib_)); \
-      if (spec1d.p == zmpi_SPEC_PROC_NULL) continue; \
+      if (spec1d.p == zmpi_SPEC_PROC_NONE) continue; \
       zmpi_spec_elem_copy_at((_ib_), 0, (_db_), (_ds_)[spec1d.p]); \
       ++(_ds_)[spec1d.p]; \
     } \
   } else { \
     for (spec1d.i = 0; spec1d.i < zmpi_spec_elem_get_n(_sb_); ++spec1d.i) { \
       spec1d.p = (_tp_)(zmpi_spec_elem_get_buf(_sb_), spec1d.i, _tpd_, NULL); \
-      if (spec1d.p == zmpi_SPEC_PROC_NULL) continue; \
+      if (spec1d.p == zmpi_SPEC_PROC_NONE) continue; \
       zmpi_spec_elem_copy_at((_sb_), spec1d.i, (_db_), (_ds_)[spec1d.p]); \
       ++(_ds_)[spec1d.p]; \
     } \
@@ -366,7 +362,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP */
 #define zmpi_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP \
-  struct { zmpi_spint_t e, i, j, p, np; } spec1i;
+  struct { zmpi_spec_elem_index_t e, i, j; zmpi_spec_proc_t p, np; } spec1i;
 
 /* sp_macro zmpi_SPEC_DO_TPROC_MOD_REARRANGE_IP */
 #define zmpi_SPEC_DO_TPROC_MOD_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ib_)  do { \
@@ -378,7 +374,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *
         spec1i.p = (_tp_)(zmpi_spec_elem_get_buf(_b_), spec1i.j, _tpd_, zmpi_spec_elem_get_buf(_ib_)); \
         zmpi_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
         while (spec1i.p != spec1i.i) { \
-          spec1i.np = (_tp_)(zmpi_spec_elem_get_buf(_b_), (_ds_)[spec1i.p], _tpd_, (_ib_)); \
+          spec1i.np = (_tp_)(zmpi_spec_elem_get_buf(_b_), (_ds_)[spec1i.p], _tpd_, zmpi_spec_elem_get_buf(_ib_)); \
           if (spec1i.np != spec1i.p) { \
             zmpi_spec_elem_copy_at((_b_), spec1i.j, (_b_), (_ds_)[spec1i.p]); \
             zmpi_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
@@ -408,7 +404,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *
 
 /* sp_macro zmpi_SPEC_FUNC_TPROC_MOD_REARRANGE_IP */
 #define zmpi_SPEC_FUNC_TPROC_MOD_REARRANGE_IP(_name_, _tp_, _s_) \
-_s_ void _name_##_tproc_mod_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, zmpi_spec_elem_t *mod) \
+_s_ void _name_##_tproc_mod_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, zmpi_spec_int_t n, zmpi_spec_elem_t *mod) \
 { \
   zmpi_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP \
   zmpi_SPEC_DO_TPROC_MOD_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n, mod); \
@@ -419,7 +415,7 @@ _s_ void _name_##_tproc_mod_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROCS_REARRANGE_DB */
 #define zmpi_SPEC_DECLARE_TPROCS_REARRANGE_DB \
-  struct { zmpi_spint_t i, j, n; } spec2d;
+  struct { zmpi_spec_elem_index_t i; zmpi_spec_int_t j, n; } spec2d;
 
 /* sp_macro zmpi_SPEC_DO_TPROCS_REARRANGE_DB */
 #define zmpi_SPEC_DO_TPROCS_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_)  do { \
@@ -433,7 +429,7 @@ _s_ void _name_##_tproc_mod_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *
 
 /* sp_macro zmpi_SPEC_FUNC_TPROCS_REARRANGE_DB */
 #define zmpi_SPEC_FUNC_TPROCS_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs, int *procs) \
+_s_ void _name_##_tprocs_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs, zmpi_spec_proc_t *procs) \
 { \
   zmpi_SPEC_DECLARE_TPROCS_REARRANGE_DB \
   zmpi_SPEC_DO_TPROCS_REARRANGE_DB(_tp_, tproc_data, s, d, displs, procs); \
@@ -441,7 +437,7 @@ _s_ void _name_##_tprocs_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, 
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROCS_REARRANGE_IP */
 #define zmpi_SPEC_DECLARE_TPROCS_REARRANGE_IP \
-  struct { zmpi_spint_t e, i, j, n, f, fe, fc, l, le, lc, o; } spec2i;
+  struct { zmpi_spec_elem_index_t e, j, fe, fc, le, lc; zmpi_spec_int_t i, n, f, l, o; } spec2i;
 
 /* sp_macro zmpi_SPEC_DO_TPROCS_REARRANGE_IP */
 #define zmpi_SPEC_DO_TPROCS_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ps_)  do { \
@@ -483,7 +479,7 @@ _s_ void _name_##_tprocs_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, 
 
 /* sp_macro zmpi_SPEC_FUNC_TPROCS_REARRANGE_IP */
 #define zmpi_SPEC_FUNC_TPROCS_REARRANGE_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs) \
+_s_ void _name_##_tprocs_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, zmpi_spec_int_t n, zmpi_spec_proc_t *procs) \
 { \
   zmpi_SPEC_DECLARE_TPROCS_REARRANGE_IP \
   zmpi_SPEC_DO_TPROCS_REARRANGE_IP(_tp_, tproc_data, s, d, displs, counts, n, procs); \
@@ -494,7 +490,7 @@ _s_ void _name_##_tprocs_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, 
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB */
 #define zmpi_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB \
-  struct { zmpi_spint_t i, j, n; } spec3d;
+  struct { zmpi_spec_elem_index_t i; zmpi_spec_int_t j, n; } spec3d;
 
 /* sp_macro zmpi_SPEC_DO_TPROCS_MOD_REARRANGE_DB */
 #define zmpi_SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_, _ib_)  do { \
@@ -518,7 +514,7 @@ _s_ void _name_##_tprocs_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, 
 
 /* sp_macro zmpi_SPEC_FUNC_TPROCS_MOD_REARRANGE_DB */
 #define zmpi_SPEC_FUNC_TPROCS_MOD_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs, int *procs, zmpi_spec_elem_t *mod) \
+_s_ void _name_##_tprocs_mod_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs, zmpi_spec_proc_t *procs, zmpi_spec_elem_t *mod) \
 { \
   zmpi_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB \
   zmpi_SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, tproc_data, s, d, displs, procs, mod); \
@@ -526,7 +522,7 @@ _s_ void _name_##_tprocs_mod_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t 
 
 /* sp_macro zmpi_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP */
 #define zmpi_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP \
-  struct { zmpi_spint_t e, i, j, n, o, f, fe, fc, l, le, lc; } spec3i;
+  struct { zmpi_spec_elem_index_t e, j, fe, fc, le, lc; zmpi_spec_int_t i, n, f, l, o; } spec3i;
 
 /* sp_macro zmpi_SPEC_DO_TPROCS_MOD_REARRANGE_IP */
 #define zmpi_SPEC_DO_TPROCS_MOD_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ps_, _ib_)  do { \
@@ -606,7 +602,7 @@ _s_ void _name_##_tprocs_mod_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t 
 
 /* sp_macro zmpi_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP */
 #define zmpi_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs, zmpi_spec_elem_t *mod) \
+_s_ void _name_##_tprocs_mod_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, zmpi_spec_int_t n, zmpi_spec_proc_t *procs, zmpi_spec_elem_t *mod) \
 { \
   zmpi_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP \
   zmpi_SPEC_DO_TPROCS_MOD_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n, procs, mod); \
@@ -652,33 +648,193 @@ _s_ void _name_##_tprocs_mod_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t 
 
 
 /* sp_type zmpi_spec_tproc_f zmpi_spec_tproc_count_f zmpi_spec_tproc_rearrange_db_f zmpi_spec_tproc_rearrange_ip_f */
-typedef int zmpi_spec_tproc_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, zmpi_spec_tproc_data_t tproc_data);
+typedef zmpi_spec_proc_t zmpi_spec_tproc_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, zmpi_spec_tproc_data_t tproc_data);
 typedef void zmpi_spec_tproc_count_f(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts);
 typedef void zmpi_spec_tproc_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs);
-typedef void zmpi_spec_tproc_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, int n);
+typedef void zmpi_spec_tproc_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, zmpi_spec_int_t n);
 
 /* sp_type zmpi_spec_tproc_mod_f zmpi_spec_tproc_mod_count_f zmpi_spec_tproc_mod_rearrange_db_f zmpi_spec_tproc_mod_rearrange_ip_f */
-typedef int zmpi_spec_tproc_mod_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, zmpi_spec_tproc_data_t tproc_data, zmpi_spec_elem_buf_t mod);
+typedef zmpi_spec_proc_t zmpi_spec_tproc_mod_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, zmpi_spec_tproc_data_t tproc_data, zmpi_spec_elem_buf_t mod);
 typedef void zmpi_spec_tproc_mod_count_f(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts);
 typedef void zmpi_spec_tproc_mod_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs, zmpi_spec_elem_t *mod);
-typedef void zmpi_spec_tproc_mod_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, zmpi_spec_elem_t *mod);
+typedef void zmpi_spec_tproc_mod_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, zmpi_spec_int_t n, zmpi_spec_elem_t *mod);
 
 /* sp_type zmpi_spec_tprocs_f zmpi_spec_tprocs_count_f zmpi_spec_tprocs_rearrange_db_f zmpi_spec_tprocs_rearrange_ip_f */
-typedef int zmpi_spec_tprocs_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, zmpi_spec_tproc_data_t tproc_data, int *procs);
-typedef void zmpi_spec_tprocs_count_f(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *procs, int *counts);
-typedef void zmpi_spec_tprocs_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs, int *procs);
-typedef void zmpi_spec_tprocs_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs);
+typedef zmpi_spec_int_t zmpi_spec_tprocs_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, zmpi_spec_tproc_data_t tproc_data, zmpi_spec_proc_t *procs);
+typedef void zmpi_spec_tprocs_count_f(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts, zmpi_spec_proc_t *procs);
+typedef void zmpi_spec_tprocs_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs, zmpi_spec_proc_t *procs);
+typedef void zmpi_spec_tprocs_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, zmpi_spec_int_t n, zmpi_spec_proc_t *procs);
 
 /* sp_type zmpi_spec_tprocs_mod_f zmpi_spec_tprocs_mod_count_f zmpi_spec_tprocs_mod_rearrange_db_f zmpi_spec_tprocs_mod_rearrange_ip_f */
-typedef int zmpi_spec_tprocs_mod_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, zmpi_spec_tproc_data_t tproc_data, int *procs, zmpi_spec_elem_buf_t mod);
-typedef void zmpi_spec_tprocs_mod_count_f(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *procs, int *counts);
-typedef void zmpi_spec_tprocs_mod_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs, int *procs, zmpi_spec_elem_t *mod);
-typedef void zmpi_spec_tprocs_mod_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs, zmpi_spec_elem_t *mod);
+typedef zmpi_spec_int_t zmpi_spec_tprocs_mod_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, zmpi_spec_tproc_data_t tproc_data, zmpi_spec_proc_t *procs, zmpi_spec_elem_buf_t mod);
+typedef void zmpi_spec_tprocs_mod_count_f(zmpi_spec_elem_t *s, zmpi_spec_tproc_data_t tproc_data, int *counts, zmpi_spec_proc_t *procs);
+typedef void zmpi_spec_tprocs_mod_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tproc_data_t tproc_data, int *displs, zmpi_spec_proc_t *procs, zmpi_spec_elem_t *mod);
+typedef void zmpi_spec_tprocs_mod_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tproc_data_t tproc_data, int *displs, int *counts, zmpi_spec_int_t n, zmpi_spec_proc_t *procs, zmpi_spec_elem_t *mod);
 
 /* sp_type zmpi_spec_tproc_reset_f */
 typedef void zmpi_spec_tproc_reset_f(zmpi_spec_tproc_data_t tproc_data);
 
 
+/* enable tloc features */
+#ifdef zmpi_SPEC_TLOC
+
+/* sp_macro zmpi_SPEC_TLOC zmpi_SPEC_LOC_NONE */
+
+
+/* tloc rearrange */
+
+/* sp_macro zmpi_SPEC_DECLARE_TLOC_REARRANGE_DB */
+#define zmpi_SPEC_DECLARE_TLOC_REARRANGE_DB \
+  struct { zmpi_spec_int_t i, p; } spec0d;
+
+/* sp_macro zmpi_SPEC_DO_TLOC_REARRANGE_DB */
+#define zmpi_SPEC_DO_TLOC_REARRANGE_DB(_tl_, _tld_, _sb_, _db_)  do { \
+  for (spec0d.i = 0; spec0d.i < zmpi_spec_elem_get_n(_sb_); ++spec0d.i) { \
+    spec0d.p = (_tl_)(zmpi_spec_elem_get_buf(_sb_), spec0d.i, _tld_); \
+    if (spec0d.p == zmpi_SPEC_LOC_NONE) continue; \
+    zmpi_spec_elem_copy_at((_sb_), spec0d.i, (_db_), spec0d.p); \
+  } } while (0)
+
+/* sp_macro zmpi_SPEC_FUNC_TLOC_REARRANGE_DB */
+#define zmpi_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
+_s_ void _name_##_tloc_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, spec_tloc_data_t tloc_data) \
+{ \
+  zmpi_SPEC_DECLARE_TLOC_REARRANGE_DB \
+  zmpi_SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
+}
+
+/* sp_macro zmpi_SPEC_DECLARE_TLOC_REARRANGE_IP */
+#define zmpi_SPEC_DECLARE_TLOC_REARRANGE_IP \
+  struct { zmpi_spec_int_t i, p, np; } spec0i;
+
+/* sp_macro zmpi_SPEC_DO_TLOC_REARRANGE_IP */
+#define zmpi_SPEC_DO_TLOC_REARRANGE_IP(_tl_, _tld_, _b_, _xb_)  do { \
+  for (spec0i.i = 0; spec0i.i < zmpi_spec_elem_get_n(_b_); ++spec0i.i) { \
+    spec0i.p = (_tl_)(zmpi_spec_elem_get_buf(_b_), spec0i.i, _tld_); \
+    if (spec0i.p == zmpi_SPEC_LOC_NONE) continue; \
+    while (spec0i.i != spec0i.p) { \
+      spec0i.np = (_tl_)(zmpi_spec_elem_get_buf(_b_), spec0i.p, _tld_); \
+      if (spec0i.np == zmpi_SPEC_LOC_NONE) { zmpi_spec_elem_copy_at((_b_), spec0i.i, (_b_), spec0i.p); break; } \
+      zmpi_spec_elem_exchange_at((_b_), spec0i.i, (_b_), spec0i.p, (_xb_)); \
+      spec0i.p = spec0i.np; \
+    } \
+  } } while (0)
+
+/* sp_macro zmpi_SPEC_FUNC_TLOC_REARRANGE_IP */
+#define zmpi_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
+_s_ void _name_##_tloc_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, spec_tloc_data_t tloc_data) \
+{ \
+  zmpi_SPEC_DECLARE_TLOC_REARRANGE_IP \
+  zmpi_SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
+}
+
+
+/* tloc_mod_mod rearrange */
+
+/* sp_macro zmpi_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB */
+#define zmpi_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
+  struct { zmpi_spec_int_t i, p; } spec1d;
+
+/* sp_macro zmpi_SPEC_DO_TLOC_MOD_REARRANGE_DB */
+#define zmpi_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, _tld_, _sb_, _db_, _ib_)  do { \
+  if (_ib_) { \
+    for (spec1d.i = 0; spec1d.i < zmpi_spec_elem_get_n(_sb_); ++spec1d.i) { \
+      spec1d.p = (_tl_)(zmpi_spec_elem_get_buf(_sb_), spec1d.i, _tld_, zmpi_spec_elem_get_buf(_ib_)); \
+      if (spec1d.p == zmpi_SPEC_LOC_NONE) continue; \
+      zmpi_spec_elem_copy_at((_ib_), 0, (_db_), spec1d.p); \
+    } \
+  } else { \
+    for (spec1d.i = 0; spec1d.i < zmpi_spec_elem_get_n(_sb_); ++spec1d.i) { \
+      spec1d.p = (_tl_)(zmpi_spec_elem_get_buf(_sb_), spec1d.i, _tld_, NULL); \
+      if (spec1d.p == zmpi_SPEC_LOC_NONE) continue; \
+      zmpi_spec_elem_copy_at((_sb_), spec1d.i, (_db_), spec1d.p); \
+    } \
+  } } while (0) 
+
+/* sp_macro zmpi_SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
+#define zmpi_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
+_s_ void _name_##_tloc_mod_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod) \
+{ \
+  zmpi_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
+  zmpi_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
+}
+
+/* sp_macro zmpi_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP */
+#define zmpi_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
+  struct { zmpi_spec_int_t i, p, np; } spec1i;
+
+/* sp_macro zmpi_SPEC_DO_TLOC_MOD_REARRANGE_IP */
+#define zmpi_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, _tld_, _b_, _xb_, _ib_)  do { \
+  if (_ib_) { \
+    for (spec1i.i = 0; spec1i.i < zmpi_spec_elem_get_n(_b_); ++spec1i.i) { \
+      spec1i.p = (_tl_)(zmpi_spec_elem_get_buf(_b_), spec1i.i, _tld_, zmpi_spec_elem_get_buf(_ib_)); \
+      if (spec1i.p == zmpi_SPEC_LOC_NONE) continue; \
+      while (spec1i.i != spec1i.p) { \
+        spec1i.np = (_tl_)(zmpi_spec_elem_get_buf(_b_), spec1i.p, _tld_, zmpi_spec_elem_get_buf(_xb_)); \
+        if (spec1i.np == zmpi_SPEC_LOC_NONE) break; \
+        zmpi_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.p); \
+        zmpi_spec_elem_copy_at((_xb_), 0, (_ib_), 0); \
+        spec1i.p = spec1i.np; \
+      } \
+      zmpi_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.i); \
+    } \
+  } else { \
+    for (spec1i.i = 0; spec1i.i < zmpi_spec_elem_get_n(_b_); ++spec1i.i) { \
+      spec1i.p = (_tl_)(zmpi_spec_elem_get_buf(_b_), spec1i.i, _tld_, NULL); \
+      if (spec1i.p == zmpi_SPEC_LOC_NONE) continue; \
+      while (spec1i.i != spec1i.p) { \
+        spec1i.np = (_tl_)(zmpi_spec_elem_get_buf(_b_), spec1i.p, _tld_, NULL); \
+        if (spec1i.np == zmpi_SPEC_LOC_NONE) { zmpi_spec_elem_copy_at((_b_), spec1i.i, (_b_), spec1i.p); break; } \
+        zmpi_spec_elem_exchange_at((_b_), spec1i.i, (_b_), spec1i.p, (_xb_)); \
+        spec1i.p = spec1i.np; \
+      } \
+    } \
+ } } while (0) 
+
+/* sp_macro zmpi_SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
+#define zmpi_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
+_s_ void _name_##_tloc_mod_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod) \
+{ \
+  zmpi_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
+  zmpi_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
+}
+
+/* sp_macro zmpi_SPEC_DEFINE_TLOC */
+#define zmpi_SPEC_DEFINE_TLOC(_name_, _tl_, _s_...) \
+  zmpi_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_) \
+  zmpi_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_)
+
+/* sp_macro zmpi_SPEC_DEFINE_TLOC_MOD */
+#define zmpi_SPEC_DEFINE_TLOC_MOD(_name_, _tl_, _s_...) \
+  zmpi_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_) \
+  zmpi_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_)
+
+/* sp_macro zmpi_SPEC_EXT_PARAM_TLOC zmpi_SPEC_EXT_PARAM_TLOC_NULL zmpi_SPEC_EXT_PARAM_TLOC_MOD zmpi_SPEC_EXT_PARAM_TLOC_MOD_NULL */
+#define zmpi_SPEC_EXT_PARAM_TLOC(_name_)      _name_##_tloc_rearrange_db, _name_##_tloc_rearrange_ip
+#define zmpi_SPEC_EXT_PARAM_TLOC_NULL         NULL, NULL
+#define zmpi_SPEC_EXT_PARAM_TLOC_MOD(_name_)  _name_##_tloc_mod_rearrange_db, _name_##_tloc_mod_rearrange_ip
+#define zmpi_SPEC_EXT_PARAM_TLOC_MOD_NULL     NULL, NULL
+
+
+/* sp_type zmpi_spec_tloc_f zmpi_spec_tloc_rearrange_db_f zmpi_spec_tloc_rearrange_ip_f */
+typedef zmpi_spec_elem_index_t zmpi_spec_tloc_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, spec_tloc_data_t tloc_data);
+typedef void zmpi_spec_tloc_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, spec_tloc_data_t tloc_data);
+typedef void zmpi_spec_tloc_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, spec_tloc_data_t tloc_data);
+
+/* sp_type zmpi_spec_tloc_mod_f zmpi_spec_tloc_mod_rearrange_db_f zmpi_spec_tloc_mod_rearrange_ip_f */
+typedef zmpi_spec_elem_index_t zmpi_spec_tloc_mod_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, spec_tloc_data_t tloc_data, zmpi_spec_elem_buf_t mod);
+typedef void zmpi_spec_tloc_mod_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod);
+typedef void zmpi_spec_tloc_mod_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod);
+
+
+#endif /* zmpi_SPEC_TLOC */
+
+
+
+
+#ifdef ZMPI_PREFIX
+# include "zmpi_atasp_rename.h"
+#endif
 
 
 typedef int ZMPI_Count;

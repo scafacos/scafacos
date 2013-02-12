@@ -508,20 +508,98 @@ typedef slint_t (*sortnet_f)(slint_t size, slint_t rank, slint_t stage, sortnet_
 typedef slint_t (*merge2x_f)(elements_t *s0, elements_t *s1, elements_t *sx);
 typedef slint_t (*merge2X_f)(elements_t *s0, elements_t *s1, elements_t *sx, elements_t *t);
 
-/* sl_type _tproc_t tproc_t */
-typedef struct _tproc_t *tproc_t;
+/* sl_type _permute_generic_t permute_generic_t */
+typedef struct _permute_generic_t
+{
+  int type;
+
+  spec_tloc_f *tloc;
+  spec_tloc_rearrange_db_f *tloc_rearrange_db;
+  spec_tloc_rearrange_ip_f *tloc_rearrange_ip;
+
+  spec_tloc_mod_f *tloc_mod;
+  spec_tloc_mod_rearrange_db_f *tloc_mod_rearrange_db;
+  spec_tloc_mod_rearrange_ip_f *tloc_mod_rearrange_ip;
+
+} permute_generic_t;
+
+/* sl_macro PERMUTE_GENERIC_DEFINE_TLOC PERMUTE_GENERIC_INIT_TLOC PERMUTE_GENERIC_INIT_EXT_TLOC */
+#define PERMUTE_GENERIC_DEFINE_TLOC(_tl_, _s_...)      SPEC_DEFINE_TLOC(_tl_, _tl_, _s_)
+#define PERMUTE_GENERIC_INIT_TLOC(_tl_)                { 1, _tl_, SPEC_EXT_PARAM_TLOC_NULL,  NULL, SPEC_EXT_PARAM_TLOC_MOD_NULL }
+#define PERMUTE_GENERIC_INIT_EXT_TLOC(_tl_)            { 1, _tl_, SPEC_EXT_PARAM_TLOC(_tl_), NULL, SPEC_EXT_PARAM_TLOC_MOD_NULL }
+
+/* sl_macro PERMUTE_GENERIC_DEFINE_TLOC_MOD PERMUTE_GENERIC_INIT_TLOC_MOD PERMUTE_GENERIC_INIT_EXT_TLOC_MOD */
+#define PERMUTE_GENERIC_DEFINE_TLOC_MOD(_tl_, _s_...)  SPEC_DEFINE_TLOC_MOD(_tl_, _tl_, _s_)
+#define PERMUTE_GENERIC_INIT_TLOC_MOD(_tl_)            { 2, NULL, SPEC_EXT_PARAM_TLOC_MOD_NULL, _tl_, SPEC_EXT_PARAM_TLOC_MOD_NULL }
+#define PERMUTE_GENERIC_INIT_EXT_TLOC_MOD(_tl_)        { 2, NULL, SPEC_EXT_PARAM_TLOC_MOD_NULL, _tl_, SPEC_EXT_PARAM_TLOC_MOD(_tl_) }
+
+/* sl_type _split_generic_t split_generic_t */
+typedef struct _split_generic_t
+{
+  int type;
+
+  spec_tproc_f *tproc;
+  spec_tproc_count_f *tproc_count_db, *tproc_count_ip;
+  spec_tproc_rearrange_db_f *tproc_rearrange_db;
+  spec_tproc_rearrange_ip_f *tproc_rearrange_ip;
+
+  spec_tproc_mod_f *tproc_mod;
+  spec_tproc_mod_count_f *tproc_mod_count_db, *tproc_mod_count_ip;
+  spec_tproc_mod_rearrange_db_f *tproc_mod_rearrange_db;
+  spec_tproc_mod_rearrange_ip_f *tproc_mod_rearrange_ip;
+
+  spec_tprocs_f *tprocs;
+  spec_tprocs_count_f *tprocs_count_db, *tprocs_count_ip;
+  spec_tprocs_rearrange_db_f *tprocs_rearrange_db;
+  spec_tprocs_rearrange_ip_f *tprocs_rearrange_ip;
+
+  spec_tprocs_mod_f *tprocs_mod;
+  spec_tprocs_mod_count_f *tprocs_mod_count_db, *tprocs_mod_count_ip;
+  spec_tprocs_mod_rearrange_db_f *tprocs_mod_rearrange_db;
+  spec_tprocs_mod_rearrange_ip_f *tprocs_mod_rearrange_ip;
+
+  spec_tproc_reset_f *reset;
+
+} split_generic_t;
+
+/* sl_macro SPLIT_GENERIC_DEFINE_TPROC SPLIT_GENERIC_INIT_TPROC SPLIT_GENERIC_INIT_EXT_TPROC */
+#define SPLIT_GENERIC_DEFINE_TPROC(_tp_, _s_...)         SPEC_DEFINE_TPROC(_tp_, _tp_, _s_)
+#define SPLIT_GENERIC_INIT_TPROC(_tp_, _r_...)           { 1, _tp_, SPEC_EXT_PARAM_TPROC_NULL,  NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, SPEC_EXT_PARAM_TPROCS_NULL, NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define SPLIT_GENERIC_INIT_EXT_TPROC(_tp_, _r_...)       { 1, _tp_, SPEC_EXT_PARAM_TPROC(_tp_), NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, SPEC_EXT_PARAM_TPROCS_NULL, NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+
+/* sl_macro SPLIT_GENERIC_DEFINE_TPROC_MOD SPLIT_GENERIC_INIT_TPROC_MOD SPLIT_GENERIC_INIT_EXT_TPROC_MOD */
+#define SPLIT_GENERIC_DEFINE_TPROC_MOD(_tp_, _s_...)     SPEC_DEFINE_TPROC_MOD(_tp_, _tp_, _s_)
+#define SPLIT_GENERIC_INIT_TPROC_MOD(_tp_, _r_...)       { 2, NULL, SPEC_EXT_PARAM_TPROC_NULL, _tp_, SPEC_EXT_PARAM_TPROC_MOD_NULL,  NULL, SPEC_EXT_PARAM_TPROCS_NULL, NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define SPLIT_GENERIC_INIT_EXT_TPROC_MOD(_tp_, _r_...)   { 2, NULL, SPEC_EXT_PARAM_TPROC_NULL, _tp_, SPEC_EXT_PARAM_TPROC_MOD(_tp_), NULL, SPEC_EXT_PARAM_TPROCS_NULL, NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+
+/* sl_macro SPLIT_GENERIC_DEFINE_TPROCS SPLIT_GENERIC_INIT_TPROCS SPLIT_GENERIC_INIT_EXT_TPROCS */
+#define SPLIT_GENERIC_DEFINE_TPROCS(_tp_, _s_...)        SPEC_DEFINE_TPROCS(_tp_, _tp_, _s_)
+#define SPLIT_GENERIC_INIT_TPROCS(_tp_, _r_...)          { 3, NULL, SPEC_EXT_PARAM_TPROC_NULL, NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, _tp_, SPEC_EXT_PARAM_TPROCS_NULL,  NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define SPLIT_GENERIC_INIT_EXT_TPROCS(_tp_, _r_...)      { 3, NULL, SPEC_EXT_PARAM_TPROC_NULL, NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, _tp_, SPEC_EXT_PARAM_TPROCS(_tp_), NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+
+/* sl_macro SPLIT_GENERIC_DEFINE_TPROCS_MOD SPLIT_GENERIC_INIT_TPROCS_MOD SPLIT_GENERIC_INIT_EXT_TPROCS_MOD */
+#define SPLIT_GENERIC_DEFINE_TPROCS_MOD(_tp_, _s_...)    SPEC_DEFINE_TPROCS_MOD(_tp_, _tp_, _s_)
+#define SPLIT_GENERIC_INIT_TPROCS_MOD(_tp_, _r_...)      { 4, NULL, SPEC_EXT_PARAM_TPROC_NULL, NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, SPEC_EXT_PARAM_TPROCS_NULL,  _tp_, SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define SPLIT_GENERIC_INIT_EXT_TPROCS_MOD(_tp_, _r_...)  { 4, NULL, SPEC_EXT_PARAM_TPROC_NULL, NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, SPEC_EXT_PARAM_TPROCS_NULL,  _tp_, SPEC_EXT_PARAM_TPROCS_MOD(_tp_), _r_ }
+
+/* sl_type tloc_f tloc_mod_f */
+typedef slint_t tloc_f(elements_t *b, slint_t x, void *tloc_data);
+typedef slint_t tloc_mod_f(elements_t *b, slint_t x, void *tloc_data, elements_t *mod);
 
 /* sl_type tproc_f tproc_mod_f tprocs_f tprocs_mod_f */
 typedef int tproc_f(elements_t *b, slint_t x, void *tproc_data);
 typedef int tproc_mod_f(elements_t *b, slint_t x, void *tproc_data, elements_t *mod);
-typedef int tprocs_f(elements_t *b, slint_t x, void *tproc_data, int *procs);
-typedef int tprocs_mod_f(elements_t *b, slint_t x, void *tproc_data, int *procs, elements_t *mod);
+typedef slint_t tprocs_f(elements_t *b, slint_t x, void *tproc_data, int *procs);
+typedef slint_t tprocs_mod_f(elements_t *b, slint_t x, void *tproc_data, int *procs, elements_t *mod);
 
 /* sl_type tproc_reset_f */
 typedef void tproc_reset_f(void *tproc_data);
 
 /* sl_macro TPROC_RESET_NULL */
 #define TPROC_RESET_NULL  NULL
+
+/* sl_type _tproc_t tproc_t */
+typedef struct _tproc_t *tproc_t;
 
 /* sl_type _tproc_exdef tproc_exdef */
 typedef struct _tproc_exdef {
@@ -551,19 +629,19 @@ typedef struct _tproc_exdef {
 /* sl_macro TPROC_EXDEF_DEFINE_TPROC TPROC_EXDEF_DEFINE_TPROC_MOD TPROC_EXDEF_DEFINE_TPROCS TPROC_EXDEF_DEFINE_TPROCS_MOD */
 #define TPROC_EXDEF_DEFINE_TPROC(_name_, _tp_, _s_...) \
   SPEC_DEFINE_TPROC(_name_, _tp_, _s_) \
-  const struct _tproc_exdef _##_name_ = { 1, SPEC_EXT_PARAM_TPROC(_name_), SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+  _s_ const struct _tproc_exdef _##_name_ = { 1, SPEC_EXT_PARAM_TPROC(_name_), SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
 #define TPROC_EXDEF_DEFINE_TPROC_MOD(_name_, _tp_, _s_...) \
   SPEC_DEFINE_TPROC_MOD(_name_, _tp_, _s_) \
-  const struct _tproc_exdef _##_name_ = { 2, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD(_name_), SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+  _s_ const struct _tproc_exdef _##_name_ = { 2, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD(_name_), SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
 #define TPROC_EXDEF_DEFINE_TPROCS(_name_, _tp_, _s_...) \
   SPEC_DEFINE_TPROCS(_name_, _tp_, _s_) \
-  const struct _tproc_exdef _##_name_ = { 3, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS(_name_), SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+  _s_ const struct _tproc_exdef _##_name_ = { 3, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS(_name_), SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
 #define TPROC_EXDEF_DEFINE_TPROCS_MOD(_name_, _tp_, _s_...) \
   SPEC_DEFINE_TPROCS_MOD(_name_, _tp_, _s_) \
-  const struct _tproc_exdef _##_name_ = { 4, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
+  _s_ const struct _tproc_exdef _##_name_ = { 4, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
 
 
 /* deprecated, sl_type k2c_func pivot_func sn_func m2x_func m2X_func */

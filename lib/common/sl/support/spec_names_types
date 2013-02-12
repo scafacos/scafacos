@@ -1,8 +1,9 @@
-spint_t
-spec_elem_index_t
+spec_int_t
+spec_proc_t
 spec_tproc_data_t
 spec_elem_buf_t
 spec_elem_t
+spec_elem_index_t
 _spec_tproc_t
 spec_tproc_t
 spec_tproc_f
@@ -22,3 +23,9 @@ spec_tprocs_mod_count_f
 spec_tprocs_mod_rearrange_db_f
 spec_tprocs_mod_rearrange_ip_f
 spec_tproc_reset_f
+spec_tloc_f
+spec_tloc_rearrange_db_f
+spec_tloc_rearrange_ip_f
+spec_tloc_mod_f
+spec_tloc_mod_rearrange_db_f
+spec_tloc_mod_rearrange_ip_f

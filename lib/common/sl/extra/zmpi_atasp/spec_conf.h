@@ -44,8 +44,12 @@
 #endif
 
 
-#define spint_fmt   "ld"
-#define MPI_SPINT   MPI_LONG
+#define spec_int_fmt  "d"
+#define spec_int_mpi  MPI_INT
+
+#define spec_proc_fmt  "d"
+
+#define spec_elem_index_fmt  "ld"
 
 #define spec_elem_alloc_buf(_e_, _n_)  Z_MOP((_e_)->buf = z_alloc(zmpil_nextent((_n_), &(_e_)->zmpil_type), 1); (_e_)->count = (_e_)->max_count = (_n_);)
 #define spec_elem_free_buf(_e_)        z_free((_e_)->buf)
@@ -68,7 +72,6 @@
 
 /*#define spec_elem_alloc_rbuf(_e_)*/
 
-/*#define SPEC_MPI_ALLTOALL_2STEP_THRESHOLD*/
 
 #define SPEC_GLOBAL_EXIT_ON_ERROR
 
@@ -80,6 +83,8 @@
 
 #define SPEC_EXIT_SUCCESS  MPI_SUCCESS
 #define SPEC_EXIT_FAILED   1
+
+/*#define SPEC_MPI_ALLTOALL_2STEP_THRESHOLD*/
 
 
 #endif /* __SPEC_CONF_H__ */

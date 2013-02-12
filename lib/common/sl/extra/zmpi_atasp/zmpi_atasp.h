@@ -35,7 +35,7 @@
 #endif
 
 
-typedef int ZMPI_Count;
+typedef long ZMPI_Count;
 
 typedef struct _ZMPI_Tproc *ZMPI_Tproc;
 

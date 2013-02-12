@@ -28,20 +28,25 @@
 
 #include "sl_common.h"
 
+#include "spec_public_conf.h"
+
+
 #define z_mpi_rank  SL_PROC_RANK
 
-#define SP_RENAME
-
 #ifdef SL_PREFIX
+# define SP_RENAME
 # define SP_PREFIX  SL_PREFIX
 #endif
 
-#include "spec_public_conf.h"
 
-#define spint_fmt  sl_int_type_fmt
-#define MPI_SPINT  sl_int_type_mpi
+#define spec_int_fmt  sl_int_type_fmt
+#define spec_int_mpi  sl_int_type_mpi
 
-#define spec_elem_alloc_buf(_e_, _n_)  elements_alloc((_e_), (_n_), SLCM_ALL)
+#define spec_proc_fmt  "d"
+
+#define spec_elem_index_fmt  sl_int_type_fmt
+
+#define spec_elem_alloc_buf(_e_, _n_)  elements_alloc((_e_), (SL_DEFCON(meas.overalloc) < 0)?((slint_t) ((_n_) * (1.0 - SL_DEFCON(meas.overalloc)))):((_n_) + SL_DEFCON(meas.overalloc)), SLCM_ALL)
 #define spec_elem_free_buf(_e_)        elements_free((_e_))
 
 #define spec_elem_copy_type(_s_, _d_)  Z_NOP()
@@ -56,6 +61,13 @@
   mpi_elements_alltoallv_ip((_b_), (_xb_), (_sc_), (_sd_), (_rc_), (_rd_), (_s_), (_r_), (_c_))
 
 #define spec_elem_alloc_rbuf(_e_)  ((_e_)->max_size <= 0)
+
+
+/*#define SPEC_GLOBAL_EXIT_ON_ERROR*/
+
+#define SPEC_PROCLIST
+
+/*#define SPEC_TIMING*/
 
 /*#define SPEC_ERROR_FILE*/
 

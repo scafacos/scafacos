@@ -46,6 +46,7 @@ slint_t SL_PROTO(binning_radix_finalize)(binning_t *bm, bin_t *bin, slint_t dc, 
 slint_t SL_PROTO(binning_radix_post)(binning_t *bm);
 slint_t SL_PROTO(elements_alloc)(elements_t *s, slint_t nelements, slcint_t components);
 slint_t SL_PROTO(elements_free)(elements_t *s);
+slint_t SL_PROTO(elements_realloc)(elements_t *s, slint_t nelements, slcint_t components);
 slint_t SL_PROTO(elements_alloca)(elements_t *s, slint_t nelements, slcint_t components);
 slint_t SL_PROTO(elements_freea)(elements_t *s);
 slint_t SL_PROTO(elements_alloc_from_blocks)(elements_t *s, slint_t nblocks, void **blocks, slint_t *blocksizes, slint_t alignment, slint_t nmax, slcint_t components);
@@ -120,6 +121,8 @@ slint_t SL_PROTO(mergep_heap_int_idx)(elements_t *s, elements_t *d, slint_t p, i
 slint_t SL_PROTO(mergep_heap_idx)(elements_t *s, elements_t *d, slint_t p, slindex_t *displs, slindex_t *counts);
 slint_t SL_PROTO(mergep_heap_unpack_idx)(packed_elements_t *s, elements_t *d, slint_t p, slindex_t *displs, slindex_t *counts);
 slint_t SL_PROTO(mergep_heap_unpack_idxonly)(packed_elements_t *s, elements_t *d, slint_t p, slindex_t *displs, slindex_t *counts);
+slint_t SL_PROTO(permute_generic_db)(elements_t *s, elements_t *d, permute_generic_t *pg, void *pg_data);
+slint_t SL_PROTO(permute_generic_ip)(elements_t *s, elements_t *x, permute_generic_t *pg, void *pg_data);
 slint SL_PROTO(sl_search_sequential_lt)(elements_t *s, slpkey_t k);
 slint SL_PROTO(sl_search_sequential_le)(elements_t *s, slpkey_t k);
 slint SL_PROTO(sl_search_sequential_gt)(elements_t *s, slpkey_t k);
@@ -188,8 +191,12 @@ slint SL_PROTO(sn_even)(slint size, slint rank, slint stage, void *snp, slint *u
 slint SL_PROTO(sn_batcher)(slint size, slint rank, slint stage, void *snp, slint *up);
 slint SL_PROTO(sn_bitonic)(slint size, slint rank, slint stage, void *snp, slint *up);
 slint SL_PROTO(sn_connected)(slint size, slint rank, slint stage, void *snp, slint *up);
-slint_t SL_PROTO(split_generic_count)(elements_t *s, tproc_f tp, void *tp_data, int *counts);
-slint_t SL_PROTO(split_generic_rearrange_ip)(elements_t *s, elements_t *sx, tproc_f tp, void *tp_data, int *displs, int *counts, int n);
+slint_t SL_PROTO(split_generic_db)(elements_t *s, elements_t *d, split_generic_t *sg, void *sg_data, slint_t n);
+slint_t SL_PROTO(split_generic_ip)(elements_t *s, elements_t *d, split_generic_t *sg, void *sg_data, slint_t n);
+slint_t SL_PROTO(split_generic_count_db)(elements_t *s, split_generic_t *sg, void *sg_data, int *counts, slint_t n);
+slint_t SL_PROTO(split_generic_count_ip)(elements_t *s, split_generic_t *sg, void *sg_data, int *counts, slint_t n);
+slint_t SL_PROTO(split_generic_rearrange_db)(elements_t *s, elements_t *d, split_generic_t *sg, void *sg_data, int *counts, slint_t n);
+slint_t SL_PROTO(split_generic_rearrange_ip)(elements_t *s, elements_t *d, split_generic_t *sg, void *sg_data, int *counts, int *displs, slint_t n);
 slint_t SL_PROTO(splitter_reset)(splitter_t *sp);
 slint_t SL_PROTO(splitx_radix)(elements_t *s, elements_t *sx, slint_t nclasses, slint_t shl, slint_t *counts);
 slint SL_PROTO(split2_lt_ge)(elements_t *s, slkey_pure_t *k, elements_t *t);

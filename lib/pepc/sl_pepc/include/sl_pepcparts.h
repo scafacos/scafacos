@@ -993,10 +993,16 @@ enum rti_tid
 
 
 
-typedef pepcparts_sl_int_type_c pepcparts_spint_t;
+#define pepcparts_SPEC_TLOC
 
-typedef pepcparts_spint_t pepcparts_spec_elem_index_t;
+typedef pepcparts_sl_int_type_c pepcparts_spec_int_t;
 
+typedef int pepcparts_spec_proc_t;
+
+#define pepcparts_SPEC_LOC_NONE   -1
+#define pepcparts_SPEC_PROC_NONE  MPI_PROC_NULL
+
+typedef void *spec_tloc_data_t;
 typedef void *pepcparts_spec_tproc_data_t;
 
 struct pepcparts__elements_t;
@@ -1005,9 +1011,7 @@ typedef struct pepcparts__elements_t *pepcparts_spec_elem_buf_t;
 
 typedef struct pepcparts__elements_t pepcparts_spec_elem_t;
 
-
-#define pepcparts_SPEC_PROC_NULL  MPI_PROC_NULL
-
+typedef pepcparts_sl_int_type_c pepcparts_spec_elem_index_t;
 
 #define pepcparts_spec_elem_set_n(_e_, _n_)     pepcparts_elem_set_size((_e_), (_n_))
 #define pepcparts_spec_elem_get_n(_e_)          pepcparts_elem_get_size((_e_))
@@ -1028,20 +1032,17 @@ typedef struct pepcparts__elements_t pepcparts_spec_elem_t;
 
 
 
-/* sp_macro pepcparts_SPEC_PROC_NULL */
-
-
 /* tproc count */
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROC_COUNT_DB */
 #define pepcparts_SPEC_DECLARE_TPROC_COUNT_DB \
-  struct { pepcparts_spint_t i, p; } spec0cd;
+  struct { pepcparts_spec_elem_index_t i; pepcparts_spec_proc_t p; } spec0cd;
 
 /* sp_macro pepcparts_SPEC_DO_TPROC_COUNT_DB */
 #define pepcparts_SPEC_DO_TPROC_COUNT_DB(_tp_, _tpd_, _b_, _cs_)  do { \
   for (spec0cd.i = 0; spec0cd.i < pepcparts_spec_elem_get_n(_b_); ++spec0cd.i) { \
     spec0cd.p = (_tp_)(pepcparts_spec_elem_get_buf(_b_), spec0cd.i, _tpd_); \
-    if (spec0cd.p == pepcparts_SPEC_PROC_NULL) continue; \
+    if (spec0cd.p == pepcparts_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec0cd.p]; \
   } } while (0)
 
@@ -1055,14 +1056,14 @@ _s_ void _name_##_tproc_count_db(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROC_COUNT_IP */
 #define pepcparts_SPEC_DECLARE_TPROC_COUNT_IP \
-  struct { pepcparts_spint_t i, p, t; } spec0ci;
+  struct { pepcparts_spec_elem_index_t i, t; pepcparts_spec_proc_t p; } spec0ci;
 
 /* sp_macro pepcparts_SPEC_DO_TPROC_COUNT_IP */
 #define pepcparts_SPEC_DO_TPROC_COUNT_IP(_tp_, _tpd_, _b_, _cs_)  do { \
   spec0ci.t = 0; \
   for (spec0ci.i = 0; spec0ci.i < pepcparts_spec_elem_get_n(_b_); ++spec0ci.i) { \
     spec0ci.p = (_tp_)(pepcparts_spec_elem_get_buf(_b_), spec0ci.i, _tpd_); \
-    if (spec0ci.p == pepcparts_SPEC_PROC_NULL) continue; \
+    if (spec0ci.p == pepcparts_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec0ci.p]; \
     if (spec0ci.t < spec0ci.i) pepcparts_spec_elem_copy_at((_b_), spec0ci.i, (_b_), spec0ci.t); \
     ++spec0ci.t; \
@@ -1083,13 +1084,13 @@ _s_ void _name_##_tproc_count_ip(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROC_MOD_COUNT_DB */
 #define pepcparts_SPEC_DECLARE_TPROC_MOD_COUNT_DB \
-  struct { pepcparts_spint_t i, p; } spec1cd;
+  struct { pepcparts_spec_elem_index_t i; pepcparts_spec_proc_t p; } spec1cd;
 
 /* sp_macro pepcparts_SPEC_DO_TPROC_MOD_COUNT_DB */
 #define pepcparts_SPEC_DO_TPROC_MOD_COUNT_DB(_tp_, _tpd_, _b_, _cs_)  do { \
   for (spec1cd.i = 0; spec1cd.i < pepcparts_spec_elem_get_n(_b_); ++spec1cd.i) { \
     spec1cd.p = (_tp_)(pepcparts_spec_elem_get_buf(_b_), spec1cd.i, _tpd_, NULL); \
-    if (spec1cd.p == pepcparts_SPEC_PROC_NULL) continue; \
+    if (spec1cd.p == pepcparts_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec1cd.p]; \
   } } while (0)
 
@@ -1103,14 +1104,14 @@ _s_ void _name_##_tproc_mod_count_db(pepcparts_spec_elem_t *s, pepcparts_spec_tp
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROC_MOD_COUNT_IP */
 #define pepcparts_SPEC_DECLARE_TPROC_MOD_COUNT_IP \
-  struct { pepcparts_spint_t i, p, t; } spec1ci;
+  struct { pepcparts_spec_elem_index_t i, t; pepcparts_spec_proc_t p; } spec1ci;
 
 /* sp_macro pepcparts_SPEC_DO_TPROC_MOD_COUNT_IP */
 #define pepcparts_SPEC_DO_TPROC_MOD_COUNT_IP(_tp_, _tpd_, _b_, _cs_)  do { \
   spec1ci.t = 0; \
   for (spec1ci.i = 0; spec1ci.i < pepcparts_spec_elem_get_n(_b_); ++spec1ci.i) { \
     spec1ci.p = (_tp_)(pepcparts_spec_elem_get_buf(_b_), spec1ci.i, _tpd_, NULL); \
-    if (spec1ci.p == pepcparts_SPEC_PROC_NULL) continue; \
+    if (spec1ci.p == pepcparts_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec1ci.p]; \
     if (spec1ci.t < spec1ci.i) pepcparts_spec_elem_copy_at((_b_), spec1ci.i, (_b_), spec1ci.t); \
     ++spec1ci.t; \
@@ -1131,7 +1132,7 @@ _s_ void _name_##_tproc_mod_count_ip(pepcparts_spec_elem_t *s, pepcparts_spec_tp
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROCS_COUNT_DB */
 #define pepcparts_SPEC_DECLARE_TPROCS_COUNT_DB \
-  struct { pepcparts_spint_t i, j, n; } spec2cd;
+  struct { pepcparts_spec_elem_index_t i; pepcparts_spec_int_t j, n; } spec2cd;
 
 /* sp_macro pepcparts_SPEC_DO_TPROCS_COUNT_DB */
 #define pepcparts_SPEC_DO_TPROCS_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -1142,7 +1143,7 @@ _s_ void _name_##_tproc_mod_count_ip(pepcparts_spec_elem_t *s, pepcparts_spec_tp
 
 /* sp_macro pepcparts_SPEC_FUNC_TPROCS_COUNT_DB */
 #define pepcparts_SPEC_FUNC_TPROCS_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_count_db(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_count_db(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts, pepcparts_spec_proc_t *procs) \
 { \
   pepcparts_SPEC_DECLARE_TPROCS_COUNT_DB \
   pepcparts_SPEC_DO_TPROCS_COUNT_DB(_tp_, tproc_data, s, counts, procs); \
@@ -1150,7 +1151,7 @@ _s_ void _name_##_tprocs_count_db(pepcparts_spec_elem_t *s, pepcparts_spec_tproc
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROCS_COUNT_IP */
 #define pepcparts_SPEC_DECLARE_TPROCS_COUNT_IP \
-  struct { pepcparts_spint_t i, j, n, t; } spec2ci;
+  struct { pepcparts_spec_elem_index_t i, t; pepcparts_spec_int_t j, n; } spec2ci;
 
 /* sp_macro pepcparts_SPEC_DO_TPROCS_COUNT_IP */
 #define pepcparts_SPEC_DO_TPROCS_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -1167,7 +1168,7 @@ _s_ void _name_##_tprocs_count_db(pepcparts_spec_elem_t *s, pepcparts_spec_tproc
 
 /* sp_macro pepcparts_SPEC_FUNC_TPROCS_COUNT_IP */
 #define pepcparts_SPEC_FUNC_TPROCS_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_count_ip(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_count_ip(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts, pepcparts_spec_proc_t *procs) \
 { \
   pepcparts_SPEC_DECLARE_TPROCS_COUNT_IP \
   pepcparts_SPEC_DO_TPROCS_COUNT_IP(_tp_, tproc_data, s, counts, procs); \
@@ -1178,7 +1179,7 @@ _s_ void _name_##_tprocs_count_ip(pepcparts_spec_elem_t *s, pepcparts_spec_tproc
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_DB */
 #define pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_DB \
-  struct { pepcparts_spint_t i, j, n; } spec3cd;
+  struct { pepcparts_spec_elem_index_t i; pepcparts_spec_int_t j, n; } spec3cd;
 
 /* sp_macro pepcparts_SPEC_DO_TPROCS_MOD_COUNT_DB */
 #define pepcparts_SPEC_DO_TPROCS_MOD_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -1190,7 +1191,7 @@ _s_ void _name_##_tprocs_count_ip(pepcparts_spec_elem_t *s, pepcparts_spec_tproc
 
 /* sp_macro pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_DB */
 #define pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_count_db(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_mod_count_db(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts, pepcparts_spec_proc_t *procs) \
 { \
   pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_DB \
   pepcparts_SPEC_DO_TPROCS_MOD_COUNT_DB(_tp_, tproc_data, s, counts, procs); \
@@ -1198,7 +1199,7 @@ _s_ void _name_##_tprocs_mod_count_db(pepcparts_spec_elem_t *s, pepcparts_spec_t
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_IP */
 #define pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_IP \
-  struct { pepcparts_spint_t i, j, n, t; } spec3ci;
+  struct { pepcparts_spec_elem_index_t i, t; pepcparts_spec_int_t j, n; } spec3ci;
 
 /* sp_macro pepcparts_SPEC_DO_TPROCS_MOD_COUNT_IP */
 #define pepcparts_SPEC_DO_TPROCS_MOD_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
@@ -1215,7 +1216,7 @@ _s_ void _name_##_tprocs_mod_count_db(pepcparts_spec_elem_t *s, pepcparts_spec_t
 
 /* sp_macro pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_IP */
 #define pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_count_ip(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts, int *procs) \
+_s_ void _name_##_tprocs_mod_count_ip(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts, pepcparts_spec_proc_t *procs) \
 { \
   pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_IP \
   pepcparts_SPEC_DO_TPROCS_MOD_COUNT_IP(_tp_, tproc_data, s, counts, procs); \
@@ -1226,13 +1227,13 @@ _s_ void _name_##_tprocs_mod_count_ip(pepcparts_spec_elem_t *s, pepcparts_spec_t
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROC_REARRANGE_DB */
 #define pepcparts_SPEC_DECLARE_TPROC_REARRANGE_DB \
-  struct { pepcparts_spint_t i, p; } spec0d;
+  struct { pepcparts_spec_elem_index_t i; pepcparts_spec_proc_t p; } spec0d;
 
 /* sp_macro pepcparts_SPEC_DO_TPROC_REARRANGE_DB */
 #define pepcparts_SPEC_DO_TPROC_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_)  do { \
   for (spec0d.i = 0; spec0d.i < pepcparts_spec_elem_get_n(_sb_); ++spec0d.i) { \
     spec0d.p = (_tp_)(pepcparts_spec_elem_get_buf(_sb_), spec0d.i, _tpd_); \
-    if (spec0d.p == pepcparts_SPEC_PROC_NULL) continue; \
+    if (spec0d.p == pepcparts_SPEC_PROC_NONE) continue; \
     pepcparts_spec_elem_copy_at((_sb_), spec0d.i, (_db_), (_ds_)[spec0d.p]); \
     ++(_ds_)[spec0d.p]; \
   } } while (0)
@@ -1247,7 +1248,7 @@ _s_ void _name_##_tproc_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_el
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROC_REARRANGE_IP */
 #define pepcparts_SPEC_DECLARE_TPROC_REARRANGE_IP \
-  struct { pepcparts_spint_t e, i, j, p, np; } spec0i;
+  struct { pepcparts_spec_elem_index_t e, i, j; pepcparts_spec_proc_t p, np; } spec0i;
 
 /* sp_macro pepcparts_SPEC_DO_TPROC_REARRANGE_IP */
 #define pepcparts_SPEC_DO_TPROC_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_)  do { \
@@ -1268,7 +1269,7 @@ _s_ void _name_##_tproc_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_el
 
 /* sp_macro pepcparts_SPEC_FUNC_TPROC_REARRANGE_IP */
 #define pepcparts_SPEC_FUNC_TPROC_REARRANGE_IP(_name_, _tp_, _s_) \
-_s_ void _name_##_tproc_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, int n) \
+_s_ void _name_##_tproc_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, pepcparts_spec_int_t n) \
 { \
   pepcparts_SPEC_DECLARE_TPROC_REARRANGE_IP \
   pepcparts_SPEC_DO_TPROC_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n); \
@@ -1279,21 +1280,21 @@ _s_ void _name_##_tproc_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_el
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_DB */
 #define pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_DB \
-  struct { pepcparts_spint_t i, p; } spec1d;
+  struct { pepcparts_spec_elem_index_t i; pepcparts_spec_proc_t p; } spec1d;
 
 /* sp_macro pepcparts_SPEC_DO_TPROC_MOD_REARRANGE_DB */
 #define pepcparts_SPEC_DO_TPROC_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ib_)  do { \
   if (_ib_) { \
     for (spec1d.i = 0; spec1d.i < pepcparts_spec_elem_get_n(_sb_); ++spec1d.i) { \
       spec1d.p = (_tp_)(pepcparts_spec_elem_get_buf(_sb_), spec1d.i, _tpd_, pepcparts_spec_elem_get_buf(_ib_)); \
-      if (spec1d.p == pepcparts_SPEC_PROC_NULL) continue; \
+      if (spec1d.p == pepcparts_SPEC_PROC_NONE) continue; \
       pepcparts_spec_elem_copy_at((_ib_), 0, (_db_), (_ds_)[spec1d.p]); \
       ++(_ds_)[spec1d.p]; \
     } \
   } else { \
     for (spec1d.i = 0; spec1d.i < pepcparts_spec_elem_get_n(_sb_); ++spec1d.i) { \
       spec1d.p = (_tp_)(pepcparts_spec_elem_get_buf(_sb_), spec1d.i, _tpd_, NULL); \
-      if (spec1d.p == pepcparts_SPEC_PROC_NULL) continue; \
+      if (spec1d.p == pepcparts_SPEC_PROC_NONE) continue; \
       pepcparts_spec_elem_copy_at((_sb_), spec1d.i, (_db_), (_ds_)[spec1d.p]); \
       ++(_ds_)[spec1d.p]; \
     } \
@@ -1309,7 +1310,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spe
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP */
 #define pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP \
-  struct { pepcparts_spint_t e, i, j, p, np; } spec1i;
+  struct { pepcparts_spec_elem_index_t e, i, j; pepcparts_spec_proc_t p, np; } spec1i;
 
 /* sp_macro pepcparts_SPEC_DO_TPROC_MOD_REARRANGE_IP */
 #define pepcparts_SPEC_DO_TPROC_MOD_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ib_)  do { \
@@ -1321,7 +1322,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spe
         spec1i.p = (_tp_)(pepcparts_spec_elem_get_buf(_b_), spec1i.j, _tpd_, pepcparts_spec_elem_get_buf(_ib_)); \
         pepcparts_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
         while (spec1i.p != spec1i.i) { \
-          spec1i.np = (_tp_)(pepcparts_spec_elem_get_buf(_b_), (_ds_)[spec1i.p], _tpd_, (_ib_)); \
+          spec1i.np = (_tp_)(pepcparts_spec_elem_get_buf(_b_), (_ds_)[spec1i.p], _tpd_, pepcparts_spec_elem_get_buf(_ib_)); \
           if (spec1i.np != spec1i.p) { \
             pepcparts_spec_elem_copy_at((_b_), spec1i.j, (_b_), (_ds_)[spec1i.p]); \
             pepcparts_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
@@ -1351,7 +1352,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spe
 
 /* sp_macro pepcparts_SPEC_FUNC_TPROC_MOD_REARRANGE_IP */
 #define pepcparts_SPEC_FUNC_TPROC_MOD_REARRANGE_IP(_name_, _tp_, _s_) \
-_s_ void _name_##_tproc_mod_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, pepcparts_spec_elem_t *mod) \
+_s_ void _name_##_tproc_mod_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, pepcparts_spec_int_t n, pepcparts_spec_elem_t *mod) \
 { \
   pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP \
   pepcparts_SPEC_DO_TPROC_MOD_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n, mod); \
@@ -1362,7 +1363,7 @@ _s_ void _name_##_tproc_mod_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spe
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_DB */
 #define pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_DB \
-  struct { pepcparts_spint_t i, j, n; } spec2d;
+  struct { pepcparts_spec_elem_index_t i; pepcparts_spec_int_t j, n; } spec2d;
 
 /* sp_macro pepcparts_SPEC_DO_TPROCS_REARRANGE_DB */
 #define pepcparts_SPEC_DO_TPROCS_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_)  do { \
@@ -1376,7 +1377,7 @@ _s_ void _name_##_tproc_mod_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spe
 
 /* sp_macro pepcparts_SPEC_FUNC_TPROCS_REARRANGE_DB */
 #define pepcparts_SPEC_FUNC_TPROCS_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *procs) \
+_s_ void _name_##_tprocs_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs, pepcparts_spec_proc_t *procs) \
 { \
   pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_DB \
   pepcparts_SPEC_DO_TPROCS_REARRANGE_DB(_tp_, tproc_data, s, d, displs, procs); \
@@ -1384,7 +1385,7 @@ _s_ void _name_##_tprocs_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_e
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_IP */
 #define pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_IP \
-  struct { pepcparts_spint_t e, i, j, n, f, fe, fc, l, le, lc, o; } spec2i;
+  struct { pepcparts_spec_elem_index_t e, j, fe, fc, le, lc; pepcparts_spec_int_t i, n, f, l, o; } spec2i;
 
 /* sp_macro pepcparts_SPEC_DO_TPROCS_REARRANGE_IP */
 #define pepcparts_SPEC_DO_TPROCS_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ps_)  do { \
@@ -1426,7 +1427,7 @@ _s_ void _name_##_tprocs_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_e
 
 /* sp_macro pepcparts_SPEC_FUNC_TPROCS_REARRANGE_IP */
 #define pepcparts_SPEC_FUNC_TPROCS_REARRANGE_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs) \
+_s_ void _name_##_tprocs_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, pepcparts_spec_int_t n, pepcparts_spec_proc_t *procs) \
 { \
   pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_IP \
   pepcparts_SPEC_DO_TPROCS_REARRANGE_IP(_tp_, tproc_data, s, d, displs, counts, n, procs); \
@@ -1437,7 +1438,7 @@ _s_ void _name_##_tprocs_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_e
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB */
 #define pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB \
-  struct { pepcparts_spint_t i, j, n; } spec3d;
+  struct { pepcparts_spec_elem_index_t i; pepcparts_spec_int_t j, n; } spec3d;
 
 /* sp_macro pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_DB */
 #define pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_, _ib_)  do { \
@@ -1461,7 +1462,7 @@ _s_ void _name_##_tprocs_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_e
 
 /* sp_macro pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_DB */
 #define pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *procs, pepcparts_spec_elem_t *mod) \
+_s_ void _name_##_tprocs_mod_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs, pepcparts_spec_proc_t *procs, pepcparts_spec_elem_t *mod) \
 { \
   pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB \
   pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, tproc_data, s, d, displs, procs, mod); \
@@ -1469,7 +1470,7 @@ _s_ void _name_##_tprocs_mod_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_sp
 
 /* sp_macro pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP */
 #define pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP \
-  struct { pepcparts_spint_t e, i, j, n, o, f, fe, fc, l, le, lc; } spec3i;
+  struct { pepcparts_spec_elem_index_t e, j, fe, fc, le, lc; pepcparts_spec_int_t i, n, f, l, o; } spec3i;
 
 /* sp_macro pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_IP */
 #define pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ps_, _ib_)  do { \
@@ -1549,7 +1550,7 @@ _s_ void _name_##_tprocs_mod_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_sp
 
 /* sp_macro pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP */
 #define pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs, pepcparts_spec_elem_t *mod) \
+_s_ void _name_##_tprocs_mod_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, pepcparts_spec_int_t n, pepcparts_spec_proc_t *procs, pepcparts_spec_elem_t *mod) \
 { \
   pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP \
   pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n, procs, mod); \
@@ -1595,31 +1596,186 @@ _s_ void _name_##_tprocs_mod_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_sp
 
 
 /* sp_type pepcparts_spec_tproc_f pepcparts_spec_tproc_count_f pepcparts_spec_tproc_rearrange_db_f pepcparts_spec_tproc_rearrange_ip_f */
-typedef int pepcparts_spec_tproc_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, pepcparts_spec_tproc_data_t tproc_data);
+typedef pepcparts_spec_proc_t pepcparts_spec_tproc_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, pepcparts_spec_tproc_data_t tproc_data);
 typedef void pepcparts_spec_tproc_count_f(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts);
 typedef void pepcparts_spec_tproc_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs);
-typedef void pepcparts_spec_tproc_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, int n);
+typedef void pepcparts_spec_tproc_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, pepcparts_spec_int_t n);
 
 /* sp_type pepcparts_spec_tproc_mod_f pepcparts_spec_tproc_mod_count_f pepcparts_spec_tproc_mod_rearrange_db_f pepcparts_spec_tproc_mod_rearrange_ip_f */
-typedef int pepcparts_spec_tproc_mod_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, pepcparts_spec_tproc_data_t tproc_data, pepcparts_spec_elem_buf_t mod);
+typedef pepcparts_spec_proc_t pepcparts_spec_tproc_mod_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, pepcparts_spec_tproc_data_t tproc_data, pepcparts_spec_elem_buf_t mod);
 typedef void pepcparts_spec_tproc_mod_count_f(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts);
 typedef void pepcparts_spec_tproc_mod_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs, pepcparts_spec_elem_t *mod);
-typedef void pepcparts_spec_tproc_mod_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, pepcparts_spec_elem_t *mod);
+typedef void pepcparts_spec_tproc_mod_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, pepcparts_spec_int_t n, pepcparts_spec_elem_t *mod);
 
 /* sp_type pepcparts_spec_tprocs_f pepcparts_spec_tprocs_count_f pepcparts_spec_tprocs_rearrange_db_f pepcparts_spec_tprocs_rearrange_ip_f */
-typedef int pepcparts_spec_tprocs_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, pepcparts_spec_tproc_data_t tproc_data, int *procs);
-typedef void pepcparts_spec_tprocs_count_f(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *procs, int *counts);
-typedef void pepcparts_spec_tprocs_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *procs);
-typedef void pepcparts_spec_tprocs_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs);
+typedef pepcparts_spec_int_t pepcparts_spec_tprocs_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, pepcparts_spec_tproc_data_t tproc_data, pepcparts_spec_proc_t *procs);
+typedef void pepcparts_spec_tprocs_count_f(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts, pepcparts_spec_proc_t *procs);
+typedef void pepcparts_spec_tprocs_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs, pepcparts_spec_proc_t *procs);
+typedef void pepcparts_spec_tprocs_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, pepcparts_spec_int_t n, pepcparts_spec_proc_t *procs);
 
 /* sp_type pepcparts_spec_tprocs_mod_f pepcparts_spec_tprocs_mod_count_f pepcparts_spec_tprocs_mod_rearrange_db_f pepcparts_spec_tprocs_mod_rearrange_ip_f */
-typedef int pepcparts_spec_tprocs_mod_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, pepcparts_spec_tproc_data_t tproc_data, int *procs, pepcparts_spec_elem_buf_t mod);
-typedef void pepcparts_spec_tprocs_mod_count_f(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *procs, int *counts);
-typedef void pepcparts_spec_tprocs_mod_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *procs, pepcparts_spec_elem_t *mod);
-typedef void pepcparts_spec_tprocs_mod_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, int n, int *procs, pepcparts_spec_elem_t *mod);
+typedef pepcparts_spec_int_t pepcparts_spec_tprocs_mod_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, pepcparts_spec_tproc_data_t tproc_data, pepcparts_spec_proc_t *procs, pepcparts_spec_elem_buf_t mod);
+typedef void pepcparts_spec_tprocs_mod_count_f(pepcparts_spec_elem_t *s, pepcparts_spec_tproc_data_t tproc_data, int *counts, pepcparts_spec_proc_t *procs);
+typedef void pepcparts_spec_tprocs_mod_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tproc_data_t tproc_data, int *displs, pepcparts_spec_proc_t *procs, pepcparts_spec_elem_t *mod);
+typedef void pepcparts_spec_tprocs_mod_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, pepcparts_spec_int_t n, pepcparts_spec_proc_t *procs, pepcparts_spec_elem_t *mod);
 
 /* sp_type pepcparts_spec_tproc_reset_f */
 typedef void pepcparts_spec_tproc_reset_f(pepcparts_spec_tproc_data_t tproc_data);
+
+
+/* enable tloc features */
+#ifdef pepcparts_SPEC_TLOC
+
+/* sp_macro pepcparts_SPEC_TLOC pepcparts_SPEC_LOC_NONE */
+
+
+/* tloc rearrange */
+
+/* sp_macro pepcparts_SPEC_DECLARE_TLOC_REARRANGE_DB */
+#define pepcparts_SPEC_DECLARE_TLOC_REARRANGE_DB \
+  struct { pepcparts_spec_int_t i, p; } spec0d;
+
+/* sp_macro pepcparts_SPEC_DO_TLOC_REARRANGE_DB */
+#define pepcparts_SPEC_DO_TLOC_REARRANGE_DB(_tl_, _tld_, _sb_, _db_)  do { \
+  for (spec0d.i = 0; spec0d.i < pepcparts_spec_elem_get_n(_sb_); ++spec0d.i) { \
+    spec0d.p = (_tl_)(pepcparts_spec_elem_get_buf(_sb_), spec0d.i, _tld_); \
+    if (spec0d.p == pepcparts_SPEC_LOC_NONE) continue; \
+    pepcparts_spec_elem_copy_at((_sb_), spec0d.i, (_db_), spec0d.p); \
+  } } while (0)
+
+/* sp_macro pepcparts_SPEC_FUNC_TLOC_REARRANGE_DB */
+#define pepcparts_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
+_s_ void _name_##_tloc_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, spec_tloc_data_t tloc_data) \
+{ \
+  pepcparts_SPEC_DECLARE_TLOC_REARRANGE_DB \
+  pepcparts_SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
+}
+
+/* sp_macro pepcparts_SPEC_DECLARE_TLOC_REARRANGE_IP */
+#define pepcparts_SPEC_DECLARE_TLOC_REARRANGE_IP \
+  struct { pepcparts_spec_int_t i, p, np; } spec0i;
+
+/* sp_macro pepcparts_SPEC_DO_TLOC_REARRANGE_IP */
+#define pepcparts_SPEC_DO_TLOC_REARRANGE_IP(_tl_, _tld_, _b_, _xb_)  do { \
+  for (spec0i.i = 0; spec0i.i < pepcparts_spec_elem_get_n(_b_); ++spec0i.i) { \
+    spec0i.p = (_tl_)(pepcparts_spec_elem_get_buf(_b_), spec0i.i, _tld_); \
+    if (spec0i.p == pepcparts_SPEC_LOC_NONE) continue; \
+    while (spec0i.i != spec0i.p) { \
+      spec0i.np = (_tl_)(pepcparts_spec_elem_get_buf(_b_), spec0i.p, _tld_); \
+      if (spec0i.np == pepcparts_SPEC_LOC_NONE) { pepcparts_spec_elem_copy_at((_b_), spec0i.i, (_b_), spec0i.p); break; } \
+      pepcparts_spec_elem_exchange_at((_b_), spec0i.i, (_b_), spec0i.p, (_xb_)); \
+      spec0i.p = spec0i.np; \
+    } \
+  } } while (0)
+
+/* sp_macro pepcparts_SPEC_FUNC_TLOC_REARRANGE_IP */
+#define pepcparts_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
+_s_ void _name_##_tloc_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, spec_tloc_data_t tloc_data) \
+{ \
+  pepcparts_SPEC_DECLARE_TLOC_REARRANGE_IP \
+  pepcparts_SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
+}
+
+
+/* tloc_mod_mod rearrange */
+
+/* sp_macro pepcparts_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB */
+#define pepcparts_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
+  struct { pepcparts_spec_int_t i, p; } spec1d;
+
+/* sp_macro pepcparts_SPEC_DO_TLOC_MOD_REARRANGE_DB */
+#define pepcparts_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, _tld_, _sb_, _db_, _ib_)  do { \
+  if (_ib_) { \
+    for (spec1d.i = 0; spec1d.i < pepcparts_spec_elem_get_n(_sb_); ++spec1d.i) { \
+      spec1d.p = (_tl_)(pepcparts_spec_elem_get_buf(_sb_), spec1d.i, _tld_, pepcparts_spec_elem_get_buf(_ib_)); \
+      if (spec1d.p == pepcparts_SPEC_LOC_NONE) continue; \
+      pepcparts_spec_elem_copy_at((_ib_), 0, (_db_), spec1d.p); \
+    } \
+  } else { \
+    for (spec1d.i = 0; spec1d.i < pepcparts_spec_elem_get_n(_sb_); ++spec1d.i) { \
+      spec1d.p = (_tl_)(pepcparts_spec_elem_get_buf(_sb_), spec1d.i, _tld_, NULL); \
+      if (spec1d.p == pepcparts_SPEC_LOC_NONE) continue; \
+      pepcparts_spec_elem_copy_at((_sb_), spec1d.i, (_db_), spec1d.p); \
+    } \
+  } } while (0) 
+
+/* sp_macro pepcparts_SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
+#define pepcparts_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
+_s_ void _name_##_tloc_mod_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod) \
+{ \
+  pepcparts_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
+  pepcparts_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
+}
+
+/* sp_macro pepcparts_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP */
+#define pepcparts_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
+  struct { pepcparts_spec_int_t i, p, np; } spec1i;
+
+/* sp_macro pepcparts_SPEC_DO_TLOC_MOD_REARRANGE_IP */
+#define pepcparts_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, _tld_, _b_, _xb_, _ib_)  do { \
+  if (_ib_) { \
+    for (spec1i.i = 0; spec1i.i < pepcparts_spec_elem_get_n(_b_); ++spec1i.i) { \
+      spec1i.p = (_tl_)(pepcparts_spec_elem_get_buf(_b_), spec1i.i, _tld_, pepcparts_spec_elem_get_buf(_ib_)); \
+      if (spec1i.p == pepcparts_SPEC_LOC_NONE) continue; \
+      while (spec1i.i != spec1i.p) { \
+        spec1i.np = (_tl_)(pepcparts_spec_elem_get_buf(_b_), spec1i.p, _tld_, pepcparts_spec_elem_get_buf(_xb_)); \
+        if (spec1i.np == pepcparts_SPEC_LOC_NONE) break; \
+        pepcparts_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.p); \
+        pepcparts_spec_elem_copy_at((_xb_), 0, (_ib_), 0); \
+        spec1i.p = spec1i.np; \
+      } \
+      pepcparts_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.i); \
+    } \
+  } else { \
+    for (spec1i.i = 0; spec1i.i < pepcparts_spec_elem_get_n(_b_); ++spec1i.i) { \
+      spec1i.p = (_tl_)(pepcparts_spec_elem_get_buf(_b_), spec1i.i, _tld_, NULL); \
+      if (spec1i.p == pepcparts_SPEC_LOC_NONE) continue; \
+      while (spec1i.i != spec1i.p) { \
+        spec1i.np = (_tl_)(pepcparts_spec_elem_get_buf(_b_), spec1i.p, _tld_, NULL); \
+        if (spec1i.np == pepcparts_SPEC_LOC_NONE) { pepcparts_spec_elem_copy_at((_b_), spec1i.i, (_b_), spec1i.p); break; } \
+        pepcparts_spec_elem_exchange_at((_b_), spec1i.i, (_b_), spec1i.p, (_xb_)); \
+        spec1i.p = spec1i.np; \
+      } \
+    } \
+ } } while (0) 
+
+/* sp_macro pepcparts_SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
+#define pepcparts_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
+_s_ void _name_##_tloc_mod_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod) \
+{ \
+  pepcparts_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
+  pepcparts_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
+}
+
+/* sp_macro pepcparts_SPEC_DEFINE_TLOC */
+#define pepcparts_SPEC_DEFINE_TLOC(_name_, _tl_, _s_...) \
+  pepcparts_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_) \
+  pepcparts_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_)
+
+/* sp_macro pepcparts_SPEC_DEFINE_TLOC_MOD */
+#define pepcparts_SPEC_DEFINE_TLOC_MOD(_name_, _tl_, _s_...) \
+  pepcparts_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_) \
+  pepcparts_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_)
+
+/* sp_macro pepcparts_SPEC_EXT_PARAM_TLOC pepcparts_SPEC_EXT_PARAM_TLOC_NULL pepcparts_SPEC_EXT_PARAM_TLOC_MOD pepcparts_SPEC_EXT_PARAM_TLOC_MOD_NULL */
+#define pepcparts_SPEC_EXT_PARAM_TLOC(_name_)      _name_##_tloc_rearrange_db, _name_##_tloc_rearrange_ip
+#define pepcparts_SPEC_EXT_PARAM_TLOC_NULL         NULL, NULL
+#define pepcparts_SPEC_EXT_PARAM_TLOC_MOD(_name_)  _name_##_tloc_mod_rearrange_db, _name_##_tloc_mod_rearrange_ip
+#define pepcparts_SPEC_EXT_PARAM_TLOC_MOD_NULL     NULL, NULL
+
+
+/* sp_type pepcparts_spec_tloc_f pepcparts_spec_tloc_rearrange_db_f pepcparts_spec_tloc_rearrange_ip_f */
+typedef pepcparts_spec_elem_index_t pepcparts_spec_tloc_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, spec_tloc_data_t tloc_data);
+typedef void pepcparts_spec_tloc_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, spec_tloc_data_t tloc_data);
+typedef void pepcparts_spec_tloc_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, spec_tloc_data_t tloc_data);
+
+/* sp_type pepcparts_spec_tloc_mod_f pepcparts_spec_tloc_mod_rearrange_db_f pepcparts_spec_tloc_mod_rearrange_ip_f */
+typedef pepcparts_spec_elem_index_t pepcparts_spec_tloc_mod_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, spec_tloc_data_t tloc_data, pepcparts_spec_elem_buf_t mod);
+typedef void pepcparts_spec_tloc_mod_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod);
+typedef void pepcparts_spec_tloc_mod_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod);
+
+
+#endif /* pepcparts_SPEC_TLOC */
 
 
 
@@ -2108,20 +2264,98 @@ typedef pepcparts_slint_t (*pepcparts_sortnet_f)(pepcparts_slint_t size, pepcpar
 typedef pepcparts_slint_t (*pepcparts_merge2x_f)(pepcparts_elements_t *s0, pepcparts_elements_t *s1, pepcparts_elements_t *sx);
 typedef pepcparts_slint_t (*pepcparts_merge2X_f)(pepcparts_elements_t *s0, pepcparts_elements_t *s1, pepcparts_elements_t *sx, pepcparts_elements_t *t);
 
-/* sl_type pepcparts__tproc_t pepcparts_tproc_t */
-typedef struct pepcparts__tproc_t *pepcparts_tproc_t;
+/* sl_type pepcparts__permute_generic_t pepcparts_permute_generic_t */
+typedef struct pepcparts__permute_generic_t
+{
+  int type;
+
+  pepcparts_spec_tloc_f *tloc;
+  pepcparts_spec_tloc_rearrange_db_f *tloc_rearrange_db;
+  pepcparts_spec_tloc_rearrange_ip_f *tloc_rearrange_ip;
+
+  pepcparts_spec_tloc_mod_f *tloc_mod;
+  pepcparts_spec_tloc_mod_rearrange_db_f *tloc_mod_rearrange_db;
+  pepcparts_spec_tloc_mod_rearrange_ip_f *tloc_mod_rearrange_ip;
+
+} pepcparts_permute_generic_t;
+
+/* sl_macro pepcparts_PERMUTE_GENERIC_DEFINE_TLOC pepcparts_PERMUTE_GENERIC_INIT_TLOC pepcparts_PERMUTE_GENERIC_INIT_EXT_TLOC */
+#define pepcparts_PERMUTE_GENERIC_DEFINE_TLOC(_tl_, _s_...)      pepcparts_SPEC_DEFINE_TLOC(_tl_, _tl_, _s_)
+#define pepcparts_PERMUTE_GENERIC_INIT_TLOC(_tl_)                { 1, _tl_, pepcparts_SPEC_EXT_PARAM_TLOC_NULL,  NULL, pepcparts_SPEC_EXT_PARAM_TLOC_MOD_NULL }
+#define pepcparts_PERMUTE_GENERIC_INIT_EXT_TLOC(_tl_)            { 1, _tl_, pepcparts_SPEC_EXT_PARAM_TLOC(_tl_), NULL, pepcparts_SPEC_EXT_PARAM_TLOC_MOD_NULL }
+
+/* sl_macro pepcparts_PERMUTE_GENERIC_DEFINE_TLOC_MOD pepcparts_PERMUTE_GENERIC_INIT_TLOC_MOD pepcparts_PERMUTE_GENERIC_INIT_EXT_TLOC_MOD */
+#define pepcparts_PERMUTE_GENERIC_DEFINE_TLOC_MOD(_tl_, _s_...)  pepcparts_SPEC_DEFINE_TLOC_MOD(_tl_, _tl_, _s_)
+#define pepcparts_PERMUTE_GENERIC_INIT_TLOC_MOD(_tl_)            { 2, NULL, pepcparts_SPEC_EXT_PARAM_TLOC_MOD_NULL, _tl_, pepcparts_SPEC_EXT_PARAM_TLOC_MOD_NULL }
+#define pepcparts_PERMUTE_GENERIC_INIT_EXT_TLOC_MOD(_tl_)        { 2, NULL, pepcparts_SPEC_EXT_PARAM_TLOC_MOD_NULL, _tl_, pepcparts_SPEC_EXT_PARAM_TLOC_MOD(_tl_) }
+
+/* sl_type pepcparts__split_generic_t pepcparts_split_generic_t */
+typedef struct pepcparts__split_generic_t
+{
+  int type;
+
+  pepcparts_spec_tproc_f *tproc;
+  pepcparts_spec_tproc_count_f *tproc_count_db, *tproc_count_ip;
+  pepcparts_spec_tproc_rearrange_db_f *tproc_rearrange_db;
+  pepcparts_spec_tproc_rearrange_ip_f *tproc_rearrange_ip;
+
+  pepcparts_spec_tproc_mod_f *tproc_mod;
+  pepcparts_spec_tproc_mod_count_f *tproc_mod_count_db, *tproc_mod_count_ip;
+  pepcparts_spec_tproc_mod_rearrange_db_f *tproc_mod_rearrange_db;
+  pepcparts_spec_tproc_mod_rearrange_ip_f *tproc_mod_rearrange_ip;
+
+  pepcparts_spec_tprocs_f *tprocs;
+  pepcparts_spec_tprocs_count_f *tprocs_count_db, *tprocs_count_ip;
+  pepcparts_spec_tprocs_rearrange_db_f *tprocs_rearrange_db;
+  pepcparts_spec_tprocs_rearrange_ip_f *tprocs_rearrange_ip;
+
+  pepcparts_spec_tprocs_mod_f *tprocs_mod;
+  pepcparts_spec_tprocs_mod_count_f *tprocs_mod_count_db, *tprocs_mod_count_ip;
+  pepcparts_spec_tprocs_mod_rearrange_db_f *tprocs_mod_rearrange_db;
+  pepcparts_spec_tprocs_mod_rearrange_ip_f *tprocs_mod_rearrange_ip;
+
+  pepcparts_spec_tproc_reset_f *reset;
+
+} pepcparts_split_generic_t;
+
+/* sl_macro pepcparts_SPLIT_GENERIC_DEFINE_TPROC pepcparts_SPLIT_GENERIC_INIT_TPROC pepcparts_SPLIT_GENERIC_INIT_EXT_TPROC */
+#define pepcparts_SPLIT_GENERIC_DEFINE_TPROC(_tp_, _s_...)         pepcparts_SPEC_DEFINE_TPROC(_tp_, _tp_, _s_)
+#define pepcparts_SPLIT_GENERIC_INIT_TPROC(_tp_, _r_...)           { 1, _tp_, pepcparts_SPEC_EXT_PARAM_TPROC_NULL,  NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define pepcparts_SPLIT_GENERIC_INIT_EXT_TPROC(_tp_, _r_...)       { 1, _tp_, pepcparts_SPEC_EXT_PARAM_TPROC(_tp_), NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+
+/* sl_macro pepcparts_SPLIT_GENERIC_DEFINE_TPROC_MOD pepcparts_SPLIT_GENERIC_INIT_TPROC_MOD pepcparts_SPLIT_GENERIC_INIT_EXT_TPROC_MOD */
+#define pepcparts_SPLIT_GENERIC_DEFINE_TPROC_MOD(_tp_, _s_...)     pepcparts_SPEC_DEFINE_TPROC_MOD(_tp_, _tp_, _s_)
+#define pepcparts_SPLIT_GENERIC_INIT_TPROC_MOD(_tp_, _r_...)       { 2, NULL, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, _tp_, pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL,  NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define pepcparts_SPLIT_GENERIC_INIT_EXT_TPROC_MOD(_tp_, _r_...)   { 2, NULL, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, _tp_, pepcparts_SPEC_EXT_PARAM_TPROC_MOD(_tp_), NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+
+/* sl_macro pepcparts_SPLIT_GENERIC_DEFINE_TPROCS pepcparts_SPLIT_GENERIC_INIT_TPROCS pepcparts_SPLIT_GENERIC_INIT_EXT_TPROCS */
+#define pepcparts_SPLIT_GENERIC_DEFINE_TPROCS(_tp_, _s_...)        pepcparts_SPEC_DEFINE_TPROCS(_tp_, _tp_, _s_)
+#define pepcparts_SPLIT_GENERIC_INIT_TPROCS(_tp_, _r_...)          { 3, NULL, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, _tp_, pepcparts_SPEC_EXT_PARAM_TPROCS_NULL,  NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define pepcparts_SPLIT_GENERIC_INIT_EXT_TPROCS(_tp_, _r_...)      { 3, NULL, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, _tp_, pepcparts_SPEC_EXT_PARAM_TPROCS(_tp_), NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+
+/* sl_macro pepcparts_SPLIT_GENERIC_DEFINE_TPROCS_MOD pepcparts_SPLIT_GENERIC_INIT_TPROCS_MOD pepcparts_SPLIT_GENERIC_INIT_EXT_TPROCS_MOD */
+#define pepcparts_SPLIT_GENERIC_DEFINE_TPROCS_MOD(_tp_, _s_...)    pepcparts_SPEC_DEFINE_TPROCS_MOD(_tp_, _tp_, _s_)
+#define pepcparts_SPLIT_GENERIC_INIT_TPROCS_MOD(_tp_, _r_...)      { 4, NULL, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_NULL,  _tp_, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define pepcparts_SPLIT_GENERIC_INIT_EXT_TPROCS_MOD(_tp_, _r_...)  { 4, NULL, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_NULL,  _tp_, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD(_tp_), _r_ }
+
+/* sl_type pepcparts_tloc_f pepcparts_tloc_mod_f */
+typedef pepcparts_slint_t pepcparts_tloc_f(pepcparts_elements_t *b, pepcparts_slint_t x, void *tloc_data);
+typedef pepcparts_slint_t pepcparts_tloc_mod_f(pepcparts_elements_t *b, pepcparts_slint_t x, void *tloc_data, pepcparts_elements_t *mod);
 
 /* sl_type pepcparts_tproc_f pepcparts_tproc_mod_f pepcparts_tprocs_f pepcparts_tprocs_mod_f */
 typedef int pepcparts_tproc_f(pepcparts_elements_t *b, pepcparts_slint_t x, void *tproc_data);
 typedef int pepcparts_tproc_mod_f(pepcparts_elements_t *b, pepcparts_slint_t x, void *tproc_data, pepcparts_elements_t *mod);
-typedef int pepcparts_tprocs_f(pepcparts_elements_t *b, pepcparts_slint_t x, void *tproc_data, int *procs);
-typedef int pepcparts_tprocs_mod_f(pepcparts_elements_t *b, pepcparts_slint_t x, void *tproc_data, int *procs, pepcparts_elements_t *mod);
+typedef pepcparts_slint_t pepcparts_tprocs_f(pepcparts_elements_t *b, pepcparts_slint_t x, void *tproc_data, int *procs);
+typedef pepcparts_slint_t pepcparts_tprocs_mod_f(pepcparts_elements_t *b, pepcparts_slint_t x, void *tproc_data, int *procs, pepcparts_elements_t *mod);
 
 /* sl_type pepcparts_tproc_reset_f */
 typedef void pepcparts_tproc_reset_f(void *tproc_data);
 
 /* sl_macro pepcparts_TPROC_RESET_NULL */
 #define pepcparts_TPROC_RESET_NULL  NULL
+
+/* sl_type pepcparts__tproc_t pepcparts_tproc_t */
+typedef struct pepcparts__tproc_t *pepcparts_tproc_t;
 
 /* sl_type pepcparts__tproc_exdef pepcparts_tproc_exdef */
 typedef struct pepcparts__tproc_exdef {
@@ -2151,19 +2385,19 @@ typedef struct pepcparts__tproc_exdef {
 /* sl_macro pepcparts_TPROC_EXDEF_DEFINE_TPROC pepcparts_TPROC_EXDEF_DEFINE_TPROC_MOD pepcparts_TPROC_EXDEF_DEFINE_TPROCS pepcparts_TPROC_EXDEF_DEFINE_TPROCS_MOD */
 #define pepcparts_TPROC_EXDEF_DEFINE_TPROC(_name_, _tp_, _s_...) \
   pepcparts_SPEC_DEFINE_TPROC(_name_, _tp_, _s_) \
-  const struct pepcparts__tproc_exdef _##_name_ = { 1, pepcparts_SPEC_EXT_PARAM_TPROC(_name_), pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+  _s_ const struct pepcparts__tproc_exdef _##_name_ = { 1, pepcparts_SPEC_EXT_PARAM_TPROC(_name_), pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
 #define pepcparts_TPROC_EXDEF_DEFINE_TPROC_MOD(_name_, _tp_, _s_...) \
   pepcparts_SPEC_DEFINE_TPROC_MOD(_name_, _tp_, _s_) \
-  const struct pepcparts__tproc_exdef _##_name_ = { 2, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD(_name_), pepcparts_SPEC_EXT_PARAM_TPROCS_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+  _s_ const struct pepcparts__tproc_exdef _##_name_ = { 2, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD(_name_), pepcparts_SPEC_EXT_PARAM_TPROCS_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
 #define pepcparts_TPROC_EXDEF_DEFINE_TPROCS(_name_, _tp_, _s_...) \
   pepcparts_SPEC_DEFINE_TPROCS(_name_, _tp_, _s_) \
-  const struct pepcparts__tproc_exdef _##_name_ = { 3, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS(_name_), pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+  _s_ const struct pepcparts__tproc_exdef _##_name_ = { 3, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS(_name_), pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
 #define pepcparts_TPROC_EXDEF_DEFINE_TPROCS_MOD(_name_, _tp_, _s_...) \
   pepcparts_SPEC_DEFINE_TPROCS_MOD(_name_, _tp_, _s_) \
-  const struct pepcparts__tproc_exdef _##_name_ = { 4, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
+  _s_ const struct pepcparts__tproc_exdef _##_name_ = { 4, pepcparts_SPEC_EXT_PARAM_TPROC_NULL, pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_NULL, pepcparts_SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
 
 
 /* deprecated, sl_type pepcparts_k2c_func pepcparts_pivot_func pepcparts_sn_func pepcparts_m2x_func pepcparts_m2X_func */
@@ -2582,6 +2816,7 @@ pepcparts_slint_t sendrecv_replace_mpi_maxsize;
 double t[2];
 pepcparts_slint_t max_nprocs;
 pepcparts_slint_t packed;
+double overalloc;
   } meas;
 #endif
 #ifdef SL_USE_MPI
@@ -2760,6 +2995,7 @@ extern const pepcparts_slint_t pepcparts_default_me_sendrecv_replace_mpi_maxsize
 extern const double pepcparts_default_meas_t[];
 extern const pepcparts_slint_t pepcparts_default_meas_max_nprocs;
 extern const pepcparts_slint_t pepcparts_default_meas_packed;
+extern const double pepcparts_default_meas_overalloc;
 extern const pepcparts_slint_t pepcparts_default_mea_packed;
 extern const pepcparts_slint_t pepcparts_default_mea_db_packed;
 extern const pepcparts_slint_t pepcparts_default_mea_ip_packed;
@@ -2823,6 +3059,7 @@ pepcparts_slint_t SL_PROTO(pepcparts_binning_radix_finalize)(pepcparts_binning_t
 pepcparts_slint_t SL_PROTO(pepcparts_binning_radix_post)(pepcparts_binning_t *bm);
 pepcparts_slint_t SL_PROTO(pepcparts_elements_alloc)(pepcparts_elements_t *s, pepcparts_slint_t nelements, slcint_t components);
 pepcparts_slint_t SL_PROTO(pepcparts_elements_free)(pepcparts_elements_t *s);
+pepcparts_slint_t SL_PROTO(pepcparts_elements_realloc)(pepcparts_elements_t *s, pepcparts_slint_t nelements, slcint_t components);
 pepcparts_slint_t SL_PROTO(pepcparts_elements_alloca)(pepcparts_elements_t *s, pepcparts_slint_t nelements, slcint_t components);
 pepcparts_slint_t SL_PROTO(pepcparts_elements_freea)(pepcparts_elements_t *s);
 pepcparts_slint_t SL_PROTO(pepcparts_elements_alloc_from_blocks)(pepcparts_elements_t *s, pepcparts_slint_t nblocks, void **blocks, pepcparts_slint_t *blocksizes, pepcparts_slint_t alignment, pepcparts_slint_t nmax, slcint_t components);
@@ -2897,6 +3134,8 @@ pepcparts_slint_t SL_PROTO(pepcparts_mergep_heap_int_idx)(pepcparts_elements_t *
 pepcparts_slint_t SL_PROTO(pepcparts_mergep_heap_idx)(pepcparts_elements_t *s, pepcparts_elements_t *d, pepcparts_slint_t p, pepcparts_slindex_t *displs, pepcparts_slindex_t *counts);
 pepcparts_slint_t SL_PROTO(pepcparts_mergep_heap_unpack_idx)(pepcparts_packed_elements_t *s, pepcparts_elements_t *d, pepcparts_slint_t p, pepcparts_slindex_t *displs, pepcparts_slindex_t *counts);
 pepcparts_slint_t SL_PROTO(pepcparts_mergep_heap_unpack_idxonly)(pepcparts_packed_elements_t *s, pepcparts_elements_t *d, pepcparts_slint_t p, pepcparts_slindex_t *displs, pepcparts_slindex_t *counts);
+pepcparts_slint_t SL_PROTO(pepcparts_permute_generic_db)(pepcparts_elements_t *s, pepcparts_elements_t *d, pepcparts_permute_generic_t *pg, void *pg_data);
+pepcparts_slint_t SL_PROTO(pepcparts_permute_generic_ip)(pepcparts_elements_t *s, pepcparts_elements_t *x, pepcparts_permute_generic_t *pg, void *pg_data);
 pepcparts_slint SL_PROTO(pepcparts_sl_search_sequential_lt)(pepcparts_elements_t *s, pepcparts_slpkey_t k);
 pepcparts_slint SL_PROTO(pepcparts_sl_search_sequential_le)(pepcparts_elements_t *s, pepcparts_slpkey_t k);
 pepcparts_slint SL_PROTO(pepcparts_sl_search_sequential_gt)(pepcparts_elements_t *s, pepcparts_slpkey_t k);
@@ -2965,8 +3204,12 @@ pepcparts_slint SL_PROTO(pepcparts_sn_even)(pepcparts_slint size, pepcparts_slin
 pepcparts_slint SL_PROTO(pepcparts_sn_batcher)(pepcparts_slint size, pepcparts_slint rank, pepcparts_slint stage, void *snp, pepcparts_slint *up);
 pepcparts_slint SL_PROTO(pepcparts_sn_bitonic)(pepcparts_slint size, pepcparts_slint rank, pepcparts_slint stage, void *snp, pepcparts_slint *up);
 pepcparts_slint SL_PROTO(pepcparts_sn_connected)(pepcparts_slint size, pepcparts_slint rank, pepcparts_slint stage, void *snp, pepcparts_slint *up);
-pepcparts_slint_t SL_PROTO(pepcparts_split_generic_count)(pepcparts_elements_t *s, pepcparts_tproc_f tp, void *tp_data, int *counts);
-pepcparts_slint_t SL_PROTO(pepcparts_split_generic_rearrange_ip)(pepcparts_elements_t *s, pepcparts_elements_t *sx, pepcparts_tproc_f tp, void *tp_data, int *displs, int *counts, int n);
+pepcparts_slint_t SL_PROTO(pepcparts_split_generic_db)(pepcparts_elements_t *s, pepcparts_elements_t *d, pepcparts_split_generic_t *sg, void *sg_data, pepcparts_slint_t n);
+pepcparts_slint_t SL_PROTO(pepcparts_split_generic_ip)(pepcparts_elements_t *s, pepcparts_elements_t *d, pepcparts_split_generic_t *sg, void *sg_data, pepcparts_slint_t n);
+pepcparts_slint_t SL_PROTO(pepcparts_split_generic_count_db)(pepcparts_elements_t *s, pepcparts_split_generic_t *sg, void *sg_data, int *counts, pepcparts_slint_t n);
+pepcparts_slint_t SL_PROTO(pepcparts_split_generic_count_ip)(pepcparts_elements_t *s, pepcparts_split_generic_t *sg, void *sg_data, int *counts, pepcparts_slint_t n);
+pepcparts_slint_t SL_PROTO(pepcparts_split_generic_rearrange_db)(pepcparts_elements_t *s, pepcparts_elements_t *d, pepcparts_split_generic_t *sg, void *sg_data, int *counts, pepcparts_slint_t n);
+pepcparts_slint_t SL_PROTO(pepcparts_split_generic_rearrange_ip)(pepcparts_elements_t *s, pepcparts_elements_t *d, pepcparts_split_generic_t *sg, void *sg_data, int *counts, int *displs, pepcparts_slint_t n);
 pepcparts_slint_t SL_PROTO(pepcparts_splitter_reset)(pepcparts_splitter_t *sp);
 pepcparts_slint_t SL_PROTO(pepcparts_splitx_radix)(pepcparts_elements_t *s, pepcparts_elements_t *sx, pepcparts_slint_t nclasses, pepcparts_slint_t shl, pepcparts_slint_t *counts);
 pepcparts_slint SL_PROTO(pepcparts_split2_lt_ge)(pepcparts_elements_t *s, pepcparts_slkey_pure_t *k, pepcparts_elements_t *t);
