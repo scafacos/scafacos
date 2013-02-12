@@ -42,6 +42,7 @@
 
 #define WORKAROUND_GRIDSORT_BUG 1
 #define FCS_P2NFFT_DISABLE_PNFFT_INFO 1
+#define CREATE_GHOSTS_SEPARATE 0
 
 /* callback functions for performing a whole loop of near field computations (using ifcs_p2nfft_compute_near_...) */
 FCS_NEAR_LOOP_FP(ifcs_p2nfft_compute_near_periodic_erfc_loop, ifcs_p2nfft_compute_near_periodic_erfc)
@@ -159,10 +160,13 @@ FCSResult ifcs_p2nfft_run(
 
   fcs_gridsort_set_particles(&gridsort, local_num_particles, positions, charges);
 
-/*#define CREATE_GHOSTS_SEPARATE*/
 
-#ifdef CREATE_GHOSTS_SEPARATE
+#if CREATE_GHOSTS_SEPARATE
   fcs_gridsort_sort_forward(&gridsort, 0, d->cart_comm_3d);
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Forward grid sort");
+
+  /* Start near sort timing */
+  FCS_P2NFFT_START_TIMING();
   if (d->short_range_flag) fcs_gridsort_create_ghosts(&gridsort, d->r_cut, d->cart_comm_3d);
 #else
   fcs_gridsort_sort_forward(&gridsort, (d->short_range_flag ? d->r_cut: 0.0), d->cart_comm_3d);
@@ -174,7 +178,11 @@ FCSResult ifcs_p2nfft_run(
   fcs_gridsort_get_ghost_particles(&gridsort, &ghost_num_particles, &ghost_positions, &ghost_charges, &ghost_indices);
 
   /* Finish forw sort timing */
-  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Forward sort");
+#if CREATE_GHOSTS_SEPARATE
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Forward near sort");
+#else
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Forward grid and near sort");
+#endif
 
   /* Handle particles, that left the box [0,L] */
   /* For periodic boundary conditions: just fold them back  */
