@@ -135,7 +135,7 @@ fcs_int fcs_uses_principal_axes(fcs_float *a, fcs_float *b, fcs_float *c);
  * @param offset - fcs_float* offet vector of system box
  * @param periodicity - fcs_int* periodic boundaries
  */
-void fcs_wrap_positions(fcs_int nparticles, fcs_float *positions, fcs_float *offset, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_int *periodicity);
+void fcs_wrap_positions(fcs_int nparticles, fcs_float *positions, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_float *offset, fcs_int *periodicity);
 
 /**
  * @brief transform the positions of particles to a [0:L][0:L][0:L] box
