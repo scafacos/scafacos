@@ -1070,6 +1070,8 @@ slint_t tproc_create_tprocs_mod(tproc_t *tproc, tprocs_mod_f *tfn, tproc_reset_f
 
 slint_t tproc_free(tproc_t *tproc) /* sl_proto, sl_func tproc_free */
 {
+  spec_tproc_destroy(&(*tproc)->spec_tproc);
+
   _tproc_free(tproc);
   
   return 0;

@@ -961,15 +961,15 @@ spint_t spec_tproc_set_proclist(spec_tproc_t *tproc, spint_t nsend_procs, sproc_
 
     spec_make_recv_proclist(nsend_procs, send_procs, &(*tproc)->nrecv_procs, &(*tproc)->recv_procs, size, rank, comm);
   }
-  
-  printf("%d: send_procs (%" spint_fmt ") = ", rank, (*tproc)->nsend_procs);
+
+/*  printf("%d: send_procs (%" spint_fmt ") = ", rank, (*tproc)->nsend_procs);
   for (i = 0; i < (*tproc)->nsend_procs; ++i) printf("  %" sproc_fmt, (*tproc)->send_procs[i]);
   printf("\n");
-  
+
   printf("%d: recv_procs (%" spint_fmt ") = ", rank, (*tproc)->nrecv_procs);
   for (i = 0; i < (*tproc)->nrecv_procs; ++i) printf("  %" sproc_fmt, (*tproc)->recv_procs[i]);
-  printf("\n");
-  
+  printf("\n");*/
+
   return SPEC_EXIT_SUCCESS;
 }
 

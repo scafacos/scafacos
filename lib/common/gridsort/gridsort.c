@@ -567,7 +567,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   fcs_int with_ghost, with_periodic, with_triclinic, with_bounds, with_zslices;
   fcs_float ghost_f[3], zslices_ghost_range, zslices_ghost_f;
 
-  fcs_float *min_bounds, max_bounds[3], box_size[3], *all_bounds;
+  fcs_float *min_bounds, max_bounds[3], box_size[3], *all_bounds = NULL;
 
 #ifdef ALLTOALLV_PACKED
   fcs_int local_packed, global_packed, original_packed;
@@ -966,8 +966,15 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 #endif
 
   forw_tproc_free(&tproc);
+
   free(original_indices);
-  
+
+#ifdef GRIDSORT_FRONT_TPROC_RANK_CACHE
+  free(rank_cache);
+#endif
+
+  if (with_bounds) free(all_bounds);
+
   gs->nsorted_particles = sout0.size;
   gs->sorted_indices = sout0.keys;
   gs->sorted_positions = sout0.data0;
