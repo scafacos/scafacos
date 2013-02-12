@@ -420,7 +420,7 @@ static FCS_NEAR_LOOP_FP(directc_coulomb_loop_fp, directc_coulomb_field_potential
 
 void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
 {
-  int i;
+  fcs_int i;
 
   int comm_rank, comm_size;
 
@@ -479,6 +479,7 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
   if (directc->cutoff_with_near)
   {
     fcs_near_create(&near);
+
     fcs_near_set_loop(&near, directc_coulomb_loop_fp);
     fcs_near_set_system(&near, directc->box_base, directc->box_a, directc->box_b, directc->box_c, periodic);
     fcs_near_set_particles(&near, directc->nparticles, directc->positions, directc->charges, NULL, directc->field, directc->potentials);

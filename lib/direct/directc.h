@@ -26,6 +26,9 @@ extern "C" {
 #endif
 
 
+#include "common/near/near.h"
+
+
 typedef struct _fcs_directc_t
 {
   fcs_float box_base[3], box_a[3], box_b[3], box_c[3];
