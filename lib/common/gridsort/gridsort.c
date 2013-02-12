@@ -999,6 +999,237 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 }
 
 
+static void forw_sendrecv(forw_elements_t *sb, int scount, int sdispl, int dst, forw_elements_t *rb, int rcount, int rdispl, int src, MPI_Comm comm, int *received)
+{
+  MPI_Status status;
+
+  MPI_Sendrecv(&sb->keys[sdispl], scount, forw_sl_key_type_mpi, dst, 0, &rb->keys[rdispl], rcount, forw_sl_key_type_mpi, src, 0, comm, &status);
+
+  MPI_Get_count(&status, forw_sl_key_type_mpi, received);
+
+  MPI_Sendrecv(&sb->data0[3 * sdispl], 3 * scount, forw_sl_data0_type_mpi, dst, 0, &rb->data0[3 * rdispl], 3 * rcount, forw_sl_data0_type_mpi, src, 0, comm, &status);
+  MPI_Sendrecv(&sb->data1[sdispl], scount, forw_sl_data1_type_mpi, dst, 0, &rb->data1[rdispl], rcount, forw_sl_data1_type_mpi, src, 0, comm, &status);
+
+}
+
+
+static void get_neighbors(int *neighbors, int *periodic, int size, int rank, MPI_Comm comm)
+{
+  int dims[3], periods[3], coords[3];
+
+  MPI_Cart_shift(comm, 0, 1, &neighbors[0], &neighbors[1]);
+  MPI_Cart_shift(comm, 1, 1, &neighbors[2], &neighbors[3]);
+  MPI_Cart_shift(comm, 2, 1, &neighbors[4], &neighbors[5]);
+
+  MPI_Cart_get(comm, 3, dims, periods, coords);
+
+  periodic[0] = (periods[0] && coords[0] == 0);
+  periodic[1] = (periods[0] && coords[0] == dims[0] - 1);
+  periodic[2] = (periods[1] && coords[1] == 0);
+  periodic[3] = (periods[1] && coords[1] == dims[1] - 1);
+  periodic[4] = (periods[2] && coords[2] == 0);
+  periodic[5] = (periods[2] && coords[2] == dims[2] - 1);
+
+/*  printf("%d: coords: %d,%d,%d\n", rank, coords[0], coords[1], coords[2]);
+  printf("%d: shift: %d,%d  %d,%d  %d,%d\n", rank, neighbors[0], neighbors[1], neighbors[2], neighbors[3], neighbors[4], neighbors[5]);
+  printf("%d: periodic: %d,%d  %d,%d  %d,%d\n", rank, periodic[0], periodic[1], periodic[2], periodic[3], periodic[4], periodic[5]);*/
+}
+
+
+static void set_ghosts(forw_elements_t *s, int count, int displ)
+{
+  fcs_int i;
+
+  for (i = displ; i < displ + count; ++i)
+  {
+    if (s->keys[i] >= 0) s->keys[i] = GRIDSORT_GHOST_BASE;
+  }
+}
+
+
+static void set_periodics(forw_elements_t *s, int count, int displ, int d)
+{
+  fcs_int i;
+
+  for (i = displ; i < displ + count; ++i)
+  {
+    if (s->keys[i] >= 0) s->keys[i] = GRIDSORT_GHOST_BASE;
+    s->keys[i] |= GRIDSORT_PERIODIC_SET(1, d);
+  }
+}
+
+
+static int gridsort_split_0b(forw_elements_t *s, forw_slint_t x, void *data)
+{
+  double *bounds = data;
+  if (s->data0[3 * x + 0] <= bounds[0])
+  {
+    if (s->data0[3 * x + 0] >= bounds[1]) return 2;
+    return 1;
+  }
+  if (s->data0[3 * x + 0] >= bounds[1]) return 3;
+  return 0;
+}
+
+static int gridsort_split_1b(forw_elements_t *s, forw_slint_t x, void *data)
+{
+  double *bounds = data;
+  if (s->data0[3 * x + 1] <= bounds[2])
+  {
+    if (s->data0[3 * x + 1] >= bounds[3]) return 2;
+    return 1;
+  }
+  if (s->data0[3 * x + 1] >= bounds[3]) return 3;
+  return 0;
+}
+
+static int gridsort_split_2b(forw_elements_t *s, forw_slint_t x, void *data)
+{
+  double *bounds = data;
+  if (s->data0[3 * x + 2] <= bounds[4])
+  {
+    if (s->data0[3 * x + 2] >= bounds[5]) return 2;
+    return 1;
+  }
+  if (s->data0[3 * x + 2] >= bounds[5]) return 3;
+  return 0;
+}
+
+
+fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MPI_Comm comm)
+{
+  fcs_int d;
+  int comm_size, comm_rank;
+
+  int cart_dims[3], cart_periods[3], cart_coords[3], topo_status;
+
+  fcs_int with_ghost, with_triclinic, with_bounds;
+
+  int counts[4], displs[4], neighbors[6], periodic[6], scounts[2], rcounts[2], received;
+  
+  fcs_float bounds[6];
+
+  forw_split_generic_t sg_gridsort_split[] = { forw_SPLIT_GENERIC_INIT_TPROC(gridsort_split_0b), forw_SPLIT_GENERIC_INIT_TPROC(gridsort_split_1b), forw_SPLIT_GENERIC_INIT_TPROC(gridsort_split_2b) };
+  
+  forw_elements_t s, sx;
+
+  MPI_Status status;
+
+
+  MPI_Comm_size(comm, &comm_size);
+  MPI_Comm_rank(comm, &comm_rank);
+
+  MPI_Topo_test(comm, &topo_status);
+
+  if (topo_status != MPI_CART)
+  {
+    fprintf(stderr, "ERROR: no Cartesian communicator available for gridsort!\n");
+    return -1;
+  }
+
+  MPI_Cart_get(comm, 3, cart_dims, cart_periods, cart_coords);
+
+  with_ghost = (ghost_range > 0);
+  with_triclinic = z_is_triclinic(gs->box_a, gs->box_b, gs->box_c);
+  with_bounds = (gs->lower_bounds[0] >= 0 && gs->lower_bounds[1] >= 0 && gs->lower_bounds[2] >= 0 && gs->upper_bounds[0] >= 0 && gs->upper_bounds[1] >= 0 && gs->upper_bounds[2] >= 0);
+
+  INFO_CMD(
+    if (comm_rank == 0)
+    {
+      printf(INFO_PRINT_PREFIX "gridsort create ghosts settings:\n");
+      printf(INFO_PRINT_PREFIX " ghost: %s\n", with_ghost?"yes":"no");
+      printf(INFO_PRINT_PREFIX " triclinic: %s\n", with_triclinic?"yes":"no");
+      printf(INFO_PRINT_PREFIX " bounds: %s\n", with_bounds?"yes":"no");
+      printf(INFO_PRINT_PREFIX " cartesian grid:\n");
+      printf(INFO_PRINT_PREFIX "  dims: %dx%dx%d\n", cart_dims[0], cart_dims[1], cart_dims[2]);
+      printf(INFO_PRINT_PREFIX "  periods: %dx%dx%d\n", cart_periods[0], cart_periods[1], cart_periods[2]);
+    }
+  );
+  
+  if (!with_ghost) return 0;
+
+  if (with_triclinic)
+  {
+    fprintf(stderr, "ERROR: box shape ([%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f] x [%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f]"
+      " x [%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f]) not yet supported for fcs_gridsort_create_ghosts\n",
+      gs->box_a[0], gs->box_a[1], gs->box_a[2], gs->box_b[0], gs->box_b[1], gs->box_b[2], gs->box_c[0], gs->box_c[1], gs->box_c[2]);
+    return -1;
+  }
+
+  get_neighbors(neighbors, periodic, comm_size, comm_rank, comm);
+
+  forw_elem_set_size(&s, gs->nsorted_particles);
+  forw_elem_set_max_size(&s, gs->nsorted_particles);
+  forw_elem_set_keys(&s, gs->sorted_indices);
+  forw_elem_set_data(&s, gs->sorted_positions, gs->sorted_charges);
+
+  forw_elements_alloc(&sx, 1, SLCM_ALL);
+
+  if (with_bounds)
+  {
+    bounds[0] = gs->lower_bounds[0] + ghost_range;
+    bounds[1] = gs->upper_bounds[0] - ghost_range;
+    bounds[2] = gs->lower_bounds[1] + ghost_range;
+    bounds[3] = gs->upper_bounds[1] - ghost_range;
+    bounds[4] = gs->lower_bounds[2] + ghost_range;
+    bounds[5] = gs->upper_bounds[2] - ghost_range;
+
+  } else
+  {
+    bounds[0] = gs->box_base[0] + (gs->box_a[0] *  cart_coords[0]      / cart_dims[0]) + ghost_range;
+    bounds[1] = gs->box_base[0] + (gs->box_a[0] * (cart_coords[0] + 1) / cart_dims[0]) - ghost_range;
+    bounds[2] = gs->box_base[1] + (gs->box_b[1] *  cart_coords[1]      / cart_dims[1]) + ghost_range;
+    bounds[3] = gs->box_base[1] + (gs->box_b[1] * (cart_coords[1] + 1) / cart_dims[1]) - ghost_range;
+    bounds[4] = gs->box_base[2] + (gs->box_c[2] *  cart_coords[2]      / cart_dims[2]) + ghost_range;
+    bounds[5] = gs->box_base[2] + (gs->box_c[2] * (cart_coords[2] + 1) / cart_dims[2]) - ghost_range;
+  }
+
+  for (d = 0; d < 3; ++d)
+  {
+    forw_split_generic_count_ip(&s, &sg_gridsort_split[d], bounds, counts, 4);
+
+    forw_counts2displs(4, counts, displs);
+    forw_split_generic_rearrange_ip(&s, &sx, &sg_gridsort_split[d], bounds, counts, displs, 4);
+
+    forw_counts2displs(4, counts, displs);
+
+/*    printf("%d: counts: %d  %d  %d  %d\n", comm_rank, counts[0], counts[1], counts[2], counts[3]);
+    printf("%d: displs: %d  %d  %d  %d\n", comm_rank, displs[0], displs[1], displs[2], displs[3]);*/
+
+    scounts[0] = counts[1] + counts[2];
+    scounts[1] = counts[2] + counts[3];
+    rcounts[0] = rcounts[1] = 0;
+
+    MPI_Sendrecv(&scounts[0], 1, MPI_INT, neighbors[2 * d + 0], 0, &rcounts[0], 1, MPI_INT, neighbors[2 * d + 1], 0, comm, &status);
+    MPI_Sendrecv(&scounts[1], 1, MPI_INT, neighbors[2 * d + 1], 0, &rcounts[1], 1, MPI_INT, neighbors[2 * d + 0], 0, comm, &status);
+
+/*    printf("%d: scounts: %d  %d\n", comm_rank, scounts[0], scounts[1]);
+    printf("%d: rcounts: %d  %d\n", comm_rank, rcounts[0], rcounts[1]);*/
+
+    forw_elements_realloc(&s, forw_elem_get_size(&s) + rcounts[0] + rcounts[1], SLCM_ALL);
+
+    forw_sendrecv(&s, scounts[0], displs[1], neighbors[2 * d + 0], &s, rcounts[0], s.size, neighbors[2 * d + 1], comm, &received);
+    if (periodic[2 * d + 1]) set_periodics(&s, rcounts[0], s.size, 2 * d + 0); else set_ghosts(&s, rcounts[0], s.size);
+    s.size += rcounts[0];
+
+    forw_sendrecv(&s, scounts[1], displs[2], neighbors[2 * d + 1], &s, rcounts[1], s.size, neighbors[2 * d + 0], comm, &received);
+    if (periodic[2 * d + 0]) set_periodics(&s, rcounts[1], s.size, 2 * d + 1); else set_ghosts(&s, rcounts[1], s.size);
+    s.size += rcounts[1];
+  }
+
+  forw_elements_free(&sx);
+
+  gs->nsorted_particles = s.size;
+  gs->sorted_indices = s.keys;
+  gs->sorted_positions = s.data0;
+  gs->sorted_charges = s.data1;
+
+  gs->nsorted_real_particles = s.size;
+
+  return 0;
+}
+
+
 static void separate_ghosts(fcs_int nparticles, fcs_gridsort_index_t *indices, fcs_float *positions, fcs_float *charges, fcs_int *real_nparticles, fcs_int *ghost_nparticles)
 {
   fcs_int l, h;

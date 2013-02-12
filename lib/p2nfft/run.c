@@ -159,7 +159,14 @@ FCSResult ifcs_p2nfft_run(
 
   fcs_gridsort_set_particles(&gridsort, local_num_particles, positions, charges);
 
+/*#define CREATE_GHOSTS_SEPARATE*/
+
+#ifdef CREATE_GHOSTS_SEPARATE
+  fcs_gridsort_sort_forward(&gridsort, 0, d->cart_comm_3d);
+  if (d->short_range_flag) fcs_gridsort_create_ghosts(&gridsort, d->r_cut, d->cart_comm_3d);
+#else
   fcs_gridsort_sort_forward(&gridsort, (d->short_range_flag ? d->r_cut: 0.0), d->cart_comm_3d);
+#endif
 
   fcs_gridsort_separate_ghosts(&gridsort, NULL, NULL);
 

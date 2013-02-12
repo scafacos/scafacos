@@ -158,6 +158,8 @@ void fcs_gridsort_get_ghost_particles(fcs_gridsort_t *gs, fcs_int *nparticles, f
  */
 fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI_Comm comm);
 
+fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MPI_Comm comm);
+
 /**
  * @brief separate real (non-ghost) and ghost particles after sorting
  * @param gs fcs_gridsort_t* gridsort object
