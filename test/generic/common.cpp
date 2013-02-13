@@ -67,10 +67,11 @@ void make_equal_counts_and_displs(fcs_int total_count, fcs_int ncounts, int *cou
   }
 }
 
-void compute_errors(errors_t *e, fcs_int nparticles, 
-		    fcs_float *positions, fcs_float *charges, 
-		    fcs_float *reference_potentials, fcs_float *reference_field, 
-		    fcs_float *result_potentials, fcs_float *result_field, 
+void compute_errors(errors_t *e, fcs_int nparticles,
+                    fcs_float *positions, fcs_float *charges,
+                    fcs_float *reference_potentials, fcs_float *reference_field,
+                    fcs_float *result_potentials, fcs_float *result_field,
+                    fcs_float *field_correction, fcs_float energy_correction,
 		    MPI_Comm comm)
 {
   // Compare resulting potential and field values with reference values
@@ -148,6 +149,16 @@ void compute_errors(errors_t *e, fcs_int nparticles,
 
     // count valid poential values
     ++local_nparticles[1];
+  }
+
+  if (reference_potentials == NULL && result_potentials != NULL)
+  for (fcs_int pid = 0; pid < nparticles; pid++) {
+    const fcs_float &res_potential = result_potentials[pid];
+
+    if (isnan(res_potential)) continue;
+
+    // compute energy sum
+    local_sum[idx_energy_sum] += 0.5 * charges[pid] * res_potential;
   }
 
   if (e->have_field_errors)
@@ -273,7 +284,7 @@ void compute_errors(errors_t *e, fcs_int nparticles,
   e->rel_max_field_error = e->abs_max_field_error / rms_field;
 
   // total energy
-  e->total_energy = global_sum[idx_energy_sum];
+  e->total_energy = global_sum[idx_energy_sum] + energy_correction;
   e->total_energy_ref = global_sum[idx_ref_energy_sum];
 
   // absolute total energy error
@@ -292,7 +303,7 @@ void print_errors(errors_t *e, const char *prefix)
 {
   // OUTPUT
   if (!e->have_potential_errors && !e->have_field_errors) {
-    cout << prefix << "NO ERRORS: No reference or result data available!" << endl;
+    cout << prefix << "NO ERRORS: No potential or field errors available! (reference or result data missing?)" << endl;
   } else {
     cout << prefix << "ABSOLUTE ERRORS (from " << e->valid_potentials_errors << " of " << e->total_nparticles << " particles)" << endl;
     if (e->have_field_errors) {

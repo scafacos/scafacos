@@ -99,6 +99,9 @@ Configuration::Configuration() {
   result_potentials = 0;
   result_field = 0;
 
+  field_correction[0] = field_correction[1] = field_correction[2] = 0;
+  energy_correction = 0;
+
   cart_comm = MPI_COMM_NULL;
 }
 
@@ -438,9 +441,6 @@ void Configuration::broadcast_input()
 void Configuration::generate_input_particles()
 {
   broadcast_input();
-  
-  if (params.decomposition == DECOMPOSE_ALL_ON_MASTER || params.decomposition == DECOMPOSE_ATOMISTIC) dup_input_overalloc = -0.1;
-  else dup_input_overalloc = -0.1;
 
   for (fcs_int i = -2; i < (fcs_int) input_generators.size(); ++i)
   {
@@ -831,6 +831,7 @@ bool Configuration::compute_errors(errors_t *e) {
   ::compute_errors(e, dup_input_nparticles, dup_input_positions, dup_input_charges,
     have_reference_values[0]?dup_input_potentials:NULL, have_reference_values[1]?dup_input_field:NULL,
     have_result_values[0]?result_potentials:NULL, have_result_values[1]?result_field:NULL,
+    field_correction, energy_correction,
     decomp_comm);
 
   return true;

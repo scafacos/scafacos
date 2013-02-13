@@ -197,9 +197,10 @@ typedef struct _errors_t
 } errors_t;
 
 void compute_errors(errors_t *e, fcs_int nparticles, 
-		    fcs_float *positions, fcs_float *charges, 
-		    fcs_float *reference_potentials, fcs_float *reference_field, 
-		    fcs_float *result_potentials, fcs_float *result_field, 
+                    fcs_float *positions, fcs_float *charges, 
+                    fcs_float *reference_potentials, fcs_float *reference_field, 
+                    fcs_float *result_potentials, fcs_float *result_field, 
+                    fcs_float *field_correction, fcs_float energy_correction,
 		    MPI_Comm comm);
 void print_errors(errors_t *e, const char *prefix = "");
 

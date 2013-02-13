@@ -96,6 +96,8 @@ public:
 
   fcs_float *result_potentials;
   fcs_float *result_field;
+  
+  fcs_float field_correction[3], energy_correction;
 
   MPI_Comm cart_comm;
   fcs_gridsort_t gridsort;

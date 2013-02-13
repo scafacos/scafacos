@@ -155,13 +155,6 @@ static struct {
 // FCS Handle
 FCS fcs;
 
-// dipole corrections
-fcs_float field_correction[3];
-fcs_float energy_correction;
-
-// total energy
-fcs_float total_energy;
-
 bool check_result(FCSResult result, bool force_abort = false) {
   if (result) {
     cout << "ERROR: Caught error on task " << comm_rank << "!" << endl;
@@ -269,7 +262,7 @@ void broadcast_global_parameters() {
 
 typedef struct
 {
-  fcs_int total_nparticles, nparticles;
+  fcs_int total_nparticles, nparticles, max_nparticles;
   fcs_float *positions, *charges, *field, *potentials;
 
   fcs_int *shuffles;
@@ -314,6 +307,7 @@ void prepare_particles(particles_t *parts)
   parts->total_nparticles = total_result_nparticles;
   parts->nparticles = result_nparticles;
 
+  parts->max_nparticles = current_config->decomp_max_nparticles;
   parts->positions = current_config->decomp_positions;
   parts->charges = current_config->decomp_charges;
   parts->field = current_config->decomp_field;
@@ -367,6 +361,21 @@ void unprepare_particles(particles_t *parts)
   }
 }
 
+double determine_total_energy(fcs_int nparticles, fcs_float *charges, fcs_float *potentials)
+{
+  fcs_float local, total;
+  
+
+  local = 0;
+
+  for (fcs_int i = 0; i < nparticles; i++) local += 0.5 * charges[i] * potentials[i];
+
+  // Compute total energy
+  MPI_Allreduce(&local, &total, 1, FCS_MPI_FLOAT, MPI_SUM, communicator);
+
+  return total;
+}
+
 void run_method(particles_t *parts) {
   // Set up method
   // * with default parameters
@@ -387,15 +396,15 @@ void run_method(particles_t *parts) {
 
   // Compute dipole moment
 //  result = fcs_compute_dipole_correction(fcs, parts->total_nparticles + parts->total_in_nparticles,
-    result = fcs_compute_dipole_correction(fcs, parts->nparticles,
-    parts->positions, parts->charges, current_config->params.epsilon, 
-    field_correction, &energy_correction);
+  result = fcs_compute_dipole_correction(fcs, parts->nparticles,
+    parts->positions, parts->charges, current_config->params.epsilon,
+    current_config->field_correction, &current_config->energy_correction);
   MASTER(cout << "    Dipole correction:" << endl);
-  MASTER(cout << "      field_correction=" \
-         << field_correction[0] << " " 
-         << field_correction[1] << " " 
-         << field_correction[2] << endl);
-  MASTER(cout << "      energy_correction=" << energy_correction << endl);
+  MASTER(cout << "      field_correction = "
+         << current_config->field_correction[0] << " " 
+         << current_config->field_correction[1] << " " 
+         << current_config->field_correction[2] << endl);
+  MASTER(cout << "      energy_correction = " << current_config->energy_correction << endl);
   if (!check_result(result)) return;
 
   // Wrap positions
@@ -420,7 +429,7 @@ void run_method(particles_t *parts) {
   /* create copies of the positions and charges, as fcs_run may modify it */
   memcpy(positions, parts->positions, 3*parts->nparticles*sizeof(fcs_float));
   memcpy(charges, parts->charges, parts->nparticles*sizeof(fcs_float));
-  result = fcs_tune(fcs, parts->nparticles, parts->nparticles, parts->positions, parts->charges);
+  result = fcs_tune(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges);
   if (!check_result(result)) return;
   MPI_Barrier(communicator);
   after = MPI_Wtime();
@@ -433,7 +442,6 @@ void run_method(particles_t *parts) {
 
   run_time_sum = 0;
 
-
   for (fcs_int i = 0; i < global_params.iterations; ++i)
   {
     MPI_Barrier(communicator);
@@ -441,7 +449,7 @@ void run_method(particles_t *parts) {
     memcpy(positions, parts->positions, 3*parts->nparticles*sizeof(fcs_float));
     memcpy(charges, parts->charges, parts->nparticles*sizeof(fcs_float));
     before = MPI_Wtime();
-    result = fcs_run(fcs, parts->nparticles, parts->nparticles,
+    result = fcs_run(fcs, parts->nparticles, parts->max_nparticles,
                      positions, charges, 
                      parts->field, parts->potentials);
     if (!check_result(result)) return;
@@ -468,46 +476,26 @@ void run_method(particles_t *parts) {
                       << parts->field[3 * i + 1] << ", "
                       << parts->field[3 * i + 2] << "  " << parts->potentials[i] << endl;*/
 
-  fcs_float local_energy = 0.0;
-
   for (fcs_int pid = 0; pid < parts->nparticles; pid++) {
     // apply dipole correction to the fields
-    parts->field[3*pid] += field_correction[0];
-    parts->field[3*pid+1] += field_correction[1];
-    parts->field[3*pid+2] += field_correction[2];
-
-    local_energy += 0.5 * parts->charges[pid] * parts->potentials[pid];
+    parts->field[3*pid] += current_config->field_correction[0];
+    parts->field[3*pid+1] += current_config->field_correction[1];
+    parts->field[3*pid+2] += current_config->field_correction[2];
   }
-
-  // Compute total energy and apply dipole correction (on master)
-  MPI_Reduce(&local_energy, &total_energy, 1, FCS_MPI_FLOAT, 
-    MPI_SUM, 0, communicator);
-
-  if (comm_rank == MASTER_RANK)
-    total_energy += energy_correction;
 }
 
 void no_method() {
-  total_energy = 0;
-
   current_config->have_result_values[0] = 0;  // no potentials results
   current_config->have_result_values[1] = 0;  // no field results
 }
 
-double determine_total_energy(fcs_int nparticles, fcs_float *charges, fcs_float *potentials)
+void print_particles(fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
-  fcs_float local, total;
-  
-
-  local = 0;
-
-  for (fcs_int i = 0; i < nparticles; i++) local += 0.5 * charges[i] * potentials[i];
-
-  // Compute total energy
-  MPI_Allreduce(&local, &total, 1, FCS_MPI_FLOAT, MPI_SUM, communicator);
-
-  return total;
+  for (fcs_int i = 0; i < nparticles; ++i) printf(" %" FCS_LMOD_INT "d: [%f %f %f] [%f] [%f %f %f] [%f]\n",
+    i, positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2], charges[i], field[3 * i + 0], field[3 * i + 1], field[3 * i + 2], potentials[i]);
 }
+
+/*#define PRINT_PARTICLES*/
 
 void run_integration(particles_t *parts)
 {
@@ -517,12 +505,17 @@ void run_integration(particles_t *parts)
   FCSResult result;
   fcs_int r = 0;
 
+  double t;
+
 
   MASTER(cout << "  Integration with " << global_params.time_steps << " time step(s)" << endl);
 
-  v_cur = new fcs_float[3 * parts->nparticles];
-  f_old = new fcs_float[3 * parts->nparticles];
+  v_cur = new fcs_float[3 * parts->max_nparticles];
+  f_old = new fcs_float[3 * parts->max_nparticles];
   f_cur = parts->field;
+
+  /* wrap positions */
+  fcs_wrap_positions(parts->nparticles, parts->positions, current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity);
 
   /* setup integration parameters */
   integ_setup(&integ, global_params.time_steps, global_params.integration_conf);
@@ -544,7 +537,7 @@ void run_integration(particles_t *parts)
     if (!check_result(result)) return;
 
     /* tune method */
-    result = fcs_tune(fcs, parts->nparticles, parts->nparticles, parts->positions, parts->charges);
+    result = fcs_tune(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges);
     if (!check_result(result)) return;
 
   } else
@@ -559,12 +552,25 @@ void run_integration(particles_t *parts)
     /* store previous field values */
     for (fcs_int i = 0; i < 3 * parts->nparticles; ++i) f_old[i] = f_cur[i];
 
+#ifdef PRINT_PARTICLES
+    MASTER(cout << "Particles before fcs_run: " << parts->nparticles << endl);
+    print_particles(parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+#endif
+
     if (fcs != FCS_NULL)
     {
       MASTER(cout << "    Run method..." << endl);
-      result = fcs_run(fcs, parts->nparticles, parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+      t = MPI_Wtime();
+      result = fcs_run(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+      t = MPI_Wtime() - t;
       if (!check_result(result)) return;
+      MASTER(printf("     = %f second(s)\n", t));
     }
+
+#ifdef PRINT_PARTICLES
+    MASTER(cout << "Particles after fcs_run: " << parts->nparticles << endl);
+    print_particles(parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+#endif
 
     if (r > 0)
     {
@@ -574,7 +580,7 @@ void run_integration(particles_t *parts)
 
     MASTER(cout << "    Determine total energy..." << endl);
     e = determine_total_energy(parts->nparticles, parts->charges, parts->potentials);
-    MASTER(cout << "      total energy = " << e << endl);
+    MASTER(cout << "      total energy = " << scientific << e << endl);
 
     if (r >= global_params.time_steps) break;
 
@@ -593,6 +599,11 @@ void run_integration(particles_t *parts)
 
     integ_correct_positions(&integ, parts->nparticles, parts->positions);
   }
+
+  current_config->have_reference_values[0] = 0;
+  current_config->have_reference_values[1] = 0;
+  current_config->have_result_values[0] = 1;
+  current_config->have_result_values[1] = 1;
 
   delete[] v_cur;
   delete[] f_old;
