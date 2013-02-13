@@ -40,7 +40,7 @@ static void convolution(
 
 
 FCSResult ifcs_p2nfft_run_2dp(
-    void *rd, fcs_int local_num_particles,
+    void *rd, fcs_int local_num_particles, fcs_int max_local_num_particles,
     fcs_float *positions, fcs_float *charges,
     fcs_float *potentials, fcs_float *field
     )
@@ -123,7 +123,7 @@ FCSResult ifcs_p2nfft_run_2dp(
   fcs_gridsort_set_bounds(&gridsort, d->lower_border, d->upper_border);
 #endif
 
-  fcs_gridsort_set_particles(&gridsort, local_num_particles, positions, charges);
+  fcs_gridsort_set_particles(&gridsort, local_num_particles, max_local_num_particles, positions, charges);
 
   fcs_gridsort_sort_forward(&gridsort, (d->short_range_flag ? d->r_cut: 0.0), d->cart_comm_3d);
 
@@ -183,7 +183,7 @@ FCSResult ifcs_p2nfft_run_2dp(
     // fcs_int *periodicity = NULL; /* sorter uses periodicity of the communicator */
     fcs_near_set_system(&near, box_base, box_a, box_b, box_c, d->periodicity);
   
-    fcs_near_set_particles(&near, sorted_num_particles, sorted_positions, sorted_charges, sorted_indices,
+    fcs_near_set_particles(&near, sorted_num_particles, sorted_num_particles, sorted_positions, sorted_charges, sorted_indices,
         (compute_field)?sorted_field:NULL, (compute_potentials)?sorted_potentials:NULL);
   
     fcs_near_set_ghosts(&near, ghost_num_particles, ghost_positions, ghost_charges, ghost_indices);

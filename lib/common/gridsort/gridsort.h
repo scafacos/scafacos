@@ -47,10 +47,12 @@ typedef struct _fcs_gridsort_t
 
   fcs_int local_nzslices, ghost_nzslices, max_ghost_nzslices;
 
-  fcs_int noriginal_particles;
+  fcs_float overalloc;
+
+  fcs_int noriginal_particles, max_noriginal_particles;
   fcs_float *original_positions, *original_charges;
 
-  fcs_int nsorted_particles;
+  fcs_int nsorted_particles, max_nsorted_particles;
   fcs_float *sorted_positions, *sorted_charges;
   fcs_gridsort_index_t *sorted_indices;
 
@@ -112,23 +114,35 @@ void fcs_gridsort_set_bounds(fcs_gridsort_t *gs, fcs_float *lower_bounds, fcs_fl
 void fcs_gridsort_set_zslices(fcs_gridsort_t *gs, fcs_int local_nzslices, fcs_int ghost_nzslices);
 
 /**
+ * @brief set size of extra memory to be allocated for sorted particle data array
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param overalloc fcs_float if overalloc >= 0 then newly allocated arrays for sorted particle data can store overalloc more particles than actually required,
+ *   if overalloc < 0 then newly allocated arrays become a factor of 1-overalloc as large (e.g., overalloc = -0.1 leads to 10% larger arrays),
+ *   default: overalloc = 0 (i.e., no extra memory)
+ * @param ghost_nzslices fcs_int number of zslices used to create ghost particles
+ */
+void fcs_gridsort_set_overalloc(fcs_gridsort_t *gs, fcs_float overalloc);
+
+/**
  * @brief set information of particles to sort
  * @param gs fcs_gridsort_t* gridsort object
  * @param nparticles fcs_int local number of particles
+ * @param max_nparticles fcs_int max number of particles that can be stored in local particle data arrays
  * @param positions fcs_float* array of local particle positions
  * @param charges fcs_float* array of local particle charges
  */
-void fcs_gridsort_set_particles(fcs_gridsort_t *gs, fcs_int nparticles, fcs_float *positions, fcs_float *charges);
+void fcs_gridsort_set_particles(fcs_gridsort_t *gs, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *charges);
 
 /**
  * @brief get information of sorted particles
  * @param gs fcs_gridsort_t* gridsort object
  * @param nparticles fcs_int* pointer to local number of particles (NULL if not required)
+ * @param max_nparticles fcs_int* pointer to max number of particles that can be stored in local particle data arrays (NULL if not required)
  * @param positions fcs_float** pointer to local array of particle positions (NULL if not required)
  * @param charges fcs_float** pointer to local array of particle charges (NULL if not required)
  * @param indices fcs_gridsort_index_t** pointer to local array of particle indices (NULL if not required)
  */
-void fcs_gridsort_get_sorted_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_float **positions, fcs_float **charges, fcs_gridsort_index_t **indices);
+void fcs_gridsort_get_sorted_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_int *max_nparticles, fcs_float **positions, fcs_float **charges, fcs_gridsort_index_t **indices);
 
 /**
  * @brief get information of real (non-ghost) particles after sorting and separating (with fcs_gridsort_separate_ghosts)

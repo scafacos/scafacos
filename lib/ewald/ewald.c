@@ -916,6 +916,7 @@ FCS_NEAR_LOOP_FP(ewald_compute_near_loop, ewald_compute_near)
 
 void ewald_compute_rspace(ewald_data_struct* d, 
 			  fcs_int num_particles,
+			  fcs_int max_num_particles,
 			  fcs_float *positions, 
 			  fcs_float *charges,
 			  fcs_float *fields,
@@ -937,7 +938,7 @@ void ewald_compute_rspace(ewald_data_struct* d,
   /* DOMAIN DECOMPOSE */
   fcs_gridsort_create(&gridsort);
   fcs_gridsort_set_system(&gridsort, box_base, box_a, box_b, box_c, NULL);
-  fcs_gridsort_set_particles(&gridsort, num_particles, 
+  fcs_gridsort_set_particles(&gridsort, num_particles, max_num_particles,
 			     positions, charges);
 
   FCS_INFO(fprintf(stderr, "  calling fcs_gridsort_sort_forward()...\n"));
@@ -946,7 +947,7 @@ void ewald_compute_rspace(ewald_data_struct* d,
 
   fcs_gridsort_separate_ghosts(&gridsort, &local_num_real_particles, 
 			       &local_num_ghost_particles);
-  fcs_gridsort_get_sorted_particles(&gridsort, &local_num_particles, 
+  fcs_gridsort_get_sorted_particles(&gridsort, &local_num_particles, NULL,
 				    NULL, NULL, NULL);
   fcs_gridsort_get_real_particles(&gridsort, &local_num_real_particles,
 				  &local_positions, &local_charges, 
@@ -986,7 +987,7 @@ void ewald_compute_rspace(ewald_data_struct* d,
   fcs_near_set_loop(&near, ewald_compute_near_loop);
   fcs_near_set_system(&near, box_base, box_a, box_b, box_c, NULL);
 
-  fcs_near_set_particles(&near, local_num_real_particles,
+  fcs_near_set_particles(&near, local_num_real_particles, local_num_real_particles,
 			 local_positions, local_charges, 
 			 local_indices,
 			 (fields != NULL)?local_fields:NULL, 
@@ -1077,7 +1078,7 @@ FCSResult fcs_ewald_run(FCS handle,
   }
 
   /* Compute near field component */
-  ewald_compute_rspace(d, num_particles, positions, charges,
+  ewald_compute_rspace(d, num_particles, local_max_particles, positions, charges,
 		       fields==NULL ? NULL : d->near_fields, 
 		       potentials==NULL ? NULL : d->near_potentials);
 

@@ -169,7 +169,7 @@ FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_num_particles, fcs_int local_m
     fcs_gridsort_create(&gridsort);
     fcs_gridsort_set_system(&gridsort, box_base, box_a, box_b, box_c, NULL);
     fcs_gridsort_set_bounds(&gridsort, lower_bound, upper_bound);
-    fcs_gridsort_set_particles(&gridsort, local_num_particles, positions, charges);
+    fcs_gridsort_set_particles(&gridsort, local_num_particles, local_max_particles, positions, charges);
     fcs_gridsort_sort_forward(&gridsort, 0.0, ctx->parameters->mpi_comm_cart);
     fcs_gridsort_get_real_particles(&gridsort, &sorted_num_particles, &sorted_positions, &sorted_charges, &sorted_indices);
     

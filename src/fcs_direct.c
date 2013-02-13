@@ -167,7 +167,7 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
 
   fcs_directc_set_system(&handle->direct_param->directc, box_base, box_a, box_b, box_c, periodicity);
 
-  fcs_directc_set_particles(&handle->direct_param->directc, local_particles, positions, charges, field, potentials);
+  fcs_directc_set_particles(&handle->direct_param->directc, local_particles, local_max_particles, positions, charges, field, potentials);
 
   fcs_directc_run(&handle->direct_param->directc, ctx->comm);
 

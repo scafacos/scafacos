@@ -26,6 +26,7 @@
 
 void ifcs_p3m_run(void* rd,
 		  fcs_int num_particles,
+		  fcs_int max_num_particles,
 		  fcs_float *positions, 
 		  fcs_float *charges,
 		  fcs_float *fields,

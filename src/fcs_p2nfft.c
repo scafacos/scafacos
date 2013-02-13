@@ -188,7 +188,7 @@ extern FCSResult fcs_p2nfft_run(
   if (result != NULL)
     return result;
   
-  result = ifcs_p2nfft_run(handle->method_context, local_particles,
+  result = ifcs_p2nfft_run(handle->method_context, local_particles, local_max_particles,
       positions, charges, potentials, field);
 
   return result;

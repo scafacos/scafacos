@@ -78,6 +78,7 @@ public:
 
   fcs_int dup_input_total_nparticles;
   fcs_int dup_input_nparticles, dup_input_nparticles_allocated;
+  fcs_float dup_input_overalloc;
   fcs_float *dup_input_positions;
   fcs_float *dup_input_charges;
   fcs_float *dup_input_potentials;
@@ -86,7 +87,7 @@ public:
   fcs_int have_reference_values[2], have_result_values[2];
 
   fcs_int decomp_total_nparticles;
-  fcs_int decomp_nparticles;
+  fcs_int decomp_nparticles, decomp_max_nparticles;
   fcs_float *decomp_positions;
   fcs_float *decomp_charges;
   fcs_float *decomp_potentials;

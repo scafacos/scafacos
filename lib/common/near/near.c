@@ -240,7 +240,7 @@ void fcs_near_create(fcs_near_t *near)
   near->box_c[0] = near->box_c[1] = near->box_c[2] = 0;
   near->periodicity[0] = near->periodicity[1] = near->periodicity[2] = -1;
 
-  near->nparticles = 0;
+  near->nparticles = near->max_nparticles = 0;
   near->positions = NULL;
   near->charges = NULL;
   near->indices = NULL;
@@ -272,7 +272,7 @@ void fcs_near_destroy(fcs_near_t *near)
   near->box_c[0] = near->box_c[1] = near->box_c[2] = 0;
   near->periodicity[0] = near->periodicity[1] = near->periodicity[2] = -1;
 
-  near->nparticles = 0;
+  near->nparticles = near->max_nparticles = 0;
   near->positions = NULL;
   near->charges = NULL;
   near->indices = NULL;
@@ -345,9 +345,10 @@ void fcs_near_set_system(fcs_near_t *near, fcs_float *box_base, fcs_float *box_a
 }
 
 
-void fcs_near_set_particles(fcs_near_t *near, fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_gridsort_index_t *indices, fcs_float *field, fcs_float *potentials)
+void fcs_near_set_particles(fcs_near_t *near, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *charges, fcs_gridsort_index_t *indices, fcs_float *field, fcs_float *potentials)
 {
   near->nparticles = nparticles;
+  near->max_nparticles = max_nparticles;
   near->positions = positions;
   near->charges = charges;
   near->indices = indices;
@@ -815,6 +816,7 @@ exit:
 
 
 /*#define SORT_FORWARD_BOUNDS*/
+/*#define CREATE_GHOSTS_SEPARATE*/
 /*#define SEPARATE_GHOSTS*/
 /*#define SEPARATE_ZSLICES  7*/
 
@@ -936,13 +938,18 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
   fcs_gridsort_set_bounds(&gridsort, lower_bounds, upper_bounds);
 #endif
 
-  fcs_gridsort_set_particles(&gridsort, near->nparticles, near->positions, near->charges);
+  fcs_gridsort_set_particles(&gridsort, near->nparticles, near->max_nparticles, near->positions, near->charges);
 
   TIMING_SYNC(comm); TIMING_START(t[1]);
+#ifdef CREATE_GHOSTS_SEPARATE
+  fcs_gridsort_sort_forward(&gridsort, 0, cart_comm);
+  fcs_gridsort_create_ghosts(&gridsort, cutoff, cart_comm);
+#else
   fcs_gridsort_sort_forward(&gridsort, cutoff, cart_comm);
+#endif
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
-  fcs_gridsort_get_sorted_particles(&gridsort, &nlocal_s, &positions_s, &charges_s, &indices_s);
+  fcs_gridsort_get_sorted_particles(&gridsort, &nlocal_s, NULL, &positions_s, &charges_s, &indices_s);
 
 #ifdef SEPARATE_GHOSTS
   fcs_gridsort_separate_ghosts(&gridsort, &nlocal_s_real, &nlocal_s_ghost);
@@ -1002,7 +1009,7 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
   else
     fcs_near_set_system(&near_s, near->box_base, near->box_a, near->box_b, near->box_c, near->periodicity);
 
-  fcs_near_set_particles(&near_s, nlocal_s_real, positions_s_real, charges_s_real, indices_s_real, field_s, potentials_s);
+  fcs_near_set_particles(&near_s, nlocal_s_real, nlocal_s_real, positions_s_real, charges_s_real, indices_s_real, field_s, potentials_s);
 
 #ifdef SEPARATE_GHOSTS
   fcs_near_set_ghosts(&near_s, nlocal_s_ghost, positions_s_ghost, charges_s_ghost, indices_s_ghost);

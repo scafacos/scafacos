@@ -34,7 +34,7 @@
  *  @returns
  */
 FCSResult ifcs_p2nfft_run(
-    void *rd, fcs_int num_particles,
+    void *rd, fcs_int num_particles, fcs_int max_local_num_particles,
     fcs_float *positions, fcs_float *charges,
     fcs_float *potentials, fcs_float *field);
 

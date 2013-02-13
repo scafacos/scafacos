@@ -37,6 +37,7 @@ static void mmm1d_coulomb_pair_force(mmm1d_data_struct *d, fcs_float charge1, fc
 
 void mmm1d_run(void* rd,
         fcs_int num_particles,
+        fcs_int max_num_particles,
         fcs_float *positions,
         fcs_float *charges,
         fcs_float *forces,
@@ -60,7 +61,7 @@ void mmm1d_run(void* rd,
   
   fcs_gridsort_create(&gridsort);
   fcs_gridsort_set_system(&gridsort, box_base, box_a, box_b, box_c, NULL);
-  fcs_gridsort_set_particles(&gridsort, num_particles, positions, charges);
+  fcs_gridsort_set_particles(&gridsort, num_particles, max_num_particles, positions, charges);
   
   MPI_Barrier(d->comm.mpicomm);
   fprintf(stderr, "mmm1d_run, rank %d\n", d->comm.rank);
@@ -69,7 +70,7 @@ void mmm1d_run(void* rd,
   fcs_gridsort_sort_forward(&gridsort, 0.0, d->comm.mpicomm);
   
   fcs_gridsort_separate_ghosts(&gridsort, &local_num_real_particles, NULL);
-  fcs_gridsort_get_sorted_particles(&gridsort, &local_num_real_particles, NULL, NULL, NULL);
+  fcs_gridsort_get_sorted_particles(&gridsort, &local_num_real_particles, NULL, NULL, NULL, NULL);
   
   //printf("uno\n");
   MPI_Barrier(d->comm.mpicomm);

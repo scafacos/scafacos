@@ -93,7 +93,7 @@ void fcs_directc_create(fcs_directc_t *directc)
   directc->box_c[0] = directc->box_c[1] = directc->box_c[2] = 0;
   directc->periodicity[0] = directc->periodicity[1] = directc->periodicity[2] = -1;
 
-  directc->nparticles = 0;
+  directc->nparticles = directc->max_nparticles = 0;
   directc->positions = NULL;
   directc->charges = NULL;
   directc->field = NULL;
@@ -135,9 +135,10 @@ void fcs_directc_set_system(fcs_directc_t *directc, fcs_float *box_base, fcs_flo
 }
 
 
-void fcs_directc_set_particles(fcs_directc_t *directc, fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
+void fcs_directc_set_particles(fcs_directc_t *directc, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
   directc->nparticles = nparticles;
+  directc->max_nparticles = max_nparticles;
   directc->positions = positions;
   directc->charges = charges;
   directc->field = field;
@@ -482,8 +483,10 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
 
     fcs_near_set_loop(&near, directc_coulomb_loop_fp);
     fcs_near_set_system(&near, directc->box_base, directc->box_a, directc->box_b, directc->box_c, periodic);
-    fcs_near_set_particles(&near, directc->nparticles, directc->positions, directc->charges, NULL, directc->field, directc->potentials);
+    fcs_near_set_particles(&near, directc->nparticles, directc->max_nparticles, directc->positions, directc->charges, NULL, directc->field, directc->potentials);
+
     fcs_near_field_solver(&near, fabs(directc->cutoff), NULL, comm);
+
     fcs_near_destroy(&near);
 
   } else

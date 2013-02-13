@@ -317,7 +317,7 @@ int main(int argc, char **argv)
 
   fcs_near_set_system(&near, box_base, box_a, box_b, box_c, periodicity);
 
-  fcs_near_set_particles(&near, nlocal, xyz, q, NULL, f, p);
+  fcs_near_set_particles(&near, nlocal, nlocal_max, xyz, q, NULL, f, p);
 
   MPI_Barrier(comm);
   t = MPI_Wtime();

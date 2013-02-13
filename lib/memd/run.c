@@ -59,7 +59,7 @@ void memd_assign_charges(memd_struct* memd, fcs_int local_num_real_particles, fc
     
 }
 
-void memd_run(void* rawdata, fcs_int num_particles, fcs_float *positions, fcs_float *charges, fcs_float *fields, fcs_float *potentials){
+void memd_run(void* rawdata, fcs_int num_particles, fcs_int max_num_particles, fcs_float *positions, fcs_float *charges, fcs_float *fields, fcs_float *potentials){
 
     memd_struct* memd = (memd_struct*) rawdata;;
     /*
@@ -88,10 +88,10 @@ void memd_run(void* rawdata, fcs_int num_particles, fcs_float *positions, fcs_fl
     
     fcs_gridsort_create(&gridsort);
     fcs_gridsort_set_system(&gridsort, box_base, box_a, box_b, box_c, NULL);
-    fcs_gridsort_set_particles(&gridsort, num_particles, positions, charges);
+    fcs_gridsort_set_particles(&gridsort, num_particles, max_num_particles, positions, charges);
     fcs_gridsort_sort_forward(&gridsort, 0.0, memd->mpiparams.communicator);
     fcs_gridsort_separate_ghosts(&gridsort, &local_num_real_particles, &local_num_ghost_particles);
-    fcs_gridsort_get_sorted_particles(&gridsort, &local_num_particles, NULL, NULL, NULL);
+    fcs_gridsort_get_sorted_particles(&gridsort, &local_num_particles, NULL, NULL, NULL, NULL);
     fcs_gridsort_get_real_particles(&gridsort, &local_num_real_particles, &local_positions, &local_charges, &local_indices);
     fcs_gridsort_get_ghost_particles(&gridsort, &local_num_ghost_particles, &local_ghost_positions, &local_ghost_charges, &local_ghost_indices);
 

@@ -62,7 +62,7 @@ typedef struct _fcs_near_t
   fcs_float box_base[3], box_a[3], box_b[3], box_c[3];
   fcs_int periodicity[3];
 
-  fcs_int nparticles;
+  fcs_int nparticles, max_nparticles;
   fcs_float *positions, *charges;
   fcs_gridsort_index_t *indices;
   fcs_float *field, *potentials;
@@ -150,13 +150,14 @@ void fcs_near_set_system(fcs_near_t *near, fcs_float *box_base, fcs_float *box_a
  * @brief set particle information
  * @param near fcs_near_t near field solver object
  * @param nparticles fcs_int local number of particles
+ * @param max_nparticles fcs_int max number of particles that can be stored in local particle data arrays
  * @param positions fcs_float* array of particle positions
  * @param charges fcs_float* array of particle charges
  * @param indices fcs_gridsort_index_t* array of particle indices (created by gridsort or NULL)
  * @param field fcs_float* array of field values, computed near field values are added, can be NULL if not required
  * @param potentials fcs_float* array of potential values, computed near field values are added, can be NULL if not required
  */
-void fcs_near_set_particles(fcs_near_t *near, fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_gridsort_index_t *indices, fcs_float *field, fcs_float *potentials);
+void fcs_near_set_particles(fcs_near_t *near, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *charges, fcs_gridsort_index_t *indices, fcs_float *field, fcs_float *potentials);
 
 /**
  * @brief set ghost particle information

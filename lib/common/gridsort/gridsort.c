@@ -338,11 +338,13 @@ void fcs_gridsort_create(fcs_gridsort_t *gs)
 
   gs->local_nzslices = gs->ghost_nzslices = gs->max_ghost_nzslices = 0;
 
-  gs->noriginal_particles = 0;
+  gs->overalloc = 0;
+
+  gs->noriginal_particles = gs->max_noriginal_particles = 0;
   gs->original_positions = NULL;
   gs->original_charges = NULL;
 
-  gs->nsorted_particles = 0;
+  gs->nsorted_particles = gs->max_nsorted_particles = 0;
   gs->sorted_positions = NULL;
   gs->sorted_charges = NULL;
   gs->sorted_indices = NULL;
@@ -393,17 +395,25 @@ void fcs_gridsort_set_zslices(fcs_gridsort_t *gs, fcs_int local_nzslices, fcs_in
 }
 
 
-void fcs_gridsort_set_particles(fcs_gridsort_t *gs, fcs_int nparticles, fcs_float *positions, fcs_float *charges)
+void fcs_gridsort_set_overalloc(fcs_gridsort_t *gs, fcs_float overalloc)
+{
+  gs->overalloc = overalloc;
+}
+
+
+void fcs_gridsort_set_particles(fcs_gridsort_t *gs, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *charges)
 {
   gs->noriginal_particles = nparticles;
+  gs->max_noriginal_particles = max_nparticles;
   gs->original_positions = positions;
   gs->original_charges = charges;
 }
 
 
-void fcs_gridsort_get_sorted_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_float **positions, fcs_float **charges, fcs_gridsort_index_t **indices)
+void fcs_gridsort_get_sorted_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_int *max_nparticles, fcs_float **positions, fcs_float **charges, fcs_gridsort_index_t **indices)
 {
   if (nparticles) *nparticles = gs->nsorted_particles;
+  if (max_nparticles) *max_nparticles = gs->max_nsorted_particles;
   if (positions) *positions = gs->sorted_positions;
   if (charges) *charges = gs->sorted_charges;
   if (indices) *indices = gs->sorted_indices;
@@ -572,6 +582,8 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 #ifdef ALLTOALLV_PACKED
   fcs_int local_packed, global_packed, original_packed;
 #endif
+
+  double old_overalloc;
   
 #ifdef DO_TIMING
   double t[2] = { 0, 0 };
@@ -583,7 +595,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
 
-  gs->nsorted_particles = 0;
+  gs->nsorted_particles = gs->max_nsorted_particles = 0;
   gs->sorted_positions = NULL;
   gs->sorted_charges = NULL;
   gs->sorted_indices = NULL;
@@ -932,6 +944,9 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   original_packed = forw_SL_DEFCON(meas.packed); forw_SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
+  old_overalloc = forw_SL_DEFCON(meas.overalloc);
+  forw_SL_DEFCON(meas.overalloc) = gs->overalloc;
+
 #ifndef ALLTOALL_SPECIFIC_IN_PLACE
   TIMING_SYNC(comm); TIMING_START(t[1]);
   forw_mpi_elements_alltoall_specific(&sin0, &sout0, NULL, tproc, grid_tproc_data, comm_size, comm_rank, comm);
@@ -948,6 +963,8 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 #ifdef ALLTOALLV_PACKED
   forw_SL_DEFCON(meas.packed) = original_packed;
 #endif
+
+  forw_SL_DEFCON(meas.overalloc) = old_overalloc;
 
   DEBUG_CMD(
     printf(DEBUG_PRINT_PREFIX "%d: keys out: %" forw_slint_fmt "\n", comm_rank, sout0.size);
@@ -976,6 +993,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   if (with_bounds) free(all_bounds);
 
   gs->nsorted_particles = sout0.size;
+  gs->max_nsorted_particles = sout0.max_size;
   gs->sorted_indices = sout0.keys;
   gs->sorted_positions = sout0.data0;
   gs->sorted_charges = sout0.data1;
@@ -1159,7 +1177,7 @@ fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MP
   get_neighbors(neighbors, periodic, comm_size, comm_rank, comm);
 
   forw_elem_set_size(&s, gs->nsorted_particles);
-  forw_elem_set_max_size(&s, gs->nsorted_particles);
+  forw_elem_set_max_size(&s, gs->max_nsorted_particles);
   forw_elem_set_keys(&s, gs->sorted_indices);
   forw_elem_set_data(&s, gs->sorted_positions, gs->sorted_charges);
 
@@ -1220,6 +1238,7 @@ fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MP
   forw_elements_free(&sx);
 
   gs->nsorted_particles = s.size;
+  gs->max_nsorted_particles = s.max_size;
   gs->sorted_indices = s.keys;
   gs->sorted_positions = s.data0;
   gs->sorted_charges = s.data1;
@@ -1451,7 +1470,7 @@ fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm)
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
 
-  gs->nsorted_particles = 0;
+  gs->nsorted_particles = gs->max_nsorted_particles = 0;
   gs->sorted_positions = NULL;
   gs->sorted_charges = NULL;
   gs->sorted_indices = NULL;
@@ -1489,6 +1508,7 @@ fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm)
   forw_tproc_free(&tproc);
 
   gs->nsorted_particles = sout0.size;
+  gs->max_nsorted_particles = sout0.max_size;
   gs->sorted_indices = sout0.keys;
   gs->sorted_positions = sout0.data0;
   gs->sorted_charges = sout0.data1;
@@ -1828,6 +1848,7 @@ void fcs_gridsort_free(fcs_gridsort_t *gs)
 
   forw_elements_free(&s0);
 
+  gs->nsorted_particles = gs->max_nsorted_particles = 0;
   gs->sorted_indices = NULL;
   gs->sorted_positions = NULL;
   gs->sorted_charges = NULL;

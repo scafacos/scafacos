@@ -71,7 +71,7 @@ extern FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_int local
         fcs_memd_tune(handle, local_particles, local_max_particles, positions, charges);
 */    
     memd_run(handle->method_context,
-            local_particles, positions, charges, fields, potentials);
+            local_particles, local_max_particles, positions, charges, fields, potentials);
         
     return NULL;
 }

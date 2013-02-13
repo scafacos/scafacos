@@ -79,6 +79,7 @@ Configuration::Configuration() {
 
   dup_input_total_nparticles = 0;
   dup_input_nparticles = dup_input_nparticles_allocated = 0;
+  dup_input_overalloc = 0;
   dup_input_positions = 0;
   dup_input_charges = 0;
   dup_input_field = 0;
@@ -111,12 +112,14 @@ Configuration::~Configuration() {
 fcs_int Configuration::add_dup_input_particles(fcs_int add_nparticles)
 {
   const fcs_int min_alloc_step = 1;
-  fcs_int i;
+  fcs_int i, new_alloc;
 
 
-  if (dup_input_nparticles + add_nparticles > dup_input_nparticles_allocated) {
+  new_alloc = (dup_input_overalloc < 0)?(round((dup_input_nparticles + add_nparticles) * (1.0 - dup_input_overalloc))):(dup_input_nparticles + add_nparticles + dup_input_overalloc);
 
-    dup_input_nparticles_allocated = z_max(dup_input_nparticles + add_nparticles, dup_input_nparticles_allocated + min_alloc_step);
+  if (new_alloc > dup_input_nparticles_allocated) {
+
+    dup_input_nparticles_allocated = z_max(new_alloc, dup_input_nparticles_allocated + min_alloc_step);
 
     dup_input_positions = (fcs_float*) realloc(dup_input_positions, dup_input_nparticles_allocated*3*sizeof(fcs_float));
     dup_input_charges = (fcs_float*) realloc(dup_input_charges, dup_input_nparticles_allocated*sizeof(fcs_float));
@@ -435,6 +438,9 @@ void Configuration::broadcast_input()
 void Configuration::generate_input_particles()
 {
   broadcast_input();
+  
+  if (params.decomposition == DECOMPOSE_ALL_ON_MASTER || params.decomposition == DECOMPOSE_ATOMISTIC) dup_input_overalloc = -0.1;
+  else dup_input_overalloc = -0.1;
 
   for (fcs_int i = -2; i < (fcs_int) input_generators.size(); ++i)
   {
@@ -725,6 +731,7 @@ void Configuration::decompose_particles()
       INFO_MASTER(cout << "Decomposing system (all-on-master)..." << endl);
       if (comm_rank == 0) {
         decomp_nparticles = dup_input_nparticles;
+        decomp_max_nparticles = dup_input_nparticles_allocated;
         decomp_positions = dup_input_positions;
         decomp_charges = dup_input_charges;
       } else {
@@ -736,34 +743,35 @@ void Configuration::decompose_particles()
     case DECOMPOSE_ATOMISTIC:
       INFO_MASTER(cout << "Decomposing system (atomistic)..." << endl);
       decomp_nparticles = dup_input_nparticles;
+      decomp_max_nparticles = dup_input_nparticles_allocated;
       decomp_positions = dup_input_positions;
       decomp_charges = dup_input_charges;
       break;
     case DECOMPOSE_RANDOM:
       INFO_MASTER(cout << "Decomposing system (random)..." << endl);
       fcs_gridsort_create(&gridsort);
-      fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_positions, dup_input_charges);
+      fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_nparticles, dup_input_positions, dup_input_charges);
       fcs_gridsort_sort_random(&gridsort, communicator);
-      fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_positions, &decomp_charges, NULL);
+      fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
       break;
     case DECOMPOSE_DOMAIN:
       INFO_MASTER(cout << "Decomposing system (domain)..." << endl);
       create_cart_comm();
       fcs_gridsort_create(&gridsort);
       fcs_gridsort_set_system(&gridsort, params.offset, params.box_a, params.box_b, params.box_c, NULL);
-      fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_positions, dup_input_charges);
+      fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_nparticles, dup_input_positions, dup_input_charges);
       fcs_gridsort_sort_forward(&gridsort, 0.0, cart_comm);
-      fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_positions, &decomp_charges, NULL);
+      fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
       decomp_comm = cart_comm;
       break;
     default:
       break;
   }
 
-  if (decomp_nparticles > 0)
+  if (decomp_max_nparticles > 0)
   {
-    decomp_potentials = new fcs_float[decomp_nparticles];
-    decomp_field = new fcs_float[3*decomp_nparticles];
+    decomp_potentials = new fcs_float[decomp_max_nparticles];
+    decomp_field = new fcs_float[3*decomp_max_nparticles];
     for (fcs_int i = 0; i < decomp_nparticles; ++i)
     {
       decomp_potentials[i] = NAN;
@@ -822,7 +830,8 @@ bool Configuration::compute_errors(errors_t *e) {
 
   ::compute_errors(e, dup_input_nparticles, dup_input_positions, dup_input_charges,
     have_reference_values[0]?dup_input_potentials:NULL, have_reference_values[1]?dup_input_field:NULL,
-    have_result_values[0]?result_potentials:NULL, have_result_values[1]?result_field:NULL, decomp_comm);
+    have_result_values[0]?result_potentials:NULL, have_result_values[1]?result_field:NULL,
+    decomp_comm);
 
   return true;
 }

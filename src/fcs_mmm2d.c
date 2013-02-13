@@ -102,7 +102,7 @@ FCSResult fcs_mmm2d_run(FCS handle,
   
   fcs_mmm2d_tune(handle, local_particles, local_max_particles, positions, charges);
   
-  mmm2d_run(handle->method_context, local_particles, positions, charges, fields, potentials);
+  mmm2d_run(handle->method_context, local_particles, local_max_particles, positions, charges, fields, potentials);
   
   return NULL;
 }

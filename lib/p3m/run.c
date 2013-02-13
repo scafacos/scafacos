@@ -60,7 +60,7 @@
 /* domain decomposition */
 static void
 ifcs_p3m_domain_decompose(ifcs_p3m_data_struct *d, fcs_gridsort_t *gridsort,
-                          fcs_int _num_particles, 
+                          fcs_int _num_particles, fcs_int _max_num_particles, 
                           fcs_float *_positions, fcs_float *_charges,
                           fcs_int *num_real_particles,
                           fcs_float **positions, fcs_float **charges,
@@ -141,6 +141,7 @@ FCS_NEAR_LOOP_FP(ifcs_p3m_compute_near_loop, ifcs_p3m_compute_near);
 /***************************************************/
 void ifcs_p3m_run(void* rd,
 		  fcs_int _num_particles,
+		  fcs_int _max_num_particles,
 		  fcs_float *_positions, 
 		  fcs_float *_charges,
 		  fcs_float *_fields,
@@ -180,7 +181,7 @@ void ifcs_p3m_run(void* rd,
   FCS_P3M_INIT_TIMING(d->comm.mpicomm);
 
   ifcs_p3m_domain_decompose(d, &gridsort, 
-                            _num_particles, _positions, _charges,
+                            _num_particles, _max_num_particles, _positions, _charges,
                             &num_real_particles,
                             &positions, &charges, &indices,
                             &num_ghost_particles,
@@ -468,7 +469,7 @@ void ifcs_p3m_run(void* rd,
     fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
     fcs_near_set_system(&near, box_base, box_a, box_b, box_c, NULL);
 
-    fcs_near_set_particles(&near, num_real_particles,
+    fcs_near_set_particles(&near, num_real_particles, num_real_particles,
                            positions, charges, indices,
                            (_fields != NULL) ? fields : NULL, 
                            (_potentials != NULL) ? potentials : NULL);
@@ -508,7 +509,7 @@ void ifcs_p3m_run(void* rd,
 /* RUN COMPONENTS */
 static void
 ifcs_p3m_domain_decompose(ifcs_p3m_data_struct *d, fcs_gridsort_t *gridsort,
-                          fcs_int _num_particles, 
+                          fcs_int _num_particles, fcs_int _max_num_particles, 
                           fcs_float *_positions, fcs_float *_charges,
                           fcs_int *num_real_particles,
                           fcs_float **positions, fcs_float **charges,
@@ -528,7 +529,7 @@ ifcs_p3m_domain_decompose(ifcs_p3m_data_struct *d, fcs_gridsort_t *gridsort,
   fcs_gridsort_create(gridsort);
   
   fcs_gridsort_set_system(gridsort, box_base, box_a, box_b, box_c, NULL);
-  fcs_gridsort_set_particles(gridsort, _num_particles, _positions, _charges);
+  fcs_gridsort_set_particles(gridsort, _num_particles, _max_num_particles, _positions, _charges);
 
   P3M_DEBUG(printf( "  calling fcs_gridsort_sort_forward()...\n"));
   FCS_P3M_START_TIMING();
@@ -543,7 +544,7 @@ ifcs_p3m_domain_decompose(ifcs_p3m_data_struct *d, fcs_gridsort_t *gridsort,
                                num_ghost_particles);
 
   fcs_gridsort_get_sorted_particles(gridsort, 
-                                    &num_particles, NULL, NULL, NULL);
+                                    &num_particles, NULL, NULL, NULL, NULL);
 
   fcs_gridsort_get_real_particles(gridsort, 
                                   num_real_particles, 

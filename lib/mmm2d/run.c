@@ -118,6 +118,7 @@ static void layered_displacement_vector(mmm2d_data_struct *d, fcs_float x1, fcs_
 /***************************************************/
 void mmm2d_run(void* rd,
         fcs_int num_particles,
+        fcs_int max_num_particles,
         fcs_float *positions,
         fcs_float *charges,
         fcs_float *forces,
@@ -150,7 +151,7 @@ void mmm2d_run(void* rd,
 
   fcs_gridsort_set_zslices(&gridsort, d->layers_per_node, 1);
 
-  fcs_gridsort_set_particles(&gridsort, num_particles, positions, charges);
+  fcs_gridsort_set_particles(&gridsort, num_particles, max_num_particles, positions, charges);
   
   MPI_Barrier(d->comm.mpicomm);
   fprintf(stderr,"mmm2d_run, %d\n", d->comm.rank);
