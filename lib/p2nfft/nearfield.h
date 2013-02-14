@@ -111,7 +111,7 @@ ifcs_p2nfft_compute_near_potential_periodic_approx_erfc(
     )
 {
   fcs_float alpha = *((fcs_float *) param);
-  fcs_float adist = alpha * adist;
+  fcs_float adist = alpha * dist;
   return ifcs_p2nfft_approx_erfc(adist) / dist;
 }
 
