@@ -76,12 +76,8 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
 
   int *cart_dims;
 
-#if defined(DUPLICATE) || defined(GRIDSORT_FRONT_TPROC_RANK_CACHE)
-  int *max_nprocs;
-#endif
-
 #ifdef DUPLICATE
-  fcs_int nprocs;
+  fcs_int nparts, *max_nparts;
   int low_coords[3], high_coords[3], coords[3];
 #else
   int rank;
@@ -99,12 +95,13 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
   fcs_float *box_size;
 #endif
 
-#if defined(GRIDSORT_FRONT_TPROC_ZSLICES) || defined(GRIDSORT_FRONT_TPROC_RANK_CACHE)
+#if defined(GRIDSORT_FRONT_TPROC_ZSLICES)
   int *cart_coords;
 #endif
 
 #ifdef GRIDSORT_FRONT_TPROC_RANK_CACHE
   int *rank_cache;
+  fcs_int *rank_cache_sizes;
 #endif
 
 #if 0
@@ -115,13 +112,13 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
 #undef STR
 #endif
 
-#if defined(DUPLICATE) || defined(GRIDSORT_FRONT_TPROC_RANK_CACHE)
-  max_nprocs = data_ptrs[7];
+#if defined(DUPLICATE)
+  max_nparts = data_ptrs[7];
 #endif
 
 #ifdef DUPLICATE
   if (x < 0)
-    return max_nprocs[3];
+    return *max_nparts;
 #endif
 
   cart_comm = *((MPI_Comm *) data_ptrs[0]);
@@ -131,7 +128,7 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
   cart_periods = data_ptrs[3];
 #endif
 
-#if defined(GRIDSORT_FRONT_TPROC_ZSLICES) || defined(GRIDSORT_FRONT_TPROC_RANK_CACHE)
+#if defined(GRIDSORT_FRONT_TPROC_ZSLICES)
   cart_coords = data_ptrs[4];
 #endif
 
@@ -142,6 +139,7 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
 
 #ifdef GRIDSORT_FRONT_TPROC_RANK_CACHE
   rank_cache = data_ptrs[8];
+  rank_cache_sizes = data_ptrs[9];
 #endif
 
 #ifdef GRIDSORT_FRONT_TPROC_BOUNDS
@@ -228,8 +226,9 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
 
 /*  printf("%d: %f,%f,%f - %d,%d,%d"
 #ifdef DUPLICATE
-  " - %d,%d,%d - %d,%d,%d\n"
+  " - %d,%d,%d - %d,%d,%d"
 #endif
+  "\n"
   , (int) x, s->data0[3 * x + 0], s->data0[3 * x + 1], s->data0[3 * x + 2],
     base_coords[0], base_coords[1], base_coords[2]
 #ifdef DUPLICATE
@@ -240,13 +239,13 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
 #ifndef DUPLICATE
 
   CART2RANK(cart_comm, base_coords, &rank, rank_cache,
-    (base_coords[0] - cart_coords[0]) +  max_nprocs[0] * ((base_coords[1] - cart_coords[1]) + max_nprocs[1] * (base_coords[2] - cart_coords[2])));
+    base_coords[0] + rank_cache_sizes[0] * (base_coords[1] + rank_cache_sizes[1] * base_coords[2]));
 
   return rank;
 
 #else /* DUPLICATE */
 
-  nprocs = 0;
+  nparts = 0;
 
 #ifndef GRIDSORT_FRONT_TPROC_ZONLY
   for (coords[0] = low_coords[0]; coords[0] <= high_coords[0]; ++coords[0])
@@ -282,32 +281,32 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
         if (coords[2] >= cart_dims[2]) key[2] |= GRIDSORT_PERIODIC_SET(coords[2] / cart_dims[2], 5);
 #endif
 
-        CART2RANK(cart_comm, coords, &procs[nprocs], rank_cache,
-          (coords[0] - cart_coords[0]) +  max_nprocs[0] * ((coords[1] - cart_coords[1]) + max_nprocs[1] * (coords[2] - cart_coords[2])));
+        CART2RANK(cart_comm, coords, &procs[nparts], rank_cache,
+          coords[0] + rank_cache_sizes[0] * (coords[1] + rank_cache_sizes[1] * coords[2]));
 
         if (sd)
         {
-          if (coords[0] == base_coords[0] && coords[1] == base_coords[1] && coords[2] == base_coords[2]) sd->keys[nprocs] = s->keys[x];
+          if (coords[0] == base_coords[0] && coords[1] == base_coords[1] && coords[2] == base_coords[2]) sd->keys[nparts] = s->keys[x];
 #ifdef GRIDSORT_FRONT_TPROC_PERIODIC
-          else sd->keys[nprocs] = key[2];
+          else sd->keys[nparts] = key[2];
 #else
-          else sd->keys[nprocs] = GRIDSORT_GHOST_BASE;
+          else sd->keys[nparts] = GRIDSORT_GHOST_BASE;
 #endif
 
-          sd->data0[3 * nprocs + 0] = s->data0[3 * x + 0];
-          sd->data0[3 * nprocs + 1] = s->data0[3 * x + 1];
-          sd->data0[3 * nprocs + 2] = s->data0[3 * x + 2];
-          sd->data1[nprocs] = s->data1[x];
+          sd->data0[3 * nparts + 0] = s->data0[3 * x + 0];
+          sd->data0[3 * nparts + 1] = s->data0[3 * x + 1];
+          sd->data0[3 * nparts + 2] = s->data0[3 * x + 2];
+          sd->data1[nparts] = s->data1[x];
         }
 
-        ++nprocs;
+        ++nparts;
       }
 #ifndef GRIDSORT_FRONT_TPROC_ZONLY
     }
   }
 #endif /* GRIDSORT_FRONT_TPROC_ZONLY */
 
-  return nprocs;
+  return nparts;
 #endif /* DUPLICATE */
 }
 

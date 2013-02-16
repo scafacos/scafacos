@@ -100,6 +100,7 @@ sl_SOURCE = \
 
 libsl_back__p_a_SOURCES = \
   $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
   $(srcdir_sl)/z_tools.h \
@@ -112,6 +113,7 @@ libsl_back__p_a_SOURCES = \
 
 libsl_back_f__a_SOURCES = \
   $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
   $(srcdir_sl)/z_tools.h \
@@ -124,6 +126,7 @@ libsl_back_f__a_SOURCES = \
 
 libsl_back_fp_a_SOURCES = \
   $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
   $(srcdir_sl)/z_tools.h \
@@ -136,6 +139,7 @@ libsl_back_fp_a_SOURCES = \
 
 libsl_forw_a_SOURCES = \
   $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
   $(srcdir_sl)/z_tools.h \
@@ -193,6 +197,7 @@ libsl_mpiwrap_a_SOURCES = \
   $(srcdir_sl)/include/sl_back_fp.h \
   $(srcdir_sl)/include/sl_forw.h \
   $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort.c \
   $(srcdir_sl)/gridsort.h \
   $(srcdir_sl)/gridsort_front_tproc.h \

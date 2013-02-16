@@ -34,6 +34,7 @@ extern "C" {
  * @brief gridsort index type
  */
 typedef long long fcs_gridsort_index_t;
+#define FCS_MPI_GRIDSORT_INDEX  MPI_LONG_LONG
 
 /**
  * @brief gridsort object structure
@@ -57,6 +58,8 @@ typedef struct _fcs_gridsort_t
   fcs_gridsort_index_t *sorted_indices;
 
   fcs_int nsorted_real_particles, nsorted_ghost_particles;
+
+  fcs_float max_particle_move;
 
   fcs_float sub_box_base[3], sub_box_a[3], sub_box_b[3], sub_box_c[3];
 
@@ -132,6 +135,13 @@ void fcs_gridsort_set_overalloc(fcs_gridsort_t *gs, fcs_float overalloc);
  * @param charges fcs_float* array of local particle charges
  */
 void fcs_gridsort_set_particles(fcs_gridsort_t *gs, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *charges);
+
+/**
+ * @brief set max. distance particles are away from the domain of the local process, e.g. because they have moved since the last grid sorting
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param nparticles fcs_float max. distance particles have moved
+ */
+void fcs_gridsort_set_max_particle_move(fcs_gridsort_t *gs, fcs_float max_particle_move);
 
 /**
  * @brief get information of sorted particles
