@@ -1,5 +1,6 @@
 spec_int_fmt
 spec_proc_fmt
+SPEC_LOC_NONE
 SPEC_PROC_NONE
 spec_elem_index_fmt
 spidx_fmt

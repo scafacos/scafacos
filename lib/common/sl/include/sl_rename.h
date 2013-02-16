@@ -297,6 +297,7 @@
 #define tproc_create_tprocs  SL_FUNC(tproc_create_tprocs)
 #define tproc_create_tprocs_mod  SL_FUNC(tproc_create_tprocs_mod)
 #define tproc_free  SL_FUNC(tproc_free)
+#define tproc_set_proclist  SL_FUNC(tproc_set_proclist)
 #define tproc_verify  SL_FUNC(tproc_verify)
 #define mpi_elements_alltoall_specific  SL_FUNC(mpi_elements_alltoall_specific)
 #define default_mea_packed  SL_VAR(default_mea_packed)

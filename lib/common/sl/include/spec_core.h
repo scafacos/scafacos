@@ -45,8 +45,8 @@
 /* sp_macro spec_int_fmt */
 /* sp_type spec_proc_t */
 /* sp_macro spec_proc_fmt */
-/* sp_macro SPEC_PROC_NONE */
-/* sp_type spec_tproc_data_t */
+/* sp_macro SPEC_LOC_NONE SPEC_PROC_NONE */
+/* sp_type spec_tloc_data_t spec_tproc_data_t */
 /* sp_type spec_elem_buf_t spec_elem_t */
 /* sp_type spec_elem_index_t */
 /* sp_macro spec_elem_index_fmt spidx_fmt */

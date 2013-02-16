@@ -1,5 +1,6 @@
 spec_int_t
 spec_proc_t
+spec_tloc_data_t
 spec_tproc_data_t
 spec_elem_buf_t
 spec_elem_t

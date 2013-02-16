@@ -697,7 +697,7 @@ typedef void zmpi_spec_tproc_reset_f(zmpi_spec_tproc_data_t tproc_data);
 
 /* sp_macro zmpi_SPEC_FUNC_TLOC_REARRANGE_DB */
 #define zmpi_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tloc_data_t tloc_data) \
 { \
   zmpi_SPEC_DECLARE_TLOC_REARRANGE_DB \
   zmpi_SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
@@ -722,7 +722,7 @@ _s_ void _name_##_tloc_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, sp
 
 /* sp_macro zmpi_SPEC_FUNC_TLOC_REARRANGE_IP */
 #define zmpi_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tloc_data_t tloc_data) \
 { \
   zmpi_SPEC_DECLARE_TLOC_REARRANGE_IP \
   zmpi_SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
@@ -753,7 +753,7 @@ _s_ void _name_##_tloc_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, sp
 
 /* sp_macro zmpi_SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
 #define zmpi_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_mod_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod) \
 { \
   zmpi_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
   zmpi_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
@@ -793,7 +793,7 @@ _s_ void _name_##_tloc_mod_rearrange_db(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d
 
 /* sp_macro zmpi_SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
 #define zmpi_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_mod_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod) \
 { \
   zmpi_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
   zmpi_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
@@ -817,14 +817,14 @@ _s_ void _name_##_tloc_mod_rearrange_ip(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x
 
 
 /* sp_type zmpi_spec_tloc_f zmpi_spec_tloc_rearrange_db_f zmpi_spec_tloc_rearrange_ip_f */
-typedef zmpi_spec_elem_index_t zmpi_spec_tloc_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, spec_tloc_data_t tloc_data);
-typedef void zmpi_spec_tloc_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, spec_tloc_data_t tloc_data);
-typedef void zmpi_spec_tloc_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, spec_tloc_data_t tloc_data);
+typedef zmpi_spec_elem_index_t zmpi_spec_tloc_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, zmpi_spec_tloc_data_t tloc_data);
+typedef void zmpi_spec_tloc_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tloc_data_t tloc_data);
+typedef void zmpi_spec_tloc_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tloc_data_t tloc_data);
 
 /* sp_type zmpi_spec_tloc_mod_f zmpi_spec_tloc_mod_rearrange_db_f zmpi_spec_tloc_mod_rearrange_ip_f */
-typedef zmpi_spec_elem_index_t zmpi_spec_tloc_mod_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, spec_tloc_data_t tloc_data, zmpi_spec_elem_buf_t mod);
-typedef void zmpi_spec_tloc_mod_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod);
-typedef void zmpi_spec_tloc_mod_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod);
+typedef zmpi_spec_elem_index_t zmpi_spec_tloc_mod_f(zmpi_spec_elem_buf_t b, zmpi_spec_elem_index_t x, zmpi_spec_tloc_data_t tloc_data, zmpi_spec_elem_buf_t mod);
+typedef void zmpi_spec_tloc_mod_rearrange_db_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *d, zmpi_spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod);
+typedef void zmpi_spec_tloc_mod_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_elem_t *x, zmpi_spec_tloc_data_t tloc_data, zmpi_spec_elem_t *mod);
 
 
 #endif /* zmpi_SPEC_TLOC */
@@ -837,7 +837,7 @@ typedef void zmpi_spec_tloc_mod_rearrange_ip_f(zmpi_spec_elem_t *s, zmpi_spec_el
 #endif
 
 
-typedef int ZMPI_Count;
+typedef long ZMPI_Count;
 
 typedef struct _ZMPI_Tproc *ZMPI_Tproc;
 

@@ -907,7 +907,7 @@ typedef int front_xqsaI_spec_proc_t;
 #define front_xqsaI_SPEC_LOC_NONE   -1
 #define front_xqsaI_SPEC_PROC_NONE  MPI_PROC_NULL
 
-typedef void *spec_tloc_data_t;
+typedef void *front_xqsaI_spec_tloc_data_t;
 typedef void *front_xqsaI_spec_tproc_data_t;
 
 struct front_xqsaI__elements_t;
@@ -1550,7 +1550,7 @@ typedef void front_xqsaI_spec_tproc_reset_f(front_xqsaI_spec_tproc_data_t tproc_
 
 /* sp_macro front_xqsaI_SPEC_FUNC_TLOC_REARRANGE_DB */
 #define front_xqsaI_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_rearrange_db(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *d, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_db(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *d, front_xqsaI_spec_tloc_data_t tloc_data) \
 { \
   front_xqsaI_SPEC_DECLARE_TLOC_REARRANGE_DB \
   front_xqsaI_SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
@@ -1575,7 +1575,7 @@ _s_ void _name_##_tloc_rearrange_db(front_xqsaI_spec_elem_t *s, front_xqsaI_spec
 
 /* sp_macro front_xqsaI_SPEC_FUNC_TLOC_REARRANGE_IP */
 #define front_xqsaI_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_rearrange_ip(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *x, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_ip(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *x, front_xqsaI_spec_tloc_data_t tloc_data) \
 { \
   front_xqsaI_SPEC_DECLARE_TLOC_REARRANGE_IP \
   front_xqsaI_SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
@@ -1606,7 +1606,7 @@ _s_ void _name_##_tloc_rearrange_ip(front_xqsaI_spec_elem_t *s, front_xqsaI_spec
 
 /* sp_macro front_xqsaI_SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
 #define front_xqsaI_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_mod_rearrange_db(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *d, spec_tloc_data_t tloc_data, front_xqsaI_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_db(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *d, front_xqsaI_spec_tloc_data_t tloc_data, front_xqsaI_spec_elem_t *mod) \
 { \
   front_xqsaI_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
   front_xqsaI_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
@@ -1646,7 +1646,7 @@ _s_ void _name_##_tloc_mod_rearrange_db(front_xqsaI_spec_elem_t *s, front_xqsaI_
 
 /* sp_macro front_xqsaI_SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
 #define front_xqsaI_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_mod_rearrange_ip(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *x, spec_tloc_data_t tloc_data, front_xqsaI_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_ip(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *x, front_xqsaI_spec_tloc_data_t tloc_data, front_xqsaI_spec_elem_t *mod) \
 { \
   front_xqsaI_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
   front_xqsaI_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
@@ -1670,14 +1670,14 @@ _s_ void _name_##_tloc_mod_rearrange_ip(front_xqsaI_spec_elem_t *s, front_xqsaI_
 
 
 /* sp_type front_xqsaI_spec_tloc_f front_xqsaI_spec_tloc_rearrange_db_f front_xqsaI_spec_tloc_rearrange_ip_f */
-typedef front_xqsaI_spec_elem_index_t front_xqsaI_spec_tloc_f(front_xqsaI_spec_elem_buf_t b, front_xqsaI_spec_elem_index_t x, spec_tloc_data_t tloc_data);
-typedef void front_xqsaI_spec_tloc_rearrange_db_f(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *d, spec_tloc_data_t tloc_data);
-typedef void front_xqsaI_spec_tloc_rearrange_ip_f(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *x, spec_tloc_data_t tloc_data);
+typedef front_xqsaI_spec_elem_index_t front_xqsaI_spec_tloc_f(front_xqsaI_spec_elem_buf_t b, front_xqsaI_spec_elem_index_t x, front_xqsaI_spec_tloc_data_t tloc_data);
+typedef void front_xqsaI_spec_tloc_rearrange_db_f(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *d, front_xqsaI_spec_tloc_data_t tloc_data);
+typedef void front_xqsaI_spec_tloc_rearrange_ip_f(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *x, front_xqsaI_spec_tloc_data_t tloc_data);
 
 /* sp_type front_xqsaI_spec_tloc_mod_f front_xqsaI_spec_tloc_mod_rearrange_db_f front_xqsaI_spec_tloc_mod_rearrange_ip_f */
-typedef front_xqsaI_spec_elem_index_t front_xqsaI_spec_tloc_mod_f(front_xqsaI_spec_elem_buf_t b, front_xqsaI_spec_elem_index_t x, spec_tloc_data_t tloc_data, front_xqsaI_spec_elem_buf_t mod);
-typedef void front_xqsaI_spec_tloc_mod_rearrange_db_f(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *d, spec_tloc_data_t tloc_data, front_xqsaI_spec_elem_t *mod);
-typedef void front_xqsaI_spec_tloc_mod_rearrange_ip_f(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *x, spec_tloc_data_t tloc_data, front_xqsaI_spec_elem_t *mod);
+typedef front_xqsaI_spec_elem_index_t front_xqsaI_spec_tloc_mod_f(front_xqsaI_spec_elem_buf_t b, front_xqsaI_spec_elem_index_t x, front_xqsaI_spec_tloc_data_t tloc_data, front_xqsaI_spec_elem_buf_t mod);
+typedef void front_xqsaI_spec_tloc_mod_rearrange_db_f(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *d, front_xqsaI_spec_tloc_data_t tloc_data, front_xqsaI_spec_elem_t *mod);
+typedef void front_xqsaI_spec_tloc_mod_rearrange_ip_f(front_xqsaI_spec_elem_t *s, front_xqsaI_spec_elem_t *x, front_xqsaI_spec_tloc_data_t tloc_data, front_xqsaI_spec_elem_t *mod);
 
 
 #endif /* front_xqsaI_SPEC_TLOC */
@@ -3168,6 +3168,7 @@ front_xqsaI_slint_t SL_PROTO(front_xqsaI_tproc_create_tproc_mod)(front_xqsaI_tpr
 front_xqsaI_slint_t SL_PROTO(front_xqsaI_tproc_create_tprocs)(front_xqsaI_tproc_t *tproc, front_xqsaI_tprocs_f *tfn, front_xqsaI_tproc_reset_f *rfn, front_xqsaI_tproc_exdef exdef);
 front_xqsaI_slint_t SL_PROTO(front_xqsaI_tproc_create_tprocs_mod)(front_xqsaI_tproc_t *tproc, front_xqsaI_tprocs_mod_f *tfn, front_xqsaI_tproc_reset_f *rfn, front_xqsaI_tproc_exdef exdef);
 front_xqsaI_slint_t SL_PROTO(front_xqsaI_tproc_free)(front_xqsaI_tproc_t *tproc);
+front_xqsaI_slint_t SL_PROTO(front_xqsaI_tproc_set_proclist)(front_xqsaI_tproc_t *tproc, front_xqsaI_slint_t nsend_procs, int *send_procs, front_xqsaI_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 front_xqsaI_slint_t SL_PROTO(front_xqsaI_tproc_verify)(front_xqsaI_tproc_t tproc, void *data, front_xqsaI_elements_t *s, int proc);
 front_xqsaI_slint_t SL_PROTO(front_xqsaI_mpi_elements_alltoall_specific)(front_xqsaI_elements_t *sin, front_xqsaI_elements_t *sout, front_xqsaI_elements_t *xs, front_xqsaI_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 front_xqsaI_slint_t SL_PROTO(front_xqsaI_mpi_elements_alltoallv_db_packed)(front_xqsaI_elements_t *sbuf, int *scounts, int *sdispls, front_xqsaI_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

@@ -882,7 +882,7 @@ typedef int back__p_spec_proc_t;
 #define back__p_SPEC_LOC_NONE   -1
 #define back__p_SPEC_PROC_NONE  MPI_PROC_NULL
 
-typedef void *spec_tloc_data_t;
+typedef void *back__p_spec_tloc_data_t;
 typedef void *back__p_spec_tproc_data_t;
 
 struct back__p__elements_t;
@@ -1525,7 +1525,7 @@ typedef void back__p_spec_tproc_reset_f(back__p_spec_tproc_data_t tproc_data);
 
 /* sp_macro back__p_SPEC_FUNC_TLOC_REARRANGE_DB */
 #define back__p_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_rearrange_db(back__p_spec_elem_t *s, back__p_spec_elem_t *d, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_db(back__p_spec_elem_t *s, back__p_spec_elem_t *d, back__p_spec_tloc_data_t tloc_data) \
 { \
   back__p_SPEC_DECLARE_TLOC_REARRANGE_DB \
   back__p_SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
@@ -1550,7 +1550,7 @@ _s_ void _name_##_tloc_rearrange_db(back__p_spec_elem_t *s, back__p_spec_elem_t 
 
 /* sp_macro back__p_SPEC_FUNC_TLOC_REARRANGE_IP */
 #define back__p_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_rearrange_ip(back__p_spec_elem_t *s, back__p_spec_elem_t *x, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_ip(back__p_spec_elem_t *s, back__p_spec_elem_t *x, back__p_spec_tloc_data_t tloc_data) \
 { \
   back__p_SPEC_DECLARE_TLOC_REARRANGE_IP \
   back__p_SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
@@ -1581,7 +1581,7 @@ _s_ void _name_##_tloc_rearrange_ip(back__p_spec_elem_t *s, back__p_spec_elem_t 
 
 /* sp_macro back__p_SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
 #define back__p_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_mod_rearrange_db(back__p_spec_elem_t *s, back__p_spec_elem_t *d, spec_tloc_data_t tloc_data, back__p_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_db(back__p_spec_elem_t *s, back__p_spec_elem_t *d, back__p_spec_tloc_data_t tloc_data, back__p_spec_elem_t *mod) \
 { \
   back__p_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
   back__p_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
@@ -1621,7 +1621,7 @@ _s_ void _name_##_tloc_mod_rearrange_db(back__p_spec_elem_t *s, back__p_spec_ele
 
 /* sp_macro back__p_SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
 #define back__p_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_mod_rearrange_ip(back__p_spec_elem_t *s, back__p_spec_elem_t *x, spec_tloc_data_t tloc_data, back__p_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_ip(back__p_spec_elem_t *s, back__p_spec_elem_t *x, back__p_spec_tloc_data_t tloc_data, back__p_spec_elem_t *mod) \
 { \
   back__p_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
   back__p_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
@@ -1645,14 +1645,14 @@ _s_ void _name_##_tloc_mod_rearrange_ip(back__p_spec_elem_t *s, back__p_spec_ele
 
 
 /* sp_type back__p_spec_tloc_f back__p_spec_tloc_rearrange_db_f back__p_spec_tloc_rearrange_ip_f */
-typedef back__p_spec_elem_index_t back__p_spec_tloc_f(back__p_spec_elem_buf_t b, back__p_spec_elem_index_t x, spec_tloc_data_t tloc_data);
-typedef void back__p_spec_tloc_rearrange_db_f(back__p_spec_elem_t *s, back__p_spec_elem_t *d, spec_tloc_data_t tloc_data);
-typedef void back__p_spec_tloc_rearrange_ip_f(back__p_spec_elem_t *s, back__p_spec_elem_t *x, spec_tloc_data_t tloc_data);
+typedef back__p_spec_elem_index_t back__p_spec_tloc_f(back__p_spec_elem_buf_t b, back__p_spec_elem_index_t x, back__p_spec_tloc_data_t tloc_data);
+typedef void back__p_spec_tloc_rearrange_db_f(back__p_spec_elem_t *s, back__p_spec_elem_t *d, back__p_spec_tloc_data_t tloc_data);
+typedef void back__p_spec_tloc_rearrange_ip_f(back__p_spec_elem_t *s, back__p_spec_elem_t *x, back__p_spec_tloc_data_t tloc_data);
 
 /* sp_type back__p_spec_tloc_mod_f back__p_spec_tloc_mod_rearrange_db_f back__p_spec_tloc_mod_rearrange_ip_f */
-typedef back__p_spec_elem_index_t back__p_spec_tloc_mod_f(back__p_spec_elem_buf_t b, back__p_spec_elem_index_t x, spec_tloc_data_t tloc_data, back__p_spec_elem_buf_t mod);
-typedef void back__p_spec_tloc_mod_rearrange_db_f(back__p_spec_elem_t *s, back__p_spec_elem_t *d, spec_tloc_data_t tloc_data, back__p_spec_elem_t *mod);
-typedef void back__p_spec_tloc_mod_rearrange_ip_f(back__p_spec_elem_t *s, back__p_spec_elem_t *x, spec_tloc_data_t tloc_data, back__p_spec_elem_t *mod);
+typedef back__p_spec_elem_index_t back__p_spec_tloc_mod_f(back__p_spec_elem_buf_t b, back__p_spec_elem_index_t x, back__p_spec_tloc_data_t tloc_data, back__p_spec_elem_buf_t mod);
+typedef void back__p_spec_tloc_mod_rearrange_db_f(back__p_spec_elem_t *s, back__p_spec_elem_t *d, back__p_spec_tloc_data_t tloc_data, back__p_spec_elem_t *mod);
+typedef void back__p_spec_tloc_mod_rearrange_ip_f(back__p_spec_elem_t *s, back__p_spec_elem_t *x, back__p_spec_tloc_data_t tloc_data, back__p_spec_elem_t *mod);
 
 
 #endif /* back__p_SPEC_TLOC */
@@ -3143,6 +3143,7 @@ back__p_slint_t SL_PROTO(back__p_tproc_create_tproc_mod)(back__p_tproc_t *tproc,
 back__p_slint_t SL_PROTO(back__p_tproc_create_tprocs)(back__p_tproc_t *tproc, back__p_tprocs_f *tfn, back__p_tproc_reset_f *rfn, back__p_tproc_exdef exdef);
 back__p_slint_t SL_PROTO(back__p_tproc_create_tprocs_mod)(back__p_tproc_t *tproc, back__p_tprocs_mod_f *tfn, back__p_tproc_reset_f *rfn, back__p_tproc_exdef exdef);
 back__p_slint_t SL_PROTO(back__p_tproc_free)(back__p_tproc_t *tproc);
+back__p_slint_t SL_PROTO(back__p_tproc_set_proclist)(back__p_tproc_t *tproc, back__p_slint_t nsend_procs, int *send_procs, back__p_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 back__p_slint_t SL_PROTO(back__p_tproc_verify)(back__p_tproc_t tproc, void *data, back__p_elements_t *s, int proc);
 back__p_slint_t SL_PROTO(back__p_mpi_elements_alltoall_specific)(back__p_elements_t *sin, back__p_elements_t *sout, back__p_elements_t *xs, back__p_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 back__p_slint_t SL_PROTO(back__p_mpi_elements_alltoallv_db_packed)(back__p_elements_t *sbuf, int *scounts, int *sdispls, back__p_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

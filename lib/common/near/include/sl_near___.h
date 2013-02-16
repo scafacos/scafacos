@@ -898,7 +898,7 @@ typedef int near____spec_proc_t;
 #define near____SPEC_LOC_NONE   -1
 #define near____SPEC_PROC_NONE  MPI_PROC_NULL
 
-typedef void *spec_tloc_data_t;
+typedef void *near____spec_tloc_data_t;
 typedef void *near____spec_tproc_data_t;
 
 struct near_____elements_t;
@@ -1541,7 +1541,7 @@ typedef void near____spec_tproc_reset_f(near____spec_tproc_data_t tproc_data);
 
 /* sp_macro near____SPEC_FUNC_TLOC_REARRANGE_DB */
 #define near____SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_rearrange_db(near____spec_elem_t *s, near____spec_elem_t *d, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_db(near____spec_elem_t *s, near____spec_elem_t *d, near____spec_tloc_data_t tloc_data) \
 { \
   near____SPEC_DECLARE_TLOC_REARRANGE_DB \
   near____SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
@@ -1566,7 +1566,7 @@ _s_ void _name_##_tloc_rearrange_db(near____spec_elem_t *s, near____spec_elem_t 
 
 /* sp_macro near____SPEC_FUNC_TLOC_REARRANGE_IP */
 #define near____SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_rearrange_ip(near____spec_elem_t *s, near____spec_elem_t *x, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_ip(near____spec_elem_t *s, near____spec_elem_t *x, near____spec_tloc_data_t tloc_data) \
 { \
   near____SPEC_DECLARE_TLOC_REARRANGE_IP \
   near____SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
@@ -1597,7 +1597,7 @@ _s_ void _name_##_tloc_rearrange_ip(near____spec_elem_t *s, near____spec_elem_t 
 
 /* sp_macro near____SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
 #define near____SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_mod_rearrange_db(near____spec_elem_t *s, near____spec_elem_t *d, spec_tloc_data_t tloc_data, near____spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_db(near____spec_elem_t *s, near____spec_elem_t *d, near____spec_tloc_data_t tloc_data, near____spec_elem_t *mod) \
 { \
   near____SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
   near____SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
@@ -1637,7 +1637,7 @@ _s_ void _name_##_tloc_mod_rearrange_db(near____spec_elem_t *s, near____spec_ele
 
 /* sp_macro near____SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
 #define near____SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_mod_rearrange_ip(near____spec_elem_t *s, near____spec_elem_t *x, spec_tloc_data_t tloc_data, near____spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_ip(near____spec_elem_t *s, near____spec_elem_t *x, near____spec_tloc_data_t tloc_data, near____spec_elem_t *mod) \
 { \
   near____SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
   near____SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
@@ -1661,14 +1661,14 @@ _s_ void _name_##_tloc_mod_rearrange_ip(near____spec_elem_t *s, near____spec_ele
 
 
 /* sp_type near____spec_tloc_f near____spec_tloc_rearrange_db_f near____spec_tloc_rearrange_ip_f */
-typedef near____spec_elem_index_t near____spec_tloc_f(near____spec_elem_buf_t b, near____spec_elem_index_t x, spec_tloc_data_t tloc_data);
-typedef void near____spec_tloc_rearrange_db_f(near____spec_elem_t *s, near____spec_elem_t *d, spec_tloc_data_t tloc_data);
-typedef void near____spec_tloc_rearrange_ip_f(near____spec_elem_t *s, near____spec_elem_t *x, spec_tloc_data_t tloc_data);
+typedef near____spec_elem_index_t near____spec_tloc_f(near____spec_elem_buf_t b, near____spec_elem_index_t x, near____spec_tloc_data_t tloc_data);
+typedef void near____spec_tloc_rearrange_db_f(near____spec_elem_t *s, near____spec_elem_t *d, near____spec_tloc_data_t tloc_data);
+typedef void near____spec_tloc_rearrange_ip_f(near____spec_elem_t *s, near____spec_elem_t *x, near____spec_tloc_data_t tloc_data);
 
 /* sp_type near____spec_tloc_mod_f near____spec_tloc_mod_rearrange_db_f near____spec_tloc_mod_rearrange_ip_f */
-typedef near____spec_elem_index_t near____spec_tloc_mod_f(near____spec_elem_buf_t b, near____spec_elem_index_t x, spec_tloc_data_t tloc_data, near____spec_elem_buf_t mod);
-typedef void near____spec_tloc_mod_rearrange_db_f(near____spec_elem_t *s, near____spec_elem_t *d, spec_tloc_data_t tloc_data, near____spec_elem_t *mod);
-typedef void near____spec_tloc_mod_rearrange_ip_f(near____spec_elem_t *s, near____spec_elem_t *x, spec_tloc_data_t tloc_data, near____spec_elem_t *mod);
+typedef near____spec_elem_index_t near____spec_tloc_mod_f(near____spec_elem_buf_t b, near____spec_elem_index_t x, near____spec_tloc_data_t tloc_data, near____spec_elem_buf_t mod);
+typedef void near____spec_tloc_mod_rearrange_db_f(near____spec_elem_t *s, near____spec_elem_t *d, near____spec_tloc_data_t tloc_data, near____spec_elem_t *mod);
+typedef void near____spec_tloc_mod_rearrange_ip_f(near____spec_elem_t *s, near____spec_elem_t *x, near____spec_tloc_data_t tloc_data, near____spec_elem_t *mod);
 
 
 #endif /* near____SPEC_TLOC */
@@ -3159,6 +3159,7 @@ near____slint_t SL_PROTO(near____tproc_create_tproc_mod)(near____tproc_t *tproc,
 near____slint_t SL_PROTO(near____tproc_create_tprocs)(near____tproc_t *tproc, near____tprocs_f *tfn, near____tproc_reset_f *rfn, near____tproc_exdef exdef);
 near____slint_t SL_PROTO(near____tproc_create_tprocs_mod)(near____tproc_t *tproc, near____tprocs_mod_f *tfn, near____tproc_reset_f *rfn, near____tproc_exdef exdef);
 near____slint_t SL_PROTO(near____tproc_free)(near____tproc_t *tproc);
+near____slint_t SL_PROTO(near____tproc_set_proclist)(near____tproc_t *tproc, near____slint_t nsend_procs, int *send_procs, near____slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 near____slint_t SL_PROTO(near____tproc_verify)(near____tproc_t tproc, void *data, near____elements_t *s, int proc);
 near____slint_t SL_PROTO(near____mpi_elements_alltoall_specific)(near____elements_t *sin, near____elements_t *sout, near____elements_t *xs, near____tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 near____slint_t SL_PROTO(near____mpi_elements_alltoallv_db_packed)(near____elements_t *sbuf, int *scounts, int *sdispls, near____elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

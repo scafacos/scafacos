@@ -913,7 +913,7 @@ typedef int back_qxpgl_spec_proc_t;
 #define back_qxpgl_SPEC_LOC_NONE   -1
 #define back_qxpgl_SPEC_PROC_NONE  MPI_PROC_NULL
 
-typedef void *spec_tloc_data_t;
+typedef void *back_qxpgl_spec_tloc_data_t;
 typedef void *back_qxpgl_spec_tproc_data_t;
 
 struct back_qxpgl__elements_t;
@@ -1556,7 +1556,7 @@ typedef void back_qxpgl_spec_tproc_reset_f(back_qxpgl_spec_tproc_data_t tproc_da
 
 /* sp_macro back_qxpgl_SPEC_FUNC_TLOC_REARRANGE_DB */
 #define back_qxpgl_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_rearrange_db(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *d, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_db(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *d, back_qxpgl_spec_tloc_data_t tloc_data) \
 { \
   back_qxpgl_SPEC_DECLARE_TLOC_REARRANGE_DB \
   back_qxpgl_SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
@@ -1581,7 +1581,7 @@ _s_ void _name_##_tloc_rearrange_db(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_e
 
 /* sp_macro back_qxpgl_SPEC_FUNC_TLOC_REARRANGE_IP */
 #define back_qxpgl_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_rearrange_ip(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *x, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_ip(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *x, back_qxpgl_spec_tloc_data_t tloc_data) \
 { \
   back_qxpgl_SPEC_DECLARE_TLOC_REARRANGE_IP \
   back_qxpgl_SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
@@ -1612,7 +1612,7 @@ _s_ void _name_##_tloc_rearrange_ip(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_e
 
 /* sp_macro back_qxpgl_SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
 #define back_qxpgl_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_mod_rearrange_db(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *d, spec_tloc_data_t tloc_data, back_qxpgl_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_db(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *d, back_qxpgl_spec_tloc_data_t tloc_data, back_qxpgl_spec_elem_t *mod) \
 { \
   back_qxpgl_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
   back_qxpgl_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
@@ -1652,7 +1652,7 @@ _s_ void _name_##_tloc_mod_rearrange_db(back_qxpgl_spec_elem_t *s, back_qxpgl_sp
 
 /* sp_macro back_qxpgl_SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
 #define back_qxpgl_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_mod_rearrange_ip(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *x, spec_tloc_data_t tloc_data, back_qxpgl_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_ip(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *x, back_qxpgl_spec_tloc_data_t tloc_data, back_qxpgl_spec_elem_t *mod) \
 { \
   back_qxpgl_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
   back_qxpgl_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
@@ -1676,14 +1676,14 @@ _s_ void _name_##_tloc_mod_rearrange_ip(back_qxpgl_spec_elem_t *s, back_qxpgl_sp
 
 
 /* sp_type back_qxpgl_spec_tloc_f back_qxpgl_spec_tloc_rearrange_db_f back_qxpgl_spec_tloc_rearrange_ip_f */
-typedef back_qxpgl_spec_elem_index_t back_qxpgl_spec_tloc_f(back_qxpgl_spec_elem_buf_t b, back_qxpgl_spec_elem_index_t x, spec_tloc_data_t tloc_data);
-typedef void back_qxpgl_spec_tloc_rearrange_db_f(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *d, spec_tloc_data_t tloc_data);
-typedef void back_qxpgl_spec_tloc_rearrange_ip_f(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *x, spec_tloc_data_t tloc_data);
+typedef back_qxpgl_spec_elem_index_t back_qxpgl_spec_tloc_f(back_qxpgl_spec_elem_buf_t b, back_qxpgl_spec_elem_index_t x, back_qxpgl_spec_tloc_data_t tloc_data);
+typedef void back_qxpgl_spec_tloc_rearrange_db_f(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *d, back_qxpgl_spec_tloc_data_t tloc_data);
+typedef void back_qxpgl_spec_tloc_rearrange_ip_f(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *x, back_qxpgl_spec_tloc_data_t tloc_data);
 
 /* sp_type back_qxpgl_spec_tloc_mod_f back_qxpgl_spec_tloc_mod_rearrange_db_f back_qxpgl_spec_tloc_mod_rearrange_ip_f */
-typedef back_qxpgl_spec_elem_index_t back_qxpgl_spec_tloc_mod_f(back_qxpgl_spec_elem_buf_t b, back_qxpgl_spec_elem_index_t x, spec_tloc_data_t tloc_data, back_qxpgl_spec_elem_buf_t mod);
-typedef void back_qxpgl_spec_tloc_mod_rearrange_db_f(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *d, spec_tloc_data_t tloc_data, back_qxpgl_spec_elem_t *mod);
-typedef void back_qxpgl_spec_tloc_mod_rearrange_ip_f(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *x, spec_tloc_data_t tloc_data, back_qxpgl_spec_elem_t *mod);
+typedef back_qxpgl_spec_elem_index_t back_qxpgl_spec_tloc_mod_f(back_qxpgl_spec_elem_buf_t b, back_qxpgl_spec_elem_index_t x, back_qxpgl_spec_tloc_data_t tloc_data, back_qxpgl_spec_elem_buf_t mod);
+typedef void back_qxpgl_spec_tloc_mod_rearrange_db_f(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *d, back_qxpgl_spec_tloc_data_t tloc_data, back_qxpgl_spec_elem_t *mod);
+typedef void back_qxpgl_spec_tloc_mod_rearrange_ip_f(back_qxpgl_spec_elem_t *s, back_qxpgl_spec_elem_t *x, back_qxpgl_spec_tloc_data_t tloc_data, back_qxpgl_spec_elem_t *mod);
 
 
 #endif /* back_qxpgl_SPEC_TLOC */
@@ -3174,6 +3174,7 @@ back_qxpgl_slint_t SL_PROTO(back_qxpgl_tproc_create_tproc_mod)(back_qxpgl_tproc_
 back_qxpgl_slint_t SL_PROTO(back_qxpgl_tproc_create_tprocs)(back_qxpgl_tproc_t *tproc, back_qxpgl_tprocs_f *tfn, back_qxpgl_tproc_reset_f *rfn, back_qxpgl_tproc_exdef exdef);
 back_qxpgl_slint_t SL_PROTO(back_qxpgl_tproc_create_tprocs_mod)(back_qxpgl_tproc_t *tproc, back_qxpgl_tprocs_mod_f *tfn, back_qxpgl_tproc_reset_f *rfn, back_qxpgl_tproc_exdef exdef);
 back_qxpgl_slint_t SL_PROTO(back_qxpgl_tproc_free)(back_qxpgl_tproc_t *tproc);
+back_qxpgl_slint_t SL_PROTO(back_qxpgl_tproc_set_proclist)(back_qxpgl_tproc_t *tproc, back_qxpgl_slint_t nsend_procs, int *send_procs, back_qxpgl_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 back_qxpgl_slint_t SL_PROTO(back_qxpgl_tproc_verify)(back_qxpgl_tproc_t tproc, void *data, back_qxpgl_elements_t *s, int proc);
 back_qxpgl_slint_t SL_PROTO(back_qxpgl_mpi_elements_alltoall_specific)(back_qxpgl_elements_t *sin, back_qxpgl_elements_t *sout, back_qxpgl_elements_t *xs, back_qxpgl_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 back_qxpgl_slint_t SL_PROTO(back_qxpgl_mpi_elements_alltoallv_db_packed)(back_qxpgl_elements_t *sbuf, int *scounts, int *sdispls, back_qxpgl_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

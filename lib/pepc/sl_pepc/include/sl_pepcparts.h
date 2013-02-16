@@ -1002,7 +1002,7 @@ typedef int pepcparts_spec_proc_t;
 #define pepcparts_SPEC_LOC_NONE   -1
 #define pepcparts_SPEC_PROC_NONE  MPI_PROC_NULL
 
-typedef void *spec_tloc_data_t;
+typedef void *pepcparts_spec_tloc_data_t;
 typedef void *pepcparts_spec_tproc_data_t;
 
 struct pepcparts__elements_t;
@@ -1645,7 +1645,7 @@ typedef void pepcparts_spec_tproc_reset_f(pepcparts_spec_tproc_data_t tproc_data
 
 /* sp_macro pepcparts_SPEC_FUNC_TLOC_REARRANGE_DB */
 #define pepcparts_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tloc_data_t tloc_data) \
 { \
   pepcparts_SPEC_DECLARE_TLOC_REARRANGE_DB \
   pepcparts_SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
@@ -1670,7 +1670,7 @@ _s_ void _name_##_tloc_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_ele
 
 /* sp_macro pepcparts_SPEC_FUNC_TLOC_REARRANGE_IP */
 #define pepcparts_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tloc_data_t tloc_data) \
 { \
   pepcparts_SPEC_DECLARE_TLOC_REARRANGE_IP \
   pepcparts_SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
@@ -1701,7 +1701,7 @@ _s_ void _name_##_tloc_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_ele
 
 /* sp_macro pepcparts_SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
 #define pepcparts_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_mod_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod) \
 { \
   pepcparts_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
   pepcparts_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
@@ -1741,7 +1741,7 @@ _s_ void _name_##_tloc_mod_rearrange_db(pepcparts_spec_elem_t *s, pepcparts_spec
 
 /* sp_macro pepcparts_SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
 #define pepcparts_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_mod_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod) \
 { \
   pepcparts_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
   pepcparts_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
@@ -1765,14 +1765,14 @@ _s_ void _name_##_tloc_mod_rearrange_ip(pepcparts_spec_elem_t *s, pepcparts_spec
 
 
 /* sp_type pepcparts_spec_tloc_f pepcparts_spec_tloc_rearrange_db_f pepcparts_spec_tloc_rearrange_ip_f */
-typedef pepcparts_spec_elem_index_t pepcparts_spec_tloc_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, spec_tloc_data_t tloc_data);
-typedef void pepcparts_spec_tloc_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, spec_tloc_data_t tloc_data);
-typedef void pepcparts_spec_tloc_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, spec_tloc_data_t tloc_data);
+typedef pepcparts_spec_elem_index_t pepcparts_spec_tloc_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, pepcparts_spec_tloc_data_t tloc_data);
+typedef void pepcparts_spec_tloc_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tloc_data_t tloc_data);
+typedef void pepcparts_spec_tloc_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tloc_data_t tloc_data);
 
 /* sp_type pepcparts_spec_tloc_mod_f pepcparts_spec_tloc_mod_rearrange_db_f pepcparts_spec_tloc_mod_rearrange_ip_f */
-typedef pepcparts_spec_elem_index_t pepcparts_spec_tloc_mod_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, spec_tloc_data_t tloc_data, pepcparts_spec_elem_buf_t mod);
-typedef void pepcparts_spec_tloc_mod_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod);
-typedef void pepcparts_spec_tloc_mod_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod);
+typedef pepcparts_spec_elem_index_t pepcparts_spec_tloc_mod_f(pepcparts_spec_elem_buf_t b, pepcparts_spec_elem_index_t x, pepcparts_spec_tloc_data_t tloc_data, pepcparts_spec_elem_buf_t mod);
+typedef void pepcparts_spec_tloc_mod_rearrange_db_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *d, pepcparts_spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod);
+typedef void pepcparts_spec_tloc_mod_rearrange_ip_f(pepcparts_spec_elem_t *s, pepcparts_spec_elem_t *x, pepcparts_spec_tloc_data_t tloc_data, pepcparts_spec_elem_t *mod);
 
 
 #endif /* pepcparts_SPEC_TLOC */
@@ -3263,6 +3263,7 @@ pepcparts_slint_t SL_PROTO(pepcparts_tproc_create_tproc_mod)(pepcparts_tproc_t *
 pepcparts_slint_t SL_PROTO(pepcparts_tproc_create_tprocs)(pepcparts_tproc_t *tproc, pepcparts_tprocs_f *tfn, pepcparts_tproc_reset_f *rfn, pepcparts_tproc_exdef exdef);
 pepcparts_slint_t SL_PROTO(pepcparts_tproc_create_tprocs_mod)(pepcparts_tproc_t *tproc, pepcparts_tprocs_mod_f *tfn, pepcparts_tproc_reset_f *rfn, pepcparts_tproc_exdef exdef);
 pepcparts_slint_t SL_PROTO(pepcparts_tproc_free)(pepcparts_tproc_t *tproc);
+pepcparts_slint_t SL_PROTO(pepcparts_tproc_set_proclist)(pepcparts_tproc_t *tproc, pepcparts_slint_t nsend_procs, int *send_procs, pepcparts_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 pepcparts_slint_t SL_PROTO(pepcparts_tproc_verify)(pepcparts_tproc_t tproc, void *data, pepcparts_elements_t *s, int proc);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_elements_alltoall_specific)(pepcparts_elements_t *sin, pepcparts_elements_t *sout, pepcparts_elements_t *xs, pepcparts_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_elements_alltoallv_db_packed)(pepcparts_elements_t *sbuf, int *scounts, int *sdispls, pepcparts_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

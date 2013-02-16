@@ -1078,6 +1078,14 @@ slint_t tproc_free(tproc_t *tproc) /* sl_proto, sl_func tproc_free */
 }
 
 
+slint_t tproc_set_proclist(tproc_t *tproc, slint_t nsend_procs, int *send_procs, slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm) /* sl_proto, sl_func tproc_set_proclist */
+{
+  spec_tproc_set_proclist(&(*tproc)->spec_tproc, nsend_procs, send_procs, nrecv_procs, recv_procs, size, rank, comm);
+
+  return 0;
+}
+
+
 slint_t tproc_verify(tproc_t tproc, void *data, elements_t *s, int proc) /* sl_proto, sl_func tproc_verify */
 {
   /* FIXME */

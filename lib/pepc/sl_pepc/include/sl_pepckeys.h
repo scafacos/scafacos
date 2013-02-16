@@ -917,7 +917,7 @@ typedef int pepckeys_spec_proc_t;
 #define pepckeys_SPEC_LOC_NONE   -1
 #define pepckeys_SPEC_PROC_NONE  MPI_PROC_NULL
 
-typedef void *spec_tloc_data_t;
+typedef void *pepckeys_spec_tloc_data_t;
 typedef void *pepckeys_spec_tproc_data_t;
 
 struct pepckeys__elements_t;
@@ -1560,7 +1560,7 @@ typedef void pepckeys_spec_tproc_reset_f(pepckeys_spec_tproc_data_t tproc_data);
 
 /* sp_macro pepckeys_SPEC_FUNC_TLOC_REARRANGE_DB */
 #define pepckeys_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_rearrange_db(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *d, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_db(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *d, pepckeys_spec_tloc_data_t tloc_data) \
 { \
   pepckeys_SPEC_DECLARE_TLOC_REARRANGE_DB \
   pepckeys_SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
@@ -1585,7 +1585,7 @@ _s_ void _name_##_tloc_rearrange_db(pepckeys_spec_elem_t *s, pepckeys_spec_elem_
 
 /* sp_macro pepckeys_SPEC_FUNC_TLOC_REARRANGE_IP */
 #define pepckeys_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_rearrange_ip(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *x, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_ip(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *x, pepckeys_spec_tloc_data_t tloc_data) \
 { \
   pepckeys_SPEC_DECLARE_TLOC_REARRANGE_IP \
   pepckeys_SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
@@ -1616,7 +1616,7 @@ _s_ void _name_##_tloc_rearrange_ip(pepckeys_spec_elem_t *s, pepckeys_spec_elem_
 
 /* sp_macro pepckeys_SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
 #define pepckeys_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_mod_rearrange_db(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *d, spec_tloc_data_t tloc_data, pepckeys_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_db(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *d, pepckeys_spec_tloc_data_t tloc_data, pepckeys_spec_elem_t *mod) \
 { \
   pepckeys_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
   pepckeys_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
@@ -1656,7 +1656,7 @@ _s_ void _name_##_tloc_mod_rearrange_db(pepckeys_spec_elem_t *s, pepckeys_spec_e
 
 /* sp_macro pepckeys_SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
 #define pepckeys_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_mod_rearrange_ip(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *x, spec_tloc_data_t tloc_data, pepckeys_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_ip(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *x, pepckeys_spec_tloc_data_t tloc_data, pepckeys_spec_elem_t *mod) \
 { \
   pepckeys_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
   pepckeys_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
@@ -1680,14 +1680,14 @@ _s_ void _name_##_tloc_mod_rearrange_ip(pepckeys_spec_elem_t *s, pepckeys_spec_e
 
 
 /* sp_type pepckeys_spec_tloc_f pepckeys_spec_tloc_rearrange_db_f pepckeys_spec_tloc_rearrange_ip_f */
-typedef pepckeys_spec_elem_index_t pepckeys_spec_tloc_f(pepckeys_spec_elem_buf_t b, pepckeys_spec_elem_index_t x, spec_tloc_data_t tloc_data);
-typedef void pepckeys_spec_tloc_rearrange_db_f(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *d, spec_tloc_data_t tloc_data);
-typedef void pepckeys_spec_tloc_rearrange_ip_f(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *x, spec_tloc_data_t tloc_data);
+typedef pepckeys_spec_elem_index_t pepckeys_spec_tloc_f(pepckeys_spec_elem_buf_t b, pepckeys_spec_elem_index_t x, pepckeys_spec_tloc_data_t tloc_data);
+typedef void pepckeys_spec_tloc_rearrange_db_f(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *d, pepckeys_spec_tloc_data_t tloc_data);
+typedef void pepckeys_spec_tloc_rearrange_ip_f(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *x, pepckeys_spec_tloc_data_t tloc_data);
 
 /* sp_type pepckeys_spec_tloc_mod_f pepckeys_spec_tloc_mod_rearrange_db_f pepckeys_spec_tloc_mod_rearrange_ip_f */
-typedef pepckeys_spec_elem_index_t pepckeys_spec_tloc_mod_f(pepckeys_spec_elem_buf_t b, pepckeys_spec_elem_index_t x, spec_tloc_data_t tloc_data, pepckeys_spec_elem_buf_t mod);
-typedef void pepckeys_spec_tloc_mod_rearrange_db_f(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *d, spec_tloc_data_t tloc_data, pepckeys_spec_elem_t *mod);
-typedef void pepckeys_spec_tloc_mod_rearrange_ip_f(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *x, spec_tloc_data_t tloc_data, pepckeys_spec_elem_t *mod);
+typedef pepckeys_spec_elem_index_t pepckeys_spec_tloc_mod_f(pepckeys_spec_elem_buf_t b, pepckeys_spec_elem_index_t x, pepckeys_spec_tloc_data_t tloc_data, pepckeys_spec_elem_buf_t mod);
+typedef void pepckeys_spec_tloc_mod_rearrange_db_f(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *d, pepckeys_spec_tloc_data_t tloc_data, pepckeys_spec_elem_t *mod);
+typedef void pepckeys_spec_tloc_mod_rearrange_ip_f(pepckeys_spec_elem_t *s, pepckeys_spec_elem_t *x, pepckeys_spec_tloc_data_t tloc_data, pepckeys_spec_elem_t *mod);
 
 
 #endif /* pepckeys_SPEC_TLOC */
@@ -3178,6 +3178,7 @@ pepckeys_slint_t SL_PROTO(pepckeys_tproc_create_tproc_mod)(pepckeys_tproc_t *tpr
 pepckeys_slint_t SL_PROTO(pepckeys_tproc_create_tprocs)(pepckeys_tproc_t *tproc, pepckeys_tprocs_f *tfn, pepckeys_tproc_reset_f *rfn, pepckeys_tproc_exdef exdef);
 pepckeys_slint_t SL_PROTO(pepckeys_tproc_create_tprocs_mod)(pepckeys_tproc_t *tproc, pepckeys_tprocs_mod_f *tfn, pepckeys_tproc_reset_f *rfn, pepckeys_tproc_exdef exdef);
 pepckeys_slint_t SL_PROTO(pepckeys_tproc_free)(pepckeys_tproc_t *tproc);
+pepckeys_slint_t SL_PROTO(pepckeys_tproc_set_proclist)(pepckeys_tproc_t *tproc, pepckeys_slint_t nsend_procs, int *send_procs, pepckeys_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 pepckeys_slint_t SL_PROTO(pepckeys_tproc_verify)(pepckeys_tproc_t tproc, void *data, pepckeys_elements_t *s, int proc);
 pepckeys_slint_t SL_PROTO(pepckeys_mpi_elements_alltoall_specific)(pepckeys_elements_t *sin, pepckeys_elements_t *sout, pepckeys_elements_t *xs, pepckeys_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 pepckeys_slint_t SL_PROTO(pepckeys_mpi_elements_alltoallv_db_packed)(pepckeys_elements_t *sbuf, int *scounts, int *sdispls, pepckeys_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

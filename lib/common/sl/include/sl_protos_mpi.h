@@ -61,6 +61,7 @@ slint_t SL_PROTO(tproc_create_tproc_mod)(tproc_t *tproc, tproc_mod_f *tfn, tproc
 slint_t SL_PROTO(tproc_create_tprocs)(tproc_t *tproc, tprocs_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef);
 slint_t SL_PROTO(tproc_create_tprocs_mod)(tproc_t *tproc, tprocs_mod_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef);
 slint_t SL_PROTO(tproc_free)(tproc_t *tproc);
+slint_t SL_PROTO(tproc_set_proclist)(tproc_t *tproc, slint_t nsend_procs, int *send_procs, slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(tproc_verify)(tproc_t tproc, void *data, elements_t *s, int proc);
 slint_t SL_PROTO(mpi_elements_alltoall_specific)(elements_t *sin, elements_t *sout, elements_t *xs, tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_elements_alltoallv_db_packed)(elements_t *sbuf, int *scounts, int *sdispls, elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

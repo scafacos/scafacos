@@ -911,7 +911,7 @@ typedef int front_xq_a0_spec_proc_t;
 #define front_xq_a0_SPEC_LOC_NONE   -1
 #define front_xq_a0_SPEC_PROC_NONE  MPI_PROC_NULL
 
-typedef void *spec_tloc_data_t;
+typedef void *front_xq_a0_spec_tloc_data_t;
 typedef void *front_xq_a0_spec_tproc_data_t;
 
 struct front_xq_a0__elements_t;
@@ -1554,7 +1554,7 @@ typedef void front_xq_a0_spec_tproc_reset_f(front_xq_a0_spec_tproc_data_t tproc_
 
 /* sp_macro front_xq_a0_SPEC_FUNC_TLOC_REARRANGE_DB */
 #define front_xq_a0_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_rearrange_db(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *d, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_db(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *d, front_xq_a0_spec_tloc_data_t tloc_data) \
 { \
   front_xq_a0_SPEC_DECLARE_TLOC_REARRANGE_DB \
   front_xq_a0_SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
@@ -1579,7 +1579,7 @@ _s_ void _name_##_tloc_rearrange_db(front_xq_a0_spec_elem_t *s, front_xq_a0_spec
 
 /* sp_macro front_xq_a0_SPEC_FUNC_TLOC_REARRANGE_IP */
 #define front_xq_a0_SPEC_FUNC_TLOC_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_rearrange_ip(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *x, spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_ip(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *x, front_xq_a0_spec_tloc_data_t tloc_data) \
 { \
   front_xq_a0_SPEC_DECLARE_TLOC_REARRANGE_IP \
   front_xq_a0_SPEC_DO_TLOC_REARRANGE_IP(_tl_, tloc_data, s, x); \
@@ -1610,7 +1610,7 @@ _s_ void _name_##_tloc_rearrange_ip(front_xq_a0_spec_elem_t *s, front_xq_a0_spec
 
 /* sp_macro front_xq_a0_SPEC_FUNC_TLOC_MOD_REARRANGE_DB */
 #define front_xq_a0_SPEC_FUNC_TLOC_MOD_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_mod_rearrange_db(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *d, spec_tloc_data_t tloc_data, front_xq_a0_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_db(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *d, front_xq_a0_spec_tloc_data_t tloc_data, front_xq_a0_spec_elem_t *mod) \
 { \
   front_xq_a0_SPEC_DECLARE_TLOC_MOD_REARRANGE_DB \
   front_xq_a0_SPEC_DO_TLOC_MOD_REARRANGE_DB(_tl_, tloc_data, s, d, mod); \
@@ -1650,7 +1650,7 @@ _s_ void _name_##_tloc_mod_rearrange_db(front_xq_a0_spec_elem_t *s, front_xq_a0_
 
 /* sp_macro front_xq_a0_SPEC_FUNC_TLOC_MOD_REARRANGE_IP */
 #define front_xq_a0_SPEC_FUNC_TLOC_MOD_REARRANGE_IP(_name_, _tl_, _s_) \
-_s_ void _name_##_tloc_mod_rearrange_ip(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *x, spec_tloc_data_t tloc_data, front_xq_a0_spec_elem_t *mod) \
+_s_ void _name_##_tloc_mod_rearrange_ip(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *x, front_xq_a0_spec_tloc_data_t tloc_data, front_xq_a0_spec_elem_t *mod) \
 { \
   front_xq_a0_SPEC_DECLARE_TLOC_MOD_REARRANGE_IP \
   front_xq_a0_SPEC_DO_TLOC_MOD_REARRANGE_IP(_tl_, tloc_data, s, x, mod); \
@@ -1674,14 +1674,14 @@ _s_ void _name_##_tloc_mod_rearrange_ip(front_xq_a0_spec_elem_t *s, front_xq_a0_
 
 
 /* sp_type front_xq_a0_spec_tloc_f front_xq_a0_spec_tloc_rearrange_db_f front_xq_a0_spec_tloc_rearrange_ip_f */
-typedef front_xq_a0_spec_elem_index_t front_xq_a0_spec_tloc_f(front_xq_a0_spec_elem_buf_t b, front_xq_a0_spec_elem_index_t x, spec_tloc_data_t tloc_data);
-typedef void front_xq_a0_spec_tloc_rearrange_db_f(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *d, spec_tloc_data_t tloc_data);
-typedef void front_xq_a0_spec_tloc_rearrange_ip_f(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *x, spec_tloc_data_t tloc_data);
+typedef front_xq_a0_spec_elem_index_t front_xq_a0_spec_tloc_f(front_xq_a0_spec_elem_buf_t b, front_xq_a0_spec_elem_index_t x, front_xq_a0_spec_tloc_data_t tloc_data);
+typedef void front_xq_a0_spec_tloc_rearrange_db_f(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *d, front_xq_a0_spec_tloc_data_t tloc_data);
+typedef void front_xq_a0_spec_tloc_rearrange_ip_f(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *x, front_xq_a0_spec_tloc_data_t tloc_data);
 
 /* sp_type front_xq_a0_spec_tloc_mod_f front_xq_a0_spec_tloc_mod_rearrange_db_f front_xq_a0_spec_tloc_mod_rearrange_ip_f */
-typedef front_xq_a0_spec_elem_index_t front_xq_a0_spec_tloc_mod_f(front_xq_a0_spec_elem_buf_t b, front_xq_a0_spec_elem_index_t x, spec_tloc_data_t tloc_data, front_xq_a0_spec_elem_buf_t mod);
-typedef void front_xq_a0_spec_tloc_mod_rearrange_db_f(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *d, spec_tloc_data_t tloc_data, front_xq_a0_spec_elem_t *mod);
-typedef void front_xq_a0_spec_tloc_mod_rearrange_ip_f(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *x, spec_tloc_data_t tloc_data, front_xq_a0_spec_elem_t *mod);
+typedef front_xq_a0_spec_elem_index_t front_xq_a0_spec_tloc_mod_f(front_xq_a0_spec_elem_buf_t b, front_xq_a0_spec_elem_index_t x, front_xq_a0_spec_tloc_data_t tloc_data, front_xq_a0_spec_elem_buf_t mod);
+typedef void front_xq_a0_spec_tloc_mod_rearrange_db_f(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *d, front_xq_a0_spec_tloc_data_t tloc_data, front_xq_a0_spec_elem_t *mod);
+typedef void front_xq_a0_spec_tloc_mod_rearrange_ip_f(front_xq_a0_spec_elem_t *s, front_xq_a0_spec_elem_t *x, front_xq_a0_spec_tloc_data_t tloc_data, front_xq_a0_spec_elem_t *mod);
 
 
 #endif /* front_xq_a0_SPEC_TLOC */
@@ -3172,6 +3172,7 @@ front_xq_a0_slint_t SL_PROTO(front_xq_a0_tproc_create_tproc_mod)(front_xq_a0_tpr
 front_xq_a0_slint_t SL_PROTO(front_xq_a0_tproc_create_tprocs)(front_xq_a0_tproc_t *tproc, front_xq_a0_tprocs_f *tfn, front_xq_a0_tproc_reset_f *rfn, front_xq_a0_tproc_exdef exdef);
 front_xq_a0_slint_t SL_PROTO(front_xq_a0_tproc_create_tprocs_mod)(front_xq_a0_tproc_t *tproc, front_xq_a0_tprocs_mod_f *tfn, front_xq_a0_tproc_reset_f *rfn, front_xq_a0_tproc_exdef exdef);
 front_xq_a0_slint_t SL_PROTO(front_xq_a0_tproc_free)(front_xq_a0_tproc_t *tproc);
+front_xq_a0_slint_t SL_PROTO(front_xq_a0_tproc_set_proclist)(front_xq_a0_tproc_t *tproc, front_xq_a0_slint_t nsend_procs, int *send_procs, front_xq_a0_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 front_xq_a0_slint_t SL_PROTO(front_xq_a0_tproc_verify)(front_xq_a0_tproc_t tproc, void *data, front_xq_a0_elements_t *s, int proc);
 front_xq_a0_slint_t SL_PROTO(front_xq_a0_mpi_elements_alltoall_specific)(front_xq_a0_elements_t *sin, front_xq_a0_elements_t *sout, front_xq_a0_elements_t *xs, front_xq_a0_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 front_xq_a0_slint_t SL_PROTO(front_xq_a0_mpi_elements_alltoallv_db_packed)(front_xq_a0_elements_t *sbuf, int *scounts, int *sdispls, front_xq_a0_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
