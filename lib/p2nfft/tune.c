@@ -847,9 +847,9 @@ static void print_command_line_arguments(
     if(verbose || !d->tune_p)
       printf("p2nfft_p,%" FCS_LMOD_INT "d,", d->p);
     if(verbose || (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) )
-      printf("p2nfft_ignore_tolerance,%" FCS_LMOD_INT "d,", (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) ? 1 : 0);
+      printf("p2nfft_ignore_tolerance,%d,", (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) ? 1 : 0);
     if(verbose || (d->virial != NULL) )
-      printf("p2nfft_virial,%" FCS_LMOD_INT "d,", (d->virial != NULL) ? 1 : 0);
+      printf("p2nfft_virial,%d,", (d->virial != NULL) ? 1 : 0);
 
     /* print PNFFT specific parameters */
     if(verbose || !d->tune_N)
@@ -872,19 +872,19 @@ static void print_command_line_arguments(
     if(verbose || d->pnfft_interpolation_order != 3)
       printf("pnfft_intpol_order,%" FCS_LMOD_INT "d,", d->pnfft_interpolation_order);
     if(verbose || (d->pnfft_flags & PNFFT_PRE_PHI_HAT) )
-      printf("pnfft_pre_phi_hat,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_PRE_PHI_HAT) ? 1 : 0);
+      printf("pnfft_pre_phi_hat,%d,", (d->pnfft_flags & PNFFT_PRE_PHI_HAT) ? 1 : 0);
     if(verbose || (d->pnfft_flags & PNFFT_FFT_IN_PLACE) )
-      printf("pnfft_fft_in_place,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_FFT_IN_PLACE) ? 1 : 0);
+      printf("pnfft_fft_in_place,%d,", (d->pnfft_flags & PNFFT_FFT_IN_PLACE) ? 1 : 0);
     if(verbose || (d->pnfft_flags & PNFFT_SORT_NODES) )
-      printf("pnfft_sort_nodes,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_SORT_NODES) ? 1 : 0);
+      printf("pnfft_sort_nodes,%d,", (d->pnfft_flags & PNFFT_SORT_NODES) ? 1 : 0);
     if(verbose || (d->pnfft_flags & PNFFT_INTERLACED) )
-      printf("pnfft_interlaced,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_INTERLACED) ? 1 : 0);
+      printf("pnfft_interlaced,%d,", (d->pnfft_flags & PNFFT_INTERLACED) ? 1 : 0);
     if(verbose || (d->pnfft_flags & PNFFT_REAL_F) )
-      printf("pnfft_real_f,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_REAL_F) ? 1 : 0);
+      printf("pnfft_real_f,%d,", (d->pnfft_flags & PNFFT_REAL_F) ? 1 : 0);
     if(d->pnfft_flags & PNFFT_GRAD_IK)
-      printf("pnfft_grad_ik,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_GRAD_IK) ? 1 : 0);
+      printf("pnfft_grad_ik,%d,", (d->pnfft_flags & PNFFT_GRAD_IK) ? 1 : 0);
     else if(d->pnfft_flags & PNFFT_GRAD_NONE)
-      printf("pnfft_grad_none,%" FCS_LMOD_INT "d,", (d->pnfft_flags & PNFFT_GRAD_NONE) ? 1 : 0);
+      printf("pnfft_grad_none,%d,", (d->pnfft_flags & PNFFT_GRAD_NONE) ? 1 : 0);
     else if(verbose)
       printf("pnfft_grad_ad,1,");
 
@@ -900,9 +900,9 @@ static void print_command_line_arguments(
       }
     }
     if(verbose || (d->pfft_flags & PFFT_TUNE) )
-      printf("pfft_tune,%" FCS_LMOD_INT "d,", (d->pfft_flags & PFFT_TUNE) ? 1 : 0);
+      printf("pfft_tune,%d,", (d->pfft_flags & PFFT_TUNE) ? 1 : 0);
     if(verbose || (d->pfft_flags & PFFT_PRESERVE_INPUT) )
-      printf("pfft_preserve_input,%" FCS_LMOD_INT "d,", (d->pfft_flags & PFFT_PRESERVE_INPUT) ? 1 : 0);
+      printf("pfft_preserve_input,%d,", (d->pfft_flags & PFFT_PRESERVE_INPUT) ? 1 : 0);
 
     printf("\n");
   }
@@ -1188,7 +1188,7 @@ static void init_pnfft(
   if(!myrank){
     printf("PNFFT_INIT: N = [%td, %td, %td]\n", N[0], N[1], N[2]);
     printf("PNFFT_INIT: n = [%td, %td, %td]\n", n[0], n[1], n[2]);
-    printf("PNFFT_INIT: m = %" FCS_LMOD_INT "d\n", m);
+    printf("PNFFT_INIT: m = %d\n", m);
     printf("PNFFT_INIT: pfft_flags = %u\n", pfft_flags);
     printf("PNFFT_INIT: pnfft_flags = %u\n", pnfft_flags);
     printf("PNFFT_INIT: x_max = [%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]\n", x_max[0], x_max[1], x_max[2]);

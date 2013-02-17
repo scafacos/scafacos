@@ -503,7 +503,7 @@ static void init_pnfft(
   if(!myrank){
     printf("PNFFT_INIT: N = [%td, %td, %td]\n", N[0], N[1], N[2]);
     printf("PNFFT_INIT: n = [%td, %td, %td]\n", n[0], n[1], n[2]);
-    printf("PNFFT_INIT: m = %" FCS_LMOD_INT "d\n", m);
+    printf("PNFFT_INIT: m = %d\n", m);
     printf("PNFFT_INIT: pfft_flags = %u\n", pfft_flags);
     printf("PNFFT_INIT: pnfft_flags = %u\n", pnfft_flags);
     printf("PNFFT_INIT: x_max = [%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]\n", x_max[0], x_max[1], x_max[2]);

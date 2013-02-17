@@ -823,7 +823,7 @@ static void print_command_line_arguments(
     }
 
     if(verbose || (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) )
-      printf("p2nfft_ignore_tolerance,%" FCS_LMOD_INT "d,", (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) ? 1 : 0);
+      printf("p2nfft_ignore_tolerance,%d,", (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) ? 1 : 0);
     if(verbose || !d->tune_p)
       printf("p2nfft_p,%" FCS_LMOD_INT "d,", d->p);
     if(verbose || !d->tune_epsI || !d->tune_r_cut)
@@ -845,7 +845,7 @@ static void print_command_line_arguments(
     if(verbose || !d->tune_m)
       printf("pnfft_m,%" FCS_LMOD_INT "d,", d->m);
     if(verbose || (d->pfft_flags & PNFFT_FFT_IN_PLACE) )
-      printf("pnfft_fft_in_place,%" FCS_LMOD_INT "d,", (d->pfft_flags & PNFFT_FFT_IN_PLACE) ? 1 : 0);
+      printf("pnfft_fft_in_place,%d,", (d->pfft_flags & PNFFT_FFT_IN_PLACE) ? 1 : 0);
     if(verbose || d->pnfft_interpolation_order != 3)
       printf("pnfft_intpol_order,%" FCS_LMOD_INT "d,", d->pnfft_interpolation_order);
     if(verbose || (~d->pnfft_flags & PNFFT_WINDOW_BSPLINE) ){
@@ -1081,7 +1081,7 @@ static void init_pnfft(
   if(!myrank){
     printf("PNFFT_INIT: N = [%td, %td, %td]\n", N[0], N[1], N[2]);
     printf("PNFFT_INIT: n = [%td, %td, %td]\n", n[0], n[1], n[2]);
-    printf("PNFFT_INIT: m = %" FCS_LMOD_INT "d\n", m);
+    printf("PNFFT_INIT: m = %d\n", m);
     printf("PNFFT_INIT: pfft_flags = %u\n", pfft_flags);
     printf("PNFFT_INIT: pnfft_flags = %u\n", pnfft_flags);
     printf("PNFFT_INIT: x_max = [%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]\n", x_max[0], x_max[1], x_max[2]);
