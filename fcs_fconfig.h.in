@@ -15,38 +15,47 @@
 ! Define to the Fortran integer type to use for FCS.
 #undef fcs_integer
 
-! Define to the Fortran floating kind to use for FCS.
+! Define to the kind of fcs_real.
 #undef fcs_real_kind
 
-! Define to the Fortran integer kind to use for FCS.
+! Define to the kind of fcs_integer.
 #undef fcs_integer_kind
 
-! Define to the Fortran floating kind to use for FCS (for C compatibility).
+! Define to the ISO C kind of fcs_real.
 #undef fcs_real_kind_isoc
 
-! Define to the Fortran integer kind to use for FCS (for C compatibility).
+! Define to the ISO C kind of fcs_integer.
 #undef fcs_integer_kind_isoc
 
 ! Whether solver method direct is enabled.
 #undef FCS_ENABLE_DIRECT
 
+! Whether solver method ewald is enabled.
+#undef FCS_ENABLE_EWALD
+
 ! Whether solver method fmm is enabled.
 #undef FCS_ENABLE_FMM
 
+! Whether solver method memd is enabled.
+#undef FCS_ENABLE_MEMD
+
 ! Whether solver method mmm1d is enabled.
 #undef FCS_ENABLE_MMM1D
+
+! Whether solver method mmm2d is enabled.
+#undef FCS_ENABLE_MMM2D
+
+! Whether solver method p2nfft is enabled.
+#undef FCS_ENABLE_P2NFFT
+
+! Whether solver method p3m is enabled.
+#undef FCS_ENABLE_P3M
 
 ! Whether solver method pepc is enabled.
 #undef FCS_ENABLE_PEPC
 
 ! Whether solver method pp3mg_pmg is enabled.
 #undef FCS_ENABLE_PP3MG_PMG
-
-! Whether solver method nfft is enabled.
-#undef FCS_ENABLE_P2NFFT
-
-! Whether solver method p3m is enabled.
-#undef FCS_ENABLE_P3M
 
 ! Whether solver method vmg is enabled.
 #undef FCS_ENABLE_VMG

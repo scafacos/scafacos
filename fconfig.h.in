@@ -1,5 +1,5 @@
-! fconfig.h.in.  Written manually, not generated.
-! This contains only defines needed for Fortran.
+! fconfig.h.in.  
+! Written manually, not generated.  This contains only defines for Fortran.
 
 ! Define if `use ifport' is needed for functions like `rand'.
 #undef NEED_USE_IFPORT
@@ -39,23 +39,32 @@
 ! Whether solver method direct is enabled.
 #undef FCS_ENABLE_DIRECT
 
-! Whether solver method pepc is enabled.
-#undef FCS_ENABLE_PEPC
-
-! Whether solver method pp3mg_pmg is enabled.
-#undef FCS_ENABLE_PP3MG_PMG
-
-!Whether solver method mmm1d is enabled.
-#undef FCS_ENABLE_MMM1D
+! Whether solver method ewald is enabled.
+#undef FCS_ENABLE_EWALD
 
 ! Whether solver method fmm is enabled.
 #undef FCS_ENABLE_FMM
+
+! Whether solver method memd is enabled.
+#undef FCS_ENABLE_MEMD
+
+! Whether solver method mmm1d is enabled.
+#undef FCS_ENABLE_MMM1D
+
+! Whether solver method mmm2d is enabled.
+#undef FCS_ENABLE_MMM2D
 
 ! Whether solver method p2nfft is enabled.
 #undef FCS_ENABLE_P2NFFT
 
 ! Whether solver method p3m is enabled.
 #undef FCS_ENABLE_P3M
+
+! Whether solver method pepc is enabled.
+#undef FCS_ENABLE_PEPC
+
+! Whether solver method pp3mg_pmg is enabled.
+#undef FCS_ENABLE_PP3MG_PMG
 
 ! Whether solver method vmg is enabled.
 #undef FCS_ENABLE_VMG

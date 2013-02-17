@@ -3,10 +3,22 @@
 /* Whether solver method direct is enabled. */
 #undef FCS_ENABLE_DIRECT
 
+/* Whether solver method ewald is enabled. */
+#undef FCS_ENABLE_EWALD
+
 /* Whether solver method fmm is enabled. */
 #undef FCS_ENABLE_FMM
 
-/* Whether solver method nfft is enabled. */
+/* Whether solver method memd is enabled. */
+#undef FCS_ENABLE_MEMD
+
+/* Whether solver method mmm1d is enabled. */
+#undef FCS_ENABLE_MMM1D
+
+/* Whether solver method mmm2d is enabled. */
+#undef FCS_ENABLE_MMM2D
+
+/* Whether solver method p2nfft is enabled. */
 #undef FCS_ENABLE_P2NFFT
 
 /* Whether solver method p3m is enabled. */
@@ -21,15 +33,33 @@
 /* Whether solver method vmg is enabled. */
 #undef FCS_ENABLE_VMG
 
-/* Whether solver method memd is enabled */
-#undef FCS_ENABLE_MEMD
+/* Define whether fcs_float is double. */
+#undef FCS_FLOAT_IS_DOUBLE
 
-/* Define to the length modifier that corresponds to the floating type to use
-   for FCS. */
+/* Define whether fcs_float is float. */
+#undef FCS_FLOAT_IS_FLOAT
+
+/* Define whether fcs_float is long double. */
+#undef FCS_FLOAT_IS_LONG_DOUBLE
+
+/* Define whether fcs_int is int. */
+#undef FCS_INT_IS_INT
+
+/* Define whether fcs_int is long. */
+#undef FCS_INT_IS_LONG
+
+/* Define whether fcs_int is long long. */
+#undef FCS_INT_IS_LONG_LONG
+
+/* Define whether fcs_int is short. */
+#undef FCS_INT_IS_SHORT
+
+/* Define to the printf length modifier that corresponds to the floating type
+   to use for FCS. */
 #undef FCS_LMOD_FLOAT
 
-/* Define to the length modifier that corresponds to the integer type to use
-   for FCS. */
+/* Define to the printf length modifier that corresponds to the integer type
+   to use for FCS. */
 #undef FCS_LMOD_INT
 
 /* Define to the MPI datatype that corresponds to the floating type to use for
@@ -48,11 +78,7 @@
 
 /* Define to a macro mangling the given C identifier (in lower and upper
    case), which must not contain underscores, for linking with Fortran. */
-#ifndef FC_FUNC
 #undef FC_FUNC
-#endif
 
 /* As FC_FUNC, but for C identifiers containing underscores. */
-#ifndef FC_FUNC_
 #undef FC_FUNC_
-#endif
