@@ -1,6 +1,6 @@
 #!/bin/sh
 methods="direct ewald fmm memd mmm1d mmm2d p2nfft p3m pepc pp3mg vmg"
-testcases="systems/3d-periodic/cloud-wall.xml.gz"
+testcases="systems/3d-periodic/cloud_wall.xml.gz"
 
 for testcase in $testcases; do
     for method in $methods; do

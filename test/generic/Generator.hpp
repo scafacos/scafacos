@@ -79,7 +79,7 @@ class generator_shape
       SHAPE_BALL,
       SHAPE_SPHERE,
       SHAPE_PLUMMER_BALL,
-      SHAPE_PLUMMER,
+      SHAPE_PLUMMER
     } type_t;
 
     static const char *tostr(fcs_int shape) {

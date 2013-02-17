@@ -439,7 +439,7 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
   INFO_CMD(
     if (comm_rank == MASTER_RANK)
     {
-      printf(INFO_PRINT_PREFIX "nparticles: %" FCS_LMOD_INT "d\n", directc->nparticles);
+      printf(INFO_PRINT_PREFIX "nparticles: %" FCS_LMOD_INT "d (max: %" FCS_LMOD_INT "d)\n", directc->nparticles, directc->max_nparticles);
       printf(INFO_PRINT_PREFIX "positions:  %p\n", directc->positions);
       printf(INFO_PRINT_PREFIX "charges:    %p\n", directc->charges);
       printf(INFO_PRINT_PREFIX "field:      %p\n", directc->field);

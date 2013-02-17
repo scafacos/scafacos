@@ -111,7 +111,7 @@ public:
 
 
 template<typename T>
-bool parse_value(string s, T &r, char *c = 0) {
+static bool parse_value(string s, T &r, char *c = 0) {
   istringstream is(s);
   is.exceptions(istream::failbit | istream::badbit);
   bool r_fail = false;
@@ -132,7 +132,7 @@ bool parse_value(string s, fcs_float &r);
 bool parse_value(string s, fcs_float &r, char &c);
 
 template<typename T>
-fcs_int parse_sequence(string s, fcs_int nmax, T *rv, char *cv) {
+static fcs_int parse_sequence(string s, fcs_int nmax, T *rv, char *cv) {
   istringstream is(s);
   is.exceptions(istream::failbit | istream::badbit);
   fcs_int i = 0;
@@ -197,10 +197,10 @@ typedef struct _errors_t
 } errors_t;
 
 void compute_errors(errors_t *e, fcs_int nparticles, 
-                    fcs_float *positions, fcs_float *charges, 
-                    fcs_float *reference_potentials, fcs_float *reference_field, 
-                    fcs_float *result_potentials, fcs_float *result_field, 
-                    fcs_float *field_correction, fcs_float energy_correction,
+		    fcs_float *positions, fcs_float *charges, 
+		    fcs_float *reference_potentials, fcs_float *reference_field, 
+		    fcs_float *result_potentials, fcs_float *result_field, 
+		    fcs_float *field_correction, fcs_float energy_correction,
 		    MPI_Comm comm);
 void print_errors(errors_t *e, const char *prefix = "");
 

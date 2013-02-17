@@ -33,6 +33,7 @@
 #include "fcs.h"
 #include "common/fcs-common/FCSCommon.h"
 
+#include "common.hpp"
 #include "Integration.hpp"
 
 
@@ -45,7 +46,7 @@ static void parse_conf(integration_t *integ, char *conf)
 
   c = new char[strlen(conf) + 1];
 
-  strncpy(c, conf, strlen(conf));
+  strcpy(c, conf);
 
   cur = c;
 
@@ -74,6 +75,7 @@ void integ_setup(integration_t *integ, fcs_int time_steps, char *conf)
 
   parse_conf(integ, conf);
 }
+
 
 void integ_system_setup(integration_t *integ, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_float *offset, fcs_int *periodicity)
 {

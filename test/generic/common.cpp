@@ -68,10 +68,10 @@ void make_equal_counts_and_displs(fcs_int total_count, fcs_int ncounts, int *cou
 }
 
 void compute_errors(errors_t *e, fcs_int nparticles,
-                    fcs_float *positions, fcs_float *charges,
-                    fcs_float *reference_potentials, fcs_float *reference_field,
-                    fcs_float *result_potentials, fcs_float *result_field,
-                    fcs_float *field_correction, fcs_float energy_correction,
+		    fcs_float *positions, fcs_float *charges,
+		    fcs_float *reference_potentials, fcs_float *reference_field,
+		    fcs_float *result_potentials, fcs_float *result_field,
+		    fcs_float *field_correction, fcs_float energy_correction,
 		    MPI_Comm comm)
 {
   // Compare resulting potential and field values with reference values

@@ -966,7 +966,7 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
 /*  printf("%d: sorted (real) = %" FCS_LMOD_INT "d\n", comm_rank, nlocal_s_real);
   for (int i = 0; i < nlocal_s_real; ++i)
   {
-    printf("  %d: %f,%f,%f  " idx_fmt "\n", i, positions_s[3 * i + 0], positions_s[3 * i + 1], positions_s[3 * i + 2], idx_val(indices_s[i]));
+    printf("  %d: %d: %f,%f,%f  %f  " idx_fmt "\n", comm_rank, i, positions_s[3 * i + 0], positions_s[3 * i + 1], positions_s[3 * i + 2], charges_s[i], idx_val(indices_s[i]));
   }*/
 
 #ifdef SEPARATE_GHOSTS

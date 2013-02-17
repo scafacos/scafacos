@@ -26,16 +26,16 @@ AC_DEFINE([FCS_CONV_INT], [$4], [Define to the scanf conversion that corresponds
 AC_DEFUN([AX_FCS_TYPE_INT],[
 if test "$1" = "short" ; then
   AX_FCS_TYPE_INT_SET([short],[MPI_SHORT],["h"],["h"])
-  AC_DEFINE([FCS_INT_IS_SHORT], [], [Define whether fcs_int is short.])
+  AC_DEFINE([FCS_INT_IS_SHORT], [1], [Define whether fcs_int is short.])
 elif test "$1" = "int" ; then
   AX_FCS_TYPE_INT_SET([int],[MPI_INT],[""])
-  AC_DEFINE([FCS_INT_IS_INT], [], [Define whether fcs_int is int.])
+  AC_DEFINE([FCS_INT_IS_INT], [1], [Define whether fcs_int is int.])
 elif test "$1" = "long" ; then
   AX_FCS_TYPE_INT_SET([long],[MPI_LONG],["l"],["l"])
-  AC_DEFINE([FCS_INT_IS_LONG], [], [Define whether fcs_int is long.])
+  AC_DEFINE([FCS_INT_IS_LONG], [1], [Define whether fcs_int is long.])
 elif test "$1" = "long long" ; then
   AX_FCS_TYPE_INT_SET([long long],[MPI_LONG_LONG],["ll"],["ll"])
-  AC_DEFINE([FCS_INT_IS_LONG_LONG], [], [Define whether fcs_int is long long.])
+  AC_DEFINE([FCS_INT_IS_LONG_LONG], [1], [Define whether fcs_int is long long.])
 else
   AC_MSG_ERROR([Datatype $1 is not a supported C integer type to use for FCS.])
 fi
@@ -53,13 +53,13 @@ AC_DEFINE([FCS_CONV_FLOAT], [$4], [Define to the scanf conversion that correspon
 AC_DEFUN([AX_FCS_TYPE_FLOAT],[
 if test "$1" = "float" ; then
   AX_FCS_TYPE_FLOAT_SET([float],[MPI_FLOAT],[""],[""])
-  AC_DEFINE([FCS_FLOAT_IS_FLOAT], [], [Define whether fcs_float is float.])
+  AC_DEFINE([FCS_FLOAT_IS_FLOAT], [1], [Define whether fcs_float is float.])
 elif test "$1" = "double" ; then
   AX_FCS_TYPE_FLOAT_SET([double],[MPI_DOUBLE],[""],["l"])
-  AC_DEFINE([FCS_FLOAT_IS_DOUBLE], [], [Define whether fcs_float is double.])
+  AC_DEFINE([FCS_FLOAT_IS_DOUBLE], [1], [Define whether fcs_float is double.])
 elif test "$1" = "long double" ; then
   AX_FCS_TYPE_FLOAT_SET([long double],[MPI_LONG_DOUBLE],["L"],["L"])
-  AC_DEFINE([FCS_FLOAT_IS_LONG_DOUBLE], [], [Define whether fcs_float is long double.])
+  AC_DEFINE([FCS_FLOAT_IS_LONG_DOUBLE], [1], [Define whether fcs_float is long double.])
 else
   AC_MSG_ERROR([Datatype $1 is not a supported C floating type to use for FCS.])
 fi

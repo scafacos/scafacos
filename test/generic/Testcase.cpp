@@ -37,6 +37,8 @@
 #include "rapidxml/rapidxml_utils.hpp"
 #include "rapidxml/rapidxml_print.hpp"
 
+#include "common/fcs-common/FCSCommon.h"
+
 #include "common.hpp"
 #include "Generator.hpp"
 #include "Testcase.hpp"
@@ -260,31 +262,31 @@ void Configuration::write_config(xml_document<> *doc, xml_node<> *config_node, c
 
     os.precision(16);
 
-    os.str("");
+    os.str(string(""));
     os << params.offset[0] << " " << params.offset[1] << " " << params.offset[2];
     s = doc->allocate_string(os.str().c_str());
     attr = doc->allocate_attribute("offset", s);
     config_node->append_attribute(attr);
 
-    os.str("");
+    os.str(string(""));
     os << out_box_a[0] << " " << out_box_a[1] << " " << out_box_a[2];
     s = doc->allocate_string(os.str().c_str());
     attr = doc->allocate_attribute("box_a", s);
     config_node->append_attribute(attr);
 
-    os.str("");
+    os.str(string(""));
     os << out_box_b[0] << " " << out_box_b[1] << " " << out_box_b[2];
     s = doc->allocate_string(os.str().c_str());
     attr = doc->allocate_attribute("box_b", s);
     config_node->append_attribute(attr);
 
-    os.str("");
+    os.str(string(""));
     os << out_box_c[0] << " " << out_box_c[1] << " " << out_box_c[2];
     s = doc->allocate_string(os.str().c_str());
     attr = doc->allocate_attribute("box_c", s);
     config_node->append_attribute(attr);
 
-    os.str("");
+    os.str(string(""));
     os << params.periodicity[0] << " " << params.periodicity[1] << " " << params.periodicity[2];
     s = doc->allocate_string(os.str().c_str());
     attr = doc->allocate_attribute("periodicity", s);
@@ -295,7 +297,7 @@ void Configuration::write_config(xml_document<> *doc, xml_node<> *config_node, c
     else if (params.epsilon == 0.0)
       attr = doc->allocate_attribute("epsilon", "vacuum");
     else {
-      os.str("");
+      os.str(string(""));
       os << params.epsilon;
       s = doc->allocate_string(os.str().c_str());
       attr = doc->allocate_attribute("epsilon", s);
@@ -718,6 +720,8 @@ void Configuration::destroy_cart_comm()
 void Configuration::decompose_particles()
 {
   generate_input_particles();
+
+  fcs_wrap_positions(dup_input_nparticles, dup_input_positions, params.box_a, params.box_b, params.box_c, params.offset, params.periodicity);
   
   MPI_Bcast(have_reference_values, 2, FCS_MPI_INT, MASTER_RANK, communicator);
 
@@ -736,6 +740,7 @@ void Configuration::decompose_particles()
         decomp_charges = dup_input_charges;
       } else {
         decomp_nparticles = 0;
+        decomp_max_nparticles = 0;
         decomp_positions = 0;
         decomp_charges = 0;
       }
@@ -757,12 +762,12 @@ void Configuration::decompose_particles()
     case DECOMPOSE_DOMAIN:
       INFO_MASTER(cout << "Decomposing system (domain)..." << endl);
       create_cart_comm();
+      decomp_comm = cart_comm;
       fcs_gridsort_create(&gridsort);
       fcs_gridsort_set_system(&gridsort, params.offset, params.box_a, params.box_b, params.box_c, NULL);
       fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_nparticles, dup_input_positions, dup_input_charges);
       fcs_gridsort_sort_forward(&gridsort, 0.0, cart_comm);
       fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
-      decomp_comm = cart_comm;
       break;
     default:
       break;
@@ -771,7 +776,7 @@ void Configuration::decompose_particles()
   if (decomp_max_nparticles > 0)
   {
     decomp_potentials = new fcs_float[decomp_max_nparticles];
-    decomp_field = new fcs_float[3*decomp_max_nparticles];
+    decomp_field = new fcs_float[3 * decomp_max_nparticles];
     for (fcs_int i = 0; i < decomp_nparticles; ++i)
     {
       decomp_potentials[i] = NAN;
@@ -866,7 +871,7 @@ void Configuration::free_decomp_particles(bool quiet)
       break;
   }
 
-  if (decomp_nparticles > 0)
+  if (decomp_max_nparticles > 0)
   {
     delete[] decomp_potentials;
     delete[] decomp_field;
@@ -971,11 +976,11 @@ Testcase::read_file(const char* filename, fcs_int *periodic_duplications, fcs_in
     else if (aname == "reference_method")
       this->reference_method = attr->value();
     else if (aname == "error_potential") {
-      istringstream is(attr->value());
+      istringstream is(string(attr->value()));
       is.exceptions(istream::failbit | istream::badbit);
       is >> this->error_potential;
     } else if (aname == "error_field") {
-      istringstream is(attr->value());
+      istringstream is(string(attr->value()));
       is.exceptions(istream::failbit | istream::badbit);
       is >> this->error_field;
     }
@@ -1004,8 +1009,9 @@ Testcase::read_file(const char* filename, fcs_int *periodic_duplications, fcs_in
   // Loop over all configuration nodes
   for (xml_node<> *config_node = system_node->first_node(CONFIGURATION_TAG);
     config_node; config_node = config_node->next_sibling(CONFIGURATION_TAG)) {
-    this->configurations.push_back(new Configuration());
-    Configuration *config = this->configurations.back();
+
+    Configuration *config = new Configuration();
+    this->configurations.push_back(config);
 
     config->params.periodic_duplications[0] = periodic_duplications[0];
     config->params.periodic_duplications[1] = periodic_duplications[1];
@@ -1071,13 +1077,13 @@ void Testcase::write_file(const char* outfilename, const char* binfilename, cons
       this->reference_method.c_str());
     system_node->append_attribute(attr);
 
-    os.str("");
+    os.str(string(""));
     os << this->error_potential;
     s = doc.allocate_string(os.str().c_str());
     attr = doc.allocate_attribute("error_potential", s);
     system_node->append_attribute(attr);
 
-    os.str("");
+    os.str(string(""));
     os << this->error_field;
     s = doc.allocate_string(os.str().c_str());
     attr = doc.allocate_attribute("error_field", s);

@@ -678,30 +678,30 @@ static void write_plain_full(xml_document<> *doc, xml_node<> *config_node, fcs_i
         xml_node<> *particle_node = doc->allocate_node(node_element, PARTICLE_TAG);
         config_node->append_node(particle_node);
 
-        os.str("");
+        os.str(string(""));
         os << pos[3*pid] << " " << pos[3*pid+1] << " " << pos[3*pid+2];
         s = doc->allocate_string(os.str().c_str());
         attr = doc->allocate_attribute("position", s);
         particle_node->append_attribute(attr);
 
-        os.str("");
+        os.str(string(""));
         os << c[pid];
         s = doc->allocate_string(os.str().c_str());
         attr = doc->allocate_attribute("q", s);
         particle_node->append_attribute(attr);
 
-        if (potentials && pot[pid] == pot[pid])
+        if (potentials && !isnan(pot[pid]))
         {
-          os.str("");
+          os.str(string(""));
           os << pot[pid];
           s = doc->allocate_string(os.str().c_str());
           attr = doc->allocate_attribute("potential", s);
           particle_node->append_attribute(attr);
         }
 
-        if (field && f[3*pid] == f[3*pid] && f[3*pid+1] == f[3*pid+1] && f[3*pid+2] == f[3*pid+2])
+        if (field && !isnan(f[3*pid]) && !isnan(f[3*pid+1]) && !isnan(f[3*pid+2]))
         {
-          os.str("");
+          os.str(string(""));
           os << f[3*pid] << " " << f[3*pid+1] << " " << f[3*pid+2];
           s = doc->allocate_string(os.str().c_str());
           attr = doc->allocate_attribute("field", s);
@@ -1118,7 +1118,7 @@ static long long write_data_sparse(MPI_File file, fcs_float *data, fcs_int s, fc
     nsparse = 0;
     for (i = 0; i < nlocal; ++i)
     {
-      for (j = 0; j < s; ++j) if (data[s * i + j] != data[s * i + j]) break;
+      for (j = 0; j < s; ++j) if (isnan(data[s * i + j])) break;
       if (j >= s) ++nsparse;
     }
   }
@@ -1139,7 +1139,7 @@ static long long write_data_sparse(MPI_File file, fcs_float *data, fcs_int s, fc
 
   for (i = 0; i < nlocal; ++i)
   {
-    for (j = 0; j < s; ++j) if (data[s * i + j] != data[s * i + j]) break;
+    for (j = 0; j < s; ++j) if (isnan(data[s * i + j])) break;
 
     if (j >= s) p = F::write_sparse(p, pid_offset + i, &data[s * i], s);
   }
@@ -1368,19 +1368,19 @@ void FileParticles::write_config(xml_document<> *doc, xml_node<> *parent_node, c
     attr = doc->allocate_attribute("file", s);
     file_node->append_attribute(attr);
     
-    os.str("");
+    os.str(string(""));
     os << F::format_id;
     s = doc->allocate_string(os.str().c_str());
     attr = doc->allocate_attribute("format", s);
     file_node->append_attribute(attr);
     
-    os.str("");
+    os.str(string(""));
     os << offset;
     s = doc->allocate_string(os.str().c_str());
     attr = doc->allocate_attribute("offset", s);
     file_node->append_attribute(attr);
     
-    os.str("");
+    os.str(string(""));
     os << ntotal;
     s = doc->allocate_string(os.str().c_str());
     attr = doc->allocate_attribute("ntotal", s);
@@ -1397,7 +1397,7 @@ void FileParticles::write_config(xml_document<> *doc, xml_node<> *parent_node, c
 
       if (total_nsparse_potentials >= 0)
       {
-        os.str("");
+        os.str(string(""));
         os << total_nsparse_potentials;
         s = doc->allocate_string(os.str().c_str());
         attr = doc->allocate_attribute("nsparse", s);
@@ -1412,7 +1412,7 @@ void FileParticles::write_config(xml_document<> *doc, xml_node<> *parent_node, c
 
       if (total_nsparse_field >= 0)
       {
-        os.str("");
+        os.str(string(""));
         os << total_nsparse_field;
         s = doc->allocate_string(os.str().c_str());
         attr = doc->allocate_attribute("nsparse", s);
@@ -1535,13 +1535,13 @@ xml_node<> *Duplicate::write_config(xml_document<> *doc, xml_node<> *node)
     new_node = doc->allocate_node(node_element, "duplicate");
     node->append_node(new_node);
 
-    os.str("");
+    os.str(string(""));
     os << params.times[0] << " " << params.times[1] << " " << params.times[2];
     s = doc->allocate_string(os.str().c_str());
     attr = doc->allocate_attribute("times", s);
     new_node->append_attribute(attr);
     
-    os.str("");
+    os.str(string(""));
     os << params.rescale;
     s = doc->allocate_string(os.str().c_str());
     attr = doc->allocate_attribute("rescale", s);

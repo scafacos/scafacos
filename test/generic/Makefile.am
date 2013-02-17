@@ -31,10 +31,10 @@ scafacos_test_DEPENDENCIES = $(SCAFACOS_MK_DEPS)
 scafacos_test_SOURCES = \
 	scafacos_test.cpp \
 	Testcase.cpp Testcase.hpp \
-        Generator.cpp Generator.hpp \
-        Integration.cpp Integration.hpp \
-        PointSequence.hpp \
-        common.cpp common.hpp \
+	Generator.cpp Generator.hpp \
+	Integration.cpp Integration.hpp \
+	PointSequence.hpp \
+	common.cpp common.hpp \
 	rapidxml/rapidxml.hpp \
 	rapidxml/rapidxml_iterators.hpp \
 	rapidxml/rapidxml_print.hpp \
@@ -49,7 +49,7 @@ EXTRA_DIST = \
 	tune_alpha_3dp.py \
 	tune_alpha_cloud_wall_3dp.py \
 	opt_alpha_cloud_wall_3dp.py \
-        compute_nonperiodic_references.sh \
+	compute_nonperiodic_references.sh \
 	rapidxml/manual.html \
 	rapidxml/license.txt
 
@@ -60,8 +60,8 @@ EXTRA_DIST += \
 	systems/3d-periodic/silica_melt_12960.xml.gz \
 	systems/3d-periodic/silica_melt_103680.xml.gz \
 	systems/3d-periodic/silica_melt_829440.xml.gz \
-        systems/nonperiodic/cloud_wall_8100.xml.gz \
-        systems/nonperiodic/silica_melt_12960.xml.gz
+	systems/nonperiodic/cloud_wall_8100.xml.gz \
+	systems/nonperiodic/silica_melt_12960.xml.gz
 
 # Generate symbolic link to systems subdir
 all-local: make-data-symlink

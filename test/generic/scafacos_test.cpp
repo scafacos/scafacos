@@ -41,7 +41,7 @@
 using namespace std;
 
 
-void usage(char** argv, int argc, int c) {
+static void usage(char** argv, int argc, int c) {
   cout << "Call: " << argv[0];
   for (int i = 1; i < argc; ++i)
     cout << " " << argv[i];
@@ -155,7 +155,7 @@ static struct {
 // FCS Handle
 FCS fcs;
 
-bool check_result(FCSResult result, bool force_abort = false) {
+static bool check_result(FCSResult result, bool force_abort = false) {
   if (result) {
     cout << "ERROR: Caught error on task " << comm_rank << "!" << endl;
     fcsResult_printResult(result);
@@ -170,7 +170,7 @@ bool check_result(FCSResult result, bool force_abort = false) {
 }
 
 // Command line parsing on master
-void parse_commandline(int argc, char* argv[]) {
+static void parse_commandline(int argc, char* argv[]) {
   int c;
   char dup0[32], *dup1 = NULL, *dup2 = NULL;
 
@@ -256,7 +256,7 @@ void parse_commandline(int argc, char* argv[]) {
 }
 
 // broadcast global parameters
-void broadcast_global_parameters() {
+static void broadcast_global_parameters() {
   MPI_Bcast(&global_params, sizeof(global_params), MPI_BYTE, MASTER_RANK, communicator);
 }
 
@@ -272,7 +272,7 @@ typedef struct
 
 } particles_t;
 
-void prepare_particles(particles_t *parts)
+static void prepare_particles(particles_t *parts)
 {
   fcs_int result_nparticles, total_result_nparticles;
 
@@ -331,8 +331,10 @@ void prepare_particles(particles_t *parts)
   }*/
 }
 
-void unprepare_particles(particles_t *parts)
+static void unprepare_particles(particles_t *parts)
 {
+  current_config->decomp_nparticles = parts->nparticles;
+
 /*  cout << "OUT: " << parts->total_nparticles << " / " << parts->total_in_nparticles << endl;
   for (fcs_int i = 0; i < current_config->decomp_nparticles; ++i)
   {
@@ -361,7 +363,7 @@ void unprepare_particles(particles_t *parts)
   }
 }
 
-double determine_total_energy(fcs_int nparticles, fcs_float *charges, fcs_float *potentials)
+static double determine_total_energy(fcs_int nparticles, fcs_float *charges, fcs_float *potentials)
 {
   fcs_float local, total;
   
@@ -376,7 +378,7 @@ double determine_total_energy(fcs_int nparticles, fcs_float *charges, fcs_float 
   return total;
 }
 
-void run_method(particles_t *parts) {
+static void run_method(particles_t *parts) {
   // Set up method
   // * with default parameters
   // * with optimized parameters
@@ -484,20 +486,22 @@ void run_method(particles_t *parts) {
   }
 }
 
-void no_method() {
+static void no_method() {
   current_config->have_result_values[0] = 0;  // no potentials results
   current_config->have_result_values[1] = 0;  // no field results
 }
 
-void print_particles(fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
+/*#define PRINT_PARTICLES*/
+
+#ifdef PRINT_PARTICLES
+static void print_particles(fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
   for (fcs_int i = 0; i < nparticles; ++i) printf(" %" FCS_LMOD_INT "d: [%f %f %f] [%f] [%f %f %f] [%f]\n",
     i, positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2], charges[i], field[3 * i + 0], field[3 * i + 1], field[3 * i + 2], potentials[i]);
 }
+#endif
 
-/*#define PRINT_PARTICLES*/
-
-void run_integration(particles_t *parts)
+static void run_integration(particles_t *parts)
 {
   integration_t integ;
 
@@ -700,10 +704,12 @@ int main(int argc, char* argv[]) {
     // Create new configuration on non-root processes
     if (comm_rank != MASTER_RANK)
     {
-      testcase->configurations.push_back(new Configuration());
-      config = testcase->configurations.end() - 1;
+      Configuration *c = new Configuration();
+      testcase->configurations.push_back(c);
+      config = testcase->configurations.end();
+      --config;
     }
-    
+ 
     current_config = *config;
 
     // Broadcast configuration parameters
