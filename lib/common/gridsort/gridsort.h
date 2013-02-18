@@ -59,6 +59,8 @@ typedef struct _fcs_gridsort_t
 
   fcs_int nsorted_real_particles, nsorted_ghost_particles;
 
+  fcs_int nresort_particles;
+
   fcs_float max_particle_move;
 
   fcs_float sub_box_base[3], sub_box_a[3], sub_box_b[3], sub_box_c[3];
@@ -75,6 +77,9 @@ typedef struct _fcs_gridsort_t
 #define GRIDSORT_PERIODIC_MASK           ((GRIDSORT_PERIODIC_CONST(1) << GRIDSORT_PERIODIC_BITS) - GRIDSORT_PERIODIC_CONST(1))
 #define GRIDSORT_PERIODIC_SET(_v_, _x_)  (((fcs_gridsort_index_t) (_v_)) << ((_x_) * GRIDSORT_PERIODIC_BITS))
 #define GRIDSORT_PERIODIC_GET(_v_, _x_)  (((_v_) >> ((_x_) * GRIDSORT_PERIODIC_BITS)) & GRIDSORT_PERIODIC_MASK)
+
+
+#include "gridsort_resort.h"
 
 
 /**
@@ -139,7 +144,7 @@ void fcs_gridsort_set_particles(fcs_gridsort_t *gs, fcs_int nparticles, fcs_int 
 /**
  * @brief set max. distance particles are away from the domain of the local process, e.g. because they have moved since the last grid sorting
  * @param gs fcs_gridsort_t* gridsort object
- * @param nparticles fcs_float max. distance particles have moved
+ * @param max_particle_move fcs_float max. distance particles have moved
  */
 void fcs_gridsort_set_max_particle_move(fcs_gridsort_t *gs, fcs_float max_particle_move);
 
@@ -182,6 +187,12 @@ void fcs_gridsort_get_ghost_particles(fcs_gridsort_t *gs, fcs_int *nparticles, f
  */
 fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI_Comm comm);
 
+/**
+ * @brief create ghost particles according to the given ghost range
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param ghost_range fcs_float range around process borders where ghost particles should be created
+ * @param comm MPI_Comm Cartesian communicator specifying the process grid
+ */
 fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MPI_Comm comm);
 
 /**
@@ -233,6 +244,22 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
                                    fcs_float *sorted_field, fcs_float *sorted_potentials,
                                    fcs_float *original_field, fcs_float *original_potentials,
                                    fcs_int set_values, MPI_Comm comm);
+
+/**
+ * @brief prepare resorting of additional particle data, i.e.
+ *   (1) enable creation of gridsort_resort object, and
+ *   (2) copy sorted potential and field values locally to original potential and field arrays
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param sorted_field fcs_float* array of field values to copy (can be NULL)
+ * @param sorted_potentials fcs_float* array of potential values to copy (can be NULL)
+ * @param original_field fcs_float* array to store field values (can be NULL)
+ * @param original_potentials fcs_float* array to store potential values (can be NULL)
+ * @param comm MPI_Comm communicator to use
+ */
+fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs,
+                                    fcs_float *sorted_field, fcs_float *sorted_potentials,
+                                    fcs_float *original_field, fcs_float *original_potentials,
+                                    MPI_Comm comm);
 
 /**
  * @brief free arrays allocated by fcs_gridsort_sort_forward (all arrays returned by getters become invalid)

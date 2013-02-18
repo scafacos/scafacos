@@ -8,7 +8,7 @@ else
 lib_LIBRARIES += libfcs_gridsort.a
 endif
 
-sl_sub_libs = libsl_back__p.a libsl_back_f_.a libsl_back_fp.a libsl_forw.a libsl_extra.a libsl_mpiwrap.a
+sl_sub_libs = libsl_back__p.a libsl_back_f_.a libsl_back_fp.a libsl_back_x.a libsl_forw.a libsl_extra.a libsl_mpiwrap.a
 
 noinst_LIBRARIES += $(sl_sub_libs)
 
@@ -24,6 +24,9 @@ libsl_back_f__a_CPPFLAGS = \
 
 libsl_back_fp_a_CPPFLAGS = \
   -DSL_PREFIX=back_fp_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_fp -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir_sl_extra)/include
+
+libsl_back_x_a_CPPFLAGS = \
+  -DSL_PREFIX=back_x_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_x -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir_sl_extra)/include
 
 libsl_forw_a_CPPFLAGS = \
   -DSL_PREFIX=forw_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_forw -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir_sl_extra)/include
@@ -103,6 +106,7 @@ libsl_back__p_a_SOURCES = \
   $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
+  $(srcdir_sl)/gridsort_resort.h \
   $(srcdir_sl)/z_tools.h \
   $(srcdir_sl)/sl_back__p/sl_config.h \
   $(srcdir_sl)/sl_back__p/sl_environment.h \
@@ -116,6 +120,7 @@ libsl_back_f__a_SOURCES = \
   $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
+  $(srcdir_sl)/gridsort_resort.h \
   $(srcdir_sl)/z_tools.h \
   $(srcdir_sl)/sl_back_f_/sl_config.h \
   $(srcdir_sl)/sl_back_f_/sl_environment.h \
@@ -129,6 +134,7 @@ libsl_back_fp_a_SOURCES = \
   $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
+  $(srcdir_sl)/gridsort_resort.h \
   $(srcdir_sl)/z_tools.h \
   $(srcdir_sl)/sl_back_fp/sl_config.h \
   $(srcdir_sl)/sl_back_fp/sl_environment.h \
@@ -137,11 +143,26 @@ libsl_back_fp_a_SOURCES = \
   $(srcdir_sl)/sl_back_fp/sl_tune_auto.h \
   $(sl_SOURCE)
 
+libsl_back_x_a_SOURCES = \
+  $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/common.h \
+  $(srcdir_sl)/gridsort.h \
+  $(srcdir_sl)/gridsort_front_tproc.h \
+  $(srcdir_sl)/gridsort_resort.h \
+  $(srcdir_sl)/z_tools.h \
+  $(srcdir_sl)/sl_back_x/sl_config.h \
+  $(srcdir_sl)/sl_back_x/sl_environment.h \
+  $(srcdir_sl)/sl_back_x/sl_extra.h \
+  $(srcdir_sl)/sl_back_x/sl_tune.h \
+  $(srcdir_sl)/sl_back_x/sl_tune_auto.h \
+  $(sl_SOURCE)
+
 libsl_forw_a_SOURCES = \
   $(srcdir_sl)/bounds_xyz2cart.h \
   $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
+  $(srcdir_sl)/gridsort_resort.h \
   $(srcdir_sl)/z_tools.h \
   $(srcdir_sl)/sl_forw/sl_config.h \
   $(srcdir_sl)/sl_forw/sl_environment.h \
@@ -195,10 +216,13 @@ libsl_mpiwrap_a_SOURCES = \
   $(srcdir_sl)/include/sl_back__p.h \
   $(srcdir_sl)/include/sl_back_f_.h \
   $(srcdir_sl)/include/sl_back_fp.h \
+  $(srcdir_sl)/include/sl_back_x.h \
   $(srcdir_sl)/include/sl_forw.h \
   $(srcdir_sl)/bounds_xyz2cart.h \
   $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort.c \
   $(srcdir_sl)/gridsort.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
+  $(srcdir_sl)/gridsort_resort.c \
+  $(srcdir_sl)/gridsort_resort.h \
   $(srcdir_sl)/z_tools.h

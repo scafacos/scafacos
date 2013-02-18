@@ -38,6 +38,7 @@
 #include "z_tools.h"
 #include "common.h"
 #include "gridsort.h"
+#include "gridsort_resort.h"
 
 
 /*#define PRINT_FORWARD_SORTED*/
@@ -307,6 +308,8 @@ void fcs_gridsort_create(fcs_gridsort_t *gs)
   gs->sorted_indices = NULL;
 
   gs->nsorted_real_particles = gs->nsorted_ghost_particles = 0;
+
+  gs->nresort_particles = -1;
 
   gs->max_particle_move = -1;
 }
@@ -1971,8 +1974,76 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
     if (comm_rank == 0)
       printf(TIMING_PRINT_PREFIX "fcs_gridsort_sort_backward: %f  %f\n", t[0], t[1]);
   );
-  
+
   return 0;
+}
+
+
+fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs,
+                                    fcs_float *sorted_field, fcs_float *sorted_potentials,
+                                    fcs_float *original_field, fcs_float *original_potentials,
+                                    MPI_Comm comm)
+{
+  int comm_size, comm_rank;
+  fcs_int i, j, nresort_particles;
+
+
+  MPI_Comm_size(comm, &comm_size);
+  MPI_Comm_rank(comm, &comm_rank);
+  
+  if (sorted_field == NULL && sorted_potentials == NULL)
+  {
+    gs->nresort_particles = gs->nsorted_real_particles;
+    return 1;
+  }
+
+  for (j = 0, i = 0; i < gs->nsorted_real_particles; ++i)
+  if (gs->sorted_indices[i] >= 0) ++j;
+
+  nresort_particles = j;
+
+  i = (nresort_particles <= gs->max_noriginal_particles)?1:0;
+  MPI_Allreduce(&i, &j, 1, FCS_MPI_INT, MPI_SUM, comm);
+
+  DEBUG_CMD(
+    if (!i) printf(DEBUG_PRINT_PREFIX "%d: Resort disabled, because max. array size %" FCS_LMOD_INT "d too small to store %" FCS_LMOD_INT "d particles\n", comm_rank, gs->max_noriginal_particles, nresort_particles);
+  );
+
+  if (j < comm_size)
+  {
+    INFO_CMD(
+      if (comm_rank == 0) printf(INFO_PRINT_PREFIX "Resort disabled, because max. array sizes on %" FCS_LMOD_INT "d of %d process(es) to small!\n", i, comm_size);
+    );
+    return 0;
+  }
+
+  j = 0;
+  for (i = 0; i < gs->nsorted_real_particles; ++i)
+  {
+/*    printf("sorted_indices[%" FCS_LMOD_INT "d]: " GRIDSORT_INDEX_STR "\n", i, GRIDSORT_INDEX_PARAM(gs->sorted_indices[i]));*/
+
+    if (gs->sorted_indices[i] < 0) continue;
+
+    gs->sorted_indices[j] = gs->sorted_indices[i];
+
+    gs->original_positions[3 * j + 0] = gs->sorted_positions[3 * i + 0];
+    gs->original_positions[3 * j + 1] = gs->sorted_positions[3 * i + 1];
+    gs->original_positions[3 * j + 2] = gs->sorted_positions[3 * i + 2];
+
+    gs->original_charges[j] = gs->sorted_charges[i];
+
+    original_field[3 * j + 0] = sorted_field[3 * i + 0];
+    original_field[3 * j + 1] = sorted_field[3 * i + 1];
+    original_field[3 * j + 2] = sorted_field[3 * i + 2];
+
+    original_potentials[j] = sorted_potentials[i];
+
+    ++j;
+  }
+
+  gs->nresort_particles = j;
+
+  return 1;
 }
 
 
