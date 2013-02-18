@@ -253,6 +253,9 @@ void fcs_near_create(fcs_near_t *near)
   near->ghost_indices = NULL;
 
   near->max_particle_move = -1;
+
+  near->resort = 0;
+  near->gridsort_resort = FCS_GRIDSORT_RESORT_NULL;
 }
 
 
@@ -285,6 +288,8 @@ void fcs_near_destroy(fcs_near_t *near)
   near->ghost_positions = NULL;
   near->ghost_charges = NULL;
   near->ghost_indices = NULL;
+
+  if (near->gridsort_resort != FCS_GRIDSORT_RESORT_NULL) fcs_gridsort_resort_destroy(&near->gridsort_resort);
 }
 
 
@@ -371,6 +376,12 @@ void fcs_near_set_ghosts(fcs_near_t *near, fcs_int nghosts, fcs_float *positions
 void fcs_near_set_max_particle_move(fcs_near_t *near, fcs_float max_particle_move)
 {
   near->max_particle_move = max_particle_move;
+}
+
+
+void fcs_near_set_resort(fcs_near_t *near, fcs_int resort)
+{
+  near->resort = resort;
 }
 
 
@@ -849,6 +860,8 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
   fcs_int nlocal_s_real;
   fcs_float *positions_s_real, *charges_s_real;
   fcs_gridsort_index_t *indices_s_real;
+  
+  fcs_int resort;
 
 #ifdef SEPARATE_GHOSTS
   fcs_int nlocal_s_ghost;
@@ -1038,7 +1051,12 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
   }*/
 
   TIMING_SYNC(comm); TIMING_START(t[3]);
-  fcs_gridsort_sort_backward(&gridsort, field_s, potentials_s, near->field, near->potentials, 0, comm);
+  if (near->resort) resort = fcs_gridsort_prepare_resort(&gridsort, field_s, potentials_s, near->field, near->potentials, comm);
+  else resort = 0;
+
+  if (!resort) fcs_gridsort_sort_backward(&gridsort, field_s, potentials_s, near->field, near->potentials, 1, comm);
+
+  if (near->resort) fcs_gridsort_resort_create(&near->gridsort_resort, &gridsort, comm);
   TIMING_SYNC(comm); TIMING_STOP(t[3]);
 
   if (field_s) free(field_s);
@@ -1059,4 +1077,62 @@ exit:
   );
 
   return 0;
+}
+
+
+void fcs_near_resort_create(fcs_near_resort_t *near_resort, fcs_near_t *near)
+{
+  *near_resort = near->gridsort_resort;
+
+  near->gridsort_resort = FCS_GRIDSORT_RESORT_NULL;
+}
+
+
+void fcs_near_resort_destroy(fcs_near_resort_t *near_resort)
+{
+  fcs_gridsort_resort_destroy(near_resort);
+  
+  *near_resort = FCS_NEAR_RESORT_NULL;
+}
+
+
+void fcs_near_resort_print(fcs_near_resort_t near_resort, MPI_Comm comm)
+{
+  fcs_gridsort_resort_print(near_resort, comm);
+}
+
+
+fcs_int fcs_near_resort_is_available(fcs_near_resort_t near_resort)
+{
+  return fcs_gridsort_resort_is_available(near_resort);
+}
+
+
+fcs_int fcs_near_resort_get_original_particles(fcs_near_resort_t near_resort)
+{
+  return fcs_gridsort_resort_get_original_particles(near_resort);
+}
+
+
+fcs_int fcs_near_resort_get_sorted_particles(fcs_near_resort_t near_resort)
+{
+  return fcs_gridsort_resort_get_sorted_particles(near_resort);
+}
+
+
+void fcs_near_resort_ints(fcs_near_resort_t near_resort, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
+{
+  fcs_gridsort_resort_ints(near_resort, src, dst, n, comm);
+}
+
+
+void fcs_near_resort_floats(fcs_near_resort_t near_resort, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
+{
+  fcs_gridsort_resort_floats(near_resort, src, dst, n, comm);
+}
+
+
+void fcs_near_resort_bytes(fcs_near_resort_t near_resort, void *src, void *dst, fcs_int n, MPI_Comm comm)
+{
+  fcs_gridsort_resort_bytes(near_resort, src, dst, n, comm);
 }

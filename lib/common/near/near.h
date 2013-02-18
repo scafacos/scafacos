@@ -44,6 +44,11 @@ typedef void (*fcs_near_loop_f)(fcs_float *positions0, fcs_float *charges0, fcs_
                                 fcs_float *positions1, fcs_float *charges1, fcs_int start1, fcs_int size1, fcs_float cutoff, const void *near_param);
 
 
+typedef fcs_gridsort_resort_t fcs_near_resort_t;
+
+#define FCS_NEAR_RESORT_NULL  FCS_GRIDSORT_RESORT_NULL
+
+
 /**
  * @brief near field solver object structure
  */
@@ -72,6 +77,9 @@ typedef struct _fcs_near_t
   fcs_gridsort_index_t *ghost_indices;
 
   fcs_float max_particle_move;
+
+  fcs_int resort;
+  fcs_gridsort_resort_t gridsort_resort;
 
 } fcs_near_t;
 
@@ -179,6 +187,17 @@ void fcs_near_set_ghosts(fcs_near_t *near, fcs_int nghosts, fcs_float *positions
 void fcs_near_set_max_particle_move(fcs_near_t *near, fcs_float max_particle_move);
 
 /**
+ * @brief set resort information
+ * @param near fcs_near_t near field solver object
+ * @param resort fcs_int if resort = 0 then fcs_near_field_solver restores the original particle order,
+ *   if resort = 1 then fcs_near_field_solver tries to retain its sorted particle order by overriding the given particle data with the sorted particle data,
+ *   the sorted order is only retained if the given particle data arrays on all processes are large enough to store the sorted particles,
+ *   default: resort = 0
+ *   
+ */
+void fcs_near_set_resort(fcs_near_t *near, fcs_int resort);
+
+/**
  * @brief compute near field interactions with the given "gridsorted" particles,
  * particle values (positions, charges, field, potentials and gridsort-indices) get rearranged!
  * @param near fcs_near_t* near field solver object
@@ -191,6 +210,73 @@ fcs_int fcs_near_compute(fcs_near_t *near,
                          fcs_float cutoff,
                          const void *compute_param,
                          MPI_Comm comm);
+
+/**
+ * @brief create near_resort object from given near field solver object
+ * @param gsr fcs_near_resort_t* near_resort object
+ * @param gs fcs_near_t* near field solver object
+ */
+void fcs_near_resort_create(fcs_near_resort_t *near_resort, fcs_near_t *near);
+
+/**
+ * @brief destroy near_resort object
+ * @param gsr fcs_near_resort_t* near_resort object
+ */
+void fcs_near_resort_destroy(fcs_near_resort_t *near_resort);
+
+/**
+ * @brief print resort information stored in near_resort object (for DEBUG)
+ * @param gsr fcs_near_resort_t* near_resort object
+ */
+void fcs_near_resort_print(fcs_near_resort_t near_resort, MPI_Comm comm);
+
+/**
+ * @brief return resorting availability, i.e., return 1 if resorting can be performed, otherwise 0
+ * @param gsr fcs_near_resort_t* near_resort object
+ */
+fcs_int fcs_near_resort_is_available(fcs_near_resort_t near_resort);
+
+/**
+ * @brief return number of original (unsorted, input) particles belonging to the resorting
+ * @param gsr fcs_near_resort_t* near_resort object
+ */
+fcs_int fcs_near_resort_get_original_particles(fcs_near_resort_t near_resort);
+
+/**
+ * @brief return number of sorted (output) particles belonging to the resorting
+ * @param gsr fcs_near_resort_t* near_resort object
+ */
+fcs_int fcs_near_resort_get_sorted_particles(fcs_near_resort_t near_resort);
+
+/**
+ * @brief perform resorting of integer values (i.e., fcs_int)
+ * @param gsr fcs_near_resort_t* near_resort object
+ * @param src fcs_int* array of integer values in original (unsorted, input) order
+ * @param dst fcs_int* array to store resorted integer values
+ * @param n fcs_int number of integer values to resort for each particle
+ * @param comm MPI_Comm communicator to be used for resorting
+ */
+void fcs_near_resort_ints(fcs_near_resort_t near_resort, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
+
+/**
+ * @brief perform resorting of float values (i.e., fcs_float)
+ * @param gsr fcs_near_resort_t* near_resort object
+ * @param src fcs_float* array of float values in original (unsorted, input) order
+ * @param dst fcs_float* array to store resorted float values
+ * @param n fcs_int number of float values to resort for each particle
+ * @param comm MPI_Comm communicator to be used for resorting
+ */
+void fcs_near_resort_floats(fcs_near_resort_t near_resort, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
+
+/**
+ * @brief perform resorting of byte values
+ * @param gsr fcs_near_resort_t* near_resort object
+ * @param src void* array of byte values in original (unsorted, input) order
+ * @param dst void* array to store resorted byte values
+ * @param n fcs_int number of byte values to resort for each particle
+ * @param comm MPI_Comm communicator to be used for resorting
+ */
+void fcs_near_resort_bytes(fcs_near_resort_t near_resort, void *src, void *dst, fcs_int n, MPI_Comm comm);
 
 /**
  * @brief compute near field interactions with the given particles (particle order remains unchanged!)
