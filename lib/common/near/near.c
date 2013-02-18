@@ -251,6 +251,8 @@ void fcs_near_create(fcs_near_t *near)
   near->ghost_positions = NULL;
   near->ghost_charges = NULL;
   near->ghost_indices = NULL;
+
+  near->max_particle_move = -1;
 }
 
 
@@ -363,6 +365,12 @@ void fcs_near_set_ghosts(fcs_near_t *near, fcs_int nghosts, fcs_float *positions
   near->ghost_positions = positions;
   near->ghost_charges = charges;
   near->ghost_indices = indices;
+}
+
+
+void fcs_near_set_max_particle_move(fcs_near_t *near, fcs_float max_particle_move)
+{
+  near->max_particle_move = max_particle_move;
 }
 
 
@@ -939,6 +947,8 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
 #endif
 
   fcs_gridsort_set_particles(&gridsort, near->nparticles, near->max_nparticles, near->positions, near->charges);
+
+  fcs_gridsort_set_max_particle_move(&gridsort, near->max_particle_move);
 
   TIMING_SYNC(comm); TIMING_START(t[1]);
 #ifdef CREATE_GHOSTS_SEPARATE

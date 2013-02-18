@@ -71,6 +71,8 @@ typedef struct _fcs_near_t
   fcs_float *ghost_positions, *ghost_charges;
   fcs_gridsort_index_t *ghost_indices;
 
+  fcs_float max_particle_move;
+
 } fcs_near_t;
 
 
@@ -168,6 +170,13 @@ void fcs_near_set_particles(fcs_near_t *near, fcs_int nparticles, fcs_int max_np
  * @param indices fcs_gridsort_index_t* array of ghost particle indices (created by gridsort)
  */
 void fcs_near_set_ghosts(fcs_near_t *near, fcs_int nghosts, fcs_float *positions, fcs_float *charges, fcs_gridsort_index_t *indices);
+
+/**
+ * @brief set max. distance particles are away from the domain of the local process, e.g. because they have moved since the last call to fcs_near_field_solver
+ * @param near fcs_near_t near field solver object
+ * @param max_particle_move fcs_float max. distance particles have moved
+ */
+void fcs_near_set_max_particle_move(fcs_near_t *near, fcs_float max_particle_move);
 
 /**
  * @brief compute near field interactions with the given "gridsorted" particles,
