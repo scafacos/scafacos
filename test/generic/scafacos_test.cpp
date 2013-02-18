@@ -410,7 +410,8 @@ static void run_method(particles_t *parts) {
   if (!check_result(result)) return;
 
   // Wrap positions
-  fcs_wrap_positions(parts->nparticles + parts->in_nparticles, parts->positions, current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity);
+  fcs_int periodicity_on[] = { 1, 1, 1 };
+  fcs_wrap_positions(parts->nparticles + parts->in_nparticles, parts->positions, current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, periodicity_on);
 
 #ifdef FCS_ENABLE_DIRECT
   if (fcs_get_method(fcs) == FCS_DIRECT)
