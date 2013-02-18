@@ -55,6 +55,7 @@ typedef struct _lgh_t
 void lgh_create(lgh_t *lgh, lghint_t size);
 void lgh_destroy(lgh_t *lgh);
 
+lgh_segment_t *lgh_alloc(lgh_t *lgh, lghint_t size);
 lgh_segment_t *lgh_alloc_minmax(lgh_t *lgh, lghint_t min, lghint_t max);
 void lgh_free(lgh_t *lgh, lgh_segment_t *seg);
 

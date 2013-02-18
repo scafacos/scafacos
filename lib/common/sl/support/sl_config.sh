@@ -97,6 +97,7 @@ cfg_extra=true
 cfg_extra_prefix=
 cfg_extra_have_h="zmpi_local zmpi_tools zmpi_ataip zmpi_atasp"
 cfg_extra_include="z_pack zmpi_local zmpi_tools"
+cfg_extra_wrap_have_h="zmpi_tools zmpi_ataip zmpi_atasp"
 cfg_extras="z_pack zmpi_local zmpi_tools zmpi_ataip zmpi_atasp"
 cfg_scripts=
 cfg_tuning=
@@ -1840,6 +1841,13 @@ if [ -n "${cfg_automake}" ] ; then
     for c in ${config_names_not} ; do
       echo -n " -DNOT_sl_${c}"
     done
+    if [ -n "${cfg_extra}" ] ; then
+      echo -n " -DZMPI_PREFIX=${cfg_extra_prefix}"
+      for x in ${cfg_extra_wrap_have_h} ; do
+        echo -n " -DHAVE_`echo ${x} | tr [a-z] [A-Z]`_H"
+      done
+      echo -n " -I\$(srcdir_sl_extra)/include"
+    fi
     echo ""
   fi
   echo ""

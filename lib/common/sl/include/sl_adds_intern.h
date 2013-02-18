@@ -26,6 +26,13 @@
 #define __SL_ADDS_INTERN_H__
 
 
+/* slint_t math functions */
+#define slint_ceil(_x_)   ceill(_x_)
+#define slint_fabs(_x_)   fabsl(_x_)
+#define slint_floor(_x_)  floorl(_x_)
+#define slint_sqrt(_x_)   sqrtl(_x_)
+
+
 inline static void elem_npack_at(elements_t *_s_, slint_t _sat_, packed_elements_t *_d_, slint_t _dat_, slint_t _n_)
 {
   slint_t i;

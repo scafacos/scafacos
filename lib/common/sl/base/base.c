@@ -1959,7 +1959,7 @@ slint_t elements_unpack_keys(packed_elements_t *s, slkey_t *k) /* sl_proto, sl_f
 
 slint merge2_basic_auto_01_x(elements_t *s0, elements_t *s1, elements_t *sx) /* sl_proto, sl_func merge2_basic_auto_01_x */
 {
-  if (z_min(s0->size, s1->size) <= sqrt(s0->size + s1->size)) return merge2_basic_sbin_01_x(s0, s1, sx);
+  if (z_min(s0->size, s1->size) <= slint_sqrt(s0->size + s1->size)) return merge2_basic_sbin_01_x(s0, s1, sx);
 
   return merge2_basic_straight_01_x(s0, s1, sx);
 }
@@ -2219,7 +2219,7 @@ static slint_t merge2_compo_hula_(elements_t *s0, elements_t *s1, elements_t *sx
 
   elements_t first, second, last, current_head, current_tail, lowest_head, lowest_tail;
 
-  s = (slint_t) floor(sqrt(s0->size + s1->size));
+  s = (slint_t) slint_floor(slint_sqrt(s0->size + s1->size));
 
   if (s0->size < s || s1->size < s)
   {
@@ -3232,7 +3232,7 @@ typedef struct _block
 
 slint_t merge2_compo_tridgell(elements_t *s0, elements_t *s1, elements_t *sx) /* sl_proto, sl_func merge2_compo_tridgell */
 {
-  slint_t blocksize = (slint_t) sqrt(s0->size + s1->size);
+  slint_t blocksize = (slint_t) slint_sqrt(s0->size + s1->size);
 
   slint_t s0blocks = (s0->size + blocksize - 1) / blocksize;
   slint_t s1blocks = (s1->size + blocksize - 1) / blocksize;

@@ -3541,8 +3541,8 @@ slint_t init_partconds(slint_t npconds, partcond_t *pconds, slint_t nparts, slin
   for (i = 0; i < npconds; ++i)
   {
     /* set default values and determine local (count/weight) limits */
-    if (!(pconds[i].pcm & SLPC_COUNTS_MM)) { pconds[i].count_min = 0.0; pconds[i].count_max = total_count; }
-    if (!(pconds[i].pcm & SLPC_COUNTS_LH)) { pconds[i].count_low = 0.0; pconds[i].count_high = total_count; }
+    if (!(pconds[i].pcm & SLPC_COUNTS_MM)) { pconds[i].count_min = 0.0; pconds[i].count_max = (double) total_count; }
+    if (!(pconds[i].pcm & SLPC_COUNTS_LH)) { pconds[i].count_low = 0.0; pconds[i].count_high = (double) total_count; }
 
     if (pconds[i].count_min < 0.0) pconds[i].count_min *= -total_count / nparts;
     if (pconds[i].count_max < 0.0) pconds[i].count_max *= -total_count / nparts;
@@ -3943,7 +3943,7 @@ slint_t mpi_select_stats(elements_t *s, slint_t nparts, int *sdispls, int size, 
     for (i = 0; i < nparts; ++i)
     {
 /*      printf("%d: %" sl_int_type_fmt " %" sl_int_type_fmt " / %f - %" sl_int_type_fmt " / %f\n", rank, i, partial_counts[i], (double) partial_counts[i] / partial_counts[nparts], (partial_counts[nparts] / nparts) - partial_counts[i], fabs(1.0 - ((double) partial_counts[i] * nparts / partial_counts[nparts])));*/
-      v += fabs((partial_counts[nparts] / nparts) - partial_counts[i]);
+      v += fabs(((double) partial_counts[nparts] / nparts) - partial_counts[i]);
       if (fabs(1.0 - ((double) partial_counts[i] * nparts / partial_counts[nparts])) < vmin) vmin = fabs(1.0 - ((double) partial_counts[i] * nparts / partial_counts[nparts]));
       if (fabs(1.0 - ((double) partial_counts[i] * nparts / partial_counts[nparts])) > vmax) vmax = fabs(1.0 - ((double) partial_counts[i] * nparts / partial_counts[nparts]));
     }
