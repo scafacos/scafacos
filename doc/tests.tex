@@ -315,22 +315,38 @@ and the virial
 \[
  ???
 \]
-We investigate the numerical error
+We investigate the absolute energy error
 \[
-  \mathcal{E}^{\varphi}_{2}(\mbox{a,b}) = \left(\displaystyle \sum_{k=1}^{N} |\varphi_{\mbox{\tiny a}}
+  \mathcal{E}_{\mathrm{abs}}^{E}(\mathrm{a},\mathrm{b})
+  = |E_{\mathrm{a}}-E_{\mathrm{b}}|\, ,
+\]
+ the absolute RMS potential error
+\[
+  \mathcal{E}^{\varphi}_{\mathrm{abs}}(\mbox{a,b})
+  = \left(\frac{1}{N} \sum_{k=1}^{N} |\varphi_{\mbox{\tiny a}}
+  (\mathbf r_k)-\varphi_{\mbox{\tiny b}}(\mathbf r_k)|^2\right)^{1/2} \, ,
+\]
+the absolute RMS force error
+\[
+  \mathcal{E}_{\mathrm{abs}}^{\boldsymbol F}(\mbox{a,b})
+  = \left(\frac{1}{N}
+    \sum_{k=1}^{N} \|\mathbf F_{\mbox{\tiny a}}(\mathbf r_k)-\mathbf F_{\mbox{\tiny b}}(\mathbf r_k)\|^2_2\right)^{1/2}\, ,
+\]
+the corresponding relative errors
+\[
+  \mathcal{E}_{\mathrm{rel}}^{E}(\mathrm{a},\mathrm{b})
+  = \frac{|E_{\mathrm{a}}-E_{\mathrm{b}}|}{|E_{\mathrm{a}}|}\, ,
+\]
+\[
+  \mathcal{E}^{\varphi}_{\mathrm{rel}}(\mbox{a,b}) = \left(\displaystyle \sum_{k=1}^{N} |\varphi_{\mbox{\tiny a}}
   (\mathbf r_k)-\varphi_{\mbox{\tiny b}}(\mathbf r_k)|^2\right)^{1/2}
   \left(\displaystyle\sum_{k=1}^{N}|\varphi_{\mbox{\tiny a}}(\mathbf r_k)|^2\right)^{-1/2}\, ,
 \]
 \[
-  \mathcal{E}_{2}^{\boldsymbol F}(\mbox{a,b})
+  \mathcal{E}_{\mathrm{rel}}^{\boldsymbol F}(\mbox{a,b})
   = \left(\displaystyle
     \sum_{k=1}^{N} \|\mathbf F_{\mbox{\tiny a}}(\mathbf r_k)-\mathbf F_{\mbox{\tiny b}}(\mathbf r_k)\|^2_2\right)^{1/2}
-    \left(\displaystyle\sum_{k=1}^{N}\|\mathbf F_{\mbox{\tiny a}}(\mathbf r_k) \|^2_2\right)^{-1/2}\;
-\]
-and
-\[
-  \mathcal{E}_{2}^{E}(\mathrm{a},\mathrm{b})
-  = \frac{|E_{\mathrm{a}}-E_{\mathrm{b}}|}{|E_{\mathrm{a}}|}
+    \left(\displaystyle\sum_{k=1}^{N}\|\mathbf F_{\mbox{\tiny a}}(\mathbf r_k) \|^2_2\right)^{-1/2}\, ,
 \]
 where $\mathrm{a}$ and $\mathrm{b}$ represent the different techniques
 for the computation.  Furthermore we investigate the sum
@@ -388,8 +404,8 @@ We choose the following parameter for our tests.
     \hline
     $N$ & $t_\textrm{direct}$ & $t_\textrm{FMM}$ & $t_\textrm{P2NFFT}$ &
     \rule{0cm}{3ex}
-    ${\cal E}^{\varphi}_2\left(\textrm{direct},\textrm{FMM}\right)$ &
-    ${\cal E}^{\varphi}_2\left(\textrm{direct},\textrm{P2NFFT}\right)$ \\
+    ${\cal E}^{\varphi}_{\mathrm rel}\left(\textrm{direct},\textrm{FMM}\right)$ &
+    ${\cal E}^{\varphi}_{\mathrm rel}\left(\textrm{direct},\textrm{P2NFFT}\right)$ \\
     \hline
     500 & ??? & ??? & ??? & ??? & ??? \\
     5\,000 & ??? & ??? & ??? & ??? & ??? \\
@@ -406,8 +422,8 @@ We choose the following parameter for our tests.
     \hline
     $P$ & $t_\textrm{FMM}$ & $t_\textrm{P2NFFT}$ &
     \rule{0cm}{3ex}
-    ${\cal E}^{\varphi}_2\left(\textrm{ref},\textrm{FMM}\right)$ &
-    ${\cal E}^{\varphi}_2\left(\textrm{ref},\textrm{P2NFFT}\right)$ \\
+    ${\cal E}^{\varphi}_{\mathrm rel}\left(\textrm{ref},\textrm{FMM}\right)$ &
+    ${\cal E}^{\varphi}_{\mathrm rel}\left(\textrm{ref},\textrm{P2NFFT}\right)$ \\
     \hline
     32   & ??? & ??? & ??? & ??? \\
     128  & ??? & ??? & ??? & ??? \\
@@ -416,7 +432,7 @@ We choose the following parameter for our tests.
     8192 & ??? & ??? & ??? & ??? \\
     \hline
   \end{tabular}
-  \caption{Strong scaling for $N=1\,000\,000$ particles and error bound ${\cal E}^{\varphi}_2 \le 10^{-4}$}
+  \caption{Strong scaling for $N=1\,000\,000$ particles and error bound ${\cal E}^{\varphi}_{\mathrm rel} \le 10^{-4}$}
 \end{table}
 
 \begin{table}[p]
@@ -425,8 +441,8 @@ We choose the following parameter for our tests.
     \hline
     $P$ & $t_\textrm{FMM}$ & $t_\textrm{P2NFFT}$ &
     \rule{0cm}{3ex}
-    ${\cal E}^{\varphi}_2\left(\textrm{ref},\textrm{FMM}\right)$ &
-    ${\cal E}^{\varphi}_2\left(\textrm{ref},\textrm{P2NFFT}\right)$ \\
+    ${\cal E}^{\varphi}_{\mathrm rel}\left(\textrm{ref},\textrm{FMM}\right)$ &
+    ${\cal E}^{\varphi}_{\mathrm rel}\left(\textrm{ref},\textrm{P2NFFT}\right)$ \\
     \hline
     32   & ??? & ??? & ??? & ??? \\
     128  & ??? & ??? & ??? & ??? \\
@@ -435,7 +451,7 @@ We choose the following parameter for our tests.
     8192 & ??? & ??? & ??? & ??? \\
     \hline
   \end{tabular}
-  \caption{Weak scaling for $N=1\,000\,000$ particles per process and error bound ${\cal E}^{\varphi}_2 \le 10^{-4}$}
+  \caption{Weak scaling for $N=1\,000\,000$ particles per process and error bound ${\cal E}^{\varphi}_{\mathrm rel} \le 10^{-4}$}
 \end{table}
 
 \subsection{Distribution \texttt{hammersley\_{}ball\_{}neg\_{}charge}}
@@ -475,9 +491,9 @@ where $R$ denotes the radius of the ball.\par
   \begin{tabular}{|c||c|c|c|c|c|c|}
     \hline \rule{0mm}{5mm}
     $N$ & $t_{\mbox{\tiny slow}}$  &   $t_{\mbox{\tiny fast}}$
-    &$\mathcal{E}_{2}^{\varphi}(\mbox{asym,slow})$
-    &$\mathcal{E}_{2}^{\varphi}(\mbox{asym,P2NFFT})$
-    &$\mathcal{E}_{2}^{\varphi}(\mbox{slow,P2NFFT})$  \\ \hline
+    &$\mathcal{E}_{\mathrm rel}^{\varphi}(\mbox{asym,slow})$
+    &$\mathcal{E}_{\mathrm rel}^{\varphi}(\mbox{asym,P2NFFT})$
+    &$\mathcal{E}_{\mathrm rel}^{\varphi}(\mbox{slow,P2NFFT})$  \\ \hline
     10\,000     & ??? & ??? & ??? & ??? &  ??? \\ \hline
     50\,000     & ??? & ??? & ??? & ??? &  ??? \\ \hline
     100\,000    & ??? & ??? & ??? & ??? &  ??? \\ \hline
@@ -485,7 +501,7 @@ where $R$ denotes the radius of the ball.\par
     500\,000    & *   & ??? & *   & ??? &  *   \\ \hline
     1\,000\,000 & *   & ??? & *   & ??? &  *   \\ \hline
   \end{tabular}
-  \caption{Computational time and the error $\mathcal{E}_{2}$ for the potential $\varphi$, *estimated.\label{e2_potential}}
+  \caption{Computational time and the error $\mathcal{E}_{\mathrm rel}$ for the potential $\varphi$, *estimated.\label{e2_potential}}
 \end{table}
 %
 The numerical experiments documented in Table~\ref{e2_potential} show
