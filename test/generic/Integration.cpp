@@ -59,6 +59,7 @@ static void parse_conf(integration_t *integ, char *conf)
     PARSE_NEXT(cur);
 
     if (strcmp(param, "delta_t") == 0) { integ->delta_t = atof(cur); PARSE_NEXT(cur); }
+    else if (strcmp(param, "resort") == 0) { integ->resort = atoi(cur); PARSE_NEXT(cur); }
   }
 
 #undef PARSE_NEXT
@@ -72,6 +73,7 @@ void integ_setup(integration_t *integ, fcs_int time_steps, char *conf)
   integ->time_steps = time_steps;
   
   integ->delta_t = 1e-2;
+  integ->resort = 0;
 
   parse_conf(integ, conf);
 }
@@ -93,6 +95,7 @@ void integ_print_settings(integration_t *integ)
 
   cout << "  Time steps: " << integ->time_steps << endl;
   cout << "  delta_t:    " << integ->delta_t << endl;
+  cout << "  resort:     " << integ->resort << endl;
 }
 
 

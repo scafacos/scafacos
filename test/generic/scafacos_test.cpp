@@ -507,6 +507,8 @@ static void run_integration(particles_t *parts)
 {
   integration_t integ;
 
+  fcs_int resort_availability, resort = 0;
+
   fcs_float *v_cur, *f_old, *f_cur, e, max_particle_move;
   FCSResult result;
   fcs_int r = 0;
@@ -532,12 +534,16 @@ static void run_integration(particles_t *parts)
   /* init integration (incl. velocity and field values) */
   integ_init(&integ, parts->nparticles, v_cur, f_cur);
 
+  resort = integ.resort;
+
   if (fcs != FCS_NULL)
   {
     /* init method */
     result = fcs_common_set(fcs, (fcs_get_near_field_flag(fcs) == 0)?0:1,
       current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity, parts->total_nparticles);
     if (!check_result(result)) return;
+
+    if (fcs_set_resort(fcs, resort) != FCS_RESULT_SUCCESS) resort = 0;
 
     /* tune method */
     result = fcs_tune(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges);
@@ -570,6 +576,31 @@ static void run_integration(particles_t *parts)
       MASTER(printf("     = %f second(s)\n", t));
     }
 
+    fcs_get_resort_availability(fcs, &resort_availability);
+    if (resort_availability)
+    {
+      fcs_get_resort_particles(fcs, &parts->nparticles);
+
+      MASTER(cout << "    Resorting old velocity and field values..." << endl);
+
+      t = MPI_Wtime();
+      fcs_resort_floats(fcs, v_cur, NULL, 3, communicator);
+      fcs_resort_floats(fcs, f_old, NULL, 3, communicator);
+      t = MPI_Wtime() - t;
+
+      MASTER(printf("     = %f second(s)\n", t));
+
+      MASTER(cout << "    Resorting reference potential and field values..." << endl);
+
+      t = MPI_Wtime();
+      if (parts->reference_potentials != NULL) fcs_resort_floats(fcs, parts->reference_potentials, NULL, 1, communicator);
+      if (parts->reference_field != NULL) fcs_resort_floats(fcs, parts->reference_field, NULL, 3, communicator);
+      t = MPI_Wtime() - t;
+
+      MASTER(printf("     = %f second(s)\n", t));
+
+    } else if (resort) MASTER(cout << "    Resorting enabled, but failed!" << endl);
+
 #ifdef PRINT_PARTICLES
     MASTER(cout << "Particles after fcs_run: " << parts->nparticles << endl);
     print_particles(parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
@@ -593,6 +624,20 @@ static void run_integration(particles_t *parts)
 
     MASTER(cout << "    Update positions..." << endl);
     integ_update_positions(&integ, parts->nparticles, parts->positions, v_cur, f_cur, &max_particle_move);
+
+    if (resort_availability)
+    {
+      MASTER(cout << "    Set max particle move = " << max_particle_move);
+
+      result = fcs_set_max_particle_move(fcs, max_particle_move);
+
+      if (!result) MASTER(cout << endl);
+      else
+      {
+        MASTER(cout << " (failed because not supported!)" << endl);
+        fcsResult_destroy(result);
+      }
+    }
 
     integ_correct_positions(&integ, parts->nparticles, parts->positions);
     fcs_set_box_a(fcs, integ.box_a);
