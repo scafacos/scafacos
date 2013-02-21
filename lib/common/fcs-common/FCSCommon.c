@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <float.h>
 
 /*#include "FCSDefinitions.h"*/
 #include "FCSCommon.h"
@@ -124,6 +125,8 @@ void fcs_wrap_positions(fcs_int nparticles, fcs_float *positions, fcs_float *box
   fcs_float ibox[9], x[3], y[3];
 
 
+  if (periodicity == NULL) return;
+
   invert_3x3(box_a, box_b, box_c, ibox);
 
   for (i = 0; i < nparticles; ++i)
@@ -140,6 +143,120 @@ void fcs_wrap_positions(fcs_int nparticles, fcs_float *positions, fcs_float *box
     positions[3 * i + 1] -= box_a[1] * y[0] + box_b[1] * y[1] + box_c[1] * y[2];
     positions[3 * i + 2] -= box_a[2] * y[0] + box_b[2] * y[1] + box_c[2] * y[2];
   }
+}
+
+
+static void fcs_determine_position_extents(fcs_int nparticles, fcs_float *positions, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_float *offset, fcs_float *min, fcs_float *max)
+{
+  fcs_int i;
+  fcs_float ibox[9], x[3], y[3];
+
+
+  invert_3x3(box_a, box_b, box_c, ibox);
+
+  for (i = 0; i < nparticles; ++i)
+  {
+    x[0] = positions[3 * i + 0] - offset[0];
+    x[1] = positions[3 * i + 1] - offset[0];
+    x[2] = positions[3 * i + 2] - offset[0];
+
+    y[0] = ibox[0] * x[0] + ibox[3] * x[1] + ibox[6] * x[2];
+    y[1] = ibox[1] * x[0] + ibox[4] * x[1] + ibox[7] * x[2];
+    y[2] = ibox[2] * x[0] + ibox[5] * x[1] + ibox[8] * x[2];
+
+    if (i == 0)
+    {
+      min[0] = max[0] = y[0];
+      min[1] = max[1] = y[1];
+      min[2] = max[2] = y[2];
+
+    } else
+    {
+      if (y[0] < min[0]) min[0] = y[0];
+      if (y[0] > max[0]) max[0] = y[0];
+      if (y[1] < min[1]) min[1] = y[1];
+      if (y[1] > max[1]) max[1] = y[1];
+      if (y[2] < min[2]) min[2] = y[2];
+      if (y[2] > max[2]) max[2] = y[2];
+    }
+  }
+}
+
+
+void fcs_expand_system_box(fcs_int nparticles, fcs_float *positions, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_float *offset, fcs_int *periodicity)
+{
+  fcs_float s, min[3], max[3];
+
+  const fcs_float eps1 =
+#if defined(FCS_FLOAT_IS_FLOAT)
+    1.0f + FLT_EPSILON
+#elif defined(FCS_FLOAT_IS_DOUBLE)
+    1.0 + DBL_EPSILON
+#elif defined(FCS_FLOAT_IS_LONG_DOUBLE)
+    1.0l + LDBL_EPSILON
+#else
+# error FCS float data type is unknown
+#endif
+    ;
+
+
+  fcs_determine_position_extents(nparticles, positions, box_a, box_b, box_c, offset, min, max);
+
+/*  printf("min-max: [%f:%f]  [%f:%f]  [%f:%f]\n", min[0], max[0], min[1], max[1], min[2], max[2]);
+
+  printf("old-system: offset: [%.16e,%.16e,%.16e], size: [%.16e,%.16e,%.16e]x[%.16e,%.16e,%.16e]x[%.16e,%.16e,%.16e]\n",
+    offset[0], offset[1], offset[2], box_a[0], box_a[1], box_a[2], box_b[0], box_b[1], box_b[2], box_c[0], box_c[1], box_c[2]);*/
+
+  if (periodicity == NULL || !periodicity[0])
+  {
+    s = 0;
+    if (min[0] < 0)
+    {
+      offset[0] += min[0] * box_a[0];
+      offset[1] += min[0] * box_a[1];
+      offset[2] += min[0] * box_a[2];
+      s -= min[0];
+    }
+    s += (max[0] >= 1)?max[0]*eps1:1;
+    box_a[0] *= s;
+    box_a[1] *= s;
+    box_a[2] *= s;
+  }
+
+  if (periodicity == NULL || !periodicity[1])
+  {
+    s = 0;
+    if (min[1] < 0)
+    {
+      offset[0] += min[1] * box_b[0];
+      offset[1] += min[1] * box_b[1];
+      offset[2] += min[1] * box_b[2];
+      s -= min[1];
+    }
+    s += (max[1] >= 1)?max[1]*eps1:1;
+    box_b[0] *= s;
+    box_b[1] *= s;
+    box_b[2] *= s;
+  }
+
+  if (periodicity == NULL || !periodicity[2])
+  {
+    s = 0;
+    if (min[2] < 0)
+    {
+      offset[0] += min[2] * box_c[0];
+      offset[1] += min[2] * box_c[1];
+      offset[2] += min[2] * box_c[2];
+      s -= min[2];
+    }
+    s += (max[2] >= 1)?max[2]*eps1:1;
+    box_c[0] *= s;
+    box_c[1] *= s;
+    box_c[2] *= s;
+  }
+
+/*  printf("new-system: offset: [%.16e,%.16e,%.16e], size: [%.16e,%.16e,%.16e]x[%.16e,%.16e,%.16e]x[%.16e,%.16e,%.16e]\n",
+    offset[0], offset[1], offset[2], box_a[0], box_a[1], box_a[2], box_b[0], box_b[1], box_b[2], box_c[0], box_c[1], box_c[2]);*/
 }
 
 
