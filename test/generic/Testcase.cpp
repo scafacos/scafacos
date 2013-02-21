@@ -98,8 +98,8 @@ Configuration::Configuration() {
   decomp_field = 0;
   decomp_comm = MPI_COMM_NULL;
 
-  result_potentials = 0;
-  result_field = 0;
+  reference_potentials = 0;
+  reference_field = 0;
 
   field_correction[0] = field_correction[1] = field_correction[2] = 0;
   energy_correction = 0;
@@ -717,17 +717,33 @@ void Configuration::destroy_cart_comm()
   if (cart_comm != MPI_COMM_NULL) MPI_Comm_free(&cart_comm);
 }
 
-void Configuration::decompose_particles()
+void Configuration::decompose_particles(fcs_int overalloc)
 {
+  fcs_gridsort_resort_t gridsort_resort;
+
+  const fcs_float overallocation = overalloc?-0.1:0;
+
+  if (params.decomposition == DECOMPOSE_ALL_ON_MASTER || params.decomposition == DECOMPOSE_ATOMISTIC) dup_input_overalloc = overallocation;
+  else dup_input_overalloc = 0;
+
   generate_input_particles();
 
+  dup_input_overalloc = overallocation;
+
+  /* wrap particle positions of periodic dimensions */
   fcs_wrap_positions(dup_input_nparticles, dup_input_positions, params.box_a, params.box_b, params.box_c, params.offset, params.periodicity);
   
+  /* increase particle system in open dimensions to enclose all particles */
+  fcs_expand_system_box(dup_input_nparticles, dup_input_positions, params.box_a, params.box_b, params.box_c, params.offset, params.periodicity);
+
   MPI_Bcast(have_reference_values, 2, FCS_MPI_INT, MASTER_RANK, communicator);
 
   decomp_comm = communicator;
   
   decomp_total_nparticles = dup_input_total_nparticles;
+
+  reference_potentials = 0;
+  reference_field = 0;
 
   switch (params.decomposition)
   {
@@ -738,6 +754,8 @@ void Configuration::decompose_particles()
         decomp_max_nparticles = dup_input_nparticles_allocated;
         decomp_positions = dup_input_positions;
         decomp_charges = dup_input_charges;
+        if (have_reference_values[0]) reference_potentials = dup_input_potentials;
+        if (have_reference_values[1]) reference_field = dup_input_field;
       } else {
         decomp_nparticles = 0;
         decomp_max_nparticles = 0;
@@ -751,23 +769,56 @@ void Configuration::decompose_particles()
       decomp_max_nparticles = dup_input_nparticles_allocated;
       decomp_positions = dup_input_positions;
       decomp_charges = dup_input_charges;
+      if (have_reference_values[0]) reference_potentials = dup_input_potentials;
+      if (have_reference_values[1]) reference_field = dup_input_field;
       break;
     case DECOMPOSE_RANDOM:
       INFO_MASTER(cout << "Decomposing system (random)..." << endl);
       fcs_gridsort_create(&gridsort);
       fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_nparticles, dup_input_positions, dup_input_charges);
+      fcs_gridsort_set_overalloc(&gridsort, dup_input_overalloc);
       fcs_gridsort_sort_random(&gridsort, communicator);
       fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
+      fcs_gridsort_prepare_resort(&gridsort, NULL, NULL, NULL, NULL, communicator);
+
+      fcs_gridsort_resort_create(&gridsort_resort, &gridsort, communicator);
+      if (have_reference_values[0])
+      {
+        reference_potentials = new fcs_float[decomp_max_nparticles];
+        fcs_gridsort_resort_floats(gridsort_resort, dup_input_potentials, reference_potentials, 1, communicator);
+      }
+      if (have_reference_values[1])
+      {
+        reference_field = new fcs_float[3 * decomp_max_nparticles];
+        fcs_gridsort_resort_floats(gridsort_resort, dup_input_field, reference_field, 3, communicator);
+      }
+      fcs_gridsort_resort_destroy(&gridsort_resort);
       break;
     case DECOMPOSE_DOMAIN:
       INFO_MASTER(cout << "Decomposing system (domain)..." << endl);
       create_cart_comm();
       decomp_comm = cart_comm;
+
       fcs_gridsort_create(&gridsort);
-      fcs_gridsort_set_system(&gridsort, params.offset, params.box_a, params.box_b, params.box_c, NULL);
+      fcs_gridsort_set_system(&gridsort, params.offset, params.box_a, params.box_b, params.box_c, params.periodicity);
       fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_nparticles, dup_input_positions, dup_input_charges);
+      fcs_gridsort_set_overalloc(&gridsort, dup_input_overalloc);
       fcs_gridsort_sort_forward(&gridsort, 0.0, cart_comm);
       fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
+      fcs_gridsort_prepare_resort(&gridsort, NULL, NULL, NULL, NULL, communicator);
+
+      fcs_gridsort_resort_create(&gridsort_resort, &gridsort, communicator);
+      if (have_reference_values[0])
+      {
+        reference_potentials = new fcs_float[decomp_max_nparticles];
+        fcs_gridsort_resort_floats(gridsort_resort, dup_input_potentials, reference_potentials, 1, communicator);
+      }
+      if (have_reference_values[1])
+      {
+        reference_field = new fcs_float[3 * decomp_max_nparticles];
+        fcs_gridsort_resort_floats(gridsort_resort, dup_input_field, reference_field, 3, communicator);
+      }
+      fcs_gridsort_resort_destroy(&gridsort_resort);
       break;
     default:
       break;
@@ -789,53 +840,11 @@ void Configuration::decompose_particles()
   }
 }
 
-void Configuration::gather_particles()
-{
-  result_potentials = 0;
-  result_field = 0;
-
-  switch (params.decomposition)
-  {
-    case DECOMPOSE_ALL_ON_MASTER:
-      INFO_MASTER(cout << "Gathering results (all-on-master)..." << endl);
-      if (comm_rank == 0) {
-        result_potentials = decomp_potentials;
-        result_field = decomp_field;
-      }
-      break;
-    case DECOMPOSE_ATOMISTIC:
-      INFO_MASTER(cout << "Gathering results (atomistic)..." << endl);
-      result_potentials = decomp_potentials;
-      result_field = decomp_field;
-      break;
-    case DECOMPOSE_RANDOM:
-      INFO_MASTER(cout << "Gathering results (random)..." << endl);
-      if (dup_input_nparticles > 0) {
-        result_potentials = new fcs_float[dup_input_nparticles];
-        result_field = new fcs_float[3*dup_input_nparticles];
-      }
-      fcs_gridsort_sort_backward(&gridsort, decomp_field, decomp_potentials,
-        (result_field)?result_field:(fcs_float *)1, (result_potentials)?result_potentials:(fcs_float *)1, 1, decomp_comm);
-      break;
-    case DECOMPOSE_DOMAIN:
-      INFO_MASTER(cout << "Gathering results (domain)..." << endl);
-      if (dup_input_nparticles > 0) {
-        result_potentials = new fcs_float[dup_input_nparticles];
-        result_field = new fcs_float[3*dup_input_nparticles];
-      }
-      fcs_gridsort_sort_backward(&gridsort, decomp_field, decomp_potentials,
-        (result_field)?result_field:(fcs_float *)1, (result_potentials)?result_potentials:(fcs_float *)1, 1, decomp_comm);
-      break;
-    default:
-      break;
-  }
-}
-
 bool Configuration::compute_errors(errors_t *e) {
 
-  ::compute_errors(e, dup_input_nparticles, dup_input_positions, dup_input_charges,
-    have_reference_values[0]?dup_input_potentials:NULL, have_reference_values[1]?dup_input_field:NULL,
-    have_result_values[0]?result_potentials:NULL, have_result_values[1]?result_field:NULL,
+  ::compute_errors(e, decomp_nparticles, decomp_positions, decomp_charges,
+    have_reference_values[0]?reference_potentials:NULL, have_reference_values[1]?reference_field:NULL,
+    have_result_values[0]?decomp_potentials:NULL, have_result_values[1]?decomp_field:NULL,
     field_correction, energy_correction,
     decomp_comm);
 
@@ -856,16 +865,16 @@ void Configuration::free_decomp_particles(bool quiet)
       if (!quiet) INFO_MASTER(cout << "Freeing data (random)..." << endl);
       fcs_gridsort_free(&gridsort);
       fcs_gridsort_destroy(&gridsort);
-      delete[] result_potentials;
-      delete[] result_field;
+      delete[] reference_potentials;
+      delete[] reference_field;
       break;
     case DECOMPOSE_DOMAIN:
       if (!quiet) INFO_MASTER(cout << "Freeing data (domain)..." << endl);
       fcs_gridsort_free(&gridsort);
       fcs_gridsort_destroy(&gridsort);
       destroy_cart_comm();
-      delete[] result_potentials;
-      delete[] result_field;
+      delete[] reference_potentials;
+      delete[] reference_field;
       break;
     default:
       break;
@@ -885,8 +894,8 @@ void Configuration::free_decomp_particles(bool quiet)
 
   decomp_comm = MPI_COMM_NULL;
 
-  result_potentials = 0;
-  result_field = 0;
+  reference_potentials = 0;
+  reference_field = 0;
 }
 
 void Configuration::determine_total_duplication()

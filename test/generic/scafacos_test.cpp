@@ -265,6 +265,8 @@ typedef struct
   fcs_int total_nparticles, nparticles, max_nparticles;
   fcs_float *positions, *charges, *field, *potentials;
 
+  fcs_float *reference_field, *reference_potentials;
+
   fcs_int *shuffles;
 
   fcs_int total_in_nparticles, in_nparticles;
@@ -312,6 +314,9 @@ static void prepare_particles(particles_t *parts)
   parts->charges = current_config->decomp_charges;
   parts->field = current_config->decomp_field;
   parts->potentials = current_config->decomp_potentials;
+  
+  parts->reference_field = current_config->reference_field;
+  parts->reference_potentials = current_config->reference_potentials;
 
   parts->total_in_nparticles = current_config->decomp_total_nparticles - parts->total_nparticles;
   parts->in_nparticles = current_config->decomp_nparticles - parts->nparticles;
@@ -409,10 +414,6 @@ static void run_method(particles_t *parts) {
   MASTER(cout << "      energy_correction = " << current_config->energy_correction << endl);
   if (!check_result(result)) return;
 
-  // Wrap positions
-  fcs_int periodicity_on[] = { 1, 1, 1 };
-  fcs_wrap_positions(parts->nparticles + parts->in_nparticles, parts->positions, current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, periodicity_on);
-
 #ifdef FCS_ENABLE_DIRECT
   if (fcs_get_method(fcs) == FCS_DIRECT)
   {
@@ -506,7 +507,7 @@ static void run_integration(particles_t *parts)
 {
   integration_t integ;
 
-  fcs_float *v_cur, *f_old, *f_cur, e;
+  fcs_float *v_cur, *f_old, *f_cur, e, max_particle_move;
   FCSResult result;
   fcs_int r = 0;
 
@@ -518,9 +519,6 @@ static void run_integration(particles_t *parts)
   v_cur = new fcs_float[3 * parts->max_nparticles];
   f_old = new fcs_float[3 * parts->max_nparticles];
   f_cur = parts->field;
-
-  /* wrap positions */
-  fcs_wrap_positions(parts->nparticles, parts->positions, current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity);
 
   /* setup integration parameters */
   integ_setup(&integ, global_params.time_steps, global_params.integration_conf);
@@ -594,15 +592,13 @@ static void run_integration(particles_t *parts)
     MASTER(cout << "  Time-step #" << r << endl);
 
     MASTER(cout << "    Update positions..." << endl);
-    integ_update_positions(&integ, parts->nparticles, parts->positions, v_cur, f_cur);
+    integ_update_positions(&integ, parts->nparticles, parts->positions, v_cur, f_cur, &max_particle_move);
 
     integ_correct_positions(&integ, parts->nparticles, parts->positions);
     fcs_set_box_a(fcs, integ.box_a);
     fcs_set_box_b(fcs, integ.box_b);
     fcs_set_box_c(fcs, integ.box_c);
     fcs_set_offset(fcs, integ.offset);
-
-    integ_correct_positions(&integ, parts->nparticles, parts->positions);
   }
 
   current_config->have_reference_values[0] = 0;
@@ -719,7 +715,7 @@ int main(int argc, char* argv[]) {
     MASTER(cout << "Processing configuration " << config_count << "..." << endl);
 
     // Distribute particles
-    current_config->decompose_particles();
+    current_config->decompose_particles(global_params.integrate);
 
     particles_t parts;
     prepare_particles(&parts);
@@ -734,9 +730,6 @@ int main(int argc, char* argv[]) {
 
     unprepare_particles(&parts);
 
-    // Gather resulting potentials and fields to master
-    current_config->gather_particles();
-
     // Compute errors
     errors_t err;
     bool have_errors = current_config->compute_errors(&err);
@@ -748,9 +741,9 @@ int main(int argc, char* argv[]) {
     if (global_params.have_outfile) {
       // Write the computed data as new references into the testcase
       if (current_config->have_result_values[0])
-        memcpy(current_config->dup_input_potentials, current_config->result_potentials, current_config->dup_input_nparticles*sizeof(fcs_float));
+        memcpy(current_config->dup_input_potentials, current_config->decomp_potentials, current_config->dup_input_nparticles*sizeof(fcs_float));
       if (current_config->have_result_values[1])
-        memcpy(current_config->dup_input_field, current_config->result_field, current_config->dup_input_nparticles*3*sizeof(fcs_float));
+        memcpy(current_config->dup_input_field, current_config->decomp_field, current_config->dup_input_nparticles*3*sizeof(fcs_float));
     }
 
     // Free particles

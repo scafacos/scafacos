@@ -94,8 +94,7 @@ public:
   fcs_float *decomp_field;
   MPI_Comm decomp_comm;
 
-  fcs_float *result_potentials;
-  fcs_float *result_field;
+  fcs_float *reference_potentials, *reference_field;
   
   fcs_float field_correction[3], energy_correction;
 
@@ -123,7 +122,7 @@ public:
   void create_cart_comm();
   void destroy_cart_comm();
 
-  void decompose_particles();
+  void decompose_particles(fcs_int overalloc = 0);
   void gather_particles();
   bool compute_errors(errors_t *e);
   void free_decomp_particles(bool quiet = false);

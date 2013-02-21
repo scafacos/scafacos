@@ -38,7 +38,7 @@ void integ_system_setup(integration_t *integ, fcs_float *box_a, fcs_float *box_b
 void integ_print_settings(integration_t *integ);
 void integ_init(integration_t *integ, fcs_int nparticles, fcs_float *velocities, fcs_float *field);
 void integ_update_velocities(integration_t *integ, fcs_int nparticles, fcs_float *v, fcs_float *f_old, fcs_float *f_cur);
-void integ_update_positions(integration_t *integ, fcs_int nparticles, fcs_float *pos, fcs_float *v_old, fcs_float *f_old);
+void integ_update_positions(integration_t *integ, fcs_int nparticles, fcs_float *pos, fcs_float *v_old, fcs_float *f_old, fcs_float *max_particle_move);
 void integ_correct_positions(integration_t *integ, fcs_int nparticles, fcs_float *pos);
 
 

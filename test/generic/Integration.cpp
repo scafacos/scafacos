@@ -117,19 +117,35 @@ void integ_update_velocities(integration_t *integ, fcs_int nparticles, fcs_float
 }
 
 
-void integ_update_positions(integration_t *integ, fcs_int nparticles, fcs_float *pos, fcs_float *v_old, fcs_float *f_old)
+void integ_update_positions(integration_t *integ, fcs_int nparticles, fcs_float *pos, fcs_float *v_old, fcs_float *f_old, fcs_float *max_particle_move)
 {
+  fcs_float old_pos[3], d;
+
+
+  *max_particle_move = 0;
+
   for (fcs_int i = 0; i < nparticles; ++i)
   {
+    old_pos[0] = pos[3 * i + 0];
+    old_pos[1] = pos[3 * i + 1];
+    old_pos[2] = pos[3 * i + 2];
+  
     pos[3 * i + 0] += integ->delta_t * (v_old[3 * i + 0] + 0.5 * f_old[3 * i + 0] * integ->delta_t);
     pos[3 * i + 1] += integ->delta_t * (v_old[3 * i + 1] + 0.5 * f_old[3 * i + 1] * integ->delta_t);
     pos[3 * i + 2] += integ->delta_t * (v_old[3 * i + 2] + 0.5 * f_old[3 * i + 2] * integ->delta_t);
+
+    d = fcs_sqrt((old_pos[0] - pos[3 * i + 0]) * (old_pos[0] - pos[3 * i + 0]) + (old_pos[1] - pos[3 * i + 1]) * (old_pos[1] - pos[3 * i + 1]) + (old_pos[2] - pos[3 * i + 2]) * (old_pos[2] - pos[3 * i + 2]));
+
+    if (d > *max_particle_move) *max_particle_move = d;
   }
 }
 
 
 void integ_correct_positions(integration_t *integ, fcs_int nparticles, fcs_float *pos)
 {
-  // wrap positions (w.r.t. periodic boundaries)
+  /* wrap particle positions of periodic dimensions */
   fcs_wrap_positions(nparticles, pos, integ->box_a, integ->box_b, integ->box_c, integ->offset, integ->periodicity);
+  
+  /* increase particle system in open dimensions to enclose all particles */
+  fcs_expand_system_box(nparticles, pos, integ->box_a, integ->box_b, integ->box_c, integ->offset, integ->periodicity);
 }
