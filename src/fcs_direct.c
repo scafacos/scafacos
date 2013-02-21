@@ -79,7 +79,9 @@ FCSResult fcs_direct_init(FCS handle)
   fcs_direct_set_cutoff_with_near(handle, FCS_FALSE);
 
   handle->direct_param->metallic_boundary_conditions = 1;
-  
+
+  handle->set_max_particle_move = fcs_direct_set_max_particle_move;
+
   DEBUG_MOP(printf("fcs_direct_init: done\n"));
 
   return NULL;
@@ -296,6 +298,14 @@ FCSResult fcs_direct_set_in_particles(FCS handle, fcs_int nin_particles, fcs_flo
   DIRECT_HANDLE_CHECK(handle, func_name);
 
   fcs_directc_set_in_particles(&handle->direct_param->directc, nin_particles, in_positions, in_charges);
+
+  return NULL;
+}
+
+
+FCSResult fcs_direct_set_max_particle_move(FCS handle, fcs_float max_particle_move)
+{
+  fcs_directc_set_max_particle_move(&handle->direct_param->directc, max_particle_move);
 
   return NULL;
 }

@@ -18,7 +18,6 @@
 */
 
 
-
 #ifndef FCS_DIRECT_INCLUDED
 #define FCS_DIRECT_INCLUDED
 
@@ -132,6 +131,9 @@ FCSResult fcs_direct_require_virial(FCS handle, fcs_int compute_virial);
  * @return FCSResult-object containing the return state
  */
 FCSResult fcs_direct_get_virial(FCS handle, fcs_float *virial);
+
+
+FCSResult fcs_direct_set_max_particle_move(FCS handle, fcs_float max_particle_move);
 
 
 #ifdef __cplusplus

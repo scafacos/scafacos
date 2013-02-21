@@ -179,6 +179,8 @@ FCSResult fcs_init ( FCS *handle, const char* method, MPI_Comm communicator )
   (*handle)->vmg_param = NULL;
 #endif
 
+  (*handle)->set_max_particle_move = NULL;
+
   /* Call the method-specific init functions */
 #ifdef FCS_ENABLE_DIRECT
   if (strcmp(method, "direct") == 0) {
@@ -2204,6 +2206,21 @@ FCSResult fcs_set_values_changed(FCS handle, fcs_int changed)
 
     return NULL;
 }
+
+FCSResult fcs_set_max_particle_move(FCS handle, fcs_float max_particle_move)
+{
+  char* fnc_name = "fcs_set_max_particle_move";
+
+  if (handle == NULL)
+    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+
+  if (handle->set_max_particle_move == NULL)
+    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "max. particle move not supported");
+
+  return handle->set_max_particle_move(handle, max_particle_move);
+}
+
+
 
 /*****************************/
 /* FORTRAN wrapper functions */

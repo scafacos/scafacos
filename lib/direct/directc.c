@@ -111,6 +111,8 @@ void fcs_directc_create(fcs_directc_t *directc)
   directc->periodic_images[0] = directc->periodic_images[1] = directc->periodic_images[2] = 1;
   directc->cutoff = 0.0;
   directc->cutoff_with_near = 0;
+
+  directc->max_particle_move = -1;
 }
 
 
@@ -181,6 +183,12 @@ void fcs_directc_set_cutoff(fcs_directc_t *directc, fcs_float cutoff)
 void fcs_directc_set_cutoff_with_near(fcs_directc_t *directc, fcs_int cutoff_with_near)
 {
   directc->cutoff_with_near = cutoff_with_near;
+}
+
+
+void fcs_directc_set_max_particle_move(fcs_directc_t *directc, fcs_float max_particle_move)
+{
+  directc->max_particle_move = max_particle_move;
 }
 
 
@@ -484,6 +492,7 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
     fcs_near_set_loop(&near, directc_coulomb_loop_fp);
     fcs_near_set_system(&near, directc->box_base, directc->box_a, directc->box_b, directc->box_c, periodic);
     fcs_near_set_particles(&near, directc->nparticles, directc->max_nparticles, directc->positions, directc->charges, NULL, directc->field, directc->potentials);
+    fcs_near_set_max_particle_move(&near, directc->max_particle_move);
 
     fcs_near_field_solver(&near, fabs(directc->cutoff), NULL, comm);
 

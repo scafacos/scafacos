@@ -129,6 +129,8 @@ typedef struct FCS_t
 
   fcs_int values_changed;
 
+  FCSResult (*set_max_particle_move)(FCS handle, fcs_float max_particle_move);
+
 } FCS_t;
 
 /**

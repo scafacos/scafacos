@@ -49,6 +49,8 @@ typedef struct _fcs_directc_t
   fcs_float cutoff;
   fcs_int cutoff_with_near;
 
+  fcs_float max_particle_move;
+
 } fcs_directc_t;
 
 
@@ -61,6 +63,7 @@ void fcs_directc_set_out_particles(fcs_directc_t *directc, fcs_int out_nparticle
 void fcs_directc_set_periodic_images(fcs_directc_t *directc, fcs_int *periodic_images);
 void fcs_directc_set_cutoff(fcs_directc_t *directc, fcs_float cutoff);
 void fcs_directc_set_cutoff_with_near(fcs_directc_t *directc, fcs_int cutoff_with_near);
+void fcs_directc_set_max_particle_move(fcs_directc_t *directc, fcs_float max_particle_move);
 void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm);
 
 
