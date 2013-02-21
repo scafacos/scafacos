@@ -139,6 +139,143 @@
 ** P3M
 ********************
 -->
+  <timings
+      method="P3M"
+      charges="12960"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,5e-3,p3m_r_cut,5.4
+    </parameters>
+    <tuned-parameters>
+r_cut=5.400000, grid=32, cao=4, alpha=0.418014
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 12960 of 12960 particles)
+          abs_rms_field_error =    1.945704e-03
+          abs_max_field_error =    5.753718e-03
+      abs_rms_potential_error =    1.456457e-03
+      abs_max_potential_error =    5.400885e-03
+             abs_energy_error =    1.644553e+00
+
+  RELATIVE ERRORS (from 12960 of 12960 particles)
+          rel_rms_field_error =    5.003920e-03
+          rel_max_field_error =    1.479729e-02
+      rel_rms_potential_error =    9.225106e-04
+      rel_max_potential_error =    3.420886e-03
+             rel_energy_error =    9.893090e-05
+    </errors>
+    <data>
+	1	8.255291e-02
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
+      charges="103680"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,5e-3,p3m_r_cut,5.4
+    </parameters>
+    <tuned-parameters>
+r_cut=5.400000, grid=64, cao=4, alpha=0.418014
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 103680 of 103680 particles)
+          abs_rms_field_error =    1.945704e-03
+          abs_max_field_error =    5.753718e-03
+      abs_rms_potential_error =    1.456457e-03
+      abs_max_potential_error =    5.400885e-03
+             abs_energy_error =    1.315642e+01
+
+  RELATIVE ERRORS (from 103680 of 103680 particles)
+          rel_rms_field_error =    5.003920e-03
+          rel_max_field_error =    1.479729e-02
+      rel_rms_potential_error =    9.225106e-04
+      rel_max_potential_error =    3.420886e-03
+             rel_energy_error =    9.893090e-05
+    </errors>
+    <data>
+	1	6.466491e-01
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
+      charges="829440"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,5e-3,p3m_r_cut,5.4
+    </parameters>
+    <tuned-parameters>
+r_cut=5.400000, grid=128, cao=4, alpha=0.418014
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 103680 of 103680 particles)
+          abs_rms_field_error =    1.945704e-03
+          abs_max_field_error =    5.753718e-03
+      abs_rms_potential_error =    1.456457e-03
+      abs_max_potential_error =    5.400885e-03
+             abs_energy_error =    1.315642e+01
+
+  RELATIVE ERRORS (from 103680 of 103680 particles)
+          rel_rms_field_error =    5.003920e-03
+          rel_max_field_error =    1.479729e-02
+      rel_rms_potential_error =    9.225106e-04
+      rel_max_potential_error =    3.420886e-03
+             rel_energy_error =    9.893090e-05
+    </errors>
+    <data>
+	1	5.777646e+00
+    </data>
+  </timings>
+  
+  <timings
+      method="P3M"
+      charges="6635520"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,5e-3,p3m_r_cut,5.4
+    </parameters>
+    <tuned-parameters>
+r_cut=5.400000, grid=256, cao=4, alpha=0.418014
+    </tuned-parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 103680 of 103680 particles)
+          abs_rms_field_error =    1.945704e-03
+          abs_max_field_error =    5.753718e-03
+      abs_rms_potential_error =    1.456457e-03
+      abs_max_potential_error =    5.400885e-03
+             abs_energy_error =    1.315642e+01
+
+  RELATIVE ERRORS (from 103680 of 103680 particles)
+          rel_rms_field_error =    5.003920e-03
+          rel_max_field_error =    1.479729e-02
+      rel_rms_potential_error =    9.225106e-04
+      rel_max_potential_error =    3.420886e-03
+             rel_energy_error =    9.893090e-05
+    </errors>
+    <data>
+	1	 4.652300e+01
+    </data>
+  </timings>
+
+  <timings
+      method="P3M"
+      charges="9447840"
+      tolerance="1e-3">
+    <parameters>
+-c tolerance_field,5e-3,p3m_r_cut,5.4
+    </parameters>
+    <tuned-parameters>
+r_cut=5.400000, grid=512, cao=3, alpha=0.418014
+    </tuned-parameters>
+    <errors>
+    </errors>
+    <data>
+	1	 1.381251e+02
+    </data>
+  </timings>
+
 
 <!-- 
 ********************
