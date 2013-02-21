@@ -117,7 +117,7 @@ fi
 
 AC_PROG_RANLIB
 AM_PROG_CC_C_O
-AM_PROG_AR
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 # Checks for libraries.
 AC_SEARCH_LIBS([log], [m])
