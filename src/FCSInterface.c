@@ -180,6 +180,13 @@ FCSResult fcs_init ( FCS *handle, const char* method, MPI_Comm communicator )
 #endif
 
   (*handle)->set_max_particle_move = NULL;
+  (*handle)->set_resort = NULL;
+  (*handle)->get_resort = NULL;
+  (*handle)->get_resort_availability = NULL;
+  (*handle)->get_resort_particles = NULL;
+  (*handle)->resort_ints = NULL;
+  (*handle)->resort_floats = NULL;
+  (*handle)->resort_bytes = NULL;
 
   /* Call the method-specific init functions */
 #ifdef FCS_ENABLE_DIRECT
@@ -2220,6 +2227,104 @@ FCSResult fcs_set_max_particle_move(FCS handle, fcs_float max_particle_move)
   return handle->set_max_particle_move(handle, max_particle_move);
 }
 
+FCSResult fcs_set_resort(FCS handle, fcs_int resort)
+{
+  char* fnc_name = "fcs_set_resort";
+
+  if (handle == NULL)
+    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+
+  if (handle->set_resort == NULL)
+    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+
+  return handle->set_resort(handle, resort);
+}
+
+
+FCSResult fcs_get_resort(FCS handle, fcs_int *resort)
+{
+  char* fnc_name = "fcs_get_resort";
+
+  if (handle == NULL)
+    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+
+  if (handle->get_resort == NULL)
+    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+
+  return handle->get_resort(handle, resort);
+}
+
+
+FCSResult fcs_get_resort_availability(FCS handle, fcs_int *availability)
+{
+  char* fnc_name = "fcs_get_resort_availability";
+
+  *availability = 0;
+
+  if (handle == NULL)
+    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+
+  if (handle->get_resort_availability == NULL)
+    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+
+  return handle->get_resort_availability(handle, availability);
+}
+
+
+FCSResult fcs_get_resort_particles(FCS handle, fcs_int *resort_particles)
+{
+  char* fnc_name = "fcs_get_resort_particles";
+
+  if (handle == NULL)
+    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+
+  if (handle->get_resort_particles == NULL)
+    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+
+  return handle->get_resort_particles(handle, resort_particles);
+}
+
+
+FCSResult fcs_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
+{
+  char* fnc_name = "fcs_resort_ints";
+
+  if (handle == NULL)
+    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+
+  if (handle->resort_ints == NULL)
+    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+
+  return handle->resort_ints(handle, src, dst, n, comm);
+}
+
+
+FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
+{
+  char* fnc_name = "fcs_resort_floats";
+
+  if (handle == NULL)
+    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+
+  if (handle->resort_floats == NULL)
+    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+
+  return handle->resort_floats(handle, src, dst, n, comm);
+}
+
+
+FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm)
+{
+  char* fnc_name = "fcs_resort_bytes";
+
+  if (handle == NULL)
+    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+
+  if (handle->resort_floats == NULL)
+    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+
+  return handle->resort_bytes(handle, src, dst, n, comm);
+}
 
 
 /*****************************/

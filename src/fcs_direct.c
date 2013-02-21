@@ -81,6 +81,13 @@ FCSResult fcs_direct_init(FCS handle)
   handle->direct_param->metallic_boundary_conditions = 1;
 
   handle->set_max_particle_move = fcs_direct_set_max_particle_move;
+  handle->set_resort = fcs_direct_set_resort;
+  handle->get_resort = fcs_direct_get_resort;
+  handle->get_resort_availability = fcs_direct_get_resort_availability;
+  handle->get_resort_particles = fcs_direct_get_resort_particles;
+  handle->resort_ints = fcs_direct_resort_ints;
+  handle->resort_floats = fcs_direct_resort_floats;
+  handle->resort_bytes = fcs_direct_resort_bytes;
 
   DEBUG_MOP(printf("fcs_direct_init: done\n"));
 
@@ -307,6 +314,62 @@ FCSResult fcs_direct_set_max_particle_move(FCS handle, fcs_float max_particle_mo
 {
   fcs_directc_set_max_particle_move(&handle->direct_param->directc, max_particle_move);
 
+  return NULL;
+}
+
+
+FCSResult fcs_direct_set_resort(FCS handle, fcs_int resort)
+{
+  fcs_directc_set_resort(&handle->direct_param->directc, resort);
+
+  return NULL;
+}
+
+
+FCSResult fcs_direct_get_resort(FCS handle, fcs_int *resort)
+{
+  fcs_directc_get_resort(&handle->direct_param->directc, resort);
+
+  return NULL;
+}
+
+
+FCSResult fcs_direct_get_resort_availability(FCS handle, fcs_int *availability)
+{
+  fcs_directc_get_resort_availability(&handle->direct_param->directc, availability);
+
+  return NULL;
+}
+
+
+FCSResult fcs_direct_get_resort_particles(FCS handle, fcs_int *resort_particles)
+{
+  fcs_directc_get_resort_particles(&handle->direct_param->directc, resort_particles);
+
+  return NULL;
+}
+
+
+FCSResult fcs_direct_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
+{
+  fcs_directc_resort_ints(&handle->direct_param->directc, src, dst, n, comm);
+  
+  return NULL;
+}
+
+
+FCSResult fcs_direct_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
+{
+  fcs_directc_resort_floats(&handle->direct_param->directc, src, dst, n, comm);
+  
+  return NULL;
+}
+
+
+FCSResult fcs_direct_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm)
+{
+  fcs_directc_resort_bytes(&handle->direct_param->directc, src, dst, n, comm);
+  
   return NULL;
 }
 

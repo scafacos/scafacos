@@ -130,6 +130,13 @@ typedef struct FCS_t
   fcs_int values_changed;
 
   FCSResult (*set_max_particle_move)(FCS handle, fcs_float max_particle_move);
+  FCSResult (*set_resort)(FCS handle, fcs_int resort);
+  FCSResult (*get_resort)(FCS handle, fcs_int *resort);
+  FCSResult (*get_resort_availability)(FCS handle, fcs_int *availability);
+  FCSResult (*get_resort_particles)(FCS handle, fcs_int *resort_particles);
+  FCSResult (*resort_ints)(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
+  FCSResult (*resort_floats)(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
+  FCSResult (*resort_bytes)(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm);
 
 } FCS_t;
 

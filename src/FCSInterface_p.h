@@ -450,6 +450,69 @@ FCSResult fcs_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tole
  */
 FCSResult fcs_set_max_particle_move(FCS handle, fcs_float max_particle_move);
 
+/**
+ * @brief function to set whether resort support is requested or not (default is no resort support)
+ *   if resort support is requested (and supported by the solver) then the solver tries to retain its sorted particle data order,
+ *   i.e., the distribution and order of the given particles is changed by fcs_run such that the position, charge, field, and potential values correspond to the sorted particle order of the solver,
+ *   this can only be performed successfully if the local sizes of the particle arrays (specified by the local_max_particles of fcs_run) on all processes are large enough to store the sorted particle order,
+ *   after performing fcs_run, function fcs_get_resort_availability can be used to determine whether resort support is available or not,
+ *   if resort support is available then fcs_get_resort_particles returns the new local number of particles and fcs_resort_[ints,floats,bytes] can be used to bring additional particle data into the new sorted order
+ * @param handle FCS handle representing an FCS solver object
+ * @param resort fcs_int whether resort support is requested or not
+ */
+FCSResult fcs_set_resort(FCS handle, fcs_int resort);
+
+/**
+ * @brief function to retrieve whether resort support is requested or not
+ * @param handle FCS handle representing an FCS solver object
+ * @param resort fcs_int* whether resort support is requested or not
+ */
+FCSResult fcs_get_resort(FCS handle, fcs_int *resort);
+
+/**
+ * @brief function to retrieve whether resort support is available after performing fcs_run
+ * @param handle FCS handle representing an FCS solver object
+ * @param availability fcs_int* whether resort support is available or not
+ */
+FCSResult fcs_get_resort_availability(FCS handle, fcs_int *availability);
+
+/**
+ * @brief function to retrieve the new local number of particles
+ * @param handle FCS handle representing an FCS solver object
+ * @param availability fcs_int* new local number of particles
+ */
+FCSResult fcs_get_resort_particles(FCS handle, fcs_int *resort_particles);
+
+/**
+ * @brief function to bring additional integer particle data into the new sorted particle order
+ * @param handle FCS handle representing an FCS solver object
+ * @param src fcs_int* array of integer values in unsorted (original) order
+ * @param dst fcs_int* array to store sorted integer values
+ * @param n fcs_int number of integer values for each particle
+ * @param comm MPI_Comm communicator to be used for sorting the particle data
+ */
+FCSResult fcs_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
+
+/**
+ * @brief function to bring additional float particle data into the new sorted particle order
+ * @param handle FCS handle representing an FCS solver object
+ * @param src fcs_float* array of float values in unsorted (original) order
+ * @param dst fcs_float* array to store sorted float values
+ * @param n fcs_int number of float values for each particle
+ * @param comm MPI_Comm communicator to be used for sorting the particle data
+ */
+FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
+
+/**
+ * @brief function to bring additional byte particle data into the new sorted particle order
+ * @param handle FCS handle representing an FCS solver object
+ * @param src void* array of byte values in unsorted (original) order
+ * @param dst void* array to store sorted byte values
+ * @param n fcs_int number of byte values for each particle
+ * @param comm MPI_Comm communicator to be used for sorting the particle data
+ */
+FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm);
+
 
 #ifdef __cplusplus
 }

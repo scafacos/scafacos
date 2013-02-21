@@ -113,11 +113,15 @@ void fcs_directc_create(fcs_directc_t *directc)
   directc->cutoff_with_near = 0;
 
   directc->max_particle_move = -1;
+
+  directc->resort = 0;
+  directc->near_resort = FCS_NEAR_RESORT_NULL;
 }
 
 
 void fcs_directc_destroy(fcs_directc_t *directc)
 {
+  if (directc->near_resort != FCS_NEAR_RESORT_NULL) fcs_near_resort_destroy(&directc->near_resort);
 }
 
 
@@ -189,6 +193,36 @@ void fcs_directc_set_cutoff_with_near(fcs_directc_t *directc, fcs_int cutoff_wit
 void fcs_directc_set_max_particle_move(fcs_directc_t *directc, fcs_float max_particle_move)
 {
   directc->max_particle_move = max_particle_move;
+}
+
+
+void fcs_directc_set_resort(fcs_directc_t *directc, fcs_int resort)
+{
+  directc->resort = resort;
+}
+
+
+void fcs_directc_get_resort(fcs_directc_t *directc, fcs_int *resort)
+{
+  *resort = directc->resort;
+}
+
+
+void fcs_directc_get_resort_availability(fcs_directc_t *directc, fcs_int *availability)
+{
+  *availability = fcs_near_resort_is_available(directc->near_resort);
+}
+
+
+void fcs_directc_get_resort_particles(fcs_directc_t *directc, fcs_int *resort_particles)
+{
+  if (directc->near_resort == FCS_NEAR_RESORT_NULL)
+  {
+    *resort_particles = directc->nparticles;
+    return;
+  }
+  
+  *resort_particles = fcs_near_resort_get_sorted_particles(directc->near_resort);
 }
 
 
@@ -493,8 +527,17 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
     fcs_near_set_system(&near, directc->box_base, directc->box_a, directc->box_b, directc->box_c, periodic);
     fcs_near_set_particles(&near, directc->nparticles, directc->max_nparticles, directc->positions, directc->charges, NULL, directc->field, directc->potentials);
     fcs_near_set_max_particle_move(&near, directc->max_particle_move);
+    fcs_near_set_resort(&near, directc->resort);
 
     fcs_near_field_solver(&near, fabs(directc->cutoff), NULL, comm);
+
+    if (directc->resort)
+    {
+      if (directc->near_resort != FCS_NEAR_RESORT_NULL) fcs_near_resort_destroy(&directc->near_resort);
+
+      fcs_near_resort_create(&directc->near_resort, &near);
+/*      fcs_near_resort_print(directc->near_resort, comm);*/
+    }
 
     fcs_near_destroy(&near);
 
@@ -516,4 +559,28 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
     if (comm_rank == MASTER_RANK)
       printf(TIMING_PRINT_PREFIX "directc: %f\n", t);
   );
+}
+
+
+void fcs_directc_resort_ints(fcs_directc_t *directc, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
+{
+  if (directc->near_resort == FCS_NEAR_RESORT_NULL) return;
+  
+  fcs_near_resort_ints(directc->near_resort, src, dst, n, comm);
+}
+
+
+void fcs_directc_resort_floats(fcs_directc_t *directc, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
+{
+  if (directc->near_resort == FCS_NEAR_RESORT_NULL) return;
+  
+  fcs_near_resort_floats(directc->near_resort, src, dst, n, comm);
+}
+
+
+void fcs_directc_resort_bytes(fcs_directc_t *directc, void *src, void *dst, fcs_int n, MPI_Comm comm)
+{
+  if (directc->near_resort == FCS_NEAR_RESORT_NULL) return;
+  
+  fcs_near_resort_bytes(directc->near_resort, src, dst, n, comm);
 }

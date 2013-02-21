@@ -51,6 +51,9 @@ typedef struct _fcs_directc_t
 
   fcs_float max_particle_move;
 
+  fcs_int resort;
+  fcs_near_resort_t near_resort;
+
 } fcs_directc_t;
 
 
@@ -64,7 +67,14 @@ void fcs_directc_set_periodic_images(fcs_directc_t *directc, fcs_int *periodic_i
 void fcs_directc_set_cutoff(fcs_directc_t *directc, fcs_float cutoff);
 void fcs_directc_set_cutoff_with_near(fcs_directc_t *directc, fcs_int cutoff_with_near);
 void fcs_directc_set_max_particle_move(fcs_directc_t *directc, fcs_float max_particle_move);
+void fcs_directc_set_resort(fcs_directc_t *directc, fcs_int resort);
+void fcs_directc_get_resort(fcs_directc_t *directc, fcs_int *resort);
+void fcs_directc_get_resort_availability(fcs_directc_t *directc, fcs_int *availability);
+void fcs_directc_get_resort_particles(fcs_directc_t *directc, fcs_int *resort_particles);
 void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm);
+void fcs_directc_resort_ints(fcs_directc_t *directc, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
+void fcs_directc_resort_floats(fcs_directc_t *directc, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
+void fcs_directc_resort_bytes(fcs_directc_t *directc, void *src, void *dst, fcs_int n, MPI_Comm comm);
 
 
 #ifdef __cplusplus
