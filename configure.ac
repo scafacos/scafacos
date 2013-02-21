@@ -116,6 +116,8 @@ if test "x$fcs_cv_fc_module_ifport" = xyes ; then
 fi
 
 AC_PROG_RANLIB
+AM_PROG_CC_C_O
+AM_PROG_AR
 
 # Checks for libraries.
 AC_SEARCH_LIBS([log], [m])

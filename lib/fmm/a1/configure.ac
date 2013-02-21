@@ -23,7 +23,7 @@ AX_PROG_CC_MPI(,,AC_MSG_FAILURE([The A1 library requires an MPI C compiler.]))
 
 # Bug in libtool adds -O2 and -g by default
 # uncomment for non-POSIX systems
-# AM_PROG_AR
+AM_PROG_AR
 PAC_PUSH_FLAG(CFLAGS)
 LT_INIT(disable-shared)
 PAC_POP_FLAG(CFLAGS)
