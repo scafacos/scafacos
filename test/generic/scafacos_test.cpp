@@ -68,6 +68,9 @@ static void usage(char** argv, int argc, int c) {
        << "               an absolute integer number of particles (without '.') or a" << endl
        << "               fractional number (with '.') relative to the given particles" << endl
        << "               (default value RES=1.0 is equivalent to all particles)" << endl;
+  cout << "    -s         utilize resort support (if available) to the retain solver" << endl
+       << "               specific particle order (i.e., no back sorting), exploit the" << endl
+       << "               limited particle movement for integration runs (using -t ...)" << endl;
   cout << "    -t S       perform integration with S time steps (run METHOD S+1 times)" << endl;
   cout << "    -g CONF    use CONF as integration configuration string"   << endl;
   cout << "  METHOD:";
@@ -146,11 +149,14 @@ static struct {
   // For how many particles results should be computed (0.1 = 10%).
   fcs_float result_particles;
 
+  // Utilize resort support of solvers (if available)
+  bool resort;
+
   // Integrate or not, number of time steps (t steps = t+1 computations), and integration configuration string
   fcs_int integrate, time_steps;
   char integration_conf[MAX_CONF_LENGTH];
 
-} global_params = { "", false, false, false, "", "", "", false, {1, 1, 1}, -1, true, false, "none", "", 1, -1.0, 0, 0, "" };
+} global_params = { "", false, false, false, "", "", "", false, {1, 1, 1}, -1, true, false, "none", "", 1, -1.0, false, 0, 0, "" };
 
 // FCS Handle
 FCS fcs;
@@ -174,7 +180,7 @@ static void parse_commandline(int argc, char* argv[]) {
   int c;
   char dup0[32], *dup1 = NULL, *dup2 = NULL;
 
-  while ((c = getopt (argc, argv, "o:bpkd:m:c:i:r:t:g:")) != -1) {
+  while ((c = getopt (argc, argv, "o:bpkd:m:c:i:r:st:g:")) != -1) {
     switch (c) {
     case 'o':
       strncpy(global_params.outfilename, optarg, MAX_FILENAME_LENGTH);
@@ -227,6 +233,9 @@ static void parse_commandline(int argc, char* argv[]) {
     case 'r':
       global_params.result_particles = fabs(atof(optarg));
       if (strchr(optarg, '.')) global_params.result_particles *= -1;
+      break;
+    case 's':
+      global_params.resort = true;
       break;
     case 't':
       global_params.integrate = 1;
@@ -383,62 +392,63 @@ static double determine_total_energy(fcs_int nparticles, fcs_float *charges, fcs
   return total;
 }
 
-static void run_method(particles_t *parts) {
-  // Set up method
-  // * with default parameters
-  // * with optimized parameters
-
+static void run_method(particles_t *parts)
+{
+  fcs_float *original_positions, *original_charges;
   FCSResult result;
-  double before, after;
-  double tune_time, run_time, run_time_sum;
-  fcs_float* positions;
-  fcs_float* charges;
+
+  double t, run_time_sum;
+
+  fcs_int resort_availability, resort = global_params.resort;
+
 
   MASTER(cout << "  Setting basic parameters..." << endl);
-  INFO_MASTER(cout << "    total number of particles: " << parts->total_nparticles + parts->total_in_nparticles << " (" << parts->total_in_nparticles << " input-only particles)" << endl);
+  MASTER(cout << "    Total number of particles: " << parts->total_nparticles + parts->total_in_nparticles << " (" << parts->total_in_nparticles << " input-only particles)" << endl);
   result = fcs_common_set(fcs, (fcs_get_near_field_flag(fcs) == 0)?0:1,
     current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity, 
     parts->total_nparticles);
   if (!check_result(result)) return;
 
+  if (resort)
+  {
+    MASTER(cout << "  Enabling resort support...");
+    if (fcs_set_resort(fcs, resort) != FCS_RESULT_SUCCESS) resort = 0;
+    MASTER(cout << " " << (resort?"OK":"failed") << endl);
+  }
+
   // Compute dipole moment
 //  result = fcs_compute_dipole_correction(fcs, parts->total_nparticles + parts->total_in_nparticles,
-  result = fcs_compute_dipole_correction(fcs, parts->nparticles,
-    parts->positions, parts->charges, current_config->params.epsilon,
-    current_config->field_correction, &current_config->energy_correction);
-  MASTER(cout << "    Dipole correction:" << endl);
-  MASTER(cout << "      field_correction = "
+  result = fcs_compute_dipole_correction(fcs, parts->nparticles, parts->positions, parts->charges,
+    current_config->params.epsilon, current_config->field_correction, &current_config->energy_correction);
+  MASTER(cout << "  Dipole correction:" << endl);
+  MASTER(cout << "    Field correction: "
          << current_config->field_correction[0] << " " 
          << current_config->field_correction[1] << " " 
          << current_config->field_correction[2] << endl);
-  MASTER(cout << "      energy_correction = " << current_config->energy_correction << endl);
+  MASTER(cout << "    Energy correction: " << current_config->energy_correction << endl);
   if (!check_result(result)) return;
 
 #ifdef FCS_ENABLE_DIRECT
-  if (fcs_get_method(fcs) == FCS_DIRECT)
-  {
-    INFO_MASTER(cout << "    additional input-only particles for direct solver: " << parts->total_in_nparticles << endl);
-    fcs_direct_set_in_particles(fcs, parts->in_nparticles, parts->in_positions, parts->in_charges);
-  }
+  if (fcs_get_method(fcs) == FCS_DIRECT) fcs_direct_set_in_particles(fcs, parts->in_nparticles, parts->in_positions, parts->in_charges);
 #endif
 
   /* arrays to hold copies of positions and charges, as they may be changed by the method */
-  positions = (fcs_float*)malloc(3*parts->nparticles*sizeof(fcs_float));
-  charges = (fcs_float*)malloc(parts->nparticles*sizeof(fcs_float));
+  original_positions = (fcs_float *) malloc(3 * parts->nparticles * sizeof(fcs_float));
+  original_charges = (fcs_float *) malloc(parts->nparticles * sizeof(fcs_float));
+
+  /* create copies of the original positions and charges, as fcs_tune and fcs_run may modify them */
+  memcpy(original_positions, parts->positions, 3 * parts->nparticles * sizeof(fcs_float));
+  memcpy(original_charges, parts->charges, parts->nparticles * sizeof(fcs_float));
 
   // Tune and time method
   MASTER(cout << "  Tuning method..." << endl);
   MPI_Barrier(communicator);
-  before = MPI_Wtime();
-  /* create copies of the positions and charges, as fcs_run may modify it */
-  memcpy(positions, parts->positions, 3*parts->nparticles*sizeof(fcs_float));
-  memcpy(charges, parts->charges, parts->nparticles*sizeof(fcs_float));
+  t = MPI_Wtime();
   result = fcs_tune(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges);
   if (!check_result(result)) return;
   MPI_Barrier(communicator);
-  after = MPI_Wtime();
-  tune_time = after - before;
-  MASTER(cout << "    Time: " << scientific << tune_time << endl);
+  t = MPI_Wtime() - t;
+  MASTER(cout << "    Time: " << scientific << t << endl);
   
   // Run and time method
   MASTER(cout << "  Running method..." << endl);
@@ -448,29 +458,43 @@ static void run_method(particles_t *parts) {
 
   for (fcs_int i = 0; i < global_params.iterations; ++i)
   {
+    /* restore original positions and charges, as fcs_tune and fcs_run may have modified them */
+    memcpy(parts->positions, original_positions, 3 * parts->nparticles * sizeof(fcs_float));
+    memcpy(parts->charges, original_charges, parts->nparticles * sizeof(fcs_float));
+
     MPI_Barrier(communicator);
-    /* create copies of the positions and charges, as fcs_run may modify it */
-    memcpy(positions, parts->positions, 3*parts->nparticles*sizeof(fcs_float));
-    memcpy(charges, parts->charges, parts->nparticles*sizeof(fcs_float));
-    before = MPI_Wtime();
-    result = fcs_run(fcs, parts->nparticles, parts->max_nparticles,
-                     positions, charges, 
-                     parts->field, parts->potentials);
+    t = MPI_Wtime();
+    result = fcs_run(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
     if (!check_result(result)) return;
     MPI_Barrier(communicator);
-    after = MPI_Wtime();
-    run_time = after - before;
-    MASTER(cout << "    #" << i << " time: " << scientific << run_time << endl);
+    t = MPI_Wtime() - t;
+    MASTER(cout << "    #" << i << " time: " << scientific << t << endl);
 
-    run_time_sum += run_time;
+    run_time_sum += t;
   }
 
-  free(positions);
-  free(charges);
+  free(original_positions);
+  free(original_charges);
   MASTER(cout << "    Average time: " << scientific << run_time_sum / global_params.iterations  << endl);
 
   current_config->have_result_values[0] = 1;  // have potentials results
   current_config->have_result_values[1] = 1;  // have field results
+
+  fcs_get_resort_availability(fcs, &resort_availability);
+  if (resort_availability)
+  {
+    fcs_get_resort_particles(fcs, &parts->nparticles);
+
+    MASTER(cout << "    Resorting reference potential and field values..." << endl);
+
+    t = MPI_Wtime();
+    if (parts->reference_potentials != NULL) fcs_resort_floats(fcs, parts->reference_potentials, NULL, 1, communicator);
+    if (parts->reference_field != NULL) fcs_resort_floats(fcs, parts->reference_field, NULL, 3, communicator);
+    t = MPI_Wtime() - t;
+
+    MASTER(printf("     = %f second(s)\n", t));
+
+  } else if (resort) MASTER(cout << "    Resorting enabled, but failed!" << endl);
 
 /*  for (fcs_int i = 0; i < parts->nparticles; ++i)
     cout << i << ": " << parts->positions[3 * i + 0] << ", "
@@ -480,8 +504,9 @@ static void run_method(particles_t *parts) {
                       << parts->field[3 * i + 1] << ", "
                       << parts->field[3 * i + 2] << "  " << parts->potentials[i] << endl;*/
 
-  for (fcs_int pid = 0; pid < parts->nparticles; pid++) {
-    // apply dipole correction to the fields
+  // apply dipole correction to the fields
+  for (fcs_int pid = 0; pid < parts->nparticles; pid++)
+  {
     parts->field[3*pid] += current_config->field_correction[0];
     parts->field[3*pid+1] += current_config->field_correction[1];
     parts->field[3*pid+2] += current_config->field_correction[2];
@@ -507,7 +532,7 @@ static void run_integration(particles_t *parts)
 {
   integration_t integ;
 
-  fcs_int resort_availability, resort = 0;
+  fcs_int resort_availability, resort = global_params.resort;
 
   fcs_float *v_cur, *f_old, *f_cur, e, max_particle_move;
   FCSResult result;
@@ -516,25 +541,23 @@ static void run_integration(particles_t *parts)
   double t;
 
 
-  MASTER(cout << "  Integration with " << global_params.time_steps << " time step(s)" << endl);
+  MASTER(cout << "  Integration with " << global_params.time_steps << " time step(s) " << (resort?"with":"without") << " utilization of resort support" << endl);
 
   v_cur = new fcs_float[3 * parts->max_nparticles];
   f_old = new fcs_float[3 * parts->max_nparticles];
   f_cur = parts->field;
 
   /* setup integration parameters */
-  integ_setup(&integ, global_params.time_steps, global_params.integration_conf);
+  integ_setup(&integ, global_params.time_steps, global_params.resort, global_params.integration_conf);
 
   integ_system_setup(&integ, current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity);
 
   MASTER(
-    integ_print_settings(&integ);
+    integ_print_settings(&integ, "    ");
   );
 
   /* init integration (incl. velocity and field values) */
   integ_init(&integ, parts->nparticles, v_cur, f_cur);
-
-  resort = integ.resort;
 
   if (fcs != FCS_NULL)
   {
@@ -680,6 +703,12 @@ int main(int argc, char* argv[]) {
   global_params.abort_on_error = false;
 
   broadcast_global_parameters();
+  
+  if (global_params.have_outfile && global_params.resort)
+  {
+    MASTER(cout << "Disabling resort support (-s) when output file should be written!" << endl);
+    global_params.resort = false;
+  }
 
   testcase = new Testcase();
 
@@ -760,7 +789,7 @@ int main(int argc, char* argv[]) {
     MASTER(cout << "Processing configuration " << config_count << "..." << endl);
 
     // Distribute particles
-    current_config->decompose_particles(global_params.integrate);
+    current_config->decompose_particles(global_params.resort);
 
     particles_t parts;
     prepare_particles(&parts);
