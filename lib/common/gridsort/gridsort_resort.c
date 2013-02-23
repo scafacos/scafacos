@@ -171,7 +171,7 @@ void fcs_gridsort_resort_destroy(fcs_gridsort_resort_t *gsr)
   back_x_elements_t sout;
 
 
-  if (gsr == FCS_GRIDSORT_RESORT_NULL) return;
+  if (*gsr == FCS_GRIDSORT_RESORT_NULL) return;
 
   back_x_elem_set_size(&sout, 0);
   back_x_elem_set_max_size(&sout, 0);

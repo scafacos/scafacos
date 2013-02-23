@@ -121,7 +121,7 @@ void fcs_directc_create(fcs_directc_t *directc)
 
 void fcs_directc_destroy(fcs_directc_t *directc)
 {
-  if (directc->near_resort != FCS_NEAR_RESORT_NULL) fcs_near_resort_destroy(&directc->near_resort);
+  fcs_near_resort_destroy(&directc->near_resort);
 }
 
 
@@ -533,7 +533,7 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
 
     if (directc->resort)
     {
-      if (directc->near_resort != FCS_NEAR_RESORT_NULL) fcs_near_resort_destroy(&directc->near_resort);
+      fcs_near_resort_destroy(&directc->near_resort);
 
       fcs_near_resort_create(&directc->near_resort, &near);
 /*      fcs_near_resort_print(directc->near_resort, comm);*/

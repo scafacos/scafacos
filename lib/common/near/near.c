@@ -289,7 +289,7 @@ void fcs_near_destroy(fcs_near_t *near)
   near->ghost_charges = NULL;
   near->ghost_indices = NULL;
 
-  if (near->gridsort_resort != FCS_GRIDSORT_RESORT_NULL) fcs_gridsort_resort_destroy(&near->gridsort_resort);
+  fcs_gridsort_resort_destroy(&near->gridsort_resort);
 }
 
 
