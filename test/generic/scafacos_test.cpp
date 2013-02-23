@@ -71,6 +71,10 @@ static void usage(char** argv, int argc, int c) {
   cout << "    -s         utilize resort support (if available) to the retain solver" << endl
        << "               specific particle order (i.e., no back sorting), exploit the" << endl
        << "               limited particle movement for integration runs (using -t ...)" << endl;
+  cout << "    -a A       allocate particle data arrays larger for resort support, A can be" << endl
+       << "               an absolute integer number of particles (without '.') or a" << endl
+       << "               fractional number (with '.') relative to the given particles" << endl
+       << "               (default value A=0.1 is equivalent to 10% larger arrays)" << endl;
   cout << "    -t S       perform integration with S time steps (run METHOD S+1 times)" << endl;
   cout << "    -g CONF    use CONF as integration configuration string"   << endl;
   cout << "  METHOD:";
@@ -152,11 +156,14 @@ static struct {
   // Utilize resort support of solvers (if available)
   bool resort;
 
+  // Overallocation
+  fcs_float overalloc;
+
   // Integrate or not, number of time steps (t steps = t+1 computations), and integration configuration string
   fcs_int integrate, time_steps;
   char integration_conf[MAX_CONF_LENGTH];
 
-} global_params = { "", false, false, false, "", "", "", false, {1, 1, 1}, -1, true, false, "none", "", 1, -1.0, false, 0, 0, "" };
+} global_params = { "", false, false, false, "", "", "", false, {1, 1, 1}, -1, true, false, "none", "", 1, -1.0, false, -0.1, 0, 0, "" };
 
 // FCS Handle
 FCS fcs;
@@ -180,7 +187,7 @@ static void parse_commandline(int argc, char* argv[]) {
   int c;
   char dup0[32], *dup1 = NULL, *dup2 = NULL;
 
-  while ((c = getopt (argc, argv, "o:bpkd:m:c:i:r:st:g:")) != -1) {
+  while ((c = getopt (argc, argv, "o:bpkd:m:c:i:r:sa:t:g:")) != -1) {
     switch (c) {
     case 'o':
       strncpy(global_params.outfilename, optarg, MAX_FILENAME_LENGTH);
@@ -236,6 +243,10 @@ static void parse_commandline(int argc, char* argv[]) {
       break;
     case 's':
       global_params.resort = true;
+      break;
+    case 'a':
+      global_params.overalloc = fabs(atof(optarg));
+      if (strchr(optarg, '.')) global_params.overalloc *= -1;
       break;
     case 't':
       global_params.integrate = 1;
@@ -789,7 +800,7 @@ int main(int argc, char* argv[]) {
     MASTER(cout << "Processing configuration " << config_count << "..." << endl);
 
     // Distribute particles
-    current_config->decompose_particles(global_params.resort);
+    current_config->decompose_particles(global_params.resort?global_params.overalloc:0);
 
     particles_t parts;
     prepare_particles(&parts);

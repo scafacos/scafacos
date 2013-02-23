@@ -122,7 +122,7 @@ public:
   void create_cart_comm();
   void destroy_cart_comm();
 
-  void decompose_particles(fcs_int overalloc = 0);
+  void decompose_particles(fcs_float overalloc = 0);
   void gather_particles();
   bool compute_errors(errors_t *e);
   void free_decomp_particles(bool quiet = false);

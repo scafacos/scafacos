@@ -717,18 +717,16 @@ void Configuration::destroy_cart_comm()
   if (cart_comm != MPI_COMM_NULL) MPI_Comm_free(&cart_comm);
 }
 
-void Configuration::decompose_particles(fcs_int overalloc)
+void Configuration::decompose_particles(fcs_float overalloc)
 {
   fcs_gridsort_resort_t gridsort_resort;
 
-  const fcs_float overallocation = overalloc?-0.1:0;
-
-  if (params.decomposition == DECOMPOSE_ALL_ON_MASTER || params.decomposition == DECOMPOSE_ATOMISTIC) dup_input_overalloc = overallocation;
+  if (params.decomposition == DECOMPOSE_ALL_ON_MASTER || params.decomposition == DECOMPOSE_ATOMISTIC) dup_input_overalloc = overalloc;
   else dup_input_overalloc = 0;
 
   generate_input_particles();
 
-  dup_input_overalloc = overallocation;
+  dup_input_overalloc = overalloc;
 
   /* wrap particle positions of periodic dimensions */
   fcs_wrap_positions(dup_input_nparticles, dup_input_positions, params.box_a, params.box_b, params.box_c, params.offset, params.periodicity);
