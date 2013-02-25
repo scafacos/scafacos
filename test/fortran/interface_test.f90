@@ -110,8 +110,9 @@ program test
 #endif
 #if FCS_ENABLE_FMM
     character(len=256, kind = c_char)                             ::  fmm_parameters = &
- "fmm_absrel,2,fmm_dipole_correction,0,fmm_deltaE,1e-6,fmm_maxdepth,19ll,fmm_unroll_limit,50ll,fmm_balanceload,1ll"
-    integer(kind = c_long_long)                                   ::  fmm_internal_tuning = 0 
+ "fmm_absrel,2,fmm_dipole_correction,0,fmm_deltaE,1e-6,fmm_maxdepth,19ll," // &
+ "fmm_unroll_limit,50ll,fmm_balanceload,1ll,fmm_internal_tuning,1ll"
+    integer(kind = c_long_long)                                   ::  fmm_internal_tuning = 1 
 #endif
 #if FCS_ENABLE_MMM1D
     character(len=256, kind = c_char)                             ::  mmm1d_parameters = &            
@@ -138,7 +139,7 @@ program test
 "vmg_gamma,2,vmg_max_iterations,20,vmg_max_level,6,vmg_near_field_cells, 6,vmg_precision,1e-6,vmg_smoothing_steps,3"
 #endif
     character(len=256, kind = c_char)                             ::  common_parameters = &
-"box_a,1.01,0.0,0.0,box_b,0.0,1.01,0.0,box_c,0.0,0.0,1.01,periodicity,1,1,1,offset,0.0,0.0,0.0,short_range_flag,0"
+"box_a,1.01,0.0,0.0,box_b,0.0,1.01,0.0,box_c,0.0,0.0,1.01,periodicity,1,1,1,offset,0.0,0.0,0.0,near_field_flag,0"
 
     call MPI_INIT(ierr)
 
@@ -168,7 +169,6 @@ program test
             write(*,'(a)') "(currently only with similar format as files from test_env/data are supported)"
         end if
         call MPI_FINALIZE(ierr)
-        stop
     endif
 
     call GET_COMMAND_ARGUMENT(1,method)
