@@ -68,7 +68,7 @@ static void usage(char** argv, int argc, int c) {
        << "               an absolute integer number of particles (without '.') or a" << endl
        << "               fractional number (with '.') relative to the given particles" << endl
        << "               (default value RES=1.0 is equivalent to all particles)" << endl;
-  cout << "    -s         utilize resort support (if available) to the retain solver" << endl
+  cout << "    -s         utilize resort support (if available) to retain the solver" << endl
        << "               specific particle order (i.e., no back sorting), exploit the" << endl
        << "               limited particle movement for integration runs (using -t ...)" << endl;
   cout << "    -a A       allocate particle data arrays larger for resort support, A can be" << endl
