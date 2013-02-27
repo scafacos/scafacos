@@ -1,10 +1,13 @@
 # Directories
 SUBDIRS = 
+if ENABLE_COMMON_NEAR
+SUBDIRS += common/near
+endif
 if ENABLE_COMMON_GRIDSORT
 SUBDIRS += common/gridsort
 endif
-if ENABLE_COMMON_NEAR
-SUBDIRS += common/near
+if ENABLE_COMMON_RESORT
+SUBDIRS += common/resort
 endif
 SUBDIRS += common/fcs-common
 if ENABLE_COMMON_FFTW

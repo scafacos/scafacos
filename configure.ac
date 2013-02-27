@@ -224,25 +224,26 @@ AC_FOREACH([solver], all_solver_methods,[
 #  echo "[]solver[]: $use_fcs_[]solver[]"
 #])
 
-# FIXME: disable near field method by default
+# FIXME: disable near field, gridsort, and resort(?) by default
 #AC_ARG_ENABLE([fcs-near],
 # [AS_HELP_STRING([--enable-fcs-near],[enable near field module])],,
 # [enable_fcs_near=no]) 
 
 enable_fcs_near=yes
-
 enable_fcs_gridsort=yes
+enable_fcs_resort=yes
 
 # Check prerequisites.
 
 # Common methods and solvers that use these methods.
-m4_define([all_common_methods], [fftw3 fftw3_mpi pfft pnfft near gridsort])
+m4_define([all_common_methods], [fftw3 fftw3_mpi pfft pnfft near gridsort resort])
 requires_fftw3="p2nfft p3m"
 requires_fftw3_mpi="p2nfft"
 requires_pfft="p2nfft"
 requires_pnfft="p2nfft"
 requires_near="ewald mmm1d mmm2d p2nfft p3m pp3mg_pmg vmg"
 requires_gridsort="p2nfft p3m"
+requires_resort="direct p2nfft fmm"
 
 AC_FOREACH([prereq], all_common_methods,[
   if test "x$enable_fcs_[]prereq[]" = xyes ; then
@@ -541,17 +542,23 @@ if test "x$use_fcs_pnfft" = xyes ; then
 fi
 AM_CONDITIONAL([ENABLE_COMMON_PNFFT],[test "x$use_fcs_pnfft_common" = xyes])
 
+# Set up near field module.
+if test "x$use_fcs_near" = xyes ; then
+  AC_MSG_NOTICE([enabling helper method 'near'])
+fi
+AM_CONDITIONAL([ENABLE_COMMON_NEAR],[test "x$use_fcs_near" = xyes])
+
 # Set up gridsort module.
 if test "x$use_fcs_gridsort" = xyes ; then
   AC_MSG_NOTICE([enabling helper method 'gridsort'])
 fi
 AM_CONDITIONAL([ENABLE_COMMON_GRIDSORT],[test "x$use_fcs_gridsort" = xyes])
 
-# Set up near field module.
-if test "x$use_fcs_near" = xyes ; then
-  AC_MSG_NOTICE([enabling helper method 'near'])
+# Set up resort module.
+if test "x$use_fcs_resort" = xyes ; then
+  AC_MSG_NOTICE([enabling helper method 'resort'])
 fi
-AM_CONDITIONAL([ENABLE_COMMON_NEAR],[test "x$use_fcs_near" = xyes])
+AM_CONDITIONAL([ENABLE_COMMON_RESORT],[test "x$use_fcs_resort" = xyes])
 
 # Solver prerequisites.
 
@@ -607,6 +614,11 @@ if test "x$use_fcs_gridsort" = xyes ; then
   AX_FCS_PACKAGE_ADD([gridsort_USE],[yes])
   AX_FCS_PACKAGE_ADD([gridsort_LIBS],[-lfcs_gridsort])
   AX_FCS_PACKAGE_ADD([gridsort_LIBS_A],[lib/common/gridsort/libfcs_gridsort.a])
+fi
+if test "x$use_fcs_resort" = xyes ; then
+  AX_FCS_PACKAGE_ADD([resort_USE],[yes])
+  AX_FCS_PACKAGE_ADD([resort_LIBS],[-lfcs_resort])
+  AX_FCS_PACKAGE_ADD([resort_LIBS_A],[lib/common/resort/libfcs_resort.a])
 fi
 AX_FCS_PACKAGE_ADD([fcs_common_USE],[yes])
 AX_FCS_PACKAGE_ADD([fcs_common_LIBS],[-lfcs_common])
@@ -686,6 +698,9 @@ AC_CONFIG_FILES([lib/common/near/Makefile])
 
 # Create gridsort module files.
 AC_CONFIG_FILES([lib/common/gridsort/Makefile])
+
+# Create resort module files.
+AC_CONFIG_FILES([lib/common/resort/Makefile])
 
 # Create test files.
 AC_CONFIG_FILES([
