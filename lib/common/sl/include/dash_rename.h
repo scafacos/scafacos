@@ -89,6 +89,17 @@
 #define ds_exec_mpi_sizefor  DS_FUNC(ds_exec_mpi_sizefor)
 #define ds_exec_mpi_extent  DS_FUNC(ds_exec_mpi_extent)
 
+/* dash_sched_a2av_aux.c */
+#define ds_aux_create  DS_FUNC(ds_aux_create)
+#define ds_aux_destroy  DS_FUNC(ds_aux_destroy)
+#define ds_aux_pre_acquire  DS_FUNC(ds_aux_pre_acquire)
+#define ds_aux_acquire  DS_FUNC(ds_aux_acquire)
+#define ds_aux_post_acquire  DS_FUNC(ds_aux_post_acquire)
+#define ds_aux_get_count  DS_FUNC(ds_aux_get_count)
+#define ds_aux_get_displ  DS_FUNC(ds_aux_get_displ)
+#define ds_aux_vacate  DS_FUNC(ds_aux_vacate)
+#define ds_aux_accept_recv  DS_FUNC(ds_aux_accept_recv)
+
 /* dash_sched_a2av.c */
 #define ds_sched_a2av_aux_blocks  DS_VAR(ds_sched_a2av_aux_blocks)
 #define ds_sched_a2av_create  DS_FUNC(ds_sched_a2av_create)
@@ -100,17 +111,6 @@
 #define ds_sched_a2av_finished  DS_FUNC(ds_sched_a2av_finished)
 #define ds_sched_a2av_pre  DS_FUNC(ds_sched_a2av_pre)
 #define ds_sched_a2av_post  DS_FUNC(ds_sched_a2av_post)
-
-/* dash_sched_a2av_aux.c */
-#define ds_aux_create  DS_FUNC(ds_aux_create)
-#define ds_aux_destroy  DS_FUNC(ds_aux_destroy)
-#define ds_aux_pre_acquire  DS_FUNC(ds_aux_pre_acquire)
-#define ds_aux_acquire  DS_FUNC(ds_aux_acquire)
-#define ds_aux_post_acquire  DS_FUNC(ds_aux_post_acquire)
-#define ds_aux_get_count  DS_FUNC(ds_aux_get_count)
-#define ds_aux_get_displ  DS_FUNC(ds_aux_get_displ)
-#define ds_aux_vacate  DS_FUNC(ds_aux_vacate)
-#define ds_aux_accept_recv  DS_FUNC(ds_aux_accept_recv)
 
 
 #endif /* __DASH_RENAME_H__ */

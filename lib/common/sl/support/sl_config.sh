@@ -954,7 +954,7 @@ if [ -d "${cfg_config}" ] ; then
   # enumerate *.h files
   for file in ${cfg_config}*.h ; do
     # skip environment.h, tune.h and _tune.h files
-    [ "${file##*/}" = "environment.h" -o "${file##*/}" = "tune.h" -o "${file}" != "${file%_tune.h}" ] && continue
+    [ ! -f "${file}" -o "${file##*/}" = "environment.h" -o "${file##*/}" = "tune.h" -o "${file}" != "${file%_tune.h}" ] && continue
 
     all_config_files="${all_config_files}${file} "
     pverbose "   ${file}"
@@ -964,7 +964,7 @@ else
   pverbose "  config file: ${cfg_config}"
 fi
 
-[ -z "${all_config_files}" ] && perror_exit "no configuration file found!"
+#[ -z "${all_config_files}" ] && perror_exit "no configuration file found!"
 
 
 # exit if 'testing'
