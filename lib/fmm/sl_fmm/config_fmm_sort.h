@@ -54,7 +54,7 @@
 #endif /* FCS mode? */
 
 
-#if defined(FCS_ENABLE_DEBUG) || 0
+#if defined(FCS_ENABLE_DEBUG_SL_FMM)
 # define DO_DEBUG
 # define DEBUG_CMD(_cmd_)  Z_MOP(_cmd_)
 #else
@@ -62,7 +62,7 @@
 #endif
 #define DEBUG_PRINT_PREFIX  "SL_FMM_DEBUG: "
 
-#if defined(FCS_ENABLE_INFO) || 0
+#if defined(FCS_ENABLE_INFO_SL_FMM)
 # define DO_INFO
 # define INFO_CMD(_cmd_)  Z_MOP(_cmd_)
 #else
@@ -70,7 +70,7 @@
 #endif
 #define INFO_PRINT_PREFIX  "SL_FMM_INFO: "
 
-#if defined(FCS_ENABLE_TIMING) || 0
+#if defined(FCS_ENABLE_TIMING_SL_FMM)
 # define DO_TIMING
 # define TIMING_CMD(_cmd_)  Z_MOP(_cmd_)
 #else
