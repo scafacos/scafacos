@@ -23,9 +23,10 @@
 #include <config.h>
 #endif
 
+#include <mpi.h>
+
 #include "fcs_fmm.h"
 #include "FCSCommon.h"
-#include "mpi.h"
 
 /*
 typedef struct fmm_internal_parameters_t
@@ -56,7 +57,7 @@ extern void fmm_ctunehomogen(void*, long long*, long long*);
 extern void fmm_ccomputewigner(void*,void*,long long);
 extern void fmm_crun(long long,fcs_float*,fcs_float*,fcs_float*,fcs_float*,fcs_float*,long long,long long,fcs_float,long
 long,long long*,fcs_float,long long,long long, long long, long long, void*,long long*);
-extern void fmm_cfinalize(void*,void**,long long);
+extern void fmm_cfinalize(void*,long long);
 
 /*
 void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float deltaE, fcs_int dipole_correction, fcs_int *return_value)
@@ -283,6 +284,9 @@ FCSResult fcs_fmm_init(FCS handle)
   ptr = malloc(4096);
   fmm_cinit(ptr);
   fcs_set_method_context( handle, ptr );
+
+  handle->fmm_param->wignersize = 0;
+  handle->fmm_param->wignerptr = NULL;
   return NULL;
 }
 
@@ -305,7 +309,6 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 	fcs_float tolerance_value;
 	fcs_float period_length;
 	void* params;
-	void* wignerptr;
 	long long wignersize;
 	long long r;
 	fcs_float* box_vector;
@@ -366,8 +369,16 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_pa
         result = fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "wrong kind of internal tuning chosen");
         return result;
     }
-	wignerptr = malloc(wignersize);
-	fmm_ccomputewigner(wignerptr,params,dotune);
+
+  if (handle->fmm_param->wignerptr == NULL || handle->fmm_param->wignersize < wignersize)
+  {
+    if (handle->fmm_param->wignerptr) free(handle->fmm_param->wignerptr);
+
+    handle->fmm_param->wignersize = wignersize;
+    handle->fmm_param->wignerptr = malloc(wignersize);
+  }
+
+  fmm_ccomputewigner(handle->fmm_param->wignerptr,params,dotune);
 
 	free(ll_periodicity);
 
@@ -477,14 +488,12 @@ extern FCSResult fcs_fmm_destroy(FCS handle)
 {
 /*	char* fnc_name = "fcs_fmm_destroy"; */
 	FCSResult result;
-        void* wignerptr;
         long long dotune;
 
     fcs_fmm_get_internal_tuning( handle, &dotune);
-	fmm_cfinalize(fcs_get_method_context(handle),&wignerptr, dotune);
+	fmm_cfinalize(fcs_get_method_context(handle),dotune);
 
-	/* TODO check for NULL ptr*/
-	free(wignerptr);
+	if (handle->fmm_param->wignerptr) free(handle->fmm_param->wignerptr);
 
 	free(fcs_get_method_context(handle));
 

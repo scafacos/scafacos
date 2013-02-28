@@ -69,6 +69,10 @@ typedef struct fcs_fmm_parameters_t
 
   /* storage space for the virial */
   fcs_float virial[9];
+
+  long long wignersize;
+  void *wignerptr;
+
 } fcs_fmm_parameters_t;
 
 

@@ -321,7 +321,7 @@ module fmm_cbindings
       	result = 1
       end subroutine fmm_crun
 
-      subroutine fmm_cfinalize(params,wignerptr,dotune) bind(c)
+      subroutine fmm_cfinalize(params,dotune) bind(c)
         use mp_wrapper, only : mp_finalize
         use mwigner
 	implicit none
@@ -329,7 +329,6 @@ module fmm_cbindings
         integer(kind=8) :: i
         integer(kind=8) :: poles
       	type(c_ptr), value :: params
-      	type(c_ptr) :: wignerptr
 
       	type(FMM_internal_params_t), pointer :: FMM_internal_params
 
@@ -341,7 +340,6 @@ module fmm_cbindings
           poles = FMM_MAXNMULTIPOLES
         endif
 
-        wignerptr = c_loc(FMM_internal_params%wignerd%wignerd(0,-poles,0,1,1))
       	FMM_internal_params%wignerd%wignerd => NULL()
         call mp_finalize()
 	
