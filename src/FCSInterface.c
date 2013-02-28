@@ -1255,12 +1255,12 @@ void fcs_printHandle(FCS handle)
       fcs_fmm_get_balanceload(handle, &load);
       fcs_fmm_get_maxdepth(handle, &maxdepth);
       fcs_fmm_get_unroll_limit(handle, &limit);
-      printf("fmm absrel: %i\n", absrel);
+      printf("fmm absrel: %" FCS_LMOD_INT "d\n", absrel);
       printf("fmm tolerance value: %e\n", tolerance_value);
-      printf("fmm dipole correction: %i\n", dipole_correction);
+      printf("fmm dipole correction: %" FCS_LMOD_INT "d\n", dipole_correction);
       printf("fmm internal tuning: %c\n", (tuning)?'T':'F');
-      printf("fmm maxdepth: %i\n", (int)maxdepth);
-      printf("fmm unroll limit: %i\n", (int)limit);
+      printf("fmm maxdepth: %lld\n", maxdepth);
+      printf("fmm unroll limit: %lld\n", limit);
       printf("fmm internal balance load: %c\n", (load)?'T':'F');
       break;
     }
@@ -2320,7 +2320,7 @@ FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm
   if (handle == NULL)
     return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
 
-  if (handle->resort_floats == NULL)
+  if (handle->resort_bytes == NULL)
     return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
 
   return handle->resort_bytes(handle, src, dst, n, comm);
