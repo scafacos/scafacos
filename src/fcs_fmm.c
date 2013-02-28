@@ -58,6 +58,8 @@ extern void fmm_ccomputewigner(void*,void*,long long);
 extern void fmm_crun(long long,fcs_float*,fcs_float*,fcs_float*,fcs_float*,fcs_float*,long long,long long,fcs_float,long
 long,long long*,fcs_float,long long,long long, long long, long long, void*,long long*);
 extern void fmm_cfinalize(void*,long long);
+extern void fmm_cinitload(void *, fcs_float *, fcs_int);
+extern void fmm_csetload(void *, fcs_float);
 
 /*
 void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float deltaE, fcs_int dipole_correction, fcs_int *return_value)
@@ -293,8 +295,6 @@ FCSResult fcs_fmm_init(FCS handle)
 /* internal fmm-specific tuning function */
 FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges)
 {
-
-
 	char* fnc_name = "fcs_fmm_tune";
 	FCSResult result;
 
@@ -312,11 +312,10 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 	long long wignersize;
 	long long r;
 	fcs_float* box_vector;
+  void* loadptr = NULL;
 
 	result = fcs_fmm_check(handle, local_particles);
 		if (result != NULL)
-
-
 	return result;
 
 	ll_periodicity = (long long*)malloc(3*sizeof(long long));
@@ -344,16 +343,14 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 
     fcs_fmm_get_internal_tuning( handle, &dotune );
     if (dotune == FCS_FMM_INHOMOGENOUS_SYSTEM)
-	{
-
-       if (define_loadvector == 1)
-       {
+    {
+      if (define_loadvector == 1)
+      {
           handle->fmm_param->define_loadvector = 0;
-          void* ptr;
           long long ll_loadvectorsize = 4*local_particles;
           fcs_float val = 1e0;
-          ptr = malloc(sizeof(ll_loadvectorsize)*ll_loadvectorsize);
-          fmm_cinitload(params,ptr,ll_loadvectorsize);
+      	  loadptr = malloc(sizeof(ll_loadvectorsize)*ll_loadvectorsize);
+          fmm_cinitload(params,loadptr,ll_loadvectorsize);
           fmm_csetload(params,val);
       }
 
@@ -380,7 +377,8 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 
   fmm_ccomputewigner(handle->fmm_param->wignerptr,params,dotune);
 
-	free(ll_periodicity);
+  free(ll_periodicity);
+  if (loadptr) free(loadptr);
 
 	if (r == 0)
 	{
@@ -413,6 +411,7 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_par
 	long long dotune;
 	long long r;
 	fcs_float* box_vector;
+  void* loadptr = NULL;
 
 	result = fcs_fmm_check(handle, local_particles);
 	if (result != NULL)
@@ -457,19 +456,18 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_par
     if (define_loadvector == 1)
     {
         handle->fmm_param->define_loadvector = 0;
-        void* ptr;
         long long ll_loadvectorsize = ll_loadvectorsize = 229074;/*local_particles*4;*/
         fcs_float val = 1e0;
-        ptr = malloc(sizeof(ll_loadvectorsize)*ll_loadvectorsize);
-        fmm_cinitload(params,ptr,ll_loadvectorsize);
+        loadptr = malloc(sizeof(ll_loadvectorsize)*ll_loadvectorsize);
+        fmm_cinitload(params,loadptr,ll_loadvectorsize);
         fmm_csetload(params,val);
     }
 
 	fmm_crun(ll_lp,positions,charges,potentials,field,handle->fmm_param->virial,ll_tp,ll_absrel,tolerance_value,
 		 ll_dip_corr, ll_periodicity, period_length, dotune, ll_maxdepth,ll_unroll_limit,ll_balance_load,params, &r);
 
-  /* FIX ME -> memory leak (free(ptr)?)*/
   free(ll_periodicity);
+  if (loadptr) free(loadptr);
   
 	if (r == 0)
 	{
