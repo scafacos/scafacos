@@ -52,6 +52,7 @@ fmm.f \
 fmm_tune.f \
 cfmm_tune.f \
 fmm_cbindings.f90 \
+fmm_cbindings.h \
 fmm.h
 
 libfmm_a_SOURCES += $(addrarithm_files)

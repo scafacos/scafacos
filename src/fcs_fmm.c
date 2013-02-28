@@ -27,6 +27,7 @@
 
 #include "fcs_fmm.h"
 #include "FCSCommon.h"
+#include "../lib/fmm/src/fmm_cbindings.h"
 
 /*
 typedef struct fmm_internal_parameters_t
@@ -50,16 +51,6 @@ typedef struct fmm_internal_parameters_t
   double hugef[100];
 } fmm_internal_parameters_t;
 */
-
-extern void fmm_cinit(void*);
-extern void fmm_ctune(long long,fcs_float*,fcs_float*,long long,long long,fcs_float,long long,long long*,fcs_float,long long, long long, long long, void*,long long*,long long*);
-extern void fmm_ctunehomogen(void*, long long*, long long*);
-extern void fmm_ccomputewigner(void*,void*,long long);
-extern void fmm_crun(long long,fcs_float*,fcs_float*,fcs_float*,fcs_float*,fcs_float*,long long,long long,fcs_float,long
-long,long long*,fcs_float,long long,long long, long long, long long, void*,long long*);
-extern void fmm_cfinalize(void*,long long);
-extern void fmm_cinitload(void *, fcs_float *, fcs_int);
-extern void fmm_csetload(void *, fcs_float);
 
 /*
 void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float deltaE, fcs_int dipole_correction, fcs_int *return_value)
@@ -289,6 +280,7 @@ FCSResult fcs_fmm_init(FCS handle)
 
   handle->fmm_param->wignersize = 0;
   handle->fmm_param->wignerptr = NULL;
+
   return NULL;
 }
 
@@ -480,7 +472,6 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_par
 extern FCSResult fcs_fmm_destroy(FCS handle)
 {
 /*  char* fnc_name = "fcs_fmm_destroy"; */
-  FCSResult result;
   long long dotune;
 
   fcs_fmm_get_internal_tuning( handle, &dotune);
@@ -490,7 +481,7 @@ extern FCSResult fcs_fmm_destroy(FCS handle)
 
   free(fcs_get_method_context(handle));
 
-  return result = NULL;
+  return NULL;
 }
 
 /******************************************************************************************************

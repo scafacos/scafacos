@@ -40,12 +40,12 @@ module fmm_cbindings
     end subroutine fmm_cinitload
 
     ! set loadvector subroutine for the C interface
-    subroutine fmm_csetload(cptr,loadptr,val) bind(c)
+    subroutine fmm_csetload(cptr,val) bind(c)
       implicit none
       integer(kind=fmm_integer) :: iboxloadlength
       real(kind=fmm_real), dimension(:), pointer :: iboxload
       real(kind=fmm_real), value :: val
-      type(c_ptr), value :: cptr,loadptr
+      type(c_ptr), value :: cptr
       type(FMM_internal_params_t), pointer :: FMM_internal_params
 
       call c_f_pointer(cptr,FMM_internal_params)
@@ -53,7 +53,7 @@ module fmm_cbindings
       iboxloadlength = FMM_internal_params%iboxloadlength 
       call c_f_pointer(FMM_internal_params%iboxloadcptr,iboxload,[iboxloadlength])
 
-      iboxload = 1.0d0 
+      iboxload = val
 
     end subroutine fmm_csetload
 
