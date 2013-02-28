@@ -39,33 +39,32 @@
  */
 
 
-
 typedef struct fcs_fmm_parameters_t
 {
-	/* list of parameters used by fmm */
-	/* what error type should be used? */
-	/* 0 -> relative error 10^(-3) */
-	/* 1 -> relative error <fmm_deltaE> */
-	/* 2 -> absolute error <fmm_deltaE> */
-	fcs_int absrel;
-	/* size of chosen error [10^(-1) .. 10^(-14)] */
-	fcs_float tolerance_value;
-	/* dipole correction */
-	fcs_int dipole_correction;
-        /* maximum tree depth [0 .. 19] */
-        fcs_int maxdepth;
-        /* limit for unrolled functions [0 .. 50] */
-        fcs_int limit;
-        /* status of the load balancing */
-        fcs_int balance;
-	/* using Coulomb potential */
-	fcs_int potential;
-	/* radius for cusp potential */
-	fcs_float cusp_radius;
-        /* load balancing vector */
-        fcs_int define_loadvector;
-    /* internal fmm tuning for inhomogenous systems */
-    long long system;
+  /* list of parameters used by fmm */
+  /* what error type should be used? */
+  /* 0 -> relative error 10^(-3) */
+  /* 1 -> relative error <fmm_deltaE> */
+  /* 2 -> absolute error <fmm_deltaE> */
+  fcs_int absrel;
+  /* size of chosen error [10^(-1) .. 10^(-14)] */
+  fcs_float tolerance_value;
+  /* dipole correction */
+  fcs_int dipole_correction;
+  /* maximum tree depth [0 .. 19] */
+  fcs_int maxdepth;
+  /* limit for unrolled functions [0 .. 50] */
+  fcs_int limit;
+  /* status of the load balancing */
+  fcs_int balance;
+  /* using Coulomb potential */
+  fcs_int potential;
+  /* radius for cusp potential */
+  fcs_float cusp_radius;
+  /* load balancing vector */
+  fcs_int define_loadvector;
+  /* internal fmm tuning for inhomogenous systems */
+  long long system;
 
   /* storage space for the virial */
   fcs_float virial[9];
@@ -74,8 +73,6 @@ typedef struct fcs_fmm_parameters_t
   void *wignerptr;
 
 } fcs_fmm_parameters_t;
-
-
 
 
 /**
@@ -97,12 +94,10 @@ extern FCSResult fcs_fmm_init(FCS handle );
 /**
  * @brief tuning routine for the basic parameters needed by fmm
  * @param handle the FCS-object into which the method specific parameters
-
-
  * can be entered
  * @param local_particles actual number of particles on process
  * @param local_max_particles size of allocated arrays
-  * @param positons fcs_float* list of positions of particles in form
+ * @param positons fcs_float* list of positions of particles in form
  *        (x1,y1,z1,x2,y2,z2,...,xn,yn,zn)
  * @param charges fcs_float* list of charges
  * @return FCSResult-object containing the return state
@@ -118,15 +113,13 @@ extern FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local
  * @param positons fcs_float* list of positions of particles in form
  *        (x1,y1,z1,x2,y2,z2,...,xn,yn,zn)
  * @param charges fcs_float* list of charges
-
-
  * @param output FCSOutput* pointer that contains a FCSOutput-object with the
  * results after the run
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, 
-			     fcs_float *positions,  
-			     fcs_float *charges, fcs_float *field, fcs_float *potentials);
+extern FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+                             fcs_float *positions, fcs_float *charges,
+                             fcs_float *field, fcs_float *potentials);
 
 /**
  * @brief a method to calculate fmm near-field potentials with the chosen method (without charges of particles)

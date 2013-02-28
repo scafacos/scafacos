@@ -66,8 +66,6 @@ extern FCSResult fcs_fmm_set_absrel(FCS handle, fcs_int choice);
 /**
  * @brief function to get the optional fmm absrel parameter
  * @param handle FCS-object that contains the parameter
-
-
  * @param absrel pointer to fcs_int
  * @return FCSResult-object containing the return state
  */
@@ -87,8 +85,6 @@ extern FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_va
  * @param handle FCS-object that contains the parameter
  * @param tolerance_value pointer to a fcs_float variable (only applicable if absrel is either 1 or 2)
  * @return FCSResult-object containing the return state
-
-
  */
 extern FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_value);
 
@@ -96,9 +92,9 @@ extern FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_v
  * @brief function to set the optional fmm energy tolerance (deltaE) parameter
  * @param handle FCS-object that is modified
  * @param dipole_correction chooses which form of dipole correction fmm should use:
- *         FCS_FMM_NO_DIPOLE_CORRECTION        no dipole correction
- *	       FCS_FMM_STANDARD_DIPOLE_CORRECTION  standard dipole correction
- *	       FCS_FMM_ACTIVE_DIPOLE_CORRECTION    dipole correction activated
+ *        FCS_FMM_NO_DIPOLE_CORRECTION        no dipole correction
+ *        FCS_FMM_STANDARD_DIPOLE_CORRECTION  standard dipole correction
+ *        FCS_FMM_ACTIVE_DIPOLE_CORRECTION    dipole correction activated
  * @return FCSResult-object containing the return state
  */
 extern FCSResult fcs_fmm_set_dipole_correction(FCS handle, fcs_int dipole_correction);
@@ -108,8 +104,6 @@ extern FCSResult fcs_fmm_set_dipole_correction(FCS handle, fcs_int dipole_correc
  * @param handle FCS-object that contains the parameter
  * @param dipole_correction pointer to fcs_int variable where the
  * function returns the dipole correction
-
-
  * @return the parameter dipole correction
  */
 extern FCSResult fcs_fmm_get_dipole_correction(FCS handle, fcs_int *dipole_correction);
@@ -118,9 +112,9 @@ extern FCSResult fcs_fmm_get_dipole_correction(FCS handle, fcs_int *dipole_corre
  * @brief function to set the fmm parameter parameter
  * @param handle FCS-object that is modified
  * @param coulomb fcs_int indicates if coulomb potential is used
- *          FCS_FMM_COULOMB if coulomb potential is not used
- *          FCS_FMM_CUSP    if cusp potential is used
- *         (exclusive to FFM_cusp!)
+ *        FCS_FMM_COULOMB if coulomb potential is not used
+ *        FCS_FMM_CUSP    if cusp potential is used
+ *        (exclusive to FFM_cusp!)
  * @return FCSResult-object containing the return state
  */
 extern FCSResult fcs_fmm_set_potential(FCS handle, fcs_int coulomb);
@@ -129,8 +123,6 @@ extern FCSResult fcs_fmm_set_potential(FCS handle, fcs_int coulomb);
  * @brief function to get the fmm coulomb parameter
  * @param handle FCS-object that contains the parameter
  * @param coulomb pointer to fcs_int variable where the function
-
-
  * returns the potential parameter
  * @return FCSResult-object containing the return state
  */
@@ -238,13 +230,11 @@ extern FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loa
  *        if absrel is either 1 or 2)
  * @param dipole_correction fcs_int chooses which form of dipole correction fmm should use:
  *        -1 = no dipole correction
- *	       0 = standard dipole correction
- *	       1 = dipole correction activated
+ *         0 = standard dipole correction
+ *         1 = dipole correction activated
  * @param potential fcs_int chooses which potential to use
  *         1 = coulomb potential (ignores radius, see below)
  *         2 = cusp potential (requires radius)
-
-
  * @param radius fcs_float sets the radius for the cusp potential, if chosen
  * @return FCSResult-object containing the return state
  */
