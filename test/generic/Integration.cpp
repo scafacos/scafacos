@@ -118,22 +118,24 @@ void integ_update_velocities(integration_t *integ, fcs_int nparticles, fcs_float
 }
 
 
-void integ_update_positions(integration_t *integ, fcs_int nparticles, fcs_float *pos, fcs_float *v_old, fcs_float *f_old, fcs_float *max_particle_move)
+void integ_update_positions(integration_t *integ, fcs_int nparticles, fcs_float *pos, fcs_float *pos_old, fcs_float *v_old, fcs_float *f_old, fcs_float *max_particle_move)
 {
   fcs_float old_pos[3], d;
 
 
   *max_particle_move = 0;
 
+  if (pos_old == NULL) pos_old = pos;
+
   for (fcs_int i = 0; i < nparticles; ++i)
   {
-    old_pos[0] = pos[3 * i + 0];
-    old_pos[1] = pos[3 * i + 1];
-    old_pos[2] = pos[3 * i + 2];
+    old_pos[0] = pos_old[3 * i + 0];
+    old_pos[1] = pos_old[3 * i + 1];
+    old_pos[2] = pos_old[3 * i + 2];
   
-    pos[3 * i + 0] += integ->delta_t * (v_old[3 * i + 0] + 0.5 * f_old[3 * i + 0] * integ->delta_t);
-    pos[3 * i + 1] += integ->delta_t * (v_old[3 * i + 1] + 0.5 * f_old[3 * i + 1] * integ->delta_t);
-    pos[3 * i + 2] += integ->delta_t * (v_old[3 * i + 2] + 0.5 * f_old[3 * i + 2] * integ->delta_t);
+    pos[3 * i + 0] = old_pos[0] + integ->delta_t * (v_old[3 * i + 0] + 0.5 * f_old[3 * i + 0] * integ->delta_t);
+    pos[3 * i + 1] = old_pos[1] + integ->delta_t * (v_old[3 * i + 1] + 0.5 * f_old[3 * i + 1] * integ->delta_t);
+    pos[3 * i + 2] = old_pos[2] + integ->delta_t * (v_old[3 * i + 2] + 0.5 * f_old[3 * i + 2] * integ->delta_t);
 
     d = fcs_sqrt((old_pos[0] - pos[3 * i + 0]) * (old_pos[0] - pos[3 * i + 0]) + (old_pos[1] - pos[3 * i + 1]) * (old_pos[1] - pos[3 * i + 1]) + (old_pos[2] - pos[3 * i + 2]) * (old_pos[2] - pos[3 * i + 2]));
 

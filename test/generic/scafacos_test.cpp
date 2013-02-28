@@ -403,9 +403,27 @@ static double determine_total_energy(fcs_int nparticles, fcs_float *charges, fcs
   return total;
 }
 
+#define BACKUP_POSITIONS
+#define BACKUP_CHARGES
+
+/*#define PRINT_PARTICLES*/
+
+#ifdef PRINT_PARTICLES
+static void print_particles(fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
+{
+  for (fcs_int i = 0; i < nparticles; ++i) printf(" %" FCS_LMOD_INT "d: [%f %f %f] [%f] [%f %f %f] [%f]\n",
+    i, positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2], charges[i], field[3 * i + 0], field[3 * i + 1], field[3 * i + 2], potentials[i]);
+}
+#endif
+
 static void run_method(particles_t *parts)
 {
-  fcs_float *original_positions, *original_charges;
+#ifdef BACKUP_POSITIONS
+  fcs_float *original_positions;
+#endif
+#ifdef BACKUP_CHARGES
+  fcs_float *original_charges;
+#endif
   FCSResult result;
 
   double t, run_time_sum;
@@ -443,13 +461,15 @@ static void run_method(particles_t *parts)
   if (fcs_get_method(fcs) == FCS_DIRECT) fcs_direct_set_in_particles(fcs, parts->in_nparticles, parts->in_positions, parts->in_charges);
 #endif
 
-  /* arrays to hold copies of positions and charges, as they may be changed by the method */
-  original_positions = (fcs_float *) malloc(3 * parts->nparticles * sizeof(fcs_float));
-  original_charges = (fcs_float *) malloc(parts->nparticles * sizeof(fcs_float));
-
   /* create copies of the original positions and charges, as fcs_tune and fcs_run may modify them */
+#ifdef BACKUP_POSITIONS
+  original_positions = (fcs_float *) malloc(3 * parts->nparticles * sizeof(fcs_float));
   memcpy(original_positions, parts->positions, 3 * parts->nparticles * sizeof(fcs_float));
+#endif
+#ifdef BACKUP_CHARGES
+  original_charges = (fcs_float *) malloc(parts->nparticles * sizeof(fcs_float));
   memcpy(original_charges, parts->charges, parts->nparticles * sizeof(fcs_float));
+#endif
 
   // Tune and time method
   MASTER(cout << "  Tuning method..." << endl);
@@ -470,8 +490,17 @@ static void run_method(particles_t *parts)
   for (fcs_int i = 0; i < global_params.iterations; ++i)
   {
     /* restore original positions and charges, as fcs_tune and fcs_run may have modified them */
+#ifdef BACKUP_POSITIONS
     memcpy(parts->positions, original_positions, 3 * parts->nparticles * sizeof(fcs_float));
+#endif
+#ifdef BACKUP_CHARGES
     memcpy(parts->charges, original_charges, parts->nparticles * sizeof(fcs_float));
+#endif
+
+#ifdef PRINT_PARTICLES
+    MASTER(cout << "Particles before fcs_run: " << parts->nparticles << endl);
+    print_particles(parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+#endif
 
     MPI_Barrier(communicator);
     t = MPI_Wtime();
@@ -481,11 +510,21 @@ static void run_method(particles_t *parts)
     t = MPI_Wtime() - t;
     MASTER(cout << "    #" << i << " time: " << scientific << t << endl);
 
+#ifdef PRINT_PARTICLES
+    MASTER(cout << "Particles after fcs_run: " << parts->nparticles << endl);
+    print_particles(parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+#endif
+
     run_time_sum += t;
   }
 
+#ifdef BACKUP_POSITIONS
   free(original_positions);
+#endif
+#ifdef BACKUP_CHARGES
   free(original_charges);
+#endif
+
   MASTER(cout << "    Average time: " << scientific << run_time_sum / global_params.iterations  << endl);
 
   current_config->have_result_values[0] = 1;  // have potentials results
@@ -529,16 +568,6 @@ static void no_method() {
   current_config->have_result_values[1] = 0;  // no field results
 }
 
-/*#define PRINT_PARTICLES*/
-
-#ifdef PRINT_PARTICLES
-static void print_particles(fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
-{
-  for (fcs_int i = 0; i < nparticles; ++i) printf(" %" FCS_LMOD_INT "d: [%f %f %f] [%f] [%f %f %f] [%f]\n",
-    i, positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2], charges[i], field[3 * i + 0], field[3 * i + 1], field[3 * i + 2], potentials[i]);
-}
-#endif
-
 static void run_integration(particles_t *parts)
 {
   integration_t integ;
@@ -546,6 +575,9 @@ static void run_integration(particles_t *parts)
   fcs_int resort_availability, resort = global_params.resort;
 
   fcs_float *v_cur, *f_old, *f_cur, e, max_particle_move;
+#ifdef BACKUP_POSITIONS
+  fcs_float *xyz_old;
+#endif
   FCSResult result;
   fcs_int r = 0;
 
@@ -557,6 +589,10 @@ static void run_integration(particles_t *parts)
   v_cur = new fcs_float[3 * parts->max_nparticles];
   f_old = new fcs_float[3 * parts->max_nparticles];
   f_cur = parts->field;
+  
+#ifdef BACKUP_POSITIONS
+  xyz_old = new fcs_float[3 * parts->max_nparticles];
+#endif
 
   /* setup integration parameters */
   integ_setup(&integ, global_params.time_steps, global_params.resort, global_params.integration_conf);
@@ -579,10 +615,6 @@ static void run_integration(particles_t *parts)
 
     if (fcs_set_resort(fcs, resort) != FCS_RESULT_SUCCESS) resort = 0;
 
-    /* tune method */
-    result = fcs_tune(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges);
-    if (!check_result(result)) return;
-
   } else
   {
     for (fcs_int i = 0; i < parts->nparticles; ++i) parts->field[3 * i + 0] = parts->field[3 * i + 1] = parts->field[3 * i + 2] = parts->potentials[i] = 0.0;
@@ -602,12 +634,35 @@ static void run_integration(particles_t *parts)
 
     if (fcs != FCS_NULL)
     {
+      /* store old positions */
+#ifdef BACKUP_POSITIONS
+      memcpy(xyz_old, parts->positions, parts->nparticles * 3 * sizeof(fcs_float));
+#endif
+
+      /* tune method */
+      MASTER(cout << "    Tune method..." << endl);
+      t = MPI_Wtime();
+      result = fcs_tune(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges);
+      t = MPI_Wtime() - t;
+      if (!check_result(result)) return;
+      MASTER(printf("     = %f second(s)\n", t));
+
+      /* restore old positions */
+#ifdef BACKUP_POSITIONS
+      memcpy(parts->positions, xyz_old, parts->nparticles * 3 * sizeof(fcs_float));
+#endif
+
       MASTER(cout << "    Run method..." << endl);
       t = MPI_Wtime();
       result = fcs_run(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
       t = MPI_Wtime() - t;
       if (!check_result(result)) return;
       MASTER(printf("     = %f second(s)\n", t));
+
+      /* restore old positions */
+#ifdef BACKUP_POSITIONS
+      memcpy(parts->positions, xyz_old, parts->nparticles * 3 * sizeof(fcs_float));
+#endif
     }
 
     fcs_get_resort_availability(fcs, &resort_availability);
@@ -633,6 +688,11 @@ static void run_integration(particles_t *parts)
 
       MASTER(printf("     = %f second(s)\n", t));
 
+      /* resort the restored old positions */
+#ifdef BACKUP_POSITIONS
+      fcs_resort_floats(fcs, parts->positions, NULL, 3, communicator);
+#endif
+
     } else if (resort) MASTER(cout << "    Resorting enabled, but failed!" << endl);
 
 #ifdef PRINT_PARTICLES
@@ -657,7 +717,7 @@ static void run_integration(particles_t *parts)
     MASTER(cout << "  Time-step #" << r << endl);
 
     MASTER(cout << "    Update positions..." << endl);
-    integ_update_positions(&integ, parts->nparticles, parts->positions, v_cur, f_cur, &max_particle_move);
+    integ_update_positions(&integ, parts->nparticles, parts->positions, NULL, v_cur, f_cur, &max_particle_move);
 
     if (resort_availability)
     {
@@ -687,6 +747,10 @@ static void run_integration(particles_t *parts)
 
   delete[] v_cur;
   delete[] f_old;
+
+#ifdef BACKUP_POSITIONS
+  delete[] xyz_old;
+#endif
 }
 
 int main(int argc, char* argv[]) {
