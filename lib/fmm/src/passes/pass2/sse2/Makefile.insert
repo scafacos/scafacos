@@ -1,0 +1,18 @@
+# single precision intrinsics
+# fallback mode: TODO: provide SP intrinsics for SSE2
+#if FCS_FLOAT_IS_FLOAT  
+#simd_sources += \
+#	passes/pass2/generic/pass2trfrqdcach.f90
+#endif
+
+# double precision intrinsics 
+#if FCS_FLOAT_IS_DOUBLE 
+simd_sources += \
+	passes/pass2/sse2/64bit/pass2trfrqdcach.f90 \
+	passes/pass2/sse2/64bit/m2l_along_z.c \
+	passes/pass2/sse2/64bit/rotate_back_around_yz.c \
+	passes/pass2/sse2/64bit/rotate_around_y.c \
+	passes/pass2/sse2/64bit/rotate_around_z.c
+#endif
+
+pass2trfrqdcach.$(OBJEXT): ../../../../fconfig.h
