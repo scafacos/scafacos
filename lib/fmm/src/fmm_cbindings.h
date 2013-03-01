@@ -18,8 +18,5 @@ void fmm_cfinalize(void*,long long);
 void fmm_cinitload(void *, fcs_float *, fcs_int);
 void fmm_csetload(void *, fcs_float);
 
-void fmm_cinitresort(void *, fcs_fmm_resort_t);
-void fmm_csetresort(void *, long long);
-
 
 #endif /* __FMM_CBINDINGS_H__ */
