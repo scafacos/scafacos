@@ -767,7 +767,88 @@ r_cut=4.48139 cao=5 grid=(256, 256, 256) alpha=0.74681
   <timings
       method="VMG"
       charges="102900"
+      tolerance="1e-1">
+    <parameters>
+      vmg_near_field_cells,2,vmg_max_level,5,vmg_discretization_order,2,vmg_interpolation_order,3,vmg_precision,1.0e-1,vmg_smoothing_steps,2
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    3.807863e-01
+          abs_max_field_error =    8.321866e-01
+      abs_rms_potential_error =    2.279613e-01
+      abs_max_potential_error =    9.894356e-01
+             abs_energy_error =    3.410358e+03
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    8.535714e-02
+          rel_max_field_error =    1.865431e-01
+      rel_rms_potential_error =    9.994019e-02
+      rel_max_potential_error =    4.337771e-01
+             rel_energy_error =    6.675525e-02
+
+             total_energy_ref =    5.108749e+04
+                 total_energy =    5.449785e+04
+    </errors>
+    <data>
+      1 2.559845e+00
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="102900"
+      tolerance="1e-2">
+    <parameters>
+      vmg_near_field_cells,3,vmg_max_level,6,vmg_discretization_order,4,vmg_interpolation_order,5,vmg_precision,1.0e-4,vmg_smoothing_steps,3
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    6.563875e-02
+          abs_max_field_error =    1.515974e-01
+      abs_rms_potential_error =    1.594322e-02
+      abs_max_potential_error =    4.642628e-02
+             abs_energy_error =    2.139947e+02
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    1.531707e-02
+          rel_max_field_error =    3.537588e-02
+      rel_rms_potential_error =    7.406705e-03
+      rel_max_potential_error =    2.156814e-02
+             rel_energy_error =    4.188789e-03
+
+             total_energy_ref =    5.108749e+04
+                 total_energy =    5.087350e+04
+    </errors>
+    <data>
+      1 3.647937e+00
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="102900"
       tolerance="1e-3">
+    <parameters>
+      vmg_near_field_cells,5,vmg_max_level,6,vmg_discretization_order,4,vmg_interpolation_order,5,vmg_precision,1.0e-4,vmg_smoothing_steps,3
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    3.747796e-03
+          abs_max_field_error =    1.489537e-02
+      abs_rms_potential_error =    1.694030e-03
+      abs_max_potential_error =    7.217332e-03
+             abs_energy_error =    2.052932e+01
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    8.725102e-04
+          rel_max_field_error =    3.467736e-03
+      rel_rms_potential_error =    7.860826e-04
+      rel_max_potential_error =    3.349066e-03
+             rel_energy_error =    4.018463e-04
+
+             total_energy_ref =    5.108749e+04
+                 total_energy =    5.110802e+04
+    </errors>
     <data>
       1 8.345983e+00
     </data>
@@ -777,8 +858,29 @@ r_cut=4.48139 cao=5 grid=(256, 256, 256) alpha=0.74681
       method="VMG"
       charges="102900"
       tolerance="1e-4">
+    <parameters>
+      vmg_near_field_cells,10,vmg_max_level,7,vmg_discretization_order,4,vmg_interpolation_order,5,vmg_precision,1.0e-4,vmg_smoothing_steps,2
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    2.324953e-04
+          abs_max_field_error =    9.004620e-04
+      abs_rms_potential_error =    2.027439e-04
+      abs_max_potential_error =    5.855304e-04
+             abs_energy_error =    3.202220e+00
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    5.412952e-05
+          rel_max_field_error =    2.096454e-04
+      rel_rms_potential_error =    9.410231e-05
+      rel_max_potential_error =    2.717702e-04
+             rel_energy_error =    6.268110e-05
+
+             total_energy_ref =    5.108749e+04
+                 total_energy =    5.109069e+04
+    </errors>
     <data>
-      1 2.532620e+01
+      1 3.239828e+01
     </data>
   </timings>
 
@@ -786,8 +888,29 @@ r_cut=4.48139 cao=5 grid=(256, 256, 256) alpha=0.74681
       method="VMG"
       charges="102900"
       tolerance="1e-5">
+    <parameters>
+      vmg_near_field_cells,18,vmg_max_level,8,vmg_discretization_order,4,vmg_interpolation_order,4,vmg_precision,1.0e-5,vmg_smoothing_steps,2
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    1.068272e-04
+          abs_max_field_error =    2.776845e-04
+      abs_rms_potential_error =    2.072742e-05
+      abs_max_potential_error =    5.795983e-05
+             abs_energy_error =    8.549594e-02
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    2.487214e-05
+          rel_max_field_error =    6.465215e-05
+      rel_rms_potential_error =    9.620847e-06
+      rel_max_potential_error =    2.690265e-05
+             rel_energy_error =    1.673520e-06
+
+             total_energy_ref =    5.108749e+04
+                 total_energy =    5.108758e+04
+    </errors>
     <data>
-      1 1.628516e+02
+      1 1.633799e+02
     </data>
   </timings>
 
