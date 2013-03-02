@@ -764,4 +764,32 @@ r_cut=4.48139 cao=5 grid=(256, 256, 256) alpha=0.74681
 ********************
 -->
 
+  <timings
+      method="VMG"
+      charges="102900"
+      tolerance="1e-3">
+    <data>
+      1 8.345983e+00
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="102900"
+      tolerance="1e-4">
+    <data>
+      1 2.532620e+01
+    </data>
+  </timings>
+
+  <timings
+      method="VMG"
+      charges="102900"
+      tolerance="1e-5">
+    <data>
+      1 1.628516e+02
+    </data>
+  </timings>
+
+
 </benchmarks>
