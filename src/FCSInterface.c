@@ -2041,11 +2041,16 @@ FCSResult fcs_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolera
 #ifdef FCS_ENABLE_FMM
         case FCS_FMM:
             if(tolerance_type == FCS_TOLERANCE_TYPE_ENERGY){
+              fcs_fmm_set_absrel(handle, FCS_FMM_CUSTOM_ABSOLUTE);
+              fcs_fmm_set_tolerance_energy(handle, tolerance_value);
+              return NULL;
+            } else if(tolerance_type == FCS_TOLERANCE_TYPE_ENERGY_REL){
+              fcs_fmm_set_absrel(handle, FCS_FMM_CUSTOM_RELATIVE);
               fcs_fmm_set_tolerance_energy(handle, tolerance_value);
               return NULL;
             }
             else
-              return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"Unsupported tolernace type. FMM only supports FCS_TOLERANCE_TYPE_ENERGY.");
+              return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"Unsupported tolerance type. FMM only supports FCS_TOLERANCE_TYPE_ENERGY and FCS_TOLERANCE_TYPE_ENERGY_REL.");
 #endif
 #ifdef FCS_ENABLE_MEMD
         case FCS_MEMD:
