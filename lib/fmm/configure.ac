@@ -120,28 +120,6 @@ case $ax_cv_fc_integer_kind_8 in
 esac
 AC_SUBST([FC_INTEGER_SIZE_8])
 
-# Find out whether IBM intrinsics are available.
-AC_CACHE_CHECK(
- [for IBM intrinsics],
- [ax_cv_have_ibm_intrinsics],
- [save_FCFLAGS=$FCFLAGS
-  FCFLAGS="$FCFLAGS -qarch=450d"
-  AC_LANG_PUSH([Fortran])
-  AC_LINK_IFELSE(
-   [AC_LANG_PROGRAM([],[[
-      real(kind=8) :: scr(2)
-      complex(kind=8) :: reg
-      call alignx(16, scr)
-      reg = loadfp(scr(1))
-]])],[ax_cv_have_ibm_intrinsics=yes],[ax_cv_have_ibm_intrinsics=no])
-  AC_LANG_POP([Fortran])
-  FCFLAGS=$save_FCFLAGS
-])
-if test "x${ax_cv_have_ibm_intrinsics}" = xyes ; then
-  AC_DEFINE([HAVE_IBM_INTRINSICS],[1],[Define if IBM intrinsics can be used.])
-fi
-AM_CONDITIONAL([ENABLE_IBM_INTRINSICS],[test "x${ax_cv_have_ibm_intrinsics}" = xyes])
-
 # Find out how to add to the Fortran include path.
 AC_FC_MODULE_FLAG
 # Find out the file name extensions of module files.
@@ -182,6 +160,28 @@ AX_FCS_CONFIG_SOLVER
 
 # Set up FMM solver.
 AX_FCS_FMM_SOLVER
+
+# Find out whether intrinsics are available.
+AX_CHECK_IBM_INTRINSICS
+AX_CHECK_SSE2_INTRINSICS
+
+AX_COMPILER_VENDOR
+AC_CHECK_SIZEOF([fcs_float])
+
+if test "x${ax_intrinsics_ibm_f}" = xyes -a "x${ac_cv_sizeof_fcs_float}" = x8 ; then
+  fmm_pass2_ppc450_64bit=yes
+fi
+if test "x${ax_intrinsics_sse2_c}" = xyes -a "x${ac_cv_sizeof_fcs_float}" = x8 -a "x${ax_cv_c_compiler_vendor}" = xintel ; then
+  fmm_pass2_sse2_64bit=yes
+fi
+
+AM_CONDITIONAL([ENABLE_IBM_F_INTRINSICS],[test "x${ax_intrinsics_ibm_f}" = xyes])
+
+#AM_CONDITIONAL([ENABLE_PASS2_PPC450_32BIT],[test "x${fmm_pass2_ppc450_32bit}" = xyes])
+AM_CONDITIONAL([ENABLE_PASS2_PPC450_64BIT],[test "x${fmm_pass2_ppc450_64bit}" = xyes])
+#AM_CONDITIONAL([ENABLE_PASS2_SSE2_32BIT],[test "x${fmm_pass2_sse2_32bit}" = xyes])
+AM_CONDITIONAL([ENABLE_PASS2_SSE2_64BIT],[test "x${fmm_pass2_sse2_64bit}" = xyes])
+AM_CONDITIONAL([ENABLE_PASS2_GENERIC],[test "x${fmm_pass2_ppc450_32bit}${fmm_pass2_ppc450_64bit}${fmm_pass2_sse2_32bit}${fmm_pass2_sse2_64bit}" != xyes])
 
 # Add FMM solver stuff to main FCS package.
 AX_FCS_PACKAGE_RESET

@@ -1,0 +1,28 @@
+# Makefile.am include
+
+pass2_sources =
+
+# SIMD intrinsics for BG/P
+if ENABLE_PPC450_64BIT
+pass2_sources += \
+  passes/pass2/ppc450/64bit/pass2trfrqdcach.f90
+passes/pass2/ppc450/64bit/pass2trfrqdcach.$(OBJEXT): ../fconfig.h
+endif
+
+#SIMD intrinsics for Intel/AMD
+if ENABLE_SSE2_64BIT
+pass2_sources += \
+  passes/pass2/sse2/64bit/pass2trfrqdcach.f90 \
+  passes/pass2/sse2/64bit/m2l_along_z.c \
+  passes/pass2/sse2/64bit/rotate_back_around_yz.c \
+  passes/pass2/sse2/64bit/rotate_around_y.c \
+  passes/pass2/sse2/64bit/rotate_around_z.c
+passes/pass2/sse2/64bit/pass2trfrqdcach.$(OBJEXT): ../fconfig.h
+endif
+
+# fallback mode
+if ENABLE_GENERIC
+pass2_sources += \
+  passes/pass2/generic/pass2trfrqdcach.f90
+passes/pass2/generic/pass2trfrqdcach.$(OBJEXT): ../fconfig.h
+endif

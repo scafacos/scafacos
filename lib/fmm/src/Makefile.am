@@ -57,12 +57,15 @@ fmm.h
 
 libfmm_a_SOURCES += $(addrarithm_files)
 
-if ENABLE_IBM_INTRINSICS
+if ENABLE_IBM_F_INTRINSICS
 libfmm_a_SOURCES += pass2trfrqdcach.f90
 pass2trfrqdcach.$(OBJEXT) : FCFLAGS:=$(FCFLAGS) -qarch=450d
 else
 libfmm_a_SOURCES += pass2trfrqdcach.legacy.f90
 endif
+
+#include passes/pass2/Makefile.include
+#libfmm_a_SOURCES += $(pass2_sources)
 
 # These files are to be treated as fixed form source.
 fmm.$(OBJEXT) \
@@ -93,7 +96,7 @@ mp_info.$(OBJEXT): fmm.h ../fconfig.h
 pvlist.$(OBJEXT): fmm.h ../fconfig.h
 fmm.$(OBJEXT): fmm.h ../fconfig.h
 mp_wrapper.$(OBJEXT): fmm.h ../fconfig.h
-if !ENABLE_IBM_INTRINSICS
+if !ENABLE_IBM_F_INTRINSICS
 pass2trfrqdcach.legacy.$(OBJEXT): fmm.h ../fconfig.h
 endif
 

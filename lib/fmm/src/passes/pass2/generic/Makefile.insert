@@ -1,5 +1,0 @@
-
-simd_sources += \
-	passes/pass2/generic/pass2trfrqdcach.f90
-
-pass2trfrqdcach.$(OBJEXT): ../../../../fconfig.h
