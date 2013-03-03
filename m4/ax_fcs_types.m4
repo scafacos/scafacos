@@ -145,7 +145,7 @@ AC_ARG_ENABLE([fcs-real],
 # Set up FCS integer and floating point types for C and Fortran.
 AC_DEFUN([AX_FCS_TYPES],[
 
-AX_FCS_TYPES_ARGS
+AC_REQUIRE([AX_FCS_TYPES_ARGS])
 
 fcs_int=
 fcs_integer=
