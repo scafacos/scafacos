@@ -1,20 +1,60 @@
-      integer, parameter :: PFFT_TRANSPOSE_NONE = 0
-      integer, parameter :: PFFT_TRANSPOSE_012  = 0
-      integer, parameter :: PFFT_TRANSPOSE_102  = 1
-      integer, parameter :: PFFT_TRANSPOSE_021  = 2
-      integer, parameter :: PFFT_TRANSPOSE_201  = 4
-      integer, parameter :: PFFT_TRANSPOSE_120  = 8
-      
-      integer, parameter :: PFFT_FORWARD    = 0
-      integer, parameter :: PFFT_BACKWARD   = 16
-      integer, parameter :: PFFT_TRANSPOSED = 32
-      integer, parameter :: PFFT_P3DFFT     = 64
-      
-      integer, parameter :: PFFT_GC_BEFORE_FFT  = 0
-      integer, parameter :: PFFT_GC_AFTER_FFT   = 128
-      
-      integer, parameter ::ptrdiff_t_kind = @PTRDIFF_T_KIND@
+      integer, parameter :: PNFFT_PRE_PHI_HUT      = 1
+      integer, parameter :: PNFFT_PRE_PHI_HAT      = 1
+      integer, parameter :: PNFFT_FG_PSI           = 2
+      integer, parameter :: PNFFT_PRE_CONST_PSI    = 4
+      integer, parameter :: PNFFT_PRE_LIN_PSI      = 8
+      integer, parameter :: PNFFT_PRE_QUAD_PSI     = 16
+      integer, parameter :: PNFFT_PRE_KUB_PSI      = 32
+      integer, parameter :: PNFFT_PRE_PSI          = 64
+      integer, parameter :: PNFFT_PRE_FG_PSI       = PNFFT_PRE_PSI + PNFFT_FG_PSI
+      integer, parameter :: PNFFT_PRE_FULL_PSI     = 128
+      integer, parameter :: PNFFT_PRE_FULL_FG_PSI  = PNFFT_PRE_FULL_PSI + PNFFT_FG_PSI
 
-      integer(ptrdiff_t_kind), parameter :: PFFT_DEFAULT_BLOCK = 0
-      integer(ptrdiff_t_kind), parameter :: PFFT_DEFAULT_BLOCKS = -1
-      integer(ptrdiff_t_kind), parameter :: PFFT_NO_GCELLS = -1
+      integer, parameter :: PNFFT_MALLOC_X         = 256
+      integer, parameter :: PNFFT_MALLOC_F_HAT     = 512
+      integer, parameter :: PNFFT_MALLOC_F         = 1024
+      integer, parameter :: PNFFT_MALLOC_GRAD_F    = 2048
+
+      integer, parameter :: PNFFT_FFT_OUT_OF_PLACE = 0
+      integer, parameter :: PNFFT_FFT_IN_PLACE     = 4096
+      integer, parameter :: PNFFT_SORT_NODES       = 8192
+      integer, parameter :: PNFFT_INTERLACED       = 16384
+      integer, parameter :: PNFFT_SHIFTED_IN       = 32768
+      integer, parameter :: PNFFT_SHIFTED_OUT      = 65536
+
+      integer, parameter :: PNFFT_GRAD_AD          = 0
+      integer, parameter :: PNFFT_GRAD_IK          = 131072
+      integer, parameter :: PNFFT_GRAD_NONE        = 262144
+
+      integer, parameter :: PNFFT_REAL_F           = 524288
+
+      integer, parameter :: PNFFT_WINDOW_KAISER_BESSEL  = 0
+      integer, parameter :: PNFFT_WINDOW_GAUSSIAN       = 1048576
+      integer, parameter :: PNFFT_WINDOW_BSPLINE        = 2097152
+      integer, parameter :: PNFFT_WINDOW_SINC_POWER     = 4194304
+      integer, parameter :: PNFFT_WINDOW_BESSEL_I0      = 8388608
+
+      integer, parameter :: PNFFT_PRE_INTPOL_PSI = PNFFT_PRE_CONST_PSI + PNFFT_PRE_LIN_PSI + PNFFT_PRE_QUAD_PSI + PNFFT_PRE_KUB_PSI
+      integer, parameter :: PNFFT_PRE_ONE_PSI    = PNFFT_PRE_INTPOL_PSI + PNFFT_PRE_FG_PSI + PNFFT_PRE_PSI + PNFFT_PRE_FULL_PSI
+
+      integer, parameter :: PNFFT_FREE_X          = PNFFT_MALLOC_X
+      integer, parameter :: PNFFT_FREE_F_HAT      = PNFFT_MALLOC_F_HAT
+      integer, parameter :: PNFFT_FREE_F          = PNFFT_MALLOC_F
+      integer, parameter :: PNFFT_FREE_GRAD_F     = PNFFT_MALLOC_GRAD_F
+
+      integer, parameter :: PNFFT_COMPUTE_F       = PNFFT_MALLOC_F
+      integer, parameter :: PNFFT_COMPUTE_GRAD_F  = PNFFT_MALLOC_GRAD_F
+
+      integer, parameter :: PNFFT_TIMER_LENGTH          = 10
+      integer, parameter :: PNFFT_TIMER_ITER            = 0
+      integer, parameter :: PNFFT_TIMER_WHOLE           = 1
+      integer, parameter :: PNFFT_TIMER_LOOP_B          = 2
+      integer, parameter :: PNFFT_TIMER_SORT_NODES      = 3
+      integer, parameter :: PNFFT_TIMER_GCELLS          = 4
+      integer, parameter :: PNFFT_TIMER_MATRIX_B        = 5
+      integer, parameter :: PNFFT_TIMER_MATRIX_F        = 6
+      integer, parameter :: PNFFT_TIMER_MATRIX_D        = 7
+      integer, parameter :: PNFFT_TIMER_SHIFT_INPUT     = 8
+      integer, parameter :: PNFFT_TIMER_SHIFT_OUTPUT    = 9
+
+      integer, parameter ::ptrdiff_t_kind = @PTRDIFF_T_KIND@
