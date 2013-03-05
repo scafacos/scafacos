@@ -16,10 +16,9 @@ libapi_la_SOURCES = \
         api-basic.c \
         api-adv.c \
         api-guru.c \
-	pnfft.f.in
-# \
-#	fortran_api.c \
-#	fortran-mangling.h \
-#	fortran-prototypes.h \
-#	fortran-wrappers.h
+	pnfft.f.in \
+	fortran-api.c \
+	fortran-mangling.h \
+	fortran-prototypes.h \
+	fortran-wrappers.h
 

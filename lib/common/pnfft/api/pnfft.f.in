@@ -1,3 +1,7 @@
+      include "mpif.h"
+      include "fftw3.f"
+      include "pfft.f"
+
       integer, parameter :: PNFFT_PRE_PHI_HUT      = 1
       integer, parameter :: PNFFT_PRE_PHI_HAT      = 1
       integer, parameter :: PNFFT_FG_PSI           = 2
@@ -57,4 +61,5 @@
       integer, parameter :: PNFFT_TIMER_SHIFT_INPUT     = 8
       integer, parameter :: PNFFT_TIMER_SHIFT_OUTPUT    = 9
 
-      integer, parameter ::ptrdiff_t_kind = @PTRDIFF_T_KIND@
+!     include pfft.f for definition of ptrdiff_t_kind 
+!      integer, parameter :: ptrdiff_t_kind = @PTRDIFF_T_KIND@

@@ -52,7 +52,7 @@ int main(int argc, char **argv){
   /* Plan parallel NFFT */
   pnfft = pnfft_init_3d(N, local_M, comm_cart_3d);
 
-  /* get data pointers */
+  /* Get data pointers */
   f_hat = pnfft_get_f_hat(pnfft);
   f     = pnfft_get_f(pnfft);
   x     = pnfft_get_x(pnfft);

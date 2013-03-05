@@ -94,6 +94,41 @@ void PNX(vsub_INT)(
 
 
 
+INT* PNX(malloc_INT)(
+    size_t size
+    )
+{
+  return (INT*) malloc(sizeof(INT) * size);
+}
+
+int* PNX(malloc_int)(
+    size_t size
+    )
+{
+  return (int*) malloc(sizeof(int) * size);
+}
+
+unsigned* PNX(malloc_unsigned)(
+    size_t size
+    )
+{
+  return (unsigned*) malloc(sizeof(unsigned) * size);
+}
+
+R* PNX(malloc_R)(
+    size_t size
+    )
+{
+  return (R*) malloc(sizeof(R) * size);
+}
+
+C* PNX(malloc_C)(
+    size_t size
+    )
+{
+  return (C*) malloc(sizeof(C) * size);
+}
+
 
 
 

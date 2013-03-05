@@ -158,6 +158,8 @@ else
   AC_DEFINE([DISABLE_FORTRAN], 1, [Define to disable Fortran wrappers.])
 fi
 
+AM_CONDITIONAL(ENABLE_FORTRAN,[test "x$enable_fortran" = "xyes"])
+
 if test "x$enable_fortran" = xyes; then
    # Find out how to name a MAIN Fortran entry point in C.
    AC_FC_MAIN([], [enable_fortran=no
@@ -418,6 +420,7 @@ AC_CONFIG_FILES(Makefile \
 		kernel/Makefile \
 		util/Makefile \
 		api/Makefile \
-		tests/Makefile)
+		tests/Makefile \
+		tests/fortran/Makefile)
 
 AC_OUTPUT

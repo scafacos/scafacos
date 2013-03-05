@@ -211,7 +211,7 @@ typedef struct PNX(plan_s) *PNX(plan);
 
 
 
-/* utils.c */
+/* util.c */
 void PNX(message)(
     const char *string, MPI_Comm comm);
 INT PNX(prod_INT)(
@@ -229,6 +229,17 @@ void PNX(vadd_INT)(
 void PNX(vsub_INT)(
     int d, const INT *vec1, const INT *vec2,
     INT *sum);
+
+INT* PNX(malloc_INT)(
+    size_t size);
+int* PNX(malloc_int)(
+    size_t size);
+unsigned* PNX(malloc_unsigned)(
+    size_t size);
+R* PNX(malloc_R)(
+    size_t size);
+C* PNX(malloc_C)(
+    size_t size);
 
 void PNX(sort_node_indices_radix_lsdf)(
     INT n, INT *keys0, INT *keys1, INT rhigh);

@@ -23,8 +23,7 @@
 #include <stddef.h> /* for ptrdiff_t */
 
 #include <pnfft.h>
-#include <inpfft.h>
-#include <util.h>
+#include <ipnfft.h>
 #include "fortran-mangling.h"
 
 /* if FC_FUNC is not defined, then we don't know how to mangle identifiers
@@ -100,7 +99,7 @@ static INT *malloc_and_revert_INT(int rnk, const INT *n)
   return n_rev;
 }
 
-static INT *malloc_and_revert_R(int rnk, const R *n)
+static R *malloc_and_revert_R(int rnk, const R *n)
 {
   R *n_rev;
   

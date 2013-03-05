@@ -72,8 +72,8 @@ PNFFT_VOIDFUNC FORT(local_size_3d, LOCAL_SIZE_3D)(
   INT *N_rev = malloc_and_revert_INT(3, N);
   INT *local_N_rev = PNX(malloc_INT)(3);
   INT *local_N_start_rev = PNX(malloc_INT)(3);
-  INT *lower_border_rev = PNX(malloc_R)(3);
-  INT *upper_border_rev = PNX(malloc_R)(3);
+  R *lower_border_rev = PNX(malloc_R)(3);
+  R *upper_border_rev = PNX(malloc_R)(3);
 
   PNX(local_size_3d)(
       N_rev, MPI_Comm_f2c(*comm_cart),
@@ -98,8 +98,8 @@ PNFFT_VOIDFUNC FORT(local_size_adv, LOCAL_SIZE_ADV)(
   INT *N_rev = malloc_and_revert_INT(*d, N);
   INT *local_N_rev = PNX(malloc_INT)(*d);
   INT *local_N_start_rev = PNX(malloc_INT)(*d);
-  INT *lower_border_rev = PNX(malloc_R)(*d);
-  INT *upper_border_rev = PNX(malloc_R)(*d);
+  R *lower_border_rev = PNX(malloc_R)(*d);
+  R *upper_border_rev = PNX(malloc_R)(*d);
 
   PNX(local_size_adv)(
       *d, N_rev, MPI_Comm_f2c(*comm_cart),
@@ -126,21 +126,22 @@ PNFFT_VOIDFUNC FORT(local_size_guru, LOCAL_SIZE_GURU)(
   INT *n_rev = malloc_and_revert_INT(*d, n);
   INT *local_N_rev = PNX(malloc_INT)(*d);
   INT *local_N_start_rev = PNX(malloc_INT)(*d);
-  INT *lower_border_rev = PNX(malloc_R)(*d);
-  INT *upper_border_rev = PNX(malloc_R)(*d);
+  R *lo_rev = PNX(malloc_R)(*d);
+  R *up_rev = PNX(malloc_R)(*d);
+  R *x_max_rev = malloc_and_revert_R(*d, x_max);
 
   PNX(local_size_guru)(
       *d, N_rev, n_rev, x_max_rev, *m, MPI_Comm_f2c(*comm_cart),
       local_N_rev, local_N_start_rev,
-      lower_border_rev, upper_border_rev);
+      lo_rev, up_rev);
 
   revert_INT(*d, local_N_rev, local_N);
   revert_and_add_ones_INT(*d, local_N_start_rev, local_N_start);
-  revert_R(*d, lower_border_rev, lower_border);
-  revert_R(*d, upper_border_rev, upper_border);
+  revert_R(*d, lo_rev, lower_border);
+  revert_R(*d, up_rev, upper_border);
 
   PNX(free)(local_N_rev); PNX(free)(local_N_start_rev);
-  PNX(free)(lower_border_rev); PNX(free)(upper_border_rev);
+  PNX(free)(lo_rev); PNX(free)(up_rev); PNX(free)(x_max_rev);
 }
 
 PNFFT_VOIDFUNC FORT(init_3d, INIT_3D)(
@@ -161,7 +162,7 @@ PNFFT_VOIDFUNC FORT(init_adv, INIT_ADV)(
     )
 {
   INT *N_rev = malloc_and_revert_INT(*d, N);
-  *p = PNX(init_adv)(N_rev, *local_M, (unsigned) *pnfft_flags, (unsigned) *fftw_flags, MPI_Comm_f2c(*comm_cart));
+  *p = PNX(init_adv)(*d, N_rev, *local_M, (unsigned) *pnfft_flags, (unsigned) *fftw_flags, MPI_Comm_f2c(*comm_cart));
   PNX(free)(N_rev);
 }
 
@@ -177,7 +178,7 @@ PNFFT_VOIDFUNC FORT(init_guru, INIT_GURU)(
   INT *n_rev = malloc_and_revert_INT(*d, n);
   R *x_max_rev = malloc_and_revert_R(*d, x_max);
 
-  *p = PNX(init_guru)(d, N_rev, n_rev, x_max_rev, *local_M, *m,
+  *p = PNX(init_guru)(*d, N_rev, n_rev, x_max_rev, *local_M, *m,
       (unsigned) *pnfft_flags, (unsigned) *fftw_flags, MPI_Comm_f2c(*comm_cart));
   
   PNX(free)(N_rev); PNX(free)(n_rev);
@@ -204,50 +205,50 @@ PNFFT_VOIDFUNC FORT(set_f_hat, SET_F_HAT)(
     C *f_hat, PNX(plan) *ths
     )
 {
-  PNX(set_f_hat)(*f_hat, *ths);
+  PNX(set_f_hat)(f_hat, *ths);
 }
 PNFFT_VOIDFUNC FORT(set_f, SET_F)(
     C *f, PNX(plan) *ths
     )
 {
-  PNX(set_f)(*f, *ths);
+  PNX(set_f)(f, *ths);
 }
 PNFFT_VOIDFUNC FORT(set_grad_f, SET_GRAD_F)(
     C *grad_f, PNX(plan) *ths
     )
 {
-  PNX(set_grad_f)(*grad_f, *ths);
+  PNX(set_grad_f)(grad_f, *ths);
 }
 PNFFT_VOIDFUNC FORT(set_x, SET_X)(
     R *x, PNX(plan) *ths
     )
 {
-  PNX(set_x)(*x, *ths);
+  PNX(set_x)(x, *ths);
 }
                                      
 PNFFT_VOIDFUNC FORT(get_f_hat, GET_F_HAT)(
-    C *f_hat, PNX(plan) * const ths
+    C **f_hat, PNX(plan) * const ths
     )
 {
-  f_hat = PNX(get_f_hat)(*ths);
+  *f_hat = PNX(get_f_hat)(*ths);
 }
 PNFFT_VOIDFUNC FORT(get_f, GET_F)(
-    C *f, PNX(plan) * const ths
+    C **f, PNX(plan) * const ths
     )
 {
-  f = PNX(get_f)(*ths);
+  *f = PNX(get_f)(*ths);
 }
 PNFFT_VOIDFUNC FORT(get_grad_f, GET_GRAD_F)(
-    C *grad_f, PNX(plan) * const ths
+    C **grad_f, PNX(plan) * const ths
     )
 {
-  grad_f = PNX(get_grad_f)(*ths);
+  *grad_f = PNX(get_grad_f)(*ths);
 }
 PNFFT_VOIDFUNC FORT(get_x, GET_X)(
-    R *x, PNX(plan) * const ths
+    R **x, PNX(plan) * const ths
     )
 {
-  x = PNX(get_x)(*ths);
+  *x = PNX(get_x)(*ths);
 }
 
 PNFFT_VOIDFUNC FORT(get_d, GET_D)(
@@ -257,28 +258,28 @@ PNFFT_VOIDFUNC FORT(get_d, GET_D)(
   *d = PNX(get_d)(*ths);
 }
 PNFFT_VOIDFUNC FORT(get_m, GET_M)(
-    int *d, PNX(plan) * const ths
+    int *m, PNX(plan) * const ths
     )
 {
   *m = PNX(get_m)(*ths);
 }
 PNFFT_VOIDFUNC FORT(get_x_max, GET_X_MAX)(
-    R *x_max, PNX(plan) * const ths
+    R **x_max, PNX(plan) * const ths
     )
 {
-  x_max = PNX(get_x_max)(*ths);
+  *x_max = PNX(get_x_max)(*ths);
 }
 PNFFT_VOIDFUNC FORT(get_N, GET_N)(
-    INT *N, PNX(plan) * const ths
+    INT **N, PNX(plan) * const ths
     )
 {
-  N = PNX(get_N)(*ths);
+  *N = PNX(get_N)(*ths);
 }
 PNFFT_VOIDFUNC FORT(get_nos, GET_NOS)(
-    INT *n, PNX(plan) * const ths
+    INT **n, PNX(plan) * const ths
     )
 {
-  n = PNX(get_n)(*ths);
+  *n = PNX(get_n)(*ths);
 }
 PNFFT_VOIDFUNC FORT(get_pnfft_flags, GET_PNFFT_FLAGS)(
     int *pnfft_flags, PNX(plan) * const ths
@@ -424,20 +425,16 @@ PNFFT_VOIDFUNC FORT(dpsi, DPSI)(
 }
 
 PNFFT_VOIDFUNC FORT(vpr_complex, VPR_COMPLEX)(
-    C *data, const INT* N, const char *name, MPI_Fint *comm_cart
+    C *data, INT *N, const char *name, MPI_Fint *comm_cart
     )
 {
-  INT *N_rev = malloc_and_revert_INT(3, N);
-  PNX(vpr_complex)(data, N_rev, name, MPI_Comm_f2c(*comm_cart));
-  PNX(free)(N_rev);
+  PNX(vpr_complex)(data, *N, name, MPI_Comm_f2c(*comm_cart));
 }
 PNFFT_VOIDFUNC FORT(vpr_real, VPR_REAL)(
-    C *data, const INT* N, const char *name, MPI_Fint *comm_cart
+    R *data, INT *N, const char *name, MPI_Fint *comm_cart
     )
 {
-  INT *N_rev = malloc_and_revert_INT(3, N);
-  PNX(vpr_real)(data, N_rev, name, MPI_Comm_f2c(*comm_cart));
-  PNX(free)(N_rev);
+  PNX(vpr_real)(data, *N, name, MPI_Comm_f2c(*comm_cart));
 }
 PNFFT_VOIDFUNC FORT(apr_complex_3d, APR_COMPLEX_3D)(
     C *data, const INT* local_N, const INT *local_N_start,
@@ -446,30 +443,30 @@ PNFFT_VOIDFUNC FORT(apr_complex_3d, APR_COMPLEX_3D)(
 {
   INT *local_N_rev = malloc_and_revert_INT(3, local_N);
   INT *local_N_start_rev = malloc_and_revert_INT(3, local_N_start);
-  PNX(apr_complex_3d)(data, N_rev, name, MPI_Comm_f2c(*comm_cart));
+  PNX(apr_complex_3d)(data, local_N_rev, local_N_start_rev, name, MPI_Comm_f2c(*comm_cart));
   PNX(free)(local_N_rev); PNX(free)(local_N_start_rev);
 }
 
 
 PNFFT_VOIDFUNC FORT(get_timer_trafo, GET_TIMER_TRAFO)(
-    double *timer,
+    double **timer,
     const PNX(plan) *p
     )
 {
   *timer = PNX(get_timer_trafo)(*p);
 }
 PNFFT_VOIDFUNC FORT(get_timer_adj, GET_TIMER_ADJ)(
-    double *timer,
+    double **timer,
     const PNX(plan) *p
     )
 {
   *timer = PNX(get_timer_adj)(*p);
 }
 PNFFT_VOIDFUNC FORT(timer_average, TIMER_AVERAGE)(
-    double *timer,
+    double **timer
     )
 {
-  PNX(timer_average)(timer);
+  PNX(timer_average)(*timer);
 }
 PNFFT_VOIDFUNC FORT(timer_copy, TIMER_COPY)(
     double **timer,
@@ -479,7 +476,7 @@ PNFFT_VOIDFUNC FORT(timer_copy, TIMER_COPY)(
   *timer = PNX(timer_copy)(orig);
 }
 PNFFT_VOIDFUNC FORT(timer_reduce_max, TIMER_REDUCE_MAX)(
-    MPI_Fint *comm, double *timer,
+    MPI_Fint *comm, double *timer
     )
 {
   PNX(timer_reduce_max)(MPI_Comm_f2c(*comm), timer);
@@ -492,10 +489,10 @@ PNFFT_VOIDFUNC FORT(timer_add, TIMER_ADD)(
   *timer = PNX(timer_add)(sum1, sum2);
 }
 PNFFT_VOIDFUNC FORT(timer_free, TIMER_FREE)(
-    double *timer,
+    double **timer
     )
 {
-  PNX(timer_free)(timer);
+  PNX(timer_free)(*timer);
 }
 
 PNFFT_VOIDFUNC FORT(reset_timer, RESET_TIMER)(
@@ -508,23 +505,23 @@ PNFFT_VOIDFUNC FORT(print_average_timer, PRINT_AVERAGE_TIMER)(
     const PNX(plan) *ths, MPI_Fint *comm
     )
 {
-  PNX(print_average_timer)(MPI_Comm_f2c(*comm), *ths);
+  PNX(print_average_timer)(*ths, MPI_Comm_f2c(*comm));
 }
 PNFFT_VOIDFUNC FORT(print_average_timer_adv, PRINT_AVERAGE_TIMER_ADV)(
     const PNX(plan) *ths, MPI_Fint *comm
     )
 {
-  PNX(print_average_timer_adv)(MPI_Comm_f2c(*comm), *ths);
+  PNX(print_average_timer_adv)(*ths, MPI_Comm_f2c(*comm));
 }
 PNFFT_VOIDFUNC FORT(write_average_timer, PRINT_AVERAGE_TIMER)(
-    const PNX(plan) *ths, MPI_Fint *comm
+    const PNX(plan) *ths, const char *name, MPI_Fint *comm
     )
 {
-  PNX(write_average_timer)(MPI_Comm_f2c(*comm), *ths);
+  PNX(write_average_timer)(*ths, name, MPI_Comm_f2c(*comm));
 }
 PNFFT_VOIDFUNC FORT(write_average_timer_adv, PRINT_AVERAGE_TIMER_ADV)(
-    const PNX(plan) *ths, MPI_Fint *comm
+    const PNX(plan) *ths, const char *name, MPI_Fint *comm
     )
 {
-  PNX(write_average_timer_adv)(MPI_Comm_f2c(*comm), *ths);
+  PNX(write_average_timer_adv)(*ths, name, MPI_Comm_f2c(*comm));
 }

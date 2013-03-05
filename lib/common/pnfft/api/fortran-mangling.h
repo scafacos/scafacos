@@ -25,14 +25,14 @@
 
 /* Fortran-like (e.g. as in BLAS) type prefixes for Fortran interface */
 #if defined(PNFFT_SINGLE)
-#  define pxf(name) CONCAT(spfft_, name)
+#  define pxf(name) CONCAT(spnfft_, name)
 #  define PXF(NAME) CONCAT(SPNFFT_, NAME)
 #elif defined(PNFFT_LDOUBLE)
 /* FIXME: what is best?  BLAS uses D..._X, apparently.  Ugh. */
-#  define pxf(name) CONCAT(lpfft_, name)
+#  define pxf(name) CONCAT(lpnfft_, name)
 #  define PXF(NAME) CONCAT(LPNFFT_, NAME)
 #else
-#  define pxf(name) CONCAT(dpfft_, name)
+#  define pxf(name) CONCAT(dpnfft_, name)
 #  define PXF(NAME) CONCAT(DPNFFT_, NAME)
 #endif
 

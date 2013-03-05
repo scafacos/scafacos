@@ -29,9 +29,6 @@
  * command :%s#)\n{[A-Za-z0-9_,\n ();*=&/\[\]-]*}#);#gc
  */
 
-/* include prototypes of all fortran wrappers to avoid pedantic gcc warnings  */
-#include <fortran-prototypes.h>
-
 PNFFT_VOIDFUNC FORT(create_procmesh_2d, CREATE_PROCMESH_2D)(
     int *ierror,
     MPI_Fint *comm, int *np2, int *np3,
@@ -106,32 +103,32 @@ PNFFT_VOIDFUNC FORT(set_x, SET_X)(
     );
                                      
 PNFFT_VOIDFUNC FORT(get_f_hat, GET_F_HAT)(
-    C *f_hat, PNX(plan) * const ths
+    C **f_hat, PNX(plan) * const ths
     );
 PNFFT_VOIDFUNC FORT(get_f, GET_F)(
-    C *f, PNX(plan) * const ths
+    C **f, PNX(plan) * const ths
     );
 PNFFT_VOIDFUNC FORT(get_grad_f, GET_GRAD_F)(
-    C *grad_f, PNX(plan) * const ths
+    C **grad_f, PNX(plan) * const ths
     );
 PNFFT_VOIDFUNC FORT(get_x, GET_X)(
-    R *x, PNX(plan) * const ths
+    R **x, PNX(plan) * const ths
     );
 
 PNFFT_VOIDFUNC FORT(get_d, GET_D)(
     int *d, PNX(plan) * const ths
     );
 PNFFT_VOIDFUNC FORT(get_m, GET_M)(
-    int *d, PNX(plan) * const ths
+    int *m, PNX(plan) * const ths
     );
 PNFFT_VOIDFUNC FORT(get_x_max, GET_X_MAX)(
-    R *x_max, PNX(plan) * const ths
+    R **x_max, PNX(plan) * const ths
     );
 PNFFT_VOIDFUNC FORT(get_N, GET_N)(
-    INT *N, PNX(plan) * const ths
+    INT **N, PNX(plan) * const ths
     );
 PNFFT_VOIDFUNC FORT(get_nos, GET_NOS)(
-    INT *n, PNX(plan) * const ths
+    INT **n, PNX(plan) * const ths
     );
 PNFFT_VOIDFUNC FORT(get_pnfft_flags, GET_PNFFT_FLAGS)(
     int *pnfft_flags, PNX(plan) * const ths
@@ -200,10 +197,10 @@ PNFFT_VOIDFUNC FORT(dpsi, DPSI)(
     );
 
 PNFFT_VOIDFUNC FORT(vpr_complex, VPR_COMPLEX)(
-    C *data, const INT* N, const char *name, MPI_Fint *comm_cart
+    C *data, INT *N, const char *name, MPI_Fint *comm_cart
     );
 PNFFT_VOIDFUNC FORT(vpr_real, VPR_REAL)(
-    C *data, const INT* N, const char *name, MPI_Fint *comm_cart
+    R *data, INT *N, const char *name, MPI_Fint *comm_cart
     );
 PNFFT_VOIDFUNC FORT(apr_complex_3d, APR_COMPLEX_3D)(
     C *data, const INT* local_N, const INT *local_N_start,
@@ -212,29 +209,29 @@ PNFFT_VOIDFUNC FORT(apr_complex_3d, APR_COMPLEX_3D)(
 
 
 PNFFT_VOIDFUNC FORT(get_timer_trafo, GET_TIMER_TRAFO)(
-    double *timer,
+    double **timer,
     const PNX(plan) *p
     );
 PNFFT_VOIDFUNC FORT(get_timer_adj, GET_TIMER_ADJ)(
-    double *timer,
+    double **timer,
     const PNX(plan) *p
     );
 PNFFT_VOIDFUNC FORT(timer_average, TIMER_AVERAGE)(
-    double *timer,
+    double **timer
     );
 PNFFT_VOIDFUNC FORT(timer_copy, TIMER_COPY)(
     double **timer,
     const double *orig
     );
 PNFFT_VOIDFUNC FORT(timer_reduce_max, TIMER_REDUCE_MAX)(
-    MPI_Fint *comm, double *timer,
+    MPI_Fint *comm, double *timer
     );
 PNFFT_VOIDFUNC FORT(timer_add, TIMER_ADD)(
     double **timer,
     const double *sum1, const double *sum2
     );
 PNFFT_VOIDFUNC FORT(timer_free, TIMER_FREE)(
-    double *timer,
+    double **timer
     );
 
 PNFFT_VOIDFUNC FORT(reset_timer, RESET_TIMER)(
@@ -247,8 +244,8 @@ PNFFT_VOIDFUNC FORT(print_average_timer_adv, PRINT_AVERAGE_TIMER_ADV)(
     const PNX(plan) *ths, MPI_Fint *comm
     );
 PNFFT_VOIDFUNC FORT(write_average_timer, PRINT_AVERAGE_TIMER)(
-    const PNX(plan) *ths, MPI_Fint *comm
+    const PNX(plan) *ths, const char *name, MPI_Fint *comm
     );
 PNFFT_VOIDFUNC FORT(write_average_timer_adv, PRINT_AVERAGE_TIMER_ADV)(
-    const PNX(plan) *ths, MPI_Fint *comm
+    const PNX(plan) *ths, const char *name, MPI_Fint *comm
     );
