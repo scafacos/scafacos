@@ -227,6 +227,8 @@ PNFFT_DEFINE_API(
 #define PNFFT_PI           3.14159265358979323846
 #endif
 
+/* Use double braces for simple generation of Fortran wrappers */
+
 /* This flags is equal to PRE_PHI_HAT. We introduce it for
  * compliance with the serial NFFT interface. */
 #define PNFFT_PRE_PHI_HUT      (1U<< 0)
@@ -237,9 +239,9 @@ PNFFT_DEFINE_API(
 #define PNFFT_PRE_QUAD_PSI     (1U<< 4)
 #define PNFFT_PRE_KUB_PSI      (1U<< 5)
 #define PNFFT_PRE_PSI          (1U<< 6)
-#define PNFFT_PRE_FG_PSI       (PNFFT_PRE_PSI | PNFFT_FG_PSI)
+#define PNFFT_PRE_FG_PSI       ((PNFFT_PRE_PSI | PNFFT_FG_PSI))
 #define PNFFT_PRE_FULL_PSI     (1U<< 7)
-#define PNFFT_PRE_FULL_FG_PSI  (PNFFT_PRE_FULL_PSI | PNFFT_FG_PSI)
+#define PNFFT_PRE_FULL_FG_PSI  ((PNFFT_PRE_FULL_PSI | PNFFT_FG_PSI))
 
 #define PNFFT_MALLOC_X         (1U<< 8)
 #define PNFFT_MALLOC_F_HAT     (1U<< 9)
@@ -267,22 +269,22 @@ PNFFT_DEFINE_API(
 #define PNFFT_WINDOW_SINC_POWER     (1U<< 22)
 #define PNFFT_WINDOW_BESSEL_I0      (1U<< 23)
 
-#define PNFFT_PRE_INTPOL_PSI (PNFFT_PRE_CONST_PSI| PNFFT_PRE_LIN_PSI| PNFFT_PRE_QUAD_PSI| PNFFT_PRE_KUB_PSI)
-#define PNFFT_PRE_ONE_PSI (PNFFT_PRE_INTPOL_PSI| PNFFT_PRE_FG_PSI| PNFFT_PRE_PSI| PNFFT_PRE_FULL_PSI)
+#define PNFFT_PRE_INTPOL_PSI ((PNFFT_PRE_CONST_PSI| PNFFT_PRE_LIN_PSI| PNFFT_PRE_QUAD_PSI| PNFFT_PRE_KUB_PSI))
+#define PNFFT_PRE_ONE_PSI    ((PNFFT_PRE_INTPOL_PSI| PNFFT_PRE_FG_PSI| PNFFT_PRE_PSI| PNFFT_PRE_FULL_PSI))
 
-#define PNFFT_FREE_X           PNFFT_MALLOC_X
-#define PNFFT_FREE_F_HAT       PNFFT_MALLOC_F_HAT
-#define PNFFT_FREE_F           PNFFT_MALLOC_F
-#define PNFFT_FREE_GRAD_F      PNFFT_MALLOC_GRAD_F
+#define PNFFT_FREE_X           ((PNFFT_MALLOC_X))
+#define PNFFT_FREE_F_HAT       ((PNFFT_MALLOC_F_HAT))
+#define PNFFT_FREE_F           ((PNFFT_MALLOC_F))
+#define PNFFT_FREE_GRAD_F      ((PNFFT_MALLOC_GRAD_F))
 
-#define PNFFT_COMPUTE_F        PNFFT_MALLOC_F
-#define PNFFT_COMPUTE_GRAD_F   PNFFT_MALLOC_GRAD_F
+#define PNFFT_COMPUTE_F        ((PNFFT_MALLOC_F))
+#define PNFFT_COMPUTE_GRAD_F   ((PNFFT_MALLOC_GRAD_F))
 
-#define PNFFT_INT            PFFT_INT
-#define PNFFT_PTRDIFF_T      PFFT_PTRDIFF_T
-#define PNFFT_FLOAT          PFFT_FLOAT
-#define PNFFT_DOUBLE         PFFT_DOUBLE
-#define PNFFT_UNSIGNED       PFFT_UNSIGNED
+#define PNFFT_INT            ((PFFT_INT))
+#define PNFFT_PTRDIFF_T      ((PFFT_PTRDIFF_T))
+#define PNFFT_FLOAT          ((PFFT_FLOAT))
+#define PNFFT_DOUBLE         ((PFFT_DOUBLE))
+#define PNFFT_UNSIGNED       ((PFFT_UNSIGNED))
 
 /* Make length of Timer public available */
 #define PNFFT_TIMER_LENGTH          (10)
