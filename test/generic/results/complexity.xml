@@ -259,24 +259,6 @@ r_cut=5.400000, grid=256, cao=4, alpha=0.418014
     </data>
   </timings>
 
-  <timings
-      method="P3M"
-      charges="9447840"
-      tolerance="1e-3">
-    <parameters>
--c tolerance_field,5e-3,p3m_r_cut,5.4
-    </parameters>
-    <tuned-parameters>
-r_cut=5.400000, grid=512, cao=3, alpha=0.418014
-    </tuned-parameters>
-    <errors>
-    </errors>
-    <data>
-	1	 1.381251e+02
-    </data>
-  </timings>
-
-
 <!-- 
 ********************
 ** PP3MG

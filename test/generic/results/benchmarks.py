@@ -161,19 +161,13 @@ def plot_against_cores(testcase, charges, tolerance,
       print "plot_against_cores(): charges=%d or tolerance=%f not found in list." % (charges, tolerance)
       return
 
-    title_s = "Testcase %s (%d charges, tolerance %1.0e)" % (testcase, charges, tolerance)
-
     methods = timing.keys()
     methods.sort()
     
     rawdata      = numpy.zeros([len(all_cores), len(methods)+1])
     rawdata[:,0] = all_cores
 
-    figures = []
-    
     if plot_timing:
-        fig = plt.figure('Timings ' + title_s)
-        figures.append(fig)
         for method in methods:
             data = timing[method]
             if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
@@ -183,8 +177,6 @@ def plot_against_cores(testcase, charges, tolerance,
         plt.ylabel('Time [s]')
     
     if plot_speedup:
-        fig = plt.figure('Speedup ' + title_s)
-        figures.append(fig)
         plt.loglog(all_cores, all_cores, '-')
         for method in methods:
             data = speedup[method]
@@ -196,8 +188,6 @@ def plot_against_cores(testcase, charges, tolerance,
         plt.ylabel('Speedup')
 
     if plot_efficiency:
-        fig = plt.figure('Efficiency ' + title_s)
-        figures.append(fig)
         for method in methods:
             data = efficiency[method]
             if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
@@ -205,8 +195,6 @@ def plot_against_cores(testcase, charges, tolerance,
         plt.legend()
         plt.xlabel('#cores')
         plt.ylabel('Efficiency')
-
-    return figures
 
 def plot_against_charges(testcase, cores, tolerance):
     all_charges, all_tolerances, all_cores, \
@@ -230,7 +218,6 @@ def plot_against_charges(testcase, cores, tolerance):
     rawdata      = numpy.zeros([len(all_charges), len(methods)+1])
     rawdata[:,0] = all_charges
 
-    plt.figure()
     plt.suptitle(title_s)
 
     for method in methods:
