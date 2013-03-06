@@ -967,6 +967,7 @@ slint_t mpi_elements_sendrecv_replace(elements_t *s, int count, int dest, int se
 const double default_meas_t[2] = { 0 };     /* sl_global sl_context sl_var default_meas_t */
 const slint_t default_meas_max_nprocs = 8;  /* sl_global sl_context sl_var default_meas_max_nprocs */
 const slint_t default_meas_packed = 0;      /* sl_global sl_context sl_var default_meas_packed */
+const slint_t default_meas_minalloc = 0;    /* sl_global sl_context sl_var default_meas_minalloc */
 const double default_meas_overalloc = 0;    /* sl_global sl_context sl_var default_meas_overalloc */
 /* sl_endif sl_context CONTEXT_END meas */
 
@@ -1104,6 +1105,15 @@ slint_t tproc_verify(tproc_t tproc, void *data, elements_t *s, int proc) /* sl_p
   }*/
 
   return 1;
+}
+
+
+slint_t mpi_elements_alltoall_specific_alloc_size(slint_t n) /* sl_func mpi_elements_alltoall_specific_alloc_size */
+{
+  if (SL_DEFCON(meas.overalloc) < 0) n = (slint_t) (n * (1.0 - SL_DEFCON(meas.overalloc)));
+  else n += SL_DEFCON(meas.overalloc);
+
+  return z_max(n, SL_DEFCON(meas.minalloc));
 }
 
 

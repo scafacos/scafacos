@@ -231,6 +231,7 @@ tproc_create_tprocs_mod
 tproc_free
 tproc_set_proclist
 tproc_verify
+mpi_elements_alltoall_specific_alloc_size
 mpi_elements_alltoall_specific
 mpi_elements_alltoallv_db_packed
 mpi_elements_alltoallv_db

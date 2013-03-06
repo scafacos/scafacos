@@ -33,7 +33,7 @@
 
 #define sl_key_integer
 
-/*#define SL_DATA0*/
+#undef SL_DATA0
 #define sl_data0_type_c            fcs_float
 #define sl_data0_size_c            3
 #define sl_data0_type_mpi          FCS_MPI_FLOAT

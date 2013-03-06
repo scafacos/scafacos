@@ -57,7 +57,7 @@
 #define back_q_pgl_sl_data0_type_mpi         REAL_MPI
 #define back_q_pgl_sl_data0_size_mpi         1
 
-/*#define back_q_pgl_SL_DATA1*/                  /* xyz */
+#undef back_q_pgl_SL_DATA1                   /* xyz */
 #define back_q_pgl_sl_data1_type_c           REAL_C
 #define back_q_pgl_sl_data1_size_c           3
 #define back_q_pgl_sl_data1_type_mpi         REAL_MPI
@@ -2727,6 +2727,7 @@ back_q_pgl_slint_t sendrecv_replace_mpi_maxsize;
 double t[2];
 back_q_pgl_slint_t max_nprocs;
 back_q_pgl_slint_t packed;
+back_q_pgl_slint_t minalloc;
 double overalloc;
   } meas;
 #endif
@@ -2906,6 +2907,7 @@ extern const back_q_pgl_slint_t back_q_pgl_default_me_sendrecv_replace_mpi_maxsi
 extern const double back_q_pgl_default_meas_t[];
 extern const back_q_pgl_slint_t back_q_pgl_default_meas_max_nprocs;
 extern const back_q_pgl_slint_t back_q_pgl_default_meas_packed;
+extern const back_q_pgl_slint_t back_q_pgl_default_meas_minalloc;
 extern const double back_q_pgl_default_meas_overalloc;
 extern const back_q_pgl_slint_t back_q_pgl_default_mea_packed;
 extern const back_q_pgl_slint_t back_q_pgl_default_mea_db_packed;

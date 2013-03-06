@@ -58,7 +58,7 @@
 #define sl_data1_type_mpi         REAL_MPI
 #define sl_data1_size_mpi         1
 
-/*#define SL_DATA2*/                  /* scr */
+#undef SL_DATA2                   /* scr */
 #define sl_data2_type_c           INTEGER_C
 #define sl_data2_size_c           1
 #define sl_data2_type_mpi         INTEGER_MPI

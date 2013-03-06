@@ -63,7 +63,7 @@
 #define front_xq_aI_sl_data1_type_mpi         REAL_MPI
 #define front_xq_aI_sl_data1_size_mpi         1
 
-/*#define front_xq_aI_SL_DATA2*/                  /* scr */
+#undef front_xq_aI_SL_DATA2                   /* scr */
 #define front_xq_aI_sl_data2_type_c           INTEGER_C
 #define front_xq_aI_sl_data2_size_c           1
 #define front_xq_aI_sl_data2_type_mpi         INTEGER_MPI
@@ -2721,6 +2721,7 @@ front_xq_aI_slint_t sendrecv_replace_mpi_maxsize;
 double t[2];
 front_xq_aI_slint_t max_nprocs;
 front_xq_aI_slint_t packed;
+front_xq_aI_slint_t minalloc;
 double overalloc;
   } meas;
 #endif
@@ -2900,6 +2901,7 @@ extern const front_xq_aI_slint_t front_xq_aI_default_me_sendrecv_replace_mpi_max
 extern const double front_xq_aI_default_meas_t[];
 extern const front_xq_aI_slint_t front_xq_aI_default_meas_max_nprocs;
 extern const front_xq_aI_slint_t front_xq_aI_default_meas_packed;
+extern const front_xq_aI_slint_t front_xq_aI_default_meas_minalloc;
 extern const double front_xq_aI_default_meas_overalloc;
 extern const front_xq_aI_slint_t front_xq_aI_default_mea_packed;
 extern const front_xq_aI_slint_t front_xq_aI_default_mea_db_packed;

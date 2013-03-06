@@ -19,6 +19,7 @@ default_me_sendrecv_replace_mpi_maxsize
 default_meas_t
 default_meas_max_nprocs
 default_meas_packed
+default_meas_minalloc
 default_meas_overalloc
 default_mea_packed
 default_mea_db_packed

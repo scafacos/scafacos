@@ -61,6 +61,7 @@ slint_t sendrecv_replace_mpi_maxsize;
 double t[2];
 slint_t max_nprocs;
 slint_t packed;
+slint_t minalloc;
 double overalloc;
   } meas;
 #endif

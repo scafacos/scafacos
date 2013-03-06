@@ -2712,6 +2712,7 @@ near____slint_t sendrecv_replace_mpi_maxsize;
 double t[2];
 near____slint_t max_nprocs;
 near____slint_t packed;
+near____slint_t minalloc;
 double overalloc;
   } meas;
 #endif
@@ -2891,6 +2892,7 @@ extern const near____slint_t near____default_me_sendrecv_replace_mpi_maxsize;
 extern const double near____default_meas_t[];
 extern const near____slint_t near____default_meas_max_nprocs;
 extern const near____slint_t near____default_meas_packed;
+extern const near____slint_t near____default_meas_minalloc;
 extern const double near____default_meas_overalloc;
 extern const near____slint_t near____default_mea_packed;
 extern const near____slint_t near____default_mea_db_packed;

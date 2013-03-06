@@ -68,7 +68,7 @@ extern INTEGER_C key_mask;
 #define sl_data2_type_mpi         INTEGER_MPI
 #define sl_data2_size_mpi         1
 
-/*#define SL_DATA3*/                  /* addr */
+#undef SL_DATA3                   /* addr */
 #define sl_data3_type_c           INTEGER_C
 #define sl_data3_size_c           1
 #define sl_data3_type_mpi         INTEGER_MPI

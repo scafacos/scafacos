@@ -43,19 +43,19 @@ libfcs_near.a: $(sl_sub_libs)
 
 sl_SOURCE = \
   $(srcdir_sl_source)/base/base.c \
-  $(srcdir_sl_source)/base/z_crc32.c \
-  $(srcdir_sl_source)/base/z_pack.c \
   $(srcdir_sl_source)/base_mpi/base_mpi.c \
   $(srcdir_sl_source)/base_mpi/dash.c \
   $(srcdir_sl_source)/base_mpi/spec.c \
+  $(srcdir_sl_source)/base/z_crc32.c \
+  $(srcdir_sl_source)/base/z_pack.c \
   $(srcdir_sl_source)/include/dash_aux_static.h \
   $(srcdir_sl_source)/include/dash_conf.h \
   $(srcdir_sl_source)/include/dash_core.h \
   $(srcdir_sl_source)/include/dash_exec.h \
   $(srcdir_sl_source)/include/dash_exec_sl.h \
   $(srcdir_sl_source)/include/dash_rename.h \
-  $(srcdir_sl_source)/include/dash_sched_a2av.h \
   $(srcdir_sl_source)/include/dash_sched_a2av_aux.h \
+  $(srcdir_sl_source)/include/dash_sched_a2av.h \
   $(srcdir_sl_source)/include/sl_adds.h \
   $(srcdir_sl_source)/include/sl_adds_intern.h \
   $(srcdir_sl_source)/include/sl_common.h \
@@ -83,19 +83,19 @@ sl_SOURCE = \
   $(srcdir_sl_source)/include/sl_xelem_call.h \
   $(srcdir_sl_source)/include/spec_conf.h \
   $(srcdir_sl_source)/include/spec_core.h \
-  $(srcdir_sl_source)/include/spec_public.h \
   $(srcdir_sl_source)/include/spec_public_conf.h \
+  $(srcdir_sl_source)/include/spec_public.h \
   $(srcdir_sl_source)/include/spec_rename.h \
   $(srcdir_sl_source)/include/z_config.h \
-  $(srcdir_sl_source)/include/z_pack.h \
   $(srcdir_sl_source)/include/z_pack_conf.h \
+  $(srcdir_sl_source)/include/z_pack.h \
   $(srcdir_sl_source)/include/z_pack_rename.h \
   $(srcdir_sl_extra)/include/zmpi_ataip.h \
   $(srcdir_sl_extra)/include/zmpi_ataip_rename.h \
   $(srcdir_sl_extra)/include/zmpi_atasp.h \
   $(srcdir_sl_extra)/include/zmpi_atasp_rename.h \
-  $(srcdir_sl_extra)/include/zmpi_tools.h \
   $(srcdir_sl_extra)/include/zmpi_tools_conf.h \
+  $(srcdir_sl_extra)/include/zmpi_tools.h \
   $(srcdir_sl_extra)/include/zmpi_tools_rename.h
 
 libsl_near____a_SOURCES = \
@@ -104,8 +104,8 @@ libsl_near____a_SOURCES = \
   $(srcdir_sl)/sl_near___/sl_config.h \
   $(srcdir_sl)/sl_near___/sl_environment.h \
   $(srcdir_sl)/sl_near___/sl_extra.h \
-  $(srcdir_sl)/sl_near___/sl_tune.h \
   $(srcdir_sl)/sl_near___/sl_tune_auto.h \
+  $(srcdir_sl)/sl_near___/sl_tune.h \
   $(sl_SOURCE)
 
 libsl_near__p_a_SOURCES = \
@@ -114,8 +114,8 @@ libsl_near__p_a_SOURCES = \
   $(srcdir_sl)/sl_near__p/sl_config.h \
   $(srcdir_sl)/sl_near__p/sl_environment.h \
   $(srcdir_sl)/sl_near__p/sl_extra.h \
-  $(srcdir_sl)/sl_near__p/sl_tune.h \
   $(srcdir_sl)/sl_near__p/sl_tune_auto.h \
+  $(srcdir_sl)/sl_near__p/sl_tune.h \
   $(sl_SOURCE)
 
 libsl_near_f__a_SOURCES = \
@@ -124,8 +124,8 @@ libsl_near_f__a_SOURCES = \
   $(srcdir_sl)/sl_near_f_/sl_config.h \
   $(srcdir_sl)/sl_near_f_/sl_environment.h \
   $(srcdir_sl)/sl_near_f_/sl_extra.h \
-  $(srcdir_sl)/sl_near_f_/sl_tune.h \
   $(srcdir_sl)/sl_near_f_/sl_tune_auto.h \
+  $(srcdir_sl)/sl_near_f_/sl_tune.h \
   $(sl_SOURCE)
 
 libsl_near_fp_a_SOURCES = \
@@ -134,37 +134,37 @@ libsl_near_fp_a_SOURCES = \
   $(srcdir_sl)/sl_near_fp/sl_config.h \
   $(srcdir_sl)/sl_near_fp/sl_environment.h \
   $(srcdir_sl)/sl_near_fp/sl_extra.h \
-  $(srcdir_sl)/sl_near_fp/sl_tune.h \
   $(srcdir_sl)/sl_near_fp/sl_tune_auto.h \
+  $(srcdir_sl)/sl_near_fp/sl_tune.h \
   $(sl_SOURCE)
 
 libsl_extra_a_SOURCES = \
   $(srcdir_sl_extra)/z_pack/z_config.h \
   $(srcdir_sl_extra)/z_pack/z_pack.c \
-  $(srcdir_sl_extra)/z_pack/z_pack.h \
   $(srcdir_sl_extra)/z_pack/z_pack_conf.h \
+  $(srcdir_sl_extra)/z_pack/z_pack.h \
   $(srcdir_sl_extra)/z_pack/z_pack_rename.h \
   $(srcdir_sl_extra)/zmpi_local/zmpi_local.c \
-  $(srcdir_sl_extra)/zmpi_local/zmpi_local.h \
   $(srcdir_sl_extra)/zmpi_local/zmpi_local_conf.h \
+  $(srcdir_sl_extra)/zmpi_local/zmpi_local.h \
   $(srcdir_sl_extra)/zmpi_local/zmpi_local_rename.h \
   $(srcdir_sl_extra)/zmpi_local/zmpil_simple.h \
   $(srcdir_sl_extra)/zmpi_tools/zmpi_tools.c \
-  $(srcdir_sl_extra)/zmpi_tools/zmpi_tools.h \
   $(srcdir_sl_extra)/zmpi_tools/zmpi_tools_conf.h \
+  $(srcdir_sl_extra)/zmpi_tools/zmpi_tools.h \
   $(srcdir_sl_extra)/zmpi_tools/zmpi_tools_rename.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash.c \
   $(srcdir_sl_extra)/zmpi_ataip/dash_aux_heap.h \
   $(srcdir_sl_extra)/zmpi_ataip/dash_aux_static.h \
+  $(srcdir_sl_extra)/zmpi_ataip/dash.c \
   $(srcdir_sl_extra)/zmpi_ataip/dash_conf.h \
   $(srcdir_sl_extra)/zmpi_ataip/dash_core.h \
   $(srcdir_sl_extra)/zmpi_ataip/dash_exec.h \
   $(srcdir_sl_extra)/zmpi_ataip/dash_exec_mpi.h \
   $(srcdir_sl_extra)/zmpi_ataip/dash_rename.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_sched_a2av.h \
   $(srcdir_sl_extra)/zmpi_ataip/dash_sched_a2av_aux.h \
-  $(srcdir_sl_extra)/zmpi_ataip/local_generic_heap.h \
+  $(srcdir_sl_extra)/zmpi_ataip/dash_sched_a2av.h \
   $(srcdir_sl_extra)/zmpi_ataip/local_generic_heap_conf.h \
+  $(srcdir_sl_extra)/zmpi_ataip/local_generic_heap.h \
   $(srcdir_sl_extra)/zmpi_ataip/local_generic_heap_rename.h \
   $(srcdir_sl_extra)/zmpi_ataip/zmpi_ataip.c \
   $(srcdir_sl_extra)/zmpi_ataip/zmpi_ataip.h \
@@ -172,18 +172,18 @@ libsl_extra_a_SOURCES = \
   $(srcdir_sl_extra)/zmpi_atasp/spec.c \
   $(srcdir_sl_extra)/zmpi_atasp/spec_conf.h \
   $(srcdir_sl_extra)/zmpi_atasp/spec_core.h \
-  $(srcdir_sl_extra)/zmpi_atasp/spec_public.h \
   $(srcdir_sl_extra)/zmpi_atasp/spec_public_conf.h \
+  $(srcdir_sl_extra)/zmpi_atasp/spec_public.h \
   $(srcdir_sl_extra)/zmpi_atasp/spec_rename.h \
   $(srcdir_sl_extra)/zmpi_atasp/zmpi_atasp.c \
   $(srcdir_sl_extra)/zmpi_atasp/zmpi_atasp.h \
   $(srcdir_sl_extra)/zmpi_atasp/zmpi_atasp_rename.h
 
 libsl_mpiwrap_a_SOURCES = \
-  $(srcdir_sl)/include/sl_near___.h \
-  $(srcdir_sl)/include/sl_near__p.h \
   $(srcdir_sl)/include/sl_near_f_.h \
   $(srcdir_sl)/include/sl_near_fp.h \
+  $(srcdir_sl)/include/sl_near___.h \
+  $(srcdir_sl)/include/sl_near__p.h \
   $(srcdir_sl)/near.c \
   $(srcdir_sl)/near.h \
   $(srcdir_sl)/z_tools.h

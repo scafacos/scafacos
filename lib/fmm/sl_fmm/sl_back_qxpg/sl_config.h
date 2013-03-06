@@ -70,7 +70,7 @@
 #define sl_data3_type_mpi         REAL_MPI
 #define sl_data3_size_mpi         3
 
-/*#define SL_DATA4*/                  /* load */
+#undef SL_DATA4                   /* load */
 #define sl_data4_type_c           REAL_C
 #define sl_data4_size_c           1
 #define sl_data4_type_mpi         REAL_MPI

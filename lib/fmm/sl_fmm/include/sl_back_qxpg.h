@@ -75,7 +75,7 @@
 #define back_qxpg_sl_data3_type_mpi         REAL_MPI
 #define back_qxpg_sl_data3_size_mpi         3
 
-/*#define back_qxpg_SL_DATA4*/                  /* load */
+#undef back_qxpg_SL_DATA4                   /* load */
 #define back_qxpg_sl_data4_type_c           REAL_C
 #define back_qxpg_sl_data4_size_c           1
 #define back_qxpg_sl_data4_type_mpi         REAL_MPI
@@ -2727,6 +2727,7 @@ back_qxpg_slint_t sendrecv_replace_mpi_maxsize;
 double t[2];
 back_qxpg_slint_t max_nprocs;
 back_qxpg_slint_t packed;
+back_qxpg_slint_t minalloc;
 double overalloc;
   } meas;
 #endif
@@ -2906,6 +2907,7 @@ extern const back_qxpg_slint_t back_qxpg_default_me_sendrecv_replace_mpi_maxsize
 extern const double back_qxpg_default_meas_t[];
 extern const back_qxpg_slint_t back_qxpg_default_meas_max_nprocs;
 extern const back_qxpg_slint_t back_qxpg_default_meas_packed;
+extern const back_qxpg_slint_t back_qxpg_default_meas_minalloc;
 extern const double back_qxpg_default_meas_overalloc;
 extern const back_qxpg_slint_t back_qxpg_default_mea_packed;
 extern const back_qxpg_slint_t back_qxpg_default_mea_db_packed;

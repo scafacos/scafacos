@@ -87,7 +87,7 @@ typedef sl_int_type_c z_int_t;
 
 #define Z_PACK_TIME
 
-#ifdef SL_TIMING
+#if defined(SL_TIMING) && (SL_TIMING >= 2)
 # define Z_PACK_TIMING
 #endif
 #ifdef SL_TIMING_PRINT_PREFIX

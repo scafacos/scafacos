@@ -39,7 +39,7 @@
 #define sl_data0_type_mpi          FCS_MPI_FLOAT
 #define sl_data0_size_mpi          3
 
-/*#define SL_DATA1*/
+#undef SL_DATA1
 #define sl_data1_type_c            fcs_float
 #define sl_data1_size_c            1
 #define sl_data1_type_mpi          FCS_MPI_FLOAT

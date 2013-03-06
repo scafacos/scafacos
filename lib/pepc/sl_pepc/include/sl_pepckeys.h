@@ -2731,6 +2731,7 @@ pepckeys_slint_t sendrecv_replace_mpi_maxsize;
 double t[2];
 pepckeys_slint_t max_nprocs;
 pepckeys_slint_t packed;
+pepckeys_slint_t minalloc;
 double overalloc;
   } meas;
 #endif
@@ -2910,6 +2911,7 @@ extern const pepckeys_slint_t pepckeys_default_me_sendrecv_replace_mpi_maxsize;
 extern const double pepckeys_default_meas_t[];
 extern const pepckeys_slint_t pepckeys_default_meas_max_nprocs;
 extern const pepckeys_slint_t pepckeys_default_meas_packed;
+extern const pepckeys_slint_t pepckeys_default_meas_minalloc;
 extern const double pepckeys_default_meas_overalloc;
 extern const pepckeys_slint_t pepckeys_default_mea_packed;
 extern const pepckeys_slint_t pepckeys_default_mea_db_packed;

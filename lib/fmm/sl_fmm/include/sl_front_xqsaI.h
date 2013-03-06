@@ -2721,6 +2721,7 @@ front_xqsaI_slint_t sendrecv_replace_mpi_maxsize;
 double t[2];
 front_xqsaI_slint_t max_nprocs;
 front_xqsaI_slint_t packed;
+front_xqsaI_slint_t minalloc;
 double overalloc;
   } meas;
 #endif
@@ -2900,6 +2901,7 @@ extern const front_xqsaI_slint_t front_xqsaI_default_me_sendrecv_replace_mpi_max
 extern const double front_xqsaI_default_meas_t[];
 extern const front_xqsaI_slint_t front_xqsaI_default_meas_max_nprocs;
 extern const front_xqsaI_slint_t front_xqsaI_default_meas_packed;
+extern const front_xqsaI_slint_t front_xqsaI_default_meas_minalloc;
 extern const double front_xqsaI_default_meas_overalloc;
 extern const front_xqsaI_slint_t front_xqsaI_default_mea_packed;
 extern const front_xqsaI_slint_t front_xqsaI_default_mea_db_packed;

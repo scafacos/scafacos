@@ -38,7 +38,7 @@
 
 #define back__p_sl_key_integer
 
-/*#define back__p_SL_DATA0*/
+#undef back__p_SL_DATA0
 #define back__p_sl_data0_type_c            fcs_float
 #define back__p_sl_data0_size_c            3
 #define back__p_sl_data0_type_mpi          FCS_MPI_FLOAT
@@ -2696,6 +2696,7 @@ back__p_slint_t sendrecv_replace_mpi_maxsize;
 double t[2];
 back__p_slint_t max_nprocs;
 back__p_slint_t packed;
+back__p_slint_t minalloc;
 double overalloc;
   } meas;
 #endif
@@ -2875,6 +2876,7 @@ extern const back__p_slint_t back__p_default_me_sendrecv_replace_mpi_maxsize;
 extern const double back__p_default_meas_t[];
 extern const back__p_slint_t back__p_default_meas_max_nprocs;
 extern const back__p_slint_t back__p_default_meas_packed;
+extern const back__p_slint_t back__p_default_meas_minalloc;
 extern const double back__p_default_meas_overalloc;
 extern const back__p_slint_t back__p_default_mea_packed;
 extern const back__p_slint_t back__p_default_mea_db_packed;

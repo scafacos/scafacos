@@ -46,7 +46,9 @@
 
 #define spec_elem_index_fmt  sl_int_type_fmt
 
-#define spec_elem_alloc_buf(_e_, _n_)  elements_alloc((_e_), (SL_DEFCON(meas.overalloc) < 0)?((slint_t) ((_n_) * (1.0 - SL_DEFCON(meas.overalloc)))):((_n_) + SL_DEFCON(meas.overalloc)), SLCM_ALL)
+slint_t mpi_elements_alltoall_specific_alloc_size(slint_t n);
+
+#define spec_elem_alloc_buf(_e_, _n_)  elements_alloc((_e_), mpi_elements_alltoall_specific_alloc_size(_n_), SLCM_ALL)
 #define spec_elem_free_buf(_e_)        elements_free((_e_))
 
 #define spec_elem_copy_type(_s_, _d_)  Z_NOP()

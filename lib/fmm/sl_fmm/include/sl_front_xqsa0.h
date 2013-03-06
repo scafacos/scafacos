@@ -73,7 +73,7 @@ extern INTEGER_C key_mask;
 #define front_xqsa0_sl_data2_type_mpi         INTEGER_MPI
 #define front_xqsa0_sl_data2_size_mpi         1
 
-/*#define front_xqsa0_SL_DATA3*/                  /* addr */
+#undef front_xqsa0_SL_DATA3                   /* addr */
 #define front_xqsa0_sl_data3_type_c           INTEGER_C
 #define front_xqsa0_sl_data3_size_c           1
 #define front_xqsa0_sl_data3_type_mpi         INTEGER_MPI
@@ -2725,6 +2725,7 @@ front_xqsa0_slint_t sendrecv_replace_mpi_maxsize;
 double t[2];
 front_xqsa0_slint_t max_nprocs;
 front_xqsa0_slint_t packed;
+front_xqsa0_slint_t minalloc;
 double overalloc;
   } meas;
 #endif
@@ -2904,6 +2905,7 @@ extern const front_xqsa0_slint_t front_xqsa0_default_me_sendrecv_replace_mpi_max
 extern const double front_xqsa0_default_meas_t[];
 extern const front_xqsa0_slint_t front_xqsa0_default_meas_max_nprocs;
 extern const front_xqsa0_slint_t front_xqsa0_default_meas_packed;
+extern const front_xqsa0_slint_t front_xqsa0_default_meas_minalloc;
 extern const double front_xqsa0_default_meas_overalloc;
 extern const front_xqsa0_slint_t front_xqsa0_default_mea_packed;
 extern const front_xqsa0_slint_t front_xqsa0_default_mea_db_packed;

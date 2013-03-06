@@ -52,13 +52,13 @@
 #define sl_data0_type_mpi         REAL_MPI
 #define sl_data0_size_mpi         1
 
-/*#define SL_DATA1*/                  /* xyz */
+#undef SL_DATA1                   /* xyz */
 #define sl_data1_type_c           REAL_C
 #define sl_data1_size_c           3
 #define sl_data1_type_mpi         REAL_MPI
 #define sl_data1_size_mpi         3
 
-/*#define SL_DATA2*/                  /* pot */
+#undef SL_DATA2                   /* pot */
 #define sl_data2_type_c           REAL_C
 #define sl_data2_size_c           1
 #define sl_data2_type_mpi         REAL_MPI

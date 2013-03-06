@@ -1260,7 +1260,7 @@ create_includes()
 
   mkdir_save "${dst}${sub}"
 
-  for src_file in ${src}${sub}*.h ; do
+  for src_file in `echo ${src}${sub}*.h | tr ' ' '\n' | sort` ; do
     [ ! -f ${src_file} ] && continue
 
     file="${src_file##*/}"
@@ -1291,7 +1291,7 @@ create_sources()
 
   mkdir_save "${dst}${sub}"
 
-  for src_file in ${src}${sub}${pat} ; do
+  for src_file in `echo ${src}${sub}${pat} | tr ' ' '\n' | sort` ; do
     [ ! -f ${src_file} ] && continue
 
     file="${src_file##*/}"
@@ -1862,13 +1862,13 @@ if [ -n "${cfg_automake}" ] ; then
     pdebug "sub_src: ${sub_src}"
     echo ""
     echo -n "sl_SOURCE ="
-    for f in ${current_dst_sl_src}${sub_src}${sub_base}*.c ${current_dst_sl_src}${sub_src}${sub_base_mpi}*.c ${current_dst_sl_src}${sub_src}${sub_include}*.h ; do
+    for f in `echo ${current_dst_sl_src}${sub_src}${sub_base}*.c ${current_dst_sl_src}${sub_src}${sub_base_mpi}*.c ${current_dst_sl_src}${sub_src}${sub_include}*.h | tr ' ' '\n' | sort` ; do
       [ ! -e "${f}" ] && continue
       echo " \\"
       echo -n "  \$(srcdir_sl_source)/${f#${current_dst_sl_src}${sub_src}}"
     done
     if [ -n "${cfg_extra}" ] ; then
-      for f in ${current_dst_sl_extra}${sub_extra}include/*.h ; do
+      for f in `echo ${current_dst_sl_extra}${sub_extra}include/*.h | tr ' ' '\n' | sort` ; do
         pdebug "file: ${f}"
         [ ! -e "${f}" ] && continue
         echo " \\"
@@ -1880,12 +1880,12 @@ if [ -n "${cfg_automake}" ] ; then
   for c in ${config_names} ; do
     echo ""
     echo -n "libsl_${c}_a_SOURCES ="
-    for f in ${dst_sl}*.h ; do
+    for f in `echo ${dst_sl}*.h | tr ' ' '\n' | sort` ; do
       [ ! -e "${f}" ] && continue
       echo " \\"
       echo -n "  \$(srcdir_sl)/${f#${dst_sl}}"
     done
-    for f in ${dst_sl}sl_${c}/*.h ; do
+    for f in `echo ${dst_sl}sl_${c}/*.h | tr ' ' '\n' | sort` ; do
       [ ! -e "${f}" ] && continue
       echo " \\"
       echo -n "  \$(srcdir_sl)/${f#${dst_sl}}"
@@ -1894,7 +1894,7 @@ if [ -n "${cfg_automake}" ] ; then
       echo " \\"
       echo "  \$(sl_SOURCE)"
     else
-      for f in ${dst_sl}sl_${c}/${dst_sl_src}${sub_include}*.h ${dst_sl}sl_${c}/${dst_sl_src}${sub_base}*.c ${dst_sl}sl_${c}/${dst_sl_src}${sub_base_mpi}*.c ; do
+      for f in `echo ${dst_sl}sl_${c}/${dst_sl_src}${sub_include}*.h ${dst_sl}sl_${c}/${dst_sl_src}${sub_base}*.c ${dst_sl}sl_${c}/${dst_sl_src}${sub_base_mpi}*.c | tr ' ' '\n' | sort` ; do
         [ ! -e "${f}" ] && continue
         echo " \\"
         echo -n "  \$(srcdir_sl)/${f#${dst_sl}}"
@@ -1907,7 +1907,7 @@ if [ -n "${cfg_automake}" ] ; then
     echo ""
     echo -n "libsl_extra_a_SOURCES ="
     for x in ${cfg_extras} ; do
-      for f in ${current_dst_sl_extra}${sub_extra}${x}/*.[hc] ; do
+      for f in `echo ${current_dst_sl_extra}${sub_extra}${x}/*.[hc] | tr ' ' '\n' | sort` ; do
         pdebug "file: ${f}"
         [ ! -e "${f}" ] && continue
         echo " \\"
@@ -1919,7 +1919,7 @@ if [ -n "${cfg_automake}" ] ; then
   echo ""
   if [ -n "${have_wrapper_sources_c}" ] ; then
     echo -n "libsl_mpiwrap_a_SOURCES ="
-    for f in ${dst_sl}include/*.h ${dst_sl}*.[hc] ; do
+    for f in `echo ${dst_sl}include/*.h ${dst_sl}*.[hc] | tr ' ' '\n' | sort`; do
       [ ! -e "${f}" ] && continue
       echo " \\"
       echo -n "  \$(srcdir_sl)/${f#${dst_sl}}"
@@ -1927,7 +1927,7 @@ if [ -n "${cfg_automake}" ] ; then
     echo ""
   else
     echo -n "noinst_HEADERS ="
-    for f in ${dst_sl}include/*.h ${dst_sl}*.h ; do
+    for f in `echo ${dst_sl}include/*.h ${dst_sl}*.h | tr ' ' '\n' | sort` ; do
       [ ! -e "${f}" ] && continue
       echo " \\"
       echo -n "  \$(srcdir_sl)/${f#${dst_sl}}"
