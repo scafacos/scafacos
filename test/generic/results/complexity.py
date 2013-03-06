@@ -14,7 +14,8 @@ tolerance = 1e-3
 ixtol = all_tolerances.index(tolerance)
 
 for method in methods:
-    loglog(all_charges, timing[method][:, ixtol, ixcor], 'o-', label=method)
+    loglog(all_charges, timing[method][:, ixtol, ixcor], 
+           label=method, **benchmarks.fmt(method))
 
 xlabel('#charges')
 ylabel('Time [s]')

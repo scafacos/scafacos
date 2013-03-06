@@ -5,6 +5,21 @@ import traceback
 import re
 import matplotlib.pylab as plt
 
+method2format = {
+    'ewald': { 'linestyle': '-', 'color': 'b', 'marker': 'x'},
+    'fmm': { 'linestyle': '-', 'color': 'b', 'marker': 'o'},
+    'memd': { 'linestyle': '-', 'color': 'g', 'marker': 'o'},
+    'p2nfft': { 'linestyle': '-', 'color': 'r', 'marker': 'o'},
+    'p3m': { 'linestyle': '-', 'color': 'c', 'marker': 'o'},
+    'pepc': { 'linestyle': '-', 'color': 'r', 'marker': 'x'},
+    'pp3mg': { 'linestyle': '-', 'color': 'k', 'marker': 'o'},
+    'vmg': { 'linestyle': '-', 'color': 'y', 'marker': 'o'},
+    }
+
+def fmt(method):
+        if (method in method2format): return method2format[method]
+        else: return { 'linestyle': '-', 'color': 'g' }
+
 def read(filename):
     """Read the XML benchmark file filename.
 
@@ -171,7 +186,8 @@ def plot_against_cores(testcase, charges, tolerance,
         for method in methods:
             data = timing[method]
             if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
-                plt.loglog(all_cores, data[ixcha,ixtol,:], 'o-', label=method)
+                plt.loglog(all_cores, data[ixcha,ixtol,:], 
+                           label=method, **fmt(method))
         plt.legend()
         plt.xlabel('#cores')
         plt.ylabel('Time [s]')
@@ -181,7 +197,8 @@ def plot_against_cores(testcase, charges, tolerance,
         for method in methods:
             data = speedup[method]
             if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
-                plt.loglog(all_cores, data[ixcha,ixtol,:], 'o-', label=method)
+                plt.loglog(all_cores, data[ixcha,ixtol,:],
+                           label=method, **fmt(method))
         plt.axes().set_aspect('equal', 'datalim')
         plt.legend()
         plt.xlabel('#cores')
@@ -191,41 +208,10 @@ def plot_against_cores(testcase, charges, tolerance,
         for method in methods:
             data = efficiency[method]
             if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
-                plt.semilogx(all_cores, data[ixcha,ixtol,:], 'o-', label=method)
+                plt.semilogx(all_cores, data[ixcha,ixtol,:],
+                             label=method, **fmt(method))
+
         plt.legend()
         plt.xlabel('#cores')
         plt.ylabel('Efficiency')
 
-def plot_against_charges(testcase, cores, tolerance):
-    all_charges, all_tolerances, all_cores, \
-        timing, speedup, efficiency = \
-        read(testcase)
-
-    try:
-       ixcor = all_cores.index(cores)
-       ixtol = all_tolerances.index(tolerance)
-    except ValueError:
-      print "plot_against_charges(): cores=%d or tolerance=%f not found in list." % (cores, tolerance)
-      return
-
-    title_s = "Testcase %s (%d cores, tolerance %1.0e)" % (testcase, cores, tolerance)
-
-    legends = []
-
-    methods = timing.keys()
-    methods.sort()
-
-    rawdata      = numpy.zeros([len(all_charges), len(methods)+1])
-    rawdata[:,0] = all_charges
-
-    plt.suptitle(title_s)
-
-    for method in methods:
-        data = timing[method]
-        if not numpy.all(numpy.isnan(data[:,ixtol,ixcor])):
-            legends.append(method)
-            plt.loglog(all_charges, data[:,ixtol,ixcor], 'o-')
-
-    plt.legend(legends)
-    plt.xlabel('#charges')
-    plt.ylabel('Time [s]')
