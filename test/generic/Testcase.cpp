@@ -114,23 +114,31 @@ Configuration::~Configuration() {
   free_decomp_particles(true);
 }
 
-fcs_int Configuration::add_dup_input_particles(fcs_int add_nparticles)
+
+void Configuration::realloc_dup_input_particles(fcs_int new_nparticles)
 {
   const fcs_int min_alloc_step = 1;
+
+  if (new_nparticles > dup_input_nparticles_allocated) {
+
+    dup_input_nparticles_allocated = z_max(new_nparticles, dup_input_nparticles_allocated + min_alloc_step);
+
+    dup_input_positions  = (fcs_float *) realloc(dup_input_positions,  dup_input_nparticles_allocated * 3 * sizeof(fcs_float));
+    dup_input_charges    = (fcs_float *) realloc(dup_input_charges,    dup_input_nparticles_allocated *     sizeof(fcs_float));
+    dup_input_potentials = (fcs_float *) realloc(dup_input_potentials, dup_input_nparticles_allocated *     sizeof(fcs_float));
+    dup_input_field      = (fcs_float *) realloc(dup_input_field,      dup_input_nparticles_allocated * 3 * sizeof(fcs_float));
+  }
+}
+
+
+fcs_int Configuration::add_dup_input_particles(fcs_int add_nparticles)
+{
   fcs_int i, new_alloc;
 
 
   new_alloc = (dup_input_overalloc < 0)?(round((dup_input_nparticles + add_nparticles) * (1.0 - dup_input_overalloc))):(dup_input_nparticles + add_nparticles + dup_input_overalloc);
 
-  if (new_alloc > dup_input_nparticles_allocated) {
-
-    dup_input_nparticles_allocated = z_max(new_alloc, dup_input_nparticles_allocated + min_alloc_step);
-
-    dup_input_positions = (fcs_float*) realloc(dup_input_positions, dup_input_nparticles_allocated*3*sizeof(fcs_float));
-    dup_input_charges = (fcs_float*) realloc(dup_input_charges, dup_input_nparticles_allocated*sizeof(fcs_float));
-    dup_input_potentials = (fcs_float*) realloc(dup_input_potentials, dup_input_nparticles_allocated*sizeof(fcs_float));
-    dup_input_field = (fcs_float*) realloc(dup_input_field, dup_input_nparticles_allocated*3*sizeof(fcs_float));
-  }
+  realloc_dup_input_particles(new_alloc);
 
   for (i = dup_input_nparticles; i < dup_input_nparticles + add_nparticles; ++i)
   {
@@ -396,6 +404,7 @@ void Configuration::print_config(fcs_int n)
     case DECOMPOSE_ATOMISTIC: cout << "atomistic" << endl; break;
     case DECOMPOSE_RANDOM: cout << "random" << endl; break;
     case DECOMPOSE_DOMAIN: cout << "domain" << endl; break;
+    case DECOMPOSE_RANDEQ: cout << "randeq" << endl; break;
   }
 
   cout << "    total particles (incl. duplications): (" << input_plain_nparticles << " + " << input_file_nparticles << " + " << input_generator_nparticles << ") * "<< total_duplication
@@ -717,14 +726,20 @@ void Configuration::destroy_cart_comm()
   if (cart_comm != MPI_COMM_NULL) MPI_Comm_free(&cart_comm);
 }
 
-void Configuration::decompose_particles(fcs_float overalloc)
+void Configuration::decompose_particles(fcs_float minalloc, fcs_float overalloc)
 {
+  fcs_int dup_input_minalloc;
   fcs_gridsort_resort_t gridsort_resort;
 
   if (params.decomposition == DECOMPOSE_ALL_ON_MASTER || params.decomposition == DECOMPOSE_ATOMISTIC) dup_input_overalloc = overalloc;
   else dup_input_overalloc = 0;
 
   generate_input_particles();
+
+  if (minalloc < 0) dup_input_minalloc = (fcs_int) fcs_ceil(dup_input_total_nparticles / comm_size * -minalloc);
+  else dup_input_minalloc = (fcs_int) fcs_ceil(minalloc);
+
+  if (params.decomposition == DECOMPOSE_ALL_ON_MASTER || params.decomposition == DECOMPOSE_ATOMISTIC) realloc_dup_input_particles(dup_input_minalloc);
 
   dup_input_overalloc = overalloc;
 
@@ -771,9 +786,12 @@ void Configuration::decompose_particles(fcs_float overalloc)
       if (have_reference_values[1]) reference_field = dup_input_field;
       break;
     case DECOMPOSE_RANDOM:
-      INFO_MASTER(cout << "Decomposing system (random)..." << endl);
+    case DECOMPOSE_RANDEQ:
+      INFO_MASTER(cout << "Decomposing system (rand" << ((params.decomposition == DECOMPOSE_RANDOM)?"om":"eq") << ")..." << endl);
       fcs_gridsort_create(&gridsort);
       fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_nparticles, dup_input_positions, dup_input_charges);
+      if (fabs(dup_input_minalloc) <= 0 && params.decomposition == DECOMPOSE_RANDEQ) fcs_gridsort_set_minalloc(&gridsort, (fcs_int) fcs_ceil(dup_input_total_nparticles / comm_size));
+      else fcs_gridsort_set_minalloc(&gridsort, dup_input_minalloc);
       fcs_gridsort_set_overalloc(&gridsort, dup_input_overalloc);
       fcs_gridsort_sort_random(&gridsort, communicator);
       fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
@@ -791,6 +809,7 @@ void Configuration::decompose_particles(fcs_float overalloc)
         fcs_gridsort_resort_floats(gridsort_resort, dup_input_field, reference_field, 3, communicator);
       }
       fcs_gridsort_resort_destroy(&gridsort_resort);
+      if (params.decomposition == DECOMPOSE_RANDEQ) equalize_particles();
       break;
     case DECOMPOSE_DOMAIN:
       INFO_MASTER(cout << "Decomposing system (domain)..." << endl);
@@ -800,6 +819,7 @@ void Configuration::decompose_particles(fcs_float overalloc)
       fcs_gridsort_create(&gridsort);
       fcs_gridsort_set_system(&gridsort, params.offset, params.box_a, params.box_b, params.box_c, params.periodicity);
       fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_nparticles, dup_input_positions, dup_input_charges);
+      fcs_gridsort_set_minalloc(&gridsort, dup_input_minalloc);
       fcs_gridsort_set_overalloc(&gridsort, dup_input_overalloc);
       fcs_gridsort_sort_forward(&gridsort, 0.0, cart_comm);
       fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
@@ -838,6 +858,54 @@ void Configuration::decompose_particles(fcs_float overalloc)
   }
 }
 
+void Configuration::equalize_particles()
+{
+  fcs_int nparticles, my_diff, all_diffs[comm_size], n;
+  int sr, rr;
+  
+
+  nparticles = (decomp_total_nparticles / comm_size) + ((decomp_total_nparticles % comm_size < comm_rank)?1:0);
+  nparticles = z_min(nparticles, decomp_max_nparticles);
+  my_diff = decomp_nparticles - nparticles;
+  
+  MPI_Allgather(&my_diff, 1, FCS_MPI_INT, all_diffs, 1, FCS_MPI_INT, communicator);
+  
+  for (sr = 0, rr = 0; rr < comm_size; ++rr)
+  {
+    while (all_diffs[rr] < 0)
+    {
+      while (sr < comm_size && all_diffs[sr] <= 0) ++sr;
+
+      if (sr >= comm_size) break;
+    
+      n = z_min(-all_diffs[rr], all_diffs[sr]);
+
+/*      if (comm_rank == 0) printf("send %" FCS_LMOD_INT "d from %d to %d\n", n, sr, rr);*/
+
+      if (comm_rank == sr)
+      {
+        MPI_Send(decomp_positions     + 3 * (decomp_nparticles - n), 3 * n, FCS_MPI_FLOAT, rr, 0, communicator);
+        MPI_Send(decomp_charges       + 1 * (decomp_nparticles - n), 1 * n, FCS_MPI_FLOAT, rr, 0, communicator);
+        MPI_Send(reference_potentials + 1 * (decomp_nparticles - n), 1 * n, FCS_MPI_FLOAT, rr, 0, communicator);
+        MPI_Send(reference_field      + 3 * (decomp_nparticles - n), 3 * n, FCS_MPI_FLOAT, rr, 0, communicator);
+        decomp_nparticles -= n;
+
+      } else if (comm_rank == rr)
+      {
+        MPI_Status status;
+        MPI_Recv(decomp_positions     + 3 * decomp_nparticles, 3 * n, FCS_MPI_FLOAT, sr, 0, communicator, &status);
+        MPI_Recv(decomp_charges       + 1 * decomp_nparticles, 1 * n, FCS_MPI_FLOAT, sr, 0, communicator, &status);
+        MPI_Recv(reference_potentials + 1 * decomp_nparticles, 1 * n, FCS_MPI_FLOAT, sr, 0, communicator, &status);
+        MPI_Recv(reference_field      + 3 * decomp_nparticles, 3 * n, FCS_MPI_FLOAT, sr, 0, communicator, &status);
+        decomp_nparticles += n;
+      }
+
+      all_diffs[rr] += n;
+      all_diffs[sr] -= n;
+    }
+  }
+}
+
 bool Configuration::compute_errors(errors_t *e) {
 
   ::compute_errors(e, decomp_nparticles, decomp_positions, decomp_charges,
@@ -860,7 +928,8 @@ void Configuration::free_decomp_particles(bool quiet)
       if (!quiet) INFO_MASTER(cout << "Freeing data (atomistic)..." << endl);
       break;
     case DECOMPOSE_RANDOM:
-      if (!quiet) INFO_MASTER(cout << "Freeing data (random)..." << endl);
+    case DECOMPOSE_RANDEQ:
+      if (!quiet) INFO_MASTER(cout << "Freeing data (rand" << ((params.decomposition == DECOMPOSE_RANDOM)?"om":"eq") << ")..." << endl);
       fcs_gridsort_free(&gridsort);
       fcs_gridsort_destroy(&gridsort);
       delete[] reference_potentials;

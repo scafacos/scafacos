@@ -71,10 +71,14 @@ static void usage(char** argv, int argc, int c) {
   cout << "    -s         utilize resort support (if available) to retain the solver" << endl
        << "               specific particle order (i.e., no back sorting), exploit the" << endl
        << "               limited particle movement for integration runs (using -t ...)" << endl;
-  cout << "    -a A       allocate particle data arrays larger for resort support, A can be" << endl
-       << "               an absolute integer number of particles (without '.') or a" << endl
-       << "               fractional number (with '.') relative to the given particles" << endl
-       << "               (default value A=0.1 is equivalent to 10% larger arrays)" << endl;
+  cout << "    -a [+]A    control size of particle data arrays for resort support, A can" << endl
+       << "               be the minimum size either as absolute value (integer w/o '.') or" << endl
+       << "               as fractional number (w/ '.') relative to average size, with" << endl
+       << "               prefix '+' A can be the additional size either as absolute value" << endl
+       << "               (integer w/o '.') or as fractional number (w/ '.') relative to" << endl
+       << "               the given particles, minimum and additional size can be set" << endl
+       << "               independently (default is minimum size A=0 and additional size" << endl
+       << "               A=+0.1, i.e. no minimum size and 10% additional size)" << endl;
   cout << "    -t S       perform integration with S time steps (run METHOD S+1 times)" << endl;
   cout << "    -g CONF    use CONF as integration configuration string"   << endl;
   cout << "  METHOD:";
@@ -156,14 +160,14 @@ static struct {
   // Utilize resort support of solvers (if available)
   bool resort;
 
-  // Overallocation
-  fcs_float overalloc;
+  // Allocation
+  fcs_float minalloc, overalloc;
 
   // Integrate or not, number of time steps (t steps = t+1 computations), and integration configuration string
   fcs_int integrate, time_steps;
   char integration_conf[MAX_CONF_LENGTH];
 
-} global_params = { "", false, false, false, "", "", "", false, {1, 1, 1}, -1, true, false, "none", "", 1, -1.0, false, -0.1, 0, 0, "" };
+} global_params = { "", false, false, false, "", "", "", false, {1, 1, 1}, -1, true, false, "none", "", 1, -1.0, false, 0, -0.1, 0, 0, "" };
 
 // FCS Handle
 FCS fcs;
@@ -219,7 +223,7 @@ static void parse_commandline(int argc, char* argv[]) {
       break;
     case 'm':
 #define STRCMP_FRONT(_s_, _t_) strncmp((_s_), (_t_), z_min(strlen(_s_), strlen(_t_)))
-      if (STRCMP_FRONT("all_on_master", optarg) == 0)
+      if (STRCMP_FRONT("all_on_master", optarg) == 0 || STRCMP_FRONT("master", optarg) == 0)
         global_params.decomposition = DECOMPOSE_ALL_ON_MASTER;
       else if (STRCMP_FRONT("atomistic", optarg) == 0)
         global_params.decomposition = DECOMPOSE_ATOMISTIC;
@@ -227,6 +231,8 @@ static void parse_commandline(int argc, char* argv[]) {
         global_params.decomposition = DECOMPOSE_RANDOM;
       else if (STRCMP_FRONT("domain", optarg) == 0)
         global_params.decomposition = DECOMPOSE_DOMAIN;
+      else if (STRCMP_FRONT("randeq", optarg) == 0)
+        global_params.decomposition = DECOMPOSE_RANDEQ;
       else
         cout << "WARNING: ignoring unknown decomposition mode '" << optarg << "'" << endl;
       break;
@@ -245,8 +251,16 @@ static void parse_commandline(int argc, char* argv[]) {
       global_params.resort = true;
       break;
     case 'a':
-      global_params.overalloc = fabs(atof(optarg));
-      if (strchr(optarg, '.')) global_params.overalloc *= -1;
+      if (optarg[0] == '+')
+      {
+        global_params.overalloc = fabs(atof(optarg + 1));
+        if (strchr(optarg + 1, '.')) global_params.overalloc *= -1;
+
+      } else
+      {
+        global_params.minalloc = fabs(atof(optarg));
+        if (strchr(optarg, '.')) global_params.minalloc *= -1;
+      }
       break;
     case 't':
       global_params.integrate = 1;
@@ -634,11 +648,6 @@ static void run_integration(particles_t *parts)
 
     if (fcs != FCS_NULL)
     {
-      /* store old positions */
-#ifdef BACKUP_POSITIONS
-      memcpy(xyz_old, parts->positions, parts->nparticles * 3 * sizeof(fcs_float));
-#endif
-
       /* tune method */
       MASTER(cout << "    Tune method..." << endl);
       t = MPI_Wtime();
@@ -647,9 +656,9 @@ static void run_integration(particles_t *parts)
       if (!check_result(result)) return;
       MASTER(printf("     = %f second(s)\n", t));
 
-      /* restore old positions */
+      /* store old positions */
 #ifdef BACKUP_POSITIONS
-      memcpy(parts->positions, xyz_old, parts->nparticles * 3 * sizeof(fcs_float));
+      memcpy(xyz_old, parts->positions, parts->nparticles * 3 * sizeof(fcs_float));
 #endif
 
       MASTER(cout << "    Run method..." << endl);
@@ -719,7 +728,7 @@ static void run_integration(particles_t *parts)
     MASTER(cout << "    Update positions..." << endl);
     integ_update_positions(&integ, parts->nparticles, parts->positions, NULL, v_cur, f_cur, &max_particle_move);
 
-    if (resort_availability)
+    if (resort_availability && integ.max_move)
     {
       MASTER(cout << "    Set max particle move = " << max_particle_move);
 
@@ -864,7 +873,7 @@ int main(int argc, char* argv[]) {
     MASTER(cout << "Processing configuration " << config_count << "..." << endl);
 
     // Distribute particles
-    current_config->decompose_particles(global_params.resort?global_params.overalloc:0);
+    current_config->decompose_particles(global_params.resort?global_params.minalloc:0, global_params.resort?global_params.overalloc:0);
 
     particles_t parts;
     prepare_particles(&parts);

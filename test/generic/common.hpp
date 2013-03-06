@@ -92,8 +92,9 @@ template<> class StaticAssert<true> {};
 // How the system is decomposed
 #define DECOMPOSE_ALL_ON_MASTER  0  // all particles on master node
 #define DECOMPOSE_ATOMISTIC      1  // continuously (and equally) distributed particles
-#define DECOMPOSE_RANDOM         2  // randomly distribute particles
+#define DECOMPOSE_RANDOM         2  // randomly distributed particles
 #define DECOMPOSE_DOMAIN         3  // domain decomposition
+#define DECOMPOSE_RANDEQ         4  // randomly AND equally distributed particles
 
 // MPI parameters
 extern MPI_Comm communicator;
