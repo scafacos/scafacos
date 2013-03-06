@@ -48,6 +48,7 @@ typedef struct _fcs_gridsort_t
 
   fcs_int local_nzslices, ghost_nzslices, max_ghost_nzslices;
 
+  fcs_int minalloc;
   fcs_float overalloc;
 
   fcs_int noriginal_particles, max_noriginal_particles;
@@ -120,6 +121,14 @@ void fcs_gridsort_set_bounds(fcs_gridsort_t *gs, fcs_float *lower_bounds, fcs_fl
  * @param ghost_nzslices fcs_int number of zslices used to create ghost particles
  */
 void fcs_gridsort_set_zslices(fcs_gridsort_t *gs, fcs_int local_nzslices, fcs_int ghost_nzslices);
+
+/**
+ * @brief set minimum size of memory to be allocated for sorted particle data array
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param minalloc fcs_int minimum size of memory, default: minalloc = 0 (i.e., no minimum)
+ * @param ghost_nzslices fcs_int number of zslices used to create ghost particles
+ */
+void fcs_gridsort_set_minalloc(fcs_gridsort_t *gs, fcs_int minalloc);
 
 /**
  * @brief set size of extra memory to be allocated for sorted particle data array

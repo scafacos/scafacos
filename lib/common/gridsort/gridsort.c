@@ -296,6 +296,7 @@ void fcs_gridsort_create(fcs_gridsort_t *gs)
 
   gs->local_nzslices = gs->ghost_nzslices = gs->max_ghost_nzslices = 0;
 
+  gs->minalloc = 0;
   gs->overalloc = 0;
 
   gs->noriginal_particles = gs->max_noriginal_particles = 0;
@@ -354,6 +355,12 @@ void fcs_gridsort_set_zslices(fcs_gridsort_t *gs, fcs_int local_nzslices, fcs_in
 {
   gs->local_nzslices = local_nzslices;
   gs->ghost_nzslices = ghost_nzslices;
+}
+
+
+void fcs_gridsort_set_minalloc(fcs_gridsort_t *gs, fcs_int minalloc)
+{
+  gs->minalloc = minalloc;
 }
 
 
@@ -679,6 +686,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   fcs_int local_packed, global_packed, original_packed;
 #endif
 
+  forw_slint_t old_minalloc;
   double old_overalloc;
   
 #ifdef DO_TIMING
@@ -1077,6 +1085,8 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   original_packed = forw_SL_DEFCON(meas.packed); forw_SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
+  old_minalloc = forw_SL_DEFCON(meas.minalloc);
+  forw_SL_DEFCON(meas.minalloc) = gs->minalloc;
   old_overalloc = forw_SL_DEFCON(meas.overalloc);
   forw_SL_DEFCON(meas.overalloc) = gs->overalloc;
 
@@ -1097,6 +1107,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   forw_SL_DEFCON(meas.packed) = original_packed;
 #endif
 
+  forw_SL_DEFCON(meas.minalloc) = old_minalloc;
   forw_SL_DEFCON(meas.overalloc) = old_overalloc;
 
   DEBUG_CMD(
@@ -1593,6 +1604,7 @@ fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm)
   
   int random_data[2];
 
+  forw_slint_t old_minalloc;
   double old_overalloc;
   
 #ifdef DO_TIMING
@@ -1635,6 +1647,8 @@ fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm)
 
   forw_tproc_create_tproc(&tproc, gridsort_random_tproc, gridsort_random_reset, forw_TPROC_EXDEF_NULL);
 
+  old_minalloc = forw_SL_DEFCON(meas.overalloc);
+  forw_SL_DEFCON(meas.overalloc) = gs->overalloc;
   old_overalloc = forw_SL_DEFCON(meas.overalloc);
   forw_SL_DEFCON(meas.overalloc) = gs->overalloc;
 
@@ -1642,6 +1656,7 @@ fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm)
   forw_mpi_elements_alltoall_specific(&sin0, &sout0, NULL, tproc, random_data, comm_size, comm_rank, comm);
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
+  forw_SL_DEFCON(meas.minalloc) = old_minalloc;
   forw_SL_DEFCON(meas.overalloc) = old_overalloc;
 
   forw_tproc_free(&tproc);
