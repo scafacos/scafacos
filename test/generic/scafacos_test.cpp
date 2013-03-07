@@ -808,6 +808,8 @@ int main(int argc, char* argv[]) {
 
   testcase->broadcast_config(MASTER_RANK, communicator);
 
+  MASTER(cout << "Particle array allocation: minalloc: " << global_params.minalloc << ", overalloc: " << global_params.overalloc << endl);
+
   FCSResult result;
 
   if (global_params.have_method) {

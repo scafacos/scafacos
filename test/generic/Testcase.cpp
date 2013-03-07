@@ -739,6 +739,8 @@ void Configuration::decompose_particles(fcs_float minalloc, fcs_float overalloc)
   if (minalloc < 0) dup_input_minalloc = (fcs_int) fcs_ceil(dup_input_total_nparticles / comm_size * -minalloc);
   else dup_input_minalloc = (fcs_int) fcs_ceil(minalloc);
 
+  if (params.decomposition == DECOMPOSE_RANDEQ) dup_input_minalloc = z_max(dup_input_minalloc, (fcs_int) fcs_ceil(dup_input_total_nparticles / comm_size));
+
   if (params.decomposition == DECOMPOSE_ALL_ON_MASTER || params.decomposition == DECOMPOSE_ATOMISTIC) realloc_dup_input_particles(dup_input_minalloc);
 
   dup_input_overalloc = overalloc;
@@ -790,8 +792,7 @@ void Configuration::decompose_particles(fcs_float minalloc, fcs_float overalloc)
       INFO_MASTER(cout << "Decomposing system (rand" << ((params.decomposition == DECOMPOSE_RANDOM)?"om":"eq") << ")..." << endl);
       fcs_gridsort_create(&gridsort);
       fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_nparticles, dup_input_positions, dup_input_charges);
-      if (fabs(dup_input_minalloc) <= 0 && params.decomposition == DECOMPOSE_RANDEQ) fcs_gridsort_set_minalloc(&gridsort, (fcs_int) fcs_ceil(dup_input_total_nparticles / comm_size));
-      else fcs_gridsort_set_minalloc(&gridsort, dup_input_minalloc);
+      fcs_gridsort_set_minalloc(&gridsort, dup_input_minalloc);
       fcs_gridsort_set_overalloc(&gridsort, dup_input_overalloc);
       fcs_gridsort_sort_random(&gridsort, communicator);
       fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
