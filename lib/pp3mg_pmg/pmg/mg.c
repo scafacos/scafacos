@@ -1,16 +1,10 @@
-/*
- *  mg.c
- *
- *  Copyright 2006 Matthias Bolten. All rights reserved.
- *
- */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <sys/time.h>
 
 #include <mpi.h>
@@ -21,18 +15,23 @@
 #include "jacobi.h"
 #include "lueqf.h"
 #include "mg.h"
-#include "rectangle.h"
 #include "restrict.h"
 #include "stencil.h"
 
+inline int min(int a, int b) {
+  return (a<b)?a:b;
+}
+
 void mg_setup( mg_data **outdata, int maxlevel, int m, int n, int o,
 	       int xstart, int xend, int ystart, int yend, int zstart, int zend,
-	       int p, int nu1, int nu2, double omega, int size, MPI_Comm cart_comm)
+	       int p, int nu1, int nu2, double omega, int size, double* values, 
+	       int* xoff, int* yoff, int* zoff, MPI_Comm cart_comm)
 {
 /* sets multigrid data for each level: 
     - m, n, o
     - x_off, y_off, z_off
     - m_l, n_l, o_l
+    - x_ghosts, y_ghosts, z_ghosts
     - left, right, lower, upper, back, front
     - periodic
     - cartesian communicator cart_comm
@@ -45,12 +44,57 @@ void mg_setup( mg_data **outdata, int maxlevel, int m, int n, int o,
 */
   int level;
   int i, j, k;
+  double sum;
   mg_data *data;
 
   /* Allocating memory for multigrid parameters */
   data = (mg_data*) malloc(maxlevel*sizeof(mg_data));
 
   for (level=0;level<maxlevel;level++) {
+    /* init stencil data */
+    if ( level == 0 ) {
+      data[0].size = size;
+      data[0].values = (double*) malloc( size*sizeof(double) );
+      data[0].x_offsets = (int*) malloc( size*sizeof(int) );
+      data[0].y_offsets = (int*) malloc( size*sizeof(int) );
+      data[0].z_offsets = (int*) malloc( size*sizeof(int) );
+      for( i = 0; i < size; i++ ){
+	data[0].values[i] = values[i];
+	data[0].x_offsets[i] = xoff[i];
+	data[0].y_offsets[i] = yoff[i];
+	data[0].z_offsets[i] = zoff[i];
+      }
+      /* setting zero */
+      /* WARNING: currently only zeros at (0.0,0.0,0.0) or at (\pi,\pi,\pi) are supported! */
+      sum = 0.0;
+      for (i=0; i<size; i++) {
+	sum += data[0].values[i];
+      }
+      if (fabs(sum)<1.0e-10) {
+	data[0].zero_at_pi3 = false;
+      } else {
+	data[0].zero_at_pi3 = true;
+      }
+    }
+    if (level<(maxlevel-1) ){
+      /* setting zero */
+      /* WARNING: currently only zeros at (0.0,0.0,0.0) or at (\pi,\pi,\pi) are supported! */
+      data[level].zero_at_pi3 = false;
+      data[level+1].values = NULL;
+      data[level+1].x_offsets = NULL;
+      data[level+1].y_offsets = NULL;
+      data[level+1].z_offsets = NULL;
+      set_stencil( data, level, 3 );
+    }
+    
+    /* calculate number of ghosts */
+    data[level].x_ghosts = data[level].y_ghosts = data[level].z_ghosts = 0;
+    for ( i=0; i<data[level].size; i++ ) {
+      if ( data[level].x_offsets[i] > data[level].x_ghosts ) data[level].x_ghosts = data[level].x_offsets[i];
+      if ( data[level].y_offsets[i] > data[level].y_ghosts ) data[level].y_ghosts = data[level].y_offsets[i];
+      if ( data[level].z_offsets[i] > data[level].z_ghosts ) data[level].z_ghosts = data[level].z_offsets[i];
+    }
+    /* printf("x_ghosts = %d, y_ghosts = %d, z_ghosts = %d\n",data[level].x_ghosts,data[level].y_ghosts,data[level].z_ghosts); */
 
     /* set periodic flag */
     data[level].periodic = p;
@@ -66,13 +110,13 @@ void mg_setup( mg_data **outdata, int maxlevel, int m, int n, int o,
     data[level].cart_comm = cart_comm;
 
     if (level==0) {
-      data[level].m = m + 2;
-      data[level].n = n + 2;
-      data[level].o = o + 2;
+      data[level].m = m + 2*data[level].x_ghosts;
+      data[level].n = n + 2*data[level].y_ghosts;
+      data[level].o = o + 2*data[level].z_ghosts;
     } else { 
-      data[level].m = data[level-1].m/2+1;
-      data[level].n = data[level-1].n/2+1;
-      data[level].o = data[level-1].o/2+1;
+      data[level].m = (data[level-1].m - 2*data[level].x_ghosts)/2 + 2*data[level].x_ghosts;
+      data[level].n = (data[level-1].n - 2*data[level].y_ghosts)/2 + 2*data[level].y_ghosts;
+      data[level].o = (data[level-1].o - 2*data[level].z_ghosts)/2 + 2*data[level].z_ghosts;
     }
 
     if (xstart%2==0)
@@ -91,15 +135,15 @@ void mg_setup( mg_data **outdata, int maxlevel, int m, int n, int o,
       data[level].z_off = 1;
 
     if (xend>=xstart)
-      data[level].m_l = xend - xstart + 3;
+      data[level].m_l = xend - xstart + 1 + 2*data[level].x_ghosts;
     else
       data[level].m_l = 0;
     if (yend>=ystart)
-      data[level].n_l = yend - ystart + 3;
+      data[level].n_l = yend - ystart + 1 + 2*data[level].y_ghosts;
     else
       data[level].n_l = 0;
     if (zend>=zstart)
-      data[level].o_l = zend - zstart + 3;
+      data[level].o_l = zend - zstart + 1 + 2*data[level].z_ghosts;
     else
       data[level].o_l = 0;
 
@@ -287,12 +331,12 @@ void mg_setup( mg_data **outdata, int maxlevel, int m, int n, int o,
       data[level].r = cuboid_alloc(data[level].m_l,data[level].n_l,data[level].o_l);
       data[level].e = cuboid_alloc(data[level].m_l,data[level].n_l,data[level].o_l);
       data[level].tmp = cuboid_alloc(data[level].m_l,data[level].n_l,data[level].o_l);
-      data[level].sbufxy = rectangle_alloc(data[level].m_l,data[level].n_l);
-      data[level].sbufxz = rectangle_alloc(data[level].m_l,data[level].o_l);
-      data[level].sbufyz = rectangle_alloc(data[level].n_l,data[level].o_l);
-      data[level].rbufxy = rectangle_alloc(data[level].m_l,data[level].n_l);
-      data[level].rbufxz = rectangle_alloc(data[level].m_l,data[level].o_l);
-      data[level].rbufyz = rectangle_alloc(data[level].n_l,data[level].o_l);
+      data[level].sbufxy = cuboid_alloc(data[level].m_l,data[level].n_l,data[level].z_ghosts);
+      data[level].sbufxz = cuboid_alloc(data[level].m_l,data[level].y_ghosts,data[level].o_l);
+      data[level].sbufyz = cuboid_alloc(data[level].x_ghosts,data[level].n_l,data[level].o_l);
+      data[level].rbufxy = cuboid_alloc(data[level].m_l,data[level].n_l,data[level].z_ghosts);
+      data[level].rbufxz = cuboid_alloc(data[level].m_l,data[level].y_ghosts,data[level].o_l);
+      data[level].rbufyz = cuboid_alloc(data[level].x_ghosts,data[level].n_l,data[level].o_l);
 
       for (i=0;i<data[level].m_l;i++) {
 	for (j=0;j<data[level].n_l;j++) {
@@ -319,23 +363,14 @@ void mg_setup( mg_data **outdata, int maxlevel, int m, int n, int o,
       data[level].rbufyz = NULL;
     }
 
-    if( level == 0 ){
-      /* allocate space for stencil data */
-      data[level].values = (double*) malloc( size*sizeof(double) );
-      data[level].x_offsets = (int*) malloc( size*sizeof(int) );
-      data[level].y_offsets = (int*) malloc( size*sizeof(int) );
-      data[level].z_offsets = (int*) malloc( size*sizeof(int) );
-    }
-
-    /* For output only */
+#ifdef DEBUG
+    /* Debugging output */
     {
       int cart_dims[3], cart_periods[3], cart_coords[3];
 
       /* Getting processes coordinates */
       MPI_Cart_get(cart_comm,3,cart_dims,cart_periods,cart_coords);
       
-      /* Debugging output */
-#ifdef DEBUG
       printf("[%3d,%3d,%3d]: level = %d, xstart = %3d, xend   = %3d, m_l = %3d\n",
 	     cart_coords[0],cart_coords[1],cart_coords[2],level,xstart,xend,
 	     data[level].m_l);
@@ -357,8 +392,8 @@ void mg_setup( mg_data **outdata, int maxlevel, int m, int n, int o,
       printf("[%3d,%3d,%3d]: level = %d, back  = %3d, front = %3d\n",
 	     cart_coords[0],cart_coords[1],cart_coords[2],level,
 	     data[level].back,data[level].front);
-#endif
     }
+#endif
 
     /* Calculating data distribution on next level */
     xstart = xstart/2;
@@ -374,121 +409,60 @@ void mg_setup( mg_data **outdata, int maxlevel, int m, int n, int o,
   return;
 }
 
-void mg_init(double ***v, double ***f, mg_data *data, int size, 
-             double* values, int* xoff, int* yoff, int* zoff, int maxlevel )
+void mg_init(double ***v, double ***f, mg_data *data )
 {
 /* inits first level (0):
     - v
     - f
-   inits stencil data for each level
 */
   int i, j, k;
   int level;
-  double*** A;
-  double a_s, b_s, c_s, d_s, e_s, f_s, g_s;
-  double min, max;
-  int myid;
 
-  /* Getting local rank */
-  MPI_Comm_rank(data[0].cart_comm, &myid);
-
-  for (i=0;i<data[0].m_l-2;i++) {
-    for (j=0;j<data[0].n_l-2;j++) {
-      for (k=0;k<data[0].o_l-2;k++) {
-	data[0].v[i+1][j+1][k+1] = v[i][j][k];
-	data[0].f[i+1][j+1][k+1] = f[i][j][k];
+  /* init initial guess and rhs */
+  for (i=0;i<data[0].m_l-2*data[0].x_ghosts;i++) {
+    for (j=0;j<data[0].n_l-2*data[0].y_ghosts;j++) {
+      for (k=0;k<data[0].o_l-2*data[0].z_ghosts;k++) {
+	data[0].v[i+data[0].x_ghosts][j+data[0].y_ghosts][k+data[0].z_ghosts] = v[i][j][k];
+	data[0].f[i+data[0].x_ghosts][j+data[0].y_ghosts][k+data[0].z_ghosts] = f[i][j][k];
       }
     }
   }
-
+  
+  update_ghosts( data[0].v, data, 0 );
   update_ghosts( data[0].f, data, 0 );
 
-  for( level = 0; level < maxlevel; level++ ){
-    if( level != 0 ){
-      data[level].values = (double*) malloc( size*sizeof(double) );
-      data[level].x_offsets = (int*) malloc( size*sizeof(int) );
-      data[level].y_offsets = (int*) malloc( size*sizeof(int) );
-      data[level].z_offsets = (int*) malloc( size*sizeof(int) );
-    }
-    data[level].size = size;
-    for( i = 0; i < size; i++ ){
-      data[level].values[i] = values[i];
-      data[level].x_offsets[i] = xoff[i];
-      data[level].y_offsets[i] = yoff[i];
-      data[level].z_offsets[i] = zoff[i];
-    }
-  }
-
-  /* init stencil data */
-  data[0].size = size;
-  for( i = 0; i < size; i++ ){
-    data[0].values[i] = values[i];
-    data[0].x_offsets[i] = xoff[i];
-    data[0].y_offsets[i] = yoff[i];
-    data[0].z_offsets[i] = zoff[i];
- }
-
-  /* find optimal omega for level 0 */
-  A = cuboid_alloc( 3, 3, 3 );
-  for( i = 0; i < 3; i++ )
-    for( j = 0; j < 3; j++ )
-      for( k = 0; k < 3; k++ )
-        A[i][j][k] = 0.0;
-  for( i = 0; i < data[0].size; i++ )
-    A[1+data[0].x_offsets[i]][1+data[0].y_offsets[i]][1+data[0].z_offsets[i]] = data[0].values[i];
-
-  a_s = A[0][1][1];
-  b_s = A[1][0][1];
-  c_s = A[1][1][0];
-  d_s = A[0][0][1];
-  e_s = A[0][1][0];
-  f_s = A[1][0][0];
-  g_s = A[0][0][0];
-
-  cuboid_free (A, 3, 3, 3);
-
-  find_min_max( a_s, b_s, c_s, d_s, e_s, f_s, g_s, &min, &max );
-  data[0].omega = calculate_omega( a_s, b_s, c_s, d_s, e_s, f_s, g_s, min, max );
-
-  for( level = 0; level < maxlevel-1; level++ )
-    set_stencil( data, level, 3 );
-
-  if( myid == 0 )
-    for( level = 0; level < maxlevel; level++ )
-      printf( "level %d: omega = %f\n", level, data[level].omega );
-
-{
-      int cart_dims[3], cart_periods[3], cart_coords[3];
-
-      /* Getting processes coordinates */
-      MPI_Cart_get(data[0].cart_comm,3,cart_dims,cart_periods,cart_coords);
-      
-      /* Debugging output */
-#ifdef DEBUG
-  for( level = 0; level < maxlevel-1; level++ ){
-      printf("[%3d,%3d,%3d]: level = %d, size = %3d\n",
-	     cart_coords[0],cart_coords[1],cart_coords[2],level,data[level].size);
-      printf("[%3d,%3d,%3d]: level = %d, values:\n",
-	     cart_coords[0],cart_coords[1],cart_coords[2],level);
-      for( i = 0; i < data[level].size; i++ )
-        printf( "%.10f ", data[level].values[i] );
-      printf("\n[%3d,%3d,%3d]: level = %d, x_offsets:\n",
-	     cart_coords[0],cart_coords[1],cart_coords[2],level);
-      for( i = 0; i < data[level].size; i++ )
-        printf( "%3d ", data[level].x_offsets[i] );
-      printf("\n[%3d,%3d,%3d]: level = %d, y_offsets:\n",
-	     cart_coords[0],cart_coords[1],cart_coords[2],level);
-      for( i = 0; i < data[level].size; i++ )
-        printf( "%3d ", data[level].y_offsets[i] );
-      printf("\n[%3d,%3d,%3d]: level = %d, z_offsets:\n",
-	     cart_coords[0],cart_coords[1],cart_coords[2],level);
-      for( i = 0; i < data[level].size; i++ )
-        printf( "%3d ", data[level].z_offsets[i] );
-      printf( "\n" );
-  }
-#endif
-    }
-
+/*       /\* Debugging output *\/ */
+/* #ifdef DEBUG */
+/*   { */
+/*     int cart_dims[3], cart_periods[3], cart_coords[3]; */
+    
+/*     /\* Getting processes coordinates *\/ */
+/*     MPI_Cart_get(data[0].cart_comm,3,cart_dims,cart_periods,cart_coords); */
+    
+/*     for( level = 0; level < maxlevel-1; level++ ){ */
+/*       printf("[%3d,%3d,%3d]: level = %d, size = %3d\n", */
+/* 	     cart_coords[0],cart_coords[1],cart_coords[2],level,data[level].size); */
+/*       printf("[%3d,%3d,%3d]: level = %d, values:\n", */
+/* 	     cart_coords[0],cart_coords[1],cart_coords[2],level); */
+/*       for( i = 0; i < data[level].size; i++ ) */
+/*         printf( "%.10f ", data[level].values[i] ); */
+/*       printf("\n[%3d,%3d,%3d]: level = %d, x_offsets:\n", */
+/* 	     cart_coords[0],cart_coords[1],cart_coords[2],level); */
+/*       for( i = 0; i < data[level].size; i++ ) */
+/*         printf( "%3d ", data[level].x_offsets[i] ); */
+/*       printf("\n[%3d,%3d,%3d]: level = %d, y_offsets:\n", */
+/* 	     cart_coords[0],cart_coords[1],cart_coords[2],level); */
+/*       for( i = 0; i < data[level].size; i++ ) */
+/*         printf( "%3d ", data[level].y_offsets[i] ); */
+/*       printf("\n[%3d,%3d,%3d]: level = %d, z_offsets:\n", */
+/* 	     cart_coords[0],cart_coords[1],cart_coords[2],level); */
+/*       for( i = 0; i < data[level].size; i++ ) */
+/*         printf( "%3d ", data[level].z_offsets[i] ); */
+/*       printf( "\n" ); */
+/*     } */
+/*   } */
+/* #endif */
+  
   return;
 }
 
@@ -496,10 +470,10 @@ void mg_result(double ***v, mg_data *data)
 {
   int i, j, k;
  
-  for (i=0;i<data[0].m_l-2;i++) {
-    for (j=0;j<data[0].n_l-2;j++) {
-      for (k=0;k<data[0].o_l-2;k++) {
-	v[i][j][k] = data[0].v[i+1][j+1][k+1];
+  for (i=0;i<data[0].m_l-2*data[0].x_ghosts;i++) {
+    for (j=0;j<data[0].n_l-2*data[0].y_ghosts;j++) {
+      for (k=0;k<data[0].o_l-2*data[0].z_ghosts;k++) {
+	v[i][j][k] = data[0].v[i+data[0].x_ghosts][j+data[0].y_ghosts][k+data[0].z_ghosts];
       }
     }
   }
@@ -523,17 +497,17 @@ void mg_free(mg_data *data, int maxlevel)
     if (data[level].tmp != NULL)
       cuboid_free(data[level].tmp,data[level].m_l,data[level].n_l,data[level].o_l);
     if (data[level].sbufxy != NULL)
-      rectangle_free(data[level].sbufxy,data[level].m_l,data[level].n_l);
+      cuboid_free(data[level].sbufxy,data[level].m_l,data[level].n_l,data[level].z_ghosts);
     if (data[level].sbufxz != NULL)
-      rectangle_free(data[level].sbufxz,data[level].m_l,data[level].o_l);
+      cuboid_free(data[level].sbufxz,data[level].m_l,data[level].y_ghosts,data[level].o_l);
     if (data[level].sbufyz != NULL)
-      rectangle_free(data[level].sbufyz,data[level].n_l,data[level].o_l);
+      cuboid_free(data[level].sbufyz,data[level].x_ghosts,data[level].n_l,data[level].o_l);
     if (data[level].rbufxy != NULL)
-      rectangle_free(data[level].rbufxy,data[level].m_l,data[level].n_l);
+      cuboid_free(data[level].rbufxy,data[level].m_l,data[level].n_l,data[level].z_ghosts);
     if (data[level].rbufxz != NULL)
-      rectangle_free(data[level].rbufxz,data[level].m_l,data[level].o_l);
+      cuboid_free(data[level].rbufxz,data[level].m_l,data[level].y_ghosts,data[level].o_l);
     if (data[level].rbufyz != NULL)
-      rectangle_free(data[level].rbufyz,data[level].n_l,data[level].o_l);
+      cuboid_free(data[level].rbufyz,data[level].x_ghosts,data[level].n_l,data[level].o_l);
     if( data[level].values != NULL )
       free( data[level].values );
     if( data[level].x_offsets != NULL )
@@ -615,7 +589,7 @@ double mg_vcycle( mg_data *data, int level, int maxlevel )
 double mg(double ***u, double ***f, int maxiter, double tol, int m, int n, int o,
 	  int xstart, int xend, int ystart, int yend, int zstart, int zend,
 	  int p, int nu1, int nu2, double omega, int size, double* values,
-	  int* xoff, int* yoff, int* zoff, MPI_Comm cart_comm)
+	  int* xoff, int* yoff, int* zoff, MPI_Comm cart_comm, int verbose)
 {
 
   /* MPI variables */
@@ -643,39 +617,41 @@ double mg(double ***u, double ***f, int maxiter, double tol, int m, int n, int o
   /* Getting local rank */
   MPI_Comm_rank(cart_comm, &myid);
 
-  m_l = xend - xstart + 3;
-  n_l = yend - ystart + 3;
-  o_l = zend - zstart + 3;
+  m_l = xend - xstart + 1;
+  n_l = yend - ystart + 1;
+  o_l = zend - zstart + 1;
 
   /* Calculating number of levels and checking input size */
   if (p) {
-    maxlevel = (int) floor(log((double) (m+1))/log(2.0)) + 1;
-    if (m!=(int) pow(2.0,(double) (maxlevel-1))) {
-      printf("m = %d != %d = 2^%d\n",m,(int) pow(2.0,(double) (maxlevel-1)),maxlevel-1);
+    maxlevel = (int) floor(log((double) (min(min(m,n),o)+1))/log(2.0)) + 1;
+    if (min(min(m,n),o)!=(int) pow(2.0,(double) (maxlevel-1))) {
+      printf("min(min(m,n),o) = %d != %d = 2^%d\n",min(min(m,n),o),(int) pow(2.0,(double) (maxlevel-1)),maxlevel-1);
       exit(123);
     }
   } else {
-    maxlevel = (int) floor(log((double) (m))/log(2.0)) + 1;
-    if (m!=(int) pow(2.0,(double) (maxlevel)) - 1) {
-      printf("m = %d != %d = 2^maxlevel - 1\n",m,(int) pow(2.0,(double) (maxlevel)) - 1);
+    maxlevel = (int) floor(log((double) min(min(m,n),o))/log(2.0)) + 1;
+    if (min(min(m,n),o)!=(int) pow(2.0,(double) (maxlevel)) - 1) {
+      printf("min(min(m,n),o) = %d != %d = 2^%d - 1\n",min(min(m,n),o),(int) pow(2.0,(double) (maxlevel)) - 1,maxlevel);
       exit(123);
     }
   }
 
   /* Initializing multigrid solver */
-  mg_setup(&data,maxlevel,m,n,o,xstart,xend,ystart,yend,zstart,zend,
-  	   p,nu1,nu2,omega,size,cart_comm);
-  mg_init( u, f, data, size, values, xoff, yoff, zoff, maxlevel );
+  mg_setup(&data, maxlevel, m, n, o, xstart, xend, ystart, yend, zstart, zend,
+  	   p, nu1, nu2, omega, size, values, xoff, yoff, zoff, cart_comm);
+  mg_init( u, f, data );
   initres_l = lueqf_res( data[0].v, data[0].f, data[0].tmp, data, 0 );
   MPI_Allreduce(&initres_l,&initres,1,MPI_DOUBLE,MPI_SUM,cart_comm);
   initres = sqrt(initres);
   
   /* Output */
-  if (myid == 0) {
+  if (myid == 0 && verbose > 0) {
     printf("*************** MG with initres = %e ***************\n",initres);
+  }
+  if (myid == 0 && verbose > 1) {
     printf("\n");
     printf("+-------+-----------+----------+\n");
-    printf("| iter. | rel. res. | time     |\n");
+    printf("| iter. | abs. res. | time     |\n");
     printf("+-------+-----------+----------+\n");
   }
 
@@ -692,16 +668,19 @@ double mg(double ***u, double ***f, int maxiter, double tol, int m, int n, int o
     elapsed = (double) (stop.tv_sec - start.tv_sec) + ((double) (stop.tv_usec - start.tv_usec))/1000000.0;
 
     /* Output */
-    if (myid == 0) {
-      printf("| %5d | %9.3e | %8.6f |\n", iter, initres == 0.0 ? 0.0 : res/initres, elapsed);
+    if ((myid == 0 && verbose > 1) || (myid == 0 && verbose > 0 && iter+1 == maxiter)){
+      printf("| %5d | %9.3e | %8.6f |\n", iter, initres == 0.0 ? 0.0 : res, elapsed);
     }
 
-    if (res/initres<tol)
+    /* Relative residual */
+    /* if (res/initres<tol) */
+    /* Absolute residual */
+    if (res<tol)
       break;
   }
 
   /* Output */
-  if (myid == 0) {
+  if (myid == 0 && verbose > 1) {
     printf("+-------+-----------+----------+\n");
     printf("\n");
   }

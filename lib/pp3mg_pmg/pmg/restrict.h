@@ -1,10 +1,3 @@
-/*
- *  restrict.h
- *
- *  Copyright 2006 Matthias Bolten. All rights reserved.
- *
- */
-
 #ifndef _RESTRICT__H_
 #define _RESTRICT__H_
 

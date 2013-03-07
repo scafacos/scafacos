@@ -1,10 +1,3 @@
-/*
- *  lueqf.h
- *
- *  Copyright 2006 Matthias Bolten. All rights reserved.
- *
- */
-
 #ifndef _LUEQF__H_
 #define _LUEQF__H_
 

@@ -116,10 +116,10 @@ void interp_poly( int degree, pp3mg_particle* particles, int*** hoc, int* ll, do
 	  for( ii = 0; ii <= degree; ii++ )
 	    for( jj = 0; jj <= degree; jj++ )
 	      for( kk = 0; kk <= degree; kk++ ) {
-/* 		printf("ii = %d, jj = %d, kk = %d, degree = %d\n",ii,jj,kk,degree); */
-/* 		printf("xi[ii] = %f, yj[jj] = %f, zk[kk] = %f\n",xi[ii],yj[jj],zk[kk]); */
-/* 		printf("x = %f, y = %f, z = %f, i = %d, j = %d, k = %d, p = %d\n",x,y,z,i,j,k,p); */
-/* 		printf("u[%d][%d][%d]\n",(int) round(xi[ii]/hx)-m_start+boundary,(int) round(yj[jj]/hy)-n_start+boundary,(int) round(zk[kk]/hz)-o_start+boundary); */
+		/* printf("ii = %d, jj = %d, kk = %d, degree = %d\n",ii,jj,kk,degree); */
+		/* printf("xi[ii] = %f, yj[jj] = %f, zk[kk] = %f\n",xi[ii],yj[jj],zk[kk]); */
+		/* printf("x = %f, y = %f, z = %f, i = %d, j = %d, k = %d, p = %d\n",x,y,z,i,j,k,p); */
+		/* printf("u[%d][%d][%d]\n",(int) round(xi[ii]/hx)-m_start+boundary,(int) round(yj[jj]/hy)-n_start+boundary,(int) round(zk[kk]/hz)-o_start+boundary); */
 		fijk[ii][jj][kk] = u[(int) round(xi[ii]/hx)-m_start+boundary][(int) round(yj[jj]/hy)-n_start+boundary][(int) round(zk[kk]/hz)-o_start+boundary];
 	      }
 						

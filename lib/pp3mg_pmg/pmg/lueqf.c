@@ -1,10 +1,3 @@
-/*
- *  lueqf.c
- *
- *  Copyright 2006 Matthias Bolten. All rights reserved.
- *
- */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -17,9 +10,9 @@ double lueqf_res( double*** v, double*** f, double*** r, mg_data* data, int leve
   double res = 0.0;
   double stencilsum;
 
-  for (i=1;i<data[level].m_l-1;i++) {
-    for (j=1;j<data[level].n_l-1;j++) {
-      for (k=1;k<data[level].o_l-1;k++) {
+  for (i=data[level].x_ghosts;i<data[level].m_l-data[level].x_ghosts;i++) {
+    for (j=data[level].y_ghosts;j<data[level].n_l-data[level].y_ghosts;j++) {
+      for (k=data[level].z_ghosts;k<data[level].o_l-data[level].z_ghosts;k++) {
 	stencilsum = 0.0;
         for( count = 0; count < data[level].size; count++ )
 	  stencilsum += ( data[level].values[count] *
@@ -32,7 +25,6 @@ double lueqf_res( double*** v, double*** f, double*** r, mg_data* data, int leve
     }
   }
 
-
   return(res);
 }
 
@@ -41,11 +33,13 @@ void lueqf_invd( double ***r, mg_data* data, int level )
   int i, j, k;
   double alpha;
 
-  alpha = 1.0 / data[level].values[0];
+  for (i=0;i<data[level].size;i++)
+    if (data[level].x_offsets[i] == 0 && data[level].y_offsets[i] == 0 && data[level].z_offsets[i] == 0)
+      alpha = 1.0 / data[level].values[i];
 
-  for (i=1;i<data[level].m_l-1;i++) {
-    for (j=1;j<data[level].n_l-1;j++) {
-      for (k=1;k<data[level].o_l-1;k++) {
+  for (i=data[level].x_ghosts;i<data[level].m_l-data[level].x_ghosts;i++) {
+    for (j=data[level].y_ghosts;j<data[level].n_l-data[level].y_ghosts;j++) {
+      for (k=data[level].z_ghosts;k<data[level].o_l-data[level].z_ghosts;k++) {
 	r[i][j][k] = alpha * r[i][j][k];
       }
     }
@@ -53,4 +47,3 @@ void lueqf_invd( double ***r, mg_data* data, int level )
 
   return;
 }
-

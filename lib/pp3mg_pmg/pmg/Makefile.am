@@ -3,8 +3,6 @@ noinst_LIBRARIES = libpmg.a
 libpmg_a_SOURCES = \
 	cuboid.c \
 	cuboid.h \
-	galerkin.c \
-	galerkin.h \
 	ghosts.c \
 	ghosts.h \
 	interpolate.c \
@@ -15,8 +13,6 @@ libpmg_a_SOURCES = \
 	lueqf.h \
 	mg.c \
 	mg.h \
-	rectangle.c \
-	rectangle.h \
 	restrict.c \
 	restrict.h \
 	stencil.c \

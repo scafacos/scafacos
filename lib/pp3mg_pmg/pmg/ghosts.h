@@ -1,10 +1,3 @@
-/*
- *  ghosts.h
- *
- *  Copyright 2006 Matthias Bolten. All rights reserved.
- *
- */
-
 #ifndef _GHOSTS__H_
 #define _GHOSTS__H_
 

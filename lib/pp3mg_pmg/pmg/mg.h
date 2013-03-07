@@ -1,10 +1,3 @@
-/*
- *  mg.h 
- *
- *  Copyright 2006 Matthias Bolten. All rights reserved.
- *
- */
-
 #ifndef _MG__H_
 #define _MG__H_
 
@@ -18,14 +11,14 @@ typedef struct {
   double ***tmp;
 
   /* buffers for send */
-  double **sbufxy;
-  double **sbufxz;
-  double **sbufyz;
+  double ***sbufxy;
+  double ***sbufxz;
+  double ***sbufyz;
 
   /* buffers for receive */
-  double **rbufxy;
-  double **rbufxz;
-  double **rbufyz;
+  double ***rbufxy;
+  double ***rbufxz;
+  double ***rbufyz;
 
   /* global dimensions */
   int m;
@@ -55,9 +48,17 @@ typedef struct {
   int back;
   int front;
 
+  /* ghosts */
+  int x_ghosts;
+  int y_ghosts;
+  int z_ghosts;
+
   /* number of pre and post smoothing steps */
   int nu1;
   int nu2;
+
+  /* position of zero */
+  _Bool zero_at_pi3;
 
   /* relaxation coefficient */
   double omega;
@@ -72,10 +73,10 @@ typedef struct {
 
 void mg_setup( mg_data **outdata, int maxlevel, int m, int n, int o,
 	       int xstart, int xend, int ystart, int yend, int zstart, int zend,
-	       int p, int nu1, int nu2, double omega, int size, MPI_Comm cart_comm);
+	       int p, int nu1, int nu2, double omega, int size, double* values, 
+	       int* xoff, int* yoff, int* zoff, MPI_Comm cart_comm);
 
-void mg_init(double ***v, double ***f, mg_data *data, int size, 
-	     double* values, int* xoff, int* yoff, int* zoff, int maxlevel );
+void mg_init(double ***v, double ***f, mg_data *data );
 
 void mg_free(mg_data *data, int maxlevel);
 
@@ -84,6 +85,6 @@ double mg_vcycle( mg_data *data, int level, int maxlevel );
 double mg(double ***u, double ***f, int maxiter, double tol, int m, int n, int o,
 	  int xstart, int xend, int ystart, int yend, int zstart, int zend,
 	  int p, int nu1, int nu2, double omega, int size, double* values,
-	  int* xoff, int* yoff, int* zoff, MPI_Comm cart_comm);
+	  int* xoff, int* yoff, int* zoff, MPI_Comm cart_comm, int verbose);
 
 #endif /* ifndef _MG__H_ */
