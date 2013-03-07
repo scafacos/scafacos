@@ -58,16 +58,16 @@
 #define GRID_DATA_LAST          (8 * 3)
 
 
-#define BOUNDS_XYZ2CART_NAME  bounds_xyz2cart
-#include "bounds_xyz2cart.h"
+#define BOUNDS_XYZ2COORDS_NAME  bounds_xyz2coords
+#include "bounds_xyz2coords.h"
 
-#define BOUNDS_XYZ2CART_GHOST
-#define BOUNDS_XYZ2CART_NAME  bounds_xyz2cart_ghost
-#include "bounds_xyz2cart.h"
+#define BOUNDS_XYZ2COORDS_GHOST
+#define BOUNDS_XYZ2COORDS_NAME  bounds_xyz2coords_ghost
+#include "bounds_xyz2coords.h"
 
-#define BOUNDS_XYZ2CART_PERIODIC
-#define BOUNDS_XYZ2CART_NAME  bounds_xyz2cart_ghost_periodic
-#include "bounds_xyz2cart.h"
+#define BOUNDS_XYZ2COORDS_PERIODIC
+#define BOUNDS_XYZ2COORDS_NAME  bounds_xyz2coords_ghost_periodic
+#include "bounds_xyz2coords.h"
 
 #if 0
 # define GRIDSORT_FRONT_TPROC_RANK_CACHE
@@ -422,7 +422,7 @@ void fcs_gridsort_get_ghost_particles(fcs_gridsort_t *gs, fcs_int *nparticles, f
 }
 
 
-static void allgather_bounds(fcs_float *bounds, fcs_float *min_bounds, fcs_float *max_bounds, fcs_float *all_bounds, int *cart_dims, int *cart_coords, MPI_Comm cart_comm, int size, int rank)
+static void allgather_bounds(fcs_float *local_bounds, fcs_float *min_bounds, fcs_float *max_bounds, fcs_float *bounds, int *cart_dims, int *cart_coords, MPI_Comm cart_comm, int size, int rank)
 {
   int root_rank, color, key;
   int root_coords[] = { 0, 0, 0 };
@@ -469,7 +469,7 @@ static void allgather_bounds(fcs_float *bounds, fcs_float *min_bounds, fcs_float
     MPI_Comm_rank(line_comm, &line_comm_rank);
 
     DEBUG_CMD(
-      printf(DEBUG_PRINT_PREFIX "%d: line comm: %d of %d, dim: %" FCS_LMOD_INT "d, bound: %" FCS_LMOD_FLOAT "f\n", rank, line_comm_rank, line_comm_size, dim, bounds[dim]);
+      printf(DEBUG_PRINT_PREFIX "%d: line comm: %d of %d, dim: %" FCS_LMOD_INT "d, bound: %" FCS_LMOD_FLOAT "f\n", rank, line_comm_rank, line_comm_size, dim, local_bounds[dim]);
     );
 
     iamroot = (cart_coords[0] == root_coords[0] && cart_coords[1] == root_coords[1] && cart_coords[2] == root_coords[2])?line_comm_rank:0;
@@ -478,22 +478,22 @@ static void allgather_bounds(fcs_float *bounds, fcs_float *min_bounds, fcs_float
 
     if (line_comm_rank == line_comm_root) gather_bounds = malloc(line_comm_size * sizeof(fcs_float));
 
-    MPI_Gather(&bounds[dim], 1, FCS_MPI_FLOAT, gather_bounds, 1, FCS_MPI_FLOAT, line_comm_root, line_comm);
+    MPI_Gather(&local_bounds[dim], 1, FCS_MPI_FLOAT, gather_bounds, 1, FCS_MPI_FLOAT, line_comm_root, line_comm);
 
     if (line_comm_rank == line_comm_root)
     {
       j = 0;
-      all_bounds[j] = min_bounds[0]; ++j;
-      all_bounds[j] = bounds[0]; ++j;
-      for (i = 0; i < cart_dims[0] - 1; ++i, ++j) all_bounds[j] = z_max(gather_bounds[j - 1], all_bounds[j - 1]);
+      bounds[j] = min_bounds[0]; ++j;
+      bounds[j] = local_bounds[0]; ++j;
+      for (i = 0; i < cart_dims[0] - 1; ++i, ++j) bounds[j] = z_max(gather_bounds[j - 1], bounds[j - 1]);
 
-      all_bounds[j] = min_bounds[1]; ++j;
-      all_bounds[j] = bounds[1]; ++j;
-      for (i = 0; i < cart_dims[1] - 1; ++i, ++j) all_bounds[j] = z_max(gather_bounds[j - 3], all_bounds[j - 1]);
+      bounds[j] = min_bounds[1]; ++j;
+      bounds[j] = local_bounds[1]; ++j;
+      for (i = 0; i < cart_dims[1] - 1; ++i, ++j) bounds[j] = z_max(gather_bounds[j - 3], bounds[j - 1]);
 
-      all_bounds[j] = min_bounds[2]; ++j;
-      all_bounds[j] = bounds[2]; ++j;
-      for (i = 0; i < cart_dims[2] - 1; ++i, ++j) all_bounds[j] = z_max(gather_bounds[j - 5], all_bounds[j - 1]);
+      bounds[j] = min_bounds[2]; ++j;
+      bounds[j] = local_bounds[2]; ++j;
+      for (i = 0; i < cart_dims[2] - 1; ++i, ++j) bounds[j] = z_max(gather_bounds[j - 5], bounds[j - 1]);
     }
 
     if (line_comm_rank == line_comm_root) free(gather_bounds);
@@ -501,66 +501,172 @@ static void allgather_bounds(fcs_float *bounds, fcs_float *min_bounds, fcs_float
     MPI_Comm_free(&line_comm);
   }
 
-  MPI_Bcast(all_bounds, cart_dims[0] + cart_dims[1] + cart_dims[2] + 3, FCS_MPI_FLOAT, root_rank, cart_comm);
+  MPI_Bcast(bounds, cart_dims[0] + cart_dims[1] + cart_dims[2] + 3, FCS_MPI_FLOAT, root_rank, cart_comm);
 
   DEBUG_CMD(
     if (rank == 0)
     {
       printf(DEBUG_PRINT_PREFIX "cart_dims: %dx%dx%d\n", cart_dims[0], cart_dims[1], cart_dims[2]);
       printf(DEBUG_PRINT_PREFIX " 0-bounds:");
-      for (i = 0; i <= cart_dims[0]; ++i) printf("  %" FCS_LMOD_FLOAT "f", all_bounds[i]);
+      for (i = 0; i <= cart_dims[0]; ++i) printf("  %" FCS_LMOD_FLOAT "f", bounds[i]);
       printf("\n");
       printf(DEBUG_PRINT_PREFIX " 1-bounds:");
-      for (i = 0; i <= cart_dims[1]; ++i) printf("  %" FCS_LMOD_FLOAT "f", all_bounds[i + cart_dims[0] + 1]);
+      for (i = 0; i <= cart_dims[1]; ++i) printf("  %" FCS_LMOD_FLOAT "f", bounds[i + cart_dims[0] + 1]);
       printf("\n");
       printf(DEBUG_PRINT_PREFIX " 2-bounds:");
-      for (i = 0; i <= cart_dims[2]; ++i) printf("  %" FCS_LMOD_FLOAT "f", all_bounds[i + cart_dims[0] + 1 + cart_dims[1] + 1]);
+      for (i = 0; i <= cart_dims[2]; ++i) printf("  %" FCS_LMOD_FLOAT "f", bounds[i + cart_dims[0] + 1 + cart_dims[1] + 1]);
       printf("\n");
     }
   );
 }
 
 
-#if defined(GRIDSORT_FRONT_TPROC_RANK_CACHE) || defined(GRIDSORT_FRONT_PROCLIST)
-static void low_high_coords(fcs_float *ghost_f, fcs_float zslices_ghost_f, fcs_float *move_f, int *cart_dims, int *cart_coords, int *low_coords, int *high_coords)
+#define BOUNDS_XYZ2COORDS(_c_, _xyz_, _base_, _b_, _cd_, _p_, _bs_) Z_MOP( \
+  if (periodicity) bounds_xyz2coords_ghost_periodic((_c_), (_xyz_), (_base_), (_b_), (_cd_), (_p_), (_bs_)); \
+  else bounds_xyz2coords_ghost((_c_), (_xyz_), (_base_), (_b_), (_cd_)); \
+)
+
+#define BOUNDS_X(_x_)  (bounds[(_x_)])
+#define BOUNDS_Y(_x_)  (bounds[cart_dims[0] + 1 + (_x_)])
+#define BOUNDS_Z(_x_)  (bounds[cart_dims[0] + cart_dims[1] + 2 + (_x_)])
+
+
+static void setup_max_nparts(fcs_int *max_nparts, fcs_float *ghost_f, fcs_float zslices_ghost_f, int *cart_dims, int *cart_coords, fcs_int *periodicity, fcs_float *bounds, fcs_float *box_size, MPI_Comm comm)
 {
-  int ghost_move_coords[3];
-  
+  int origin[3], low[3], high[3];
+  fcs_float xyz[3], base[3];
+  fcs_int local_nparts[3];
 
-  if (move_f)
+
+  if (bounds)
   {
-    ghost_move_coords[0] = (int) fcs_ceil((ghost_f[0] + move_f[0]) * cart_dims[0]);
-    ghost_move_coords[1] = (int) fcs_ceil((ghost_f[1] + move_f[1]) * cart_dims[1]);
-    ghost_move_coords[2] = (int) fcs_ceil((z_max(ghost_f[2], zslices_ghost_f) + move_f[2]) * cart_dims[2]);
+    xyz[0] = BOUNDS_X(cart_coords[0]);
+    xyz[1] = BOUNDS_Y(cart_coords[1]);
+    xyz[2] = BOUNDS_Z(cart_coords[2]);
 
-    low_coords[0] = cart_coords[0] - ghost_move_coords[0];
-    low_coords[1] = cart_coords[1] - ghost_move_coords[1];
-    low_coords[2] = cart_coords[2] - ghost_move_coords[2];
+    base[0] = base[1] = base[2] = 0;
+    BOUNDS_XYZ2COORDS(origin, xyz, base, bounds, cart_dims, periodicity, box_size);
 
-    high_coords[0] = cart_coords[0] + ghost_move_coords[0];
-    high_coords[1] = cart_coords[1] + ghost_move_coords[1];
-    high_coords[2] = cart_coords[2] + ghost_move_coords[2];
+    base[0] = 2 * ghost_f[0] * box_size[0];
+    base[1] = 2 * ghost_f[1] * box_size[1];
+    base[2] = 2 * ghost_f[2] * box_size[2];
+
+    BOUNDS_XYZ2COORDS(low, xyz, base, bounds, cart_dims, periodicity, box_size);
+
+    base[0] = -2 * ghost_f[0] * box_size[0];
+    base[1] = -2 * ghost_f[1] * box_size[1];
+    base[2] = -2 * ghost_f[2] * box_size[2];
+    BOUNDS_XYZ2COORDS(high, xyz, base, bounds, cart_dims, periodicity, box_size);
+
+    local_nparts[0] = z_max(origin[0] - low[0], high[0] - origin[0]) + 1;
+    local_nparts[1] = z_max(origin[1] - low[1], high[1] - origin[1]) + 1;
+    local_nparts[2] = z_max(origin[2] - low[2], high[2] - origin[2]) + 1;
+
+    MPI_Allreduce(local_nparts, max_nparts, 3, FCS_MPI_INT, MPI_MAX, comm);
 
   } else
   {
-    ghost_move_coords[0] = (int) fcs_ceil(ghost_f[0] * cart_dims[0]);
-    ghost_move_coords[1] = (int) fcs_ceil(ghost_f[1] * cart_dims[1]);
-    ghost_move_coords[2] = (int) fcs_ceil(z_max(ghost_f[2], zslices_ghost_f) * cart_dims[2]);
-
-    low_coords[0] = 0 - ghost_move_coords[0];
-    low_coords[1] = 0 - ghost_move_coords[1];
-    low_coords[2] = 0 - ghost_move_coords[2];
-
-    high_coords[0] = cart_dims[0] - 1 + ghost_move_coords[0];
-    high_coords[1] = cart_dims[1] - 1 + ghost_move_coords[1];
-    high_coords[2] = cart_dims[2] - 1 + ghost_move_coords[2];
+    max_nparts[0] = (fcs_int) fcs_ceil(2.0 * ghost_f[0] * cart_dims[0]) + 1;
+    max_nparts[1] = (fcs_int) fcs_ceil(2.0 * ghost_f[1] * cart_dims[1]) + 1;
+    max_nparts[2] = (fcs_int) fcs_ceil(2.0 * z_max(ghost_f[2], zslices_ghost_f) * cart_dims[2]) + 1;
   }
+
+  max_nparts[3] = max_nparts[0] * max_nparts[1] * max_nparts[2];
+
+/*  int comm_rank;
+  MPI_Comm_rank(comm, &comm_rank);
+  printf("%d: origin: %d,%d,%d - low: %d,%d,%d - high: %d,%d,%d\n", comm_rank, origin[0], origin[1], origin[2], low[0], low[1], low[2], high[0], high[1], high[2]);
+  printf("%d: local_nparts: %d,%d,%d - max_nparts: %d,%d,%d\n", comm_rank, (int) local_nparts[0], (int) local_nparts[1], (int) local_nparts[2], (int) max_nparts[0], (int) max_nparts[1], (int) max_nparts[2]);*/
+}
+
+
+#if defined(GRIDSORT_FRONT_TPROC_RANK_CACHE) || defined(GRIDSORT_FRONT_PROCLIST)
+static void low_high_coords(int *low_coords, int *high_coords, fcs_float *ghost_f, fcs_float zslices_ghost_f, fcs_float *move_f, int *cart_dims, int *cart_coords, fcs_int *periodicity, fcs_float *bounds, fcs_float *box_size)
+{
+  fcs_float low_xyz[3], high_xyz[3], base[3];
+  int ghost_move_coords[3];
+
+
+  if (bounds)
+  {
+    if (move_f)
+    {
+      low_xyz[0] = BOUNDS_X(cart_coords[0]);
+      low_xyz[1] = BOUNDS_Y(cart_coords[1]);
+      low_xyz[2] = BOUNDS_Z(cart_coords[2]);
+
+      high_xyz[0] = BOUNDS_X(cart_coords[0] + 1);
+      high_xyz[1] = BOUNDS_Y(cart_coords[1] + 1);
+      high_xyz[2] = BOUNDS_Z(cart_coords[2] + 1);
+
+      base[0] = (      ghost_f[0]                   + move_f[0]) * box_size[0];
+      base[1] = (      ghost_f[1]                   + move_f[1]) * box_size[1];
+      base[2] = (z_max(ghost_f[2], zslices_ghost_f) + move_f[2]) * box_size[2];
+
+    } else
+    {
+      low_xyz[0] = BOUNDS_X(0);
+      low_xyz[1] = BOUNDS_Y(0);
+      low_xyz[2] = BOUNDS_Z(0);
+
+      high_xyz[0] = BOUNDS_X(cart_dims[0]);
+      high_xyz[1] = BOUNDS_Y(cart_dims[1]);
+      high_xyz[2] = BOUNDS_Z(cart_dims[2]);
+
+      base[0] =       ghost_f[0]                   * box_size[0];
+      base[1] =       ghost_f[1]                   * box_size[1];
+      base[2] = z_max(ghost_f[2], zslices_ghost_f) * box_size[2];
+    }
+
+    BOUNDS_XYZ2COORDS(low_coords, low_xyz, base, bounds, cart_dims, periodicity, box_size);
+
+    base[0] *= -1;
+    base[1] *= -1;
+    base[2] *= -1;
+
+    BOUNDS_XYZ2COORDS(high_coords, high_xyz, base, bounds, cart_dims, periodicity, box_size);
+
+  } else
+  {
+    if (move_f)
+    {
+      ghost_move_coords[0] = (int) fcs_ceil((ghost_f[0] + move_f[0]) * cart_dims[0]);
+      ghost_move_coords[1] = (int) fcs_ceil((ghost_f[1] + move_f[1]) * cart_dims[1]);
+      ghost_move_coords[2] = (int) fcs_ceil((z_max(ghost_f[2], zslices_ghost_f) + move_f[2]) * cart_dims[2]);
+
+      low_coords[0] = cart_coords[0] - ghost_move_coords[0];
+      low_coords[1] = cart_coords[1] - ghost_move_coords[1];
+      low_coords[2] = cart_coords[2] - ghost_move_coords[2];
+
+      high_coords[0] = cart_coords[0] + ghost_move_coords[0];
+      high_coords[1] = cart_coords[1] + ghost_move_coords[1];
+      high_coords[2] = cart_coords[2] + ghost_move_coords[2];
+
+    } else
+    {
+      ghost_move_coords[0] = (int) fcs_ceil(ghost_f[0] * cart_dims[0]);
+      ghost_move_coords[1] = (int) fcs_ceil(ghost_f[1] * cart_dims[1]);
+      ghost_move_coords[2] = (int) fcs_ceil(z_max(ghost_f[2], zslices_ghost_f) * cart_dims[2]);
+
+      low_coords[0] = 0 - ghost_move_coords[0];
+      low_coords[1] = 0 - ghost_move_coords[1];
+      low_coords[2] = 0 - ghost_move_coords[2];
+
+      high_coords[0] = cart_dims[0] - 1 + ghost_move_coords[0];
+      high_coords[1] = cart_dims[1] - 1 + ghost_move_coords[1];
+      high_coords[2] = cart_dims[2] - 1 + ghost_move_coords[2];
+    }
+  }
+
+/*  int comm_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
+  printf("%d: coords: %d,%d,%d - %d,%d,%d\n", comm_rank, low_coords[0], low_coords[1], low_coords[2], high_coords[0], high_coords[1], high_coords[2]);*/
 }
 #endif
 
 
 #ifdef GRIDSORT_FRONT_TPROC_RANK_CACHE
-static int *setup_rank_cache(fcs_float *ghost_f, fcs_float zslices_ghost_f, fcs_float *move_f, int *cart_dims, int *cart_coords, fcs_int *periodicity, fcs_int *rank_cache_offset, fcs_int *rank_cache_sizes, fcs_int *rank_cache_size)
+static int *setup_rank_cache(fcs_int *rank_cache_offset, fcs_int *rank_cache_sizes, fcs_int *rank_cache_size, fcs_float *ghost_f, fcs_float zslices_ghost_f, fcs_float *move_f, int *cart_dims, int *cart_coords, fcs_int *periodicity, fcs_float *bounds, fcs_float *box_size)
 {
   fcs_int i;
   int *rank_cache;
@@ -568,7 +674,7 @@ static int *setup_rank_cache(fcs_float *ghost_f, fcs_float zslices_ghost_f, fcs_
   int low_coords[3], high_coords[3];
 
 
-  low_high_coords(ghost_f, zslices_ghost_f, move_f, cart_dims, cart_coords, low_coords, high_coords);
+  low_high_coords(low_coords, high_coords, ghost_f, zslices_ghost_f, move_f, cart_dims, cart_coords, periodicity, bounds, box_size);
 
   if (!periodicity[0]) { low_coords[0] = z_max(0, low_coords[0]); high_coords[0] = z_min(high_coords[0], cart_dims[0] - 1); }
   if (!periodicity[1]) { low_coords[1] = z_max(0, low_coords[1]); high_coords[1] = z_min(high_coords[1], cart_dims[1] - 1); }
@@ -592,12 +698,13 @@ static int *setup_rank_cache(fcs_float *ghost_f, fcs_float zslices_ghost_f, fcs_
 
 
 #ifdef GRIDSORT_FRONT_PROCLIST
-static int *setup_proclist(fcs_float *ghost_f, fcs_float zslices_ghost_f, fcs_float *move_f, int *cart_dims, int *cart_coords, fcs_int *periodicity, fcs_int *nprocs, MPI_Comm comm)
+static int *setup_proclist(fcs_int *nprocs, fcs_int max_nprocs, fcs_float *ghost_f, fcs_float zslices_ghost_f, fcs_float *move_f, int *cart_dims, int *cart_coords, fcs_int *periodicity, fcs_float *bounds, fcs_float *box_size, MPI_Comm comm)
 {
   int *procs, low_coords[3], high_coords[3], offsets[3], nums[3], x[3], coords[3];
+  fcs_int local_skip, global_skip;
 
 
-  low_high_coords(ghost_f, zslices_ghost_f, move_f, cart_dims, cart_coords, low_coords, high_coords);
+  low_high_coords(low_coords, high_coords, ghost_f, zslices_ghost_f, move_f, cart_dims, cart_coords, periodicity, bounds, box_size);
 
 #define MAP_COORD(_c_, _d_)  ((((_c_) % (_d_)) + (_d_)) % (_d_))
 
@@ -616,6 +723,14 @@ static int *setup_proclist(fcs_float *ghost_f, fcs_float zslices_ghost_f, fcs_fl
     low_coords[0], low_coords[1], low_coords[2], high_coords[0], high_coords[1], high_coords[2],
     offsets[0], offsets[1], offsets[2], nums[0], nums[1], nums[2]
   );*/
+
+  local_skip = (nums[0] * nums[1] * nums[2] > max_nprocs)?1:0;
+  MPI_Allreduce(&local_skip, &global_skip, 1, FCS_MPI_INT, MPI_SUM, comm);
+  if (global_skip > 0)
+  {
+    *nprocs = nums[0] * nums[1] * nums[2];
+    return NULL;
+  }
 
   procs = malloc(nums[0] * nums[1] * nums[2] * sizeof(int));
 
@@ -667,7 +782,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   int *procs;
 #endif
 
-  void *grid_tproc_data[] = { &comm, grid_data, cart_dims, cart_periods, cart_coords, NULL, NULL, &max_nparts[3], NULL, NULL };
+  void *grid_tproc_data[] = { &comm, grid_data, cart_dims, cart_coords, periodicity, NULL, NULL, &max_nparts[3], NULL, NULL };
 
   forw_tproc_t tproc;
   forw_tproc_f *tproc_func = NULL;
@@ -680,7 +795,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   fcs_float move_f[3];
 #endif
 
-  fcs_float *min_bounds, max_bounds[3], box_size[3], *all_bounds = NULL;
+  fcs_float *min_bounds, max_bounds[3], box_size[3], *bounds = NULL;
 
 #ifdef ALLTOALLV_PACKED
   fcs_int local_packed, global_packed, original_packed;
@@ -714,22 +829,9 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 
   MPI_Cart_get(comm, 3, cart_dims, cart_periods, cart_coords);
 
-  if (gs->periodicity[0] < 0 || gs->periodicity[1] < 0 || gs->periodicity[2] < 0)
-  {
-    if (topo_status == MPI_CART)
-    {
-      periodicity[0] = cart_periods[0];
-      periodicity[1] = cart_periods[1];
-      periodicity[2] = cart_periods[2];
-
-    } else return -1;
-
-  } else
-  {
-    periodicity[0] = gs->periodicity[0];
-    periodicity[1] = gs->periodicity[1];
-    periodicity[2] = gs->periodicity[2];
-  }
+  periodicity[0] = (gs->periodicity[0])?cart_periods[0]:0;
+  periodicity[1] = (gs->periodicity[1])?cart_periods[1]:0;
+  periodicity[2] = (gs->periodicity[2])?cart_periods[2]:0;
 
   with_ghost = (ghost_range > 0);
   with_periodic = (periodicity[0] || periodicity[1] || periodicity[2]);
@@ -853,45 +955,37 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
     box_size[1] = gs->box_b[1];
     box_size[2] = gs->box_c[2];
 
-    all_bounds = malloc((cart_dims[0] + cart_dims[1] + cart_dims[2] + 3) * sizeof(fcs_float));
+    bounds = malloc((cart_dims[0] + cart_dims[1] + cart_dims[2] + 3) * sizeof(fcs_float));
 
     DEBUG_CMD(
       printf(DEBUG_PRINT_PREFIX "%d: my bounds: %" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f - %" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f\n",
         comm_rank, gs->lower_bounds[0], gs->lower_bounds[1], gs->lower_bounds[2], gs->upper_bounds[0], gs->upper_bounds[1], gs->upper_bounds[2]);
     );
 
-    allgather_bounds(gs->upper_bounds, min_bounds, max_bounds, all_bounds, cart_dims, cart_coords, comm, comm_size, comm_rank);
+    allgather_bounds(gs->upper_bounds, min_bounds, max_bounds, bounds, cart_dims, cart_coords, comm, comm_size, comm_rank);
 
-    for (i = 0; i <= cart_dims[0]; ++i) all_bounds[i] -= gs->box_base[0];
-    for (i = 0; i <= cart_dims[1]; ++i) all_bounds[i + cart_dims[0] + 1] -= gs->box_base[1];
-    for (i = 0; i <= cart_dims[2]; ++i) all_bounds[i + cart_dims[0] + cart_dims[1] + 2] -= gs->box_base[2];
+    for (i = 0; i <= cart_dims[0]; ++i) bounds[i] -= gs->box_base[0];
+    for (i = 0; i <= cart_dims[1]; ++i) bounds[i + cart_dims[0] + 1] -= gs->box_base[1];
+    for (i = 0; i <= cart_dims[2]; ++i) bounds[i + cart_dims[0] + cart_dims[1] + 2] -= gs->box_base[2];
 
-    grid_tproc_data[5] = all_bounds;
+    grid_tproc_data[5] = bounds;
     grid_tproc_data[6] = box_size;
 
-#define BOUND0(_x_)  (gs->box_base[0] + all_bounds[(_x_)])
-#define BOUND1(_x_)  (gs->box_base[1] + all_bounds[cart_dims[0] + 1 + (_x_)])
-#define BOUND2(_x_)  (gs->box_base[2] + all_bounds[cart_dims[0] + cart_dims[1] + 2 + (_x_)])
+    gs->sub_box_base[0] = gs->box_base[0] + BOUNDS_X(cart_coords[0]);
+    gs->sub_box_base[1] = gs->box_base[1] + BOUNDS_Y(cart_coords[1]);
+    gs->sub_box_base[2] = gs->box_base[2] + BOUNDS_Z(cart_coords[2]);
 
-    gs->sub_box_base[0] = BOUND0(cart_coords[0]);
-    gs->sub_box_base[1] = BOUND1(cart_coords[1]);
-    gs->sub_box_base[2] = BOUND2(cart_coords[2]);
-
-    gs->sub_box_a[0] = BOUND0(cart_coords[0] + 1) - BOUND0(cart_coords[0]);
+    gs->sub_box_a[0] = gs->box_base[0] + BOUNDS_X(cart_coords[0] + 1) - BOUNDS_X(cart_coords[0]);
     gs->sub_box_a[1] = 0;
     gs->sub_box_a[2] = 0;
 
     gs->sub_box_b[0] = 0;
-    gs->sub_box_b[1] = BOUND1(cart_coords[1] + 1) - BOUND1(cart_coords[1]);
+    gs->sub_box_b[1] = gs->box_base[1] + BOUNDS_Y(cart_coords[1] + 1) - BOUNDS_Y(cart_coords[1]);
     gs->sub_box_b[2] = 0;
 
     gs->sub_box_c[0] = 0;
     gs->sub_box_c[1] = 0;
-    gs->sub_box_c[2] = BOUND2(cart_coords[2] + 1) - BOUND2(cart_coords[2]);
-
-#undef BOUND0
-#undef BOUND1
-#undef BOUND2
+    gs->sub_box_c[2] = gs->box_base[2] + BOUNDS_Z(cart_coords[2] + 1) - BOUNDS_Z(cart_coords[2]);
 
   } else
   {
@@ -953,14 +1047,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   forw_elem_set_keys(&sout0, NULL);
   forw_elem_set_data(&sout0, NULL, NULL);
 
-/*  max_nparts[0] = (fcs_int) fcs_ceil((2.0 * ghost_f[0] + 1.0) * cart_dims[0]);
-  max_nparts[1] = (fcs_int) fcs_ceil((2.0 * ghost_f[1] + 1.0) * cart_dims[1]);
-  max_nparts[2] = (fcs_int) fcs_ceil((2.0 * z_max(ghost_f[2], zslices_ghost_f) + 1.0) * cart_dims[2]);*/
-
-  max_nparts[0] = (fcs_int) fcs_ceil(2.0 * ghost_f[0] * cart_dims[0]) + 1;
-  max_nparts[1] = (fcs_int) fcs_ceil(2.0 * ghost_f[1] * cart_dims[1]) + 1;
-  max_nparts[2] = (fcs_int) fcs_ceil(2.0 * z_max(ghost_f[2], zslices_ghost_f) * cart_dims[2]) + 1;
-  max_nparts[3] = max_nparts[0] * max_nparts[1] * max_nparts[2];
+  setup_max_nparts(max_nparts, ghost_f, zslices_ghost_f, cart_dims, cart_coords, periodicity, bounds, box_size, comm);
 
   INFO_CMD(
     if (comm_rank == 0)
@@ -968,7 +1055,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   );
 
 #ifdef GRIDSORT_FRONT_TPROC_RANK_CACHE
-  rank_cache = setup_rank_cache(ghost_f, zslices_ghost_f, (gs->max_particle_move >= 0)?move_f:NULL, cart_dims, cart_coords, periodicity, &rank_cache_offset, rank_cache_sizes, &rank_cache_size);
+  rank_cache = setup_rank_cache(&rank_cache_offset, rank_cache_sizes, &rank_cache_size, ghost_f, zslices_ghost_f, (gs->max_particle_move >= 0)?move_f:NULL, cart_dims, cart_coords, periodicity, bounds, box_size);
 
   grid_tproc_data[8] = rank_cache + rank_cache_offset;
   grid_tproc_data[9] = rank_cache_sizes;
@@ -1050,21 +1137,26 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 #ifdef GRIDSORT_FRONT_PROCLIST
   if (gs->max_particle_move >= 0)
   {
-    procs = setup_proclist(ghost_f, zslices_ghost_f, move_f, cart_dims, cart_coords, periodicity, &nprocs, comm);
+    procs = setup_proclist(&nprocs, comm_size / 2, ghost_f, zslices_ghost_f, move_f, cart_dims, cart_coords, periodicity, bounds, box_size, comm);
 
     DEBUG_CMD(
       printf(DEBUG_PRINT_PREFIX "%d: nprocs: %" forw_slint_fmt "\n", comm_rank, nprocs);
     );
 
-    if (nprocs < comm_size)
+    INFO_CMD(
+    if (comm_rank == 0)
+      printf(INFO_PRINT_PREFIX "%d: proclist: nprocs: %" FCS_LMOD_INT "d, procs: %p\n", comm_rank, nprocs, procs);
+    );
+
+    if (procs)
     {
 #ifdef ALLTOALL_SPECIFIC_PACKED
       forwp_tproc_set_proclist(&p_tproc, nprocs, procs, nprocs, procs, comm_size, comm_rank, comm);
 #endif
       forw_tproc_set_proclist(&tproc, nprocs, procs, nprocs, procs, comm_size, comm_rank, comm);
-    }
 
-    free(procs);
+      free(procs);
+    }
   }
 #endif
 
@@ -1134,7 +1226,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   free(rank_cache);
 #endif
 
-  if (with_bounds) free(all_bounds);
+  if (bounds) free(bounds);
 
   gs->nsorted_particles = sout0.size;
   gs->max_nsorted_particles = sout0.max_size;
@@ -1159,6 +1251,13 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 
   return 0;
 }
+
+  
+#undef BOUNDS_X
+#undef BOUNDS_Y
+#undef BOUNDS_Z
+
+#undef BOUNDS_XYZ2COORDS
 
 
 static void forw_sendrecv(forw_elements_t *sb, int scount, int sdispl, int dst, forw_elements_t *rb, int rcount, int rdispl, int src, MPI_Comm comm, int *received)
@@ -2017,17 +2116,17 @@ fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs,
 
   nresort_particles = j;
 
-  i = (nresort_particles <= gs->max_noriginal_particles)?1:0;
+  i = (nresort_particles > gs->max_noriginal_particles)?1:0;
   MPI_Allreduce(&i, &j, 1, FCS_MPI_INT, MPI_SUM, comm);
 
   DEBUG_CMD(
-    if (!i) printf(DEBUG_PRINT_PREFIX "%d: Resort disabled, because max. array size %" FCS_LMOD_INT "d too small to store %" FCS_LMOD_INT "d particles\n", comm_rank, gs->max_noriginal_particles, nresort_particles);
+    if (i) printf(DEBUG_PRINT_PREFIX "%d: Resort disabled, because max. array size %" FCS_LMOD_INT "d too small to store %" FCS_LMOD_INT "d particles\n", comm_rank, gs->max_noriginal_particles, nresort_particles);
   );
 
-  if (j < comm_size)
+  if (j > 0)
   {
     INFO_CMD(
-      if (comm_rank == 0) printf(INFO_PRINT_PREFIX "Resort disabled, because max. array sizes on %" FCS_LMOD_INT "d of %d process(es) to small!\n", i, comm_size);
+      if (comm_rank == 0) printf(INFO_PRINT_PREFIX "Resort disabled, because max. array sizes on %" FCS_LMOD_INT "d of %d process(es) to small!\n", j, comm_size);
     );
     return 0;
   }

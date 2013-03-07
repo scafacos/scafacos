@@ -28,20 +28,20 @@
 
 
 #ifdef GRIDSORT_FRONT_TPROC_TRICLINIC
-# define GSFT_GET_CART(_d_, _p_, _gb_, _gf_)  (int) fcs_floor(((_p_)[0] - (_gb_)[0]) * (_gf_)[0] + ((_p_)[1] - (_gb_)[1]) * (_gf_)[1] + ((_p_)[2] - (_gb_)[2]) * (_gf_)[2])
+# define GET_COORD(_d_, _p_, _gb_, _gf_)  (int) fcs_floor(((_p_)[0] - (_gb_)[0]) * (_gf_)[0] + ((_p_)[1] - (_gb_)[1]) * (_gf_)[1] + ((_p_)[2] - (_gb_)[2]) * (_gf_)[2])
 #else
-# define GSFT_GET_CART(_d_, _p_, _gb_, _gf_)  (int) fcs_floor(((_p_)[_d_] - (_gb_)[_d_]) * (_gf_)[_d_])
+# define GET_COORD(_d_, _p_, _gb_, _gf_)  (int) fcs_floor(((_p_)[_d_] - (_gb_)[_d_]) * (_gf_)[_d_])
 #endif
 
 #ifdef GRIDSORT_FRONT_TPROC_BOUNDS
 # ifdef GRIDSORT_FRONT_TPROC_GHOST
 #  ifdef GRIDSORT_FRONT_TPROC_PERIODIC
-#   define GSFT_XYZ2COORDS(_c_, _xyz_, _gb_, _bs_, _cd_, _bd_)  bounds_xyz2cart_ghost_periodic((_c_), (_xyz_), (_gb_), (_bs_), (_cd_), (_bd_))
+#   define BOUNDS_XYZ2COORDS(_c_, _xyz_, _base_, _b_, _cd_, _p_, _bs_)  bounds_xyz2coords_ghost_periodic((_c_), (_xyz_), (_base_), (_b_), (_cd_), (_p_), (_bs_))
 #  else
-#   define GSFT_XYZ2COORDS(_c_, _xyz_, _gb_, _bs_, _cd_, _bd_)  bounds_xyz2cart_ghost((_c_), (_xyz_), (_gb_), (_bs_), (_cd_), (_bd_))
+#   define BOUNDS_XYZ2COORDS(_c_, _xyz_, _base_, _b_, _cd_, _p_, _bs_)  bounds_xyz2coords_ghost((_c_), (_xyz_), (_base_), (_b_), (_cd_))
 #  endif
 # else
-#  define GSFT_XYZ2COORDS(_c_, _xyz_, _gb_, _bs_, _cd_, _bd_)  bounds_xyz2cart((_c_), (_xyz_), (_gb_), (_bs_), (_cd_), (_bd_))
+#  define BOUNDS_XYZ2COORDS(_c_, _xyz_, _base_, _b_, _cd_, _p_, _bs_)   bounds_xyz2coords((_c_), (_xyz_), (_base_), (_b_), (_cd_))
 # endif
 #endif
 
@@ -84,7 +84,7 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
 #endif
 
 #ifdef GRIDSORT_FRONT_TPROC_PERIODIC
-  int *cart_periods;
+  fcs_int *periodicity;
 # ifdef DUPLICATE
   fcs_gridsort_index_t key[3];
 # endif
@@ -92,7 +92,9 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
 
 #ifdef GRIDSORT_FRONT_TPROC_BOUNDS
   fcs_float *bounds;
+#if defined(GRIDSORT_FRONT_TPROC_GHOST) && defined(GRIDSORT_FRONT_TPROC_PERIODIC)
   fcs_float *box_size;
+# endif
 #endif
 
 #if defined(GRIDSORT_FRONT_TPROC_ZSLICES)
@@ -124,17 +126,19 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
   cart_comm = *((MPI_Comm *) data_ptrs[0]);
   grid_data = data_ptrs[1];
   cart_dims = data_ptrs[2];
-#ifdef GRIDSORT_FRONT_TPROC_PERIODIC
-  cart_periods = data_ptrs[3];
+#if defined(GRIDSORT_FRONT_TPROC_ZSLICES)
+  cart_coords = data_ptrs[3];
 #endif
 
-#if defined(GRIDSORT_FRONT_TPROC_ZSLICES)
-  cart_coords = data_ptrs[4];
+#ifdef GRIDSORT_FRONT_TPROC_PERIODIC
+  periodicity = data_ptrs[4];
 #endif
 
 #ifdef GRIDSORT_FRONT_TPROC_BOUNDS
   bounds = data_ptrs[5];
+#if defined(GRIDSORT_FRONT_TPROC_GHOST) && defined(GRIDSORT_FRONT_TPROC_PERIODIC)
   box_size = data_ptrs[6];
+# endif
 #endif
 
 #ifdef GRIDSORT_FRONT_TPROC_RANK_CACHE
@@ -143,51 +147,51 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
 #endif
 
 #ifdef GRIDSORT_FRONT_TPROC_BOUNDS
-  GSFT_XYZ2COORDS(base_coords, &s->data0[3 * x], &grid_data[GRID_DATA_BASE], bounds, cart_dims, box_size);
+  BOUNDS_XYZ2COORDS(base_coords, &s->data0[3 * x], &grid_data[GRID_DATA_BASE], bounds, cart_dims, periodicity, box_size);
 # ifdef GRIDSORT_FRONT_TPROC_GHOST
-  GSFT_XYZ2COORDS(low_coords, &s->data0[3 * x], &grid_data[GRID_DATA_LOW], bounds, cart_dims, box_size);
-  GSFT_XYZ2COORDS(high_coords, &s->data0[3 * x], &grid_data[GRID_DATA_HIGH], bounds, cart_dims, box_size);
+  BOUNDS_XYZ2COORDS(low_coords, &s->data0[3 * x], &grid_data[GRID_DATA_LOW], bounds, cart_dims, periodicity, box_size);
+  BOUNDS_XYZ2COORDS(high_coords, &s->data0[3 * x], &grid_data[GRID_DATA_HIGH], bounds, cart_dims, periodicity, box_size);
 # endif
 #else /* GRIDSORT_FRONT_TPROC_BOUNDS */
 # ifdef GRIDSORT_FRONT_TPROC_ZONLY
   base_coords[0] = cart_coords[0];
   base_coords[1] = cart_coords[1];
 # else /* GRIDSORT_FRONT_TPROC_ZONLY */
-  base_coords[0] = GSFT_GET_CART(0, &s->data0[3 * x], &grid_data[GRID_DATA_BASE], &grid_data[GRID_DATA_A]);
-  base_coords[1] = GSFT_GET_CART(1, &s->data0[3 * x], &grid_data[GRID_DATA_BASE], &grid_data[GRID_DATA_B]);
+  base_coords[0] = GET_COORD(0, &s->data0[3 * x], &grid_data[GRID_DATA_BASE], &grid_data[GRID_DATA_A]);
+  base_coords[1] = GET_COORD(1, &s->data0[3 * x], &grid_data[GRID_DATA_BASE], &grid_data[GRID_DATA_B]);
 # endif /* GRIDSORT_FRONT_TPROC_ZONLY */
-  base_coords[2] = GSFT_GET_CART(2, &s->data0[3 * x], &grid_data[GRID_DATA_BASE], &grid_data[GRID_DATA_C]);
+  base_coords[2] = GET_COORD(2, &s->data0[3 * x], &grid_data[GRID_DATA_BASE], &grid_data[GRID_DATA_C]);
 # ifdef DUPLICATE
 #  ifdef GRIDSORT_FRONT_TPROC_ZONLY
   low_coords[0] = cart_coords[0];
   low_coords[1] = cart_coords[1];
 #  else /* GRIDSORT_FRONT_TPROC_ZONLY */
-  low_coords[0] = GSFT_GET_CART(0, &s->data0[3 * x], &grid_data[GRID_DATA_LOW], &grid_data[GRID_DATA_A]);
-  low_coords[1] = GSFT_GET_CART(1, &s->data0[3 * x], &grid_data[GRID_DATA_LOW], &grid_data[GRID_DATA_B]);
+  low_coords[0] = GET_COORD(0, &s->data0[3 * x], &grid_data[GRID_DATA_LOW], &grid_data[GRID_DATA_A]);
+  low_coords[1] = GET_COORD(1, &s->data0[3 * x], &grid_data[GRID_DATA_LOW], &grid_data[GRID_DATA_B]);
 #  endif /* GRIDSORT_FRONT_TPROC_ZONLY */
 #  ifdef GRIDSORT_FRONT_TPROC_ZSLICES
-  low_coords[2] = GSFT_GET_CART(2, &s->data0[3 * x], &grid_data[GRID_DATA_ZSLICES_LOW], &grid_data[GRID_DATA_C]);
+  low_coords[2] = GET_COORD(2, &s->data0[3 * x], &grid_data[GRID_DATA_ZSLICES_LOW], &grid_data[GRID_DATA_C]);
 #  else /* GRIDSORT_FRONT_TPROC_ZSLICES */
-  low_coords[2] = GSFT_GET_CART(2, &s->data0[3 * x], &grid_data[GRID_DATA_LOW], &grid_data[GRID_DATA_C]);
+  low_coords[2] = GET_COORD(2, &s->data0[3 * x], &grid_data[GRID_DATA_LOW], &grid_data[GRID_DATA_C]);
 #  endif /* GRIDSORT_FRONT_TPROC_ZSLICES */
 #  ifdef GRIDSORT_FRONT_TPROC_ZONLY
   high_coords[0] = cart_coords[0];
   high_coords[1] = cart_coords[1];
 #  else /* GRIDSORT_FRONT_TPROC_ZONLY */
-  high_coords[0] = GSFT_GET_CART(0, &s->data0[3 * x], &grid_data[GRID_DATA_HIGH], &grid_data[GRID_DATA_A]);
-  high_coords[1] = GSFT_GET_CART(1, &s->data0[3 * x], &grid_data[GRID_DATA_HIGH], &grid_data[GRID_DATA_B]);
+  high_coords[0] = GET_COORD(0, &s->data0[3 * x], &grid_data[GRID_DATA_HIGH], &grid_data[GRID_DATA_A]);
+  high_coords[1] = GET_COORD(1, &s->data0[3 * x], &grid_data[GRID_DATA_HIGH], &grid_data[GRID_DATA_B]);
 #  endif /* GRIDSORT_FRONT_TPROC_ZONLY */
 #  ifdef GRIDSORT_FRONT_TPROC_ZSLICES
-  high_coords[2] = GSFT_GET_CART(2, &s->data0[3 * x], &grid_data[GRID_DATA_ZSLICES_HIGH], &grid_data[GRID_DATA_C]);
+  high_coords[2] = GET_COORD(2, &s->data0[3 * x], &grid_data[GRID_DATA_ZSLICES_HIGH], &grid_data[GRID_DATA_C]);
 #  else /* GRIDSORT_FRONT_TPROC_ZSLICES */
-  high_coords[2] = GSFT_GET_CART(2, &s->data0[3 * x], &grid_data[GRID_DATA_HIGH], &grid_data[GRID_DATA_C]);
+  high_coords[2] = GET_COORD(2, &s->data0[3 * x], &grid_data[GRID_DATA_HIGH], &grid_data[GRID_DATA_C]);
 #  endif /* GRIDSORT_FRONT_TPROC_ZSLICES */
 # endif /* DUPLICATE */
 #endif /* GRIDSORT_FRONT_TPROC_BOUNDS */
 
 #ifndef GRIDSORT_FRONT_TPROC_ZONLY
 #ifdef GRIDSORT_FRONT_TPROC_PERIODIC
-  if (!cart_periods[0])
+  if (!periodicity[0])
   {
 #endif
     base_coords[0] = z_minmax(0, base_coords[0], cart_dims[0] - 1);
@@ -199,7 +203,7 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
   }
 #endif
 #ifdef GRIDSORT_FRONT_TPROC_PERIODIC
-  if (!cart_periods[1])
+  if (!periodicity[1])
   {
 #endif
     base_coords[1] = z_minmax(0, base_coords[1], cart_dims[1] - 1);
@@ -212,7 +216,7 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
 #endif
 #endif /* GRIDSORT_FRONT_TPROC_ZONLY */
 #ifdef GRIDSORT_FRONT_TPROC_PERIODIC
-  if (!cart_periods[2])
+  if (!periodicity[2])
   {
 #endif
     base_coords[2] = z_minmax(0, base_coords[2], cart_dims[2] - 1);
@@ -311,8 +315,8 @@ static forw_slint_t GRIDSORT_FRONT_TPROC_NAME(forw_elements_t *s, forw_slint_t x
 }
 
 
-#undef GSFT_GET_CART
-#undef GSFT_XYZ2COORDS
+#undef GET_COORD
+#undef BOUNDS_XYZ2COORDS
 #undef DUPLICATE
 #undef CART2RANK
 

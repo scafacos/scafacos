@@ -131,9 +131,7 @@ void fcs_gridsort_resort_create(fcs_gridsort_resort_t *gridsort_resort, fcs_grid
   original_packed = back_x_SL_DEFCON(meas.packed); back_x_SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
-  TIMING_SYNC(comm); TIMING_START(t[1]);
   back_x_mpi_elements_alltoall_specific(&sin, &sout, NULL, tproc, NULL, comm_size, comm_rank, comm);
-  TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 #ifdef ALLTOALLV_PACKED
   back_x_SL_DEFCON(meas.packed) = original_packed;
@@ -253,9 +251,7 @@ static void resort_1float(fcs_gridsort_resort_t gridsort_resort, fcs_float *src,
   original_packed = back__p_SL_DEFCON(meas.packed); back__p_SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
-  TIMING_SYNC(comm); TIMING_START(t[1]);
   back__p_mpi_elements_alltoall_specific(&sin, &sout, NULL, tproc, NULL, size, rank, comm);
-  TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 #ifdef ALLTOALLV_PACKED
   back__p_SL_DEFCON(meas.packed) = original_packed;
@@ -310,9 +306,7 @@ static void resort_3floats(fcs_gridsort_resort_t gridsort_resort, fcs_float *src
   original_packed = back_f__SL_DEFCON(meas.packed); back_f__SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
-  TIMING_SYNC(comm); TIMING_START(t[1]);
   back_f__mpi_elements_alltoall_specific(&sin, &sout, NULL, tproc, NULL, size, rank, comm);
-  TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 #ifdef ALLTOALLV_PACKED
   back_f__SL_DEFCON(meas.packed) = original_packed;

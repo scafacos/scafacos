@@ -102,7 +102,7 @@ sl_SOURCE = \
   $(srcdir_sl_extra)/include/zmpi_tools_rename.h
 
 libsl_back__p_a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/bounds_xyz2coords.h \
   $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
   $(srcdir_sl)/gridsort.h \
@@ -116,7 +116,7 @@ libsl_back__p_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_back_f__a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/bounds_xyz2coords.h \
   $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
   $(srcdir_sl)/gridsort.h \
@@ -130,7 +130,7 @@ libsl_back_f__a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_back_fp_a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/bounds_xyz2coords.h \
   $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
   $(srcdir_sl)/gridsort.h \
@@ -144,7 +144,7 @@ libsl_back_fp_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_back_x_a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/bounds_xyz2coords.h \
   $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
   $(srcdir_sl)/gridsort.h \
@@ -158,7 +158,7 @@ libsl_back_x_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_forw_a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/bounds_xyz2coords.h \
   $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort_front_tproc.h \
   $(srcdir_sl)/gridsort.h \
@@ -213,7 +213,7 @@ libsl_extra_a_SOURCES = \
   $(srcdir_sl_extra)/zmpi_atasp/zmpi_atasp_rename.h
 
 libsl_mpiwrap_a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2cart.h \
+  $(srcdir_sl)/bounds_xyz2coords.h \
   $(srcdir_sl)/common.h \
   $(srcdir_sl)/gridsort.c \
   $(srcdir_sl)/gridsort_front_tproc.h \
