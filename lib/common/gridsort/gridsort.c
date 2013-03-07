@@ -1746,8 +1746,8 @@ fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm)
 
   forw_tproc_create_tproc(&tproc, gridsort_random_tproc, gridsort_random_reset, forw_TPROC_EXDEF_NULL);
 
-  old_minalloc = forw_SL_DEFCON(meas.overalloc);
-  forw_SL_DEFCON(meas.overalloc) = gs->overalloc;
+  old_minalloc = forw_SL_DEFCON(meas.minalloc);
+  forw_SL_DEFCON(meas.minalloc) = gs->minalloc;
   old_overalloc = forw_SL_DEFCON(meas.overalloc);
   forw_SL_DEFCON(meas.overalloc) = gs->overalloc;
 
