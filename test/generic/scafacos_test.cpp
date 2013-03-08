@@ -539,7 +539,8 @@ static void run_method(particles_t *parts)
   free(original_charges);
 #endif
 
-  MASTER(cout << "    Average time: " << scientific << run_time_sum / global_params.iterations  << endl);
+  MASTER(cout << "    Average time: " << scientific << run_time_sum / global_params.iterations << endl);
+  MASTER(cout << "    Total time:   " << scientific << run_time_sum << endl);
 
   current_config->have_result_values[0] = 1;  // have potentials results
   current_config->have_result_values[1] = 1;  // have field results
@@ -595,7 +596,7 @@ static void run_integration(particles_t *parts)
   FCSResult result;
   fcs_int r = 0;
 
-  double t;
+  double t, tune_time_sum, run_time_sum, resort_time_sum;
 
 
   MASTER(cout << "  Integration with " << global_params.time_steps << " time step(s) " << (resort?"with":"without") << " utilization of resort support" << endl);
@@ -636,6 +637,8 @@ static void run_integration(particles_t *parts)
 
   MASTER(cout << "  Initial step" << endl);
 
+  tune_time_sum = run_time_sum = resort_time_sum = 0;
+
   while (1)
   {
     /* store previous field values */
@@ -650,11 +653,15 @@ static void run_integration(particles_t *parts)
     {
       /* tune method */
       MASTER(cout << "    Tune method..." << endl);
+      MPI_Barrier(communicator);
       t = MPI_Wtime();
       result = fcs_tune(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges);
+      MPI_Barrier(communicator);
       t = MPI_Wtime() - t;
       if (!check_result(result)) return;
       MASTER(printf("     = %f second(s)\n", t));
+
+      tune_time_sum += t;
 
       /* store old positions */
 #ifdef BACKUP_POSITIONS
@@ -662,11 +669,15 @@ static void run_integration(particles_t *parts)
 #endif
 
       MASTER(cout << "    Run method..." << endl);
+      MPI_Barrier(communicator);
       t = MPI_Wtime();
       result = fcs_run(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+      MPI_Barrier(communicator);
       t = MPI_Wtime() - t;
       if (!check_result(result)) return;
       MASTER(printf("     = %f second(s)\n", t));
+
+      run_time_sum += t;
 
       /* restore old positions */
 #ifdef BACKUP_POSITIONS
@@ -681,12 +692,15 @@ static void run_integration(particles_t *parts)
 
       MASTER(cout << "    Resorting old velocity and field values..." << endl);
 
+      MPI_Barrier(communicator);
       t = MPI_Wtime();
       fcs_resort_floats(fcs, v_cur, NULL, 3);
       fcs_resort_floats(fcs, f_old, NULL, 3);
+      MPI_Barrier(communicator);
       t = MPI_Wtime() - t;
-
       MASTER(printf("     = %f second(s)\n", t));
+
+      resort_time_sum += t;
 
       MASTER(cout << "    Resorting reference potential and field values..." << endl);
 
@@ -753,6 +767,10 @@ static void run_integration(particles_t *parts)
   current_config->have_reference_values[1] = 0;
   current_config->have_result_values[0] = 1;
   current_config->have_result_values[1] = 1;
+
+  MASTER(cout << "  Tune time:   " << scientific << tune_time_sum << endl);
+  MASTER(cout << "  Run time:    " << scientific << run_time_sum << endl);
+  MASTER(cout << "  Resort time: " << scientific << resort_time_sum << endl);
 
   delete[] v_cur;
   delete[] f_old;
