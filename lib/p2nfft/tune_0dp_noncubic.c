@@ -573,7 +573,7 @@ static int pnfft_is_up_to_date(
   plan_m = FCS_PNFFT(get_m)(ths);
   FCS_PNFFT(get_N)(ths, plan_N);
   FCS_PNFFT(get_n)(ths, plan_n);
-  FCS_PNFFT(get_x_max)(ths, x_max);
+  FCS_PNFFT(get_x_max)(ths, plan_x_max);
   plan_pnfft_flags = FCS_PNFFT(get_pnfft_flags)(ths);
   plan_pfft_flags = pnfft_get_pfft_flags(ths);
 
