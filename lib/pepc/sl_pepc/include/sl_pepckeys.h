@@ -3180,7 +3180,7 @@ pepckeys_slint_t SL_PROTO(pepckeys_tproc_create_tproc_mod)(pepckeys_tproc_t *tpr
 pepckeys_slint_t SL_PROTO(pepckeys_tproc_create_tprocs)(pepckeys_tproc_t *tproc, pepckeys_tprocs_f *tfn, pepckeys_tproc_reset_f *rfn, pepckeys_tproc_exdef exdef);
 pepckeys_slint_t SL_PROTO(pepckeys_tproc_create_tprocs_mod)(pepckeys_tproc_t *tproc, pepckeys_tprocs_mod_f *tfn, pepckeys_tproc_reset_f *rfn, pepckeys_tproc_exdef exdef);
 pepckeys_slint_t SL_PROTO(pepckeys_tproc_free)(pepckeys_tproc_t *tproc);
-pepckeys_slint_t SL_PROTO(pepckeys_tproc_set_proclist)(pepckeys_tproc_t *tproc, pepckeys_slint_t nsend_procs, int *send_procs, pepckeys_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
+pepckeys_slint_t SL_PROTO(pepckeys_tproc_set_proclists)(pepckeys_tproc_t *tproc, pepckeys_slint_t nsend_procs, int *send_procs, pepckeys_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 pepckeys_slint_t SL_PROTO(pepckeys_tproc_verify)(pepckeys_tproc_t tproc, void *data, pepckeys_elements_t *s, int proc);
 pepckeys_slint_t SL_PROTO(pepckeys_mpi_elements_alltoall_specific)(pepckeys_elements_t *sin, pepckeys_elements_t *sout, pepckeys_elements_t *xs, pepckeys_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 pepckeys_slint_t SL_PROTO(pepckeys_mpi_elements_alltoallv_db_packed)(pepckeys_elements_t *sbuf, int *scounts, int *sdispls, pepckeys_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

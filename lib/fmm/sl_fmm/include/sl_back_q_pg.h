@@ -3176,7 +3176,7 @@ back_q_pg_slint_t SL_PROTO(back_q_pg_tproc_create_tproc_mod)(back_q_pg_tproc_t *
 back_q_pg_slint_t SL_PROTO(back_q_pg_tproc_create_tprocs)(back_q_pg_tproc_t *tproc, back_q_pg_tprocs_f *tfn, back_q_pg_tproc_reset_f *rfn, back_q_pg_tproc_exdef exdef);
 back_q_pg_slint_t SL_PROTO(back_q_pg_tproc_create_tprocs_mod)(back_q_pg_tproc_t *tproc, back_q_pg_tprocs_mod_f *tfn, back_q_pg_tproc_reset_f *rfn, back_q_pg_tproc_exdef exdef);
 back_q_pg_slint_t SL_PROTO(back_q_pg_tproc_free)(back_q_pg_tproc_t *tproc);
-back_q_pg_slint_t SL_PROTO(back_q_pg_tproc_set_proclist)(back_q_pg_tproc_t *tproc, back_q_pg_slint_t nsend_procs, int *send_procs, back_q_pg_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
+back_q_pg_slint_t SL_PROTO(back_q_pg_tproc_set_proclists)(back_q_pg_tproc_t *tproc, back_q_pg_slint_t nsend_procs, int *send_procs, back_q_pg_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 back_q_pg_slint_t SL_PROTO(back_q_pg_tproc_verify)(back_q_pg_tproc_t tproc, void *data, back_q_pg_elements_t *s, int proc);
 back_q_pg_slint_t SL_PROTO(back_q_pg_mpi_elements_alltoall_specific)(back_q_pg_elements_t *sin, back_q_pg_elements_t *sout, back_q_pg_elements_t *xs, back_q_pg_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 back_q_pg_slint_t SL_PROTO(back_q_pg_mpi_elements_alltoallv_db_packed)(back_q_pg_elements_t *sbuf, int *scounts, int *sdispls, back_q_pg_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

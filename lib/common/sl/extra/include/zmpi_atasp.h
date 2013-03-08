@@ -896,6 +896,7 @@ int ZMPI_Tproc_create_tprocs_mod(ZMPI_Tproc *tproc, ZMPI_TPROCS_MOD_FN *tfn, ZMP
 int ZMPI_Tproc_free(ZMPI_Tproc *tproc);
 
 int ZMPI_Tproc_set_neighbors(ZMPI_Tproc *tproc, int nneighbors, int *neighbors, MPI_Comm comm);
+int ZMPI_Tproc_set_proclists(ZMPI_Tproc *tproc, int ndstprocs, int *dstprocs, int nsrcprocs, int *srcprocs, MPI_Comm comm);
 
 typedef int ZMPI_ALLTOALL_SPECIFIC_FN(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, MPI_Comm comm);
 

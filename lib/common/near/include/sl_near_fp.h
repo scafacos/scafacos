@@ -3161,7 +3161,7 @@ near_fp_slint_t SL_PROTO(near_fp_tproc_create_tproc_mod)(near_fp_tproc_t *tproc,
 near_fp_slint_t SL_PROTO(near_fp_tproc_create_tprocs)(near_fp_tproc_t *tproc, near_fp_tprocs_f *tfn, near_fp_tproc_reset_f *rfn, near_fp_tproc_exdef exdef);
 near_fp_slint_t SL_PROTO(near_fp_tproc_create_tprocs_mod)(near_fp_tproc_t *tproc, near_fp_tprocs_mod_f *tfn, near_fp_tproc_reset_f *rfn, near_fp_tproc_exdef exdef);
 near_fp_slint_t SL_PROTO(near_fp_tproc_free)(near_fp_tproc_t *tproc);
-near_fp_slint_t SL_PROTO(near_fp_tproc_set_proclist)(near_fp_tproc_t *tproc, near_fp_slint_t nsend_procs, int *send_procs, near_fp_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
+near_fp_slint_t SL_PROTO(near_fp_tproc_set_proclists)(near_fp_tproc_t *tproc, near_fp_slint_t nsend_procs, int *send_procs, near_fp_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 near_fp_slint_t SL_PROTO(near_fp_tproc_verify)(near_fp_tproc_t tproc, void *data, near_fp_elements_t *s, int proc);
 near_fp_slint_t SL_PROTO(near_fp_mpi_elements_alltoall_specific)(near_fp_elements_t *sin, near_fp_elements_t *sout, near_fp_elements_t *xs, near_fp_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 near_fp_slint_t SL_PROTO(near_fp_mpi_elements_alltoallv_db_packed)(near_fp_elements_t *sbuf, int *scounts, int *sdispls, near_fp_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

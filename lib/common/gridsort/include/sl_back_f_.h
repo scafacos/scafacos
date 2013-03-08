@@ -3145,7 +3145,7 @@ back_f__slint_t SL_PROTO(back_f__tproc_create_tproc_mod)(back_f__tproc_t *tproc,
 back_f__slint_t SL_PROTO(back_f__tproc_create_tprocs)(back_f__tproc_t *tproc, back_f__tprocs_f *tfn, back_f__tproc_reset_f *rfn, back_f__tproc_exdef exdef);
 back_f__slint_t SL_PROTO(back_f__tproc_create_tprocs_mod)(back_f__tproc_t *tproc, back_f__tprocs_mod_f *tfn, back_f__tproc_reset_f *rfn, back_f__tproc_exdef exdef);
 back_f__slint_t SL_PROTO(back_f__tproc_free)(back_f__tproc_t *tproc);
-back_f__slint_t SL_PROTO(back_f__tproc_set_proclist)(back_f__tproc_t *tproc, back_f__slint_t nsend_procs, int *send_procs, back_f__slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
+back_f__slint_t SL_PROTO(back_f__tproc_set_proclists)(back_f__tproc_t *tproc, back_f__slint_t nsend_procs, int *send_procs, back_f__slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 back_f__slint_t SL_PROTO(back_f__tproc_verify)(back_f__tproc_t tproc, void *data, back_f__elements_t *s, int proc);
 back_f__slint_t SL_PROTO(back_f__mpi_elements_alltoall_specific)(back_f__elements_t *sin, back_f__elements_t *sout, back_f__elements_t *xs, back_f__tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 back_f__slint_t SL_PROTO(back_f__mpi_elements_alltoallv_db_packed)(back_f__elements_t *sbuf, int *scounts, int *sdispls, back_f__elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

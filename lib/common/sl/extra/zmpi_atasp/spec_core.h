@@ -121,7 +121,7 @@ spint_t spec_tproc_set_reset(spec_tproc_t *tproc, spec_tproc_reset_f *reset);
 
 #ifdef SPEC_PROCLIST
 void spec_make_recv_proclist(spint_t nsend_procs, sproc_t *send_procs, spint_t *nrecv_procs, sproc_t **recv_procs, int size, int rank, MPI_Comm comm);
-spint_t spec_tproc_set_proclist(spec_tproc_t *tproc, spint_t nsend_procs, sproc_t *send_procs, spint_t nrecv_procs, sproc_t *recv_procs, int size, int rank, MPI_Comm comm);
+spint_t spec_tproc_set_proclists(spec_tproc_t *tproc, spint_t nsend_procs, sproc_t *send_procs, spint_t nrecv_procs, sproc_t *recv_procs, int size, int rank, MPI_Comm comm);
 #endif
 
 spint_t spec_print(spec_tproc_t *tproc, spec_tproc_data_t tproc_data, spec_elem_t *b);

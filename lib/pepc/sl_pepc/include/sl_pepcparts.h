@@ -3265,7 +3265,7 @@ pepcparts_slint_t SL_PROTO(pepcparts_tproc_create_tproc_mod)(pepcparts_tproc_t *
 pepcparts_slint_t SL_PROTO(pepcparts_tproc_create_tprocs)(pepcparts_tproc_t *tproc, pepcparts_tprocs_f *tfn, pepcparts_tproc_reset_f *rfn, pepcparts_tproc_exdef exdef);
 pepcparts_slint_t SL_PROTO(pepcparts_tproc_create_tprocs_mod)(pepcparts_tproc_t *tproc, pepcparts_tprocs_mod_f *tfn, pepcparts_tproc_reset_f *rfn, pepcparts_tproc_exdef exdef);
 pepcparts_slint_t SL_PROTO(pepcparts_tproc_free)(pepcparts_tproc_t *tproc);
-pepcparts_slint_t SL_PROTO(pepcparts_tproc_set_proclist)(pepcparts_tproc_t *tproc, pepcparts_slint_t nsend_procs, int *send_procs, pepcparts_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
+pepcparts_slint_t SL_PROTO(pepcparts_tproc_set_proclists)(pepcparts_tproc_t *tproc, pepcparts_slint_t nsend_procs, int *send_procs, pepcparts_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 pepcparts_slint_t SL_PROTO(pepcparts_tproc_verify)(pepcparts_tproc_t tproc, void *data, pepcparts_elements_t *s, int proc);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_elements_alltoall_specific)(pepcparts_elements_t *sin, pepcparts_elements_t *sout, pepcparts_elements_t *xs, pepcparts_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_elements_alltoallv_db_packed)(pepcparts_elements_t *sbuf, int *scounts, int *sdispls, pepcparts_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

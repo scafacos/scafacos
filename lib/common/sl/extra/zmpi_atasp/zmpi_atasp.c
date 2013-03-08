@@ -136,8 +136,25 @@ int ZMPI_Tproc_set_neighbors(ZMPI_Tproc *tproc, int nneighbors, int *neighbors, 
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
 
-  spec_tproc_set_proclist(&(*tproc)->spec_tproc, nneighbors, neighbors, -1, NULL, comm_size, comm_rank, comm);
-  
+  spec_tproc_set_proclists(&(*tproc)->spec_tproc, nneighbors, neighbors, -1, NULL, comm_size, comm_rank, comm);
+
+  return MPI_SUCCESS;
+#else
+  return 1;
+#endif
+}
+
+
+int ZMPI_Tproc_set_proclists(ZMPI_Tproc *tproc, int ndstprocs, int *dstprocs, int nsrcprocs, int *srcprocs, MPI_Comm comm) /* zmpi_func ZMPI_Tproc_set_proclists */
+{
+  int comm_size, comm_rank;
+
+#ifdef SPEC_PROCLIST
+  MPI_Comm_size(comm, &comm_size);
+  MPI_Comm_rank(comm, &comm_rank);
+
+  spec_tproc_set_proclists(&(*tproc)->spec_tproc, ndstprocs, dstprocs, nsrcprocs, srcprocs, comm_size, comm_rank, comm);
+
   return MPI_SUCCESS;
 #else
   return 1;

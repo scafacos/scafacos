@@ -229,7 +229,7 @@ tproc_create_tproc_mod
 tproc_create_tprocs
 tproc_create_tprocs_mod
 tproc_free
-tproc_set_proclist
+tproc_set_proclists
 tproc_verify
 mpi_elements_alltoall_specific_alloc_size
 mpi_elements_alltoall_specific

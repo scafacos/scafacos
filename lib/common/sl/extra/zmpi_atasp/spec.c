@@ -781,7 +781,7 @@ spint_t spec_tproc_create(spec_tproc_t *tproc, spec_tproc_f *func, spec_tproc_mo
 spint_t spec_tproc_destroy(spec_tproc_t *tproc) /* sp_func spec_tproc_destroy */
 {
 #ifdef SPEC_PROCLIST
-  spec_tproc_set_proclist(tproc, -1, NULL, -1, NULL, 0, -1, MPI_COMM_NULL);
+  spec_tproc_set_proclists(tproc, -1, NULL, -1, NULL, 0, -1, MPI_COMM_NULL);
 #endif
 
   z_free(*tproc);
@@ -928,7 +928,7 @@ void spec_make_recv_proclist(spint_t nsend_procs, sproc_t *send_procs, spint_t *
 }
 
 
-spint_t spec_tproc_set_proclist(spec_tproc_t *tproc, spint_t nsend_procs, sproc_t *send_procs, spint_t nrecv_procs, sproc_t *recv_procs, int size, int rank, MPI_Comm comm) /* sp_func spec_tproc_set_proclist */
+spint_t spec_tproc_set_proclists(spec_tproc_t *tproc, spint_t nsend_procs, sproc_t *send_procs, spint_t nrecv_procs, sproc_t *recv_procs, int size, int rank, MPI_Comm comm) /* sp_func spec_tproc_set_proclists */
 {
   spint_t i;
 

@@ -59,7 +59,7 @@
 #define spec_tproc_set_ext_tprocs_mod  SP_FUNC(spec_tproc_set_ext_tprocs_mod)
 #define spec_tproc_set_reset  SP_FUNC(spec_tproc_set_reset)
 #define spec_make_recv_proclist  SP_FUNC(spec_make_recv_proclist)
-#define spec_tproc_set_proclist  SP_FUNC(spec_tproc_set_proclist)
+#define spec_tproc_set_proclists  SP_FUNC(spec_tproc_set_proclists)
 #define spec_print  SP_FUNC(spec_print)
 
 

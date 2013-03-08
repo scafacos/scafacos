@@ -3174,7 +3174,7 @@ front_xqsa0_slint_t SL_PROTO(front_xqsa0_tproc_create_tproc_mod)(front_xqsa0_tpr
 front_xqsa0_slint_t SL_PROTO(front_xqsa0_tproc_create_tprocs)(front_xqsa0_tproc_t *tproc, front_xqsa0_tprocs_f *tfn, front_xqsa0_tproc_reset_f *rfn, front_xqsa0_tproc_exdef exdef);
 front_xqsa0_slint_t SL_PROTO(front_xqsa0_tproc_create_tprocs_mod)(front_xqsa0_tproc_t *tproc, front_xqsa0_tprocs_mod_f *tfn, front_xqsa0_tproc_reset_f *rfn, front_xqsa0_tproc_exdef exdef);
 front_xqsa0_slint_t SL_PROTO(front_xqsa0_tproc_free)(front_xqsa0_tproc_t *tproc);
-front_xqsa0_slint_t SL_PROTO(front_xqsa0_tproc_set_proclist)(front_xqsa0_tproc_t *tproc, front_xqsa0_slint_t nsend_procs, int *send_procs, front_xqsa0_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
+front_xqsa0_slint_t SL_PROTO(front_xqsa0_tproc_set_proclists)(front_xqsa0_tproc_t *tproc, front_xqsa0_slint_t nsend_procs, int *send_procs, front_xqsa0_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 front_xqsa0_slint_t SL_PROTO(front_xqsa0_tproc_verify)(front_xqsa0_tproc_t tproc, void *data, front_xqsa0_elements_t *s, int proc);
 front_xqsa0_slint_t SL_PROTO(front_xqsa0_mpi_elements_alltoall_specific)(front_xqsa0_elements_t *sin, front_xqsa0_elements_t *sout, front_xqsa0_elements_t *xs, front_xqsa0_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 front_xqsa0_slint_t SL_PROTO(front_xqsa0_mpi_elements_alltoallv_db_packed)(front_xqsa0_elements_t *sbuf, int *scounts, int *sdispls, front_xqsa0_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

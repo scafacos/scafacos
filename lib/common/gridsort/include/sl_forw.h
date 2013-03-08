@@ -3145,7 +3145,7 @@ forw_slint_t SL_PROTO(forw_tproc_create_tproc_mod)(forw_tproc_t *tproc, forw_tpr
 forw_slint_t SL_PROTO(forw_tproc_create_tprocs)(forw_tproc_t *tproc, forw_tprocs_f *tfn, forw_tproc_reset_f *rfn, forw_tproc_exdef exdef);
 forw_slint_t SL_PROTO(forw_tproc_create_tprocs_mod)(forw_tproc_t *tproc, forw_tprocs_mod_f *tfn, forw_tproc_reset_f *rfn, forw_tproc_exdef exdef);
 forw_slint_t SL_PROTO(forw_tproc_free)(forw_tproc_t *tproc);
-forw_slint_t SL_PROTO(forw_tproc_set_proclist)(forw_tproc_t *tproc, forw_slint_t nsend_procs, int *send_procs, forw_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
+forw_slint_t SL_PROTO(forw_tproc_set_proclists)(forw_tproc_t *tproc, forw_slint_t nsend_procs, int *send_procs, forw_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 forw_slint_t SL_PROTO(forw_tproc_verify)(forw_tproc_t tproc, void *data, forw_elements_t *s, int proc);
 forw_slint_t SL_PROTO(forw_mpi_elements_alltoall_specific)(forw_elements_t *sin, forw_elements_t *sout, forw_elements_t *xs, forw_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 forw_slint_t SL_PROTO(forw_mpi_elements_alltoallv_db_packed)(forw_elements_t *sbuf, int *scounts, int *sdispls, forw_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
