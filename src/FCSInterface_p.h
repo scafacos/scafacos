@@ -489,9 +489,8 @@ FCSResult fcs_get_resort_particles(FCS handle, fcs_int *resort_particles);
  * @param src fcs_int* array of integer values in unsorted (original) order
  * @param dst fcs_int* array to store sorted integer values
  * @param n fcs_int number of integer values for each particle
- * @param comm MPI_Comm communicator to be used for sorting the particle data
  */
-FCSResult fcs_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
+FCSResult fcs_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n);
 
 /**
  * @brief function to bring additional float particle data into the new sorted particle order
@@ -499,9 +498,8 @@ FCSResult fcs_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI
  * @param src fcs_float* array of float values in unsorted (original) order
  * @param dst fcs_float* array to store sorted float values
  * @param n fcs_int number of float values for each particle
- * @param comm MPI_Comm communicator to be used for sorting the particle data
  */
-FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
+FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n);
 
 /**
  * @brief function to bring additional byte particle data into the new sorted particle order
@@ -509,9 +507,8 @@ FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int 
  * @param src void* array of byte values in unsorted (original) order
  * @param dst void* array to store sorted byte values
  * @param n fcs_int number of byte values for each particle
- * @param comm MPI_Comm communicator to be used for sorting the particle data
  */
-FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm);
+FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n);
 
 
 #ifdef __cplusplus

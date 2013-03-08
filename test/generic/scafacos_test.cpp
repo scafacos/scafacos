@@ -552,8 +552,8 @@ static void run_method(particles_t *parts)
     MASTER(cout << "    Resorting reference potential and field values..." << endl);
 
     t = MPI_Wtime();
-    if (parts->reference_potentials != NULL) fcs_resort_floats(fcs, parts->reference_potentials, NULL, 1, communicator);
-    if (parts->reference_field != NULL) fcs_resort_floats(fcs, parts->reference_field, NULL, 3, communicator);
+    if (parts->reference_potentials != NULL) fcs_resort_floats(fcs, parts->reference_potentials, NULL, 1);
+    if (parts->reference_field != NULL) fcs_resort_floats(fcs, parts->reference_field, NULL, 3);
     t = MPI_Wtime() - t;
 
     MASTER(printf("     = %f second(s)\n", t));
@@ -682,8 +682,8 @@ static void run_integration(particles_t *parts)
       MASTER(cout << "    Resorting old velocity and field values..." << endl);
 
       t = MPI_Wtime();
-      fcs_resort_floats(fcs, v_cur, NULL, 3, communicator);
-      fcs_resort_floats(fcs, f_old, NULL, 3, communicator);
+      fcs_resort_floats(fcs, v_cur, NULL, 3);
+      fcs_resort_floats(fcs, f_old, NULL, 3);
       t = MPI_Wtime() - t;
 
       MASTER(printf("     = %f second(s)\n", t));
@@ -691,15 +691,15 @@ static void run_integration(particles_t *parts)
       MASTER(cout << "    Resorting reference potential and field values..." << endl);
 
       t = MPI_Wtime();
-      if (parts->reference_potentials != NULL) fcs_resort_floats(fcs, parts->reference_potentials, NULL, 1, communicator);
-      if (parts->reference_field != NULL) fcs_resort_floats(fcs, parts->reference_field, NULL, 3, communicator);
+      if (parts->reference_potentials != NULL) fcs_resort_floats(fcs, parts->reference_potentials, NULL, 1);
+      if (parts->reference_field != NULL) fcs_resort_floats(fcs, parts->reference_field, NULL, 3);
       t = MPI_Wtime() - t;
 
       MASTER(printf("     = %f second(s)\n", t));
 
       /* resort the restored old positions */
 #ifdef BACKUP_POSITIONS
-      fcs_resort_floats(fcs, parts->positions, NULL, 3, communicator);
+      fcs_resort_floats(fcs, parts->positions, NULL, 3);
 #endif
 
     } else if (resort) MASTER(cout << "    Resorting enabled, but failed!" << endl);

@@ -2290,7 +2290,7 @@ FCSResult fcs_get_resort_particles(FCS handle, fcs_int *resort_particles)
 }
 
 
-FCSResult fcs_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
+FCSResult fcs_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n)
 {
   char* fnc_name = "fcs_resort_ints";
 
@@ -2300,11 +2300,11 @@ FCSResult fcs_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI
   if (handle->resort_ints == NULL)
     return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
 
-  return handle->resort_ints(handle, src, dst, n, comm);
+  return handle->resort_ints(handle, src, dst, n, fcs_get_communicator(handle));
 }
 
 
-FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
+FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n)
 {
   char* fnc_name = "fcs_resort_floats";
 
@@ -2314,11 +2314,11 @@ FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int 
   if (handle->resort_floats == NULL)
     return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
 
-  return handle->resort_floats(handle, src, dst, n, comm);
+  return handle->resort_floats(handle, src, dst, n, fcs_get_communicator(handle));
 }
 
 
-FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm)
+FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n)
 {
   char* fnc_name = "fcs_resort_bytes";
 
@@ -2328,7 +2328,7 @@ FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm
   if (handle->resort_bytes == NULL)
     return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
 
-  return handle->resort_bytes(handle, src, dst, n, comm);
+  return handle->resort_bytes(handle, src, dst, n, fcs_get_communicator(handle));
 }
 
 
