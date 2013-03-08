@@ -48,6 +48,7 @@ typedef long long fcs_resort_index_t;
 fcs_resort_index_t *fcs_resort_indices_alloc(fcs_int nindices);
 void fcs_resort_indices_free(fcs_resort_index_t *indices);
 void fcs_resort_indices_init(fcs_int nindices, fcs_resort_index_t *indices, int rank);
+void fcs_resort_indices_print(fcs_int nindices, fcs_resort_index_t *indices);
 
 
 /**
@@ -57,6 +58,9 @@ typedef struct _fcs_resort_t
 {
   fcs_int noriginal_particles, nsorted_particles;
   fcs_resort_index_t *indices;
+  
+  fcs_int nprocs;
+  int *procs;
 
 } *fcs_resort_t;
 
@@ -129,6 +133,14 @@ void fcs_resort_free_indices(fcs_resort_t resort);
  * @param resort fcs_resort_t resort object
  */
 fcs_resort_index_t *fcs_resort_get_indices(fcs_resort_t resort);
+
+/**
+ * @brief set (optionally) the list of processes that the local process will communicate with for resort
+ * @param nprocs fcs_int number of processes in the list
+ * @param procs *int list of process ranks
+ * @param resort fcs_resort_t resort object
+ */
+void fcs_resort_set_proclists(fcs_resort_t resort, fcs_int nprocs, int *procs);
 
 /**
  * @brief perform resorting of integer values (i.e., fcs_int)

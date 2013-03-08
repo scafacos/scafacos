@@ -63,6 +63,8 @@ typedef struct _fcs_gridsort_t
   fcs_int nresort_particles;
 
   fcs_float max_particle_move;
+  fcs_int nprocs;
+  int *procs;
 
   fcs_float sub_box_base[3], sub_box_a[3], sub_box_b[3], sub_box_c[3];
 

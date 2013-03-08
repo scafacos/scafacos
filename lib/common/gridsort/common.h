@@ -69,3 +69,14 @@
 #define TIMING_START(_t_)          TIMING_CMD(((_t_) = MPI_Wtime());)
 #define TIMING_STOP(_t_)           TIMING_CMD(((_t_) = MPI_Wtime() - (_t_));)
 #define TIMING_STOP_ADD(_t_, _r_)  TIMING_CMD(((_r_) += MPI_Wtime() - (_t_));)
+
+#if 0
+# define GRIDSORT_FRONT_TPROC_RANK_CACHE
+#endif
+
+#if 1
+# define GRIDSORT_PROCLIST
+# define GRIDSORT_FRONT_PROCLIST
+# define GRIDSORT_BACK_PROCLIST
+# define GRIDSORT_RESORT_PROCLIST
+#endif

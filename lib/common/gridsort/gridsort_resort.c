@@ -125,6 +125,10 @@ void fcs_gridsort_resort_create(fcs_gridsort_resort_t *gridsort_resort, fcs_grid
 
   back_x_tproc_create_tproc(&tproc, gridsort_back_x_tproc, back_x_TPROC_RESET_NULL, back_x_TPROC_EXDEF_NULL);
 
+#ifdef GRIDSORT_RESORT_PROCLIST
+  if (gs->procs) back_x_tproc_set_proclists(&tproc, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+#endif
+
 #ifdef ALLTOALLV_PACKED
   local_packed = ALLTOALLV_PACKED(comm_size, sin.size);
   MPI_Allreduce(&local_packed, &global_packed, 1, FCS_MPI_INT, MPI_SUM, comm);
@@ -160,6 +164,10 @@ void fcs_gridsort_resort_create(fcs_gridsort_resort_t *gridsort_resort, fcs_grid
   for (i = 0; i < gs->noriginal_particles; ++i) resort_indices[GRIDSORT_INDEX_GET_POS(sout.keys[i])] = sout.data0[i];
 
   back_x_elements_free(&sout);
+
+#ifdef GRIDSORT_RESORT_PROCLIST
+  if (gs->procs) fcs_resort_set_proclists(*gridsort_resort, gs->nprocs, gs->procs);
+#endif
 }
 
 
@@ -245,6 +253,10 @@ static void resort_1float(fcs_gridsort_resort_t gridsort_resort, fcs_float *src,
 
   back__p_tproc_create_tproc(&tproc, gridsort_back__p_tproc, back__p_TPROC_RESET_NULL, back__p_TPROC_EXDEF_NULL);
 
+#ifdef GRIDSORT_RESORT_PROCLIST
+  if (gridsort_resort->nprocs >= 0) back__p_tproc_set_proclists(&tproc, gridsort_resort->nprocs, gridsort_resort->procs, gridsort_resort->nprocs, gridsort_resort->procs, size, rank, comm);
+#endif
+
 #ifdef ALLTOALLV_PACKED
   local_packed = ALLTOALLV_PACKED(size, sin.size);
   MPI_Allreduce(&local_packed, &global_packed, 1, FCS_MPI_INT, MPI_SUM, comm);
@@ -299,6 +311,10 @@ static void resort_3floats(fcs_gridsort_resort_t gridsort_resort, fcs_float *src
   back_f__elem_set_data(&sout, NULL);
 
   back_f__tproc_create_tproc(&tproc, gridsort_back_f__tproc, back_f__TPROC_RESET_NULL, back_f__TPROC_EXDEF_NULL);
+
+#ifdef GRIDSORT_RESORT_PROCLIST
+  if (gridsort_resort->nprocs >= 0) back_f__tproc_set_proclists(&tproc, gridsort_resort->nprocs, gridsort_resort->procs, gridsort_resort->nprocs, gridsort_resort->procs, size, rank, comm);
+#endif
 
 #ifdef ALLTOALLV_PACKED
   local_packed = ALLTOALLV_PACKED(size, sin.size);

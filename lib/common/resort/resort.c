@@ -61,6 +61,9 @@
 #define TIMING_PRINT_PREFIX  "RESORT_TIMING: "
 
 
+#define RESORT_PROCLIST
+
+
 fcs_resort_index_t *fcs_resort_indices_alloc(fcs_int nindices)
 {
   return malloc(nindices * sizeof(fcs_resort_index_t));
@@ -104,6 +107,9 @@ void fcs_resort_create(fcs_resort_t *resort)
   (*resort)->noriginal_particles = -1;
   (*resort)->nsorted_particles = -1;
   (*resort)->indices = NULL;
+
+  (*resort)->nprocs = -1;
+  (*resort)->procs = NULL;
 }
 
 
@@ -112,6 +118,10 @@ void fcs_resort_destroy(fcs_resort_t *resort)
   if (*resort == FCS_RESORT_NULL) return;
 
   fcs_resort_free_indices(*resort);
+
+  fcs_resort_set_proclists(*resort, -1, NULL);
+
+  free(*resort);
 
   *resort = FCS_RESORT_NULL;
 }
@@ -183,6 +193,24 @@ void fcs_resort_free_indices(fcs_resort_t resort)
 fcs_resort_index_t *fcs_resort_get_indices(fcs_resort_t resort)
 {
   return resort->indices;
+}
+
+
+void fcs_resort_set_proclists(fcs_resort_t resort, fcs_int nprocs, int *procs)
+{
+  fcs_int i;
+
+
+  resort->nprocs = nprocs;
+
+  if (resort->procs) free(resort->procs);
+  resort->procs = NULL;
+
+  if (nprocs < 0) return;
+
+  resort->procs = malloc(nprocs * sizeof(int));
+
+  for (i = 0; i < nprocs; ++i) resort->procs[i] = procs[i];
 }
 
 
@@ -409,6 +437,10 @@ static void resort_ints(fcs_resort_t resort, fcs_int *src, fcs_int *dst, fcs_int
 
   ZMPI_Tproc_create_tproc(&tproc, resort_tproc, ZMPI_TPROC_RESET_NULL, ZMPI_TPROC_EXDEF_NULL);
 
+#ifdef RESORT_PROCLIST
+  if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(&tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
+#endif
+
   ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, &received, comm);
 
   ZMPI_Tproc_free(&tproc);
@@ -446,6 +478,10 @@ static void resort_floats(fcs_resort_t resort, fcs_float *src, fcs_float *dst, f
 
   ZMPI_Tproc_create_tproc(&tproc, resort_tproc, ZMPI_TPROC_RESET_NULL, ZMPI_TPROC_EXDEF_NULL);
 
+#ifdef RESORT_PROCLIST
+  if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(&tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
+#endif
+
   ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, &received, comm);
 
   ZMPI_Tproc_free(&tproc);
@@ -482,6 +518,10 @@ static void resort_bytes(fcs_resort_t resort, void *src, void *dst, fcs_int x, M
   MPI_Type_commit(&type);
 
   ZMPI_Tproc_create_tproc(&tproc, resort_tproc, ZMPI_TPROC_RESET_NULL, ZMPI_TPROC_EXDEF_NULL);
+
+#ifdef RESORT_PROCLIST
+  if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(&tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
+#endif
 
   ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, &received, comm);
 

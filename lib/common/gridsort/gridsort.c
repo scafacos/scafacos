@@ -69,13 +69,6 @@
 #define BOUNDS_XYZ2COORDS_NAME  bounds_xyz2coords_ghost_periodic
 #include "bounds_xyz2coords.h"
 
-#if 0
-# define GRIDSORT_FRONT_TPROC_RANK_CACHE
-#endif
-
-#if 0
-# define GRIDSORT_FRONT_PROCLIST
-#endif
 
 /* no ghosts and not periodic */
 #undef GRIDSORT_FRONT_TPROC_GHOST
@@ -313,11 +306,20 @@ void fcs_gridsort_create(fcs_gridsort_t *gs)
   gs->nresort_particles = -1;
 
   gs->max_particle_move = -1;
+  gs->nprocs = -1;
+  gs->procs = NULL;
 }
 
 
+#ifdef GRIDSORT_PROCLIST
+static void release_proclist(fcs_int *nprocs, int **procs);
+#endif
+
 void fcs_gridsort_destroy(fcs_gridsort_t *gs)
 {
+#ifdef GRIDSORT_PROCLIST
+  release_proclist(&gs->nprocs, &gs->procs);
+#endif
 }
 
 
@@ -580,7 +582,7 @@ static void setup_max_nparts(fcs_int *max_nparts, fcs_float *ghost_f, fcs_float 
 }
 
 
-#if defined(GRIDSORT_FRONT_TPROC_RANK_CACHE) || defined(GRIDSORT_FRONT_PROCLIST)
+#if defined(GRIDSORT_FRONT_TPROC_RANK_CACHE) || defined(GRIDSORT_PROCLIST)
 static void low_high_coords(int *low_coords, int *high_coords, fcs_float *ghost_f, fcs_float zslices_ghost_f, fcs_float *move_f, int *cart_dims, int *cart_coords, fcs_int *periodicity, fcs_float *bounds, fcs_float *box_size)
 {
   fcs_float low_xyz[3], high_xyz[3], base[3];
@@ -697,7 +699,7 @@ static int *setup_rank_cache(fcs_int *rank_cache_offset, fcs_int *rank_cache_siz
 #endif
 
 
-#ifdef GRIDSORT_FRONT_PROCLIST
+#ifdef GRIDSORT_PROCLIST
 static int *setup_proclist(fcs_int *nprocs, fcs_int max_nprocs, fcs_float *ghost_f, fcs_float zslices_ghost_f, fcs_float *move_f, int *cart_dims, int *cart_coords, fcs_int *periodicity, fcs_float *bounds, fcs_float *box_size, MPI_Comm comm)
 {
   int *procs, low_coords[3], high_coords[3], offsets[3], nums[3], x[3], coords[3];
@@ -751,6 +753,14 @@ static int *setup_proclist(fcs_int *nprocs, fcs_int max_nprocs, fcs_float *ghost
 
   return procs;
 }
+
+
+static void release_proclist(fcs_int *nprocs, int **procs)
+{
+  *nprocs = -1;
+  if (*procs) free(*procs);
+  *procs = NULL;
+}
 #endif
 
 
@@ -777,11 +787,6 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   fcs_int rank_cache_offset, rank_cache_sizes[3], rank_cache_size;
 #endif
 
-#ifdef GRIDSORT_FRONT_PROCLIST
-  fcs_int nprocs;
-  int *procs;
-#endif
-
   void *grid_tproc_data[] = { &comm, grid_data, cart_dims, cart_coords, periodicity, NULL, NULL, &max_nparts[3], NULL, NULL };
 
   forw_tproc_t tproc;
@@ -791,7 +796,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   fcs_int with_ghost, with_periodic, with_triclinic, with_bounds, with_zslices;
   fcs_float ghost_f[3], zslices_ghost_range, zslices_ghost_f;
 
-#if defined(GRIDSORT_FRONT_TPROC_RANK_CACHE) || defined(GRIDSORT_FRONT_PROCLIST)
+#if defined(GRIDSORT_FRONT_TPROC_RANK_CACHE) || defined(GRIDSORT_PROCLIST)
   fcs_float move_f[3];
 #endif
 
@@ -896,7 +901,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
         ghost_range, ghost_f[0], ghost_f[1], ghost_f[2]);
   );
 
-#if defined(GRIDSORT_FRONT_TPROC_RANK_CACHE) || defined(GRIDSORT_FRONT_PROCLIST)
+#if defined(GRIDSORT_FRONT_TPROC_RANK_CACHE) || defined(GRIDSORT_PROCLIST)
   move_f[0] = get_ghost_factor(gs->box_a, gs->box_b, gs->box_c, z_max(0, gs->max_particle_move));
   move_f[1] = get_ghost_factor(gs->box_b, gs->box_c, gs->box_a, z_max(0, gs->max_particle_move));
   move_f[2] = get_ghost_factor(gs->box_c, gs->box_a, gs->box_b, z_max(0, gs->max_particle_move));
@@ -1134,10 +1139,12 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
     return -1;
   }
 
-#ifdef GRIDSORT_FRONT_PROCLIST
+#ifdef GRIDSORT_PROCLIST
+  release_proclist(&gs->nprocs, &gs->procs);
+
   if (gs->max_particle_move >= 0)
   {
-    procs = setup_proclist(&nprocs, comm_size / 2, ghost_f, zslices_ghost_f, move_f, cart_dims, cart_coords, periodicity, bounds, box_size, comm);
+    gs->procs = setup_proclist(&gs->nprocs, comm_size / 2, ghost_f, zslices_ghost_f, move_f, cart_dims, cart_coords, periodicity, bounds, box_size, comm);
 
     DEBUG_CMD(
       printf(DEBUG_PRINT_PREFIX "%d: nprocs: %" forw_slint_fmt "\n", comm_rank, nprocs);
@@ -1145,18 +1152,12 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 
     INFO_CMD(
     if (comm_rank == 0)
-      printf(INFO_PRINT_PREFIX "%d: proclist: nprocs: %" FCS_LMOD_INT "d, procs: %p\n", comm_rank, nprocs, procs);
+      printf(INFO_PRINT_PREFIX "%d: proclist: nprocs: %" FCS_LMOD_INT "d, procs: %p\n", comm_rank, gs->nprocs, gs->procs);
     );
 
-    if (procs)
-    {
-#ifdef ALLTOALL_SPECIFIC_PACKED
-      forwp_tproc_set_proclist(&p_tproc, nprocs, procs, nprocs, procs, comm_size, comm_rank, comm);
-#endif
-      forw_tproc_set_proclist(&tproc, nprocs, procs, nprocs, procs, comm_size, comm_rank, comm);
-
-      free(procs);
-    }
+# ifdef GRIDSORT_FRONT_PROCLIST
+    if (gs->procs) forw_tproc_set_proclists(&tproc, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+# endif
   }
 #endif
 
@@ -1907,6 +1908,10 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
 
       back_fp_tproc_create_tproc(&tproc0, gridsort_back_fp_tproc, back_fp_TPROC_RESET_NULL, back_fp_TPROC_EXDEF_NULL);
 
+#ifdef GRIDSORT_BACK_PROCLIST
+      if (gs->procs) back_fp_tproc_set_proclists(&tproc0, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+#endif
+
 #ifdef ALLTOALLV_PACKED
       local_packed = ALLTOALLV_PACKED(comm_size, sin0.size);
       MPI_Allreduce(&local_packed, &global_packed, 1, FCS_MPI_INT, MPI_SUM, comm);
@@ -1975,6 +1980,10 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
 
       back_f__tproc_create_tproc(&tproc1, gridsort_back_f__tproc, back_f__TPROC_RESET_NULL, back_f__TPROC_EXDEF_NULL);
 
+#ifdef GRIDSORT_BACK_PROCLIST
+      if (gs->procs) back_f__tproc_set_proclists(&tproc1, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+#endif
+
 #ifdef ALLTOALLV_PACKED
       local_packed = ALLTOALLV_PACKED(comm_size, sin1.size);
       MPI_Allreduce(&local_packed, &global_packed, 1, FCS_MPI_INT, MPI_SUM, comm);
@@ -2039,6 +2048,10 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
       back__p_elem_set_data(&sout2, NULL);
 
       back__p_tproc_create_tproc(&tproc2, gridsort_back__p_tproc, back__p_TPROC_RESET_NULL, back__p_TPROC_EXDEF_NULL);
+
+#ifdef GRIDSORT_BACK_PROCLIST
+      if (gs->procs) back__p_tproc_set_proclists(&tproc2, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+#endif
 
 #ifdef ALLTOALLV_PACKED
       local_packed = ALLTOALLV_PACKED(comm_size, sin2.size);
