@@ -20,6 +20,7 @@ sub canonicalize_type {
 # C->Fortran map of supported return types
 %return_types = (
     "int" => "integer(C_INT)",
+    "unsigned" => "integer(C_INT), value",
     "ptrdiff_t" => "integer(C_INTPTR_T)",
     "size_t" => "integer(C_SIZE_T)",
     "double" => "real(C_DOUBLE)",
@@ -40,6 +41,7 @@ sub canonicalize_type {
     "pnfftf_complex *" => "type(C_PTR)",
     "pnfftl_complex *" => "type(C_PTR)",
     "pnfftq_complex *" => "type(C_PTR)",
+    "ptrdiff_t *" => "type(C_PTR)",
     );
 
 # C->Fortran map of supported argument types
@@ -83,45 +85,31 @@ sub canonicalize_type {
     "const pnfftq_r2r_kind *" => "integer(C_FFTW_R2R_KIND), dimension(*), intent(in)",
 
     "double *" => "real(C_DOUBLE), dimension(*), intent(out)",
+    "const double *" => "real(C_DOUBLE), dimension(*), intent(in)",
     "float *" => "real(C_FLOAT), dimension(*), intent(out)",
+    "const float *" => "real(C_FLOAT), dimension(*), intent(in)",
     "long double *" => "real(C_LONG_DOUBLE), dimension(*), intent(out)",
+    "const long double *" => "real(C_LONG_DOUBLE), dimension(*), intent(in)",
     "__float128 *" => "real(16), dimension(*), intent(out)",
+    "const __float128 *" => "real(16), dimension(*), intent(in)",
 
     "pnfft_complex *" => "complex(C_DOUBLE_COMPLEX), dimension(*), intent(out)",
     "pnfftf_complex *" => "complex(C_FLOAT_COMPLEX), dimension(*), intent(out)",
     "pnfftl_complex *" => "complex(C_LONG_DOUBLE_COMPLEX), dimension(*), intent(out)",
     "pnfftq_complex *" => "complex(16), dimension(*), intent(out)",
 
-    "const pnfft_iodim *" => "type(pnfft_iodim), dimension(*), intent(in)",
-    "const pnfftf_iodim *" => "type(pnfftf_iodim), dimension(*), intent(in)",
-    "const pnfftl_iodim *" => "type(pnfftl_iodim), dimension(*), intent(in)",
-    "const pnfftq_iodim *" => "type(pnfftq_iodim), dimension(*), intent(in)",
-
-    "const pnfft_iodim64 *" => "type(pnfft_iodim64), dimension(*), intent(in)",
-    "const pnfftf_iodim64 *" => "type(pnfftf_iodim64), dimension(*), intent(in)",
-    "const pnfftl_iodim64 *" => "type(pnfftl_iodim64), dimension(*), intent(in)",
-    "const pnfftq_iodim64 *" => "type(pnfftq_iodim64), dimension(*), intent(in)",
-
     "void *" => "type(C_PTR), value",
     "FILE *" => "type(C_PTR), value",
 
     "const char *" => "character(C_CHAR), dimension(*), intent(in)",
-
-    "pnfft_write_char_func" => "type(C_FUNPTR), value",
-    "pnfftf_write_char_func" => "type(C_FUNPTR), value",
-    "pnfftl_write_char_func" => "type(C_FUNPTR), value",
-    "pnfftq_write_char_func" => "type(C_FUNPTR), value",
-    "pnfft_read_char_func" => "type(C_FUNPTR), value",
-    "pnfftf_read_char_func" => "type(C_FUNPTR), value",
-    "pnfftl_read_char_func" => "type(C_FUNPTR), value",
-    "pnfftq_read_char_func" => "type(C_FUNPTR), value",
 
     # Although the MPI standard defines this type as simply "integer",
     # if we use integer without a 'C_' kind in a bind(C) interface then
     # gfortran complains.  Instead, since MPI also requires the C type
     # MPI_Fint to match Fortran integers, we use the size of this type
     # (extracted by configure and substituted by the Makefile).
-    "MPI_Comm" => "integer(C_MPI_FINT), value"
+    "MPI_Comm" => "integer(C_MPI_FINT), value",
+    "MPI_Comm *" => "integer(C_MPI_FINT), intent(out)"
     );
 
 while (<>) {
@@ -151,6 +139,9 @@ while (<>) {
 	else {
 	    $cname = $name;
 	}
+
+        # Since Fortran isn't case sensitive we must distiguish between get_N and get_n
+        $name =~ s/get_n/get_nos/;
 
 	# Fortran has a 132-character line-length limit by default (grr)
 	$len = 0;

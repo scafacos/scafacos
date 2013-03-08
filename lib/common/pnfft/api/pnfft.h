@@ -100,25 +100,25 @@
   PNFFT_EXTERN void PNX(set_x)(                                                         \
       R *x, PNX(plan) ths);                                                             \
                                                                                         \
-  PNFFT_EXTERN C* PNX(get_f_hat)(                                                       \
+  PNFFT_EXTERN C *PNX(get_f_hat)(                                                       \
       const PNX(plan) ths);                                                             \
-  PNFFT_EXTERN C* PNX(get_f)(                                                           \
+  PNFFT_EXTERN C *PNX(get_f)(                                                           \
       const PNX(plan) ths);                                                             \
-  PNFFT_EXTERN C* PNX(get_grad_f)(                                                      \
+  PNFFT_EXTERN C *PNX(get_grad_f)(                                                      \
       const PNX(plan) ths);                                                             \
-  PNFFT_EXTERN R* PNX(get_x)(                                                           \
+  PNFFT_EXTERN R *PNX(get_x)(                                                           \
       const PNX(plan) ths);                                                             \
                                                                                         \
   PNFFT_EXTERN int PNX(get_d)(                                                          \
       const PNX(plan) ths);                                                             \
   PNFFT_EXTERN int PNX(get_m)(                                                          \
       const PNX(plan) ths);                                                             \
-  PNFFT_EXTERN R* PNX(get_x_max)(                                                       \
-      const PNX(plan) ths);                                                             \
-  PNFFT_EXTERN INT* PNX(get_N)(                                                         \
-      const PNX(plan) ths);                                                             \
-  PNFFT_EXTERN INT* PNX(get_n)(                                                         \
-      const PNX(plan) ths);                                                             \
+  PNFFT_EXTERN void PNX(get_x_max)(                                                     \
+      const PNX(plan) ths, R *x_max);                                                   \
+  PNFFT_EXTERN  void PNX(get_N)(                                                        \
+      const PNX(plan) ths, INT *N);                                                     \
+  PNFFT_EXTERN void PNX(get_n)(                                                         \
+      const PNX(plan) ths, INT *n);                                                     \
   PNFFT_EXTERN unsigned PNX(get_pnfft_flags)(                                           \
       const PNX(plan) ths);                                                             \
   PNFFT_EXTERN unsigned PNX(get_pfft_flags)(                                            \
@@ -170,20 +170,20 @@
       C *data, INT *local_N, INT *local_N_start,                                        \
       const char *name, MPI_Comm comm);                                                 \
                                                                                         \
-  PNFFT_EXTERN double* PNX(get_timer_trafo)(                                            \
+  PNFFT_EXTERN double *PNX(get_timer_trafo)(                                            \
       PNX(plan) ths);                                                                   \
-  PNFFT_EXTERN double* PNX(get_timer_adj)(                                              \
+  PNFFT_EXTERN double *PNX(get_timer_adj)(                                              \
       PNX(plan) ths);                                                                   \
   PNFFT_EXTERN void PNX(timer_average)(                                                 \
       double *timer);                                                                   \
-  PNFFT_EXTERN double* PNX(timer_copy)(                                                 \
+  PNFFT_EXTERN double *PNX(timer_copy)(                                                 \
       const double *orig);                                                              \
-  PNFFT_EXTERN double* PNX(timer_reduce_max)(                                           \
-      MPI_Comm comm, double* timer);                                                    \
-  PNFFT_EXTERN double* PNX(timer_add)(                                                  \
-      const double* sum1, const double* sum2);                                          \
+  PNFFT_EXTERN double *PNX(timer_reduce_max)(                                           \
+      MPI_Comm comm, double *timer);                                                    \
+  PNFFT_EXTERN double *PNX(timer_add)(                                                  \
+      const double *sum1, const double *sum2);                                          \
   PNFFT_EXTERN void PNX(timer_free)(                                                    \
-      double* ths);                                                                     \
+      double *ths);                                                                     \
                                                                                         \
   PNFFT_EXTERN void PNX(reset_timer)(                                                   \
       PNX(plan) ths);                                                                   \
@@ -210,17 +210,9 @@ typedef pfftl_complex pnfftl_complex;
 #define PNFFT_MANGLE_FLOAT(name) PNFFT_CONCAT(pnfftf_, name)
 #define PNFFT_MANGLE_LONG_DOUBLE(name) PNFFT_CONCAT(pnfftl_, name)
 
-PNFFT_DEFINE_API(
-    PNFFT_MANGLE_DOUBLE, PFFT_MANGLE_DOUBLE, FFTW_MANGLE_DOUBLE,
-    double, pnfft_complex, ptrdiff_t)
-PNFFT_DEFINE_API(
-    PNFFT_MANGLE_FLOAT, PFFT_MANGLE_FLOAT, FFTW_MANGLE_FLOAT,
-    float, pnfftf_complex, ptrdiff_t)
-PNFFT_DEFINE_API(
-    PNFFT_MANGLE_LONG_DOUBLE, PFFT_MANGLE_LONG_DOUBLE, FFTW_MANGLE_LONG_DOUBLE,
-    long double, pnfftl_complex, ptrdiff_t)
-
-
+PNFFT_DEFINE_API(PNFFT_MANGLE_DOUBLE, PFFT_MANGLE_DOUBLE, FFTW_MANGLE_DOUBLE, double, pnfft_complex, ptrdiff_t)
+PNFFT_DEFINE_API(PNFFT_MANGLE_FLOAT, PFFT_MANGLE_FLOAT, FFTW_MANGLE_FLOAT, float, pnfftf_complex, ptrdiff_t)
+PNFFT_DEFINE_API(PNFFT_MANGLE_LONG_DOUBLE, PFFT_MANGLE_LONG_DOUBLE, FFTW_MANGLE_LONG_DOUBLE, long double, pnfftl_complex, ptrdiff_t)
 
 
 #ifndef PNFFT_PI

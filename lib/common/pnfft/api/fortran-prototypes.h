@@ -122,13 +122,13 @@ PNFFT_VOIDFUNC FORT(get_m, GET_M)(
     int *m, PNX(plan) * const ths
     );
 PNFFT_VOIDFUNC FORT(get_x_max, GET_X_MAX)(
-    R **x_max, PNX(plan) * const ths
+    PNX(plan) * const ths, R *x_max
     );
 PNFFT_VOIDFUNC FORT(get_N, GET_N)(
-    INT **N, PNX(plan) * const ths
+    PNX(plan) * const ths, INT *N
     );
 PNFFT_VOIDFUNC FORT(get_nos, GET_NOS)(
-    INT **n, PNX(plan) * const ths
+    PNX(plan) * const ths, INT *n
     );
 PNFFT_VOIDFUNC FORT(get_pnfft_flags, GET_PNFFT_FLAGS)(
     int *pnfft_flags, PNX(plan) * const ths

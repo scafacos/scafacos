@@ -352,25 +352,31 @@ int PNX(get_m)(
   return ths->m;
 }
 
-R* PNX(get_x_max)(
-    const PNX(plan) ths
+PNX(get_x_max)(
+    const PNX(plan) ths,
+    R *x_max
     )
 {
-  return ths->x_max;
+  for(int t=0; t<ths->d; t++)
+    x_max[t] = ths->x_max[t];
 }
 
-INT* PNX(get_N)(
-    const PNX(plan) ths
+void PNX(get_N)(
+    const PNX(plan) ths,
+    INT *N
     )
 {
-  return ths->N;
+  for(int t=0; t<ths->d; t++)
+    N[t] = ths->N[t];
 }
 
-INT* PNX(get_n)(
-    const PNX(plan) ths
+void PNX(get_n)(
+    const PNX(plan) ths,
+    INT *n
     )
 {
-  return ths->n;
+  for(int t=0; t<ths->d; t++)
+    n[t] = ths->n[t];
 }
 
 unsigned PNX(get_pnfft_flags)(

@@ -264,22 +264,22 @@ PNFFT_VOIDFUNC FORT(get_m, GET_M)(
   *m = PNX(get_m)(*ths);
 }
 PNFFT_VOIDFUNC FORT(get_x_max, GET_X_MAX)(
-    R **x_max, PNX(plan) * const ths
+    PNX(plan) * const ths, R *x_max
     )
 {
-  *x_max = PNX(get_x_max)(*ths);
+  PNX(get_x_max)(*ths, x_max);
 }
 PNFFT_VOIDFUNC FORT(get_N, GET_N)(
-    INT **N, PNX(plan) * const ths
+    PNX(plan) * const ths, INT *N
     )
 {
-  *N = PNX(get_N)(*ths);
+  PNX(get_N)(*ths, N);
 }
 PNFFT_VOIDFUNC FORT(get_nos, GET_NOS)(
-    INT **n, PNX(plan) * const ths
+    PNX(plan) * const ths, INT *n
     )
 {
-  *n = PNX(get_n)(*ths);
+  PNX(get_n)(*ths, n);
 }
 PNFFT_VOIDFUNC FORT(get_pnfft_flags, GET_PNFFT_FLAGS)(
     int *pnfft_flags, PNX(plan) * const ths

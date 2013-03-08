@@ -4,12 +4,15 @@ AM_CPPFLAGS = -I$(top_srcdir)/kernel
 # Headers that are installed.
 if ENABLE_HEADER_INSTALL
 include_HEADERS = pnfft.h
-nodist_include_HEADERS = pnfft.f
+nodist_include_HEADERS = pnfft.f pnfft.f03
 else
 noinst_HEADERS = pnfft.h
 endif
 	
 noinst_LTLIBRARIES = libapi.la
+
+EXTRA_DIST = f03-api.sh f03-wrap.sh genf03-api.pl genf03-wrap.pl
+CLEANFILES = pnfft.f03 pnfft.f03.in f03-wrap.c
 
 # Group local sources into convenience lib.
 libapi_la_SOURCES = \
@@ -20,5 +23,26 @@ libapi_la_SOURCES = \
 	fortran-api.c \
 	fortran-mangling.h \
 	fortran-prototypes.h \
-	fortran-wrappers.h
+	fortran-wrappers.h \
+	$(builddir)/f03-wrap.c
+
+# pnfft.f03.in: pnfft.h f03-api.sh genf03-api.pl
+# 	sh $(srcdir)/f03-api.sh d f l > $@
+# 
+# pnfft.f03: pnfft.f03.in
+# 	sed 's/C_MPI_FINT/@C_MPI_FINT@/' $(srcdir)/pnfft.f03.in > $@
+# 
+# f03-wrap.c: pnfft.h f03-wrap.sh genf03-wrap.pl
+# 	sh $(srcdir)/f03-wrap.sh > $@
+
+
+
+pnfft.f03.in: pnfft.h f03-api.sh genf03-api.pl
+	(cd $(srcdir); sh f03-api.sh d f l > $(abs_builddir)/$@)
+
+pnfft.f03: pnfft.f03.in
+	sed 's/C_MPI_FINT/@C_MPI_FINT@/' pnfft.f03.in > $@
+
+f03-wrap.c: pnfft.h f03-wrap.sh genf03-wrap.pl
+	(cd $(srcdir); sh f03-wrap.sh >  $(abs_builddir)/$@)
 
