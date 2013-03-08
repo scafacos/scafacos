@@ -662,8 +662,8 @@ FCSResult ifcs_p2nfft_tune(
       /*   accuracy of 1e-17 needs 24896 interpolation nodes */
       if(d->interpolation_order < 0)
         return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "No support of direct evaluation for CG approximtation. Choose non-negative interpolation order!");
-//       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
-      d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
+      d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
+//       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
 
       if(d->near_interpolation_table_potential != NULL)
         free(d->near_interpolation_table_potential);
@@ -1368,8 +1368,8 @@ static int pnfft_is_up_to_date(
     )
 {
   int plan_d, plan_m;
-  ptrdiff_t *plan_N, *plan_n;
-  fcs_float *plan_x_max;
+  ptrdiff_t plan_N[3], plan_n[3];
+  fcs_float plan_x_max[3];
   unsigned plan_pnfft_flags, plan_pfft_flags;
 
 #if FCS_P2NFFT_DEBUG_RETUNE
@@ -1382,9 +1382,9 @@ static int pnfft_is_up_to_date(
 
   plan_d = FCS_PNFFT(get_d)(ths);
   plan_m = FCS_PNFFT(get_m)(ths);
-  plan_N = FCS_PNFFT(get_N)(ths);
-  plan_n = FCS_PNFFT(get_n)(ths);
-  plan_x_max = FCS_PNFFT(get_x_max)(ths);
+  FCS_PNFFT(get_N)(ths, plan_N);
+  FCS_PNFFT(get_n)(ths, plan_n);
+  FCS_PNFFT(get_x_max)(ths, x_max);
   plan_pnfft_flags = FCS_PNFFT(get_pnfft_flags)(ths);
   plan_pfft_flags = FCS_PNFFT(get_pfft_flags)(ths);
 

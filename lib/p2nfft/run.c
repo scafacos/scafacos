@@ -104,9 +104,11 @@ FCSResult ifcs_p2nfft_run(
   if(!d->use_ewald)
     for(fcs_int j=0; j<local_num_particles; j++)
       for(fcs_int t=0; t<3; t++)
-        if( (positions[3*j+t] < 0) || (positions[3*j+t] > d->box_size) )
+        if( (positions[3*j+t] < 0) || (positions[3*j+t] > d->box_size) ){
 //        if( (positions[3*j+t] < 0) || fcs_float_is_zero(d->box_size - positions[3*j+t])  || (positions[3*j+t] > d->box_size) )
+          fprintf(stderr, "j = %d, t = %d, position = %f, box_size = %f\n", j, t, positions[3*j+t], d->box_size);
           return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box or reached the upper border.");
+        }
   /* TODO: implement additional scaling of particles to ensure x \in [0,L)
    * Idea: use allreduce to get min and max coordinates, adapt scaling of particles for every time step */
 
