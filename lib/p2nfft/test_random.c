@@ -51,7 +51,7 @@ int main (
   FCSResult fcs_result;
   
   fcs_result = fcs_init(&fcs_handle, "DIRECT", comm);
-  fcs_result = fcs_common_set(fcs_handle, 1, box_a, box_b, box_c, periodicity, num_particles, num_particles);
+  fcs_result = fcs_set_common(fcs_handle, 1, box_a, box_b, box_c, periodicity, num_particles, num_particles);
   fcs_result = fcs_DIRECT_require_virial(fcs_result, 0);
   fcs_result = fcs_tune(fcs_handle, 8, 8, positions, charges);
   fcs_result = fcs_run(fcs_handle, 8, 8, positions, charges, field, potentials);

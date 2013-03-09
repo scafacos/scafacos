@@ -447,7 +447,7 @@ static void run_method(particles_t *parts)
 
   MASTER(cout << "  Setting basic parameters..." << endl);
   MASTER(cout << "    Total number of particles: " << parts->total_nparticles + parts->total_in_nparticles << " (" << parts->total_in_nparticles << " input-only particles)" << endl);
-  result = fcs_common_set(fcs, (fcs_get_near_field_flag(fcs) == 0)?0:1,
+  result = fcs_set_common(fcs, (fcs_get_near_field_flag(fcs) == 0)?0:1,
     current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity, 
     parts->total_nparticles);
   if (!check_result(result)) return;
@@ -624,7 +624,7 @@ static void run_integration(particles_t *parts)
   if (fcs != FCS_NULL)
   {
     /* init method */
-    result = fcs_common_set(fcs, (fcs_get_near_field_flag(fcs) == 0)?0:1,
+    result = fcs_set_common(fcs, (fcs_get_near_field_flag(fcs) == 0)?0:1,
       current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity, parts->total_nparticles);
     if (!check_result(result)) return;
 

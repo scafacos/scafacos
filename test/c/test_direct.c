@@ -235,7 +235,7 @@ int main(int argc, char **argv)
   fcs_direct_set_cutoff(fcs_handle, cutoff);
   ASSERT_FCS(fcs_result);
 
-  fcs_result = fcs_common_set(fcs_handle, 1, box_a, box_b, box_c, box_base, periodicity, ntotal);
+  fcs_result = fcs_set_common(fcs_handle, 1, box_a, box_b, box_c, box_base, periodicity, ntotal);
   ASSERT_FCS(fcs_result);
 
   fcs_result = fcs_require_virial(fcs_handle, 1);

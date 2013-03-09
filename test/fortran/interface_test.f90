@@ -264,16 +264,16 @@ program test
 
     if (my_rank == 0) write(*,*) "----------------------------call common setter---------------------------------"
     ret = fcs_parser(handle, trim(adjustl(common_parameters)) // c_null_char, FCS_FALSE)
-    !ret =  fcs_common_set(handle, short_range_flag, box_a, box_b, box_c, offset, periodicity, total_particles)
-    if (my_rank == 0) write(*,*) "fcs_common_set (parser) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_common_set (parser) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_common_set (parser) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    !ret =  fcs_set_common(handle, short_range_flag, box_a, box_b, box_c, offset, periodicity, total_particles)
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", fcsResult_getReturnCode(ret)
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
     if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
     if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
     ret = fcs_set_total_particles(handle, total_particles)
-    if (my_rank == 0) write(*,*) "fcs_common_set (total particles) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_common_set (total particles) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_common_set (total particles) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    if (my_rank == 0) write(*,*) "fcs_set_common (total particles) returns: ", fcsResult_getReturnCode(ret)
+    if (my_rank == 0) write(*,*) "fcs_set_common (total particles) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
+    if (my_rank == 0) write(*,*) "fcs_set_common (total particles) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
     if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
     if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
     if (fcs_get_method(handle) == FCS_MMM1D) then
@@ -281,9 +281,9 @@ program test
       periodicity_i(2) = .false.
       periodicity_i(3) = .true.
       ret = fcs_set_periodicity(handle, periodicity_i)
-      if (my_rank == 0) write(*,*) "fcs_common_set (mmm1d) returns: ", fcsResult_getReturnCode(ret)
-      if (my_rank == 0) write(*,*) "fcs_common_set (mmm1d) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-      if (my_rank == 0) write(*,*) "fcs_common_set (mmm1d) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm1d) returns: ", fcsResult_getReturnCode(ret)
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm1d) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm1d) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
       if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
     if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
     else if (fcs_get_method(handle) == FCS_MMM2D) then
@@ -291,9 +291,9 @@ program test
       periodicity_i(2) = .true.
       periodicity_i(3) = .false.
       ret = fcs_set_periodicity(handle, periodicity_i)
-      if (my_rank == 0) write(*,*) "fcs_common_set (mmm2d) returns: ", fcsResult_getReturnCode(ret)
-      if (my_rank == 0) write(*,*) "fcs_common_set (mmm2d) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-      if (my_rank == 0) write(*,*) "fcs_common_set (mmm2d) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))    
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm2d) returns: ", fcsResult_getReturnCode(ret)
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm2d) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm2d) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))    
       if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
     if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
   end if

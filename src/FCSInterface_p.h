@@ -83,7 +83,7 @@ FCSResult fcs_init (FCS *handle, const char* method, MPI_Comm communicator);
  * particles in the system
  * @return FCSResult-object containing the return state or NULL if successful
  */
-FCSResult fcs_common_set(FCS handle, fcs_int near_field_flag, fcs_float* box_a, fcs_float* box_b, fcs_float* box_c, fcs_float* offset, fcs_int* periodicity, fcs_int total_particles);
+FCSResult fcs_set_common(FCS handle, fcs_int near_field_flag, fcs_float* box_a, fcs_float* box_b, fcs_float* box_c, fcs_float* offset, fcs_int* periodicity, fcs_int total_particles);
 
 /**
  * @brief getter function for method

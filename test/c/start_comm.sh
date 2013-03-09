@@ -21,7 +21,7 @@ for m in ${methods} ; do
     "1") echo "FAILED due to timeout!" ;;
     "10") echo "is not available!" ;;
     "11") echo "FAILED on 'fcs_init'" ;;
-    "12") echo "FAILED on 'fcs_common_set'" ;;
+    "12") echo "FAILED on 'fcs_set_common'" ;;
     "13") echo "FAILED on 'fcs_run'" ;;
     "14") echo "FAILED on 'fcs_destroy'" ;;
     *) echo "FAILED with return code '$ret'" ;;

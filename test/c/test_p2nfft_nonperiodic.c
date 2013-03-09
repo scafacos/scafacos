@@ -92,7 +92,7 @@ for(int t=0; t<6; t++)
   fcs_result = fcs_init(&fcs_handle, "direct", comm);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_common_set(fcs_handle, 1, box_a, box_b, box_c, offset, periodicity, total_num_particles);
+  fcs_result = fcs_set_common(fcs_handle, 1, box_a, box_b, box_c, offset, periodicity, total_num_particles);
   assert_fcs(fcs_result);
 
   fcs_result = fcs_tune(fcs_handle, num_particles, max_num_particles, positions, charges);
@@ -139,7 +139,7 @@ for(int t=0; t<6; t++)
   fcs_result = fcs_init(&fcs_handle, "p2nfft", comm);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_common_set(fcs_handle, 1, box_a, box_b, box_c, offset, periodicity, total_num_particles);
+  fcs_result = fcs_set_common(fcs_handle, 1, box_a, box_b, box_c, offset, periodicity, total_num_particles);
   assert_fcs(fcs_result);
 
   fcs_set_tolerance(fcs_handle, FCS_TOLERANCE_TYPE_POTENTIAL, tolerance);

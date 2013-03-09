@@ -221,8 +221,8 @@ use iso_c_binding
 !                                   common setup
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      function fcs_common_set_f(handle, near_field_flag, box_a, box_b, box_c, &
-           offset, periodicity, total_parts) BIND(C,name="fcs_common_set")
+      function fcs_set_common_f(handle, near_field_flag, box_a, box_b, box_c, &
+           offset, periodicity, total_parts) BIND(C,name="fcs_set_common")
           use iso_c_binding
           implicit none
           type(c_ptr),value                                 ::  handle
@@ -233,7 +233,7 @@ use iso_c_binding
           real(kind = fcs_real_kind_isoc)                   ::  offset(3)
           integer(kind = fcs_integer_kind_isoc)             ::  periodicity(3)
           integer(kind = fcs_integer_kind_isoc), value      ::  total_parts
-          type(c_ptr)                                       ::  fcs_common_set_f
+          type(c_ptr)                                       ::  fcs_set_common_f
       end function
       
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -887,7 +887,7 @@ use iso_c_binding
      
   end function
 
-  function fcs_common_set(handle, near_field_flag, box_a, box_b, box_c, &
+  function fcs_set_common(handle, near_field_flag, box_a, box_b, box_c, &
                           offset, periodicity, total_parts)
     use iso_c_binding
     implicit none
@@ -901,7 +901,7 @@ use iso_c_binding
     integer(kind = fcs_integer_kind_isoc)             ::  total_parts
     integer(kind = fcs_integer_kind_isoc)             ::  p_c(3)
     integer(kind = fcs_integer_kind_isoc)             ::  srf_c
-    type(c_ptr)                                       ::  fcs_common_set
+    type(c_ptr)                                       ::  fcs_set_common
     
     where (periodicity)
       p_c = 1
@@ -915,7 +915,7 @@ use iso_c_binding
       srf_c = 0
     end if
     
-    fcs_common_set = fcs_common_set_f(handle, srf_c, box_a, box_b, box_c, offset, p_c, total_parts)
+    fcs_set_common = fcs_set_common_f(handle, srf_c, box_a, box_b, box_c, offset, p_c, total_parts)
   end function
 
   function fcs_set_periodicity(handle, periodicity)

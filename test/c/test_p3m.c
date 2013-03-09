@@ -135,10 +135,10 @@ int main(int argc, char **argv) {
   box_c[2] = box_l[2];
 
 #ifdef FCS_NEAR_FIELD
-  result = fcs_common_set(handle, 1, box_a, box_b, box_c, 
+  result = fcs_set_common(handle, 1, box_a, box_b, box_c, 
 			  offset, periodicity, total_particles);
 #else
-  result = fcs_common_set(handle, 0, box_a, box_b, box_c, 
+  result = fcs_set_common(handle, 0, box_a, box_b, box_c, 
 			  offset, periodicity, total_particles);
 #endif
 

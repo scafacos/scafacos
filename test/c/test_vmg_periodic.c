@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
   fcs_result = fcs_init(&fcs_handle, method, comm);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_common_set(fcs_handle, 1,
+  fcs_result = fcs_set_common(fcs_handle, 1,
 			      box_a, box_b, box_c,
 			      offset, periodic, n_total);
   assert_fcs(fcs_result);

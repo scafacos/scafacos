@@ -1082,9 +1082,9 @@ fcs_int fcs_get_total_particles(FCS handle)
 }
 
 /* function to fill in all obligatory data at once */
-FCSResult fcs_common_set(FCS handle, fcs_int near_field_flag, fcs_float* box_a, fcs_float* box_b, fcs_float* box_c, fcs_float* offset, fcs_int* periodicity, fcs_int total_particles)
+FCSResult fcs_set_common(FCS handle, fcs_int near_field_flag, fcs_float* box_a, fcs_float* box_b, fcs_float* box_c, fcs_float* offset, fcs_int* periodicity, fcs_int total_particles)
 {
-    /*char* fnc_name = "fcs_common_set";*/
+    /*char* fnc_name = "fcs_set_common";*/
     FCSResult result;
 
     result = fcs_set_near_field_flag(handle,near_field_flag);

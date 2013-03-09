@@ -132,10 +132,10 @@ program test
     call MPI_BARRIER(communicator,ierr)
 
     if (my_rank == 0) write(*,*) "----------------------------call common setter---------------------------------"
-    ret =  fcs_common_set(handle, short_range_flag, box_a, box_b, box_c, offset, periodicity, total_particles)
-    if (my_rank == 0) write(*,*) "fcs_common_set (parser) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_common_set (parser) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_common_set (parser) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    ret =  fcs_set_common(handle, short_range_flag, box_a, box_b, box_c, offset, periodicity, total_particles)
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", fcsResult_getReturnCode(ret)
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
     
     call MPI_BARRIER(communicator,ierr)
 

@@ -279,7 +279,7 @@ program main
    call fcs_init(fcs_handle, trim(fcs_method(method)), MPI_COMM_WORLD, fcs_res) !TODO: Reihenfolge der Parameter wie in der C-Variante
    call checkres(fcs_res, my_rank)
    !! ScaFaCoS: Generic Parameter Setup
-   call fcshandle_common_set(fcs_handle, .true., boxa, boxb, boxc, ntotal, ntotal, per, fcs_res) !TODO: Funktion heist fcs_common_set() - das praefix ist auch bei nahezu allen anderen funktionen noch falsch
+   call fcs_set_common(fcs_handle, .true., boxa, boxb, boxc, ntotal, ntotal, per, fcs_res)
    call checkres(fcs_res, my_rank)
    !! ScaFaCoS: Method-specific Parameter Setup
    call setup_methodspecific(fcs_handle, my_rank, num_ranks)

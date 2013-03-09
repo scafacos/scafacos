@@ -56,7 +56,7 @@ int main (int argc, char** argv) {
 
   fcs_result = fcs_init(&fcs_handle, "DIRECT", comm);
   assert_fcs(fcs_result);
-  fcs_result = fcs_common_set(fcs_handle, near_field_flag, box_a, box_b, box_c, offset, periodicity, num_particles);
+  fcs_result = fcs_set_common(fcs_handle, near_field_flag, box_a, box_b, box_c, offset, periodicity, num_particles);
   assert_fcs(fcs_result);
   fcs_result = fcs_tune(fcs_handle, num_particles, num_particles, positions, charges);
   assert_fcs(fcs_result);

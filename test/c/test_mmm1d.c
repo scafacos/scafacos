@@ -98,7 +98,7 @@ int main(int argc, char **argv)
   box_b[1] = box_l[1];
   box_c[2] = box_l[2];
 
-  result = fcs_common_set(handle, 1, box_a, box_b, box_c, 
+  result = fcs_set_common(handle, 1, box_a, box_b, box_c, 
            offset, periodicity, total_particles);
   if (result != NULL) {
     fcsResult_printResult(result);

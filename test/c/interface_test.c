@@ -313,7 +313,7 @@ main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Setting common data...\n");
   /*result =
-    fcs_common_set (handle, near_field_flag, box_a, box_b, box_c, offset,
+    fcs_set_common (handle, near_field_flag, box_a, box_b, box_c, offset,
 		    periodicity, number_of_particles);*/
   result = fcs_parser(handle, common_parameters, FCS_FALSE);
   if (comm_rank == 0)

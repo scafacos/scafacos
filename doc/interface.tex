@@ -292,7 +292,7 @@ chosen in the initialization step (\ref{sec:init_step}). The former is mandatory
 the system is needed by the solvers in order to calculate the correct forces, while the latter is optional as
 the solvers provide (non-optimal) default parameters for themselves.
 
-As can be seen in figure \ref{fig:fcs_common_set} the calls differ for C and Fortran. Since plain C does not provide a logical data type, e.g. bool,
+As can be seen in figure \ref{fig:fcs_set_common} the calls differ for C and Fortran. Since plain C does not provide a logical data type, e.g. bool,
 the C interface uses integer variables for this purpose. The Fortran data kinds are linked to the C data types set in the configure script. Possible
 return values are \textit{NULL} for a successful return and either \newline\textit{FCS\_WRONG\_ARGUMENT} if an argument is not defined or \textit{FCS\_WRONG\_VALUE}
 if an argument has an invalid value.\\
@@ -315,7 +315,7 @@ if an argument has an invalid value.\\
 \label{fig:interface_box_scheme}
 \end{figure}
 
-The common setup requires basic data about the simulation system. An overview can be seen in table \ref{tab:fcs_common_set_parameters}. The box vectors
+The common setup requires basic data about the simulation system. An overview can be seen in table \ref{tab:fcs_set_common_parameters}. The box vectors
 describe the form of the box, in which the particles reside. For each solver there can be certain restrictions as for which kind of systems they can simulate. 
 To get an idea which solvers work best (or work at all) with which systems please refer to the corresponding solver description within this documentation.
 In general no solver is able to handle non-orthogonal boxes as of yet, although the interface should be able to handle these kind of boxes. The offset
@@ -352,7 +352,7 @@ near field computations in the main program. The functionality of the near field
 \end{tabular}
 \end{center}
 \caption{Parameters for fcs\_common\_set}
-\label{tab:fcs_common_set_parameters}
+\label{tab:fcs_set_common_parameters}
 \end{table}
 
 To change the solver-specific parameters, there are solver-specific setter functions. These are called \textit{fcs\_$<$solver$>$\_set\_$<$parameter$>$} where 

@@ -24,11 +24,11 @@ type(c_ptr)                                 :: fcs_init
 \begin{figure}[htb]
 \begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
 /* C */
-FCSResult fcs_common_set(FCS handle, fcs_int short_range_flag, fcs_float* box_a, fcs_float* box_b, fcs_float* box_c, fcs_float* offset, fcs_int* periodicity, fcs_int total_particles);
+FCSResult fcs_set_common(FCS handle, fcs_int short_range_flag, fcs_float* box_a, fcs_float* box_b, fcs_float* box_c, fcs_float* offset, fcs_int* periodicity, fcs_int total_particles);
 \end{lstlisting}
 \begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
 ! Fortran
-function fcs_common_set(handle,short_range_flag,box_a,box_b,box_c,offset,periodicity,total_particles)
+function fcs_set_common(handle,short_range_flag,box_a,box_b,box_c,offset,periodicity,total_particles)
 type(c_ptr)                                 ::  handle
 logical                                     ::  short_range_flag
 real(kind = fcs_real_kind_isoc)             ::  box_a(3)
@@ -37,10 +37,10 @@ real(kind = fcs_real_kind_isoc)             ::  box_c(3)
 real(kind = fcs_real_kind_isoc)             ::  offset(3)
 logical                                     ::  periodicity(3)
 integer(kind = fcs_integer_kind_isoc)       ::  total_parts
-type(c_ptr)                                 ::  fcs_common_set
+type(c_ptr)                                 ::  fcs_set_common
 \end{lstlisting}
 \caption{Function call: fcs\_common\_set}
-\label{fig:fcs_common_set}
+\label{fig:fcs_set_common}
 \ufunctiontoindex{fcs\_common\_set}
 \end{figure}
 \begin{figure}[htb]

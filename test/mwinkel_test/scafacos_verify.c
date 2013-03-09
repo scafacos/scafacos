@@ -211,7 +211,7 @@ int main(int argc, char** argv)
   fcs_res = fcs_init( &fcs_handle, fcs_method[method], comm);
   checkres(fcs_res);
   // ScaFaCoS: Generic Parameter Setup
-  fcs_res = fcs_common_set( fcs_handle, true, boxa, boxb, boxc, per, ntotal );
+  fcs_res = fcs_set_common( fcs_handle, true, boxa, boxb, boxc, per, ntotal );
   checkres(fcs_res);
   // ScaFaCoS: Method-specific Parameter Setup
   setup_methodspecific( fcs_handle, my_rank, num_ranks);

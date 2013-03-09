@@ -286,7 +286,7 @@ int main (int argc, char **argv)
   ASSERT_FCS(fcs_result);
   fcs_result = fcs_set_dimension (fcs_handle, DIM);
   ASSERT_FCS(fcs_result);
-  fcs_result = fcs_common_set(fcs_handle, 1,
+  fcs_result = fcs_set_common(fcs_handle, 1,
                                     box[0], box[1], box[2], offset, periodic_flags,
                                     particles);
   ASSERT_FCS(fcs_result);
