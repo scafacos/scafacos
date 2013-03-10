@@ -3,7 +3,7 @@ SUBDIRS =
 
 # Enable Fortran subdirectory only on request.
 if ENABLE_FORTRAN
-SUBDIRS += fortran f03
+SUBDIRS += f03
 endif
 
 # Directory of ipnfft.h
@@ -19,7 +19,7 @@ LDADD = $(top_builddir)/lib@PNFFT_PREFIX@pnfft@PREC_SUFFIX@.la $(pfft_LIBS) $(ff
 check_PROGRAMS = \
 	simple_test
 
-#if ENABLE_COMMON_PFFT
+#if ENABLE_COMMON_PNFFT
 # do not compile checks
 #else
 check_PROGRAMS += \

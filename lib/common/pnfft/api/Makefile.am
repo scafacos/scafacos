@@ -12,7 +12,7 @@ endif
 noinst_LTLIBRARIES = libapi.la
 
 EXTRA_DIST = f03-api.sh f03-wrap.sh genf03-api.pl genf03-wrap.pl
-CLEANFILES = pnfft.f03 pnfft.f03.in f03-wrap.c
+CLEANFILES = pnfft.f03 pnfft.f03.in pnfftl.f03 pnfftl.f03.in f03-wrap.c
 
 # Group local sources into convenience lib.
 libapi_la_SOURCES = \
@@ -36,13 +36,22 @@ libapi_la_SOURCES = \
 # 	sh $(srcdir)/f03-wrap.sh > $@
 
 
-
-pnfft.f03.in: pnfft.h f03-api.sh genf03-api.pl
-	(cd $(srcdir); sh f03-api.sh d f l > $(abs_builddir)/$@)
-
+# provide separate header for long precision, since some compilers do not support it
 pnfft.f03: pnfft.f03.in
 	sed 's/C_MPI_FINT/@C_MPI_FINT@/' pnfft.f03.in > $@
 
+pnfftl.f03: pnfftl.f03.in
+	sed 's/C_MPI_FINT/@C_MPI_FINT@/' pnfftl.f03.in > $@
+
+
+if TRUE
+# enable only in maintainer mode?
+pnfft.f03.in: pnfft.h f03-api.sh genf03-api.pl
+	(cd $(srcdir); sh f03-api.sh d f > $(abs_builddir)/$@)
+
+pnfftl.f03.in: pnfft.h f03-api.sh genf03-api.pl
+	(cd $(srcdir); sh f03-api.sh l > $(abs_builddir)/$@)
+
 f03-wrap.c: pnfft.h f03-wrap.sh genf03-wrap.pl
 	(cd $(srcdir); sh f03-wrap.sh >  $(abs_builddir)/$@)
-
+endif

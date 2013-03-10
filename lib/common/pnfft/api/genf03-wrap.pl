@@ -22,6 +22,17 @@ sub canonicalize_type {
     return $type;
 }
 
+sub canonicalize_name {
+    my($name);
+    ($name) = @_;
+    # Since Fortran isn't case sensitive we must distiguish between N and n
+    if ($name eq "n") {
+      $name = "Nos";
+    }
+    return $name;
+}
+
+
 while (<>) {
     next if /^ *$/;
     if (/^ *extern +([a-zA-Z_0-9 ]+[ \*]) *pnfftl_([a-zA-Z_0-9]+) *\((.*)\) *$/) {
@@ -37,7 +48,7 @@ while (<>) {
 	foreach $arg (split(/ *, */, $args)) {
             $arg =~ /^([a-zA-Z_0-9 ]+[ \*]) *([a-zA-Z_0-9]+) *$/;
             $argtype = &canonicalize_type($1);
-            $argname = $2;
+            $argname = &canonicalize_name($2);
 	    print $comma;
 	    if ($argtype eq "MPI_Comm") {
 		print "MPI_Fint f_$argname";
@@ -58,7 +69,7 @@ while (<>) {
 	foreach $arg (split(/ *, */, $args)) {
             $arg =~ /^([a-zA-Z_0-9 ]+[ \*]) *([a-zA-Z_0-9]+) *$/;
             $argtype = &canonicalize_type($1);
-            $argname = $2;
+            $argname = &canonicalize_name($2);
 	    if (($argtype eq "MPI_Comm") || ($argtype eq "MPI_Comm *")) {
 		print "$comma$argname";
 		$comma = ", ";
@@ -69,7 +80,7 @@ while (<>) {
 	foreach $arg (split(/ *, */, $args)) {
             $arg =~ /^([a-zA-Z_0-9 ]+[ \*]) *([a-zA-Z_0-9]+) *$/;
             $argtype = &canonicalize_type($1);
-            $argname = $2;
+            $argname = &canonicalize_name($2);
             if ($argtype eq "MPI_Comm") {
                 print "  $argname = MPI_Comm_f2c(f_$argname);\n";
             }
@@ -80,7 +91,7 @@ while (<>) {
 	foreach $arg (split(/ *, */, $args)) {
             $arg =~ /^([a-zA-Z_0-9 ]+[ \*]) *([a-zA-Z_0-9]+) *$/;
             $argtype = &canonicalize_type($1);
-            $argname = $2;
+            $argname = &canonicalize_name($2);
             if ($argtype eq "MPI_Comm *") {
               $argnames = "$argnames$comma&$argname";
             }
@@ -98,7 +109,7 @@ while (<>) {
           foreach $arg (split(/ *, */, $args)) {
             $arg =~ /^([a-zA-Z_0-9 ]+[ \*]) *([a-zA-Z_0-9]+) *$/;
             $argtype = &canonicalize_type($1);
-            $argname = $2;
+            $argname = &canonicalize_name($2);
             if ($argtype eq "MPI_Comm *") {
               print "  *f_$argname = MPI_Comm_c2f($argname);\n";
             }

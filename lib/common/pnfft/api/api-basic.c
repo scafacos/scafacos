@@ -352,7 +352,7 @@ int PNX(get_m)(
   return ths->m;
 }
 
-PNX(get_x_max)(
+void PNX(get_x_max)(
     const PNX(plan) ths,
     R *x_max
     )

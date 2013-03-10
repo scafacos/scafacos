@@ -17,10 +17,20 @@ sub canonicalize_type {
     return $type;
 }
 
+sub canonicalize_name {
+    my($name);
+    ($name) = @_;
+    # Since Fortran isn't case sensitive we must distiguish between N and n
+    if ($name eq "n") {
+      $name = "Nos";
+    }
+    return $name;
+}
+
 # C->Fortran map of supported return types
 %return_types = (
     "int" => "integer(C_INT)",
-    "unsigned" => "integer(C_INT), value",
+    "unsigned" => "integer(C_INT)",
     "ptrdiff_t" => "integer(C_INTPTR_T)",
     "size_t" => "integer(C_SIZE_T)",
     "double" => "real(C_DOUBLE)",
@@ -76,7 +86,7 @@ sub canonicalize_type {
     "const pnfftq_plan" => "type(C_PTR), value",
 
     "const int *" => "integer(C_INT), dimension(*), intent(in)",
-    "ptrdiff_t *" => "integer(C_INTPTR_T), intent(out)",
+    "ptrdiff_t *" => "integer(C_INTPTR_T), dimension(*), intent(out)",
     "const ptrdiff_t *" => "integer(C_INTPTR_T), dimension(*), intent(in)",
 
     "const pnfft_r2r_kind *" => "integer(C_FFTW_R2R_KIND), dimension(*), intent(in)",
@@ -141,7 +151,7 @@ while (<>) {
 	}
 
         # Since Fortran isn't case sensitive we must distiguish between get_N and get_n
-        $name =~ s/get_n/get_nos/;
+        $name =~ s/get_n/get_Nos/;
 
 	# Fortran has a 132-character line-length limit by default (grr)
 	$len = 0;
@@ -162,6 +172,7 @@ while (<>) {
 	$argnames =~ s/([a-zA-Z_0-9 ]+[ \*]) *([a-zA-Z_0-9]+) */$2/g;
 	$comma = "";
 	foreach $argname (split(/ *, */, $argnames)) {
+            $argname = &canonicalize_name($argname);
 	    if ($len + length("$comma$argname") + 3 > 132) {
 		printf ", &\n%*s", $len0, "";
 		$len = $len0;
@@ -182,7 +193,7 @@ while (<>) {
 	foreach $arg (split(/ *, */, $args)) {
 	    $arg =~ /^([a-zA-Z_0-9 ]+[ \*]) *([a-zA-Z_0-9]+) *$/;
 	    $argtype = &canonicalize_type($1);
-	    $argname = $2;
+            $argname = &canonicalize_name($2);
 	    $ftype = $arg_types{$argtype};
 
 	    # Various special cases for argument types:

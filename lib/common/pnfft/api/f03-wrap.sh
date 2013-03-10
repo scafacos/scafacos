@@ -20,6 +20,6 @@ echo "#include \"ipnfft.h\""
 echo
 
 # Declare prototypes using FFTW_EXTERN, important for Windows DLLs
-grep -v 'mpi.h' pnfft.h | gcc -E - -I${FFTW_INC} -I${PFFT_INC} |grep "pnfftl_init" |tr ';' '\n' | grep "MPI_Comm" | perl genf03-wrap.pl | grep "MPI_Fint" | sed 's/^/PNFFT_EXTERN /;s/$/;/'
-grep -v 'mpi.h' pnfft.h | gcc -E - -I${FFTW_INC} -I${PFFT_INC} |grep "pnfftl_init" |tr ';' '\n' | grep "MPI_Comm" | perl genf03-wrap.pl
+mpicc -E pnfft.h -I${FFTW_INC} -I${PFFT_INC} |grep "pnfftl_init" |tr ';' '\n' | grep "MPI_Comm" | perl genf03-wrap.pl | grep "MPI_Fint" | sed 's/^/PNFFT_EXTERN /;s/$/;/'
+mpicc -E pnfft.h -I${FFTW_INC} -I${PFFT_INC} |grep "pnfftl_init" |tr ';' '\n' | grep "MPI_Comm" | perl genf03-wrap.pl
 
