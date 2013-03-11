@@ -26,5 +26,5 @@ libfcs_pepc_a_SOURCES =
 libfcs_pepc.a: $(sublibs)
 	$(mkinstalldirs) .libs
 	rm -f $@
-	for l in $^ ; do l="./$${l}" lib="$${l##*/}" ; dir="$${l%$${lib}}" ; $(add_lib_objects) ; done
+	for l in $^ ; do l="./$${l}" lib="$${l##*/}" ; dir="$${l%$${lib}}" ; $(add_dir_lib_objects) ; done
 	$(RANLIB) $@

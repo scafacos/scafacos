@@ -47,6 +47,8 @@ pepc_raw_f90_sources = pepc_scafacos.f90 \
 
 liblpepc_a_SOURCES = $(pepc_raw_c_sources)
 
+liblpepc_a_CPPFLAGS = -I$(top_srcdir)/openpa/src
+
 ALL_INCLUDE_HEADER = $(srcdir)/pepc_debug.h 
 PP_FILES = $(pepc_raw_f90_sources)
 
@@ -78,7 +80,16 @@ debug:	$(OBJECTS)
 	@echo "Loading object files using flags $(DBFLAGS)"
 	$(FC) $(LDFLAGS)  $(VISITLIBS) $(DBFLAGS)  -o $@ $(OBJECTS)
 
-clean-local: clean-other-files cleanps
+all-local: make-opa-config
+
+make-opa-config: $(top_builddir)/openpa/src/opa_config.h
+	ln -s $^ opa_config.h
+
+clean-local: clean-opa-config clean-other-files cleanps
+
+clean-opa-config:
+	rm -f opa_config.h
+
 clean-other-files:
 	$(RM) *% *~ bin/key rand *.pif core module.deps
 
@@ -93,9 +104,9 @@ tree_stats.pp.o: module_walk_communicator.pp.o
 $(builddir)/module.deps: $(pepc_raw_f90_sources) $(ALL_INCLUDE_HEADER)
 	SRCDIR="$(srcdir)" PRE_INCLUDE="$(ALL_INCLUDE_HEADER)" CPP="cpp $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES)" OBJEXT="$(PP_SUFFIX).$(OBJEXT)" MODEXT="$(FC_MODEXT)" \
 	$(SHELL) $(top_srcdir)/build-aux/fortran-depcomp $^ > $@
-	@echo "uname -a: `uname -a`"
-	$(MAKE) -v
-	@echo "--> $@" ; cat $@ ; echo "<-- $@"
+#	@echo "uname -a: `uname -a`"
+#	$(MAKE) -v
+#	@echo "--> $@" ; cat $@ ; echo "<-- $@"
 
 DISTCLEANFILES = module.deps
 
