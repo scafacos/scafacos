@@ -83,7 +83,7 @@ debug:	$(OBJECTS)
 all-local: make-opa-config
 
 make-opa-config: $(top_builddir)/openpa/src/opa_config.h
-	@[ ! -f opa_config.h ] && ln -s $^ opa_config.h
+	@if [ ! -f opa_config.h ] ; then ln -s $^ opa_config.h ; fi
 
 clean-local: clean-opa-config clean-other-files cleanps
 
