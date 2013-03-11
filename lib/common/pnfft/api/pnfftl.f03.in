@@ -1,0 +1,445 @@
+! Generated automatically.  DO NOT EDIT!
+
+! integers
+
+! unsigned
+  integer(C_INT), parameter :: PNFFT_FFT_OUT_OF_PLACE = 0
+  integer(C_INT), parameter :: PNFFT_GRAD_AD = 0
+  integer(C_INT), parameter :: PNFFT_WINDOW_KAISER_BESSEL = 0
+  integer(C_INT), parameter :: PNFFT_TIMER_LENGTH = 10
+  integer(C_INT), parameter :: PNFFT_TIMER_ITER = 0
+  integer(C_INT), parameter :: PNFFT_TIMER_WHOLE = 1
+  integer(C_INT), parameter :: PNFFT_TIMER_LOOP_B = 2
+  integer(C_INT), parameter :: PNFFT_TIMER_SORT_NODES = 3
+  integer(C_INT), parameter :: PNFFT_TIMER_GCELLS = 4
+  integer(C_INT), parameter :: PNFFT_TIMER_MATRIX_B = 5
+  integer(C_INT), parameter :: PNFFT_TIMER_MATRIX_F = 6
+  integer(C_INT), parameter :: PNFFT_TIMER_MATRIX_D = 7
+  integer(C_INT), parameter :: PNFFT_TIMER_SHIFT_INPUT = 8
+  integer(C_INT), parameter :: PNFFT_TIMER_SHIFT_OUTPUT = 9
+
+! shifted unsigned
+  integer(C_INT), parameter :: PNFFT_PRE_PHI_HUT = 1
+  integer(C_INT), parameter :: PNFFT_PRE_PHI_HAT = 1
+  integer(C_INT), parameter :: PNFFT_FG_PSI = 2
+  integer(C_INT), parameter :: PNFFT_PRE_CONST_PSI = 4
+  integer(C_INT), parameter :: PNFFT_PRE_LIN_PSI = 8
+  integer(C_INT), parameter :: PNFFT_PRE_QUAD_PSI = 16
+  integer(C_INT), parameter :: PNFFT_PRE_KUB_PSI = 32
+  integer(C_INT), parameter :: PNFFT_PRE_PSI = 64
+  integer(C_INT), parameter :: PNFFT_PRE_FULL_PSI = 128
+  integer(C_INT), parameter :: PNFFT_MALLOC_X = 256
+  integer(C_INT), parameter :: PNFFT_MALLOC_F_HAT = 512
+  integer(C_INT), parameter :: PNFFT_MALLOC_F = 1024
+  integer(C_INT), parameter :: PNFFT_MALLOC_GRAD_F = 2048
+  integer(C_INT), parameter :: PNFFT_FFT_IN_PLACE = 4096
+  integer(C_INT), parameter :: PNFFT_SORT_NODES = 8192
+  integer(C_INT), parameter :: PNFFT_INTERLACED = 16384
+  integer(C_INT), parameter :: PNFFT_SHIFTED_IN = 32768
+  integer(C_INT), parameter :: PNFFT_SHIFTED_OUT = 65536
+  integer(C_INT), parameter :: PNFFT_GRAD_IK = 131072
+  integer(C_INT), parameter :: PNFFT_GRAD_NONE = 262144
+  integer(C_INT), parameter :: PNFFT_REAL_F = 524288
+  integer(C_INT), parameter :: PNFFT_WINDOW_GAUSSIAN = 1048576
+  integer(C_INT), parameter :: PNFFT_WINDOW_BSPLINE = 2097152
+  integer(C_INT), parameter :: PNFFT_WINDOW_SINC_POWER = 4194304
+  integer(C_INT), parameter :: PNFFT_WINDOW_BESSEL_I0 = 8388608
+
+! redirections
+  integer(C_INT), parameter :: PNFFT_PRE_FG_PSI = PNFFT_PRE_PSI &
+      + PNFFT_FG_PSI
+  integer(C_INT), parameter :: PNFFT_PRE_FULL_FG_PSI = PNFFT_PRE_FULL_PSI &
+      + PNFFT_FG_PSI
+  integer(C_INT), parameter :: PNFFT_PRE_INTPOL_PSI = PNFFT_PRE_CONST_PSI &
+      + PNFFT_PRE_LIN_PSI &
+      + PNFFT_PRE_QUAD_PSI &
+      + PNFFT_PRE_KUB_PSI
+  integer(C_INT), parameter :: PNFFT_PRE_ONE_PSI = PNFFT_PRE_INTPOL_PSI &
+      + PNFFT_PRE_FG_PSI &
+      + PNFFT_PRE_PSI &
+      + PNFFT_PRE_FULL_PSI
+  integer(C_INT), parameter :: PNFFT_FREE_X = PNFFT_MALLOC_X
+  integer(C_INT), parameter :: PNFFT_FREE_F_HAT = PNFFT_MALLOC_F_HAT
+  integer(C_INT), parameter :: PNFFT_FREE_F = PNFFT_MALLOC_F
+  integer(C_INT), parameter :: PNFFT_FREE_GRAD_F = PNFFT_MALLOC_GRAD_F
+  integer(C_INT), parameter :: PNFFT_COMPUTE_F = PNFFT_MALLOC_F
+  integer(C_INT), parameter :: PNFFT_COMPUTE_GRAD_F = PNFFT_MALLOC_GRAD_F
+  integer(C_INT), parameter :: PNFFT_INT = PFFT_INT
+  integer(C_INT), parameter :: PNFFT_PTRDIFF_T = PFFT_PTRDIFF_T
+  integer(C_INT), parameter :: PNFFT_FLOAT = PFFT_FLOAT
+  integer(C_INT), parameter :: PNFFT_DOUBLE = PFFT_DOUBLE
+  integer(C_INT), parameter :: PNFFT_UNSIGNED = PFFT_UNSIGNED
+
+
+  interface
+    integer(C_INT) function pnfftl_create_procmesh_2d(comm,np0,np1,comm_cart_2d) bind(C, name='pnfftl_create_procmesh_2d_f03')
+      import
+      integer(C_MPI_FINT), value :: comm
+      integer(C_INT), value :: np0
+      integer(C_INT), value :: np1
+      integer(C_MPI_FINT), intent(out) :: comm_cart_2d
+    end function pnfftl_create_procmesh_2d
+    
+    integer(C_INT) function pnfftl_create_procmesh(rnk,comm,np,comm_cart) bind(C, name='pnfftl_create_procmesh_f03')
+      import
+      integer(C_INT), value :: rnk
+      integer(C_MPI_FINT), value :: comm
+      integer(C_INT), dimension(*), intent(in) :: np
+      integer(C_MPI_FINT), intent(out) :: comm_cart
+    end function pnfftl_create_procmesh
+    
+    subroutine pnfftl_local_size_3d(N,comm_cart,local_N,local_N_start,lower_border,upper_border) &
+               bind(C, name='pnfftl_local_size_3d_f03')
+      import
+      integer(C_INTPTR_T), dimension(*), intent(in) :: N
+      integer(C_MPI_FINT), value :: comm_cart
+      integer(C_INTPTR_T), dimension(*), intent(out) :: local_N
+      integer(C_INTPTR_T), dimension(*), intent(out) :: local_N_start
+      real(C_LONG_DOUBLE), dimension(*), intent(out) :: lower_border
+      real(C_LONG_DOUBLE), dimension(*), intent(out) :: upper_border
+    end subroutine pnfftl_local_size_3d
+    
+    subroutine pnfftl_local_size_adv(d,N,comm_cart,local_N,local_N_start,lower_border,upper_border) &
+               bind(C, name='pnfftl_local_size_adv_f03')
+      import
+      integer(C_INT), value :: d
+      integer(C_INTPTR_T), dimension(*), intent(in) :: N
+      integer(C_MPI_FINT), value :: comm_cart
+      integer(C_INTPTR_T), dimension(*), intent(out) :: local_N
+      integer(C_INTPTR_T), dimension(*), intent(out) :: local_N_start
+      real(C_LONG_DOUBLE), dimension(*), intent(out) :: lower_border
+      real(C_LONG_DOUBLE), dimension(*), intent(out) :: upper_border
+    end subroutine pnfftl_local_size_adv
+    
+    subroutine pnfftl_local_size_guru(d,N,Nos,x_max,m,comm_cart,local_N,local_N_start,lower_border,upper_border) &
+               bind(C, name='pnfftl_local_size_guru_f03')
+      import
+      integer(C_INT), value :: d
+      integer(C_INTPTR_T), dimension(*), intent(in) :: N
+      integer(C_INTPTR_T), dimension(*), intent(in) :: Nos
+      real(C_LONG_DOUBLE), dimension(*), intent(in) :: x_max
+      integer(C_INT), value :: m
+      integer(C_MPI_FINT), value :: comm_cart
+      integer(C_INTPTR_T), dimension(*), intent(out) :: local_N
+      integer(C_INTPTR_T), dimension(*), intent(out) :: local_N_start
+      real(C_LONG_DOUBLE), dimension(*), intent(out) :: lower_border
+      real(C_LONG_DOUBLE), dimension(*), intent(out) :: upper_border
+    end subroutine pnfftl_local_size_guru
+    
+    type(C_PTR) function pnfftl_init_3d(N,local_M,comm_cart) bind(C, name='pnfftl_init_3d_f03')
+      import
+      integer(C_INTPTR_T), dimension(*), intent(in) :: N
+      integer(C_INTPTR_T), value :: local_M
+      integer(C_MPI_FINT), value :: comm_cart
+    end function pnfftl_init_3d
+    
+    type(C_PTR) function pnfftl_init_adv(d,N,local_M,pnfft_flags,fftw_flags,comm_cart) bind(C, name='pnfftl_init_adv_f03')
+      import
+      integer(C_INT), value :: d
+      integer(C_INTPTR_T), dimension(*), intent(in) :: N
+      integer(C_INTPTR_T), value :: local_M
+      integer(C_INT), value :: pnfft_flags
+      integer(C_INT), value :: fftw_flags
+      integer(C_MPI_FINT), value :: comm_cart
+    end function pnfftl_init_adv
+    
+    type(C_PTR) function pnfftl_init_guru(d,N,Nos,x_max,local_M,m,pnfft_flags,fftw_flags,comm_cart) &
+                         bind(C, name='pnfftl_init_guru_f03')
+      import
+      integer(C_INT), value :: d
+      integer(C_INTPTR_T), dimension(*), intent(in) :: N
+      integer(C_INTPTR_T), dimension(*), intent(in) :: Nos
+      real(C_LONG_DOUBLE), dimension(*), intent(in) :: x_max
+      integer(C_INTPTR_T), value :: local_M
+      integer(C_INT), value :: m
+      integer(C_INT), value :: pnfft_flags
+      integer(C_INT), value :: fftw_flags
+      integer(C_MPI_FINT), value :: comm_cart
+    end function pnfftl_init_guru
+    
+    subroutine pnfftl_init_nodes(ths,local_M,pnfft_flags,pnfft_finalize_flags) bind(C, name='pnfftl_init_nodes')
+      import
+      type(C_PTR), value :: ths
+      integer(C_INTPTR_T), value :: local_M
+      integer(C_INT), value :: pnfft_flags
+      integer(C_INT), value :: pnfft_finalize_flags
+    end subroutine pnfftl_init_nodes
+    
+    subroutine pnfftl_precompute_psi(ths) bind(C, name='pnfftl_precompute_psi')
+      import
+      type(C_PTR), value :: ths
+    end subroutine pnfftl_precompute_psi
+    
+    subroutine pnfftl_set_f_hat(f_hat,ths) bind(C, name='pnfftl_set_f_hat')
+      import
+      complex(C_LONG_DOUBLE_COMPLEX), dimension(*), intent(out) :: f_hat
+      type(C_PTR), value :: ths
+    end subroutine pnfftl_set_f_hat
+    
+    subroutine pnfftl_set_f(f,ths) bind(C, name='pnfftl_set_f')
+      import
+      complex(C_LONG_DOUBLE_COMPLEX), dimension(*), intent(out) :: f
+      type(C_PTR), value :: ths
+    end subroutine pnfftl_set_f
+    
+    subroutine pnfftl_set_grad_f(grad_f,ths) bind(C, name='pnfftl_set_grad_f')
+      import
+      complex(C_LONG_DOUBLE_COMPLEX), dimension(*), intent(out) :: grad_f
+      type(C_PTR), value :: ths
+    end subroutine pnfftl_set_grad_f
+    
+    subroutine pnfftl_set_x(x,ths) bind(C, name='pnfftl_set_x')
+      import
+      real(C_LONG_DOUBLE), dimension(*), intent(out) :: x
+      type(C_PTR), value :: ths
+    end subroutine pnfftl_set_x
+    
+    type(C_PTR) function pnfftl_get_f_hat(ths) bind(C, name='pnfftl_get_f_hat')
+      import
+      type(C_PTR), value :: ths
+    end function pnfftl_get_f_hat
+    
+    type(C_PTR) function pnfftl_get_f(ths) bind(C, name='pnfftl_get_f')
+      import
+      type(C_PTR), value :: ths
+    end function pnfftl_get_f
+    
+    type(C_PTR) function pnfftl_get_grad_f(ths) bind(C, name='pnfftl_get_grad_f')
+      import
+      type(C_PTR), value :: ths
+    end function pnfftl_get_grad_f
+    
+    type(C_PTR) function pnfftl_get_x(ths) bind(C, name='pnfftl_get_x')
+      import
+      type(C_PTR), value :: ths
+    end function pnfftl_get_x
+    
+    integer(C_INT) function pnfftl_get_d(ths) bind(C, name='pnfftl_get_d')
+      import
+      type(C_PTR), value :: ths
+    end function pnfftl_get_d
+    
+    integer(C_INT) function pnfftl_get_m(ths) bind(C, name='pnfftl_get_m')
+      import
+      type(C_PTR), value :: ths
+    end function pnfftl_get_m
+    
+    subroutine pnfftl_get_x_max(ths,x_max) bind(C, name='pnfftl_get_x_max')
+      import
+      type(C_PTR), value :: ths
+      real(C_LONG_DOUBLE), dimension(*), intent(out) :: x_max
+    end subroutine pnfftl_get_x_max
+    
+    subroutine pnfftl_get_N(ths,N) bind(C, name='pnfftl_get_N')
+      import
+      type(C_PTR), value :: ths
+      integer(C_INTPTR_T), dimension(*), intent(out) :: N
+    end subroutine pnfftl_get_N
+    
+    subroutine pnfftl_get_Nos(ths,Nos) bind(C, name='pnfftl_get_n')
+      import
+      type(C_PTR), value :: ths
+      integer(C_INTPTR_T), dimension(*), intent(out) :: Nos
+    end subroutine pnfftl_get_Nos
+    
+    integer(C_INT) function pnfftl_get_pnfft_flags(ths) bind(C, name='pnfftl_get_pnfft_flags')
+      import
+      type(C_PTR), value :: ths
+    end function pnfftl_get_pnfft_flags
+    
+    integer(C_INT) function pnfftl_get_pfft_flags(ths) bind(C, name='pnfftl_get_pfft_flags')
+      import
+      type(C_PTR), value :: ths
+    end function pnfftl_get_pfft_flags
+    
+    subroutine pnfftl_finalize(ths,pnfft_finalize_flags) bind(C, name='pnfftl_finalize')
+      import
+      type(C_PTR), value :: ths
+      integer(C_INT), value :: pnfft_finalize_flags
+    end subroutine pnfftl_finalize
+    
+    subroutine pnfftl_trafo(ths) bind(C, name='pnfftl_trafo')
+      import
+      type(C_PTR), value :: ths
+    end subroutine pnfftl_trafo
+    
+    subroutine pnfftl_adj(ths) bind(C, name='pnfftl_adj')
+      import
+      type(C_PTR), value :: ths
+    end subroutine pnfftl_adj
+    
+    subroutine pnfftl_init() bind(C, name='pnfftl_init')
+      import
+    end subroutine pnfftl_init
+    
+    subroutine pnfftl_cleanup() bind(C, name='pnfftl_cleanup')
+      import
+    end subroutine pnfftl_cleanup
+    
+    type(C_PTR) function pnfftl_malloc(Nos) bind(C, name='pnfftl_malloc')
+      import
+      integer(C_SIZE_T), value :: Nos
+    end function pnfftl_malloc
+    
+    type(C_PTR) function pnfftl_alloc_real(Nos) bind(C, name='pnfftl_alloc_real')
+      import
+      integer(C_SIZE_T), value :: Nos
+    end function pnfftl_alloc_real
+    
+    type(C_PTR) function pnfftl_alloc_complex(Nos) bind(C, name='pnfftl_alloc_complex')
+      import
+      integer(C_SIZE_T), value :: Nos
+    end function pnfftl_alloc_complex
+    
+    subroutine pnfftl_free(p) bind(C, name='pnfftl_free')
+      import
+      type(C_PTR), value :: p
+    end subroutine pnfftl_free
+    
+    subroutine pnfftl_init_f_hat_3d(N,local_N,local_N_start,data) bind(C, name='pnfftl_init_f_hat_3d')
+      import
+      integer(C_INTPTR_T), dimension(*), intent(in) :: N
+      integer(C_INTPTR_T), dimension(*), intent(in) :: local_N
+      integer(C_INTPTR_T), dimension(*), intent(in) :: local_N_start
+      complex(C_LONG_DOUBLE_COMPLEX), dimension(*), intent(out) :: data
+    end subroutine pnfftl_init_f_hat_3d
+    
+    subroutine pnfftl_init_x_3d(lo,up,loc_M,x) bind(C, name='pnfftl_init_x_3d')
+      import
+      real(C_LONG_DOUBLE), dimension(*), intent(in) :: lo
+      real(C_LONG_DOUBLE), dimension(*), intent(in) :: up
+      integer(C_INTPTR_T), value :: loc_M
+      real(C_LONG_DOUBLE), dimension(*), intent(out) :: x
+    end subroutine pnfftl_init_x_3d
+    
+    subroutine pnfftl_init_x_3d_adv(lo,up,x_max,loc_M,x) bind(C, name='pnfftl_init_x_3d_adv')
+      import
+      real(C_LONG_DOUBLE), dimension(*), intent(in) :: lo
+      real(C_LONG_DOUBLE), dimension(*), intent(in) :: up
+      real(C_LONG_DOUBLE), dimension(*), intent(in) :: x_max
+      integer(C_INTPTR_T), value :: loc_M
+      real(C_LONG_DOUBLE), dimension(*), intent(out) :: x
+    end subroutine pnfftl_init_x_3d_adv
+    
+    real(C_LONG_DOUBLE) function pnfftl_inv_phi_hat(ths,dim,k) bind(C, name='pnfftl_inv_phi_hat')
+      import
+      type(C_PTR), value :: ths
+      integer(C_INT), value :: dim
+      integer(C_INTPTR_T), value :: k
+    end function pnfftl_inv_phi_hat
+    
+    real(C_LONG_DOUBLE) function pnfftl_phi_hat(ths,dim,k) bind(C, name='pnfftl_phi_hat')
+      import
+      type(C_PTR), value :: ths
+      integer(C_INT), value :: dim
+      integer(C_INTPTR_T), value :: k
+    end function pnfftl_phi_hat
+    
+    real(C_LONG_DOUBLE) function pnfftl_psi(ths,dim,x) bind(C, name='pnfftl_psi')
+      import
+      type(C_PTR), value :: ths
+      integer(C_INT), value :: dim
+      real(C_LONG_DOUBLE), value :: x
+    end function pnfftl_psi
+    
+    real(C_LONG_DOUBLE) function pnfftl_dpsi(ths,dim,x) bind(C, name='pnfftl_dpsi')
+      import
+      type(C_PTR), value :: ths
+      integer(C_INT), value :: dim
+      real(C_LONG_DOUBLE), value :: x
+    end function pnfftl_dpsi
+    
+    subroutine pnfftl_vpr_complex(data,N,name,comm) bind(C, name='pnfftl_vpr_complex_f03')
+      import
+      complex(C_LONG_DOUBLE_COMPLEX), dimension(*), intent(out) :: data
+      integer(C_INTPTR_T), value :: N
+      character(C_CHAR), dimension(*), intent(in) :: name
+      integer(C_MPI_FINT), value :: comm
+    end subroutine pnfftl_vpr_complex
+    
+    subroutine pnfftl_vpr_real(data,N,name,comm) bind(C, name='pnfftl_vpr_real_f03')
+      import
+      real(C_LONG_DOUBLE), dimension(*), intent(out) :: data
+      integer(C_INTPTR_T), value :: N
+      character(C_CHAR), dimension(*), intent(in) :: name
+      integer(C_MPI_FINT), value :: comm
+    end subroutine pnfftl_vpr_real
+    
+    subroutine pnfftl_apr_complex_3d(data,local_N,local_N_start,name,comm) bind(C, name='pnfftl_apr_complex_3d_f03')
+      import
+      complex(C_LONG_DOUBLE_COMPLEX), dimension(*), intent(out) :: data
+      integer(C_INTPTR_T), dimension(*), intent(out) :: local_N
+      integer(C_INTPTR_T), dimension(*), intent(out) :: local_N_start
+      character(C_CHAR), dimension(*), intent(in) :: name
+      integer(C_MPI_FINT), value :: comm
+    end subroutine pnfftl_apr_complex_3d
+    
+    type(C_PTR) function pnfftl_get_timer_trafo(ths) bind(C, name='pnfftl_get_timer_trafo')
+      import
+      type(C_PTR), value :: ths
+    end function pnfftl_get_timer_trafo
+    
+    type(C_PTR) function pnfftl_get_timer_adj(ths) bind(C, name='pnfftl_get_timer_adj')
+      import
+      type(C_PTR), value :: ths
+    end function pnfftl_get_timer_adj
+    
+    subroutine pnfftl_timer_average(timer) bind(C, name='pnfftl_timer_average')
+      import
+      real(C_DOUBLE), dimension(*), intent(out) :: timer
+    end subroutine pnfftl_timer_average
+    
+    type(C_PTR) function pnfftl_timer_copy(orig) bind(C, name='pnfftl_timer_copy')
+      import
+      real(C_DOUBLE), dimension(*), intent(in) :: orig
+    end function pnfftl_timer_copy
+    
+    type(C_PTR) function pnfftl_timer_reduce_max(comm,timer) bind(C, name='pnfftl_timer_reduce_max_f03')
+      import
+      integer(C_MPI_FINT), value :: comm
+      real(C_DOUBLE), dimension(*), intent(out) :: timer
+    end function pnfftl_timer_reduce_max
+    
+    type(C_PTR) function pnfftl_timer_add(sum1,sum2) bind(C, name='pnfftl_timer_add')
+      import
+      real(C_DOUBLE), dimension(*), intent(in) :: sum1
+      real(C_DOUBLE), dimension(*), intent(in) :: sum2
+    end function pnfftl_timer_add
+    
+    subroutine pnfftl_timer_free(ths) bind(C, name='pnfftl_timer_free')
+      import
+      real(C_DOUBLE), dimension(*), intent(out) :: ths
+    end subroutine pnfftl_timer_free
+    
+    subroutine pnfftl_reset_timer(ths) bind(C, name='pnfftl_reset_timer')
+      import
+      type(C_PTR), value :: ths
+    end subroutine pnfftl_reset_timer
+    
+    subroutine pnfftl_print_average_timer(ths,comm) bind(C, name='pnfftl_print_average_timer_f03')
+      import
+      type(C_PTR), value :: ths
+      integer(C_MPI_FINT), value :: comm
+    end subroutine pnfftl_print_average_timer
+    
+    subroutine pnfftl_print_average_timer_adv(ths,comm) bind(C, name='pnfftl_print_average_timer_adv_f03')
+      import
+      type(C_PTR), value :: ths
+      integer(C_MPI_FINT), value :: comm
+    end subroutine pnfftl_print_average_timer_adv
+    
+    subroutine pnfftl_write_average_timer(ths,name,comm) bind(C, name='pnfftl_write_average_timer_f03')
+      import
+      type(C_PTR), value :: ths
+      character(C_CHAR), dimension(*), intent(in) :: name
+      integer(C_MPI_FINT), value :: comm
+    end subroutine pnfftl_write_average_timer
+    
+    subroutine pnfftl_write_average_timer_adv(ths,name,comm) bind(C, name='pnfftl_write_average_timer_adv_f03')
+      import
+      type(C_PTR), value :: ths
+      character(C_CHAR), dimension(*), intent(in) :: name
+      integer(C_MPI_FINT), value :: comm
+    end subroutine pnfftl_write_average_timer_adv
+    
+  end interface
