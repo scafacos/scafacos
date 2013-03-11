@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -148,7 +148,7 @@ module module_debug
 
        call DATE_AND_TIME(cdate,ctime,czone)
 
-       write(istream, '(2(a2,"/"),a4,", ",2(a2,":"),a2, " (GMT", a5") - ", a, //)') &
+       write(istream, '(2(a2,"/"),a4,", ",2(a2,":"),a2, " (GMT", a5,") - ", a, //)') &
              cdate(7:8), cdate(5:6), cdate(1:4), &
              ctime(1:2), ctime(3:4), ctime(5:6), &
              czone, &

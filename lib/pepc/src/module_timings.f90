@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -22,15 +22,85 @@
 !>
 !> All stuff concerning timing: timings are contained in a single
 !> array. certain entries therein are addressed via integer
-!> parameters, eg.   tim(t_allocate) = 0.1234
+!> parameters, eg.
+!>
+!>      tim(t_allocate) = 0.1234
 !>
 !> you can use own (frontend-defined) timer constants in the range
-!> t_userdefined_first .. t_userdefined_last, e.g.
-!> call timer_start(t_userdefined + 0)
-!> call timer_start(t_userdefined + 7)
+!> `t_userdefined_first` .. `t_userdefined_last`, e.g.
+!>
+!>      call timer_start(t_userdefined + 0)
+!>      call timer_start(t_userdefined + 7)
+!>
 !> etc.
 !>
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! The following is a diagram of the hierarchy of a subset of the timers 
+! provided by this module.
+!
+!
+!  t_all
+!  +
+!  |
+!  +-> t_fields_tree
+!  |   +
+!  |   |
+!  |   +-> t_domains
+!  |   |   +
+!  |   |   |
+!  |   |   +-> t_domains_keys
+!  |   |   |
+!  |   |   +-> t_domains_add_sort
+!  |   |   |   +
+!  |   |   |   |
+!  |   |   |   +-> t_domains_sort
+!  |   |   |   |   +
+!  |   |   |   |   |
+!  |   |   |   |   +-> t_domains_sort_pure
+!  |   |   |   |
+!  |   |   |   +-> t_domains_ship
+!  |   |   |       +
+!  |   |   |       |
+!  |   |   |       +-> t_domains_add_pack
+!  |   |   |       |
+!  |   |   |       +-> t_domains_add_alltoallv
+!  |   |   |       |
+!  |   |   |       +-> t_domains_add_unpack
+!  |   |   |
+!  |   |   +-> t_domains_bound
+!  |   |
+!  |   +-> t_allocate
+!  |   |
+!  |   +-> t_local
+!  |   |   +
+!  |   |   |
+!  |   |   +-> t_build_pure
+!  |   |   |
+!  |   |   +-> t_props_leafs
+!  |   |
+!  |   +-> t_branches_find
+!  |   |
+!  |   +-> t_exchange_branches
+!  |   |
+!  |   +-> t_global
+!  |
+!  +-> t_fields_passes
+!      +
+!      |
+!      +-> t_walk
+!      |   +
+!      |   |
+!      |   +-> t_comm_total
+!      |       +
+!      |       |
+!      |       +-> t_comm_sendreqs
+!      |       |
+!      |       +-> t_comm_recv
+!      |
+!      +-> t_lattice
+!
+
 module module_timings
   implicit none
 
@@ -152,24 +222,9 @@ module module_timings
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
-    !> Logs current time, i.e. sets
-    !>      tim(id) = MPI_WTIME()
-    !>
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    subroutine timer_stamp(id)
-      implicit none
-      include 'mpif.h'
-      integer, intent(in) :: id !< the affected timer address
-
-      tim(id) = MPI_WTIME()
-
-    end subroutine timer_stamp
-
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !>
     !> Starts a timer, i.e. sets
-    !>      tim(id) = MPI_WTIME()
+    !>
+    !>      tim(id) = - MPI_WTIME()
     !>
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timer_start(id)
@@ -177,7 +232,7 @@ module module_timings
       include 'mpif.h'
       integer, intent(in) :: id !< the affected timer address
 
-      tim(id) = MPI_WTIME()
+      tim(id) = - MPI_WTIME()
 
     end subroutine timer_start
 
@@ -185,7 +240,8 @@ module module_timings
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Stops a timer, i.e. sets
-    !>      tim(id) = MPI_WTIME() - tim(id)
+    !>
+    !>      tim(id) = tim(id) + MPI_WTIME()
     !>
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timer_stop(id)
@@ -193,9 +249,41 @@ module module_timings
       include 'mpif.h'
       integer, intent(in) :: id !< the affected timer address
 
-      tim(id) = MPI_WTIME() - tim(id)
+      tim(id) = tim(id) + MPI_WTIME()
 
     end subroutine timer_stop
+
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !>
+    !> Resumes a timer, i.e. sets
+    !>
+    !>      tim(id) = tim(id) - MPI_WTIME()
+    !>
+    !> This can be used to accumulate the durations of a task that is
+    !> performed repeatedly between accesses to the timer, e.g.
+    !> multiple particles are treated per timestep. Before use, the
+    !> timer has to be reset.
+    !>
+    !>      call timer_reset(t_example)
+    !>      do i=1,n
+    !>        ...
+    !>        call timer_resume(t_example)
+    !>        call subroutine_to_be_timed()
+    !>        call timer_stop(t_example)
+    !>        ...
+    !>      end do
+    !>      accumulated_time = timer_read(t_example)
+    !>
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    subroutine timer_resume(id)
+      implicit none
+      include 'mpif.h'
+      integer, intent(in) :: id !< the affected timer address
+
+      tim(id) = tim(id) - MPI_WTIME()
+
+    end subroutine timer_resume
 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -250,7 +338,7 @@ module module_timings
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Outputs all local timing data to timing_XXXX.dat
-    !> if itime <=1, an additional header is printed
+    !> if `itime <=1`, an additional header is printed
     !>
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timings_LocalOutput(itime, iuserflag)
@@ -280,19 +368,23 @@ module module_timings
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Gathers global timing data and outputs to
-    !> timing_avg.dat, timing_min.dat, timing_max.dat
-    !> if itime <=1, an additional header is printed
+    !> timing_avg.dat, timing_min.dat, timing_max.dat.
+    !> If `printheader` is present, its value controls the output of
+    !> descriptive column headers, otherwise, if `itime <=1`, headers
+    !> are printed.
     !>
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    subroutine timings_GatherAndOutput(itime, iuserflag)
+    subroutine timings_GatherAndOutput(itime, iuserflag, printheader)
       use treevars
       implicit none
       include 'mpif.h'
       integer, intent(in) :: itime !< current timestep
       integer, optional, intent(in) :: iuserflag !< frontend-defined flag that is passed through and output to the second column
+      logical, optional, intent(in) :: printheader
       integer :: ierr
 
       integer :: flag
+      logical :: do_printheader
 
       real*8, dimension(1:numtimings) :: tim_max
       real*8, dimension(1:numtimings) :: tim_avg
@@ -305,6 +397,12 @@ module module_timings
         flag = 0
       endif
 
+      if (present(printheader)) then
+        do_printheader = printheader
+      else
+        do_printheader = itime <= 1
+      end if
+
       call MPI_REDUCE(tim, tim_max, numtimings, MPI_REAL8, MPI_MAX, 0, MPI_COMM_lpepc,ierr);
       call MPI_REDUCE(tim, tim_min, numtimings, MPI_REAL8, MPI_MIN, 0, MPI_COMM_lpepc,ierr);
       call MPI_REDUCE(tim, tim_avg, numtimings, MPI_REAL8, MPI_SUM, 0, MPI_COMM_lpepc,ierr);
@@ -312,12 +410,12 @@ module module_timings
      if (me==0) then
         tim_avg = tim_avg / num_pe
         tim_dev = tim_max - tim_min
-        call timings_ToFile(itime, flag, tim_max, 'timing_max.dat', itime<=1)
-        call timings_ToFile(itime, flag, tim_avg, 'timing_avg.dat', itime<=1)
-        call timings_ToFile(itime, flag, tim_min, 'timing_min.dat', itime<=1)
-        call timings_ToFile(itime, flag, tim_dev, 'timing_dev_abs.dat', itime<=1)
+        call timings_ToFile(itime, flag, tim_max, 'timing_max.dat', do_printheader)
+        call timings_ToFile(itime, flag, tim_avg, 'timing_avg.dat', do_printheader)
+        call timings_ToFile(itime, flag, tim_min, 'timing_min.dat', do_printheader)
+        call timings_ToFile(itime, flag, tim_dev, 'timing_dev_abs.dat', do_printheader)
         tim_dev = tim_dev / tim_min
-        call timings_ToFile(itime, flag, tim_dev, 'timing_dev_rel.dat', itime<=1)
+        call timings_ToFile(itime, flag, tim_dev, 'timing_dev_rel.dat', do_printheader)
 
         write(*,'(a20,f16.10," s")') "t_all = ",       tim(t_all)
         write(*,'(a20,f16.10," s")') "t_tot = ",       tim(t_tot)

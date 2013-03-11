@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -20,7 +20,7 @@
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !>
-!>  Encapsulates functions for accessing, manipulating, and verifying hash table data
+!>  Encapsulates functions for periodic boundary conditions
 !>
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -47,8 +47,10 @@ module module_mirror_boxes
       real*8, public :: Lattice(3,3) !< holds the lattice transformation matrix
       real*8, public :: LatticeInv(3,3) !< holds the inverse lattice transformation matrix
       real*8, public :: LatticeCenter(3) !< holds the central point of the lattice box
+      real*8, public :: LatticeOrigin(3) = [0., 0., 0.] !< holds the lattice origin - can be modified by calling program
       logical, public :: periodicity(3) = [.false., .false., .false.]  !< boolean switches for determining periodicity directions
       integer, public :: mirror_box_layers = 1 !< size of near-field layer (nmber of shells)
+      real*8, public :: unit_box_volume = 1.0 !< volume box that is spanned by t_lattice_1..3, is initialized in calc_neighour_boxes()
       !> variables that should not be written to
       integer, public :: num_neighbour_boxes = 1
       integer, dimension(:,:), allocatable, public :: neighbour_boxes !dimensions in 3D case (3,27)
@@ -72,8 +74,11 @@ module module_mirror_boxes
       public init_movement_constraint
       public constrain_periodic
       public lattice_vect
+      public lattice_indices
       public system_is_unit_cube
       public system_uses_principal_axes
+      public check_lattice_boundaries
+
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -109,24 +114,40 @@ module module_mirror_boxes
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
+        !> Calculates the lattice indices of the unit cell into which the
+        !> argument vector points
+        !> @param[in] xyz vector
+        !>
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        function lattice_indices(xyz)
+          implicit none
+          real*8, intent(in) :: xyz(3)
+          integer :: lattice_indices(3)
+
+          lattice_indices = floor(matmul(xyz, LatticeInv))
+
+        end function lattice_indices
+
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !>
         !> Prepares the list of neighbour boxes within ws
         !> stores their number in num_neighbour_boxes and their logical
         !> indices/coordinates in neighbour_boxes
         !>
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         subroutine calc_neighbour_boxes()
+        use module_math_tools, only : cross_product
         implicit none
         integer :: i,j,k,idx
 
+         LatticeCenter = 0.5*(t_lattice_1 + t_lattice_2 + t_lattice_3) + LatticeOrigin
+
           if (allocated(neighbour_boxes)) deallocate(neighbour_boxes)
 
-          do i = 1,3
-            if (periodicity(i)) then
-               periodicity_switches(i) = mirror_box_layers
-             else
-               periodicity_switches(i) = 0
-             end if
-          end do
+          where (periodicity(:))
+            periodicity_switches = mirror_box_layers
+          end where
 
           idx = 0
 
@@ -166,6 +187,8 @@ module module_mirror_boxes
           end do
 
           neighbour_boxes(:,idx+1) = [0, 0, 0] ! center box is put to the back of the boxlist for easier iteration
+          
+          unit_box_volume = abs(dot_product(cross_product(t_lattice_1, t_lattice_2),t_lattice_3))
 
           call init_movement_constraint()
 
@@ -181,25 +204,13 @@ module module_mirror_boxes
           use module_math_tools
           implicit none
 
-          integer :: i,j
-
           Lattice(1,:) = t_lattice_1
           Lattice(2,:) = t_lattice_2
           Lattice(3,:) = t_lattice_3
           LatticeInv = Inverse3(Lattice)
 
           ! simplify the movement constraint if the lattice is really simple
-          simplelattice = .true.
-          do i = 1,3
-            do j = 1,3
-              if (i.ne.j) then
-                simplelattice = simplelattice .and. (Lattice(i,j) == 0)
-              else
-                simplelattice = simplelattice .and. (Lattice(i,j) >  0)
-              end if
-            end do
-          end do
-
+          simplelattice = system_uses_principal_axes()
 
         end subroutine init_movement_constraint
 
@@ -210,42 +221,38 @@ module module_mirror_boxes
         !> back into it
         !>
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        subroutine constrain_periodic(x, y, z, np_local)
+        subroutine constrain_periodic(particles, np_local)
             use module_math_tools
+            use module_pepc_types
 
             implicit none
 
-            real*8, intent(inout), dimension(1:np_local) :: x,y,z
+            type(t_particle), intent(inout) :: particles(:)
             integer, intent(in) :: np_local
 
             integer :: p !< loop variable
-            real*8 :: lattice_coord(3), real_coord(3)
+            real*8 :: lattice_coord(3), real_coord(3), latticewalls(3)
 
             if (simplelattice) then
+                latticewalls(1:3) = [t_lattice_1(1), t_lattice_2(2), t_lattice_3(3)]
 
                 do p = 1,np_local
-
-                  if (periodicity(1)) x(p) = modulo(x(p), t_lattice_1(1))
-                  if (periodicity(2)) y(p) = modulo(y(p), t_lattice_2(2))
-                  if (periodicity(3)) z(p) = modulo(z(p), t_lattice_3(3))
-
+                  where (periodicity) particles(p)%x = modulo(particles(p)%x-LatticeOrigin, latticewalls) + LatticeOrigin
                 end do
 
             else
               ! the lattice axes are not parallel to the outer cartesian axes
                 do p = 1,np_local
 
-                    lattice_coord = matmul([x(p), y(p), z(p)], LatticeInv)
+                    lattice_coord = matmul(particles(p)%x-LatticeOrigin, LatticeInv)
 
                     if (any(lattice_coord > 1.D+0) .or. any(lattice_coord < 0.D+0)) then
 
                       lattice_coord = modulo(lattice_coord, 1.D+0)
 
-                      real_coord = matmul(lattice_coord, Lattice)
+                      real_coord = matmul(lattice_coord, Lattice) + LatticeOrigin
 
-                      if (periodicity(1)) x(p) = real_coord(1)
-                      if (periodicity(2)) y(p) = real_coord(2)
-                      if (periodicity(3)) z(p) = real_coord(3)
+                      where (periodicity) particles(p)%x = real_coord
 
                     end if
                 end do
@@ -302,6 +309,36 @@ module module_mirror_boxes
                                 (normsq(t_lattice_3) == 1.0)
 
         end function
+        
+        
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !>
+        !>  Verifies, if all particles lie inside the central box,
+        !>  otherweise LatticeOrigin or LatticeCenter are invalid
+        !>
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        logical function check_lattice_boundaries(particles, nparticles)
+          use module_pepc_types
+          use module_debug
+          implicit none
+          type (t_particle), dimension(:), intent(in) :: particles
+          integer, intent(in) :: nparticles
+          integer :: p
+          real*8 :: lattice_coord(3)
+          
+          check_lattice_boundaries = .true.
+          
+          do p = 1,nparticles
+
+            lattice_coord = matmul(particles(p)%x-LatticeOrigin, LatticeInv)
+
+            if (any(((lattice_coord > 1.D+0) .or. (lattice_coord < 0.D+0)) .and. periodicity)) then
+              DEBUG_WARNING_ALL('("Particle ", I0, " at coords", 3(X,G12.3), " lies outside the central box. Maybe, LatticeCenter or LatticeOrigin is wrong." )', p, particles(p)%x)
+            end if
+          end do
+        end function
+
 
 
 end module module_mirror_boxes

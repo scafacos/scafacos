@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -69,13 +69,13 @@ module module_walk_communicator
 
 
     public init_comm_data
-    public run_communication_loop_inner
     public uninit_comm_data
     public notify_walk_finished
     public send_request
     public send_data
     public unpack_data
     public send_walk_finished
+    public broadcast_walk_finished
 
   contains
 
@@ -112,125 +112,6 @@ module module_walk_communicator
 
 
 
-    subroutine run_communication_loop_inner(walk_finished, nummessages)
-        use module_pepc_types
-        use module_debug
-        implicit none
-        include 'mpif.h'
-        logical :: msg_avail
-        integer :: ierr
-        integer :: stat(MPI_STATUS_SIZE)
-        integer :: reqhandle
-        integer*8 :: requested_key
-        type (t_tree_node_transport_package), allocatable :: child_data(:) ! child data to be received - maximum up to eight children per particle
-        integer :: num_children
-        integer :: ipe_sender, msg_tag
-        integer, intent(inout), dimension(mintag:maxtag) :: nummessages
-        logical, intent(inout) :: walk_finished(num_pe)
-        integer :: dummy, i
-        real*8 :: tcomm
-
-          ! notify rank 0 if we completed our traversal
-          if (walk_status == WALK_ALL_MSG_DONE) call send_walk_finished()
-
-          ! probe for incoming messages
-          ! TODO: could be done with a blocking probe, but
-          ! since my Open-MPI Version is *not thread-safe*,
-          ! we will have to guarantee, that there is only one thread
-          ! doing all the communication during walk...
-          ! otherwise, we cannot send any messages while this thread is idling in a blocking probe
-          ! and hence cannot abort this block
-          ! if a blocking probe is used,
-          ! the calls to send_requests() and send_walk_finished() have
-          ! to be performed asynchonously (i.e. from the walk threads)
-          call MPI_IPROBE(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_lpepc, msg_avail, stat, ierr)
-          if (msg_avail) then
-
-            comm_loop_iterations(3) = comm_loop_iterations(3) + 1
-            tcomm = MPI_WTIME()
-
-          do while (msg_avail)
-
-          ipe_sender = stat(MPI_SOURCE)
-          msg_tag    = stat(MPI_TAG)
-
-          ! the functions returns the number of received messages of any tag
-          nummessages(msg_tag) = nummessages(msg_tag) + 1
-
-          select case (msg_tag)
-             ! another PE requested child data for a certain key
-             case (TAG_REQUEST_KEY)
-                ! actually receive this request... ! TODO: use MPI_RECV_INIT(), MPI_START() and colleagues for faster communication
-                call MPI_RECV( requested_key, 1, MPI_INTEGER8, ipe_sender, TAG_REQUEST_KEY, &
-                        MPI_COMM_lpepc, MPI_STATUS_IGNORE, ierr)
-                ! ... and answer it
-                call send_data(requested_key, ipe_sender)
-
-             ! some PE answered our request and sends
-             case (TAG_REQUESTED_DATA)
-                ! actually receive the data... ! TODO: use MPI_RECV_INIT(), MPI_START() and colleagues for faster communication
-                call MPI_GET_COUNT(stat, MPI_TYPE_tree_node_transport_package, num_children, ierr)
-                allocate(child_data(num_children))
-                call MPI_RECV( child_data, num_children, MPI_TYPE_tree_node_transport_package, ipe_sender, TAG_REQUESTED_DATA, &
-                        MPI_COMM_lpepc, MPI_STATUS_IGNORE, ierr)
-                ! ... and put it into the tree and all other data structures
-                call unpack_data(child_data, num_children, ipe_sender)
-                deallocate(child_data)
-
-             ! rank 0 does bookkeeping about which PE is already finished with its walk
-             ! no one else will ever receive this message tag
-             case (TAG_FINISHED_PE)
-                ! actually receive the data (however, we are not interested in it here) ! TODO: use MPI_RECV_INIT(), MPI_START() and colleagues for faster communication
-                call MPI_RECV( dummy, 1, MPI_INTEGER, ipe_sender, TAG_FINISHED_PE, &
-                        MPI_COMM_lpepc, MPI_STATUS_IGNORE, ierr)
-
-                if (walk_comm_debug) then
-                  DEBUG_INFO('("PE", I6, " has been told that PE", I6, "has finished walking")', me, ipe_sender)
-                end if
-
-                walk_finished(ipe_sender+1) = .true.
-
-                if ( all(walk_finished) ) then
-                  ! all PEs have to be informed
-                  ! TODO: need better idea here...
-                  if (walk_comm_debug) then
-                    DEBUG_INFO('("PE", I6, " has found out that all PEs have finished walking - telling them to exit now")', me)
-                  end if
-
-                  do i=0,num_pe-1
-                    call MPI_IBSEND(comm_dummy, 1, MPI_INTEGER, i, TAG_FINISHED_ALL, &
-                       MPI_COMM_lpepc, reqhandle, ierr )
-                    call MPI_REQUEST_FREE( reqhandle, ierr)
-                  end do
-                end if
-
-
-             ! all PEs have finished their walk
-             case (TAG_FINISHED_ALL)
-                call MPI_RECV( dummy, 1, MPI_INTEGER, ipe_sender, TAG_FINISHED_ALL, &
-                            MPI_COMM_lpepc, MPI_STATUS_IGNORE, ierr) ! TODO: use MPI_RECV_INIT(), MPI_START() and colleagues for faster communication
-
-                if (walk_comm_debug) then
-                  DEBUG_INFO('("PE", I6, " has been told to terminate by PE", I6, " since all walks on all PEs are finished")', me, ipe_sender)
-                end if
-
-                walk_status = WALK_ALL_FINISHED
-
-          end select
-
-          call MPI_IPROBE(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_lpepc, msg_avail, stat, ierr)
-
-        end do ! while (msg_avail)
-
-          timings_comm(TIMING_RECEIVE) = timings_comm(TIMING_RECEIVE) +  (MPI_WTIME() - tcomm)
-
-        endif
-
-    end subroutine
-
-
-
-
       subroutine uninit_comm_data()
         implicit none
         include 'mpif.h'
@@ -263,16 +144,36 @@ module module_walk_communicator
         implicit none
         include 'mpif.h'
         integer :: ierr
-        integer :: reqhandle
 
         ! notify rank 0 that we are finished with our walk
-        call MPI_IBSEND(comm_dummy, 1, MPI_INTEGER, 0, TAG_FINISHED_PE, &
-                        MPI_COMM_lpepc, reqhandle, ierr )
-        call MPI_REQUEST_FREE( reqhandle, ierr)
+        call MPI_BSEND(comm_dummy, 1, MPI_INTEGER, 0, TAG_FINISHED_PE, &
+          MPI_COMM_lpepc, ierr)
 
         walk_status = WALK_I_NOTIFIED_0
 
       end subroutine send_walk_finished
+
+
+      subroutine broadcast_walk_finished()
+        use treevars, only : num_pe, MPI_COMM_lpepc
+        use module_debug
+        implicit none
+        include 'mpif.h'
+        integer :: i, ierr
+
+         ! all PEs have to be informed
+         ! TODO: need better idea here...
+         if (walk_comm_debug) then
+           DEBUG_INFO('("PE", I6, " has found out that all PEs have finished walking - telling them to exit now")', me)
+         end if
+
+         do i=0,num_pe-1
+           call MPI_BSEND(comm_dummy, 1, MPI_INTEGER, i, TAG_FINISHED_ALL, &
+             MPI_COMM_lpepc, ierr)
+         end do
+
+
+      end subroutine
 
 
     subroutine send_data(requested_key, ipe_sender)
@@ -286,9 +187,8 @@ module module_walk_communicator
       integer :: process_addr
       type(t_tree_node_transport_package), target :: children_to_send(8)
       type(t_tree_node_transport_package), pointer :: c
-      integer :: reqhandle
       integer*8, dimension(8) :: key_child
-      integer, dimension(8) :: addr_child, node_child, byte_child, leaves_child, owner_child
+      integer, dimension(8) :: addr_child, node_child, byte_child, leaves_child, owner_child, level_child
       integer :: j, ic, ierr, nchild
 
       if (walk_comm_debug) then
@@ -306,6 +206,7 @@ module module_walk_communicator
       byte_child(1:nchild)   = int(IAND( htable( addr_child(1:nchild) )%childcode, CHILDCODE_CHILDBYTE ))! Catch lowest 8 bits of childbyte - filter off requested and here flags
       leaves_child(1:nchild) = htable( addr_child(1:nchild) )%leaves                      ! # contained leaves
       owner_child(1:nchild)  = htable( addr_child(1:nchild) )%owner                       ! real owner of child (does not necessarily have to be identical to me, at least after futural modifications)
+      level_child(1:nchild)  = htable( addr_child(1:nchild) )%level                       ! level of child node
       ! Package children properties into user-defined multipole array for shipping
       do ic = 1,nchild
          c=>children_to_send(ic)
@@ -314,12 +215,12 @@ module module_walk_communicator
            c%byte   = byte_child(ic)
            c%leaves = leaves_child(ic)
            c%owner  = owner_child(ic)
+	   c%level  = level_child(ic)
       end do
-
+      
       ! Ship child data back to PE that requested it
-      call MPI_IBSEND( children_to_send(1:nchild), nchild, MPI_TYPE_tree_node_transport_package, ipe_sender, TAG_REQUESTED_DATA, &
-              MPI_COMM_lpepc, reqhandle, ierr )
-      call MPI_REQUEST_FREE(reqhandle, ierr)
+      call MPI_BSEND( children_to_send(1:nchild), nchild, MPI_TYPE_tree_node_transport_package, &
+        ipe_sender, TAG_REQUESTED_DATA, MPI_COMM_lpepc, ierr)
 
       ! statistics on number of sent children-packages
       sum_ships = sum_ships + 1
@@ -333,13 +234,13 @@ module module_walk_communicator
       include 'mpif.h'
       logical :: send_request
       type(t_request_queue_entry), intent(in) :: req
-      integer :: reqhandle, ierr
+      integer :: ierr
 
       if (.not. BTEST( htable(req%addr)%childcode, CHILDCODE_BIT_REQUEST_SENT ) ) then
         ! send a request to PE req_queue_owners(req_queue_top)
         ! telling, that we need child data for particle request_key(req_queue_top)
-        call MPI_IBSEND(req%key, 1, MPI_INTEGER8, req%owner, TAG_REQUEST_KEY, MPI_COMM_lpepc, reqhandle, ierr )
-        call MPI_REQUEST_FREE( reqhandle, ierr)
+        call MPI_BSEND(req%key, 1, MPI_INTEGER8, req%owner, TAG_REQUEST_KEY, &
+          MPI_COMM_lpepc, ierr)
 
         htable(req%addr)%childcode = ibset(htable(req%addr)%childcode, CHILDCODE_BIT_REQUEST_SENT )
 
@@ -357,19 +258,26 @@ module module_walk_communicator
       use module_tree
       use module_spacefilling
       use module_debug
+      use module_atomic_ops
       implicit none
       include 'mpif.h'
       type (t_tree_node_transport_package) :: child_data(num_children) !< child data that has been received
       integer :: num_children !< actual number of valid children in dataset
       integer, intent(in) :: ipe_sender
       integer*8 :: kparent
-      integer :: ownerchild, parent_addr(num_children)
+      integer :: ownerchild, parent_addr(0:num_children), num_parents
       integer :: ic
+
+      num_parents = 0
+      parent_addr(0) = maxaddress + 1
 
       do ic = 1, num_children
         ! save parent address - after (!) inserting all (!) children we can flag it: it`s children are then accessible
-        kparent     = ishft( child_data(ic)%key, -3 )
-        parent_addr(ic) = key2addr( kparent, 'WALK:unpack_data() - get parent address' )
+        kparent     = parent_key_from_key( child_data(ic)%key )
+        parent_addr(num_parents + 1) = key2addr( kparent, 'WALK:unpack_data() - get parent address' )
+        if (parent_addr(num_parents) .ne. parent_addr(num_parents + 1)) then
+          num_parents = num_parents + 1
+        end if
 
         if (walk_comm_debug) then
           DEBUG_INFO('("PE", I6, " received answer.                            parent_key=", O22, ",        sender=", I6, ",        owner=", I6, ", kchild=", O22)',
@@ -384,9 +292,11 @@ module module_walk_communicator
         sum_fetches = sum_fetches+1
      end do
 
+     call atomic_read_write_barrier()
+
      ! set 'children-here'-flag for all parent addresses
      ! may only be done *after inserting all* children, hence not(!) during the loop above
-     do ic=1,num_children
+     do ic=1,num_parents
          htable( parent_addr(ic) )%childcode = IBSET(  htable( parent_addr(ic) )%childcode, CHILDCODE_BIT_CHILDREN_AVAILABLE) ! Set children_HERE flag for parent node
      end do
 

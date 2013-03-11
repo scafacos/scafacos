@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -107,7 +107,7 @@ contains
         allocate(branch_level_D2(0:nlev))
         allocate(speedup_potenz(0:nlev))
 
-        speedup_potenz(:) = (/ (2_8**(3*ilevel),ilevel=0,nlev) /)
+        speedup_potenz(:) = (/ (2_8**(idim*ilevel),ilevel=0,nlev) /)
 
     end subroutine branches_initialize
 
@@ -149,11 +149,11 @@ contains
             if(me.eq.0)then
                 right_limit      = particles(npp+1)%key
                 right_virt_limit = bpi(right_limit_me,right_limit)
-                left_virt_limit  = 2_8**(nlev*3)
+                left_virt_limit  = 2_8**(nlev * idim)
             else if(me.eq.(num_pe-1))then
                 left_limit       = particles(npp+1)%key
                 left_virt_limit  = bpi(left_limit,left_limit_me)
-                right_virt_limit = 2_8**(3*nlev+1)-1
+                right_virt_limit = 2_8**(idim * nlev+1)-1
             else
                 left_limit       = particles(npp+2)%key
                 right_limit      = particles(npp+1)%key
@@ -161,8 +161,8 @@ contains
                 right_virt_limit = bpi(right_limit_me,right_limit)
             end if
         else
-            left_virt_limit  = 2_8**(3*nlev)
-            right_virt_limit = 2_8**(3*nlev+1)-1
+            left_virt_limit  = 2_8**(idim * nlev)
+            right_virt_limit = 2_8**(idim * nlev+1)-1
         end if
 
     end subroutine get_virtual_local_domain
@@ -260,9 +260,9 @@ contains
  
         ! get estimation number of branches at all levels
         do ilevel=0,nlev
-            pos=3*(nlev-ilevel)
-            branch_level_D1(ilevel)=ibits(D1,pos,3_8)
-            branch_level_D2(ilevel)=ibits(D2,pos,3_8)
+            pos=idim*(nlev-ilevel)
+            branch_level_D1(ilevel)=ibits(D1,pos,idim)
+            branch_level_D2(ilevel)=ibits(D2,pos,idim)
             branch_level(ilevel)=branch_level_D1(ilevel) + branch_level_D2(ilevel)
         end do
         
@@ -280,7 +280,7 @@ contains
         use module_debug, only : pepc_status
         implicit none
 
-        integer*8 :: ilevel, j
+        integer :: ilevel, j
         integer*8 :: possible_branch
         integer*8 :: pos
 
@@ -296,8 +296,8 @@ contains
         pos=L
         do ilevel=0,nlev
             do j=1,int(branch_level_D1(ilevel))
-                pos = pos - speedup_potenz((nlev-ilevel))!8**(nlev-ilevel)
-                possible_branch=ishft(pos,-3*(nlev-ilevel))
+                pos = pos - speedup_potenz((nlev-ilevel))!2**(idim*(nlev-ilevel))
+                possible_branch=shift_key_by_level(pos,-(nlev-ilevel))
              
                 ! After local build hashtable should contain branch key
                 ! otherwise branch does not exists
@@ -314,8 +314,8 @@ contains
         pos=L-1
         do ilevel=0,nlev
             do j=1,int(branch_level_D2(ilevel))
-                pos = pos + speedup_potenz((nlev-ilevel))!8**(nlev-ilevel)
-                possible_branch=ishft(pos,-3*(nlev-ilevel))
+                pos = pos + speedup_potenz((nlev-ilevel))!2**(idim*(nlev-ilevel))
+                possible_branch=shift_key_by_level(pos,-(nlev-ilevel))
                 
                 ! After build hashtable should contain branch key
                 ! otherwise branch does not exists
@@ -346,7 +346,7 @@ contains
         integer*8, intent(inout), dimension(1:branch_max_global) :: resultarray
         integer, intent(in) :: resultidx
 
-        integer*8 :: ilevel, j
+        integer :: ilevel, j
         integer*8 :: pbranch_level(0:nlev), pbranch_level_D1(0:nlev), pbranch_level_D2(0:nlev)
         integer*8 :: pos
 
@@ -362,8 +362,8 @@ contains
         pos=L
         do ilevel=0,nlev
             do j=1,int(pbranch_level_D1(ilevel))
-                pos = pos - speedup_potenz((nlev-ilevel))!8**(nlev-ilevel)
-                resultarray(resultidx+find_possible_branches) = ishft(pos,-3*(nlev-ilevel))
+                pos = pos - speedup_potenz((nlev-ilevel))!2**(idim*(nlev-ilevel))
+                resultarray(resultidx+find_possible_branches) = shift_key_by_level(pos,-(nlev-ilevel))
                 find_possible_branches = find_possible_branches + 1
             end do
         end do
@@ -372,8 +372,8 @@ contains
         pos=L-1
         do ilevel=0,nlev
             do j=1,int(pbranch_level_D2(ilevel))
-                pos = pos + speedup_potenz((nlev-ilevel))!8**(nlev-ilevel)
-                resultarray(resultidx+find_possible_branches) = ishft(pos,-3*(nlev-ilevel))
+                pos = pos + speedup_potenz((nlev-ilevel))!2**(idim*(nlev-ilevel))
+                resultarray(resultidx+find_possible_branches) = shift_key_by_level(pos,-(nlev-ilevel))
                 find_possible_branches = find_possible_branches + 1
             end do
         end do

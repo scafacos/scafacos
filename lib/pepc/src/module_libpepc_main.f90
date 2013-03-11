@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -24,6 +24,12 @@
 !>
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 module module_libpepc_main
+    use module_debug, only : debug_level
+    use treevars, only : np_mult, interaction_list_length_factor
+    use module_spacefilling, only : curve_type
+    use module_domains, only : weighted, force_cubic_domain
+    use module_mirror_boxes, only: mirror_box_layers
+
     implicit none
     private
 
@@ -42,6 +48,8 @@ module module_libpepc_main
     public libpepc_restore_particles
     public libpepc_traverse_tree
     public libpepc_grow_tree
+    public libpepc_read_parameters
+    public libpepc_write_parameters
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -62,9 +70,39 @@ module module_libpepc_main
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    namelist /libpepc/ debug_level, np_mult, curve_type, force_cubic_domain, weighted, interaction_list_length_factor, mirror_box_layers
 
     contains
 
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !>
+    !> reads libpepc-specific parameters from file
+    !>
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    subroutine libpepc_read_parameters(filehandle)
+        use module_debug, only: pepc_status
+        implicit none
+        integer, intent(in) :: filehandle
+
+        call pepc_status("READ PARAMETERS, section libpepc")
+        read(filehandle,NML=libpepc)
+
+    end subroutine libpepc_read_parameters
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !>
+    !> writes libpepc-specific parameters to file
+    !>
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    subroutine libpepc_write_parameters(filehandle)
+        use module_debug, only: pepc_status
+        implicit none
+        integer, intent(in) :: filehandle
+
+        write(filehandle, NML=libpepc)
+
+    end subroutine
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
@@ -114,9 +152,9 @@ module module_libpepc_main
         !TODO: make adjustable by user or find a good estimation. Additional Question: Does this value have to be globally constant?
         nppmax = int(1.25 * max(npart/num_pe,1000)) ! allow 25% fluctuation around average particle number per PE in sorting library for load balancing
 
-        if (nppmax .lt. np_local) then
-            DEBUG_WARNING_ALL(*, 'nppmax=',nppmax, 'is smaller than np_local=',np_local,' - fixing and continuing. This could lead to load balancing issues. See ticket no. 10')
-            nppmax = max(nppmax, np_local)
+        if (nppmax-2 .lt. np_local) then
+            DEBUG_WARNING_ALL(*, 'nppmax-2=',nppmax-2, 'is smaller than np_local=',np_local,' - fixing and continuing. This could lead to load balancing issues. See ticket no. 10')
+            nppmax = max(nppmax, np_local) + 2
          end if
 
         ! fields for sorting library results, we have to deallocate them in case someone did not call restore()
@@ -138,7 +176,9 @@ module module_libpepc_main
         allocate(leaf_keys(npp+neighbour_pe_particles))
         call tree_build_from_particles(particles, npp+neighbour_pe_particles, leaf_keys)
         ! remove the boundary particles from the htable - we are not interested in them any more
-        call htable_remove_keys(leaf_keys(npp+1:npp+neighbour_pe_particles), neighbour_pe_particles)
+        if (neighbour_pe_particles > 0) then
+          call htable_remove_keys(leaf_keys(npp+1:npp+neighbour_pe_particles), neighbour_pe_particles)
+        end if
         neighbour_pe_particles = 0
         ! build tree from local particle keys up to root (the boundary particles are not included in the tree construction)
         call tree_build_upwards(leaf_keys(1:npp), npp)
@@ -230,7 +270,9 @@ module module_libpepc_main
 
         do ibox = 1,num_neighbour_boxes ! sum over all boxes within ws=1
 
-            if (ibox .ne. 1) call debug_barrier() ! we have to synchronize the different walks to prevent problems with recognition of finished ranks by rank 0
+            call debug_barrier() ! we have to synchronize the different walks to prevent problems with recognition of finished ranks by rank 0
+                                 ! just for the case that some frontend calls traverse_tree() several times, all of them have to be
+                                 ! synchronized individually - hence in any case there must be a barrier here
 
             ! tree walk finds interaction partners and calls interaction routine for particles on short list
             call tree_walk(nparticles,particles,ttrav,ttrav_loc, lattice_vect(neighbour_boxes(:,ibox)), tcomm)
@@ -247,7 +289,7 @@ module module_libpepc_main
         call timer_start(t_lattice)
         ! add lattice contribution and other per-particle-forces
         ! TODO: do not call calc_force_per_particle here!
-        call calc_force_per_particle(particles, npp)
+        call calc_force_per_particle(particles, nparticles)
         call timer_stop(t_lattice)
 
         call timer_stop(t_fields_passes)

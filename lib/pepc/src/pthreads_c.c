@@ -1,7 +1,7 @@
 /*
 * This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 * 
-* Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+* Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 *                         Forschungszentrum Juelich GmbH,
 *                         Germany
 * 
@@ -27,6 +27,7 @@
 *************************************************************************/
 
 #include <pthread.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sched.h>
@@ -38,8 +39,10 @@ pthread_t *__restrict__ my_threads;
 pthread_rwlock_t *my_rwlocks;
 void* *my_thread_args; // array of void pointers for making packup copies of the pthread argument pointers
 pthread_attr_t thread_attr;
-int maxnumthreads = 0;
-int maxnumlocks   = 0;
+int maxnumthreads  = 0;
+int maxnumlocks    = 0;
+
+int RWLOCKS_BUSY = EBUSY;
 
 #define CHECKRES do {if (iret != 0) return iret;} while(0);
 
@@ -150,9 +153,21 @@ int rwlocks_rdlock(int id)
 }
 
 
+int rwlocks_tryrdlock(int id)
+{
+    return pthread_rwlock_tryrdlock(&my_rwlocks[id-1]);
+}
+
+
 int rwlocks_wrlock(int id)
 {
     return pthread_rwlock_wrlock(&my_rwlocks[id-1]);
+}
+
+
+int rwlocks_trywrlock(int id)
+{
+    return pthread_rwlock_trywrlock(&my_rwlocks[id-1]);
 }
 
 

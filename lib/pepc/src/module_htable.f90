@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -41,6 +41,7 @@ module module_htable
         integer   :: leaves        !< # leaves contained within twig (=1 for leaf, npart for root)
         integer   :: childcode     !< Byte code indicating position of children (twig node); particle label (leaf node)
         integer   :: owner         !< Node owner (for branches)
+	integer   :: level         !< level_from_key(key)
     end type t_hash
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -51,7 +52,6 @@ module module_htable
 
     type (t_hash), public, target, allocatable :: htable(:) !< hash table
     integer*8,     public ::  hashconst  !< hashing constants
-    integer*8,     public, parameter ::  hashchild = b'111' !< bits that contain the child index in a key
 
     integer*8, public, parameter :: KEY_INVALID = -1
     integer*8, public, parameter :: KEY_EMPTY   =  0
@@ -103,7 +103,7 @@ module module_htable
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     integer, private, parameter :: start_child_idx = 0 !< index of first child to be used in traversal - do not change, currently not completely implemented
-    type (t_hash), private, parameter :: HASHENTRY_EMPTY = t_hash(KEY_EMPTY,0,-1,0,0,0) !< constant for empty hashentry
+    type (t_hash), private, parameter :: HASHENTRY_EMPTY = t_hash(KEY_EMPTY,0,-1,0,0,0, 0) !< constant for empty hashentry
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -170,13 +170,14 @@ module module_htable
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine htable_clear_and_insert_root()
         use treevars, only : ntwig, me
+	use module_spacefilling, only : level_from_key
         implicit none
 
         call htable_clear()
 
         ntwig = 1
 
-        htable(1) = t_hash(1_8, -1, -1, 0, IBSET(0, CHILDCODE_BIT_CHILDREN_AVAILABLE), me)
+        htable(1) = t_hash(1_8, -1, -1, 0, IBSET(0, CHILDCODE_BIT_CHILDREN_AVAILABLE), me, level_from_key(1_8))
 
         call htable_prepare_address_list()
 
@@ -233,6 +234,7 @@ module module_htable
     function get_next_node_key(keyin)
 
         use treevars
+        use module_spacefilling
 
         implicit none
         integer*8 :: get_next_node_key
@@ -241,20 +243,20 @@ module module_htable
         integer*8 :: search_key, parent_key
         integer   :: parent_addr
         integer   :: parent_child_byte 
-        integer*8 :: search_child_idx
+        integer   :: search_child_idx
 
         search_key = keyin
 
         ! search for next sibling, uncle, great-uncle etc
         do while (search_key > 1) ! loop through parent nodes up to root
-            parent_key        = ishft(search_key,-3)
+            parent_key        = parent_key_from_key(search_key)
             parent_addr       = key2addr( parent_key ,"next_node(), get parent_addr" )
-            parent_child_byte = ibits( htable( parent_addr ) % childcode, 0, 8)
+            parent_child_byte = ibits( htable( parent_addr ) % childcode, 0, 2**idim)
 
-            search_child_idx  = int(ibits( search_key, 0, 3), kind(search_child_idx) ) ! lower three bits of key
+            search_child_idx  = child_number_from_key(search_key) ! lower three bits of key
 
             do ! loop over all siblings
-                search_child_idx   = modulo(search_child_idx + 1_8, 8_8) ! get next sibling, possibly starting again from first one
+                search_child_idx   = modulo(search_child_idx + 1, 2**idim) ! get next sibling, possibly starting again from first one
 
                 ! if sibling-loop wrapped and reached starting point again --> go up one level
                 if ( search_child_idx == start_child_idx ) then
@@ -264,7 +266,7 @@ module module_htable
 
                 ! if sibling exists: next_node has been found
                 if ( btest(parent_child_byte, search_child_idx) ) then
-                    get_next_node_key = ior(int(ishft(parent_key, 3), kind(search_child_idx)), search_child_idx) ! assemble next_node out of parent-key and new sibling-index
+                    get_next_node_key = child_key_from_parent_key(parent_key, search_child_idx) ! assemble next_node out of parent-key and new sibling-index
                     return
                 endif
             end do
@@ -281,7 +283,8 @@ module module_htable
     !>
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine get_childkeys(addr, childnum, childkeys)
-        use treevars
+        use treevars, only: idim
+        use module_spacefilling
         implicit none
         integer, intent(in) :: addr
         integer, intent(out) :: childnum
@@ -291,11 +294,11 @@ module module_htable
         integer*8 :: keyhead
         integer :: childcode
 
-        keyhead   = ishft(htable(addr)%key, 3)
+        keyhead   = shift_key_by_level(htable(addr)%key, 1)
         childcode = htable(addr)%childcode
         childnum = 0
 
-        do i=0,7
+        do i=0,2**idim - 1
           if (btest(childcode, i)) then
             childnum            = childnum + 1
             childkeys(childnum) = ior(keyhead, 1_8*i)
@@ -338,7 +341,7 @@ module module_htable
 
             if (point_free(hashaddr) /= 0) then     ! Check if new address in collision res. list
                 free_addr( point_free(hashaddr) ) = free_addr(sum_unused)  ! Replace free address with last on list
-                point_free(free_addr(sum_unused)) = point_free(hashaddr)  ! Reset pointer
+                point_free(free_addr(sum_unused)) = point_free(hashaddr)   ! Reset pointer
                 point_free(hashaddr)              = 0
                 sum_unused = sum_unused - 1
             endif
@@ -415,11 +418,14 @@ module module_htable
           ! could not find key
           DEBUG_WARNING_ALL('("Key not resolved in KEY2ADDR at ",a)', cmark)
           DEBUG_WARNING_ALL('("Bad address, check #-table and key list for PE", I7)', me)
-          DEBUG_WARNING_ALL('("key (octal)           = ", o22)', keyin)
-          DEBUG_WARNING_ALL('("initial address (dez) = ", i22)', int(IAND( keyin, hashconst)))
-          DEBUG_WARNING_ALL('("   last address (dez) = ", i22)', key2addr)
-          DEBUG_WARNING_ALL('("# const         (dez) = ", i22)', hashconst)
-          DEBUG_WARNING_ALL('("maxaddress      (dez) = ", i22)', maxaddress)
+          DEBUG_WARNING_ALL('("key                  (oct) = ", o22)', keyin)
+          DEBUG_WARNING_ALL('("initial address      (dez) = ", i22)', int(IAND( keyin, hashconst)))
+          DEBUG_WARNING_ALL('("   last address      (dez) = ", i22)', key2addr)
+          if (.not. (key2addr == -1)) then
+            DEBUG_WARNING_ALL('("htable(lastaddr)%key (oct) = ", o22)', htable(key2addr)%key)
+          end if
+          DEBUG_WARNING_ALL('("# const              (dez) = ", i22)', hashconst)
+          DEBUG_WARNING_ALL('("     maxaddress      (dez) = ", i22)', maxaddress)
           call diagnose_tree()
           call debug_mpi_abort()
         endif
@@ -604,7 +610,7 @@ module module_htable
                 collision=" "
               endif
 
-              write (debug_ipefile,'(x,i10,x,o10,3(x,i10),x,o22,x,i22,x,o22,x,a1,xi12,x,i10,4x,3(b8.8,"."),b8.8)') &
+              write (debug_ipefile,'(x,i10,x,o10,3(x,i10),x,o22,x,i22,x,o22,x,a1,x,i12,x,i10,4x,3(b8.8,"."),b8.8)') &
                       i,                   &
                       i,                   &
                       htable(i)%owner,     &
@@ -612,7 +618,7 @@ module module_htable
                       htable(i)%node,      &
                       htable(i)%key,       &
                       htable(i)%key,       &
-                      ishft( htable(i)%key,-3 ), &
+                      parent_key_from_key(htable(i)%key), &
                       collision,           &
                       htable(i)%link,      &
                       htable(i)%leaves,    &

@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -89,7 +89,7 @@ module module_fmm_framework
       !> variables for extrinsic to intrinsic correction
       real(kfp) :: box_dipole(3) = zero
       real(kfp) :: quad_trace    = zero
-
+      
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!  subroutine-implementation  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -119,15 +119,13 @@ module module_fmm_framework
           MPI_COMM_fmm = mpi_comm
           ws           = mirror_box_layers
 
-          LatticeCenter = 0.5*(t_lattice_1 + t_lattice_2 + t_lattice_3)
-
           do_periodic = any(periodicity(1:3))
 
            ! anything above has to be done in any case
           if (do_periodic) then
             MLattice = 0
 
-            if (use_pretabulated_lattice_coefficients .or. (system_is_unit_cube() .and. all(periodicity(1:3)))) then
+            if (use_pretabulated_lattice_coefficients .or. system_is_unit_cube()) then
               call load_lattice_coefficients(MLattice)
               if (use_pretabulated_lattice_coefficients) then
                 DEBUG_WARNING('(a)', "Using pretabulated lattice coefficients. These are only valid for 3D-periodic unit-box simulations regions.")
@@ -152,11 +150,17 @@ module module_fmm_framework
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         subroutine fmm_framework_timestep(particles, nparticles)
           use module_pepc_types
+          use module_mirror_boxes
+          use module_debug
           implicit none
           integer, intent(in) :: nparticles
-          type(t_particle), dimension(nparticles), intent(in) :: particles
+          type(t_particle), intent(in) :: particles(:)
 
           if (do_periodic) then
+            if (.not. check_lattice_boundaries(particles, nparticles)) then
+              DEBUG_ERROR(*, 'Lattice contribution will be wrong. Aborting.')
+            endif
+            
             call calc_omega_tilde(particles, nparticles)
             call calc_mu_cent(omega_tilde, mu_cent)
             call calc_extrinsic_correction(particles, nparticles)
@@ -209,10 +213,14 @@ module module_fmm_framework
 
           ! zeroth step of iteration
           ML = Lstar
+          
+          ! FIXME untested : call zero_terms_taylor(ML)
 
           do iter = 1,MaxIter
 
             ML = M2L( UL( ML ) , MStar ) + Lstar
+
+            ! FIXME untested : call zero_terms_taylor(ML)
 
             if ((myrank == 0) .and. dbg(DBG_PERIODIC)) then
               write(fn,'("MLattice.", I2.2, ".tab")') iter
@@ -227,6 +235,51 @@ module module_fmm_framework
 
         end subroutine calc_lattice_coefficients
 
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !>
+        !> Sets those elements in a Taylor expansion to zero that vanish
+        !> anyway, see J. Chem. Phys 121, 2886, Section V
+        !>
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        subroutine zero_terms_taylor(M)
+          use module_mirror_boxes, only : periodicity
+          implicit none
+          complex(kfp), intent(inout) :: M(1:fmm_array_length_taylor)
+          
+          ! 1D, 2D, and 3D periodicity
+          M(tblinv(0, 0, Lmax_taylor)) = (zero, zero)
+          
+          if (count(periodicity) > 2) then
+            ! only for 3D-periodic case
+            M(tblinv(1, 0, Lmax_taylor)) = (zero, zero)
+            M(tblinv(1, 1, Lmax_taylor)) = (zero, zero)
+          endif
+
+        end subroutine
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !>
+        !> Sets those elements in a Multipole expansion to zero that vanish
+        !> anyway, see J. Chem. Phys 121, 2886, Section V
+        !>
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        subroutine zero_terms_multipole(O)
+          use module_mirror_boxes, only : periodicity
+          implicit none
+          complex(kfp), intent(inout) :: O(1:fmm_array_length_multipole)
+          
+          ! 1D, 2D, and 3D periodicity
+          O(tblinv(0, 0, Lmax_multipole)) = (zero, zero)
+          
+          if (count(periodicity) > 2) then
+            ! only for 3D-periodic case
+            O(tblinv(1, 0, Lmax_multipole)) = (zero, zero)
+            O(tblinv(1, 1, Lmax_multipole)) = (zero, zero)
+          endif
+
+        end subroutine
+         
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
@@ -500,7 +553,7 @@ module module_fmm_framework
           use module_debug
           implicit none
 
-          type(t_particle), dimension(nparticles), intent(in) :: particles
+          type(t_particle), intent(in) :: particles(:)
           integer, intent(in) :: nparticles
 
           integer :: ll, mm, p
@@ -532,11 +585,12 @@ module module_fmm_framework
             call WriteTableToFile('omega_tilde.tab', omega_tilde, Lmax_multipole)
           end if
 
-          if (abs(omega_tilde( tblinv(0, 0, Lmax_multipole))) > 1.E-10_kfp) then
+          if (abs(omega_tilde( tblinv(0, 0, Lmax_multipole))) > 0.) then
             DEBUG_WARNING(*, 'The central box is not charge-neutral: Q_total=omega_tilde( tblinv(0, 0))=', omega_tilde( tblinv(0, 0, Lmax_multipole)), ' Setting to zero, resulting potentials might be wrong.' )
+            omega_tilde( tblinv(0, 0, Lmax_multipole)) = (zero, zero) ! FIXME this line should be removed if zer_terms functions are used
           end if
-
-          omega_tilde( tblinv(0, 0, Lmax_multipole)) = (zero, zero)
+          
+          ! FIXME untested: call zero_terms_multipole(omega_tilde)
 
         end subroutine calc_omega_tilde
 
@@ -549,14 +603,17 @@ module module_fmm_framework
         !> \f$\frac{2\pi}{3}\sum_p q(p){\vec r}_p\cdot{\vec r}_p\f$
         !> for performing the extrinsic-to-intrinsic correction
         !> (see [J.Chem.Phys. 107, 10131, eqn.(19,20)] for details
+        !>       ^ inside this publication, the volume factor is missing
+        !>  [J. Chem. Phys. 101, 5024, eqn (5)] contains this volume
         !>
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         subroutine calc_extrinsic_correction(particles, nparticles)
           use module_debug
           use module_pepc_types
+          use module_mirror_boxes, only : unit_box_volume
           implicit none
 
-          type(t_particle), intent(in), dimension(nparticles) :: particles(:)
+          type(t_particle), intent(in) :: particles(:)
           integer, intent(in) :: nparticles
 
           real(kfp), parameter :: pi=acos(-one)
@@ -582,14 +639,15 @@ module module_fmm_framework
               call MPI_ALLREDUCE(MPI_IN_PLACE, box_dipole, 3, MPI_REAL_fmm, MPI_SUM, MPI_COMM_fmm, ierr)
               call MPI_ALLREDUCE(MPI_IN_PLACE, quad_trace, 1, MPI_REAL_fmm, MPI_SUM, MPI_COMM_fmm, ierr)
 
-              box_dipole = 4.*pi/3. * box_dipole
-              quad_trace = 2.*pi/3. * quad_trace
+              box_dipole = 4.*pi/(3.*unit_box_volume) * box_dipole
+              quad_trace = 2.*pi/(3.*unit_box_volume) * quad_trace
 
           end if
 
         end subroutine calc_extrinsic_correction
 
 
+         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !> Calculates the lattice contribution with respect to the
@@ -1189,7 +1247,7 @@ module module_fmm_framework
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
-        !> Computes the associated Legendre polynomial \f$P_l_m (x)\f$.
+        !> Computes the associated Legendre polynomial \f$P_{lm}(x)\f$.
         !> Here m and l are integers satisfying  \f$0 \leq m \leq l\f$,
         !> while x lies in the range \f$-1 \leq x \leq 1\f$.
         !>
@@ -1199,8 +1257,8 @@ module module_fmm_framework
         !>              (ISBN 0-521-43064-X)
         !> pg. 246ff
         !>
-        !> and modified to give \f$P_l_m (x)\f$:
-        !> \f$ P_l_m (x) = (-1)^m P_l^m (x) \f$, see
+        !> and modified to give \f$P_{lm}(x)\f$:
+        !> \f$ P_{lm}(x) = (-1)^m P_l^m (x) \f$, see
         !>
         !> Abramowitz and Stegun: Handbook of Mathematical Functions
         !> Section 8. Legendre Functions (pg. 332)

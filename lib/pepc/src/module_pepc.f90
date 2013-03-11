@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -25,10 +25,7 @@
 !>
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 module module_pepc
-    use module_debug, only : debug_level
-    use treevars, only : np_mult, interaction_list_length_factor
-    use module_spacefilling, only : curve_type
-    use module_domains, only : weighted
+
     implicit none
     private
 
@@ -75,7 +72,6 @@ module module_pepc
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     logical :: pepc_initializes_mpi !< is set to .true., if pepc has to care for MPI_INIT and MPI_FINALIZE; otherwise, the frontend must care for that
-    namelist /libpepc/ debug_level, np_mult, curve_type, weighted, interaction_list_length_factor
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -95,8 +91,8 @@ module module_pepc
     !> Call this function at program startup before any MPI calls
     !>
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    subroutine pepc_initialize(frontendname, my_rank,n_cpu,init_mpi, db_level_in, comm)
-      use treevars, only : me, num_pe, treevars_idim => idim, MPI_COMM_lpepc
+    subroutine pepc_initialize(frontendname, my_rank,n_cpu,init_mpi, db_level_in, comm, idim)
+      use treevars, only : np_mult, me, num_pe, MPI_COMM_lpepc
       use module_pepc_types, only : register_lpepc_mpi_types
       use module_walk
       use module_domains
@@ -110,10 +106,10 @@ module module_pepc
       logical, intent(in) :: init_mpi !< if set to .true., if pepc has to care for MPI_INIT and MPI_FINALIZE; otherwise, the frontend must care for that
       integer, intent(in), optional :: db_level_in !< sets debug level for treecode kernel (overrides settings, that may be read from libpepc-section in input file)
       integer, intent(inout), optional :: comm !< communicator. if pepc initializes MPI, it returns an MPI_COMM_DUP-copy of its own communicator; otherwise, it uses an MPI_COMM_DUP copy of the given comm
+      integer, intent(in), optional :: idim
       integer :: ierr, provided
 
-      integer, parameter :: MPI_THREAD_LEVEL = MPI_THREAD_FUNNELED ! "The process may be multi-threaded, but the application
-                                                                   !  must ensure that only the main thread makes MPI calls."
+      integer, parameter :: MPI_THREAD_LEVEL = MPI_THREAD_MULTIPLE ! " If the process is multithreaded, multiple threads may call MPI at once with no restrictions."
 
       call pepc_status('SETUP')
 
@@ -182,7 +178,11 @@ module module_pepc
       ! create and register mpi types
       call register_lpepc_mpi_types()
 
-      call pepc_prepare(treevars_idim)
+      if (present(idim)) then
+        call pepc_prepare(idim)
+      else
+        call pepc_prepare(3)
+      end if
 
     end subroutine
 
@@ -252,6 +252,7 @@ module module_pepc
       use module_debug, only : pepc_status
       use module_interaction_specific, only : calc_force_read_parameters
       use module_walk, only: tree_walk_read_parameters
+      use module_libpepc_main, only: libpepc_read_parameters
       implicit none
       integer, intent(in) :: filehandle
 
@@ -261,10 +262,10 @@ module module_pepc
       rewind(filehandle)
       call tree_walk_read_parameters(filehandle)
       rewind(filehandle)
-      call pepc_status("READ PARAMETERS, section libpepc")
-      read(filehandle,NML=libpepc)
+      call libpepc_read_parameters(filehandle)
 
     end subroutine
+
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
@@ -275,13 +276,14 @@ module module_pepc
       use module_debug, only : pepc_status
       use module_interaction_specific, only : calc_force_write_parameters
       use module_walk, only: tree_walk_write_parameters
+      use module_libpepc_main, only: libpepc_write_parameters
       implicit none
       integer, intent(in) :: filehandle
 
       call pepc_status("WRITE PARAMETERS")
       call calc_force_write_parameters(filehandle)
       call tree_walk_write_parameters(filehandle)
-      write(filehandle,NML=libpepc)
+      call libpepc_write_parameters(filehandle)
 
     end subroutine
 
@@ -294,7 +296,7 @@ module module_pepc
     !>
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine pepc_prepare(idim)
-      use treevars, only : treevars_idim => idim
+      use treevars, only : treevars_prepare
       use module_walk
       use module_branching, only : branches_initialize
       use module_interaction_specific
@@ -302,7 +304,7 @@ module module_pepc
       implicit none
       integer, intent(in) :: idim
 
-      treevars_idim = idim
+      call treevars_prepare(idim)
 
       ! initialize mirror boxes
       call calc_neighbour_boxes()
@@ -328,6 +330,7 @@ module module_pepc
       use module_pepc_types, only : free_lpepc_mpi_types
       use module_walk, only : tree_walk_finalize 
       use module_interaction_specific, only : calc_force_finalize
+      use treevars, only : treevars_finalize
       implicit none
       include 'mpif.h'
       integer :: ierr
@@ -339,6 +342,8 @@ module module_pepc
       call tree_walk_finalize()
       ! deregister mpi types
       call free_lpepc_mpi_types()
+
+      call treevars_finalize()
 
       if (pepc_initializes_mpi) call MPI_FINALIZE(ierr)
     end subroutine
@@ -398,6 +403,7 @@ module module_pepc
       use module_pepc_types
       use module_libpepc_main
       use module_debug
+      use module_timings, only: timer_stop, t_all
       implicit none
       integer, intent(inout) :: np_local    !< number of particles on this CPU, i.e. number of particles in particles-array
       integer, intent(in) :: npart_total !< total number of simulation particles (sum over np_local over all MPI ranks)
@@ -418,7 +424,11 @@ module module_pepc
       call pepc_traverse_tree(np_local, particles)
       if (dbg(DBG_STATS)) call pepc_statistics(itime)
       if (restore)        call pepc_restore_particles(np_local, particles)
-      if (dealloc)        call pepc_timber_tree()
+      if (dealloc) then
+        call pepc_timber_tree()
+      else ! t_all should be stopped, do it either in pepc_timber_tree or here
+        call timer_stop(t_all)
+      end if
 
     end subroutine
 
@@ -433,12 +443,20 @@ module module_pepc
     subroutine pepc_grow_tree(np_local, npart_total, particles)
       use module_pepc_types
       use module_libpepc_main
+      use module_debug, only : pepc_status
+      use module_interaction_specific, only : calc_force_after_grow
       implicit none
       integer, intent(inout) :: np_local    !< number of particles on this CPU, i.e. number of particles in particles-array
       integer, intent(in) :: npart_total !< total number of simulation particles (sum over np_local over all MPI ranks)
       type(t_particle), allocatable, intent(inout) :: particles(:) !< input particle data, initializes %x, %data, %work appropriately (and optionally set %label) before calling this function
 
       call libpepc_grow_tree(np_local, npart_total, particles)
+      
+      call pepc_status('AFTER GROW: CALC FORCE')
+      call calc_force_after_grow(particles, np_local)
+      ! call pepc_status('AFTER GROW: TRAVERSE')
+      ! TODO: invoke global comm thread here
+      call pepc_status('AFTER GROW DONE')
 
     end subroutine
 

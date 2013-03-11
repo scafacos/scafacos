@@ -1,6 +1,6 @@
 # Initialize Autoconf.  We require version 2.59 or newer.
 AC_PREREQ([2.59])
-AC_INIT([PEPC], [1.5.2], [insert-bugreport-address-for-pepc-here], [pepc])
+AC_INIT([PEPC], [rev3572], [pepc@fz-juelich.de], [pepc])
 
 AC_MSG_NOTICE([****************************************************************])
 AC_MSG_NOTICE([*      Configuring solver PEPC                                 *])
@@ -91,11 +91,15 @@ AX_SORT_LIB
 # Set up FCS library.
 AX_FCS_CONFIG_SOLVER
 
+# configure sub-library
+AC_CONFIG_SUBDIRS([openpa])
+
 # Set up information for FCS package if inside the FCS tree.
 m4_ifdef([AX_FCS_PACKAGE_RESET],[
 AX_FCS_PACKAGE_RESET
 AX_FCS_PACKAGE_ADD([pepc_LIBS],[-lfcs_pepc])
 AX_FCS_PACKAGE_ADD([pepc_LIBS_A],[libfcs_pepc.a])
+AX_FCS_PACKAGE_ADD([SUB_PACKAGES],[openpa])
 AX_FCS_PACKAGE_ADD([FCLIBS_USE],[yes])
 ])
 
@@ -117,7 +121,8 @@ m4_esyscmd([rm -f src/module.deps])
 # These are from automake-generated .in files.
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
-		 sl_pepc/Makefile])
+		 sl_pepc/Makefile
+		 openpa/Makefile])
 
 # Create config headers: config.h comes from autoheader-generated config.h.in,
 # fconfig.h.in is written manually and only contains stuff needed for Fortran.

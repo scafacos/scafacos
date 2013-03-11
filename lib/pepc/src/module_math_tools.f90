@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -45,6 +45,12 @@ module module_math_tools
 
       public inverse3
       public bpi
+      public cross_product
+
+      interface cross_product
+        module procedure cross_product3
+      end interface
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -60,6 +66,21 @@ module module_math_tools
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       contains
 
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !>
+        !> Vector (cross) product of two 3D-vectors
+        !>
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        function cross_product3(a, b)
+          implicit none
+          real*8, dimension(1:3) :: cross_product3
+          real*8, dimension(1:3), intent(in) :: a, b
+
+          cross_product3 = [ a(2)*b(3) - a(3)*b(2), &
+                             a(3)*b(1) - a(1)*b(3), &
+                             a(1)*b(2) - a(2)*b(1)  ]
+
+        end function cross_product3
 
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -198,6 +219,7 @@ module module_math_tools
         !>
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         integer*8 function bpi(a, b)
+          use treevars, only: idim
           use module_spacefilling
           use module_debug
           implicit none
@@ -209,12 +231,12 @@ module module_math_tools
           integer :: bpilevel
 
           if (b < a) then
-            DEBUG_ERROR('("Error: b < a in math_tools::bpi(a = ",O64,", b = ",O64,")")', a,b)
+            DEBUG_ERROR('("Error: b < a in math_tools::bpi(a = ",o22,"(oct), ",i22,"(dec), b = ",o22,"(oct), ",i22,"(dec))")', a,a,b,b)
           endif
 
           axorb             = ieor(a,b)
           bpilevel          = level_from_key(axorb)
-          mask              = not(2_8**(3*bpilevel) - 1)
+          mask              = not(2_8**(idim*bpilevel) - 1)
           bpi               = iand(b,mask) ! extract highgest bits from b (which has to be the larger of both parameters)
 
         end function bpi

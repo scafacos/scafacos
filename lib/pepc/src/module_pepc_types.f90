@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2012 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -59,12 +59,13 @@ module module_pepc_types
       end type t_particle
 
       ! Data structure for shipping multiple moments of child nodes
-      integer, private, parameter :: nprops_tree_node_transport_package = 5 ! Number of multipole properties to ship
+      integer, private, parameter :: nprops_tree_node_transport_package = 6! Number of multipole properties to ship
       type t_tree_node_transport_package
          integer*8 :: key     ! key
          integer   :: byte    ! byte code
          integer   :: leaves  ! # leaves contained
          integer   :: owner   ! owner where multipole resides
+	 integer   :: level   ! level_from_key(key)
          type(t_tree_node_interaction_data) :: m ! real physics
       end type t_tree_node_transport_package
 
@@ -123,14 +124,15 @@ module module_pepc_types
         call MPI_TYPE_COMMIT( MPI_TYPE_particle, ierr)
 
         ! register tree_node type
-        blocklengths(1:nprops_tree_node_transport_package)  = [1, 1, 1, 1, 1]
-        types(1:nprops_tree_node_transport_package)         = [MPI_INTEGER8, MPI_INTEGER, MPI_INTEGER, MPI_INTEGER, MPI_TYPE_tree_node_interaction_data]
+        blocklengths(1:nprops_tree_node_transport_package)  = [1, 1, 1, 1, 1, 1]
+        types(1:nprops_tree_node_transport_package)         = [MPI_INTEGER8, MPI_INTEGER, MPI_INTEGER, MPI_INTEGER, MPI_INTEGER, MPI_TYPE_tree_node_interaction_data]
         call MPI_GET_ADDRESS( dummy_tree_node,        address(0), ierr )
         call MPI_GET_ADDRESS( dummy_tree_node%key,    address(1), ierr )
         call MPI_GET_ADDRESS( dummy_tree_node%byte,   address(2), ierr )
         call MPI_GET_ADDRESS( dummy_tree_node%leaves, address(3), ierr )
         call MPI_GET_ADDRESS( dummy_tree_node%owner,  address(4), ierr )
-        call MPI_GET_ADDRESS( dummy_tree_node%m    ,  address(5), ierr )
+        call MPI_GET_ADDRESS( dummy_tree_node%level,  address(5), ierr )
+        call MPI_GET_ADDRESS( dummy_tree_node%m    ,  address(6), ierr )
         displacements(1:nprops_tree_node_transport_package) = int(address(1:nprops_tree_node_transport_package) - address(0))
         call MPI_TYPE_STRUCT( nprops_tree_node_transport_package, blocklengths, displacements, types, MPI_TYPE_tree_node_transport_package, ierr )
         call MPI_TYPE_COMMIT( MPI_TYPE_tree_node_transport_package, ierr)

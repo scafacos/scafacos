@@ -18,7 +18,8 @@ noinst_LIBRARIES = liblpepc.a
 
 pepc_raw_c_sources = bgp_core.c \
                      pepc_c_utils.c \
-                     pthreads_c.c
+                     pthreads_c.c \
+		     atomic_ops.c
 pepc_raw_f90_sources = pepc_scafacos.f90 \
                        module_libpepc_main.f90 \
                        module_walk_pthreads.f90 \
@@ -41,7 +42,8 @@ pepc_raw_f90_sources = pepc_scafacos.f90 \
                        module_interaction_specific.f90 \
                        module_utils.f90 \
                        module_interaction_specific_types_XYZQ.f90 \
-                       module_walk_communicator.f90
+                       module_walk_communicator.f90 \
+		       module_atomic_ops.f90
 
 liblpepc_a_SOURCES = $(pepc_raw_c_sources)
 
