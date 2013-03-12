@@ -34,7 +34,7 @@ pnfftl.f03: pnfftl.f03.in
 	sed 's/C_MPI_FINT/@C_MPI_FINT@/' $(srcdir)/pnfftl.f03.in > $@
 
 
-if MAINTAINER_MODE
+if FALSE
 # enable only in maintainer mode?
 pnfft.f03.in: pnfft.h f03-api.sh genf03-api.pl
 	sh $(srcdir)/f03-api.sh d f > $@
