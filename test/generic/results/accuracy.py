@@ -1,8 +1,7 @@
 import benchmarks
 from matplotlib.pyplot import *
 
-all_charges, all_tolerances, all_cores, \
-        timing, speedup, efficiency = \
+all_charges, all_tolerances, all_cores, timing  = \
         benchmarks.read('accuracy.xml')
 
 methods = timing.keys()

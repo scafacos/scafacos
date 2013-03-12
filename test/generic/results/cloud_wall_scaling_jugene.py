@@ -4,60 +4,110 @@ from numpy import *
 
 testcase = 'cloud_wall_scaling_jugene.xml'
 
-all_charges, all_tolerances, all_cores, timing, _, _ = benchmarks.read(testcase)
+all_charges, all_tolerances, all_cores, timing = benchmarks.read(testcase)
 
-def plot_against_cores(testcase, charges, tolerance): 
+def plot_timing(testcase, charges, tolerance):
     ixcha = all_charges.index(charges)
     ixtol = all_tolerances.index(tolerance)
 
     methods = timing.keys()
     methods.sort()
 
-    rawdata      = zeros([len(all_cores), len(methods)+1])
-    rawdata[:,0] = all_cores
-
     for method in methods:
-        data = timing[method]
-        if not all(isnan(data[ixcha,ixtol,:])):
-            plt.loglog(all_cores, data[ixcha,ixtol,:], 
-                       label=method, **benchmarks.fmt(method))
+      data = timing[method]
+      if not all(isnan(data[ixcha,ixtol,:])):
+        plt.loglog(all_cores, data[ixcha,ixtol,:], 
+                   label=method, **benchmarks.fmt(method))
+
     plt.legend()
     plt.xlabel('#cores')
     plt.ylabel('Time [s]')
 
-figure('8100 charges')
-subplot(121, title='tol 1e-3')
-plot_against_cores(testcase, 8100, 1e-3)
-subplot(122, title='tol 1e-5')
-plot_against_cores(testcase, 8100, 1e-5)
+def plot_efficiency(testcase, charges, tolerance):
+    ixcha = all_charges.index(charges)
+    ixtol = all_tolerances.index(tolerance)
+
+    methods = timing.keys()
+    methods.sort()
+
+    minimal_time = None
+    # look for the minimal timing
+    for method in methods:
+        methodtimes = timing[method][ixcha,ixtol,:]
+        if all(isnan(methodtimes)): continue
+        i = 0
+        while (isnan(methodtimes[i])): i += 1
+        serial_time = all_cores[i] * methodtimes[i]
+        if minimal_time is None or serial_time < minimal_time:
+            minimal_time = serial_time
+
+    if minimal_time is None:
+        print "No data for charges={} tolerance={}".format(charges, tolerance)
+        return
+            
+    for method in methods:
+      data = timing[method]
+      if not all(isnan(data[ixcha,ixtol,:])):
+        plt.loglog(all_cores, minimal_time/(data[ixcha,ixtol,:]*all_cores), 
+                   label=method, **benchmarks.fmt(method))
+
+    plt.legend()
+    plt.xlabel('#cores')
+    plt.ylabel('Efficiency')
+
+figure()
+subplot(221, title='8100 charges, tol 1e-3')
+plot_timing(testcase, 8100, 1e-3)
+subplot(222, title='8100 charges, tol 1e-5')
+plot_timing(testcase, 8100, 1e-5)
+subplot(223, title='8100 charges, tol 1e-3')
+plot_efficiency(testcase, 8100, 1e-3)
+subplot(224, title='8100 charges, tol 1e-5')
+plot_efficiency(testcase, 8100, 1e-5)
 tight_layout()
 
-figure('102900 charges')
-subplot(121, title='tol 1e-3')
-plot_against_cores(testcase, 102900, 1e-3)
-subplot(122, title='tol 1e-5')
-plot_against_cores(testcase, 102900, 1e-5)
+figure()
+subplot(221, title='102900 charges, tol 1e-3')
+plot_timing(testcase, 102900, 1e-3)
+subplot(222, title='102900 charges, tol 1e-5')
+plot_timing(testcase, 102900, 1e-5)
+subplot(223, title='102900 charges, tol 1e-3')
+plot_efficiency(testcase, 102900, 1e-3)
+subplot(224, title='102900 charges, tol 1e-5')
+plot_efficiency(testcase, 102900, 1e-5)
 tight_layout()
 
-figure('1012500 charges')
-subplot(121, title='tol 1e-3')
-plot_against_cores(testcase, 1012500, 1e-3)
-subplot(122, title='tol 1e-5')
-plot_against_cores(testcase, 1012500, 1e-5)
+figure()
+subplot(221, title='1012500 charges, tol 1e-3')
+plot_timing(testcase, 1012500, 1e-3)
+subplot(222, title='1012500 charges, tol 1e-5')
+plot_timing(testcase, 1012500, 1e-5)
+subplot(223, title='1012500 charges, tol 1e-3')
+plot_efficiency(testcase, 1012500, 1e-3)
+subplot(224, title='1012500 charges, tol 1e-5')
+plot_efficiency(testcase, 1012500, 1e-5)
 tight_layout()
 
-figure('9830400 charges')
-subplot(121, title='tol 1e-3')
-plot_against_cores(testcase, 9830400, 1e-3)
-subplot(122, title='tol 1e-5')
-plot_against_cores(testcase, 9830400, 1e-5)
+figure()
+subplot(221, title='9830400 charges, tol 1e-3')
+plot_timing(testcase, 9830400, 1e-3)
+subplot(222, title='9830400 charges, tol 1e-5')
+plot_timing(testcase, 9830400, 1e-5)
+subplot(223, title='9830400 charges, tol 1e-3')
+plot_efficiency(testcase, 9830400, 1e-3)
+subplot(224, title='9830400 charges, tol 1e-5')
+plot_efficiency(testcase, 9830400, 1e-5)
 tight_layout()
 
-figure('1012500000 charges')
-subplot(121, title='tol 1e-3')
-plot_against_cores(testcase, 1012500000, 1e-3)
-subplot(122, title='tol 1e-5')
-plot_against_cores(testcase, 1012500000, 1e-5)
+figure()
+subplot(221, title='1012500000 charges, tol 1e-3')
+plot_timing(testcase, 1012500000, 1e-3)
+subplot(222, title='1012500000 charges, tol 1e-5')
+plot_timing(testcase, 1012500000, 1e-5)
+subplot(223, title='1012500000 charges, tol 1e-3')
+plot_efficiency(testcase, 1012500000, 1e-3)
+subplot(224, title='1012500000 charges, tol 1e-5')
+plot_efficiency(testcase, 1012500000, 1e-5)
 tight_layout()
                         
 plt.show()

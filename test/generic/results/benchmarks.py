@@ -131,8 +131,6 @@ def read(filename):
         # create arrays
         timing_array = numpy.empty((len(all_charges), len(all_tolerances), len(all_cores)))
         timing_array[:,:,:] = numpy.NaN
-        speedup_array = timing_array.copy()
-        efficiency_array = timing_array.copy()
         # fill array
         for charges in timing[methodname]:
             ixcha = all_charges.index(charges)
@@ -141,77 +139,36 @@ def read(filename):
                 for cores in timing[methodname][charges][tolerance]:
                     try:
                       ixcor = all_cores.index(cores)
-                      timing_array[ixcha,ixtol,ixcor] = timing[methodname][charges][tolerance][cores]
+                      timing_array[ixcha,ixtol,ixcor] = \
+                          timing[methodname][charges][tolerance][cores]
                     except ValueError:
                       print "cores = %d not found in list." % cores
-                # find minimal number of cores with a defined time
-                mincoresix = 0
-                while mincoresix < timing_array.shape[2]-1 and \
-                  numpy.isnan(timing_array[ixcha,ixtol,mincoresix]): mincoresix += 1
-                # compute estimated 1-core-time
-                est_serial_time = timing_array[ixcha,ixtol,mincoresix] * all_cores[mincoresix]
-
-                # speedup
-                speedup_array[ixcha,ixtol,:] = est_serial_time
-                speedup_array[ixcha,ixtol,:] /= timing_array[ixcha,ixtol,:]
-                # efficiency
-                efficiency_array[ixcha,ixtol,:] = speedup_array[ixcha,ixtol,:] / all_cores
 
         timing[methodname] = timing_array
-        speedup[methodname] = speedup_array
-        efficiency[methodname] = efficiency_array
+        
+    # speedup_array = timing_array.copy()
+    # efficiency_array = timing_array.copy()
 
-    return all_charges, all_tolerances, all_cores, timing, speedup, efficiency
-
-def plot_against_cores(testcase, charges, tolerance, 
-                       plot_timing=True, plot_speedup=False, plot_efficiency=True):
-    all_charges, all_tolerances, all_cores, \
-        timing, speedup, efficiency = \
-        read(testcase)
-
-    try:
-      ixcha = all_charges.index(charges)
-      ixtol = all_tolerances.index(tolerance)
-    except ValueError:
-      print "plot_against_cores(): charges=%d or tolerance=%f not found in list." % (charges, tolerance)
-      return
-
-    methods = timing.keys()
-    methods.sort()
     
-    rawdata      = numpy.zeros([len(all_cores), len(methods)+1])
-    rawdata[:,0] = all_cores
+    #             # find minimal number of cores with a defined time
+    #             mincoresix = 0
+    #             while mincoresix < timing_array.shape[2]-1 and \
+    #               numpy.isnan(timing_array[ixcha,ixtol,mincoresix]): 
+    #                     mincoresix += 1
 
-    if plot_timing:
-        for method in methods:
-            data = timing[method]
-            if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
-                plt.loglog(all_cores, data[ixcha,ixtol,:], 
-                           label=method, **fmt(method))
-        plt.legend()
-        plt.xlabel('#cores')
-        plt.ylabel('Time [s]')
-    
-    if plot_speedup:
-        plt.loglog(all_cores, all_cores, '-')
-        for method in methods:
-            data = speedup[method]
-            if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
-                plt.loglog(all_cores, data[ixcha,ixtol,:],
-                           label=method, **fmt(method))
-        plt.axes().set_aspect('equal', 'datalim')
-        plt.legend()
-        plt.xlabel('#cores')
-        plt.ylabel('Speedup')
+    #             # compute estimated 1-core-time
+    #             est_serial_time = \
+    #                 timing_array[ixcha,ixtol,mincoresix] * all_cores[mincoresix]
 
-    if plot_efficiency:
-        for method in methods:
-            data = efficiency[method]
-            if not numpy.all(numpy.isnan(data[ixcha,ixtol,:])):
-                plt.semilogx(all_cores, data[ixcha,ixtol,:],
-                             label=method, **fmt(method))
+    #             # speedup
+    #             speedup_array[ixcha,ixtol,:] = est_serial_time
+    #             speedup_array[ixcha,ixtol,:] /= timing_array[ixcha,ixtol,:]
 
-        plt.legend()
-        plt.xlabel('#cores')
-        plt.ylabel('Efficiency')
+    #             # efficiency
+    #             efficiency_array[ixcha,ixtol,:] = \
+    #                 speedup_array[ixcha,ixtol,:] / all_cores
 
+    #     speedup[methodname] = speedup_array
+    #     efficiency[methodname] = efficiency_array
+
+    return all_charges, all_tolerances, all_cores, timing
