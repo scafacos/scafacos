@@ -730,7 +730,7 @@ r_cut=4.48139 cao=5 grid=(256, 256, 256) alpha=0.74681
       pp3mg_cells_x,64,pp3mg_cells_y,64,pp3mg_cells_z,64,pp3mg_ghosts,8,pp3mg_degree,4,pp3mg_tol,1e-4,pp3mg_max_iterations,50,SIXTHORDER
     </parameters>
     <data>
-	1	2.086843e+01
+	1	1.989459e+01
     </data>
   </timings>
 
@@ -742,7 +742,7 @@ r_cut=4.48139 cao=5 grid=(256, 256, 256) alpha=0.74681
       pp3mg_cells_x,64,pp3mg_cells_y,64,pp3mg_cells_z,64,pp3mg_ghosts,9,pp3mg_degree,6,pp3mg_tol,1e-4,pp3mg_max_iterations,50,SIXTHORDER
     </parameters>
     <data>
-	1	4.051433e+01
+	1	3.538030e+01
     </data>
   </timings>
 
@@ -754,7 +754,7 @@ r_cut=4.48139 cao=5 grid=(256, 256, 256) alpha=0.74681
       pp3mg_cells_x,128,pp3mg_cells_y,128,pp3mg_cells_z,128,pp3mg_ghosts,13,pp3mg_degree,6,pp3mg_tol,1e-5,pp3mg_max_iterations,50,SIXTHORDER
     </parameters>
     <data>
-	1	9.255600e+01
+	1	8.249039e+01
     </data>
   </timings>
 

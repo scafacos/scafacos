@@ -32,8 +32,8 @@
 #include "interpolation.h"
 #include "particle.h"
 
-#define POLYNOMIAL
-#define SIXTHORDER
+#define SPLINE
+#define FOURTHORDER
 
 /*
  *
