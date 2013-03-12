@@ -193,6 +193,27 @@
       method="P2NFFT"
       charges="8100"
       tolerance="1e-3">
+    <parameters>
+       -c p2nfft_ignore_tolerance,0,tolerance_field,0.001000,p2nfft_N,64,64,64,p2nfft_n,64,64,64,p2nfft_m,2,p2nfft_p,8,p2nfft_epsI,0.149380,p2nfft_inplace_fft,0,p2nfft_intpol_order,3,p2nfft_window,bspline,p2nfft_reg,cg,
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 8100 of 8100 particles)
+          abs_rms_field_error =    1.406819e-03
+          abs_max_field_error =    3.341195e-03
+      abs_rms_potential_error =    3.376608e-04
+      abs_max_potential_error =    8.729966e-04
+             abs_energy_error =    8.280254e-01
+
+  RELATIVE ERRORS (from 8100 of 8100 particles)
+          rel_rms_field_error =    3.275701e-04
+          rel_max_field_error =    7.779788e-04
+      rel_rms_potential_error =    1.567185e-04
+      rel_max_potential_error =    4.051840e-04
+             rel_energy_error =    2.059015e-04
+
+             total_energy_ref =    4.021464e+03
+                 total_energy =    4.022292e+03
+    </errors>
     <data>
       4096	 1.390275e+00
       2048	 7.205749e-01
@@ -214,6 +235,27 @@
       method="P2NFFT"
       charges="8100"
       tolerance="1e-5">
+    <parameters>
+       -c p2nfft_ignore_tolerance,0,tolerance_field,0.000010,p2nfft_N,64,64,64,p2nfft_n,64,64,64,p2nfft_m,3,p2nfft_p,8,p2nfft_epsI,0.180000,p2nfft_inplace_fft,0,p2nfft_intpol_order,3,p2nfft_window,bspline,p2nfft_reg,cg,
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 8100 of 8100 particles)
+          abs_rms_field_error =    4.183973e-05
+          abs_max_field_error =    7.679434e-05
+      abs_rms_potential_error =    5.755830e-06
+      abs_max_potential_error =    1.380833e-05
+             abs_energy_error =    5.456231e-03
+
+  RELATIVE ERRORS (from 8100 of 8100 particles)
+          rel_rms_field_error =    9.741394e-06
+          rel_max_field_error =    1.787975e-05
+      rel_rms_potential_error =    2.671626e-06
+      rel_max_potential_error =    6.409275e-06
+             rel_energy_error =    1.356777e-06
+
+             total_energy_ref =    4.021464e+03
+                 total_energy =    4.021470e+03
+    </errors>
     <data>
       4096	 1.527145e+00
       2048	 7.407000e-01
@@ -235,6 +277,27 @@
       method="P2NFFT"
       charges="102900"
       tolerance="1e-3">
+    <parameters>
+       -c p2nfft_ignore_tolerance,0,tolerance_field,0.001000,p2nfft_N,128,128,128,p2nfft_n,128,128,128,p2nfft_m,2,p2nfft_p,8,p2nfft_epsI,0.064020,p2nfft_inplace_fft,0,p2nfft_intpol_order,3,p2nfft_window,bspline,p2nfft_reg,cg,
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    2.425070e-03
+          abs_max_field_error =    4.811544e-03
+      abs_rms_potential_error =    5.298123e-04
+      abs_max_potential_error =    1.373241e-03
+             abs_energy_error =    1.051828e+01
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    5.646579e-04
+          rel_max_field_error =    1.120329e-03
+      rel_rms_potential_error =    2.459018e-04
+      rel_max_potential_error =    6.373626e-04
+             rel_energy_error =    2.058875e-04
+
+             total_energy_ref =    5.108749e+04
+                 total_energy =    5.109801e+04
+    </errors>
     <data>
       4096	 1.426955e+00
       2048	 6.575768e-01
@@ -256,6 +319,27 @@
       method="P2NFFT"
       charges="102900"
       tolerance="1e-5">
+    <parameters>
+       -c p2nfft_ignore_tolerance,0,tolerance_field,0.000010,p2nfft_N,128,128,128,p2nfft_n,128,128,128,p2nfft_m,4,p2nfft_p,8,p2nfft_epsI,0.077143,p2nfft_inplace_fft,0,p2nfft_intpol_order,3,p2nfft_window,bspline,p2nfft_reg,cg,
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    9.724447e-06
+          abs_max_field_error =    2.277781e-05
+      abs_rms_potential_error =    2.584611e-06
+      abs_max_potential_error =    6.810380e-06
+             abs_energy_error =    6.924086e-02
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    2.264108e-06
+          rel_max_field_error =    5.303276e-06
+      rel_rms_potential_error =    1.199673e-06
+      rel_max_potential_error =    3.161106e-06
+             rel_energy_error =    1.355339e-06
+
+             total_energy_ref =    5.108749e+04
+                 total_energy =    5.108756e+04
+    </errors>
     <data>
       4096	 1.451607e+00
       2048	 5.760071e-01
@@ -277,6 +361,27 @@
       method="P2NFFT"
       charges="1012500"
       tolerance="1e-3">
+    <parameters>
+       -c p2nfft_ignore_tolerance,0,tolerance_field,0.001000,p2nfft_N,256,256,256,p2nfft_n,256,256,256,p2nfft_m,2,p2nfft_p,8,p2nfft_epsI,0.029876,p2nfft_inplace_fft,0,p2nfft_intpol_order,3,p2nfft_window,bspline,p2nfft_reg,cg,
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 1012500 of 1012500 particles)
+          abs_rms_field_error =    3.088181e-03
+          abs_max_field_error =    6.135863e-03
+      abs_rms_potential_error =    7.122531e-04
+      abs_max_potential_error =    1.806666e-03
+             abs_energy_error =    1.036693e+02
+
+  RELATIVE ERRORS (from 1012500 of 1012500 particles)
+          rel_rms_field_error =    7.190569e-04
+          rel_max_field_error =    1.428684e-03
+      rel_rms_potential_error =    3.305781e-04
+      rel_max_potential_error =    8.385277e-04
+             rel_energy_error =    2.062320e-04
+
+             total_energy_ref =    5.026830e+05
+                 total_energy =    5.027867e+05
+    </errors>
     <data>
       4096	 1.293856e+00
       2048	 7.551548e-01
@@ -298,6 +403,27 @@
       method="P2NFFT"
       charges="1012500"
       tolerance="1e-5">
+    <parameters>
+       -c p2nfft_ignore_tolerance,0,tolerance_field,0.000010,p2nfft_N,256,256,256,p2nfft_n,256,256,256,p2nfft_m,4,p2nfft_p,8,p2nfft_epsI,0.036000,p2nfft_inplace_fft,0,p2nfft_intpol_order,3,p2nfft_window,bspline,p2nfft_reg,cg,
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 1012500 of 1012500 particles)
+          abs_rms_field_error =    1.503111e-05
+          abs_max_field_error =    3.293565e-05
+      abs_rms_potential_error =    3.296810e-06
+      abs_max_potential_error =    9.080740e-06
+             abs_energy_error =    6.822594e-01
+
+  RELATIVE ERRORS (from 1012500 of 1012500 particles)
+          rel_rms_field_error =    3.499639e-06
+          rel_max_field_error =    7.668288e-06
+      rel_rms_potential_error =    1.530248e-06
+      rel_max_potential_error =    4.214917e-06
+             rel_energy_error =    1.357236e-06
+
+             total_energy_ref =    5.026830e+05
+                 total_energy =    5.026837e+05
+    </errors>
     <data>
       4096	 1.285603e+00
       2048	 7.051740e-01
@@ -314,7 +440,6 @@
       1	 5.261275e+01
     </data>
   </timings>
-
 
 <!-- 
 ********************
