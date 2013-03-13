@@ -168,7 +168,7 @@ FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
     printf("** epsilon :               %f\n", eps);
     printf("** theta :                 %f\n", theta);
     printf("** npm :                   %f\n", npm);
-    printf("** db_level :              %f\n", db_level);
+    printf("** db_level :              %d\n", db_level);
     printf("** require virial :        %d\n", requirevirial);
     printf("** num walk threads :      %d\n", num_walk_threads);
     printf("** dipole correction :     %d\n", lat_corr);
