@@ -43,7 +43,9 @@ endif
 
 EXTRA_DIST = \
 	systems/xyz2xml.py \
+	systems/xml2xyz.py \
 	systems/xml2vtf.py \
+	systems/xml2vtk.py \
 	scafacos_test_all.sh \
 	tune_alpha_2dp.py \
 	tune_alpha_3dp.py \
