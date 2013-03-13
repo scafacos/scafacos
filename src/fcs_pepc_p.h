@@ -72,7 +72,7 @@ extern FCSResult fcs_pepc_get_theta(FCS handle, fcs_float* theta);
  * @param level user-set debug level of pepc solver
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_set_debuglevel(FCS handle, fcs_int level);
+extern FCSResult fcs_pepc_set_debug_level(FCS handle, fcs_int level);
 
 /**
  * @brief function to get the pepc debug level
@@ -80,7 +80,7 @@ extern FCSResult fcs_pepc_set_debuglevel(FCS handle, fcs_int level);
  * @param level user-set debug level of pepc solver
  * @return the debug level
  */
-extern FCSResult fcs_pepc_get_debuglevel(FCS handle, fcs_int* level);
+extern FCSResult fcs_pepc_get_debug_level(FCS handle, fcs_int* level);
 
 /**
  * @brief function to set pepcs number of walk threads per MPI rank

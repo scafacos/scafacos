@@ -103,6 +103,7 @@ FCSResult fcs_pepc_init(FCS handle)
   if ((result = fcs_pepc_set_load_balancing(    handle,   0   ))) return result;
   if ((result = fcs_pepc_set_dipole_correction( handle,   1   ))) return result;
   if ((result = fcs_pepc_set_npm(               handle, -45.0 ))) return result;
+  if ((result = fcs_pepc_set_debug_level(       handle,   0   ))) return result;
 
   return NULL;
 }
@@ -130,10 +131,6 @@ FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
   fcs_float eps, theta, npm;
   fcs_pepc_internal_t *pepc_internal;
 
-#ifdef FCS_ENABLE_DEBUG
-  db_level=5;
-#endif
-
   nparts_tot = fcs_get_total_particles(handle);
   if ((result = fcs_pepc_get_epsilon(handle, &eps)))                        return result;
   if ((result = fcs_pepc_get_theta(handle, &theta)))                        return result;
@@ -141,6 +138,7 @@ FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
   if ((result = fcs_pepc_get_load_balancing(handle, &load_balancing)))      return result;
   if ((result = fcs_pepc_get_dipole_correction(handle, &lat_corr)))         return result;
   if ((result = fcs_pepc_get_npm(handle, &npm)))                            return result;
+  if ((result = fcs_pepc_get_debug_level(handle, &db_level)))               return result;
   requirevirial = handle->pepc_param->requirevirial;
 
   pepc_internal = (fcs_pepc_internal_t*) fcs_get_method_context(handle);
@@ -170,6 +168,7 @@ FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
     printf("** epsilon :               %f\n", eps);
     printf("** theta :                 %f\n", theta);
     printf("** npm :                   %f\n", npm);
+    printf("** db_level :              %f\n", db_level);
     printf("** require virial :        %d\n", requirevirial);
     printf("** num walk threads :      %d\n", num_walk_threads);
     printf("** dipole correction :     %d\n", lat_corr);
@@ -407,6 +406,35 @@ extern FCSResult fcs_pepc_get_npm(FCS handle, fcs_float* npm)
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
 
   *npm = handle->pepc_param->npm;
+  return NULL;
+}
+
+/* setter function for pepc parameter debug_level */
+extern FCSResult fcs_pepc_set_debug_level(FCS handle, fcs_int level)
+{
+  char* fnc_name = "fcs_pepc_set_debuglevel";
+
+  if (handle == NULL)
+    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name,
+			    "null pointer supplied as handle");
+
+  if (fcs_get_method(handle) != FCS_PEPC)
+    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name,
+			    "wrong method chosen, please choose a method (method is not \"pepc\")");
+
+  handle->pepc_param->debug_level = level;
+  return NULL;
+}
+
+/* getter function for pepc parameter debug_level */
+extern FCSResult fcs_pepc_get_debug_level(FCS handle, fcs_int* level)
+{
+  char* fnc_name = "FCSResultfcs_pepc_get_debuglevel";
+
+  if (!handle || !handle->pepc_param)
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
+
+  *level = handle->pepc_param->debug_level;
   return NULL;
 }
 

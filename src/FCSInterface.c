@@ -1702,6 +1702,7 @@ FCSResult fcs_parser(FCS handle, const char *parameters, fcs_bool continue_on_er
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_dipole_correction", pepc_set_dipole_correction, PARSE_VAL(fcs_int));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_load_balancing",    pepc_set_load_balancing,    PARSE_VAL(fcs_int));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_npm",               pepc_set_npm,               PARSE_VAL(fcs_float));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_debug_level",       pepc_set_debug_level,       PARSE_VAL(fcs_int));
 #endif
 #ifdef FCS_ENABLE_PP3MG_PMG
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_x",        pp3mg_set_cells_x,        PARSE_VAL(fcs_int));

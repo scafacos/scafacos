@@ -58,6 +58,8 @@ typedef struct fcs_pepc_parameters_t
   fcs_int dipole_correction;
   /* internal memory usage parameter */
   fcs_float npm;
+  /* pepc_debug level */
+  fcs_int debug_level;
 
 } fcs_pepc_parameters_t;
 
