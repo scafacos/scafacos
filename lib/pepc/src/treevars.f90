@@ -31,10 +31,11 @@ module treevars
 
   implicit none
 
-  !  Associated MPI stuff
+  !  Associated parallelization stuff
   integer :: me       !< Rank of current task
   integer :: num_pe   !< # cpus used by program
-  integer :: MPI_COMM_lpepc !> communicator that has been supplied to or created by pepc_initialize
+  integer :: MPI_COMM_lpepc !< communicator that has been supplied to or created by pepc_initialize
+  integer :: num_threads = 3 !< number of threads to be used for hybrid parallelization (Pthreads, OpenMP, etc.), for compatibility, we set it to num_walk_threads in tree_walk_read_parameters() for now
 
   !  tree variables
   integer*8, allocatable :: &

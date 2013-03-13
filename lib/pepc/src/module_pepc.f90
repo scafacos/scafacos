@@ -258,11 +258,11 @@ module module_pepc
 
       call pepc_status("READ PARAMETERS")
       rewind(filehandle)
+      call libpepc_read_parameters(filehandle)
+      rewind(filehandle)
       call calc_force_read_parameters(filehandle)
       rewind(filehandle)
       call tree_walk_read_parameters(filehandle)
-      rewind(filehandle)
-      call libpepc_read_parameters(filehandle)
 
     end subroutine
 

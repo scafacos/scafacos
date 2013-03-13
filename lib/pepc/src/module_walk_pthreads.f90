@@ -605,7 +605,7 @@ module module_walk
   
     integer, public :: max_particles_per_thread = 2000 !< maximum number of particles that will in parallel be processed by one workthread
 
-    integer, public :: num_walk_threads = 3 !< number of worker threads
+    integer, public :: num_walk_threads = -1 !< number of worker threads, default value is set to treevars%num_threads in tree_walk_read_parameters()
     integer, private :: primary_processor_id = 0
 
     real*8, dimension(:), allocatable :: boxlength2
@@ -699,12 +699,20 @@ module module_walk
       !>
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine tree_walk_read_parameters(filehandle)
-        use module_debug, only: pepc_status
+        use module_debug
+        use treevars, only: num_threads
         implicit none
         integer, intent(in) :: filehandle
 
         call pepc_status("READ PARAMETERS, section walk_para_pthreads")
         read(filehandle, NML=walk_para_pthreads)
+        
+        if (num_walk_threads > 0) then ! it has been set through the namelist
+          DEBUG_WARNING(*,  'Setting num_walk_threads through the walk_para_pthreads namelist directly is deprecated and will be removed soon. Please switch to parameter num_threads in namelist libpepc in your parameter files.')
+          num_threads = num_walk_threads
+        else          
+          num_walk_threads = num_threads
+        endif
 
       end subroutine
 

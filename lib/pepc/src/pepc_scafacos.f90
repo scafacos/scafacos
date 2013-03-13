@@ -27,7 +27,7 @@ subroutine pepc_scafacos_run(nlocal, ntotal, positions, charges, &
   use module_mirror_boxes, only : t_lattice_1, t_lattice_2, t_lattice_3, periodicity
   use module_fmm_framework, only : do_extrinsic_correction
   use module_debug, only : debug_level
-  use treevars, only : np_mult
+  use treevars, only : np_mult, num_threads
 
   implicit none
 
@@ -67,6 +67,7 @@ subroutine pepc_scafacos_run(nlocal, ntotal, positions, charges, &
   theta2 = theta**2
   eps2   = eps**2
   num_walk_threads         = nwt
+  num_threads              = nwt
   max_particles_per_thread = 100
   np_mult                  = npm
   if (db_level > 0) debug_level = ibset(db_level,0)

@@ -549,6 +549,7 @@ module module_fmm_framework
         !>
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         subroutine calc_omega_tilde(particles, nparticles)
+          use treevars, only: num_threads
           use module_pepc_types
           use module_debug
           implicit none
@@ -564,6 +565,9 @@ module module_fmm_framework
           omega_tilde = 0
 
           ! calculate multipole contributions of all local particles
+
+          !$ call omp_set_num_threads(num_threads)
+          !$OMP  PARALLEL DO DEFAULT(PRIVATE) SHARED(particles,LatticeCenter) SCHEDULE(RUNTIME) REDUCTION(+:omega_tilde)
           do p=1,nparticles
             R   = particles(p)%x - LatticeCenter
             S   = cartesian_to_spherical(R)
@@ -575,6 +579,8 @@ module module_fmm_framework
             end do
 
           end do
+          !$OMP  END PARALLEL DO          
+          !$ call omp_set_num_threads(1)
 
           call chop(omega_tilde)
 

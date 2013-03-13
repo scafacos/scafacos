@@ -1,6 +1,6 @@
 # Initialize Autoconf.  We require version 2.59 or newer.
 AC_PREREQ([2.59])
-AC_INIT([PEPC], [rev3572], [pepc@fz-juelich.de], [pepc])
+AC_INIT([PEPC], [rev3575], [pepc@fz-juelich.de], [pepc])
 
 AC_MSG_NOTICE([****************************************************************])
 AC_MSG_NOTICE([*      Configuring solver PEPC                                 *])
@@ -70,6 +70,12 @@ AC_SUBST([ARFLAGS])
 : ${RM="rm -f"}
 AC_SUBST([RM])
 
+# for some code parts, this solver needs OpenMP, so check whether its available
+# this macro sets OPENMP_CFLAGS, OPENMP_CXXFLAGS, OPENMP_FCFLAGS, depending on choice of current langugage - we need the Fortran here
+AC_LANG_PUSH([Fortran])dnl
+AX_OPENMP
+AC_LANG_POP([Fortran])dnl
+
 ######################################################################
 # Set up parameters.
 ######################################################################
@@ -91,6 +97,9 @@ AX_SORT_LIB
 # Set up FCS library.
 AX_FCS_CONFIG_SOLVER
 
+# we need OpenMP for some parts of the solver
+FCFLAGS="$FCFLAGS $OPENMP_FCFLAGS"
+
 # configure sub-library
 AC_CONFIG_SUBDIRS([openpa])
 
@@ -99,6 +108,8 @@ m4_ifdef([AX_FCS_PACKAGE_RESET],[
 AX_FCS_PACKAGE_RESET
 AX_FCS_PACKAGE_ADD([pepc_LIBS],[-lfcs_pepc])
 AX_FCS_PACKAGE_ADD([pepc_LIBS_A],[libfcs_pepc.a])
+AX_FCS_PACKAGE_ADD([pepc_FCFLAGS],[$OPENMP_FCFLAGS])
+AX_FCS_PACKAGE_ADD([pepc_LDADD],[$OPENMP_FCFLAGS])
 AX_FCS_PACKAGE_ADD([SUB_PACKAGES],[openpa])
 AX_FCS_PACKAGE_ADD([FCLIBS_USE],[yes])
 ])
