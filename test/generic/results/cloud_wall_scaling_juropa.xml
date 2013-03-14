@@ -141,7 +141,7 @@
 ** PEPC
 ********************
 -->
-  <timings
+<!--  <timings
       method="PEPC"
       charges="8100"
       tolerance="1e-3">
@@ -182,7 +182,7 @@
       1	 	      
     </data>
   </timings>
-  
+  -->
 <!-- 
 ********************
 ** P2NFFT

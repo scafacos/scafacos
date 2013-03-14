@@ -6,20 +6,23 @@ import re
 import matplotlib.pylab as plt
 
 method2format = {
-    'ewald': { 'linestyle': '-', 'color': 'b', 'marker': 'x'},
-    'fmm': { 'linestyle': '-', 'color': 'b', 'marker': 'o'},
-    'memd': { 'linestyle': '-', 'color': 'g', 'marker': 'o'},
-    'p2nfft': { 'linestyle': '-', 'color': 'r', 'marker': 'o'},
-    'p3m': { 'linestyle': '-', 'color': 'c', 'marker': 'o'},
-    'pepc': { 'linestyle': '-', 'color': 'r', 'marker': 'x'},
-    'pp3mg': { 'linestyle': '-', 'color': 'k', 'marker': 'o'},
-    'vmg': { 'linestyle': '-', 'color': 'y', 'marker': 'o'},
+    'fmm': { 'linestyle': '--', 'color': 'b', 'marker': 'v', 'linewidth': 2},
+    'memd': { 'linestyle': '-', 'color': 'g', 'marker': '>', 'linewidth': 2},
+    'p2nfft': { 'linestyle': '--', 'color': 'r', 'marker': '^', 'linewidth': 2},
+    'p3m': { 'linestyle': '-', 'color': 'c', 'marker': 'o', 'linewidth': 2},
+    'pp3mg': { 'linestyle': '--', 'color': 'k', 'marker': '<', 'linewidth': 2},
+    'vmg': { 'linestyle': '-', 'color': 'y', 'marker': 'D', 'linewidth': 2},
+    'ewald': { 'linestyle': '-', 'color': 'b', 'marker': 'x', 'linewidth': 2},
+    'pepc': { 'linestyle': '-', 'color': 'r', 'marker': 'x', 'linewidth': 2},
     }
 
 def fmt(method):
-        if (method in method2format): return method2format[method]
-        else: return { 'linestyle': '-', 'color': 'g' }
+    if (method in method2format): return method2format[method]
+    else: return { 'linestyle': '-', 'color': 'g' }
 
+class Data:
+    pass
+        
 def read(filename):
     """Read the XML benchmark file filename.
 
@@ -29,7 +32,7 @@ def read(filename):
       - the tolerance of the benchmark
       - the number of cores
     """
-    
+
     # Method, Testcase, #charges -> array((#cores, time))
     file = open(filename, "r")
     doc = xml.dom.minidom.parse(file)
@@ -38,7 +41,6 @@ def read(filename):
     # get top-level element
     benchmarks_el = doc.documentElement
 
-    # create data structure
     timing = {}
     speedup = {}
     efficiency = {}
@@ -145,30 +147,35 @@ def read(filename):
                       print "cores = %d not found in list." % cores
 
         timing[methodname] = timing_array
-        
-    # speedup_array = timing_array.copy()
-    # efficiency_array = timing_array.copy()
 
-    
-    #             # find minimal number of cores with a defined time
-    #             mincoresix = 0
-    #             while mincoresix < timing_array.shape[2]-1 and \
-    #               numpy.isnan(timing_array[ixcha,ixtol,mincoresix]): 
-    #                     mincoresix += 1
+        speedup_array = timing_array.copy()
+        efficiency_array = timing_array.copy()
 
-    #             # compute estimated 1-core-time
-    #             est_serial_time = \
-    #                 timing_array[ixcha,ixtol,mincoresix] * all_cores[mincoresix]
+        # find minimal number of cores with a defined time
+        mincoresix = 0
+        while mincoresix < timing_array.shape[2]-1 and \
+          numpy.isnan(timing_array[ixcha,ixtol,mincoresix]): 
+                mincoresix += 1
 
-    #             # speedup
-    #             speedup_array[ixcha,ixtol,:] = est_serial_time
-    #             speedup_array[ixcha,ixtol,:] /= timing_array[ixcha,ixtol,:]
+        # compute estimated 1-core-time
+        est_serial_time = \
+            timing_array[ixcha,ixtol,mincoresix] * all_cores[mincoresix]
 
-    #             # efficiency
-    #             efficiency_array[ixcha,ixtol,:] = \
-    #                 speedup_array[ixcha,ixtol,:] / all_cores
+        # speedup
+        speedup_array[ixcha,ixtol,:] = est_serial_time
+        speedup_array[ixcha,ixtol,:] /= timing_array[ixcha,ixtol,:]
 
-    #     speedup[methodname] = speedup_array
-    #     efficiency[methodname] = efficiency_array
+        # efficiency
+        efficiency_array[ixcha,ixtol,:] = \
+            speedup_array[ixcha,ixtol,:] / all_cores
 
-    return all_charges, all_tolerances, all_cores, timing
+        speedup[methodname] = speedup_array
+        efficiency[methodname] = efficiency_array
+
+    return { 'methods' : all_methods,
+             'charges' : all_charges,
+             'cores' : all_cores,
+             'tolerances' : all_tolerances,
+             'timing' : timing,
+             'speedup' : speedup,
+             'efficiency' : efficiency }
