@@ -428,7 +428,7 @@ FCSResult ifcs_p2nfft_run_2dp(
 
   /* Calculate self-interactions */
   for (fcs_int j = 0; j < sorted_num_particles; ++j)
-    sorted_potentials[j] -= sorted_charges[j] * ifcs_p2nfft_compute_near_potential(rd, 0.0);
+    sorted_potentials[j] -= sorted_charges[j] * ifcs_p2nfft_compute_self_potential(rd);
 
   /* Finish self interaction timing */
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "self interaction calculation");
@@ -469,7 +469,7 @@ FCSResult ifcs_p2nfft_run_2dp(
   fcs_float self_energy = 0.0;
   fcs_float self_global;
   for(fcs_int j = 0; j < sorted_num_particles; ++j)
-    self_energy -= 0.5 * sorted_charges[j] * sorted_charges[j] * ifcs_p2nfft_compute_near_potential(rd, 0.0);
+    self_energy -= 0.5 * sorted_charges[j] * sorted_charges[j] * ifcs_p2nfft_compute_self_potential(rd);
 
   MPI_Reduce(&self_energy, &self_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: self energy: %" FCS_LMOD_FLOAT "f\n", self_global);

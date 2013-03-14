@@ -67,14 +67,14 @@ FCSResult ifcs_p2nfft_run(
   /* redirect to implemetation of noncubic case */
 #if FCS_P2NFFT_NONCUBIC_TEST
   return ifcs_p2nfft_run_0dp_noncubic(
-    rd, local_num_particles,
+    rd, local_num_particles, max_local_num_particles,
     positions, charges,
     potentials, field);
 #endif  
   /* redirect to test implemetation of 2d-periodic case */
 #if FCS_P2NFFT_MIXED_PERIODICITY_TEST
   return ifcs_p2nfft_run_2dp(
-    rd, local_num_particles,
+    rd, local_num_particles, max_local_num_particles,
     positions, charges,
     potentials, field);
 #endif  
