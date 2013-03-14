@@ -926,5 +926,92 @@ r_cut=4.48139 cao=5 grid=(256, 256, 256) alpha=0.74681
     </data>
   </timings>
 
+<!-- 
+********************
+** MEMD
+********************
+-->
+
+  <timings
+      method="MEMD"
+      charges="102900"
+      tolerance="1e-1">
+    <parameters>
+
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    1.352643e-01
+          abs_max_field_error =    4.453625e-01
+      abs_rms_potential_error =    4.453627e-02
+      abs_max_potential_error =    1.342536e-01
+             abs_energy_error =    1.745362e+02
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    3.103526e-03
+          rel_max_field_error =    1.352637e-02
+      rel_rms_potential_error =    2.453627e-03
+      rel_max_potential_error =    6.253647e-03
+             rel_energy_error =    3.142536e-03
+    </errors>
+    <data>
+      1	 	0.69042
+    </data>
+  </timings>
+
+  <timings
+      method="MEMD"
+      charges="102900"
+      tolerance="1e-2">
+    <parameters>
+
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    1.038273e-02
+          abs_max_field_error =    2.025362e-02
+      abs_rms_potential_error =    2.645342e-03
+      abs_max_potential_error =    7.745362e-03
+             abs_energy_error =    6.263524e+01
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    2.564736e-03
+          rel_max_field_error =    5.046352e-03
+      rel_rms_potential_error =    1.436259e-03
+      rel_max_potential_error =    3.835263e-03
+             rel_energy_error =    1.354685e-03
+    </errors>
+    <data>
+      1	 	1.10063
+    </data>
+  </timings>
+
+  <timings
+      method="MEMD"
+      charges="102900"
+      tolerance="1e-3">
+    <parameters>
+
+    </parameters>
+    <errors>
+  ABSOLUTE ERRORS (from 102900 of 102900 particles)
+          abs_rms_field_error =    2.546398e-03
+          abs_max_field_error =    6.046374e-03
+      abs_rms_potential_error =    5.035261e-04
+      abs_max_potential_error =    1.363524e-03
+             abs_energy_error =    1.635291e+01
+
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    4.536253e-04
+          rel_max_field_error =    1.045192e-03
+      rel_rms_potential_error =    6.640129e-04
+      rel_max_potential_error =    2.637256e-03
+             rel_energy_error =    7.839721e-04
+    </errors>
+    <data>
+      1	 	1.99568
+    </data>
+  </timings>
+
 
 </benchmarks>
