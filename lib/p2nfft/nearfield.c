@@ -79,9 +79,9 @@ static fcs_float compute_self_potential_nonperiodic(
       );
   else {
 #if FCS_P2NFFT_NEAR_BASISPOLY
-    return ifcs_p2nfft_regkernel(ifcs_p2nfft_one_over_modulus, dist/d->box_scale, d->p, 0, d->epsI, d->epsB) / d->box_scale;
+    return ifcs_p2nfft_regkernel(ifcs_p2nfft_one_over_modulus, dist/d->box_scales[0], d->p, 0, d->epsI, d->epsB) / d->box_scales[0];
 #else
-    return ifcs_p2nfft_nearfield_correction_taylor2p(dist/d->box_scale, d->p, d->taylor2p_coeff) / d->box_scale;
+    return ifcs_p2nfft_nearfield_correction_taylor2p(dist/d->box_scales[0], d->p, d->taylor2p_coeff) / d->box_scales[0];
 #endif
   }
 }
@@ -131,9 +131,9 @@ static fcs_float compute_near_potential_nonperiodic(
         );
   } else {
 #if FCS_P2NFFT_NEAR_BASISPOLY
-    return 1.0/dist - ifcs_p2nfft_regkernel(ifcs_p2nfft_one_over_modulus, dist/d->box_scale, d->p, 0, d->epsI, d->epsB) / d->box_scale;
+    return 1.0/dist - ifcs_p2nfft_regkernel(ifcs_p2nfft_one_over_modulus, dist/d->box_scales[0], d->p, 0, d->epsI, d->epsB) / d->box_scales[0];
 #else
-    return 1.0/dist - ifcs_p2nfft_nearfield_correction_taylor2p(dist/d->box_scale, d->p, d->taylor2p_coeff) / d->box_scale;
+    return 1.0/dist - ifcs_p2nfft_nearfield_correction_taylor2p(dist/d->box_scales[0], d->p, d->taylor2p_coeff) / d->box_scales[0];
 #endif
   }
 }
@@ -187,8 +187,8 @@ static fcs_float compute_near_field_nonperiodic(
   else
     return -1.0/(dist*dist)
         - ifcs_p2nfft_nearfield_correction_taylor2p_derive(
-          dist/d->box_scale, d->p, d->taylor2p_derive_coeff
-        ) / (d->box_scale*d->box_scale);
+          dist/d->box_scales[0], d->p, d->taylor2p_derive_coeff
+        ) / (d->box_scales[0]*d->box_scales[0]);
 }
 
 

@@ -97,16 +97,16 @@ FCSResult ifcs_p2nfft_run(
   FCS_P2NFFT_INIT_TIMING(d->cart_comm_3d);
 
   /* Tuning was called in fcs_run */
-//  result = ifcs_p2nfft_tune(rd, local_num_particles, positions, charges, d->box_size);
+//  result = ifcs_p2nfft_tune(rd, local_num_particles, positions, charges, d->box_l[0]);
 
   /* handle particles, that left the box [0,L] */
   /* for non-periodic boundary conditions: user must increase the box */
   if(!d->use_ewald)
     for(fcs_int j=0; j<local_num_particles; j++)
       for(fcs_int t=0; t<3; t++)
-        if( (positions[3*j+t] < 0) || (positions[3*j+t] > d->box_size) ){
-//        if( (positions[3*j+t] < 0) || fcs_float_is_zero(d->box_size - positions[3*j+t])  || (positions[3*j+t] > d->box_size) )
-          fprintf(stderr, "j = %d, t = %d, position = %f, box_size = %f\n", j, t, positions[3*j+t], d->box_size);
+        if( (positions[3*j+t] < 0) || (positions[3*j+t] > d->box_l[t]) ){
+//        if( (positions[3*j+t] < 0) || fcs_float_is_zero(d->box_l[t] - positions[3*j+t])  || (positions[3*j+t] > d->box_l[t]) )
+          fprintf(stderr, "j = %d, t = %d, position = %f, box_l = %f\n", j, t, positions[3*j+t], d->box_l[t]);
           return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box or reached the upper border.");
         }
   /* TODO: implement additional scaling of particles to ensure x \in [0,L)
@@ -121,9 +121,9 @@ FCSResult ifcs_p2nfft_run(
     lo[t] = d->lower_border[t];
     up[t] = d->upper_border[t];
     if(!d->use_ewald){
-      if(fcs_float_is_zero(lo[t]-d->box_size))
+      if(fcs_float_is_zero(lo[t]-d->box_l[t]))
         lo[t] += 0.1;
-      if(fcs_float_is_zero(up[t]-d->box_size))
+      if(fcs_float_is_zero(up[t]-d->box_l[t]))
         up[t] += 0.1;
     }
   }
@@ -449,9 +449,9 @@ FCSResult ifcs_p2nfft_run(
       for(fcs_int t=0; t<3; t++)
         sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (FCS_P2NFFT_PI * box_vol * d->box_l[t]);
     } else {
-      sorted_potentials[j] += creal(f[j]) / d->box_scale;
+      sorted_potentials[j] += creal(f[j]) / d->box_scales[0];
       for(fcs_int t=0; t<3; t++)
-        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (d->box_scale * d->box_scale);
+        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (d->box_scales[0] * d->box_scales[0]);
     }
   }
 
@@ -491,7 +491,7 @@ FCSResult ifcs_p2nfft_run(
     if(d->use_ewald)
       far_energy += 0.5 * sorted_charges[j] * f[j] / (FCS_P2NFFT_PI * box_vol);
     else
-      far_energy += 0.5 * sorted_charges[j] * f[j] / d->box_scale;
+      far_energy += 0.5 * sorted_charges[j] * f[j] / d->box_scales[0];
 
   MPI_Reduce(&far_energy, &far_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: far field energy: %" FCS_LMOD_FLOAT "f\n", far_global);

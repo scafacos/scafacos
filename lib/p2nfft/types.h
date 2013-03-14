@@ -127,12 +127,7 @@ typedef struct {
   fcs_float sum_q2;
   fcs_float bg_charge;
   fcs_float box_l[3];
-  fcs_float box_size;
 
-  /* box scale and shift for cubic boxes */
-  fcs_float box_scale;
-  fcs_float box_shift;
-  
   /* introduce box shifts for non-cubic boxes */
   fcs_float box_scales[3];
   fcs_float box_shifts[3];

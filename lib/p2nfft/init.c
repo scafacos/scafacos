@@ -130,18 +130,15 @@ FCSResult ifcs_p2nfft_init(
   d->one_over_r_cut = -1.0;
   d->epsI = -1.0;
   d->epsB = -1.0;
-  d->box_size = -1.0;
   d->num_nodes = -1;
   d->sum_qpart = -1;
   d->sum_q2 = -1.0;
   d->sum_q = 0.0;
   d->bg_charge = 0.0;
-  d->box_scale = 1.0;
-  d->box_shift = 0.0;
   for(int t=0; t<3; t++){
     d->box_l[t] = -1.0; 
-    d->box_scales[t] = d->box_scale;
-    d->box_shifts[t] = d->box_shift;
+    d->box_scales[t] = 1.0;
+    d->box_shifts[t] = 0.0;
   }
   
   comm_get_periodicity(comm, d->periodicity);
