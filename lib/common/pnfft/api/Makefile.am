@@ -37,11 +37,11 @@ pnfftl.f03: pnfftl.f03.in
 if FALSE
 # enable only in maintainer mode?
 pnfft.f03.in: pnfft.h f03-api.sh genf03-api.pl
-	sh $(srcdir)/f03-api.sh d f > $@
+	(cd $(srcdir); sh f03-api.sh d f > $@)
 
 pnfftl.f03.in: pnfft.h f03-api.sh genf03-api.pl
-	sh $(srcdir)/f03-api.sh l > $@
+	(cd $(srcdir); sh f03-api.sh l > $@)
 
 f03-wrap.c: pnfft.h f03-wrap.sh genf03-wrap.pl
-	sh $(srcdir)/f03-wrap.sh > $@
+	(cd $(srcdir); sh f03-wrap.sh > $@)
 endif

@@ -434,6 +434,5 @@ AC_CONFIG_FILES(Makefile \
 		tests/Makefile \
 		tests/f03/Makefile)
 # 		tests/fortran/Makefile)
-#                 api/pnfft.f03 \
 
 AC_OUTPUT

@@ -9,7 +9,6 @@ program main
   include "pfft.f"
   include "pnfft.f03"
 
-
   integer np(3), m, window, window_flag, ierror, l1, l2, l3
   integer(C_INTPTR_T) :: N(3), local_N(3), local_N_start(3)
   integer(C_INTPTR_T) :: num_nodes, local_num_nodes
@@ -21,7 +20,6 @@ program main
   real(C_DOUBLE) f_hat_sum, x_max(3)
   integer comm_cart_3d
   integer myrank
-
 
   N = (/ 16,16,16 /)
   np = (/ 2,2,2 /)
@@ -37,7 +35,7 @@ program main
   ierror =  pnfft_create_procmesh(3, MPI_COMM_WORLD, np, comm_cart_3d)
   if (ierror .ne. 0) then
     if(myrank .eq. 0) then
-      write(*,*) "Error: This test file only works with 8 processes"
+      write(*,*) "Error: This test file only works with ", np(1)*np(2)*np(3), " processes"
     endif
     call MPI_Finalize(ierror)
     call exit(1)
@@ -46,8 +44,6 @@ program main
 ! Get parameters of data distribution
   call pnfft_local_size_3d(N, comm_cart_3d, &
       local_N, local_N_start, lower_border, upper_border)
-
-! Allocate memory
 
 ! Plan parallel NFFT
   pnfft = pnfft_init_3d(N, local_num_nodes, comm_cart_3d)
@@ -58,7 +54,7 @@ program main
   cx     = pnfft_get_x(pnfft)
 
 ! Convert data pointers to Fortran format
-  call c_f_pointer(cf_hat, f_hat, [N])
+  call c_f_pointer(cf_hat, f_hat, [local_N])
   call c_f_pointer(cf,     f,     [local_num_nodes])
   call c_f_pointer(cx,     x,     [3,local_num_nodes])
 
@@ -71,35 +67,40 @@ program main
      x)
 
 ! Print input Fourier coefficents
-!  call vpr_complex(comm_cart_3d, 8, f_hat, &
-!       "Input Fourier coefficients on process 1:")
-  write (*,*) "Input Fourier coefficients on process 1:", f_hat(1:2,1:2,1:2)
+  if(myrank .eq. 0) then
+    write (*,*) ""
+    write (*,*) "Input Fourier coefficients on process 1:"
+    write (*,*) f_hat(1:4,1,1)
+  endif
 
 ! Execute parallel NFFT
   call pnfft_trafo(pnfft)
 
 ! Print NFFT results
-!  call vpr_complex(comm_cart_3d, 8, f, &
-!       "PNFFT Results on process 1:")
-  write (*,*) "PNFFT Results on process 1:", f(1:8)
+  if(myrank .eq. 0) then
+    write (*,*) ""
+    write (*,*) "PNFFT Results on process 1:"
+    write (*,*) f(1:4)
+  endif
 
 ! Execute parallel adjoint NFFT
   call pnfft_adj(pnfft)
 
 ! Scale data
-  do l3=1,local_N(1)
+  do l3=1,local_N(3)
     do l2=1,local_N(2)
-      do l1=1,local_N(3)
+      do l1=1,local_N(1)
         f_hat(l1,l2,l3) = f_hat(l1,l2,l3) / (N(3)*N(2)*N(1));
       enddo
     enddo
   enddo
 
 ! Print output Fourier coefficents
-!  call vpr_complex(comm_cart_3d, 8, f_hat, &
-!      "Fourier coefficients after one forward and backward PNFFT on process 1:")
-  write (*,*) "Fourier coefficients after one forward and backward PNFFT on process 1:", f_hat(1:2,1:2,1:2)
-
+  if(myrank .eq. 0) then
+    write (*,*) ""
+    write (*,*) "Fourier coefficients after one forward and backward PNFFT on process 1:"
+    write (*,*) f_hat(1:4,1,1)
+  endif
 
 ! Free mem and finalize      
   call pnfft_finalize(pnfft, &
@@ -109,35 +110,6 @@ program main
   call MPI_Finalize(ierror)
 end program main
 
-
-! subroutine vpr_complex(comm, num, vec, info)
-!   use, intrinsic :: iso_c_binding
-!   implicit none
-!   include "mpif.h"
-!   include "fftw3.f"
-!   include "pfft.f"
-!   include "pnfft.f03"
-!  
-!   integer k, num
-!   complex(C_DOUBLE_COMPLEX) vec(:)
-!   character info(:)
-!   integer comm, myrank, ierror
-!  
-!   call MPI_Comm_rank(comm, myrank, ierror)
-!  
-!   if (myrank .eq. 0) then
-!     write (*,*) info
-!     do k=0,num
-!       if (MOD(k,4) .eq. 0) then
-!         write (*,*) k, "."
-!       endif
-!       write (*,*) vec(k)
-!       if (MOD(k,4) .eq. 3) then
-!         write (*,*) "\n"
-!       endif
-!     enddo
-!   endif
-! end subroutine vpr_complex
 
 subroutine init_random_x(lo, up, local_num_nodes, x)
   use, intrinsic :: iso_c_binding
@@ -149,7 +121,7 @@ subroutine init_random_x(lo, up, local_num_nodes, x)
   integer t
   integer(C_INTPTR_T) local_num_nodes
   integer(C_INTPTR_T) j
-  real(C_DOUBLE) lo(3), up(3), x(:,:)
+  real(C_DOUBLE) lo(3), up(3), x(3,local_num_nodes)
 
   do j=1,local_num_nodes
     do t=1,3
@@ -157,7 +129,6 @@ subroutine init_random_x(lo, up, local_num_nodes, x)
     enddo
   enddo
 end subroutine init_random_x
-
 
 
 
