@@ -688,8 +688,6 @@ FCSResult ifcs_p2nfft_tune(
             d->near_interpolation_table_force);
       }
 
-//      for(int t=0; t<3; t++)
-//        d->x_max[t] = 0.5;
       for(int t=0; t<3; t++)
         d->x_max[t] = 0.5 * d->box_l[0] / d->box_scales[0];
      

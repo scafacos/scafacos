@@ -415,14 +415,7 @@ FCSResult ifcs_p2nfft_tune_2dp(
             p2nfft_k_space_error_general_window(d->sum_qpart, d->sum_q2, d->box_l, d->N, d->alpha, (cao+1)/2, d->pnfft_window_flag, d->cart_comm_3d), (cao+1)/2);
 #endif
 
-      /* PNFFT calculates with real space cutoff 2*m+2
-       * Therefore m is one smaller then the P3M cao. */
-//      d->m = cao - 1;
-      
-      /* Bugfix: Although we compute with 2*m+2 values, the real space cutoff is still 2*m */
       /* P3M tuning works with cao==2*m */
-      /* increase real space cutoff in order to compensate force errors because of analytic differentiation */
-//       d->m = cao/2 + 1;
       d->m = (cao+1)/2;
 
       /* default oversampling equals 1 in 3d-periodic case */
@@ -810,45 +803,81 @@ static void print_command_line_arguments(
       printf("%" FCS_LMOD_FLOAT "f,", d->tolerance);
     }
 
-    if(verbose || (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) )
-      printf("p2nfft_ignore_tolerance,%d,", (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) ? 1 : 0);
-    if(verbose || !d->tune_p)
-      printf("p2nfft_p,%" FCS_LMOD_INT "d,", d->p);
+    /* print P2NFFT specific parameters */
+    if(verbose || !d->tune_epsI || !d->tune_r_cut)
+      printf("p2nfft_r_cut,%" FCS_LMOD_FLOAT "f,", d->r_cut);
     if(verbose || !d->tune_epsI || !d->tune_r_cut)
       printf("p2nfft_epsI,%" FCS_LMOD_FLOAT "f,", d->epsI);
+    if(verbose || !d->tune_alpha)
+      printf("p2nfft_alpha,%" FCS_LMOD_FLOAT "f,", d->alpha);
     if(verbose || d->interpolation_order != 3)
       printf("p2nfft_intpol_order,%" FCS_LMOD_INT "d,", d->interpolation_order);
-    if(verbose || (d->regularization != FCS_P2NFFT_REG_DEFAULT) ){
+    if(verbose || (d->regularization == FCS_P2NFFT_REG_CG) ){
       printf("p2nfft_reg_name,");
       if(d->regularization == FCS_P2NFFT_REG_CG)
         printf("cg,");
       else if(d->regularization == FCS_P2NFFT_REG_TAYLOR2P)
         printf("taylor2p,");
     }
+    if(verbose || !d->tune_p)
+      printf("p2nfft_p,%" FCS_LMOD_INT "d,", d->p);
+    if(verbose || (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) )
+      printf("p2nfft_ignore_tolerance,%d,", (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) ? 1 : 0);
+    if(verbose || (d->virial != NULL) )
+      printf("p2nfft_virial,%d,", (d->virial != NULL) ? 1 : 0);
 
+    /* print PNFFT specific parameters */
     if(verbose || !d->tune_N)
       printf("pnfft_N,%td,%td,%td,", d->N[0], d->N[1], d->N[2]);
     if(verbose || !d->tune_n)
       printf("pnfft_n,%td,%td,%td,", d->n[0], d->n[1], d->n[2]);
+    if(verbose || (d->pnfft_window != FCS_P2NFFT_DEFAULT_PNFFT_WINDOW) ){
+      printf("pnfft_window_name,");
+      switch(d->pnfft_window){
+        case 0: printf("gaussian,"); break;
+        case 1: printf("bspline,"); break;
+        case 2: printf("sinc,"); break;
+        case 3: printf("kaiser,"); break;
+        case 4: printf("bessel_i0,"); break;
+        default: printf("failure,");
+      }
+    }
     if(verbose || !d->tune_m)
       printf("pnfft_m,%" FCS_LMOD_INT "d,", d->m);
-    if(verbose || (d->pfft_flags & PNFFT_FFT_IN_PLACE) )
-      printf("pnfft_fft_in_place,%d,", (d->pfft_flags & PNFFT_FFT_IN_PLACE) ? 1 : 0);
     if(verbose || d->pnfft_interpolation_order != 3)
       printf("pnfft_intpol_order,%" FCS_LMOD_INT "d,", d->pnfft_interpolation_order);
-    if(verbose || (~d->pnfft_flags & PNFFT_WINDOW_BSPLINE) ){
-      printf("pnfft_window,");
-      if(d->pnfft_flags & PNFFT_WINDOW_GAUSSIAN)
-        printf("gaussian,");
-      else if(d->pnfft_flags & PNFFT_WINDOW_BSPLINE)
-        printf("bspline,");
-      else if(d->pnfft_flags & PNFFT_WINDOW_SINC_POWER)
-        printf("sinc,");
-      else if(d->pnfft_flags & PNFFT_WINDOW_BESSEL_I0)
-        printf("bessel_i0,");
-      else
-        printf("kaiser,");
+    if(verbose || (d->pnfft_flags & PNFFT_PRE_PHI_HAT) )
+      printf("pnfft_pre_phi_hat,%d,", (d->pnfft_flags & PNFFT_PRE_PHI_HAT) ? 1 : 0);
+    if(verbose || (d->pnfft_flags & PNFFT_FFT_IN_PLACE) )
+      printf("pnfft_fft_in_place,%d,", (d->pnfft_flags & PNFFT_FFT_IN_PLACE) ? 1 : 0);
+    if(verbose || (d->pnfft_flags & PNFFT_SORT_NODES) )
+      printf("pnfft_sort_nodes,%d,", (d->pnfft_flags & PNFFT_SORT_NODES) ? 1 : 0);
+    if(verbose || (d->pnfft_flags & PNFFT_INTERLACED) )
+      printf("pnfft_interlaced,%d,", (d->pnfft_flags & PNFFT_INTERLACED) ? 1 : 0);
+    if(verbose || (d->pnfft_flags & PNFFT_REAL_F) )
+      printf("pnfft_real_f,%d,", (d->pnfft_flags & PNFFT_REAL_F) ? 1 : 0);
+    if(d->pnfft_flags & PNFFT_GRAD_IK)
+      printf("pnfft_grad_ik,%d,", (d->pnfft_flags & PNFFT_GRAD_IK) ? 1 : 0);
+    else if(d->pnfft_flags & PNFFT_GRAD_NONE)
+      printf("pnfft_grad_none,%d,", (d->pnfft_flags & PNFFT_GRAD_NONE) ? 1 : 0);
+    else if(verbose)
+      printf("pnfft_grad_ad,1,");
+
+    /* print PFFT specific parameters */
+    if(verbose || (d->pfft_patience != FCS_P2NFFT_DEFAULT_PFFT_PATIENCE) ){
+      printf("pfft_patience_name,");
+      switch(d->pfft_patience){
+        case 0 : printf("estimate,"); break;
+        case 1 : printf("measure,"); break;
+        case 2 : printf("patient,"); break;
+        case 3 : printf("exhaustive,"); break;
+        default: printf("failure,");
+      }
     }
+    if(verbose || (d->pfft_flags & PFFT_TUNE) )
+      printf("pfft_tune,%d,", (d->pfft_flags & PFFT_TUNE) ? 1 : 0);
+    if(verbose || (d->pfft_flags & PFFT_PRESERVE_INPUT) )
+      printf("pfft_preserve_input,%d,", (d->pfft_flags & PFFT_PRESERVE_INPUT) ? 1 : 0);
 
     printf("\n");
   }
@@ -1010,26 +1039,26 @@ static void init_pnfft(
 #endif
   
   switch(pnfft_window){
-    case 0: pnfft_flags |= PNFFT_WINDOW_KAISER_BESSEL; break;
-    case 1: pnfft_flags |= PNFFT_WINDOW_GAUSSIAN; break;
-    case 2: pnfft_flags |= PNFFT_WINDOW_BSPLINE; break;
-    case 3: pnfft_flags |= PNFFT_WINDOW_SINC_POWER; break;
+    case 0: pnfft_flags |= PNFFT_WINDOW_GAUSSIAN; break;
+    case 1: pnfft_flags |= PNFFT_WINDOW_BSPLINE; break;
+    case 2: pnfft_flags |= PNFFT_WINDOW_SINC_POWER; break;
+    case 3: pnfft_flags |= PNFFT_WINDOW_KAISER_BESSEL; break;
     case 4: pnfft_flags |= PNFFT_WINDOW_BESSEL_I0; break;
   }
 
   switch(pnfft_intpol_order){
-    case 0: pnfft_flags |= 0; break;
+    case 0: pnfft_flags |= PNFFT_PRE_CONST_PSI; break;
     case 1: pnfft_flags |= PNFFT_PRE_LIN_PSI; break;
     case 2: pnfft_flags |= PNFFT_PRE_QUAD_PSI; break;
     case 3: pnfft_flags |= PNFFT_PRE_KUB_PSI; break;
   }
 
   switch(pfft_patience){
-    case 0: pfft_flags |= FFTW_ESTIMATE; break;
-    case 1: pfft_flags |= FFTW_MEASURE; break;
-    case 2: pfft_flags |= FFTW_PATIENT; break;
-    case 3: pfft_flags |= FFTW_EXHAUSTIVE; break;
-    default: pfft_flags |= FFTW_MEASURE; break;
+    case 0: pfft_flags |= PFFT_ESTIMATE; break;
+    case 1: pfft_flags |= PFFT_MEASURE; break;
+    case 2: pfft_flags |= PFFT_PATIENT; break;
+    case 3: pfft_flags |= PFFT_EXHAUSTIVE; break;
+    default: pfft_flags |= PFFT_MEASURE; break;
   }
 
   /* return if nothing to do */
