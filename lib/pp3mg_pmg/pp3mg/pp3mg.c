@@ -32,7 +32,7 @@
 #include "interpolation.h"
 #include "particle.h"
 
-#define SPLINE
+#define POLYNOMIAL6
 #define FOURTHORDER
 
 /*
@@ -331,12 +331,19 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 
   double d_2 = 4.0*params->radius*params->radius;
   double d_3 = 2.0*params->radius*d_2;
+  double d_4 = d_2*d_2;
   double d_5 = d_3*d_2;
+  double d_6 = d_4*d_2;
   double d_7 = d_5*d_2;
+  double d_8 = d_4*d_4;
   double d_9 = d_7*d_2;
+  double d_10 = d_8*d_2;
   double d_11 = d_9*d_2;
+  double d_12 = d_10*d_2;
   double d_13 = d_11*d_2;
+  double d_14 = d_12*d_2;
   double d_15 = d_13*d_2;
+  double d_16 = d_14*d_2;
   double d_17 = d_15*d_2;
 
   for( p = 0; p < data->n_stored_particles; p++ ){
@@ -381,7 +388,7 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 	      ( 64 * PP3MG_PI * params->radius_7 );
 #endif
 
-#ifdef POLYNOMIAL
+#ifdef POLYNOMIAL14
 	  double r_2 = SQUARE( i*params->hx - data->particles[p].x ) +
 	      SQUARE( j*params->hy - data->particles[p].y ) +
 	      SQUARE( k*params->hz - data->particles[p].z );
@@ -394,6 +401,33 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 	    double dr_16 = dr_8*dr_8;
 	    data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
 	      data->particles[p].q * 109395.0 * dr * dr_2 * dr_4 / (1024.0 * d_17 * PP3MG_PI);
+	  }
+#endif
+
+#ifdef POLYNOMIAL10
+	  double r_2 = SQUARE( i*params->hx - data->particles[p].x ) +
+	      SQUARE( j*params->hy - data->particles[p].y ) +
+	      SQUARE( k*params->hz - data->particles[p].z );
+	  r = sqrt (r_2);
+	  if (r < (params->radius)) {
+	    double dr = d_2 - 4.0*r_2;
+	    double dr_2 = dr*dr;
+	    double dr_4 = dr_2*dr_2;
+	    data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
+	      data->particles[p].q * 9009.0 * dr * dr_4 / (128.0 * d_13 * PP3MG_PI);
+	  }
+#endif
+
+#ifdef POLYNOMIAL6
+	  double r_2 = SQUARE( i*params->hx - data->particles[p].x ) +
+	      SQUARE( j*params->hy - data->particles[p].y ) +
+	      SQUARE( k*params->hz - data->particles[p].z );
+	  r = sqrt (r_2);
+	  if (r < (params->radius)) {
+	    double dr = d_2 - 4.0*r_2;
+	    double dr_2 = dr*dr;
+	    data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
+	      data->particles[p].q * 315.0 * dr * dr_2 / (8.0 * d_9 * PP3MG_PI);
 	  }
 #endif
 
@@ -721,8 +755,16 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 		      		 ( 1120 * r * params->radius_7 );
 #endif
 
-#ifdef POLYNOMIAL		      
+#ifdef POLYNOMIAL14
 		      val = (((((((25740.0/d_17*r_2 - 58344.0/d_15)*r_2 + 58905.0/d_13)*r_2 - 69615.0/(2.0*d_11))*r_2 + 425425.0/(32.0*d_9))*r_2 - 109395.0/(32.0*d_7))*r_2 + 153153.0/(256.0*d_5))*r_2 - 36465.0/(512.0*d_3))*r_2 + 109395.0/(16384.0*2*params->radius);
+#endif
+
+#ifdef POLYNOMIAL10
+		      val = ((((((946176.0*r_2 - 1677312.0*d_2)*r_2 + 1281280.0*d_4)*r_2 - 549120.0*d_6)*r_2 + 144144.0*d_8)*r_2 - 24024.0*d_10)*r_2 + 3003.0*d_12)/(512.0*d_13);
+#endif
+
+#ifdef POLYNOMIAL6
+		      val = ((((8960.0*r_2 - 11520.0*d_2)*r_2 + 6048.0*d_4)*r_2 - 1680.0*d_6)*r_2 + 315.0*d_8)/(64.0*d_9);
 #endif
 
 		      val = val - 1.0 / r;  
@@ -781,11 +823,25 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 		      239 / ( 80.0 * params->radius );
 #endif
 
-#ifdef POLYNOMIAL
+#ifdef POLYNOMIAL14
 		    data->particles[p1].e = data->particles[p1].e -
 		      1.0 / ( 4 * PP3MG_PI ) *
 		      SQUARE( data->particles[p1].q ) *
 		      109395.0 / ( 16384.0 * 2.0 * params->radius );
+#endif
+
+#ifdef POLYNOMIAL10
+		    data->particles[p1].e = data->particles[p1].e -
+		      1.0 / ( 4 * PP3MG_PI ) *
+		      SQUARE( data->particles[p1].q ) *
+		      3003.0 / ( 512.0 * 2.0 * params->radius );
+#endif
+
+#ifdef POLYNOMIAL6
+		    data->particles[p1].e = data->particles[p1].e -
+		      1.0 / ( 4 * PP3MG_PI ) *
+		      SQUARE( data->particles[p1].q ) *
+		      315.0 / ( 64.0 * 2.0 * params->radius );
 #endif
 		  }			
 		  p2 = data->ll[p2];
