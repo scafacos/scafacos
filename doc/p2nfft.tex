@@ -239,10 +239,10 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     $-1$ (direct evaluation of the error function), $0$ (constant interpolation), $1$ (linear interpolation), $2$ (quadratic interpolation) and $3$ (cubic interpolation).
     Default value is $3$.
   \item \verb!p2nfft_reg! -
-    Choose between the two regularization methods for non-periodic boundaries. Feasible values are \verb!2ptaylor! (Regularization with 2-point-Taylor polynomials)
+    Choose between the two regularization methods for non-periodic boundaries. Feasible values are \verb!taylor2p! (Regularization with 2-point-Taylor polynomials)
     and \verb!cg! (Fourier coefficients have been precomputed via CG iteration). Default is \verb!cg!
   \item \verb!p2nfft_p! -
-    The degree of the two-point-Taylor polynomial. This parameter only takes affect, if regularization \verb!2ptaylor! has been enabled.
+    The degree of the two-point-Taylor polynomial. This parameter only takes affect, if regularization \verb!taylor2p! has been enabled.
     Feasible values are any integers between $1$ and $16$. Default value is $7$.
   \item \verb!p2nfft_virial! -
     Decide if the computation of the virial should be included in P2NFFT.
@@ -402,7 +402,7 @@ FCSResult fcs_p2nfft_set_regularization_by_name(
     FCS handle, char* reg_name);
 \end{alltt}
     Set/retrieve the near field regularization by number or name (default = 0).
-    Feasible values are 0 (\verb!"cg"!) and 1 (\verb!"2ptaylor"!).
+    Feasible values are 0 (\verb!"cg"!) and 1 (\verb!"taylor2p"!).
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_p(FCS handle, fcs_int p);
