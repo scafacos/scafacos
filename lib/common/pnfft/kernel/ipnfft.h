@@ -28,7 +28,7 @@
 
 #include "config.h"
 
-#define PNFFT_ENABLE_DEBUG 0
+#define PNFFT_ENABLE_DEBUG 1
 
 #define PNFFT_DEBUG_USE_KAISER_BESSEL 0
 #define PNFFT_DEBUG_USE_GAUSSIAN      0

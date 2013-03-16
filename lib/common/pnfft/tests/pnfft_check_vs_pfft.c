@@ -41,7 +41,7 @@ int main(int argc, char **argv){
   n[0] = n[1] = n[2] = 0;
   m = 6;
   x_max[0] = x_max[1] = x_max[2] = 0.5;
-  window = 0;
+  window = 4;
   np[0]=2; np[1]=2; np[2]=2;
   
   /* set parameters by command line */
@@ -52,10 +52,10 @@ int main(int argc, char **argv){
     n[t] = (n[t]==0) ? 2*N[t] : n[t];
 
   switch(window){
-    case 1: window_flag = PNFFT_WINDOW_GAUSSIAN; break;
-    case 2: window_flag = PNFFT_WINDOW_BSPLINE; break;
-    case 3: window_flag = PNFFT_WINDOW_SINC_POWER; break;
-    case 4: window_flag = PNFFT_WINDOW_BESSEL_I0; break;
+    case 0: window_flag = PNFFT_WINDOW_GAUSSIAN; break;
+    case 1: window_flag = PNFFT_WINDOW_BSPLINE; break;
+    case 2: window_flag = PNFFT_WINDOW_SINC_POWER; break;
+    case 3: window_flag = PNFFT_WINDOW_BESSEL_I0; break;
     default: window_flag = PNFFT_WINDOW_KAISER_BESSEL;
   }
 
@@ -68,10 +68,10 @@ int main(int argc, char **argv){
   pfft_printf(MPI_COMM_WORLD, "*      m = %d real space cutoff (change with -pnfft_m *),\n", m);
   pfft_printf(MPI_COMM_WORLD, "*      window = %d window function ", window);
   switch(window){
-    case 1: pfft_printf(MPI_COMM_WORLD, "(PNFFT_WINDOW_GAUSSIAN) "); break;
-    case 2: pfft_printf(MPI_COMM_WORLD, "(PNFFT_WINDOW_BSPLINE) "); break;
-    case 3: pfft_printf(MPI_COMM_WORLD, "(PNFFT_WINDOW_SINC_POWER) "); break;
-    case 4: pfft_printf(MPI_COMM_WORLD, "(PNFFT_WINDOW_BESSEL_I0) "); break;
+    case 0: pfft_printf(MPI_COMM_WORLD, "(PNFFT_WINDOW_GAUSSIAN) "); break;
+    case 1: pfft_printf(MPI_COMM_WORLD, "(PNFFT_WINDOW_BSPLINE) "); break;
+    case 2: pfft_printf(MPI_COMM_WORLD, "(PNFFT_WINDOW_SINC_POWER) "); break;
+    case 3: pfft_printf(MPI_COMM_WORLD, "(PNFFT_WINDOW_BESSEL_I0) "); break;
     default: pfft_printf(MPI_COMM_WORLD, "(PNFFT_WINDOW_KAISER_BESSEL) "); break;
   }
   pfft_printf(MPI_COMM_WORLD, "(change with -pnfft_window *),\n");

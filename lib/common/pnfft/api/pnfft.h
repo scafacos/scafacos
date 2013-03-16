@@ -146,6 +146,9 @@
       const INT *N, const INT *local_N,                                                 \
       const INT *local_N_start,                                                         \
       C *data);                                                                         \
+  PNFFT_EXTERN void PNX(init_f)(                                                        \
+      INT local_M,                                                                      \
+      C *data);                                                                         \
   PNFFT_EXTERN void PNX(init_x_3d)(                                                     \
       const R *lo, const R *up, INT loc_M,                                              \
       R *x);                                                                            \

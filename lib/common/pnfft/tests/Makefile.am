@@ -23,10 +23,11 @@ check_PROGRAMS = \
 # do not compile checks
 #else
 check_PROGRAMS += \
-	pnfft_check \
+	pnfft_trafo_check \
+	pnfft_trafo_check_grad \
+	pnfft_trafo_check_2d \
+	pnfft_adj_check \
 	pnfft_check_vs_pfft \
-	pnfft_check_grad \
-	pnfft_check_2d \
 	pnfft_test \
 	pnfft_test_adv
 #endif

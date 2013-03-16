@@ -402,6 +402,16 @@ void PNX(init_f_hat_3d)(
       data);
 }
 
+void PNX(init_f)(
+    INT local_M,
+    C *data
+    )
+{
+  INT local_M_start = 0;
+
+  PX(init_input_c2c)(1, &local_M, &local_M, &local_M_start,
+      data);
+}
 
 void PNX(init_x_3d)(
     const R *lo, const R *up, INT loc_M,

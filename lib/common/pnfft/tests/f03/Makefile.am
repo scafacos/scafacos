@@ -18,6 +18,6 @@ check_PROGRAMS =
 #if ENABLE_COMMON_PNFFT
 # do not compile checks
 #else
-check_PROGRAMS += \
-	pnfft_test
+# check_PROGRAMS += \
+# 	pnfft_test
 #endif
