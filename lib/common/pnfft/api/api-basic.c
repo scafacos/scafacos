@@ -161,7 +161,7 @@ void PNX(trafo)(
     /* multiplication with matrix B */
     ths->timer_trafo[PNFFT_TIMER_MATRIX_B] -= MPI_Wtime();
     if(ths->pnfft_flags & PNFFT_INTERLACED)
-      PNX(trafo_B_grad_ad)(ths,1);
+      PNX(trafo_B_grad_ad)(ths, 1);
     else
       PNX(trafo_B_grad_ad)(ths, 0);
     ths->timer_trafo[PNFFT_TIMER_MATRIX_B] += MPI_Wtime();

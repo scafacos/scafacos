@@ -11,18 +11,19 @@ program main
 
   integer np(3), m, window, window_flag, ierror, l1, l2, l3
   integer(C_INTPTR_T) :: N(3), local_N(3), local_N_start(3)
-  integer(C_INTPTR_T) :: num_nodes, local_M
+  integer(C_INTPTR_T) :: num_nodes, local_num_nodes
   real(C_DOUBLE) :: lower_border(3), upper_border(3)
   type(C_PTR) :: pnfft, cf_hat, cf, cx
   complex(C_DOUBLE_COMPLEX), pointer :: f_hat(:,:,:), f(:)
   real(C_DOUBLE), pointer :: x(:,:)
 
   real(C_DOUBLE) f_hat_sum, x_max(3)
-  integer comm_cart_3d, myrank
+  integer comm_cart_3d
+  integer myrank
 
   N = (/ 16,16,16 /)
   np = (/ 2,2,2 /)
-  local_M = N(1)*N(2)*N(3) / (np(1)*np(2)*np(3))
+  local_num_nodes = N(1)*N(2)*N(3) / (np(1)*np(2)*np(3))
 
 ! Initialize MPI and PFFT
   call MPI_Init(ierror)
@@ -45,7 +46,7 @@ program main
       local_N, local_N_start, lower_border, upper_border)
 
 ! Plan parallel NFFT
-  pnfft = pnfft_init_3d(N, local_M, comm_cart_3d)
+  pnfft = pnfft_init_3d(N, local_num_nodes, comm_cart_3d)
 
 ! Get data pointers in C format
   cf_hat = pnfft_get_f_hat(pnfft)
@@ -54,15 +55,15 @@ program main
 
 ! Convert data pointers to Fortran format
   call c_f_pointer(cf_hat, f_hat, [local_N])
-  call c_f_pointer(cf,     f,     [local_M])
-  call c_f_pointer(cx,     x,     [integer(C_INTPTR_T)::3,local_M])
+  call c_f_pointer(cf,     f,     [local_num_nodes])
+  call c_f_pointer(cx,     x,     [integer(C_INTPTR_T)::3,local_num_nodes])
 
 ! Initialize Fourier coefficients
   call init_f_hat(N, local_N, local_N_start, &
       f_hat)
 
 ! Initialize nonequispaced nodes
-  call init_random_x(lower_border, upper_border, local_M, &
+  call init_random_x(lower_border, upper_border, local_num_nodes, &
      x)
 
 ! Print input Fourier coefficents
@@ -109,16 +110,16 @@ program main
 end program main
 
 
-subroutine init_random_x(lo, up, local_M, x)
+subroutine init_random_x(lo, up, local_num_nodes, x)
   use, intrinsic :: iso_c_binding
   implicit none
 
   integer(C_INTPTR_T) j, t
-  integer(C_INTPTR_T), intent(in) :: local_M
+  integer(C_INTPTR_T), intent(in) :: local_num_nodes
   real(C_DOUBLE), intent(in) :: lo(3), up(3)
-  real(C_DOUBLE), intent(out) :: x(3,local_M)
+  real(C_DOUBLE), intent(out) :: x(3,local_num_nodes)
 
-  do j=1,local_M
+  do j=1,local_num_nodes
     do t=1,3
       x(t,j) = (up(t) - lo(t)) * rand(0) + lo(t)
     enddo
@@ -155,4 +156,66 @@ real function func(l,N)
 
   func = exp(-real(l*l)/real(N*N))
 end function func
+
+
+subroutine pnfft_perform_guru( &
+    N, Nos, local_M, m, x_max, window_flag, &
+    np, comm, &
+    f, f_hat_sum &
+    )
+
+  use, intrinsic :: iso_c_binding
+
+  implicit none
+  include "mpif.h"
+  include "fftw3.f"
+  include "pfft.f"
+  include "pnfft.f03"
+
+  integer(C_INTPTR_T), intent(in)  :: N(3), Nos(3), local_M
+  integer,             intent(in)  :: m, window_flag, np(3), comm
+  real(C_DOUBLE),      intent(in)  :: x_max(3)
+  complex(C_DOUBLE),   intent(out) :: f(local_M), f_hat_sum
+
+  integer ierr, myrank, comm_cart_3d
+  complex(C_DOUBLE_COMPLEX), pointer :: f_hat(:,:,:), f(:)
+  real(C_DOUBLE), pointer :: x(:,:)
+  type(C_PTR) :: pnfft, cf_hat, cf, cx
+
+  call MPI_Comm_rank(comm, myrank, ierr)
+
+! Create three-dimensional process grid of
+! size np(1) x np(2) x np(3), if possible
+  ierror =  pnfft_create_procmesh(3, comm, np, comm_cart_3d)
+  if (ierror .ne. 0) then
+    if(myrank .eq. 0) then
+      write(*,*) "Error: This test file only works with ", np(1)*np(2)*np(3), " processes"
+    endif
+    call MPI_Finalize(ierror)
+    call exit(1)
+  endif
+
+! Get parameters of data distribution
+  call pnfft_local_size_guru(3, N, Nos, x_max, m, comm_cart_3d, &
+      local_N, local_N_start, lower_border, upper_border)
+
+! Plan parallel NFFT
+  pnfft = pnfft_init_guru(3, N, Nos, x_max, local_M, m, &
+      PNFFT_MALLOC_X + PNFFT_MALLOC_F_HAT + PNFFT_MALLOC_F + window_flag, &
+      PFFT_ESTIMATE, comm_cart_3d)
+
+! Get data pointers in C format
+  cf_hat = pnfft_get_f_hat(pnfft)
+  cf     = pnfft_get_f(pnfft)
+  cx     = pnfft_get_x(pnfft)
+
+! Convert data pointers to Fortran format
+  call c_f_pointer(cf_hat, f_hat, [local_N])
+  call c_f_pointer(cf,     f,     [local_M])
+  call c_f_pointer(cx,     x,     [integer(C_INTPTR_T)::3,local_M])
+
+
+
+end subroutine pnfft_perform_guru
+
 

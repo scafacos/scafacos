@@ -114,8 +114,8 @@ static void pnfft_perform_guru(
 
   /* create three-dimensional process grid of size np[0] x np[1], if possible */
   if( pnfft_create_procmesh(2, comm, np, &comm_cart_2d) ){
-    pfft_fprintf(MPI_COMM_WORLD, stderr, "Error: Procmesh of size %d x %d does not fit to number of allocated processes.\n", np[0], np[1]);
-    pfft_fprintf(MPI_COMM_WORLD, stderr, "       Please allocate %d processes (mpiexec -np %d ...) or change the procmesh (with -pnfft_np * * *).\n", np[0]*np[1], np[0]*np[1]);
+    pfft_fprintf(comm, stderr, "Error: Procmesh of size %d x %d does not fit to number of allocated processes.\n", np[0], np[1]);
+    pfft_fprintf(comm, stderr, "       Please allocate %d processes (mpiexec -np %d ...) or change the procmesh (with -pnfft_np * * *).\n", np[0]*np[1], np[0]*np[1]);
     MPI_Finalize();
     return;
   }
