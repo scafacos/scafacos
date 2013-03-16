@@ -128,7 +128,7 @@ static void p2nfft_k_space_error_sum2_ad(
     ptrdiff_t grid[3], fcs_float grid_i[3],
     fcs_int cao, fcs_float alpha_L_i, 
     fcs_float *alias1, fcs_float *alias2);
-void p2nfft_k_space_error_sum2_adi(
+static void p2nfft_k_space_error_sum2_adi(
     fcs_int nx, fcs_int ny, fcs_int nz,
     ptrdiff_t grid[3], fcs_float grid_i[3],
     fcs_int cao, fcs_float alpha_L_i,
@@ -572,7 +572,7 @@ FCSResult ifcs_p2nfft_tune(
         
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
         for(int t=0; t<3; t++){
-          d->box_scales[t] = d->box_l[t] * sqrt(3) / (0.5 - d->epsB);
+          d->box_scales[t] = d->box_l[t] * fcs_sqrt(3) / (0.5 - d->epsB);
           d->box_shifts[t] = d->box_l[t] / 2.0;
         }
 
@@ -689,7 +689,7 @@ FCSResult ifcs_p2nfft_tune(
       }
 
       for(int t=0; t<3; t++)
-        d->x_max[t] = 0.5 * d->box_l[0] / d->box_scales[0];
+        d->x_max[t] = 0.5 * d->box_l[t] / d->box_scales[t];
      
 #if FCS_ENABLE_INFO 
      if(!comm_rank){
@@ -875,7 +875,7 @@ static void print_command_line_arguments(
     else if(d->pnfft_flags & PNFFT_GRAD_NONE)
       printf("pnfft_grad_none,%d,", (d->pnfft_flags & PNFFT_GRAD_NONE) ? 1 : 0);
     else if(verbose)
-      printf("pnfft_grad_ad,1,");
+      printf("pnfft_grad_ik,0,");
 
     /* print PFFT specific parameters */
     if(verbose || (d->pfft_patience != FCS_P2NFFT_DEFAULT_PFFT_PATIENCE) ){
@@ -1248,7 +1248,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_nonperiodic(
       twiddle_k2 = (local_Ni_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
       for(ptrdiff_t k2 = local_Ni_start[2]; k2 < local_Ni_start[2] + local_Ni[2]; k2++, twiddle_k2 *= -1.0, m++){
         x2 = (fcs_float) k2 / N[2] - 0.5;
-        xnorm = sqrt(x0*x0+x1*x1+x2*x2);
+        xnorm = fcs_sqrt(x0*x0+x1*x1+x2*x2);
         twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
 
         /* constant continuation outside the ball with radius 0.5 */
@@ -1509,7 +1509,7 @@ static fcs_float p2nfft_tune_alpha(
   rs_err = p2nfft_real_space_error(sum_qpart, sum_q2, box_l, r_cut, 0.0);
 
   if(FCS_P2NFFT_SQRT2 * rs_err > tolerance_field) {
-    /* assume rs_err = ks_err -> rs_err = accuracy/sqrt(2.0) -> alpha */
+    /* assume rs_err = ks_err -> rs_err = accuracy/fcs_sqrt(2.0) -> alpha */
     alpha = fcs_sqrt(fcs_log(FCS_P2NFFT_SQRT2 * rs_err/tolerance_field)) / r_cut;
   } else {
     /* even alpha=0 is ok, however, we cannot choose it since it kills the k-space error formula.
@@ -1716,7 +1716,7 @@ static void p2nfft_k_space_error_sum2_ad(
 #define FCS_P2NFFT_BRILLOUIN 1 
 
 /** aliasing sum used by \ref ifcs_p3m_k_space_error. */
-void p2nfft_k_space_error_sum2_adi(
+static void p2nfft_k_space_error_sum2_adi(
     fcs_int nx, fcs_int ny, fcs_int nz,
     ptrdiff_t grid[3], fcs_float grid_i[3],
     fcs_int cao, fcs_float alpha_L_i,

@@ -33,6 +33,16 @@
 
 #define WORKAROUND_GRIDSORT_BUG 1
 #define FCS_P2NFFT_DISABLE_PNFFT_INFO 1
+#define CREATE_GHOSTS_SEPARATE 0
+
+/* callback functions for performing a whole loop of near field computations (using ifcs_p2nfft_compute_near_...) */
+static FCS_NEAR_LOOP_FP(ifcs_p2nfft_compute_near_periodic_erfc_loop, ifcs_p2nfft_compute_near_periodic_erfc)
+static FCS_NEAR_LOOP_FP(ifcs_p2nfft_compute_near_periodic_approx_erfc_loop, ifcs_p2nfft_compute_near_periodic_approx_erfc)
+// static FCS_NEAR_LOOP_FP(ifcs_p2nfft_compute_near_interpolation_loop, ifcs_p2nfft_compute_near_interpolation)
+static FCS_NEAR_LOOP_FP(ifcs_p2nfft_compute_near_interpolation_const_loop, ifcs_p2nfft_compute_near_interpolation_const)
+static FCS_NEAR_LOOP_FP(ifcs_p2nfft_compute_near_interpolation_lin_loop, ifcs_p2nfft_compute_near_interpolation_lin)
+static FCS_NEAR_LOOP_FP(ifcs_p2nfft_compute_near_interpolation_quad_loop, ifcs_p2nfft_compute_near_interpolation_quad)
+static FCS_NEAR_LOOP_FP(ifcs_p2nfft_compute_near_interpolation_cub_loop, ifcs_p2nfft_compute_near_interpolation_cub)
 
 static void convolution(
     const INT *local_N, const fcs_pnfft_complex *regkern_hat,
@@ -125,7 +135,17 @@ FCSResult ifcs_p2nfft_run_2dp(
 
   fcs_gridsort_set_particles(&gridsort, local_num_particles, max_local_num_particles, positions, charges);
 
+
+#if CREATE_GHOSTS_SEPARATE
+  fcs_gridsort_sort_forward(&gridsort, 0, d->cart_comm_3d);
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Forward grid sort");
+
+  /* Start near sort timing */
+  FCS_P2NFFT_START_TIMING();
+  if (d->short_range_flag) fcs_gridsort_create_ghosts(&gridsort, d->r_cut, d->cart_comm_3d);
+#else
   fcs_gridsort_sort_forward(&gridsort, (d->short_range_flag ? d->r_cut: 0.0), d->cart_comm_3d);
+#endif
 
   fcs_gridsort_separate_ghosts(&gridsort, NULL, NULL);
 
@@ -133,7 +153,11 @@ FCSResult ifcs_p2nfft_run_2dp(
   fcs_gridsort_get_ghost_particles(&gridsort, &ghost_num_particles, &ghost_positions, &ghost_charges, &ghost_indices);
 
   /* Finish forw sort timing */
-  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Forward sort");
+#if CREATE_GHOSTS_SEPARATE
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Forward near sort");
+#else
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Forward grid and near sort");
+#endif
 
   /* Handle particles, that left the box [0,L] */
   /* For periodic boundary conditions: just fold them back.
@@ -172,11 +196,25 @@ FCSResult ifcs_p2nfft_run_2dp(
     sorted_field[j] = 0;
 
   if(d->short_range_flag){
-
     fcs_near_create(&near);
   
-    fcs_near_set_field(&near, ifcs_p2nfft_compute_near_field);
-    fcs_near_set_potential(&near, ifcs_p2nfft_compute_near_potential);
+    if(d->interpolation_order >= 0){
+      switch(d->interpolation_order){
+        case 0: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_const_loop); break;
+        case 1: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_lin_loop); break;
+        case 2: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_quad_loop); break;
+        case 3: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_cub_loop); break;
+        default: return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
+      } 
+    } else if(d->use_ewald){
+      if(d->interpolation_order == -1)
+        fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_periodic_erfc_loop);
+      else
+        fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_periodic_approx_erfc_loop);
+    } else {
+      fcs_near_set_field(&near, ifcs_p2nfft_compute_near_field);
+      fcs_near_set_potential(&near, ifcs_p2nfft_compute_near_potential);
+    }
 
     // fcs_int periodicity[3] = { 1, 1, 1 };
     // fcs_int periodicity[3] = { 0, 0, 0 };
@@ -188,7 +226,19 @@ FCSResult ifcs_p2nfft_run_2dp(
   
     fcs_near_set_ghosts(&near, ghost_num_particles, ghost_positions, ghost_charges, ghost_indices);
   
-    fcs_near_compute(&near, d->r_cut, rd, d->cart_comm_3d);
+    if(d->interpolation_order >= 0){
+      ifcs_p2nfft_near_params near_params;
+      near_params.interpolation_order = d->interpolation_order;
+      near_params.interpolation_num_nodes = d->interpolation_num_nodes;
+      near_params.near_interpolation_table_potential = d->near_interpolation_table_potential;
+      near_params.near_interpolation_table_force = d->near_interpolation_table_force;
+      near_params.one_over_r_cut = d->one_over_r_cut;
+
+      fcs_near_compute(&near, d->r_cut, &near_params, d->cart_comm_3d);
+    } else if(d->use_ewald)
+      fcs_near_compute(&near, d->r_cut, &(d->alpha), d->cart_comm_3d);
+    else
+      fcs_near_compute(&near, d->r_cut, rd, d->cart_comm_3d);
   
     fcs_near_destroy(&near);
 
@@ -223,9 +273,6 @@ FCSResult ifcs_p2nfft_run_2dp(
   if (myrank == 0) fprintf(stderr, "E_NEAR(0) = %" FCS_LMOD_FLOAT "e\n", sorted_field[0]);
 #endif
       
-  /* Start far field timing */
-  FCS_P2NFFT_START_TIMING();
-
   /* Reinit PNFFT corresponding to number of sorted nodes */
   FCS_PNFFT(init_nodes)(d->pnfft, sorted_num_particles,
       PNFFT_MALLOC_X| PNFFT_MALLOC_F| PNFFT_MALLOC_GRAD_F,
@@ -299,6 +346,18 @@ FCSResult ifcs_p2nfft_run_2dp(
 //   fprintf(stderr, "myrank = %d, sorted_num_particles = %d\n", myrank, sorted_num_particles);
 // #endif
 
+#if FCS_ENABLE_INFO && !FCS_P2NFFT_DISABLE_PNFFT_INFO
+  /* Start print timing */
+  FCS_P2NFFT_START_TIMING();
+#endif
+
+  FCS_PNFFT(precompute_psi)(d->pnfft);
+
+#if FCS_ENABLE_INFO && !FCS_P2NFFT_DISABLE_PNFFT_INFO
+  /* Finish print timing */
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "pnfft_precompute_psi");
+#endif
+
   /* Reset pnfft timer (delete timings from fcs_init and fcs_tune) */  
 #if FCS_ENABLE_INFO && !FCS_P2NFFT_DISABLE_PNFFT_INFO
   FCS_PNFFT(reset_timer)(d->pnfft);
@@ -318,6 +377,9 @@ FCSResult ifcs_p2nfft_run_2dp(
   MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: checksum of NFFT^H input: %e + I* %e\n", creal(csum_global), cimag(csum_global));
 #endif
+
+  /* Start far field timing */
+  FCS_P2NFFT_START_TIMING();
 
   /* Perform adjoint NFFT */
   FCS_PNFFT(adj)(d->pnfft);
