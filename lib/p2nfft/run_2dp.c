@@ -422,7 +422,7 @@ FCSResult ifcs_p2nfft_run_2dp(
   for (fcs_int j = 0; j < sorted_num_particles; ++j){
 #if FCS_P2NFFT_MIXED_PERIODICITY_TEST
     if(d->use_ewald){
-      sorted_potentials[j] += creal(f[j]);
+      sorted_potentials[j] += creal(f[j]) / (d->box_scales[0] * d->box_scales[1] * d->box_scales[2]);
       for(fcs_int t=0; t<3; t++)
         sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]);
     } else {
@@ -474,7 +474,7 @@ FCSResult ifcs_p2nfft_run_2dp(
   for(fcs_int j = 0; j < sorted_num_particles; ++j)
     if(d->use_ewald)
 #if FCS_P2NFFT_MIXED_PERIODICITY_TEST
-      far_energy += 0.5 * sorted_charges[j] * f[j] / (box_vol);
+      far_energy += 0.5 * sorted_charges[j] * f[j] / (d->box_scales[0] * d->box_scales[1] * d->box_scales[2]);
 #else
       far_energy += 0.5 * sorted_charges[j] * f[j] / (FCS_P2NFFT_PI * box_vol);
 #endif

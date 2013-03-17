@@ -551,8 +551,8 @@ FCSResult ifcs_p2nfft_tune(
             /* good choice for reqiured_accuracy == 1e3 with hammersley_ball_pos_1e4 */
             d->epsI = 0.5 * avg_dist/d->box_l[0];
           } else { /* user defined r_cut, now scale it into unit cube */
-            /* invert r_cut = box_scale * epsI, where box_scale depends on epsI */
-            d->epsI = d->r_cut / 2.0 / (d->box_l[0] * sqrt(3) + 1);
+            /* invert r_cut = box_scale * epsI, where box_scale = box_l*sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
+            d->epsI = 0.5 / (d->box_l[0] / d->r_cut * sqrt(3) + 1.0);
           }
         }
   

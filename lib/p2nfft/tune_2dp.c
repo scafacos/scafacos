@@ -217,7 +217,7 @@ FCSResult ifcs_p2nfft_tune_2dp(
   }
   d->use_ewald = periodicity[0] || periodicity[1] || periodicity[2];  
 #if FCS_P2NFFT_MIXED_PERIODICITY_TEST
-  d->num_periodic_dims = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
+  d->num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
 #endif
 
   /* Now, after the periodicity is clear, we can set the default tolerance type. */
@@ -306,12 +306,53 @@ FCSResult ifcs_p2nfft_tune_2dp(
 //      fcs_int cao = d->m + 1;
       fcs_int cao = 2*d->m;
 
+  
+      if(d->tune_r_cut){
+        if(d->tune_epsI){
+          /* set r_cut to 3 times the average distance between charges */
+          d->r_cut = 3.0 * avg_dist;
+
+          /* fulfill minimum image convention for periodic dims */
+          for(int t=0; t<3; t++)
+            if(periodicity[t])
+              if (d->r_cut > d->box_l[t])
+                d->r_cut = d->box_l[t];
+
+          /* set epsI corresponding to r_cut */
+          d->epsI = 1.0; /* At the end, epsI will be less than 0.5 because of minimal image convention. */
+          for(int t=0; t<3; t++){
+            fcs_float epsI;
+            if(periodicity[t]){
+              epsI = d->r_cut / box_l[t];
+            } else {
+              /* invert r_cut = box_scale * epsI, where box_scale = box_l*sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
+              epsI = 0.5 / (d->box_l[0] / d->r_cut * sqrt(d->num_nonperiodic_dims) + 1.0);
+
+              /* Check epsI <= 1/8 for proper definition of the interval [epsI,0.5-epsB].
+               * We do not need this for fully-periodic boundary conditions. */
+              if(epsI > 0.125) epsI = 0.125;
+            }
+
+            /* Choose the smallest epsI of all dimensions. */
+            if(epsI < d->epsI)
+             d->epsI = epsI; 
+          }
+        } else {
+          d->r_cut = d->epsI * d->box_l[0];
+        }
+        d->one_over_r_cut = 1.0/d->r_cut;
+      } else {
+        /* invert r_cut = box_scale * epsI, where box_scale = box_l*sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
+        d->epsI = 0.5 / (d->box_l[0] / d->r_cut * sqrt(3) + 1.0);
+      }
+      d->epsB = d->epsI;
+
       for(int t=0; t<3; t++){
         /* calculate box_scales depending on boundary condition */
         if(d->periodicity[t])
           d->box_scales[t] = d->box_l[t];
         else
-          d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB) * fcs_sqrt(3 - d->num_periodic_dims) ;
+          d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB) * fcs_sqrt(d->num_nonperiodic_dims) ;
 
         /* calculate box_shifts are the same for periodic and non-periodic boundary conditions */
         d->box_shifts[t] = d->box_l[t] / 2.0;
@@ -324,17 +365,6 @@ FCSResult ifcs_p2nfft_tune_2dp(
         fprintf(stderr, "x_max = %f, box_l = %f, box_scale = %f\n", d->x_max[t], d->box_l[t], d->box_scales[t]);
       }
      
-      if(d->tune_r_cut){
-        if(d->tune_epsI){
-          /* set r_cut to 3 times the average distance between charges */
-          d->r_cut = 3.0 * avg_dist;
-          if (d->r_cut > d->box_l[0])
-            d->r_cut = d->box_l[0];
-        } else
-          d->r_cut = d->epsI * d->box_l[0];
-        d->one_over_r_cut = 1.0/d->r_cut;
-      }
-
       /* shift and scale box into [-0.5,0.5)^3 */
       for(int t=0; t<3; t++){
         d->box_scales[t] = d->box_l[t];
@@ -751,12 +781,12 @@ FCSResult ifcs_p2nfft_tune_2dp(
 
     /* precompute Fourier coefficients for convolution */
 #if FCS_P2NFFT_MIXED_PERIODICITY_TEST
-    if (d->num_periodic_dims == 2)
-      d->regkern_hat = malloc_and_precompute_regkern_hat_2d_periodic_simple(
-          d->N, d->local_N, d->local_N_start, d->periodicity, d->box_l, d->alpha);
-//       d->regkern_hat = malloc_and_precompute_regkern_hat_2d_periodic(
-//           d->N, d->epsB, d->box_l, d->alpha, d->periodicity, d->p,
-//           d->cart_comm_pnfft);
+    if (d->num_nonperiodic_dims == 1)
+//       d->regkern_hat = malloc_and_precompute_regkern_hat_2d_periodic_simple(
+//           d->N, d->local_N, d->local_N_start, d->periodicity, d->box_l, d->alpha);
+      d->regkern_hat = malloc_and_precompute_regkern_hat_2d_periodic(
+          d->N, d->epsB, d->box_l, d->alpha, d->periodicity, d->p,
+          d->cart_comm_pnfft);
     else 
 #endif
     if(d->use_ewald)
@@ -1393,6 +1423,8 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic_simple(
     if(!periodicity[t])
       scale /= N[t];
 
+  /* Omit twiddles in this simple case, where no FFT is computed. 
+   * Instead, already precompute the values in the shifted interval. */
   m = 0;
   for(k[1]=local_N_start[1]; k[1] < local_N_start[1] + local_N[1]; k[1]++){
     x1 = (periodicity[1]) ? k[1] / box_l[1] : 0.0;
@@ -1405,11 +1437,6 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic_simple(
         k0 = (periodicity[0]) ? k[0] : 0;
         knorm = fcs_sqrt( x0*x0 + x1*x1 + x2*x2 );
 
-//         if (((k0 == 0) && (k1 == 0)) || (k2 != 0))
-//           regkern_hat[m] = 0;
-//         else
-//           regkern_hat[m] = 1.0/box_l[0] * (1-erfc(FCS_P2NFFT_PI * knorm/alpha))/knorm;
-// 
         /* Check if all indices corresponding to periodic dims are 0.
          * Index correspoding to non-periodic dim will be 0 per default. */
         if ((k0 == 0) && (k1 == 0) && (k2 == 0))
@@ -1425,6 +1452,21 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic_simple(
       }
     }
   }
+
+  /* take care of transposed order N1 x N2 x N0 */
+  /* shift FFT input via twiddle factors on the output */
+//   m=0;
+//   twiddle_k1 = (local_No_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
+//   for(ptrdiff_t k1 = 0; k1 < local_No[1]; k1++, twiddle_k1 *= -1.0){
+//     twiddle_k2 = (local_No_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
+//     for(ptrdiff_t k2 = 0; k2 < local_No[2]; k2++, twiddle_k2 *= -1.0){
+//       twiddle_k0 = (local_No_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
+//       for(ptrdiff_t k0 = 0; k0 < local_No[0]; k0++, twiddle_k0 *= -1.0, m++){
+//         twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
+//         regkern_hat[m] *= twiddle;
+//       }
+//     }
+//   }
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
 //     if (myrank == 0) fprintf(stderr, "local_N = [%td %td %td], local_N_start = [%td %td %td]\n",
@@ -1445,7 +1487,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic(
 {
   ptrdiff_t howmany = 1, alloc_local, m;
   ptrdiff_t local_Ni[3], local_Ni_start[3], local_No[3], local_No_start[3];
-  fcs_float x0, x1, x2, scale = 1.0, twiddle, twiddle_k0=1.0, twiddle_k1=1.0, twiddle_k2=1.0;
+  ptrdiff_t k[3];
+  fcs_float scale = 1.0, twiddle, twiddle_k0=1.0, twiddle_k1=1.0, twiddle_k2=1.0;
+  fcs_float x[3];
   pfft_plan pfft;
   fcs_pnfft_complex *regkern_hat;
 
@@ -1476,31 +1520,29 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic(
   csum = 0.0;
 #endif
  
-  /* shift FFT output via twiddle factors on the input */ 
+  /* shift FFT output via twiddle factors on the input */
+  /* twiddle only the non-periodic dims, since there we need to calculate 1d-FFTs */ 
   m=0;
   if(!periodicity[0]) twiddle_k0 = (local_Ni_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
-  for(ptrdiff_t k0 = local_Ni_start[0]; k0 < local_Ni_start[0] + local_Ni[0]; k0++){
-    x0 = (fcs_float) k0 / N[0] - 0.5;
+  for(ptrdiff_t l0 = local_Ni_start[0]; l0 < local_Ni_start[0] + local_Ni[0]; l0++){
+    x[0] = (periodicity[0]) ? 0.0 : (fcs_float) l0 / N[0] - 0.5;
+    k[0] = (periodicity[0]) ? l0 - N[0]/2 : 0;  
     if(!periodicity[1]) twiddle_k1 = (local_Ni_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
-    for(ptrdiff_t k1 = local_Ni_start[1]; k1 < local_Ni_start[1] + local_Ni[1]; k1++){
-      x1 = (fcs_float) k1 / N[1] - 0.5;
+    for(ptrdiff_t l1 = local_Ni_start[1]; l1 < local_Ni_start[1] + local_Ni[1]; l1++){
+      x[1] = (periodicity[1]) ? 0.0 : (fcs_float) l1 / N[1] - 0.5;
+      k[1] = (periodicity[1]) ? l1 - N[1]/2 : 0;  
       if(!periodicity[2]) twiddle_k2 = (local_Ni_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
-      for(ptrdiff_t k2 = local_Ni_start[2]; k2 < local_Ni_start[2] + local_Ni[2]; k2++, m++){
-        x2 = (fcs_float) k2 / N[2] - 0.5;
+      for(ptrdiff_t l2 = local_Ni_start[2]; l2 < local_Ni_start[2] + local_Ni[2]; l2++, m++){
+        x[2] = (periodicity[2]) ? 0.0 : (fcs_float) l2 / N[2] - 0.5;
+        k[2] = (periodicity[2]) ? l2 - N[2]/2 : 0;  
         twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
 
         /* New regularization for mixed boundary conditions */
-        fcs_float k[3] = {k0-N[0]/2,k1-N[1]/2,k2-N[2]/2};
-        fcs_float x[3] = {x0,x1,x2};
-        fcs_float knorm = 0.0;
-        fcs_float xnorm = 0.0;
+        fcs_float knorm = 0.0, xnorm = 0.0;
 
         for(fcs_int t=0; t<3; t++){
-//           k[t] /= box_l[t];
-          if(periodicity[t])
-            knorm += k[t]*k[t];
-          else
-            xnorm += x[t]*x[t];
+          knorm += k[t] / box_l[t] * k[t] / box_l[t];
+          xnorm += x[t] * x[t];
         }
         knorm = fcs_sqrt(knorm);
         xnorm = fcs_sqrt(xnorm);
@@ -1508,14 +1550,20 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic(
         /* constant continuation outside the region with radius 0.5 */
         xnorm = (xnorm < 0.5) ? xnorm : 0.5;
 
-        fcs_float params[2];
-        params[0] = alpha;
-        params[1] = knorm;
+//         fcs_float params[2];
+//         params[0] = alpha;
+//         params[1] = knorm;
 
-        int knorm_is_zero=1;
-        for(int t=0; t<3; t++)
-          if( periodicity[t] && (k[t] != 0) )
-            knorm_is_zero = 0;
+        /* simplify for pure 2d geometry with periodic boundary conditions */
+
+        /* Check if all indices corresponding to periodic dims are 0.
+         * Index correspoding to non-periodic dim will be 0 per default. */
+        if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0))
+          regkern_hat[m] = 0;
+        else
+          regkern_hat[m] = erfc(FCS_P2NFFT_PI * knorm/alpha) / knorm;
+
+        regkern_hat[m] *= scale * twiddle;
 
         /* different regularizations for k==0 and k<>0 */
 //         if(knorm_is_zero)
@@ -1525,31 +1573,6 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic(
 // 
 //         regkern_hat[m] *= scale * twiddle;
 
-        /* simplify for pure 2d geometry with periodic boundary conditions */
-        knorm = fcs_sqrt( k[0]*k[0] + k[1]*k[1] );
-//         fprintf(stderr, "k0 = %td, k1 = %td, N = [%td, %td], k = [%.2e %.2e], knorm = %.2e\n", k0, k1, N[0], N[1], k[0], k[1], knorm);
-//         knorm = fcs_sqrt( k0*(fcs_float)k0  + k1*(fcs_float)k1 );
-//         if (((k0 == 0) && (k1 == 0)) || (k2 != 0))
-        if (((k0 == N[0]/2) && (k1 == N[1]/2)) || (k2 != N[2]/2))
-          regkern_hat[m] = 0;
-        else
-          regkern_hat[m] = 1.0/box_l[0] * (1-erfc(FCS_P2NFFT_PI * knorm/alpha))/knorm;
-
-        regkern_hat[m] *= scale * twiddle;
-//         regkern_hat[m] *= scale;
-
-//         if(creal(regkern_hat[m]) > 1e12)
-//           fprintf(stderr, "before PFFT: N[2]*regkern[%td, %td, %td] = %e + I * %e, knorm = %.2e, alpha = %.2e, erfc(FCS_P2NFFT_PI * knorm/alpha) = %.2e, twiddle_k0 = %e, twiddle = %e\n",
-//               k0-N[0/2], k1-N[1]/2, k2-N[2]/2, creal(N[2]*regkern_hat[m]), cimag(N[2]*regkern_hat[m]), knorm, alpha, 1-erf(FCS_P2NFFT_PI*knorm/alpha), twiddle_k0, twiddle);
-
-//         if(knorm_is_zero)
-//           regkern_hat[m] = 0.0;
-//         else
-//           regkern_hat[m] = 1/box_l[0] * (1-erf(FCS_PI*knorm/(alpha*box_l[0]))) / knorm;
-//           regkern_hat[m] = 1/(box_l[0]*box_l[1]*box_l[2]) * (1-erf(FCS_PI*knorm/(alpha))) / knorm;
-
-//          regkern_hat[m] *= scale;
-//          regkern_hat[m] *= scale * twiddle;
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
@@ -1589,23 +1612,6 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic(
       for(ptrdiff_t k0 = 0; k0 < local_No[0]; k0++, m++){
         twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
         regkern_hat[m] *= twiddle;
-
-        fcs_float k[2] = {k0-N[0]/2, k1-N[1]/2};
-        fcs_float knorm = fcs_sqrt(k[0]*k[0] + k[1]*k[1]);
-
-        if ((k0 == N[0]/2) && (k1 == N[1]/2))
-          regkern_hat[m] = 0;
-        else
-          regkern_hat[m] = 1.0/N[2] * (1-erf(FCS_P2NFFT_PI * knorm/alpha))/knorm;
-// 
-//         if (((k0 == N[0]/2) && (k1 == N[1]/2)) || (k2 != N[2]/2))
-//           regkern_hat[m] = 0;
-//         else
-//           regkern_hat[m] = (1-erf(FCS_P2NFFT_PI * knorm/alpha))/knorm;
-
-#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
-//           fprintf(stderr, "after PFFT: regkern_hat[%td, %td, %td] = %.2e + I * %.2e\n", k0-N[0]/2, k1-N[1]/2, k2-N[2]/2, creal(regkern_hat[m]), cimag(regkern_hat[m]));
-#endif
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
         csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
 #endif
