@@ -1550,9 +1550,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic(
         /* constant continuation outside the region with radius 0.5 */
         xnorm = (xnorm < 0.5) ? xnorm : 0.5;
 
-//         fcs_float params[2];
-//         params[0] = alpha;
-//         params[1] = knorm;
+        fcs_float params[2];
+        params[0] = alpha;
+        params[1] = knorm;
 
         /* simplify for pure 2d geometry with periodic boundary conditions */
 
@@ -1563,15 +1563,18 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic(
         else
           regkern_hat[m] = erfc(FCS_P2NFFT_PI * knorm/alpha) / knorm;
 
-        regkern_hat[m] *= scale * twiddle;
-
         /* different regularizations for k==0 and k<>0 */
-//         if(knorm_is_zero)
-//           regkern_hat[m] = -2.0 * FCS_SQRTPI / (box_l[0]*box_l[0]) * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_keq0, xnorm, p, params, epsB);
+//         if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0))
+//           regkern_hat[m] = 0.0;
 //         else
-//           regkern_hat[m] = 1/(2.0*box_l[0]) * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, xnorm, p, params, epsB) / knorm;
-// 
-//         regkern_hat[m] *= scale * twiddle;
+//           regkern_hat[m] = 0.5 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, xnorm, p, params, epsB) / knorm;
+
+//         if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0))
+//           regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_keq0, xnorm, p, params, epsB);
+//         else
+//           regkern_hat[m] = 0.5 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, xnorm, p, params, epsB) / knorm;
+
+        regkern_hat[m] *= scale * twiddle;
 
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
