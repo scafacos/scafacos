@@ -22,6 +22,18 @@
  *
  */
 
+enum CHARGE_DISTRIBUTION {
+  polynomial_deg_6,
+  polynomial_deg_10,
+  polynomial_deg_14,
+  spline_deg_4
+};
+
+enum DISCRETIZATION {
+  order_4_compact,
+  order_6
+};
+
 /* Particle */
 typedef struct{
   double x;
@@ -74,6 +86,12 @@ typedef struct{
 
   /* Relative residiual for solver */
   double tol;
+
+  /* Charge distribution */
+  enum CHARGE_DISTRIBUTION distribution;
+
+  /* Discretization */
+  enum DISCRETIZATION discretization;
 } pp3mg_parameters;
 
 /* Data */
@@ -116,7 +134,9 @@ typedef struct{
  */
 void pp3mg_init( double x_in, double y_in, double z_in, int m_in, int n_in,
 		 int o_in, int ghosts_in, int degree_in, int max_particles_in, 
-		 int maxiter_in, double tol_in, MPI_Comm mpi_comm,
+		 int maxiter_in, double tol_in,  
+		 enum CHARGE_DISTRIBUTION distribution_in, 
+		 enum DISCRETIZATION discretization_in, MPI_Comm mpi_comm,
 		 pp3mg_data* data, pp3mg_parameters* params);
 
 void pp3mg( double* x, double* y, double* z, double* q, double* e, 

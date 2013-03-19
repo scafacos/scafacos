@@ -60,7 +60,7 @@ FCSResult fcs_pp3mg_init(FCS handle)
 
   fcs_set_method_context(handle, ctx);
 
-  result = fcs_pp3mg_setup(handle, 128, 128, 128, 8, 4, 10000, 20, 1.0e-7);
+  result = fcs_pp3mg_setup(handle, 128, 128, 128, 8, 4, 10000, 20, 1.0e-7, 1, 1);
   if (result != NULL) return result;
 
   DEBUG_MOP(printf("fcs_pp3mg_init: done\n"));
@@ -124,7 +124,10 @@ FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_
 	     handle->pp3mg_param->degree,
 	     handle->pp3mg_param->max_particles,
 	     handle->pp3mg_param->maxiter,
-	     handle->pp3mg_param->tol,comm,
+	     handle->pp3mg_param->tol,
+	     handle->pp3mg_param->distribution,
+	     handle->pp3mg_param->discretization,
+	     comm,
 	     ctx->data,
 	     ctx->parameters);
 
@@ -221,7 +224,7 @@ FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_num_particles, fcs_int local_m
 
 
 /* combined setter function for all pp3mg parameters */
-extern FCSResult fcs_pp3mg_setup(FCS handle, fcs_int cells_x, fcs_int cells_y, fcs_int cells_z, fcs_int ghosts, fcs_int degree, fcs_int max_particles, fcs_int max_iterations, fcs_float tol)
+extern FCSResult fcs_pp3mg_setup(FCS handle, fcs_int cells_x, fcs_int cells_y, fcs_int cells_z, fcs_int ghosts, fcs_int degree, fcs_int max_particles, fcs_int max_iterations, fcs_float tol, fcs_int distribution, fcs_int discretization)
 {
   FCSResult result;
 
@@ -247,6 +250,12 @@ extern FCSResult fcs_pp3mg_setup(FCS handle, fcs_int cells_x, fcs_int cells_y, f
   if (result != NULL) return result;
 
   result = fcs_pp3mg_set_tol(handle, tol);
+  if (result != NULL) return result;
+
+  result = fcs_pp3mg_set_distribution(handle, distribution);
+  if (result != NULL) return result;
+
+  result = fcs_pp3mg_set_discretization(handle, distribution);
   if (result != NULL) return result;
 
   return NULL;
@@ -376,6 +385,38 @@ FCSResult fcs_pp3mg_set_tol(FCS handle, fcs_float tol)
 FCSResult fcs_pp3mg_get_tol(FCS handle, fcs_float *tol)
 {
   *tol = handle->pp3mg_param->tol;
+  
+  return NULL;
+}
+
+/* setter for parameter distribution */
+FCSResult fcs_pp3mg_set_distribution(FCS handle, fcs_int distribution)
+{
+  handle->pp3mg_param->distribution = distribution;
+  
+  return NULL;
+}
+
+/* getter for parameter distribution */
+FCSResult fcs_pp3mg_get_distribution(FCS handle, fcs_int *distribution)
+{
+  *distribution = handle->pp3mg_param->distribution;
+  
+  return NULL;
+}
+
+/* setter for parameter discretization */
+FCSResult fcs_pp3mg_set_discretization(FCS handle, fcs_int discretization)
+{
+  handle->pp3mg_param->discretization = discretization;
+  
+  return NULL;
+}
+
+/* getter for parameter discretization */
+FCSResult fcs_pp3mg_get_discretization(FCS handle, fcs_int *discretization)
+{
+  *discretization = handle->pp3mg_param->discretization;
   
   return NULL;
 }

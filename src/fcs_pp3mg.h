@@ -53,6 +53,8 @@ typedef struct fcs_pp3mg_parameters_t
   fcs_int degree;
   fcs_int maxiter;
   fcs_float tol;
+  fcs_int distribution;
+  fcs_int discretization;
 } fcs_pp3mg_parameters_t;
 
 

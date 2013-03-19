@@ -276,6 +276,8 @@ FCSResult fcs_init ( FCS *handle, const char* method, MPI_Comm communicator )
     (*handle)->pp3mg_param->degree = -1;
     (*handle)->pp3mg_param->maxiter = -1;
     (*handle)->pp3mg_param->tol = -1.0;
+    (*handle)->pp3mg_param->distribution = 0;
+    (*handle)->pp3mg_param->discretization = 0;
     return fcs_pp3mg_init(*handle);
   }
 #endif
@@ -1351,6 +1353,8 @@ void fcs_printHandle(FCS handle)
 	fcs_int max_particles;
 	fcs_int max_iterations;
 	fcs_float tol;
+	fcs_int distribution;
+	fcs_int discretization;
 
 	fcs_pp3mg_get_cells_x(handle, &cells_x);
 	fcs_pp3mg_get_cells_y(handle, &cells_y);
@@ -1360,7 +1364,9 @@ void fcs_printHandle(FCS handle)
 	fcs_pp3mg_get_max_particles(handle, &max_particles);
 	fcs_pp3mg_get_max_iterations(handle, &max_iterations);
 	fcs_pp3mg_get_tol(handle, &tol);
-
+	fcs_pp3mg_get_distribution(handle, &distribution);
+	fcs_pp3mg_get_discretization(handle, &discretization);
+ 
 	printf("pp3mg cells x: %i\n",cells_x);
 	printf("pp3mg cells y: %i\n",cells_y);
 	printf("pp3mg cells z: %i\n",cells_z);
@@ -1369,6 +1375,8 @@ void fcs_printHandle(FCS handle)
 	printf("pp3mg max_particles: %i\n",max_particles);
 	printf("pp3mg max_iterations: %i\n",max_iterations);
 	printf("pp3mg tol: %e\n",tol);
+	printf("pp3mg distribution: %d\n",distribution);
+	printf("pp3mg discretization: %d\n",discretization);
       }
       break;
 #endif
@@ -1713,6 +1721,8 @@ FCSResult fcs_parser(FCS handle, const char *parameters, fcs_bool continue_on_er
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_max_particles",  pp3mg_set_max_particles,  PARSE_VAL(fcs_int));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_max_iterations", pp3mg_set_max_iterations, PARSE_VAL(fcs_int));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_tol",            pp3mg_set_tol,            PARSE_VAL(fcs_float));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_distribution",   pp3mg_set_distribution,   PARSE_VAL(fcs_int));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_discretization", pp3mg_set_discretization, PARSE_VAL(fcs_int));
 #endif
 #ifdef FCS_ENABLE_VMG
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("vmg_max_level",            vmg_set_max_level,            PARSE_VAL(fcs_int));

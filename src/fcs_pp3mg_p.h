@@ -102,12 +102,24 @@ FCSResult fcs_pp3mg_set_tol(FCS handle, fcs_float tol);
 /* getter for parameter tol */
 FCSResult fcs_pp3mg_get_tol(FCS handle, fcs_float *tol);
 
+/* setter for parameter distribution */
+FCSResult fcs_pp3mg_set_distribution(FCS handle, fcs_int disctribution);
+
+/* getter for parameter distribution */
+FCSResult fcs_pp3mg_get_distribution(FCS handle, fcs_int *distribution);
+
+/* setter for parameter discretization */
+FCSResult fcs_pp3mg_set_discretization(FCS handle, fcs_int discretization);
+
+/* getter for parameter discretization */
+FCSResult fcs_pp3mg_get_discretization(FCS handle, fcs_int *discertization);
+
 /**
  * @brief combined setter for all direct solver parameters
  * @param handle FCS-object data is stored into
  * @param cutoff fcs_float the chosen cutoff (see fcs_pp3mg_set_cutoff)
  * @return FCSResult-object containing th return state
  **/
-extern FCSResult fcs_pp3mg_setup(FCS handle, fcs_int cells_x, fcs_int cells_y, fcs_int cells_z, fcs_int ghosts, fcs_int degree, fcs_int max_particles, fcs_int maxiter, fcs_float tol);
+extern FCSResult fcs_pp3mg_setup(FCS handle, fcs_int cells_x, fcs_int cells_y, fcs_int cells_z, fcs_int ghosts, fcs_int degree, fcs_int max_particles, fcs_int maxiter, fcs_float tol, fcs_int distribution, fcs_int discretization);
 
 #endif

@@ -32,8 +32,8 @@
 #include "interpolation.h"
 #include "particle.h"
 
-#define POLYNOMIAL6
-#define FOURTHORDER
+#define POLYNOMIAL10
+#define SIXTHORDER
 
 /*
  *
@@ -61,7 +61,9 @@
 	
 void pp3mg_init( double x_in, double y_in, double z_in, int m_in, int n_in,
 		 int o_in, int ghosts_in, int degree_in, int max_particles_in, 
-		 int maxiter_in, double tol_in, MPI_Comm mpi_comm,
+		 int maxiter_in, double tol_in, 
+		 enum CHARGE_DISTRIBUTION distribution_in, 
+		 enum DISCRETIZATION discretization_in, MPI_Comm mpi_comm,
 		 pp3mg_data* data, pp3mg_parameters* params)
 {
 		
@@ -82,6 +84,8 @@ void pp3mg_init( double x_in, double y_in, double z_in, int m_in, int n_in,
   params->degree = degree_in;
   params->maxiter = maxiter_in;
   params->tol = tol_in;
+  params->distribution = distribution_in;
+  params->discretization = discretization_in;
 	
   /* Initialize cartesian process grid */
   mpi_dims[0]    = 0;
@@ -329,6 +333,8 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
       for( k = 0; k <= (params->o_end-params->o_start); k++ )
 	data->f[i][j][k] = 0.0;
 
+  double r_2;
+
   double d_2 = 4.0*params->radius*params->radius;
   double d_3 = 2.0*params->radius*d_2;
   double d_4 = d_2*d_2;
@@ -360,77 +366,75 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
     for( i = i_start; i <= i_end; i++ )
       for( j = j_start; j <= j_end; j++ )
 	for( k = k_start; k <= k_end; k++ ) {
-#ifdef SPLINE
-	  double r_2 = SQUARE( i*params->hx - data->particles[p].x ) +
-	      SQUARE( j*params->hy - data->particles[p].y ) +
-	      SQUARE( k*params->hz - data->particles[p].z );
-	  double r_4 = r_2 * r_2;
-	  r = sqrt (r_2);
- 	  if( r < (params->radius / 3.0) )
-	    data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
-	      data->particles[p].q *
-	      ( 27.0 * ( 81.0 * r_4 -
-	  		 54.0 * r_2 * params->radius_2 +
-	  		 11.0 * params->radius_4 ) ) /
-	      ( 32.0 * PP3MG_PI * params->radius_7 );
-	  else if( r < ( 2.0 * params->radius / 3.0 ) )
-	    data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
-	      data->particles[p].q *
-	      ( 27 * ( (-9) * r_2 +
-	  	       6 * r * params->radius + params->radius_2 ) *
-	  	( 27 * r_2 - 42 * r * params->radius +
-	  	  17 * params->radius_2 ) ) /
-	      ( 64 * PP3MG_PI * params->radius_7 );
-	  else if( r < params->radius )
-	    data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
-	      data->particles[p].q *
-	      ( 2187 * SQUARE(SQUARE( r - params->radius )) ) /
-	      ( 64 * PP3MG_PI * params->radius_7 );
-#endif
-
-#ifdef POLYNOMIAL14
-	  double r_2 = SQUARE( i*params->hx - data->particles[p].x ) +
-	      SQUARE( j*params->hy - data->particles[p].y ) +
-	      SQUARE( k*params->hz - data->particles[p].z );
-	  r = sqrt (r_2);
-	  if (r < (params->radius)) {
-	    double dr = d_2 - 4.0*r_2;
-	    double dr_2 = dr*dr;
-	    double dr_4 = dr_2*dr_2;
-	    double dr_8 = dr_4*dr_4;
-	    double dr_16 = dr_8*dr_8;
-	    data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
-	      data->particles[p].q * 109395.0 * dr * dr_2 * dr_4 / (1024.0 * d_17 * PP3MG_PI);
-	  }
-#endif
-
-#ifdef POLYNOMIAL10
-	  double r_2 = SQUARE( i*params->hx - data->particles[p].x ) +
-	      SQUARE( j*params->hy - data->particles[p].y ) +
-	      SQUARE( k*params->hz - data->particles[p].z );
-	  r = sqrt (r_2);
-	  if (r < (params->radius)) {
-	    double dr = d_2 - 4.0*r_2;
-	    double dr_2 = dr*dr;
-	    double dr_4 = dr_2*dr_2;
-	    data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
-	      data->particles[p].q * 9009.0 * dr * dr_4 / (128.0 * d_13 * PP3MG_PI);
-	  }
-#endif
-
-#ifdef POLYNOMIAL6
-	  double r_2 = SQUARE( i*params->hx - data->particles[p].x ) +
-	      SQUARE( j*params->hy - data->particles[p].y ) +
-	      SQUARE( k*params->hz - data->particles[p].z );
-	  r = sqrt (r_2);
-	  if (r < (params->radius)) {
-	    double dr = d_2 - 4.0*r_2;
-	    double dr_2 = dr*dr;
-	    data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
-	      data->particles[p].q * 315.0 * dr * dr_2 / (8.0 * d_9 * PP3MG_PI);
-	  }
-#endif
-
+	  switch (params->distribution) {
+	    case polynomial_deg_6:
+	      r_2 = SQUARE( i*params->hx - data->particles[p].x ) +
+		SQUARE( j*params->hy - data->particles[p].y ) +
+		SQUARE( k*params->hz - data->particles[p].z );
+	      r = sqrt (r_2);
+	      if (r < (params->radius)) {
+		double dr = d_2 - 4.0*r_2;
+		double dr_2 = dr*dr;
+		data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
+		  data->particles[p].q * 315.0 * dr * dr_2 / (8.0 * d_9 * PP3MG_PI);
+	      }
+	      break;
+	    case polynomial_deg_10:
+	      r_2 = SQUARE( i*params->hx - data->particles[p].x ) +
+		SQUARE( j*params->hy - data->particles[p].y ) +
+		SQUARE( k*params->hz - data->particles[p].z );
+	      r = sqrt (r_2);
+	      if (r < (params->radius)) {
+		double dr = d_2 - 4.0*r_2;
+		double dr_2 = dr*dr;
+		double dr_4 = dr_2*dr_2;
+		data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
+		  data->particles[p].q * 9009.0 * dr * dr_4 / (128.0 * d_13 * PP3MG_PI);
+	      }
+	      break;
+	    case polynomial_deg_14:
+	      r_2 = SQUARE( i*params->hx - data->particles[p].x ) +
+		SQUARE( j*params->hy - data->particles[p].y ) +
+		SQUARE( k*params->hz - data->particles[p].z );
+	      r = sqrt (r_2);
+	      if (r < (params->radius)) {
+		double dr = d_2 - 4.0*r_2;
+		double dr_2 = dr*dr;
+		double dr_4 = dr_2*dr_2;
+		double dr_8 = dr_4*dr_4;
+		double dr_16 = dr_8*dr_8;
+		data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
+		  data->particles[p].q * 109395.0 * dr * dr_2 * dr_4 / (1024.0 * d_17 * PP3MG_PI);
+	      }
+	      break;
+	    case spline_deg_4:
+	      r_2 = SQUARE( i*params->hx - data->particles[p].x ) +
+		SQUARE( j*params->hy - data->particles[p].y ) +
+		SQUARE( k*params->hz - data->particles[p].z );
+	      double r_4 = r_2 * r_2;
+	      r = sqrt (r_2);
+	      if( r < (params->radius / 3.0) )
+		data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
+		  data->particles[p].q *
+		  ( 27.0 * ( 81.0 * r_4 -
+			     54.0 * r_2 * params->radius_2 +
+			     11.0 * params->radius_4 ) ) /
+		  ( 32.0 * PP3MG_PI * params->radius_7 );
+	      else if( r < ( 2.0 * params->radius / 3.0 ) )
+		data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
+		  data->particles[p].q *
+		  ( 27 * ( (-9) * r_2 +
+			   6 * r * params->radius + params->radius_2 ) *
+		    ( 27 * r_2 - 42 * r * params->radius +
+		      17 * params->radius_2 ) ) /
+		  ( 64 * PP3MG_PI * params->radius_7 );
+	      else if( r < params->radius )
+		data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
+		  data->particles[p].q *
+		  ( 2187 * SQUARE(SQUARE( r - params->radius )) ) /
+		  ( 64 * PP3MG_PI * params->radius_7 );
+	      break;
+	    }
 	}
   }
 
@@ -438,8 +442,6 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
   {
     double sum_local = 0.0;
     double sum = 0.0;
-//    double abssum_local = 0.0;
-//    double abssum = 0.0;
 
     for (i=0;i<=params->m_end-params->m_start;i++) {
       for (j=0;j<=params->n_end-params->n_start;j++) {
@@ -470,36 +472,36 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
     }
   }
 
-#ifdef FOURTHORDER
-  /* Preparing right hand side for 4th order solver */
-  for( i = 0; i <= (params->m_end-params->m_start+2*params->ghosts); i++ )
-    for( j = 0; j <= (params->n_end-params->n_start+2*params->ghosts); j++ )
-      for( k = 0; k <= (params->o_end-params->o_start+2*params->ghosts); k++ )
-  	data->f_ghosted[i][j][k] = 0.0;
-				
-  for( i = 0; i <= (params->m_end-params->m_start); i++ )
-    for( j = 0; j <= (params->n_end-params->n_start); j++ )
-      for( k = 0; k <= (params->o_end-params->o_start); k++ )
-  	data->f_ghosted[i+params->ghosts][j+params->ghosts][k+params->ghosts] = data->f[i][j][k];
-
-  pp3mg_update_ghosts( data->f_ghosted, params->m_end-params->m_start+1,
-  		       params->n_end-params->n_start+1,
+  if (params->discretization == order_4_compact) {
+    /* Preparing right hand side for 4th order compact solver */
+    for( i = 0; i <= (params->m_end-params->m_start+2*params->ghosts); i++ )
+      for( j = 0; j <= (params->n_end-params->n_start+2*params->ghosts); j++ )
+	for( k = 0; k <= (params->o_end-params->o_start+2*params->ghosts); k++ )
+	  data->f_ghosted[i][j][k] = 0.0;
+    
+    for( i = 0; i <= (params->m_end-params->m_start); i++ )
+      for( j = 0; j <= (params->n_end-params->n_start); j++ )
+	for( k = 0; k <= (params->o_end-params->o_start); k++ )
+	  data->f_ghosted[i+params->ghosts][j+params->ghosts][k+params->ghosts] = data->f[i][j][k];
+    
+    pp3mg_update_ghosts( data->f_ghosted, params->m_end-params->m_start+1,
+			 params->n_end-params->n_start+1,
   		       params->o_end-params->o_start+1,
-  		       params->ghosts, params->mpi_comm_cart );
-
-  for( i = 0; i <= (params->m_end-params->m_start); i++ )
-    for( j = 0; j <= (params->n_end-params->n_start); j++ )
-      for( k = 0; k <= (params->o_end-params->o_start); k++ )
-  	data->f[i][j][k] = (1.0/12) *
-  	  (6 * data->f_ghosted[i+params->ghosts][j+params->ghosts][k+params->ghosts] +
-  	   data->f_ghosted[i-1+params->ghosts][j+params->ghosts][k+params->ghosts] +
-  	   data->f_ghosted[i+1+params->ghosts][j+params->ghosts][k+params->ghosts] +
-  	   data->f_ghosted[i+params->ghosts][j-1+params->ghosts][k+params->ghosts] +
-  	   data->f_ghosted[i+params->ghosts][j+1+params->ghosts][k+params->ghosts] +
-  	   data->f_ghosted[i+params->ghosts][j+params->ghosts][k-1+params->ghosts] +
-  	   data->f_ghosted[i+params->ghosts][j+params->ghosts][k+1+params->ghosts] );
-#endif
-
+			 params->ghosts, params->mpi_comm_cart );
+    
+    for( i = 0; i <= (params->m_end-params->m_start); i++ )
+      for( j = 0; j <= (params->n_end-params->n_start); j++ )
+	for( k = 0; k <= (params->o_end-params->o_start); k++ )
+	  data->f[i][j][k] = (1.0/12) *
+	    (6 * data->f_ghosted[i+params->ghosts][j+params->ghosts][k+params->ghosts] +
+	     data->f_ghosted[i-1+params->ghosts][j+params->ghosts][k+params->ghosts] +
+	     data->f_ghosted[i+1+params->ghosts][j+params->ghosts][k+params->ghosts] +
+	     data->f_ghosted[i+params->ghosts][j-1+params->ghosts][k+params->ghosts] +
+	     data->f_ghosted[i+params->ghosts][j+1+params->ghosts][k+params->ghosts] +
+	     data->f_ghosted[i+params->ghosts][j+params->ghosts][k-1+params->ghosts] +
+	     data->f_ghosted[i+params->ghosts][j+params->ghosts][k+1+params->ghosts] );
+  }
+    
   /* -------------------------------------------------------------------
    *
    * Initializing variables for solver
@@ -584,72 +586,74 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 /*   zoff[16] = -1; */
 /*   zoff[17] = 1; */
 /*   zoff[18] = -1; */
-
-#ifdef FOURTHORDER
-  /* 4-th order compact solver */
-  size = 19;
-  xoff   = (int*) malloc( size*sizeof( int ) );
-  yoff   = (int*) malloc( size*sizeof( int ) );
-  zoff   = (int*) malloc( size*sizeof( int ) );
-  values = (double*) malloc( size*sizeof( double ) );
-
-  xoff[ 0] =  0; yoff[ 0] =  0; zoff[ 0] =  0; values[ 0] = (2.0-2.0/3.0)*(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz));
-  xoff[ 1] = -1; yoff[ 1] =  0; zoff[ 1] =  0; values[ 1] = -1.0/(params->hx*params->hx) + (2.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/6.0;
-  xoff[ 2] =  1; yoff[ 2] =  0; zoff[ 2] =  0; values[ 2] = -1.0/(params->hx*params->hx) + (2.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/6.0;
-  xoff[ 3] =  0; yoff[ 3] = -1; zoff[ 3] =  0; values[ 3] = -1.0/(params->hy*params->hy) + (1.0/(params->hx*params->hx)+2.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/6.0;
-  xoff[ 4] =  0; yoff[ 4] =  1; zoff[ 4] =  0; values[ 4] = -1.0/(params->hy*params->hy) + (1.0/(params->hx*params->hx)+2.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/6.0;
-  xoff[ 5] =  0; yoff[ 5] =  0; zoff[ 5] = -1; values[ 5] = -1.0/(params->hz*params->hz) + (1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+2.0/(params->hz*params->hz))/6.0;
-  xoff[ 6] =  0; yoff[ 6] =  0; zoff[ 6] =  1; values[ 6] = -1.0/(params->hz*params->hz) + (1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+2.0/(params->hz*params->hz))/6.0;
-  xoff[ 7] = -1; yoff[ 7] = -1; zoff[ 7] =  0; values[ 7] = -(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy))/12.0;
-  xoff[ 8] = -1; yoff[ 8] =  1; zoff[ 8] =  0; values[ 8] = -(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy))/12.0;
-  xoff[ 9] =  1; yoff[ 9] = -1; zoff[ 9] =  0; values[ 9] = -(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy))/12.0;
-  xoff[10] =  1; yoff[10] =  1; zoff[10] =  0; values[10] = -(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy))/12.0;
-  xoff[11] = -1; yoff[11] =  0; zoff[11] = -1; values[11] = -(1.0/(params->hx*params->hx)+1.0/(params->hz*params->hz))/12.0;
-  xoff[12] = -1; yoff[12] =  0; zoff[12] =  1; values[12] = -(1.0/(params->hx*params->hx)+1.0/(params->hz*params->hz))/12.0;
-  xoff[13] =  1; yoff[13] =  0; zoff[13] = -1; values[13] = -(1.0/(params->hx*params->hx)+1.0/(params->hz*params->hz))/12.0;
-  xoff[14] =  1; yoff[14] =  0; zoff[14] =  1; values[14] = -(1.0/(params->hx*params->hx)+1.0/(params->hz*params->hz))/12.0;
-  xoff[15] =  0; yoff[15] = -1; zoff[15] = -1; values[15] = -(1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/12.0;
-  xoff[16] =  0; yoff[16] = -1; zoff[16] =  1; values[16] = -(1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/12.0;
-  xoff[17] =  0; yoff[17] =  1; zoff[17] = -1; values[17] = -(1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/12.0;
-  xoff[18] =  0; yoff[18] =  1; zoff[18] =  1; values[18] = -(1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/12.0;
-
-  nu1 = 3;
-  nu2 = 3;
-  omega = 0.8;	
-#endif
-
-#ifdef SIXTHORDER
-  /* 6-th order solver */
-  size = 19;
-  xoff   = (int*) malloc( size*sizeof( int ) );
-  yoff   = (int*) malloc( size*sizeof( int ) );
-  zoff   = (int*) malloc( size*sizeof( int ) );
-  values = (double*) malloc( size*sizeof( double ) );
-
-  xoff[ 0] =  0; yoff[ 0] =  0; zoff[ 0] =  0; values[ 0] = (490.0/180.0)*(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz));
-  xoff[ 1] =  1; yoff[ 1] =  0; zoff[ 1] =  0; values[ 1] = (-270.0/180.0)*(1.0/(params->hx*params->hx));
-  xoff[ 2] = -1; yoff[ 2] =  0; zoff[ 2] =  0; values[ 2] = (-270.0/180.0)*(1.0/(params->hx*params->hx));
-  xoff[ 3] =  0; yoff[ 3] =  1; zoff[ 3] =  0; values[ 3] = (-270.0/180.0)*(1.0/(params->hy*params->hy));
-  xoff[ 4] =  0; yoff[ 4] = -1; zoff[ 4] =  0; values[ 4] = (-270.0/180.0)*(1.0/(params->hy*params->hy));
-  xoff[ 5] =  0; yoff[ 5] =  0; zoff[ 5] =  1; values[ 5] = (-270.0/180.0)*(1.0/(params->hz*params->hz));
-  xoff[ 6] =  0; yoff[ 6] =  0; zoff[ 6] = -1; values[ 6] = (-270.0/180.0)*(1.0/(params->hz*params->hz));
-  xoff[ 7] =  2; yoff[ 7] =  0; zoff[ 7] =  0; values[ 7] = (27.0/180.0)*(1.0/(params->hx*params->hx));
-  xoff[ 8] = -2; yoff[ 8] =  0; zoff[ 8] =  0; values[ 8] = (27.0/180.0)*(1.0/(params->hx*params->hx));
-  xoff[ 9] =  0; yoff[ 9] =  2; zoff[ 9] =  0; values[ 9] = (27.0/180.0)*(1.0/(params->hy*params->hy));
-  xoff[10] =  0; yoff[10] = -2; zoff[10] =  0; values[10] = (27.0/180.0)*(1.0/(params->hy*params->hy));
-  xoff[11] =  0; yoff[11] =  0; zoff[11] =  2; values[11] = (27.0/180.0)*(1.0/(params->hz*params->hz));
-  xoff[12] =  0; yoff[12] =  0; zoff[12] = -2; values[12] = (27.0/180.0)*(1.0/(params->hz*params->hz));
-  xoff[13] =  3; yoff[13] =  0; zoff[13] =  0; values[13] = (-2.0/180.0)*(1.0/(params->hx*params->hx));
-  xoff[14] = -3; yoff[14] =  0; zoff[14] =  0; values[14] = (-2.0/180.0)*(1.0/(params->hx*params->hx));
-  xoff[15] =  0; yoff[15] =  3; zoff[15] =  0; values[15] = (-2.0/180.0)*(1.0/(params->hy*params->hy));
-  xoff[16] =  0; yoff[16] = -3; zoff[16] =  0; values[16] = (-2.0/180.0)*(1.0/(params->hy*params->hy));
-  xoff[17] =  0; yoff[17] =  0; zoff[17] =  3; values[17] = (-2.0/180.0)*(1.0/(params->hz*params->hz));
-  xoff[18] =  0; yoff[18] =  0; zoff[18] = -3; values[18] = (-2.0/180.0)*(1.0/(params->hz*params->hz));
-
-  nu1 = 10;
-  nu2 = 10;
-  omega = 0.8;
-#endif
+  
+  switch (params->discretization) {
+  case order_4_compact:
+    /* 4-th order compact solver */
+    size = 19;
+    xoff   = (int*) malloc( size*sizeof( int ) );
+    yoff   = (int*) malloc( size*sizeof( int ) );
+    zoff   = (int*) malloc( size*sizeof( int ) );
+    values = (double*) malloc( size*sizeof( double ) );
+    
+    xoff[ 0] =  0; yoff[ 0] =  0; zoff[ 0] =  0; values[ 0] = (2.0-2.0/3.0)*(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz));
+    xoff[ 1] = -1; yoff[ 1] =  0; zoff[ 1] =  0; values[ 1] = -1.0/(params->hx*params->hx) + (2.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/6.0;
+    xoff[ 2] =  1; yoff[ 2] =  0; zoff[ 2] =  0; values[ 2] = -1.0/(params->hx*params->hx) + (2.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/6.0;
+    xoff[ 3] =  0; yoff[ 3] = -1; zoff[ 3] =  0; values[ 3] = -1.0/(params->hy*params->hy) + (1.0/(params->hx*params->hx)+2.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/6.0;
+    xoff[ 4] =  0; yoff[ 4] =  1; zoff[ 4] =  0; values[ 4] = -1.0/(params->hy*params->hy) + (1.0/(params->hx*params->hx)+2.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/6.0;
+    xoff[ 5] =  0; yoff[ 5] =  0; zoff[ 5] = -1; values[ 5] = -1.0/(params->hz*params->hz) + (1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+2.0/(params->hz*params->hz))/6.0;
+    xoff[ 6] =  0; yoff[ 6] =  0; zoff[ 6] =  1; values[ 6] = -1.0/(params->hz*params->hz) + (1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+2.0/(params->hz*params->hz))/6.0;
+    xoff[ 7] = -1; yoff[ 7] = -1; zoff[ 7] =  0; values[ 7] = -(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy))/12.0;
+    xoff[ 8] = -1; yoff[ 8] =  1; zoff[ 8] =  0; values[ 8] = -(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy))/12.0;
+    xoff[ 9] =  1; yoff[ 9] = -1; zoff[ 9] =  0; values[ 9] = -(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy))/12.0;
+    xoff[10] =  1; yoff[10] =  1; zoff[10] =  0; values[10] = -(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy))/12.0;
+    xoff[11] = -1; yoff[11] =  0; zoff[11] = -1; values[11] = -(1.0/(params->hx*params->hx)+1.0/(params->hz*params->hz))/12.0;
+    xoff[12] = -1; yoff[12] =  0; zoff[12] =  1; values[12] = -(1.0/(params->hx*params->hx)+1.0/(params->hz*params->hz))/12.0;
+    xoff[13] =  1; yoff[13] =  0; zoff[13] = -1; values[13] = -(1.0/(params->hx*params->hx)+1.0/(params->hz*params->hz))/12.0;
+    xoff[14] =  1; yoff[14] =  0; zoff[14] =  1; values[14] = -(1.0/(params->hx*params->hx)+1.0/(params->hz*params->hz))/12.0;
+    xoff[15] =  0; yoff[15] = -1; zoff[15] = -1; values[15] = -(1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/12.0;
+    xoff[16] =  0; yoff[16] = -1; zoff[16] =  1; values[16] = -(1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/12.0;
+    xoff[17] =  0; yoff[17] =  1; zoff[17] = -1; values[17] = -(1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/12.0;
+    xoff[18] =  0; yoff[18] =  1; zoff[18] =  1; values[18] = -(1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz))/12.0;
+    
+    nu1 = 3;
+    nu2 = 3;
+    omega = 0.8;
+    break;
+    
+  case order_6:
+    /* 6-th order solver */
+    size = 19;
+    xoff   = (int*) malloc( size*sizeof( int ) );
+    yoff   = (int*) malloc( size*sizeof( int ) );
+    zoff   = (int*) malloc( size*sizeof( int ) );
+    values = (double*) malloc( size*sizeof( double ) );
+    
+    xoff[ 0] =  0; yoff[ 0] =  0; zoff[ 0] =  0; values[ 0] = (490.0/180.0)*(1.0/(params->hx*params->hx)+1.0/(params->hy*params->hy)+1.0/(params->hz*params->hz));
+    xoff[ 1] =  1; yoff[ 1] =  0; zoff[ 1] =  0; values[ 1] = (-270.0/180.0)*(1.0/(params->hx*params->hx));
+    xoff[ 2] = -1; yoff[ 2] =  0; zoff[ 2] =  0; values[ 2] = (-270.0/180.0)*(1.0/(params->hx*params->hx));
+    xoff[ 3] =  0; yoff[ 3] =  1; zoff[ 3] =  0; values[ 3] = (-270.0/180.0)*(1.0/(params->hy*params->hy));
+    xoff[ 4] =  0; yoff[ 4] = -1; zoff[ 4] =  0; values[ 4] = (-270.0/180.0)*(1.0/(params->hy*params->hy));
+    xoff[ 5] =  0; yoff[ 5] =  0; zoff[ 5] =  1; values[ 5] = (-270.0/180.0)*(1.0/(params->hz*params->hz));
+    xoff[ 6] =  0; yoff[ 6] =  0; zoff[ 6] = -1; values[ 6] = (-270.0/180.0)*(1.0/(params->hz*params->hz));
+    xoff[ 7] =  2; yoff[ 7] =  0; zoff[ 7] =  0; values[ 7] = (27.0/180.0)*(1.0/(params->hx*params->hx));
+    xoff[ 8] = -2; yoff[ 8] =  0; zoff[ 8] =  0; values[ 8] = (27.0/180.0)*(1.0/(params->hx*params->hx));
+    xoff[ 9] =  0; yoff[ 9] =  2; zoff[ 9] =  0; values[ 9] = (27.0/180.0)*(1.0/(params->hy*params->hy));
+    xoff[10] =  0; yoff[10] = -2; zoff[10] =  0; values[10] = (27.0/180.0)*(1.0/(params->hy*params->hy));
+    xoff[11] =  0; yoff[11] =  0; zoff[11] =  2; values[11] = (27.0/180.0)*(1.0/(params->hz*params->hz));
+    xoff[12] =  0; yoff[12] =  0; zoff[12] = -2; values[12] = (27.0/180.0)*(1.0/(params->hz*params->hz));
+    xoff[13] =  3; yoff[13] =  0; zoff[13] =  0; values[13] = (-2.0/180.0)*(1.0/(params->hx*params->hx));
+    xoff[14] = -3; yoff[14] =  0; zoff[14] =  0; values[14] = (-2.0/180.0)*(1.0/(params->hx*params->hx));
+    xoff[15] =  0; yoff[15] =  3; zoff[15] =  0; values[15] = (-2.0/180.0)*(1.0/(params->hy*params->hy));
+    xoff[16] =  0; yoff[16] = -3; zoff[16] =  0; values[16] = (-2.0/180.0)*(1.0/(params->hy*params->hy));
+    xoff[17] =  0; yoff[17] =  0; zoff[17] =  3; values[17] = (-2.0/180.0)*(1.0/(params->hz*params->hz));
+    xoff[18] =  0; yoff[18] =  0; zoff[18] = -3; values[18] = (-2.0/180.0)*(1.0/(params->hz*params->hz));
+    
+    nu1 = 10;
+    nu2 = 10;
+    omega = 0.8;
+    break;
+  }
 
   /* -------------------------------------------------------------------
    *
@@ -728,45 +732,47 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 
 		    /* Calculate energy */
 		    if( r < params->radius ){
-#ifdef SPLINE
-		      if( r < (params->radius / 3.0 ) )
-		      	val = ( (-3645) * r_6 +
-		      		5103 * r_4 * params->radius_2 -
-		      		3465 * r_2 * params->radius_4 +
-		      		1673 * params->radius_6 ) /
-		      	  ( 560 * params->radius_7 );
-		      else if( r < ( 2 * params->radius / 3.0 ) )
-		      	val = ( 32805 * r * r_6 -
-		      		102060 * r_6 * params->radius +
-		      		107163 * r * r_4 * params->radius_2 -
-		      		28350 * r_4 * params->radius_3 -
-		      		16065 * r * r_2 * params->radius_4 +
-		      		9933 * r * params->radius_6 +
-		      		10 * params->radius_7 ) /
-		      	  ( 3360 * r * params->radius_7 );
-		      else
-		      	val = -(  3645 * r * r_6 -
-		      		   20412 * r_6 * params->radius +
-		      		   45927 * r_4 * r  * params->radius_2 -
-		      		   51030 * r_4 * params->radius_3 +
-		      		   25515 * r_2 * r * params->radius_4 -
-		      		   5103 * r * params->radius_6 +
-		      		   338 * params->radius_7 ) /
-		      		 ( 1120 * r * params->radius_7 );
-#endif
+		      switch (params->distribution) {
+		      case polynomial_deg_6:
+			val = ((((8960.0*r_2 - 11520.0*d_2)*r_2 + 6048.0*d_4)*r_2 - 1680.0*d_6)*r_2 + 315.0*d_8)/(64.0*d_9);
+			break;
 
-#ifdef POLYNOMIAL14
-		      val = (((((((25740.0/d_17*r_2 - 58344.0/d_15)*r_2 + 58905.0/d_13)*r_2 - 69615.0/(2.0*d_11))*r_2 + 425425.0/(32.0*d_9))*r_2 - 109395.0/(32.0*d_7))*r_2 + 153153.0/(256.0*d_5))*r_2 - 36465.0/(512.0*d_3))*r_2 + 109395.0/(16384.0*2*params->radius);
-#endif
+		      case polynomial_deg_10:
+			val = ((((((946176.0*r_2 - 1677312.0*d_2)*r_2 + 1281280.0*d_4)*r_2 - 549120.0*d_6)*r_2 + 144144.0*d_8)*r_2 - 24024.0*d_10)*r_2 + 3003.0*d_12)/(512.0*d_13);
+			break;
 
-#ifdef POLYNOMIAL10
-		      val = ((((((946176.0*r_2 - 1677312.0*d_2)*r_2 + 1281280.0*d_4)*r_2 - 549120.0*d_6)*r_2 + 144144.0*d_8)*r_2 - 24024.0*d_10)*r_2 + 3003.0*d_12)/(512.0*d_13);
-#endif
+		      case polynomial_deg_14:
+			val = (((((((25740.0/d_17*r_2 - 58344.0/d_15)*r_2 + 58905.0/d_13)*r_2 - 69615.0/(2.0*d_11))*r_2 + 425425.0/(32.0*d_9))*r_2 - 109395.0/(32.0*d_7))*r_2 + 153153.0/(256.0*d_5))*r_2 - 36465.0/(512.0*d_3))*r_2 + 109395.0/(16384.0*2*params->radius);
+			break;
 
-#ifdef POLYNOMIAL6
-		      val = ((((8960.0*r_2 - 11520.0*d_2)*r_2 + 6048.0*d_4)*r_2 - 1680.0*d_6)*r_2 + 315.0*d_8)/(64.0*d_9);
-#endif
-
+		      case spline_deg_4:
+			if( r < (params->radius / 3.0 ) )
+			  val = ( (-3645) * r_6 +
+				  5103 * r_4 * params->radius_2 -
+				  3465 * r_2 * params->radius_4 +
+				  1673 * params->radius_6 ) /
+			    ( 560 * params->radius_7 );
+			else if( r < ( 2 * params->radius / 3.0 ) )
+			  val = ( 32805 * r * r_6 -
+				  102060 * r_6 * params->radius +
+				  107163 * r * r_4 * params->radius_2 -
+				  28350 * r_4 * params->radius_3 -
+				  16065 * r * r_2 * params->radius_4 +
+				  9933 * r * params->radius_6 +
+				  10 * params->radius_7 ) /
+			    ( 3360 * r * params->radius_7 );
+			else
+			  val = -(  3645 * r * r_6 -
+				    20412 * r_6 * params->radius +
+				    45927 * r_4 * r  * params->radius_2 -
+				    51030 * r_4 * params->radius_3 +
+				    25515 * r_2 * r * params->radius_4 -
+				    5103 * r * params->radius_6 +
+				    338 * params->radius_7 ) /
+			    ( 1120 * r * params->radius_7 );
+			break;
+		      }
+			
 		      val = val - 1.0 / r;  
 		      data->particles[p1].e = data->particles[p1].e -
 			1.0 / ( 4 * PP3MG_PI ) * data->particles[p1].q *
@@ -775,29 +781,31 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 
 		    /* Calculate forces */
 		    if( r < params->radius ){
-#ifdef SPLINE
-		      if( r < params->radius / 3.0 )
-			val = (-9.0) * ( 385 * params->radius_4 -
-					 1134 * params->radius_2 * r_2 + 
-					 1215 * r_4 ) /
-			  ( 280 * params->radius_7 );
-		      else if( r < ( 2 * params->radius / 3.0 ) )
-			val = ((-5.0) * params->radius_7 -
-			       16065 * params->radius_4 * r * r_2 -
-			       42525 * params->radius_3 * r_4 +
-			       214326 * params->radius_2 * r * r_4 -
-			       255150 * params->radius * r_6 +
-			       98415 * r * r_6  ) /
-			  ( 1680 * params->radius_7 * r * r_2 );
-		      else 
-			val = -( (-169.0) * params->radius_7 +
-				 25515 * params->radius_4 * r * r_2 -
-				 76545 * params->radius_3 * r_4 +
-				 91854 * params->radius_2 * r * r_4 -
-				 51030 * params->radius * r_6 + 
-				 10935 * r * r_6 ) /
-			  ( 560 * params->radius_7 * r * r_2 );
-#endif
+		      switch (params->distribution) {
+		      case spline_deg_4:
+			if( r < params->radius / 3.0 )
+			  val = (-9.0) * ( 385 * params->radius_4 -
+					   1134 * params->radius_2 * r_2 + 
+					   1215 * r_4 ) /
+			    ( 280 * params->radius_7 );
+			else if( r < ( 2 * params->radius / 3.0 ) )
+			  val = ((-5.0) * params->radius_7 -
+				 16065 * params->radius_4 * r * r_2 -
+				 42525 * params->radius_3 * r_4 +
+				 214326 * params->radius_2 * r * r_4 -
+				 255150 * params->radius * r_6 +
+				 98415 * r * r_6  ) /
+			    ( 1680 * params->radius_7 * r * r_2 );
+			else 
+			  val = -( (-169.0) * params->radius_7 +
+				   25515 * params->radius_4 * r * r_2 -
+				   76545 * params->radius_3 * r_4 +
+				   91854 * params->radius_2 * r * r_4 -
+				   51030 * params->radius * r_6 + 
+				   10935 * r * r_6 ) /
+			    ( 560 * params->radius_7 * r * r_2 );
+			break;
+		      }
 			
 		      val = val + 1.0/r / r_2;
 		      data->particles[p1].fx += 
@@ -816,33 +824,35 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 		  } /* if( p1 != p2) */
 		  else{
 		    /* Self energy correction */
-#ifdef SPLINE
-		    data->particles[p1].e = data->particles[p1].e -
-		      1.0 / ( 4 * PP3MG_PI ) *
-		      SQUARE( data->particles[p1].q ) *
-		      239 / ( 80.0 * params->radius );
-#endif
+		    switch (params->distribution) {
+		    case polynomial_deg_6:
+		      data->particles[p1].e = data->particles[p1].e -
+			1.0 / ( 4 * PP3MG_PI ) *
+			SQUARE( data->particles[p1].q ) *
+			315.0 / ( 64.0 * 2.0 * params->radius );
+		      break;
 
-#ifdef POLYNOMIAL14
-		    data->particles[p1].e = data->particles[p1].e -
-		      1.0 / ( 4 * PP3MG_PI ) *
-		      SQUARE( data->particles[p1].q ) *
-		      109395.0 / ( 16384.0 * 2.0 * params->radius );
-#endif
+		    case polynomial_deg_10:
+		      data->particles[p1].e = data->particles[p1].e -
+			1.0 / ( 4 * PP3MG_PI ) *
+			SQUARE( data->particles[p1].q ) *
+			3003.0 / ( 512.0 * 2.0 * params->radius );
+		      break;
 
-#ifdef POLYNOMIAL10
-		    data->particles[p1].e = data->particles[p1].e -
-		      1.0 / ( 4 * PP3MG_PI ) *
-		      SQUARE( data->particles[p1].q ) *
-		      3003.0 / ( 512.0 * 2.0 * params->radius );
-#endif
+		    case polynomial_deg_14:
+		      data->particles[p1].e = data->particles[p1].e -
+			1.0 / ( 4 * PP3MG_PI ) *
+			SQUARE( data->particles[p1].q ) *
+			109395.0 / ( 16384.0 * 2.0 * params->radius );
+		      break;
 
-#ifdef POLYNOMIAL6
-		    data->particles[p1].e = data->particles[p1].e -
-		      1.0 / ( 4 * PP3MG_PI ) *
-		      SQUARE( data->particles[p1].q ) *
-		      315.0 / ( 64.0 * 2.0 * params->radius );
-#endif
+		    case spline_deg_4:
+		      data->particles[p1].e = data->particles[p1].e -
+			1.0 / ( 4 * PP3MG_PI ) *
+			SQUARE( data->particles[p1].q ) *
+			239 / ( 80.0 * params->radius );
+		      break;
+		    }
 		  }			
 		  p2 = data->ll[p2];
 		} /* while( p2 >= 0) */
