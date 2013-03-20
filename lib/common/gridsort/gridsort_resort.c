@@ -43,6 +43,11 @@
 #include "gridsort_resort.h"
 
 
+/*#define RESORT_13FLOATS*/
+
+
+#ifdef RESORT_13FLOATS
+
 static int gridsort_back_f__tproc(back_f__elements_t *s, back_f__slint_t x, void *data)
 {
   if (!GRIDSORT_INDEX_IS_VALID(s->keys[x])) return MPI_PROC_NULL;
@@ -57,6 +62,8 @@ static int gridsort_back__p_tproc(back__p_elements_t *s, back__p_slint_t x, void
 
   return GRIDSORT_INDEX_GET_PROC(s->keys[x]);
 }
+
+#endif /* RESORT_13FLOATS */
 
 
 static int gridsort_back_x_tproc(back_x_elements_t *s, back_x_slint_t x, void *data)
@@ -83,6 +90,12 @@ void fcs_gridsort_resort_create(fcs_gridsort_resort_t *gridsort_resort, fcs_grid
   fcs_int local_packed, global_packed, original_packed;
 #endif
 
+#ifdef DO_TIMING
+  double t[4] = { 0, 0, 0, 0 };
+#endif
+
+
+  TIMING_SYNC(comm); TIMING_START(t[0]);
 
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
@@ -98,9 +111,13 @@ void fcs_gridsort_resort_create(fcs_gridsort_resort_t *gridsort_resort, fcs_grid
     return;
   }
 
+  TIMING_SYNC(comm); TIMING_START(t[1]);
+
   resort_indices = fcs_resort_indices_alloc(gs->nresort_particles);
 
   fcs_resort_indices_init(gs->nresort_particles, resort_indices, comm_rank);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 /*  printf("nresort_particles = %" FCS_LMOD_INT "d\n", gs->nresort_particles);
   for (i = 0; i < gs->nresort_particles; ++i)
@@ -135,7 +152,11 @@ void fcs_gridsort_resort_create(fcs_gridsort_resort_t *gridsort_resort, fcs_grid
   original_packed = back_x_SL_DEFCON(meas.packed); back_x_SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
+  TIMING_SYNC(comm); TIMING_START(t[2]);
+
   back_x_mpi_elements_alltoall_specific(&sin, &sout, NULL, tproc, NULL, comm_size, comm_rank, comm);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
 #ifdef ALLTOALLV_PACKED
   back_x_SL_DEFCON(meas.packed) = original_packed;
@@ -161,13 +182,24 @@ void fcs_gridsort_resort_create(fcs_gridsort_resort_t *gridsort_resort, fcs_grid
   
   resort_indices = fcs_resort_get_indices(*gridsort_resort);
 
+  TIMING_SYNC(comm); TIMING_START(t[3]);
+
   for (i = 0; i < gs->noriginal_particles; ++i) resort_indices[GRIDSORT_INDEX_GET_POS(sout.keys[i])] = sout.data0[i];
+
+  TIMING_SYNC(comm); TIMING_STOP(t[3]);
 
   back_x_elements_free(&sout);
 
 #ifdef GRIDSORT_RESORT_PROCLIST
   if (gs->procs) fcs_resort_set_proclists(*gridsort_resort, gs->nprocs, gs->procs);
 #endif
+
+  TIMING_SYNC(comm); TIMING_STOP(t[0]);
+
+  TIMING_CMD(
+    if (comm_rank == 0)
+      printf(TIMING_PRINT_PREFIX "fcs_gridsort_resort_create: %f  %f  %f  %f\n", t[0], t[1], t[2], t[3]);
+  );
 }
 
 
@@ -202,6 +234,8 @@ fcs_int fcs_gridsort_resort_get_sorted_particles(fcs_gridsort_resort_t gridsort_
 }
 
 
+#ifdef RESORT_13FLOATS
+
 static void copy_floats(fcs_int n, fcs_float *src, fcs_float *dst, fcs_int x, fcs_gridsort_index_t *indices)
 {
   fcs_int i, j, k;
@@ -225,7 +259,7 @@ static void copy_floats(fcs_int n, fcs_float *src, fcs_float *dst, fcs_int x, fc
 
 static void resort_1float(fcs_gridsort_resort_t gridsort_resort, fcs_float *src, fcs_float *dst, MPI_Comm comm)
 {
-  int size, rank;
+  int comm_size, comm_rank;
   back__p_elements_t sin, sout;
   back__p_tproc_t tproc;
 
@@ -233,11 +267,17 @@ static void resort_1float(fcs_gridsort_resort_t gridsort_resort, fcs_float *src,
   fcs_int local_packed, global_packed, original_packed;
 #endif
 
+#ifdef DO_TIMING
+  double t[3] = { 0, 0, 0 };
+#endif
 
-  MPI_Comm_size(comm, &size);
-  MPI_Comm_rank(comm, &rank);
 
-  back__p_SL_DEFCON(mpi.rank) = rank;
+  TIMING_SYNC(comm); TIMING_START(t[0]);
+
+  MPI_Comm_size(comm, &comm_size);
+  MPI_Comm_rank(comm, &comm_rank);
+
+  back__p_SL_DEFCON(mpi.rank) = comm_rank;
 
   back__p_mpi_datatypes_init();
 
@@ -254,16 +294,20 @@ static void resort_1float(fcs_gridsort_resort_t gridsort_resort, fcs_float *src,
   back__p_tproc_create_tproc(&tproc, gridsort_back__p_tproc, back__p_TPROC_RESET_NULL, back__p_TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_RESORT_PROCLIST
-  if (gridsort_resort->nprocs >= 0) back__p_tproc_set_proclists(&tproc, gridsort_resort->nprocs, gridsort_resort->procs, gridsort_resort->nprocs, gridsort_resort->procs, size, rank, comm);
+  if (gridsort_resort->nprocs >= 0) back__p_tproc_set_proclists(&tproc, gridsort_resort->nprocs, gridsort_resort->procs, gridsort_resort->nprocs, gridsort_resort->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
-  local_packed = ALLTOALLV_PACKED(size, sin.size);
+  local_packed = ALLTOALLV_PACKED(comm_size, sin.size);
   MPI_Allreduce(&local_packed, &global_packed, 1, FCS_MPI_INT, MPI_SUM, comm);
   original_packed = back__p_SL_DEFCON(meas.packed); back__p_SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
-  back__p_mpi_elements_alltoall_specific(&sin, &sout, NULL, tproc, NULL, size, rank, comm);
+  TIMING_SYNC(comm); TIMING_START(t[1]);
+
+  back__p_mpi_elements_alltoall_specific(&sin, &sout, NULL, tproc, NULL, comm_size, comm_rank, comm);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 #ifdef ALLTOALLV_PACKED
   back__p_SL_DEFCON(meas.packed) = original_packed;
@@ -272,19 +316,30 @@ static void resort_1float(fcs_gridsort_resort_t gridsort_resort, fcs_float *src,
   back__p_tproc_free(&tproc);
 
   if (gridsort_resort->nsorted_particles != sout.size)
-    fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" back__p_slint_fmt "!\n", rank, gridsort_resort->nsorted_particles, sout.size);
+    fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" back__p_slint_fmt "!\n", comm_rank, gridsort_resort->nsorted_particles, sout.size);
+
+  TIMING_SYNC(comm); TIMING_START(t[2]);
 
   copy_floats(sout.size, sout.data1, (dst)?dst:src, 1, sout.keys);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
   back__p_elements_free(&sout);
 
   back__p_mpi_datatypes_release();
+
+  TIMING_SYNC(comm); TIMING_STOP(t[0]);
+
+  TIMING_CMD(
+    if (comm_rank == 0)
+      printf(TIMING_PRINT_PREFIX "resort_1float: %f  %f  %f\n", t[0], t[1], t[2]);
+  );
 }
 
 
 static void resort_3floats(fcs_gridsort_resort_t gridsort_resort, fcs_float *src, fcs_float *dst, MPI_Comm comm)
 {
-  int size, rank;
+  int comm_size, comm_rank;
   back_f__elements_t sin, sout;
   back_f__tproc_t tproc;
 
@@ -292,11 +347,17 @@ static void resort_3floats(fcs_gridsort_resort_t gridsort_resort, fcs_float *src
   fcs_int local_packed, global_packed, original_packed;
 #endif
 
+#ifdef DO_TIMING
+  double t[3] = { 0, 0, 0 };
+#endif
 
-  MPI_Comm_size(comm, &size);
-  MPI_Comm_rank(comm, &rank);
 
-  back_f__SL_DEFCON(mpi.rank) = rank;
+  TIMING_SYNC(comm); TIMING_START(t[0]);
+
+  MPI_Comm_size(comm, &comm_size);
+  MPI_Comm_rank(comm, &comm_rank);
+
+  back_f__SL_DEFCON(mpi.rank) = comm_rank;
 
   back_f__mpi_datatypes_init();
 
@@ -313,16 +374,20 @@ static void resort_3floats(fcs_gridsort_resort_t gridsort_resort, fcs_float *src
   back_f__tproc_create_tproc(&tproc, gridsort_back_f__tproc, back_f__TPROC_RESET_NULL, back_f__TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_RESORT_PROCLIST
-  if (gridsort_resort->nprocs >= 0) back_f__tproc_set_proclists(&tproc, gridsort_resort->nprocs, gridsort_resort->procs, gridsort_resort->nprocs, gridsort_resort->procs, size, rank, comm);
+  if (gridsort_resort->nprocs >= 0) back_f__tproc_set_proclists(&tproc, gridsort_resort->nprocs, gridsort_resort->procs, gridsort_resort->nprocs, gridsort_resort->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
-  local_packed = ALLTOALLV_PACKED(size, sin.size);
+  local_packed = ALLTOALLV_PACKED(comm_size, sin.size);
   MPI_Allreduce(&local_packed, &global_packed, 1, FCS_MPI_INT, MPI_SUM, comm);
   original_packed = back_f__SL_DEFCON(meas.packed); back_f__SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
-  back_f__mpi_elements_alltoall_specific(&sin, &sout, NULL, tproc, NULL, size, rank, comm);
+  TIMING_SYNC(comm); TIMING_START(t[1]);
+
+  back_f__mpi_elements_alltoall_specific(&sin, &sout, NULL, tproc, NULL, comm_size, comm_rank, comm);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 #ifdef ALLTOALLV_PACKED
   back_f__SL_DEFCON(meas.packed) = original_packed;
@@ -331,14 +396,27 @@ static void resort_3floats(fcs_gridsort_resort_t gridsort_resort, fcs_float *src
   back_f__tproc_free(&tproc);
 
   if (gridsort_resort->nsorted_particles != sout.size)
-    fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" back_f__slint_fmt "!\n", rank, gridsort_resort->nsorted_particles, sout.size);
+    fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" back_f__slint_fmt "!\n", comm_rank, gridsort_resort->nsorted_particles, sout.size);
+
+  TIMING_SYNC(comm); TIMING_START(t[2]);
 
   copy_floats(sout.size, sout.data0, (dst)?dst:src, 3, sout.keys);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
   back_f__elements_free(&sout);
 
   back_f__mpi_datatypes_release();
+
+  TIMING_SYNC(comm); TIMING_STOP(t[0]);
+
+  TIMING_CMD(
+    if (comm_rank == 0)
+      printf(TIMING_PRINT_PREFIX "resort_3float: %f  %f  %f\n", t[0], t[1], t[2]);
+  );
 }
+
+#endif /* RESORT_13FLOATS */
 
 
 void fcs_gridsort_resort_ints(fcs_gridsort_resort_t gridsort_resort, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
@@ -349,6 +427,7 @@ void fcs_gridsort_resort_ints(fcs_gridsort_resort_t gridsort_resort, fcs_int *sr
 
 void fcs_gridsort_resort_floats(fcs_gridsort_resort_t gridsort_resort, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
 {
+#ifdef RESORT_13FLOATS
   if (fcs_resort_get_indices(gridsort_resort) != NULL)
   switch (n)
   {
@@ -359,6 +438,7 @@ void fcs_gridsort_resort_floats(fcs_gridsort_resort_t gridsort_resort, fcs_float
       resort_3floats(gridsort_resort, src, dst, comm);
       return;
   }
+#endif
 
   fcs_resort_resort_floats(gridsort_resort, src, dst, n, comm);
 }

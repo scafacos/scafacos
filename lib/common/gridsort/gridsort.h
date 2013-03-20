@@ -37,14 +37,28 @@ typedef long long fcs_gridsort_index_t;
 #define FCS_MPI_GRIDSORT_INDEX  MPI_LONG_LONG
 
 /**
- * @brief gridsort object structure
+ * @brief gridsort structure form permanent data
  */
-typedef struct _fcs_gridsort_t
+typedef struct _fcs_gridsort_data_t
 {
   fcs_float box_base[3], box_a[3], box_b[3], box_c[3];
   fcs_int periodicity[3];
 
   fcs_float lower_bounds[3], upper_bounds[3];
+
+  fcs_float *bounds;
+
+} *fcs_gridsort_cache_t;
+
+#define FCS_GRIDSORT_CACHE_NULL  NULL
+
+
+/**
+ * @brief gridsort object structure
+ */
+typedef struct _fcs_gridsort_t
+{
+  struct _fcs_gridsort_data_t d;
 
   fcs_int local_nzslices, ghost_nzslices, max_ghost_nzslices;
 
@@ -67,6 +81,8 @@ typedef struct _fcs_gridsort_t
   int *procs;
 
   fcs_float sub_box_base[3], sub_box_a[3], sub_box_b[3], sub_box_c[3];
+
+  fcs_gridsort_cache_t *cache;
 
 } fcs_gridsort_t;
 
@@ -189,6 +205,19 @@ void fcs_gridsort_get_real_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fc
  * @param indices fcs_gridsort_index_t** ghost pointer to array of prickle indices (NULL if not required)
  */
 void fcs_gridsort_get_ghost_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_float **positions, fcs_float **charges, fcs_gridsort_index_t **indices);
+
+/**
+ * @brief set gridsort cache to store and reuse gridsort data across several gridsort instances
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param cache fcs_gridsort_cache_t* gridsort cache
+ */
+void fcs_gridsort_set_cache(fcs_gridsort_t *gs, fcs_gridsort_cache_t *cache);
+
+/**
+ * @brief free gridsort cache
+ * @param cache fcs_gridsort_cache_t* gridsort cache
+ */
+void fcs_gridsort_release_cache(fcs_gridsort_cache_t *cache);
 
 /**
  * @brief sort particles to the process grid and create ghost particles
