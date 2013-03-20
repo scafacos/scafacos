@@ -89,6 +89,7 @@ void fcs_resort_print(fcs_resort_t resort);
 /**
  * @brief return resorting availability, i.e., return 1 if resorting can be performed, otherwise 0
  * @param resort fcs_resort_t resort object
+ * @return fcs_int whether resorting is available
  */
 fcs_int fcs_resort_is_available(fcs_resort_t resort);
 
@@ -101,6 +102,7 @@ void fcs_resort_set_original_particles(fcs_resort_t resort, fcs_int original_par
 /**
  * @brief return number of original (unsorted, input) particles belonging to the resorting
  * @param resort fcs_resort_t resort object
+ * @return fcs_int number of original particles 
  */
 fcs_int fcs_resort_get_original_particles(fcs_resort_t resort);
 
@@ -113,6 +115,7 @@ void fcs_resort_set_sorted_particles(fcs_resort_t resort, fcs_int sorted_particl
 /**
  * @brief return number of sorted (output) particles belonging to the resorting
  * @param resort fcs_resort_t resort object
+ * @return fcs_int number of sorted particles 
  */
 fcs_int fcs_resort_get_sorted_particles(fcs_resort_t resort);
 
@@ -131,13 +134,14 @@ void fcs_resort_free_indices(fcs_resort_t resort);
 /**
  * @brief return pointer to allocated memory for resort indices
  * @param resort fcs_resort_t resort object
+ * @return fcs_resort_index_t* pointer of allocated memory
  */
 fcs_resort_index_t *fcs_resort_get_indices(fcs_resort_t resort);
 
 /**
  * @brief set (optionally) the list of processes that the local process will communicate with for resort
  * @param nprocs fcs_int number of processes in the list
- * @param procs *int list of process ranks
+ * @param procs int* list of process ranks
  * @param resort fcs_resort_t resort object
  */
 void fcs_resort_set_proclists(fcs_resort_t resort, fcs_int nprocs, int *procs);
@@ -145,7 +149,7 @@ void fcs_resort_set_proclists(fcs_resort_t resort, fcs_int nprocs, int *procs);
 /**
  * @brief perform resorting of integer values (i.e., fcs_int)
  * @param resort fcs_resort_t resort object
- * @param src fcs_int* array of integer values in original (unsorted, input) order
+ * @param src *fcs_int array of integer values in original (unsorted, input) order
  * @param dst fcs_int* array to store resorted integer values
  * @param n fcs_int number of integer values to resort for each particle
  * @param comm MPI_Comm MPI communicator

@@ -33,6 +33,7 @@
 # include "zmpi_atasp.h"
 #endif
 
+#include "z_tools.h"
 #include "resort.h"
 
 
@@ -60,6 +61,23 @@
 #endif
 #define TIMING_PRINT_PREFIX  "RESORT_TIMING: "
 
+#define DO_TIMING_SYNC
+
+#ifdef DO_TIMING
+# define TIMING_DECL(_decl_)       _decl_
+# define TIMING_CMD(_cmd_)         Z_MOP(_cmd_)
+#else
+# define TIMING_DECL(_decl_)
+# define TIMING_CMD(_cmd_)         Z_NOP()
+#endif
+#ifdef DO_TIMING_SYNC
+# define TIMING_SYNC(_c_)          TIMING_CMD(MPI_Barrier(_c_);)
+#else
+# define TIMING_SYNC(_c_)          Z_NOP()
+#endif
+#define TIMING_START(_t_)          TIMING_CMD(((_t_) = MPI_Wtime());)
+#define TIMING_STOP(_t_)           TIMING_CMD(((_t_) = MPI_Wtime() - (_t_));)
+#define TIMING_STOP_ADD(_t_, _r_)  TIMING_CMD(((_r_) += MPI_Wtime() - (_t_));)
 
 #define RESORT_PROCLIST
 
@@ -412,6 +430,8 @@ static int resort_tproc(void *b, ZMPI_Count x, void *tproc_data)
   return FCS_RESORT_INDEX_GET_PROC(idx);
 }
 
+ZMPI_TPROC_EXDEF_DEFINE_TPROC(resort_tproc_exdef, resort_tproc)
+
 
 static void resort_ints(fcs_resort_t resort, fcs_int *src, fcs_int *dst, fcs_int x, MPI_Comm comm)
 {
@@ -426,11 +446,21 @@ static void resort_ints(fcs_resort_t resort, fcs_int *src, fcs_int *dst, fcs_int
   ZMPI_Tproc tproc;
   int received;
 
+#ifdef DO_TIMING
+  double t[4] = { 0, 0, 0, 0 };
+#endif
+
+
+  TIMING_SYNC(comm); TIMING_START(t[0]);
 
   send = malloc(resort->noriginal_particles * type_size);
   recv = malloc(resort->nsorted_particles * type_size);
 
+  TIMING_SYNC(comm); TIMING_START(t[1]);
+
   pack_ints(resort->noriginal_particles, src, x, resort->indices, send);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
   MPI_Type_create_struct(2, lengths, displs, types, &type);
   MPI_Type_commit(&type);
@@ -441,16 +471,31 @@ static void resort_ints(fcs_resort_t resort, fcs_int *src, fcs_int *dst, fcs_int
   if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(&tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
 #endif
 
+  TIMING_SYNC(comm); TIMING_START(t[2]);
+
   ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, &received, comm);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
   ZMPI_Tproc_free(&tproc);
 
   MPI_Type_free(&type);
 
+  TIMING_SYNC(comm); TIMING_START(t[3]);
+
   unpack_ints(resort->nsorted_particles, recv, (dst)?dst:src, x);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[3]);
   
   free(send);
   free(recv);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[0]);
+
+  TIMING_CMD(
+    if (comm_rank == 0)
+      printf(TIMING_PRINT_PREFIX "resort_ints: %f  %f  %f  %f\n", t[0], t[1], t[2], t[3]);
+  );
 }
 
 
@@ -467,11 +512,21 @@ static void resort_floats(fcs_resort_t resort, fcs_float *src, fcs_float *dst, f
   ZMPI_Tproc tproc;
   int received;
 
+#ifdef DO_TIMING
+  double t[4] = { 0, 0, 0, 0 };
+#endif
+
+
+  TIMING_SYNC(comm); TIMING_START(t[0]);
 
   send = malloc(resort->noriginal_particles * type_size);
   recv = malloc(resort->nsorted_particles * type_size);
 
+  TIMING_SYNC(comm); TIMING_START(t[1]);
+
   pack_floats(resort->noriginal_particles, src, x, resort->indices, send);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
   MPI_Type_create_struct(2, lengths, displs, types, &type);
   MPI_Type_commit(&type);
@@ -482,16 +537,31 @@ static void resort_floats(fcs_resort_t resort, fcs_float *src, fcs_float *dst, f
   if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(&tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
 #endif
 
+  TIMING_SYNC(comm); TIMING_START(t[2]);
+
   ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, &received, comm);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
   ZMPI_Tproc_free(&tproc);
 
   MPI_Type_free(&type);
 
+  TIMING_SYNC(comm); TIMING_START(t[3]);
+
   unpack_floats(resort->nsorted_particles, recv, (dst)?dst:src, x);
+  
+  TIMING_SYNC(comm); TIMING_STOP(t[3]);
   
   free(send);
   free(recv);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[0]);
+
+  TIMING_CMD(
+    if (comm_rank == 0)
+      printf(TIMING_PRINT_PREFIX "resort_floats: %f  %f  %f  %f\n", t[0], t[1], t[2], t[3]);
+  );
 }
 
 
@@ -508,11 +578,21 @@ static void resort_bytes(fcs_resort_t resort, void *src, void *dst, fcs_int x, M
   ZMPI_Tproc tproc;
   int received;
 
+#ifdef DO_TIMING
+  double t[4] = { 0, 0, 0, 0 };
+#endif
+
+
+  TIMING_SYNC(comm); TIMING_START(t[0]);
 
   send = malloc(resort->noriginal_particles * type_size);
   recv = malloc(resort->nsorted_particles * type_size);
 
+  TIMING_SYNC(comm); TIMING_START(t[1]);
+
   pack_bytes(resort->noriginal_particles, src, x, resort->indices, send);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
   MPI_Type_create_struct(2, lengths, displs, types, &type);
   MPI_Type_commit(&type);
@@ -523,16 +603,31 @@ static void resort_bytes(fcs_resort_t resort, void *src, void *dst, fcs_int x, M
   if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(&tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
 #endif
 
+  TIMING_SYNC(comm); TIMING_START(t[2]);
+
   ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, &received, comm);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
   ZMPI_Tproc_free(&tproc);
 
   MPI_Type_free(&type);
 
+  TIMING_SYNC(comm); TIMING_START(t[3]);
+
   unpack_bytes(resort->nsorted_particles, recv, (dst)?dst:src, x);
+  
+  TIMING_SYNC(comm); TIMING_STOP(t[3]);
   
   free(send);
   free(recv);
+
+  TIMING_SYNC(comm); TIMING_STOP(t[0]);
+
+  TIMING_CMD(
+    if (comm_rank == 0)
+      printf(TIMING_PRINT_PREFIX "resort_bytes: %f  %f  %f  %f\n", t[0], t[1], t[2], t[3]);
+  );
 }
 
 
