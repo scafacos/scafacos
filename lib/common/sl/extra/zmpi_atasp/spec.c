@@ -196,7 +196,11 @@ spint_t spec_alltoallv_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spe
     for (i = 0; i < size; ++i) printf("  %d (%d)", scounts2[i], scounts[i]);
     printf("\n");*/
     
+#ifdef HAVE_ZMPI_ALLTOALLV_PROCLISTS
+    ZMPI_Alltoallv_proclists(scounts, scounts2, sdispls, MPI_INT, tproc->nsend_procs, tproc->send_procs, rcounts, rcounts2, rdispls, MPI_INT, tproc->nrecv_procs, tproc->recv_procs, comm);
+#else
     MPI_Alltoallv(scounts, scounts2, sdispls, MPI_INT, rcounts, rcounts2, rdispls, MPI_INT, comm);
+#endif
 
 /*    printf("%d: rcounts2 = ", rank);
     for (i = 0; i < size; ++i) printf("  %d (%d)", rcounts2[i], rcounts[i]);
@@ -311,7 +315,14 @@ spint_t spec_alltoallv_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spe
   sdispls[0] = 0;
   for (i = 1; i < size; ++i) sdispls[i] = sdispls[i - 1] + scounts[i - 1];
 
-  spec_elem_alltoallv_db(xb, scounts, sdispls, rb, rcounts, rdispls, size, rank, comm);
+#ifdef SPEC_PROCLIST
+# ifdef spec_elem_alltoallv_proclists_db
+  if (tproc->nsend_procs >= 0 || tproc->nrecv_procs >= 0)
+    spec_elem_alltoallv_proclists_db(xb, scounts, sdispls, tproc->nsend_procs, tproc->send_procs, rb, rcounts, rdispls, tproc->nrecv_procs, tproc->recv_procs, size, rank, comm);
+  else
+# endif
+#endif
+    spec_elem_alltoallv_db(xb, scounts, sdispls, rb, rcounts, rdispls, size, rank, comm);
 
   Z_TIMING_SYNC(comm); Z_TIMING_STOP(t[4]);
 
@@ -468,7 +479,11 @@ spint_t spec_alltoallv_ip(spec_elem_t *b, spec_elem_t *xb, spec_tproc_t tproc, s
     for (i = 0; i < tproc->nsend_procs; ++i) scounts2[tproc->send_procs[i]] = 1;
     for (i = 0; i < tproc->nrecv_procs; ++i) rcounts2[tproc->recv_procs[i]] = 1;
 
+#ifdef HAVE_ZMPI_ALLTOALLV_PROCLISTS
+    ZMPI_Alltoallv_proclists(scounts, scounts2, sdispls, MPI_INT, tproc->nsend_procs, tproc->send_procs, rcounts, rcounts2, rdispls, MPI_INT, tproc->nrecv_procs, tproc->recv_procs, comm);
+#else
     MPI_Alltoallv(scounts, scounts2, sdispls, MPI_INT, rcounts, rcounts2, rdispls, MPI_INT, comm);
+#endif
 
     z_free(scounts2);
 

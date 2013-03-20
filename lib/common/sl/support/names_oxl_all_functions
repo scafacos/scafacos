@@ -240,6 +240,7 @@ mpi_elements_alltoallv_ip_double
 mpi_elements_alltoallv_ip_mpi
 mpi_elements_alltoallv_ip_dash
 mpi_elements_alltoallv_ip
+mpi_elements_alltoallv_proclists_db
 mpi_elements_packed_datatype_create
 mpi_elements_packed_datatype_destroy
 mpi_find_exact_equal
@@ -247,6 +248,7 @@ mpi_find_exact
 mpi_merge2
 mpi_mergek_equal
 mpi_mergek_sorted
+mpi_mergek_sorted2
 mpi_mergek
 mpi_mergek_equal2
 mpi_partition_exact_generic

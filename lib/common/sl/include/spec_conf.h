@@ -59,6 +59,9 @@ slint_t mpi_elements_alltoall_specific_alloc_size(slint_t n);
 #define spec_elem_alltoallv_db(_sb_, _sc_, _sd_, _rb_, _rc_, _rd_, _s_, _r_, _c_) \
   mpi_elements_alltoallv_db((_sb_), (_sc_), (_sd_), (_rb_), (_rc_), (_rd_), (_s_), (_r_), (_c_))
 
+#define spec_elem_alltoallv_proclists_db(_sb_, _sc_, _sd_, _nsp_, _sp_, _rb_, _rc_, _rd_, _nrp_, _rp_, _s_, _r_, _c_) \
+  mpi_elements_alltoallv_proclists_db((_sb_), (_sc_), (_sd_), (_nsp_), (_sp_), (_rb_), (_rc_), (_rd_), (_nrp_), (_rp_), (_s_), (_r_), (_c_))
+
 #define spec_elem_alltoallv_ip(_b_, _xb_, _sc_, _sd_, _rc_, _rd_, _s_, _r_, _c_) \
   mpi_elements_alltoallv_ip((_b_), (_xb_), (_sc_), (_sd_), (_rc_), (_rd_), (_s_), (_r_), (_c_))
 

@@ -50,5 +50,8 @@
 /* alltoall_2step.c */
 #define ZMPI_Alltoall_2step_int  ZMPI_FUNC(ZMPI_Alltoall_2step_int)
 
+/* alltoallv_proclists.c */
+#define ZMPI_Alltoallv_proclists  ZMPI_FUNC(ZMPI_Alltoallv_proclists)
+
 
 #endif /* __ZMPI_TOOLS_RENAME_H__ */

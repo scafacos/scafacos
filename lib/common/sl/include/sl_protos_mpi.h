@@ -71,6 +71,7 @@ slint_t SL_PROTO(mpi_elements_alltoallv_ip_double)(elements_t *s, elements_t *sx
 slint_t SL_PROTO(mpi_elements_alltoallv_ip_mpi)(elements_t *s, elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_elements_alltoallv_ip_dash)(elements_t *s, elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_elements_alltoallv_ip)(elements_t *s, elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
+slint_t SL_PROTO(mpi_elements_alltoallv_proclists_db)(elements_t *sbuf, int *scounts, int *sdispls, int nsendprocs, int *sendprocs, elements_t *rbuf, int *rcounts, int *rdispls, int nrecvprocs, int *recvprocs, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_elements_packed_datatype_create)(MPI_Datatype *pdt, slint_t structured);
 slint_t SL_PROTO(mpi_elements_packed_datatype_destroy)(MPI_Datatype *pdt);
 slint_t SL_PROTO(mpi_find_exact_equal)(elements_t *s, slint_t other_rank, slint_t high_rank, slint_t *ex_start, slint_t *ex_size, int size, int rank, MPI_Comm comm);
@@ -78,6 +79,7 @@ slint_t SL_PROTO(mpi_find_exact)(elements_t *s, slint_t other_rank, slint_t high
 slint_t SL_PROTO(mpi_merge2)(elements_t *s, slint_t other_rank, slint_t high_rank, slint_t *dst_size, merge2x_f m2, elements_t *xs, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_mergek_equal)(elements_t *s, sortnet_f sn, sortnet_data_t snd, merge2x_f m2x, elements_t *xs, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_mergek_sorted)(elements_t *s, merge2x_f m2x, elements_t *xs, int size, int rank, MPI_Comm comm);
+slint_t SL_PROTO(mpi_mergek_sorted2)(elements_t *s, sortnet_f sn, sortnet_data_t snd, merge2x_f m2x, elements_t *xs, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_mergek)(elements_t *s, sortnet_f sn, sortnet_data_t snd, merge2x_f m2x, elements_t *xs, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_mergek_equal2)(elements_t *s, sortnet_f sn, sortnet_data_t snd, merge2x_f m2x, elements_t *xs, int *sizes, int *ranks, MPI_Comm *comms);
 slint_t SL_PROTO(mpi_partition_exact_generic)(elements_t *s, partcond_t *pcond, binning_t *bm, int *scounts, int *rcounts, int size, int rank, MPI_Comm comm);

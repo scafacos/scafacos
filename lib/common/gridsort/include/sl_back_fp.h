@@ -729,6 +729,10 @@ enum rti_tid
   rti_tid_mpi_mergek_sorted_while,
   rti_tid_mpi_mergek_sorted_while_check,
   rti_tid_mpi_mergek_sorted_while_oddeven,
+  rti_tid_mpi_mergek_sorted2,
+  rti_tid_mpi_mergek_sorted2_while,
+  rti_tid_mpi_mergek_sorted2_while_check,
+  rti_tid_mpi_mergek_sorted2_while_oddeven,
   rti_tid_mpi_mergek,
   rti_tid_mpi_mergek_equalike,
   rti_tid_mpi_mergek_while,
@@ -3155,6 +3159,7 @@ back_fp_slint_t SL_PROTO(back_fp_mpi_elements_alltoallv_ip_double)(back_fp_eleme
 back_fp_slint_t SL_PROTO(back_fp_mpi_elements_alltoallv_ip_mpi)(back_fp_elements_t *s, back_fp_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
 back_fp_slint_t SL_PROTO(back_fp_mpi_elements_alltoallv_ip_dash)(back_fp_elements_t *s, back_fp_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
 back_fp_slint_t SL_PROTO(back_fp_mpi_elements_alltoallv_ip)(back_fp_elements_t *s, back_fp_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
+back_fp_slint_t SL_PROTO(back_fp_mpi_elements_alltoallv_proclists_db)(back_fp_elements_t *sbuf, int *scounts, int *sdispls, int nsendprocs, int *sendprocs, back_fp_elements_t *rbuf, int *rcounts, int *rdispls, int nrecvprocs, int *recvprocs, int size, int rank, MPI_Comm comm);
 back_fp_slint_t SL_PROTO(back_fp_mpi_elements_packed_datatype_create)(MPI_Datatype *pdt, back_fp_slint_t structured);
 back_fp_slint_t SL_PROTO(back_fp_mpi_elements_packed_datatype_destroy)(MPI_Datatype *pdt);
 back_fp_slint_t SL_PROTO(back_fp_mpi_find_exact_equal)(back_fp_elements_t *s, back_fp_slint_t other_rank, back_fp_slint_t high_rank, back_fp_slint_t *ex_start, back_fp_slint_t *ex_size, int size, int rank, MPI_Comm comm);
@@ -3162,6 +3167,7 @@ back_fp_slint_t SL_PROTO(back_fp_mpi_find_exact)(back_fp_elements_t *s, back_fp_
 back_fp_slint_t SL_PROTO(back_fp_mpi_merge2)(back_fp_elements_t *s, back_fp_slint_t other_rank, back_fp_slint_t high_rank, back_fp_slint_t *dst_size, back_fp_merge2x_f m2, back_fp_elements_t *xs, int size, int rank, MPI_Comm comm);
 back_fp_slint_t SL_PROTO(back_fp_mpi_mergek_equal)(back_fp_elements_t *s, back_fp_sortnet_f sn, back_fp_sortnet_data_t snd, back_fp_merge2x_f m2x, back_fp_elements_t *xs, int size, int rank, MPI_Comm comm);
 back_fp_slint_t SL_PROTO(back_fp_mpi_mergek_sorted)(back_fp_elements_t *s, back_fp_merge2x_f m2x, back_fp_elements_t *xs, int size, int rank, MPI_Comm comm);
+back_fp_slint_t SL_PROTO(back_fp_mpi_mergek_sorted2)(back_fp_elements_t *s, back_fp_sortnet_f sn, back_fp_sortnet_data_t snd, back_fp_merge2x_f m2x, back_fp_elements_t *xs, int size, int rank, MPI_Comm comm);
 back_fp_slint_t SL_PROTO(back_fp_mpi_mergek)(back_fp_elements_t *s, back_fp_sortnet_f sn, back_fp_sortnet_data_t snd, back_fp_merge2x_f m2x, back_fp_elements_t *xs, int size, int rank, MPI_Comm comm);
 back_fp_slint_t SL_PROTO(back_fp_mpi_mergek_equal2)(back_fp_elements_t *s, back_fp_sortnet_f sn, back_fp_sortnet_data_t snd, back_fp_merge2x_f m2x, back_fp_elements_t *xs, int *sizes, int *ranks, MPI_Comm *comms);
 back_fp_slint_t SL_PROTO(back_fp_mpi_partition_exact_generic)(back_fp_elements_t *s, back_fp_partcond_t *pcond, back_fp_binning_t *bm, int *scounts, int *rcounts, int size, int rank, MPI_Comm comm);

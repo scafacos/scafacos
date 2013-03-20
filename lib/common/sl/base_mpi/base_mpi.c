@@ -1508,6 +1508,37 @@ slint_t mpi_elements_alltoallv_ip(elements_t *s, elements_t *sx, int *scounts, i
 
 
 
+/* sl_macro MEAP_TRACE_IF */
+
+#include "sl_common.h"
+
+#include "zmpi_tools.h"
+
+
+#ifndef MEAP_TRACE_IF
+# ifdef GLOBAL_TRACE_IF
+#  define MEAP_TRACE_IF  GLOBAL_TRACE_IF
+# else
+#  define MEAP_TRACE_IF  (SL_PROC_RANK == -1)
+# endif
+#endif
+
+
+#ifdef HAVE_ZMPI_ALLTOALLV_PROCLISTS
+
+slint_t mpi_elements_alltoallv_proclists_db(elements_t *sbuf, int *scounts, int *sdispls, int nsendprocs, int *sendprocs, elements_t *rbuf, int *rcounts, int *rdispls, int nrecvprocs, int *recvprocs, int size, int rank, MPI_Comm comm) /* sl_proto, sl_func mpi_elements_alltoallv_proclists_db */
+{
+#define xelem_call \
+  ZMPI_Alltoallv_proclists(xelem_buf(sbuf), scounts, sdispls, xelem_mpi_datatype, nsendprocs, sendprocs, xelem_buf(rbuf), rcounts, rdispls, xelem_mpi_datatype, nrecvprocs, recvprocs, comm);
+#include "sl_xelem_call.h"
+
+  return 0;
+}
+
+#endif
+
+
+
 #include "sl_common.h"
 
 
@@ -2200,6 +2231,74 @@ slint_t mpi_mergek_sorted(elements_t *s, merge2x_f m2x, elements_t *xs, int size
     printf("%d: mpi_mergek_sorted:  check: %f\n", rank, rti_tcumu(rti_tid_mpi_mergek_sorted_while_check));
     printf("%d: mpi_mergek_sorted:  oddeven: %f\n", rank, rti_tcumu(rti_tid_mpi_mergek_sorted_while_oddeven));
     printf("%d: mpi_mergek_sorted: stages: %" slint_fmt "\n", rank, stage);
+  }
+#endif
+
+  return stage;
+}
+
+
+slint_t mpi_mergek_sorted2(elements_t *s, sortnet_f sn, sortnet_data_t snd, merge2x_f m2x, elements_t *xs, int size, int rank, MPI_Comm comm) /* sl_proto, sl_func mpi_mergek_sorted2 */
+{
+  slint_t stage, other_rank, up, high_rank, done;
+
+
+  Z_TRACE_IF(MMK_TRACE_IF, "starting mpi_mergek_sorted2");
+
+  /* sl_tid rti_tid_mpi_mergek_sorted2 */
+
+  rti_treset(rti_tid_mpi_mergek_sorted2_while);          /* sl_tid */
+  rti_treset(rti_tid_mpi_mergek_sorted2_while_check);    /* sl_tid */
+  rti_treset(rti_tid_mpi_mergek_sorted2_while_oddeven);  /* sl_tid */
+
+  rti_tstart(rti_tid_mpi_mergek_sorted2);
+
+  if (size < 0) MPI_Comm_size(comm, &size);
+  if (rank < 0) MPI_Comm_rank(comm, &rank);
+
+#ifdef MMK_SORTED_SYNC
+  MPI_Barrier(comm);
+#endif
+
+  rti_tstart(rti_tid_mpi_mergek_sorted2_while);
+
+  stage = 0;
+
+  if (size > 1)
+  while ((other_rank = (sn)(size, rank, stage, snd, &up)) >= 0)
+  {
+    rti_tstart(rti_tid_mpi_mergek_sorted2_while_check);
+    done = mpi_check_global_order(key_purify(s->keys[0]), key_purify(s->keys[s->size - 1]), -1, size, rank, comm);
+    rti_tstop(rti_tid_mpi_mergek_sorted2_while_check);
+
+    if (done) break;
+
+    Z_TRACE_IF(MMK_TRACE_IF, "stage: %" slint_fmt " order failed, do %s", stage, ((stage % 2)?"odd":"even"));
+
+    rti_tstart(rti_tid_mpi_mergek_sorted2_while_oddeven);
+    high_rank = (up)?(z_min(rank, other_rank)):(z_max(rank, other_rank));
+    mpi_merge2(s, other_rank, high_rank, NULL, m2x, xs, size, rank, comm);
+    rti_tstop(rti_tid_mpi_mergek_sorted2_while_oddeven);
+
+#ifdef MMK_SORTED_SYNC
+    MPI_Barrier(comm);
+#endif
+
+    ++stage;
+  }
+
+  rti_tstop(rti_tid_mpi_mergek_sorted2_while);
+
+  rti_tstop(rti_tid_mpi_mergek_sorted2);
+
+#if defined(MMK_PRINT_TIMINGS) && defined(SL_USE_RTI_TIM)
+  if (MMK_PRINT_TIMINGS)
+  {
+    printf("%d: mpi_mergek_sorted2: %f\n", rank, rti_tlast(rti_tid_mpi_mergek_sorted2));
+    printf("%d: mpi_mergek_sorted2: while: %f\n", rank, rti_tlast(rti_tid_mpi_mergek_sorted2_while));
+    printf("%d: mpi_mergek_sorted2:  check: %f\n", rank, rti_tcumu(rti_tid_mpi_mergek_sorted2_while_check));
+    printf("%d: mpi_mergek_sorted2:  oddeven: %f\n", rank, rti_tcumu(rti_tid_mpi_mergek_sorted2_while_oddeven));
+    printf("%d: mpi_mergek_sorted2: stages: %" slint_fmt "\n", rank, stage);
   }
 #endif
 

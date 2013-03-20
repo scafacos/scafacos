@@ -763,6 +763,10 @@ enum rti_tid
   rti_tid_mpi_mergek_sorted_while,
   rti_tid_mpi_mergek_sorted_while_check,
   rti_tid_mpi_mergek_sorted_while_oddeven,
+  rti_tid_mpi_mergek_sorted2,
+  rti_tid_mpi_mergek_sorted2_while,
+  rti_tid_mpi_mergek_sorted2_while_check,
+  rti_tid_mpi_mergek_sorted2_while_oddeven,
   rti_tid_mpi_mergek,
   rti_tid_mpi_mergek_equalike,
   rti_tid_mpi_mergek_while,
@@ -3189,6 +3193,7 @@ front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_elements_alltoallv_ip_double)(front
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_elements_alltoallv_ip_mpi)(front_xq_aX_elements_t *s, front_xq_aX_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_elements_alltoallv_ip_dash)(front_xq_aX_elements_t *s, front_xq_aX_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_elements_alltoallv_ip)(front_xq_aX_elements_t *s, front_xq_aX_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
+front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_elements_alltoallv_proclists_db)(front_xq_aX_elements_t *sbuf, int *scounts, int *sdispls, int nsendprocs, int *sendprocs, front_xq_aX_elements_t *rbuf, int *rcounts, int *rdispls, int nrecvprocs, int *recvprocs, int size, int rank, MPI_Comm comm);
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_elements_packed_datatype_create)(MPI_Datatype *pdt, front_xq_aX_slint_t structured);
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_elements_packed_datatype_destroy)(MPI_Datatype *pdt);
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_find_exact_equal)(front_xq_aX_elements_t *s, front_xq_aX_slint_t other_rank, front_xq_aX_slint_t high_rank, front_xq_aX_slint_t *ex_start, front_xq_aX_slint_t *ex_size, int size, int rank, MPI_Comm comm);
@@ -3196,6 +3201,7 @@ front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_find_exact)(front_xq_aX_elements_t 
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_merge2)(front_xq_aX_elements_t *s, front_xq_aX_slint_t other_rank, front_xq_aX_slint_t high_rank, front_xq_aX_slint_t *dst_size, front_xq_aX_merge2x_f m2, front_xq_aX_elements_t *xs, int size, int rank, MPI_Comm comm);
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_mergek_equal)(front_xq_aX_elements_t *s, front_xq_aX_sortnet_f sn, front_xq_aX_sortnet_data_t snd, front_xq_aX_merge2x_f m2x, front_xq_aX_elements_t *xs, int size, int rank, MPI_Comm comm);
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_mergek_sorted)(front_xq_aX_elements_t *s, front_xq_aX_merge2x_f m2x, front_xq_aX_elements_t *xs, int size, int rank, MPI_Comm comm);
+front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_mergek_sorted2)(front_xq_aX_elements_t *s, front_xq_aX_sortnet_f sn, front_xq_aX_sortnet_data_t snd, front_xq_aX_merge2x_f m2x, front_xq_aX_elements_t *xs, int size, int rank, MPI_Comm comm);
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_mergek)(front_xq_aX_elements_t *s, front_xq_aX_sortnet_f sn, front_xq_aX_sortnet_data_t snd, front_xq_aX_merge2x_f m2x, front_xq_aX_elements_t *xs, int size, int rank, MPI_Comm comm);
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_mergek_equal2)(front_xq_aX_elements_t *s, front_xq_aX_sortnet_f sn, front_xq_aX_sortnet_data_t snd, front_xq_aX_merge2x_f m2x, front_xq_aX_elements_t *xs, int *sizes, int *ranks, MPI_Comm *comms);
 front_xq_aX_slint_t SL_PROTO(front_xq_aX_mpi_partition_exact_generic)(front_xq_aX_elements_t *s, front_xq_aX_partcond_t *pcond, front_xq_aX_binning_t *bm, int *scounts, int *rcounts, int size, int rank, MPI_Comm comm);

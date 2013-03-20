@@ -32,6 +32,7 @@
 
 
 #define HAVE_ZMPI_ALLTOALL_2STEP
+#define HAVE_ZMPI_ALLTOALLV_PROCLISTS
 
 
 #endif /* __ZMPI_TOOLS_CONF_H__ */

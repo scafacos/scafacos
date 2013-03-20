@@ -35,7 +35,7 @@ libsl_extra_a_CPPFLAGS = \
   -DSL_EXTRA_PREFIX=fcs_gridsort_ -DZMPI_PREFIX=fcs_gridsort_ -DHAVE_Z_PACK_H -I$(srcdir_sl_extra)/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir_sl_extra)/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir_sl_extra)/zmpi_tools
 
 libsl_mpiwrap_a_CPPFLAGS = \
-  -DSL_USE_MPI -I$(srcdir_sl)/include -I$(top_srcdir)/lib -DZMPI_PREFIX=fcs_gridsort_ -DHAVE_ZMPI_TOOLS_H -DHAVE_ZMPI_ATAIP_H -DHAVE_ZMPI_ATASP_H -I$(srcdir_sl_extra)/include
+  -DSL_USE_MPI -I$(srcdir_sl)/include -I$(top_srcdir)/lib -DZMPI_PREFIX=fcs_gridsort_ -DHAVE_ZMPI_LOCAL_H -DHAVE_ZMPI_TOOLS_H -DHAVE_ZMPI_ATAIP_H -DHAVE_ZMPI_ATASP_H -I$(srcdir_sl_extra)/include
 
 libfcs_gridsort_a_SOURCES =
 
@@ -97,7 +97,8 @@ sl_SOURCE = \
   $(srcdir_sl_extra)/include/zmpi_ataip_rename.h \
   $(srcdir_sl_extra)/include/zmpi_atasp.h \
   $(srcdir_sl_extra)/include/zmpi_atasp_rename.h \
-  $(srcdir_sl_extra)/include/zmpi_tools_conf.h \
+  $(srcdir_sl_extra)/include/zmpi_local.h \
+  $(srcdir_sl_extra)/include/zmpi_local_rename.h \
   $(srcdir_sl_extra)/include/zmpi_tools.h \
   $(srcdir_sl_extra)/include/zmpi_tools_rename.h
 

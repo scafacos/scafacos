@@ -745,6 +745,10 @@ enum rti_tid
   rti_tid_mpi_mergek_sorted_while,
   rti_tid_mpi_mergek_sorted_while_check,
   rti_tid_mpi_mergek_sorted_while_oddeven,
+  rti_tid_mpi_mergek_sorted2,
+  rti_tid_mpi_mergek_sorted2_while,
+  rti_tid_mpi_mergek_sorted2_while_check,
+  rti_tid_mpi_mergek_sorted2_while_oddeven,
   rti_tid_mpi_mergek,
   rti_tid_mpi_mergek_equalike,
   rti_tid_mpi_mergek_while,
@@ -3171,6 +3175,7 @@ near__p_slint_t SL_PROTO(near__p_mpi_elements_alltoallv_ip_double)(near__p_eleme
 near__p_slint_t SL_PROTO(near__p_mpi_elements_alltoallv_ip_mpi)(near__p_elements_t *s, near__p_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
 near__p_slint_t SL_PROTO(near__p_mpi_elements_alltoallv_ip_dash)(near__p_elements_t *s, near__p_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
 near__p_slint_t SL_PROTO(near__p_mpi_elements_alltoallv_ip)(near__p_elements_t *s, near__p_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
+near__p_slint_t SL_PROTO(near__p_mpi_elements_alltoallv_proclists_db)(near__p_elements_t *sbuf, int *scounts, int *sdispls, int nsendprocs, int *sendprocs, near__p_elements_t *rbuf, int *rcounts, int *rdispls, int nrecvprocs, int *recvprocs, int size, int rank, MPI_Comm comm);
 near__p_slint_t SL_PROTO(near__p_mpi_elements_packed_datatype_create)(MPI_Datatype *pdt, near__p_slint_t structured);
 near__p_slint_t SL_PROTO(near__p_mpi_elements_packed_datatype_destroy)(MPI_Datatype *pdt);
 near__p_slint_t SL_PROTO(near__p_mpi_find_exact_equal)(near__p_elements_t *s, near__p_slint_t other_rank, near__p_slint_t high_rank, near__p_slint_t *ex_start, near__p_slint_t *ex_size, int size, int rank, MPI_Comm comm);
@@ -3178,6 +3183,7 @@ near__p_slint_t SL_PROTO(near__p_mpi_find_exact)(near__p_elements_t *s, near__p_
 near__p_slint_t SL_PROTO(near__p_mpi_merge2)(near__p_elements_t *s, near__p_slint_t other_rank, near__p_slint_t high_rank, near__p_slint_t *dst_size, near__p_merge2x_f m2, near__p_elements_t *xs, int size, int rank, MPI_Comm comm);
 near__p_slint_t SL_PROTO(near__p_mpi_mergek_equal)(near__p_elements_t *s, near__p_sortnet_f sn, near__p_sortnet_data_t snd, near__p_merge2x_f m2x, near__p_elements_t *xs, int size, int rank, MPI_Comm comm);
 near__p_slint_t SL_PROTO(near__p_mpi_mergek_sorted)(near__p_elements_t *s, near__p_merge2x_f m2x, near__p_elements_t *xs, int size, int rank, MPI_Comm comm);
+near__p_slint_t SL_PROTO(near__p_mpi_mergek_sorted2)(near__p_elements_t *s, near__p_sortnet_f sn, near__p_sortnet_data_t snd, near__p_merge2x_f m2x, near__p_elements_t *xs, int size, int rank, MPI_Comm comm);
 near__p_slint_t SL_PROTO(near__p_mpi_mergek)(near__p_elements_t *s, near__p_sortnet_f sn, near__p_sortnet_data_t snd, near__p_merge2x_f m2x, near__p_elements_t *xs, int size, int rank, MPI_Comm comm);
 near__p_slint_t SL_PROTO(near__p_mpi_mergek_equal2)(near__p_elements_t *s, near__p_sortnet_f sn, near__p_sortnet_data_t snd, near__p_merge2x_f m2x, near__p_elements_t *xs, int *sizes, int *ranks, MPI_Comm *comms);
 near__p_slint_t SL_PROTO(near__p_mpi_partition_exact_generic)(near__p_elements_t *s, near__p_partcond_t *pcond, near__p_binning_t *bm, int *scounts, int *rcounts, int size, int rank, MPI_Comm comm);

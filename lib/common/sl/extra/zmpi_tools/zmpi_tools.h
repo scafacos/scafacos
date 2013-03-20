@@ -50,5 +50,9 @@ int ZMPI_Alltoallv_sendrecv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Da
 int ZMPI_Alltoallw_sendrecv(void* sendbuf, int sendcounts[], int sdispls[], MPI_Datatype sendtypes[], void *recvbuf, int recvcounts[], int rdispls[], MPI_Datatype recvtypes[], MPI_Comm comm);
 #endif
 
+#ifdef HAVE_ZMPI_ALLTOALLV_PROCLISTS
+int ZMPI_Alltoallv_proclists(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void* recvbuf, int *recvcounts, int *rdispls, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm);
+#endif
+
 
 #endif /* __ZMPI_TOOLS_H__ */

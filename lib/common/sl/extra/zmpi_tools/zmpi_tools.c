@@ -245,3 +245,64 @@ int ZMPI_Alltoall_2step_int(void *sendbuf, int sendcount, MPI_Datatype sendtype,
 #undef TSTOP
 #undef int_copy_at
 #undef WITH_TIMING
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <mpi.h>
+
+#include "z_pack.h"
+
+#include "zmpi_tools.h"
+
+
+int ZMPI_Alltoallv_proclists(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void* recvbuf, int *recvcounts, int *rdispls, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoallv_proclists */
+{
+  int i, j;
+
+  const int tag = 0;
+
+  int nreqs;
+  MPI_Request *reqs;
+  MPI_Status *stats;
+
+  MPI_Aint sendtype_lb, sendtype_extent, recvtype_lb, recvtype_extent;
+
+
+  reqs = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Request));
+  stats = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Status));
+
+  MPI_Type_get_extent(sendtype, &sendtype_lb, &sendtype_extent);
+  MPI_Type_get_extent(recvtype, &recvtype_lb, &recvtype_extent);
+
+  nreqs = 0;
+
+  for (i = 0; i < nrecvprocs; ++i)
+  {
+    j = recvprocs[i];
+    if (recvcounts[j] > 0)
+    {
+      MPI_Irecv(((char *) recvbuf) + (rdispls[j] * recvtype_extent), recvcounts[j], recvtype, j, tag, comm, &reqs[nreqs]);
+      ++nreqs;
+    }
+  }
+
+  for (i = 0; i < nsendprocs; ++i)
+  {
+    j = sendprocs[i];
+    if (sendcounts[j] > 0)
+    {
+      MPI_Isend(((char *) sendbuf) + (sdispls[j] * sendtype_extent), sendcounts[j], sendtype, j, tag, comm, &reqs[nreqs]);
+      ++nreqs;
+    }
+  }
+
+  MPI_Waitall(nreqs, reqs, stats);
+
+  z_free(reqs);
+  z_free(stats);
+
+  return MPI_SUCCESS;
+}

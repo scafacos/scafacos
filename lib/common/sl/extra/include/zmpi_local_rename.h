@@ -22,16 +22,34 @@
  */
 
 
-#ifndef __ZMPI_TOOLS_CONF_H__
-#define __ZMPI_TOOLS_CONF_H__
+#ifndef __ZMPI_LOCAL_RENAME_H__
+#define __ZMPI_LOCAL_RENAME_H__
 
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
+#ifndef ZMPI_RENAME
+
+#define ZMPI_RENAME
+
+#define ZMPI_CONCAT(_a_, _b_)           ZMPI_CONCAT_(_a_, _b_)
+#define ZMPI_CONCAT_(_a_, _b_)          _a_##_b_
+
+#define ZMPI_CONCONCAT(_a_, _b_, _c_)   ZMPI_CONCONCAT_(_a_, _b_, _c_)
+#define ZMPI_CONCONCAT_(_a_, _b_, _c_)  _a_##_b_##_c_
+
+#ifdef ZMPI_PREFIX
+# define ZMPI_VAR(_v_)   ZMPI_CONCAT(ZMPI_PREFIX, _v_)
+# define ZMPI_FUNC(_f_)  ZMPI_CONCAT(ZMPI_PREFIX, _f_)
+#else
+# define ZMPI_VAR(_v_)   _v_
+# define ZMPI_FUNC(_f_)  _f_
 #endif
 
+#endif /* ZMPI_RENAME */
 
-#define HAVE_ZMPI_ALLTOALL_2STEP
+
+/* zmpil_simple.c */
+#define zmpil_simple_create  ZMPI_FUNC(zmpil_simple_create)
+#define zmpil_simple_destroy  ZMPI_FUNC(zmpil_simple_destroy)
 
 
-#endif /* __ZMPI_TOOLS_CONF_H__ */
+#endif /* __ZMPI_LOCAL_RENAME_H__ */

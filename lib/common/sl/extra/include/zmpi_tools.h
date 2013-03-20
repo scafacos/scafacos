@@ -26,7 +26,18 @@
 #define __ZMPI_TOOLS_H__
 
 
-#include "zmpi_tools_conf.h"
+
+
+
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+
+#define HAVE_ZMPI_ALLTOALL_2STEP
+#define HAVE_ZMPI_ALLTOALLV_PROCLISTS
+
+
 
 #ifdef ZMPI_PREFIX
 # include "zmpi_tools_rename.h"
@@ -48,6 +59,10 @@ int ZMPI_Alltoallw_isendirecv(void* sendbuf, int sendcounts[], int sdispls[], MP
 int ZMPI_Alltoall_sendrecv(void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm);
 int ZMPI_Alltoallv_sendrecv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sendtype, void* recvbuf, int *recvcounts, int *rdispls, MPI_Datatype recvtype, MPI_Comm comm);
 int ZMPI_Alltoallw_sendrecv(void* sendbuf, int sendcounts[], int sdispls[], MPI_Datatype sendtypes[], void *recvbuf, int recvcounts[], int rdispls[], MPI_Datatype recvtypes[], MPI_Comm comm);
+#endif
+
+#ifdef HAVE_ZMPI_ALLTOALLV_PROCLISTS
+int ZMPI_Alltoallv_proclists(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void* recvbuf, int *recvcounts, int *rdispls, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm);
 #endif
 
 

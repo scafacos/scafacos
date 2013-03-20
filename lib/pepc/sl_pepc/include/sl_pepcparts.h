@@ -849,6 +849,10 @@ enum rti_tid
   rti_tid_mpi_mergek_sorted_while,
   rti_tid_mpi_mergek_sorted_while_check,
   rti_tid_mpi_mergek_sorted_while_oddeven,
+  rti_tid_mpi_mergek_sorted2,
+  rti_tid_mpi_mergek_sorted2_while,
+  rti_tid_mpi_mergek_sorted2_while_check,
+  rti_tid_mpi_mergek_sorted2_while_oddeven,
   rti_tid_mpi_mergek,
   rti_tid_mpi_mergek_equalike,
   rti_tid_mpi_mergek_while,
@@ -3275,6 +3279,7 @@ pepcparts_slint_t SL_PROTO(pepcparts_mpi_elements_alltoallv_ip_double)(pepcparts
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_elements_alltoallv_ip_mpi)(pepcparts_elements_t *s, pepcparts_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_elements_alltoallv_ip_dash)(pepcparts_elements_t *s, pepcparts_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_elements_alltoallv_ip)(pepcparts_elements_t *s, pepcparts_elements_t *sx, int *scounts, int *sdispls, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);
+pepcparts_slint_t SL_PROTO(pepcparts_mpi_elements_alltoallv_proclists_db)(pepcparts_elements_t *sbuf, int *scounts, int *sdispls, int nsendprocs, int *sendprocs, pepcparts_elements_t *rbuf, int *rcounts, int *rdispls, int nrecvprocs, int *recvprocs, int size, int rank, MPI_Comm comm);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_elements_packed_datatype_create)(MPI_Datatype *pdt, pepcparts_slint_t structured);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_elements_packed_datatype_destroy)(MPI_Datatype *pdt);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_find_exact_equal)(pepcparts_elements_t *s, pepcparts_slint_t other_rank, pepcparts_slint_t high_rank, pepcparts_slint_t *ex_start, pepcparts_slint_t *ex_size, int size, int rank, MPI_Comm comm);
@@ -3282,6 +3287,7 @@ pepcparts_slint_t SL_PROTO(pepcparts_mpi_find_exact)(pepcparts_elements_t *s, pe
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_merge2)(pepcparts_elements_t *s, pepcparts_slint_t other_rank, pepcparts_slint_t high_rank, pepcparts_slint_t *dst_size, pepcparts_merge2x_f m2, pepcparts_elements_t *xs, int size, int rank, MPI_Comm comm);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_mergek_equal)(pepcparts_elements_t *s, pepcparts_sortnet_f sn, pepcparts_sortnet_data_t snd, pepcparts_merge2x_f m2x, pepcparts_elements_t *xs, int size, int rank, MPI_Comm comm);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_mergek_sorted)(pepcparts_elements_t *s, pepcparts_merge2x_f m2x, pepcparts_elements_t *xs, int size, int rank, MPI_Comm comm);
+pepcparts_slint_t SL_PROTO(pepcparts_mpi_mergek_sorted2)(pepcparts_elements_t *s, pepcparts_sortnet_f sn, pepcparts_sortnet_data_t snd, pepcparts_merge2x_f m2x, pepcparts_elements_t *xs, int size, int rank, MPI_Comm comm);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_mergek)(pepcparts_elements_t *s, pepcparts_sortnet_f sn, pepcparts_sortnet_data_t snd, pepcparts_merge2x_f m2x, pepcparts_elements_t *xs, int size, int rank, MPI_Comm comm);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_mergek_equal2)(pepcparts_elements_t *s, pepcparts_sortnet_f sn, pepcparts_sortnet_data_t snd, pepcparts_merge2x_f m2x, pepcparts_elements_t *xs, int *sizes, int *ranks, MPI_Comm *comms);
 pepcparts_slint_t SL_PROTO(pepcparts_mpi_partition_exact_generic)(pepcparts_elements_t *s, pepcparts_partcond_t *pcond, pepcparts_binning_t *bm, int *scounts, int *rcounts, int size, int rank, MPI_Comm comm);
