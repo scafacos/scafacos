@@ -153,6 +153,18 @@
 	1	12.718
     </data>
   </timings>
+
+  <timings
+      method="FMM"
+      charges="102900"
+      tolerance="1e-13">
+    <parameters>
+	-c fmm_tolerance_energy,0.00000000000001,fmm_unroll_limit,0ll,fmm_internal_tuning,0ll 
+    </parameters>
+    <data>
+	1	17.826
+    </data>
+  </timings>
 <!-- 
 ********************
 ** P2NFFT
