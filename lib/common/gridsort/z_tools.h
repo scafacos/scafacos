@@ -37,8 +37,11 @@
 #define z_is_zero(_x_)            ((_x_) == 0)
 #define z_is_not_zero(_x_)        ((_x_) != 0)
 
-#define z_fp_is_zero(_x_)         ((_x_) <= 0 && (_x_) >= 0)
-#define z_fp_is_not_zero(_x_)     ((_x_) < 0 || (_x_) > 0)
+#define z_fp_is_equal(_x_, _y_)        ((_x_) <= (_y_) && (_x_) >= (_y_))
+#define z_fp_is_not_equal(_x_, _y_)    ((_x_) < (_y_) || (_x_) > (_y_))
+
+#define z_fp_is_zero(_x_)              z_fp_is_equal(_x_, 0)
+#define z_fp_is_not_zero(_x_)          z_fp_is_not_equal(_x_, 0)
 
 #define z_is_triclinic(_a_, _b_, _c_)  (z_fp_is_not_zero((_a_)[1]) || z_fp_is_not_zero((_a_)[2]) || z_fp_is_not_zero((_b_)[0]) || z_fp_is_not_zero((_b_)[2]) || z_fp_is_not_zero((_c_)[0]) || z_fp_is_not_zero((_c_)[1]))
 
