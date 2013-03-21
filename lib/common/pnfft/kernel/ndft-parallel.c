@@ -29,6 +29,7 @@
 
 #define PNFFT_ENABLE_CALC_INTPOL_NODES 0
 #define USE_EWALD_SPLITTING_FUNCTION_AS_WINDOW 0
+#define TUNE_B_FOR_EWALD_SPLITTING 1
 #define PNFFT_TUNE_LOOP_ADJ_B 0
 
 static void loop_over_particles_adj(
@@ -482,6 +483,10 @@ PNX(plan) PNX(init_internal)(
   if(pnfft_flags & PNFFT_WINDOW_GAUSSIAN){
     for(int t=0; t<d; t++)
       ths->b[t]= ((R)m / PNFFT_PI) * K(2.0)*ths->sigma[t] / (K(2.0)*ths->sigma[t]-K(1.0));
+#if TUNE_B_FOR_EWALD_SPLITTING
+    for(int t=0; t<d; t++)
+      ths->b[t]= 0.65;
+#endif
 #if USE_EWALD_SPLITTING_FUNCTION_AS_WINDOW
     for(int t=0; t<d; t++){
       R C=0.976; /* strange constant from paper by D. Lindbo */
@@ -513,9 +518,18 @@ PNX(plan) PNX(init_internal)(
   } else if(pnfft_flags & PNFFT_WINDOW_BESSEL_I0){
     for(int t=0; t<d; t++)
       ths->b[t] = (R) PNFFT_PI * (K(2.0) - K(1.0)/ths->sigma[t]);
+#if TUNE_B_FOR_EWALD_SPLITTING
+    for(int t=0; t<d; t++)
+      ths->b[t]= 5.46637;
+#endif
   } else { /* default window function is Kaiser-Bessel */
     for(int t=0; t<d; t++)
       ths->b[t] = (R) PNFFT_PI * (K(2.0) - K(1.0)/ths->sigma[t]);
+#if TUNE_B_FOR_EWALD_SPLITTING
+    for(int t=0; t<d; t++)
+      ths->b[t]= 5.35;
+//       ths->b[t]= 5.65;
+#endif
   }
 
   get_size_gcells(m, ths->cutoff, pnfft_flags,
@@ -1566,12 +1580,10 @@ static R window_bessel_i0_1d(
     R x, INT n, R b, int m
     )
 {
-  /* TODO: try to avoid case d<0, since in theory d >= 0 */
   R d = PNFFT_SQR( (R)m ) - PNFFT_SQR( x*n );
-  R r = (d<0) ? pnfft_sqrt(-d) : pnfft_sqrt(d);
 
   /* Compact support in real space */
-  return (d>0) ? 0.5 * PNX(bessel_i0)(b*r) : 0.0;
+  return (d<0) ? 0.0 : 0.5 * PNX(bessel_i0)(b*pnfft_sqrt(d));
 }
 
 static R window_bessel_i0_derivative_1d(
@@ -1579,10 +1591,9 @@ static R window_bessel_i0_derivative_1d(
     )
 {
   R d = PNFFT_SQR( (R)m ) - PNFFT_SQR( x*n );
-  R r = (d<0) ? pnfft_sqrt(-d) : pnfft_sqrt(d);
 
   /* Compact support in real space */
-  return (d>0) ? 0.5 * b * (R)n * (R)n * x * PNX(bessel_i1)(b*r) / r : 0.0;
+  return (d<0) ? 0.0 : 0.5 * b * (R)n * (R)n * x * PNX(bessel_i1)(b*pnfft_sqrt(d)) / pnfft_sqrt(d);
 }
 
 static R kaiser_bessel_1d(

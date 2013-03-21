@@ -131,7 +131,7 @@ subroutine init_f_hat(N, local_N, local_N_start, f_hat)
 
   integer(C_INTPTR_T) :: l1, l2, l3
   integer(C_INTPTR_T), intent(in) :: N(3), local_N(3), local_N_start(3)
-  complex(C_DOUBLE), intent(out) :: f_hat(local_N(1),local_N(2),local_N(3))
+  complex(C_DOUBLE_COMPLEX), intent(out) :: f_hat(local_N(1),local_N(2),local_N(3))
   real :: func
 
 ! use C-like row-major order here  

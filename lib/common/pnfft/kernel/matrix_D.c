@@ -42,58 +42,31 @@
 /* For oversampling factor sigma==1 we have to assure that the argument of the square root is not less than zero.
  * This is theoretically true (since k runs between -n/2 and n/2-1), but can be numerically wrong for k=-n/2. */
 /* The factor 1/n from matrix D cancels with the factor n of the inverse Fourier coefficients. */
-#define PNFFT_INV_PHI_HAT_KAISER(k,n,b,m) \
-  ( ((k) == -(n)/2) ? 0.0 : 1.0 / PNX(bessel_i0)( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) )
+#define PNFFT_INV_PHI_HAT_KAISER(k,N,n,b,m) \
+  ( (PNFFT_ABS(k) >= (n) - (N)/2) ? 0.0 : 1.0 / PNX(bessel_i0)( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) )
 
-#define PNFFT_PHI_HAT_KAISER(k,n,b,m) \
-  ( (PNFFT_ABS(k) >= (n)/2) ? 0.0 : PNX(bessel_i0)( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) )
+#define PNFFT_PHI_HAT_KAISER(k,N,n,b,m) \
+  ( (PNFFT_ABS(k) >= (n) - (N)/2) ? 0.0 : PNX(bessel_i0)( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) )
 
 
-#define PNFFT_INV_PHI_HAT_BESSEL_I0(k,n,b,m) \
-  ( (PNFFT_ABS(k) == (n)/2) ? 1.0/(m) : PNFFT_KAISER_SQRT1(k,n,b) / pnfft_sinh( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) )
+/* #define PNFFT_INV_PHI_HAT_BESSEL_I0(k,N,n,b,m) \
+   ( (PNFFT_ABS(k) == (n) - (N)/2) ? 1.0/(m) : PNFFT_KAISER_SQRT1(k,n,b) / pnfft_sinh( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) ) */
 
-#define PNFFT_PHI_HAT_BESSEL_I0(k,n,b,m) \
-  ( (PNFFT_ABS(k) < (n)/2) \
+#define PNFFT_INV_PHI_HAT_BESSEL_I0(k,N,n,b,m) \
+  ( (PNFFT_ABS(k) < (n) - (N)/2) \
+    ? PNFFT_KAISER_SQRT1(k,n,b) / pnfft_sinh( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) \
+    : (PNFFT_ABS(k) > (n) - (N)/2) \
+    ? PNFFT_KAISER_SQRT2(k,n,b) / pnfft_sin( (m) * PNFFT_KAISER_SQRT2(k,n,b) ) \
+    : 1.0 / (m) \
+  )
+
+#define PNFFT_PHI_HAT_BESSEL_I0(k,N,n,b,m) \
+  ( (PNFFT_ABS(k) < (n) - (N)/2) \
     ? pnfft_sinh( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) / PNFFT_KAISER_SQRT1(k,n,b) \
-    : (PNFFT_ABS(k) > (n)/2) \
+    : (PNFFT_ABS(k) > (n) - (N)/2) \
     ? pnfft_sin( (m) * PNFFT_KAISER_SQRT2(k,n,b) ) / PNFFT_KAISER_SQRT2(k,n,b) \
     : (m) \
   )
-
-
-/* copy from NFFT */
-#ifdef KAISER_BESSELII
-#define PHI(x,d)( \
-    ( ((m/sigma)^2 - (x*N)^2 ) > 0) \
-    ? PI/2.0/sigma* (i0(PI*(2.0*sigma-1)* sqrt((m/sigma)^2 - (x*N)^2))) \
-    : 0.0 \
-    ) 
-/* wo die /n herkommt ??????????????????? */
-#define PHI_HUT(k,d) ( \
-    ( (2.0*sigma-1.0)^2 - (2.0*(k)/N)^2 >0) \
-    ? sinh( PI*m/sigma* sqrt( (2.0*sigma-1.0)^2 - (2.0*(k)/N)^2) ) \
-        /( sqrt( (2.0*sigma-1.0)^2 - (2.0*(k)/N)^2 ) ) \
-    : sin( PI*m/sigma*  sqrt(-(2.0*sigma-1.0)^2 + (2.0*(k)/N)^2) ) \
-        /( sqrt(-(2.0*sigma-1.0)^2 + (2.0*(k)/N)^2 ) ) \
-    )
-
-#define PHI(x,d)  (\
-    ( (1.0/sigma)^2 - (x*N/m)^2 ) > 0 \
-    ? N*(2.0*sigma-1.0)/(2.0*m)* i0(PI*m*(2.0*sigma-1)* sqrt( (1.0/sigma)^2 - (x*N/m)^2)) / n \
-    :0.0 \
-    ) 
-// wo die /n herkommt ??????????????????? 
-#define PHI_HUT(k,d) (\
-    (2.0*sigma-1.0)^2 - (2.0*k/N)^2 > 0 \
-    ? sinh( PI*m/sigma* sqrt( (2.0*sigma-1.0)^2 - (2.0*k/N)^2 ) ) \
-        /(PI*m/(2.0*sigma-1.0)* sqrt( (2.0*sigma-1.0)^2 - (2.0*k/N)^2 ) ) \
-    : (2.0*sigma-1.0)^2 - (2.0*k/N)^2 < 0 \
-    ? sin(  PI*m/sigma* sqrt(-(2.0*sigma-1.0)^2 + (2.0*k/N)^2 ) ) \
-        /(PI*m/(2.0*sigma-1.0)* sqrt(-(2.0*sigma-1.0)^2 + (2.0*k/N)^2 ) ) \
-    :1.0 \
-    )
-#endif
-
 
 /* Usage of MAX:
  * For oversampling factor sigma==1 we have to assure that the argument of the square root is not less than zero.
@@ -154,9 +127,9 @@ R PNX(inv_phi_hat)(
   else if(ths->pnfft_flags & PNFFT_WINDOW_SINC_POWER)
     return PNFFT_INV_PHI_HAT_SINC_POWER(k, ths->n[dim], ths->b[dim], ths->m, ths->spline_coeffs);
   else if(ths->pnfft_flags & PNFFT_WINDOW_BESSEL_I0)
-    return PNFFT_INV_PHI_HAT_BESSEL_I0(k, ths->n[dim], ths->b[dim], ths->m);
+    return PNFFT_INV_PHI_HAT_BESSEL_I0(k, ths->N[dim], ths->n[dim], ths->b[dim], ths->m);
   else
-    return PNFFT_INV_PHI_HAT_KAISER(k, ths->n[dim], ths->b[dim], ths->m);
+    return PNFFT_INV_PHI_HAT_KAISER(k, ths->N[dim], ths->n[dim], ths->b[dim], ths->m);
 }
 
 R PNX(phi_hat)(
@@ -170,9 +143,9 @@ R PNX(phi_hat)(
   else if(ths->pnfft_flags & PNFFT_WINDOW_SINC_POWER)
     return PNFFT_PHI_HAT_SINC_POWER(k, ths->n[dim], ths->b[dim], ths->m, ths->spline_coeffs);
   else if(ths->pnfft_flags & PNFFT_WINDOW_BESSEL_I0)
-    return PNFFT_PHI_HAT_BESSEL_I0(k, ths->n[dim], ths->b[dim], ths->m);
+    return PNFFT_PHI_HAT_BESSEL_I0(k, ths->N[dim], ths->n[dim], ths->b[dim], ths->m);
   else
-    return PNFFT_PHI_HAT_KAISER(k, ths->n[dim], ths->b[dim], ths->m);
+    return PNFFT_PHI_HAT_KAISER(k, ths->N[dim], ths->n[dim], ths->b[dim], ths->m);
 }
 
 void PNX(trafo_D)(
