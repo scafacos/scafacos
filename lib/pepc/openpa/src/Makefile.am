@@ -3,9 +3,12 @@
 #  (C) 2008 by Argonne National Laboratory.
 #      See COPYRIGHT in top-level directory.
 
-lib_LTLIBRARIES = libopa.la
-libopa_la_SOURCES = opa_primitives.c opa_queue.c
-libopa_la_LDFLAGS = ${libopa_so_versionflags}
+#lib_LTLIBRARIES = libopa.la
+#libopa_la_SOURCES = opa_primitives.c opa_queue.c
+#libopa_la_LDFLAGS = ${libopa_so_versionflags}
+
+noinst_LIBRARIES = libopa.a
+libopa_a_SOURCES = opa_primitives.c opa_queue.c
 
 include_HEADERS = opa_primitives.h opa_queue.h opa_util.h
 nodist_include_HEADERS = opa_config.h

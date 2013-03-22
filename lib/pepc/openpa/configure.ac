@@ -9,21 +9,17 @@ AC_PREREQ(2.62)
 AC_INIT([OpenPA], [1.0.3], [https://trac.mcs.anl.gov/projects/openpa/newticket])
 dnl Set the directory that contains support scripts such as install-sh and
 dnl config.guess.  It also contains autoconf macro files.
-AC_CONFIG_AUX_DIR(confdb)
-AC_CONFIG_MACRO_DIR([confdb])
+AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign color-tests 1.11])  # changed from 1.12.3 to 1.11
 
-# automake 1.12 seems to require this, but automake 1.11 doesn't recognize it
-# must come before LT_INIT
-m4_ifdef([AM_PROG_AR],[AM_PROG_AR])
-
-LT_PREREQ([2.2.6])
+#LT_PREREQ([2.2.6])
 
 # Bug in libtool adds -O2 and -g by default
-save_cflags=$CFLAGS
-LT_INIT(disable-shared)
-CFLAGS=$save_cflags
+#save_cflags=$CFLAGS
+#LT_INIT(disable-shared)
+#CFLAGS=$save_cflags
 
 if test -s "$srcdir/VERSION" ; then
    . $srcdir/VERSION
@@ -57,14 +53,21 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 ########################################################################
 
-# check if we're cross compiling
+## check if we're cross compiling
 if test "$build_alias" = "$host_alias" ; then
   CROSS_COMPILING="no"
 else
   CROSS_COMPILING="yes"
 fi
 
-AC_PROG_CC
+AX_PROG_CC_MPI(,,AC_MSG_FAILURE([This version of the OpenPA library requires an MPI C compiler.]))
+#AC_PROG_CC
+
+# automake 1.12 seems to require this, but automake 1.11 doesn't recognize it
+# must come before LT_INIT
+m4_ifdef([AM_PROG_AR],[AM_PROG_AR])
+
+AC_PROG_RANLIB
 
 AC_HEADER_ASSERT
 # do we need intrin.h in here since it's a windows file?
@@ -425,6 +428,6 @@ export libopa_so_versionflags
 AC_SUBST(libopa_so_versionflags)
 
 
-AC_CONFIG_FILES([Makefile src/Makefile test/Makefile openpa.pc])
+AC_CONFIG_FILES([Makefile src/Makefile openpa.pc]) #test/Makefile
 AC_OUTPUT
 

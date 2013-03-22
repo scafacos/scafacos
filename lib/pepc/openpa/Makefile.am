@@ -3,7 +3,7 @@
 #  (C) 2008 by Argonne National Laboratory.
 #      See COPYRIGHT in top-level directory.
 
-ACLOCAL_AMFLAGS = -I confdb
+ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = src #test
 noinst_DATA = README
