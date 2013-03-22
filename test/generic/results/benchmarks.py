@@ -6,14 +6,14 @@ import re
 import matplotlib.pylab as plt
 
 method2format = {
-    'fmm': { 'linestyle': '--', 'color': 'b', 'marker': 'v', 'linewidth': 2},
-    'memd': { 'linestyle': '-', 'color': 'g', 'marker': '>', 'linewidth': 2},
-    'p2nfft': { 'linestyle': '--', 'color': 'r', 'marker': '^', 'linewidth': 2},
-    'p3m': { 'linestyle': '-', 'color': 'c', 'marker': 'o', 'linewidth': 2},
-    'pp3mg': { 'linestyle': '--', 'color': 'k', 'marker': '<', 'linewidth': 2},
-    'vmg': { 'linestyle': '-', 'color': 'y', 'marker': 'D', 'linewidth': 2},
-    'ewald': { 'linestyle': '-', 'color': 'b', 'marker': 'x', 'linewidth': 2},
-    'pepc': { 'linestyle': '-', 'color': 'r', 'marker': 'x', 'linewidth': 2},
+    'FMM': { 'linestyle': '--', 'color': 'b', 'marker': 'v', 'linewidth': 2},
+    'MEMD': { 'linestyle': '-', 'color': 'g', 'marker': '>', 'linewidth': 2},
+    'P2NFFT': { 'linestyle': '--', 'color': 'r', 'marker': '^', 'linewidth': 2},
+    'P3M': { 'linestyle': '-', 'color': 'c', 'marker': 'o', 'linewidth': 2},
+    'PP3MG': { 'linestyle': '--', 'color': 'k', 'marker': '<', 'linewidth': 2},
+    'VMG': { 'linestyle': '-', 'color': 'y', 'marker': 'D', 'linewidth': 2},
+    'EWALD': { 'linestyle': '-', 'color': 'b', 'marker': 'x', 'linewidth': 2},
+    'PEPC': { 'linestyle': '-', 'color': 'r', 'marker': 'x', 'linewidth': 2},
     }
 
 def fmt(method):
@@ -61,7 +61,7 @@ def read(filename):
         timing_counter += 1
         # get method, charges and tolerance
         try:
-            methodname = timings_el.attributes['method'].value.lower()
+            methodname = timings_el.attributes['method'].value.upper()
             charges = int(timings_el.attributes['charges'].value)
             tolerance = float(timings_el.attributes['tolerance'].value)
         except KeyError as error:
