@@ -59,7 +59,7 @@ AC_DEFUN([AX_FCS_PACKAGE_PROCESS],[
         IFS="${_ifs}"
 #        echo "ax_l: ${ax_l}"
         ax_var="${ax_l%%=*}"
-        ax_val="${ax_l##*=}"
+        ax_val="${ax_l#*=}"
 #        echo "-> $ax_var / $ax_val"
         test "x${ax_var}" = x -o "x${ax_val}" = x && continue
         if test "x${ax_var}" = xSUB_PACKAGES ; then
