@@ -14,12 +14,12 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign color-tests 1.11])  # changed from 1.12.3 to 1.11
 
-#LT_PREREQ([2.2.6])
+LT_PREREQ([2.2.6])
 
 # Bug in libtool adds -O2 and -g by default
-#save_cflags=$CFLAGS
-#LT_INIT(disable-shared)
-#CFLAGS=$save_cflags
+save_cflags=$CFLAGS
+LT_INIT(disable-shared)
+CFLAGS=$save_cflags
 
 if test -s "$srcdir/VERSION" ; then
    . $srcdir/VERSION
@@ -53,7 +53,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 ########################################################################
 
-## check if we're cross compiling
+# check if we're cross compiling
 if test "$build_alias" = "$host_alias" ; then
   CROSS_COMPILING="no"
 else
@@ -66,8 +66,6 @@ AX_PROG_CC_MPI(,,AC_MSG_FAILURE([This version of the OpenPA library requires an 
 # automake 1.12 seems to require this, but automake 1.11 doesn't recognize it
 # must come before LT_INIT
 m4_ifdef([AM_PROG_AR],[AM_PROG_AR])
-
-AC_PROG_RANLIB
 
 AC_HEADER_ASSERT
 # do we need intrin.h in here since it's a windows file?

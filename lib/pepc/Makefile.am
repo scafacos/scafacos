@@ -13,7 +13,7 @@ DISTCLEANFILES = fcs-package.info
 # Subdirectories to descend into.
 SUBDIRS = src sl_pepc openpa
 
-sublibs = src/liblpepc.a sl_pepc/libsl_pepc.a openpa/src/libopa.a
+sublibs = src/liblpepc.a sl_pepc/libsl_pepc.a openpa/src/.libs/libopa.a
 
 if ENABLE_LIBRARY_INSTALL
 lib_LIBRARIES = libfcs_pepc.a
