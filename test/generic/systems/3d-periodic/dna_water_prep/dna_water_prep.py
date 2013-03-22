@@ -6,12 +6,20 @@
 import gzip, sys, re
 import xml.dom.minidom
 
+# input files
+pdbfilename = 'protonated_imotif_hairpin.pdb'
+itpfilename = '1ART6_A.itp'
+
+# output files
+vtffilename = 'dna_water.vtf.gz'
+xmlfilename = 'dna_water_prep.xml.gz'
+
 template = """<?xml version="1.0" ?>
 <!DOCTYPE scafacos_test  SYSTEM 'scafacos_test.dtd'>
-<scafacos_test name="Name of the testcase"
-               description="Short description of the testcase." 
-               reference_method="What method was used to generate the reference data."
-               error_field="1.0" error_potential="1.0" 
+<scafacos_test name="dna_water"
+               description="A short DNA fragment (i-motif hairpin) in water" 
+               reference_method="ewald"
+               error_field="1.0e-7" error_potential="1.0e-7" 
                ></scafacos_test>"""
 doc = xml.dom.minidom.parseString(template)
 
@@ -27,10 +35,9 @@ config_node.attributes['box_c'] = '0.0 0.0 54.104'
 config_node.attributes['epsilon'] = 'metallic'
 config_node.attributes['periodicity'] = '1 1 1'
 
-# READ PDB FILE    
-filename = 'protonated_imotif_hairpin.pdb'
-print('Reading %s...' % filename)
-pdbfile = open(filename, 'r')
+# READ PDB FILE
+print('Reading %s...' % pdbfilename)
+pdbfile = open(pdbfilename, 'r')
 atoms = dict()
 linecount = 0
 atomcount = 0
@@ -65,14 +72,13 @@ for line in pdbfile.readlines():
             }
 
 pdbfile.close()
-print("Read {} atoms from {}.".format(atomcount, filename))
+print("Read {} atoms from {}.".format(atomcount, pdbfilename))
 
 # READ ITP FILE
-filename = '1ART6_A.itp'
 qs = []
 bonds = []
-print("Reading {}...".format(filename))
-itpfile = open(filename, 'r')
+print("Reading {}...".format(itpfilename))
+itpfile = open(itpfilename, 'r')
 linecount = 0
 while True:
   line = itpfile.readline()
@@ -115,15 +121,15 @@ for no in range(687, 703):
 
 for no in range(703, 15544, 3):
     atoms[no]['q'] = -0.834
-    atoms[no+1]['q'] = -0.417
-    atoms[no+2]['q'] = -0.417
+    atoms[no+1]['q'] = 0.417
+    atoms[no+2]['q'] = 0.417
     bonds.append((no, no+1))
     bonds.append((no, no+2))
 
-filename = 'dna_water_15543.xml.gz'
-print "Writing to {}...".format(filename)
-xmlfile = gzip.open(filename, 'w')
+print "Writing to {}...".format(xmlfilename)
+xmlfile = gzip.open(xmlfilename, 'w')
 
+sum_q = 0.0
 for no in range(1, 15544):
     particle = doc.createElement('particle')
     config_node.appendChild(particle)
@@ -131,13 +137,15 @@ for no in range(1, 15544):
                                                         atoms[no]['y'], 
                                                         atoms[no]['z'])
     particle.attributes['q'] = str(atoms[no]['q'])
+    sum_q += atoms[no]['q']
+
+print "sum =", sum_q
 
 xmlfile.write(doc.toprettyxml())
 xmlfile.close()
 
-filename = 'dna_water_15543.vtf.gz'
-print "Writing to {}...".format(filename)
-vtffile = gzip.open(filename, 'w')
+print "Writing to {}...".format(vtffilename)
+vtffile = gzip.open(vtffilename, 'w')
 vtffile.write('pbc 54.104 54.104 54.104\n')
 for no in range(1, 15544):
     atom = atoms[no]
