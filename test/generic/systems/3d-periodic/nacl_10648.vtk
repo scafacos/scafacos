@@ -1,8 +1,0 @@
-# vtk DataFile Version 3.0
-Original file: nacl_10648
-ASCII
-DATASET UNSTRUCTURED_GRID
-POINTS 0 float
-POINT_DATA 0
-SCALARS charge float 1
-LOOKUP_TABLE default
