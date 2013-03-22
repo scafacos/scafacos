@@ -130,4 +130,5 @@ libsl_extra_a_SOURCES = \
 
 libsl_mpiwrap_a_SOURCES = \
   $(srcdir_sl)/resort.c \
-  $(srcdir_sl)/resort.h
+  $(srcdir_sl)/resort.h \
+  $(srcdir_sl)/z_tools.h
