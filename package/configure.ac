@@ -83,6 +83,25 @@ if test "x$enable_single_lib" = xyes ; then
   SCAFACOS_MK_DEPS="${SCAFACOS_MK_DEPS} \$(top_builddir)/package/libfcs.a"
 fi
 
+if test "x${ax_fcs_package_COMP_USE}" != x ; then
+  AC_LANG_PUSH([C])
+  AX_OPENMP
+  AC_LANG_POP([C])
+  CFLAGS="$CFLAGS $OPENMP_CFLAGS"
+fi
+if test "x${ax_fcs_package_FCOMP_USE}" != x ; then
+  AC_LANG_PUSH([Fortran])
+  AX_OPENMP
+  AC_LANG_POP([Fortran])
+  FCFLAGS="$FCFLAGS $OPENMP_FCFLAGS"
+fi
+if test "x${ax_fcs_package_CXXOMP_USE}" != x ; then
+  AC_LANG_PUSH([C++])
+  AX_OPENMP
+  AC_LANG_POP([C++])
+  CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+fi
+
 AC_FOREACH([mod],[fcs ]all_solver_methods all_common_methods,[
 if test "x${ax_fcs_package_[]mod[]_USE}" != x ; then
   if test "x$enable_single_lib" != xyes ; then
