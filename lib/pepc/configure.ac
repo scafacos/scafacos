@@ -132,7 +132,6 @@ m4_esyscmd([rm -f src/module.deps])
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 sl_pepc/Makefile])
-#		 openpa2/Makefile])
 
 # Create config headers: config.h comes from autoheader-generated config.h.in,
 # fconfig.h.in is written manually and only contains stuff needed for Fortran.
