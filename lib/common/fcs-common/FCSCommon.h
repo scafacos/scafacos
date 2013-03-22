@@ -40,6 +40,8 @@ extern "C" {
 # error FCS float data type is unknown
 #endif
 
+#include <math.h>
+
 #define fcs_sqrt(_x_)      FCS_MATH(sqrt)(_x_)
 #define fcs_fabs(_x_)      FCS_MATH(fabs)(_x_)
 #define fcs_floor(_x_)     FCS_MATH(floor)(_x_)
