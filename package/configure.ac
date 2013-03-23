@@ -131,14 +131,19 @@ fi
 # It's ugly, but probably safer: add full Fortran or C++ libraries if required.
 use_fcs_full_ldflags=yes
 
+# Unset the cache variables for Fortran and C++ libraries (before the following checks),
+# because the compiler flags here may be different from the top-level configure (e.g., OpenMP flags!).
+
 # Determine which Fortran libraries are required by a non-Fortran linker.
 if test "x${ax_fcs_package_FCLIBS_USE}" != x ; then
+  AS_UNSET([ac_cv_fc_libs])
   if test "x${use_fcs_full_ldflags}" = xyes ; then
     AC_FC_LIBRARY_LDFLAGS
     m4_ifdef([ACX_FC_LIBRARY_LDFLAGS_FIX],[ACX_FC_LIBRARY_LDFLAGS_FIX])
     SCAFACOS_PC_LIBS="${SCAFACOS_PC_LIBS} ${FCLIBS}"
     SCAFACOS_MK_LDADD="${SCAFACOS_MK_LDADD} ${FCLIBS}"
   else
+    AS_UNSET([ax_cv_diff_library_ldflags_fc])
     AX_DIFF_LIBRARY_LDFLAGS_FC
     SCAFACOS_PC_LIBS="${SCAFACOS_PC_LIBS} ${FCLIBS_DIFF}"
     SCAFACOS_MK_LDADD="${SCAFACOS_MK_LDADD} ${FCLIBS_DIFF}"
@@ -147,11 +152,13 @@ fi
 
 # Determine which C++ libraries are required by a non-C++ linker.
 if test "x${ax_fcs_package_CXXLIBS_USE}" != x ; then
+  AS_UNSET([ax_cv_cxxlibs])
   if test "x${use_fcs_full_ldflags}" = xyes ; then
     AX_CXX_LIBRARY_LDFLAGS
     SCAFACOS_PC_LIBS="${SCAFACOS_PC_LIBS} ${CXXLIBS}"
     SCAFACOS_MK_LDADD="${SCAFACOS_MK_LDADD} ${CXXLIBS}"
   else
+    AS_UNSET([ax_cv_diff_library_ldflags_cxx])
     AX_DIFF_LIBRARY_LDFLAGS_CXX
     SCAFACOS_PC_LIBS="${SCAFACOS_PC_LIBS} ${CXXLIBS_DIFF}"
     SCAFACOS_MK_LDADD="${SCAFACOS_MK_LDADD} ${CXXLIBS_DIFF}"
