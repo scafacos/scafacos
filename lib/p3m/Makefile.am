@@ -10,7 +10,7 @@ libfcs_p3m_a_SOURCES = \
 	communication.h communication.c \
 	caf.c caf.h \
 	fft.c fft.h \
-	influence_function.c influence_function.c \
+	influence_function.c influence_function.h \
 	init.c init.h \
 	parameters.c parameters.h \
 	prepare.c prepare.h \

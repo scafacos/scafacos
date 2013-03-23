@@ -129,3 +129,6 @@ CLEANFILES = \
 	run.out \
 	*.file \
 	C_test.xyz
+
+clean-local:
+	-rm -rf diag
