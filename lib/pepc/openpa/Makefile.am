@@ -28,9 +28,9 @@ prettycheck:
 all-executable:
 
 # pkgconfig files
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = openpa.pc
-$(pkgconfig_DATA): config.status
+#pkgconfigdir = $(libdir)/pkgconfig
+#pkgconfig_DATA = openpa.pc
+#$(pkgconfig_DATA): config.status
 
 # make MPICH2 happy
 coverage:
