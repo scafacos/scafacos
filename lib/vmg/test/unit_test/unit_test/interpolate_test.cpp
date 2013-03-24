@@ -95,11 +95,11 @@ BOOST_AUTO_TEST_CASE(InterpolateTest)
         p.Pos() = pos_begin;
 
         ip.Evaluate(p);
-        BOOST_CHECK_SMALL(p.Pot() - grid->GetVal(i), 1.0e-12);
+        BOOST_CHECK_SMALL(p.Pot() - grid->GetVal(i), vmg_float(1.0e-12));
 
         p.Pos() += 0.5 * grid->Extent().MeshWidth();
         ip.Evaluate(p);
-        BOOST_CHECK_SMALL(p.Pot() - f(p.Pos()), 1.0e-7);
+        BOOST_CHECK_SMALL(p.Pot() - f(p.Pos()), vmg_float(1.0e-7));
 
       }
 

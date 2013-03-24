@@ -118,7 +118,7 @@ BOOST_FIXTURE_TEST_CASE(LibraryForceSinusTest, LibraryForceSinusFixture)
 	ref *= -1.0 * sine_factor;
 
 	for (int i=0; i<3; ++i)
-	  BOOST_CHECK_SMALL(p.Field()[i] - ref[i], 0.01);
+	  BOOST_CHECK_SMALL(p.Field()[i] - ref[i], vmg_float(0.01));
 
       }
 }
