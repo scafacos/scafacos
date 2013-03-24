@@ -7,6 +7,11 @@
 AC_PREREQ(2.62)
 
 AC_INIT([OpenPA], [1.0.3], [https://trac.mcs.anl.gov/projects/openpa/newticket])
+
+AC_MSG_NOTICE([****************************************************************])
+AC_MSG_NOTICE([*      Configuring OpenPA (part of solver PEPC)                 ])
+AC_MSG_NOTICE([****************************************************************])
+
 dnl Set the directory that contains support scripts such as install-sh and
 dnl config.guess.  It also contains autoconf macro files.
 AC_CONFIG_AUX_DIR([build-aux])
