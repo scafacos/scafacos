@@ -987,12 +987,11 @@ Testcase::Testcase()
 
 void
 Testcase::read_file(const char* filename, fcs_int *periodic_duplications, fcs_int decomposition) {
-  static const fcs_int READSIZE = 8192;
+  static const size_t READSIZE = 8192;
   ZLIB_IFELSE(gzFile, FILE*) inputfile;
-  fcs_int inputsize;
+  size_t inputsize, dataread;
   char* inputdata;
   char* datap;
-  int dataread;
   xml_document<> doc;
   xml_attribute<> *attr;
   string aname;
