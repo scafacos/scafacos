@@ -547,9 +547,9 @@ int sl_MPI_Alltoall_int(void *sendbuf, int sendcount, void *recvbuf, int recvcou
 
 
 /* sl_ifdef SL_USE_MPI sl_context CONTEXT_BEGIN me */
-const void *default_me_sendrecv_replace_mem = NULL;                   /* sl_global sl_context sl_var default_me_sendrecv_replace_mem */
-const slint_t default_me_sendrecv_replace_memsize = 0;                /* sl_global sl_context sl_var default_me_sendrecv_replace_memsize */
-const slint_t default_me_sendrecv_replace_mpi_maxsize = INT_MAX / 2;  /* sl_global sl_context sl_var default_me_sendrecv_replace_mpi_maxsize */
+const void *default_me_sendrecv_replace_mem = NULL;          /* sl_global sl_context sl_var default_me_sendrecv_replace_mem */
+const slint_t default_me_sendrecv_replace_memsize = 0;       /* sl_global sl_context sl_var default_me_sendrecv_replace_memsize */
+const slint_t default_me_sendrecv_replace_mpi_maxsize = -1;  /* sl_global sl_context sl_var default_me_sendrecv_replace_mpi_maxsize */
 /* sl_endif sl_context CONTEXT_END me */
 
 #ifndef ME_TRACE_IF
@@ -872,8 +872,6 @@ slint_t mpi_elements_sendrecv_replace(elements_t *s, int count, int dest, int se
 
   Z_TRACE_IF(ME_TRACE_IF, "me_sendrecv_replace_memsize: %" slint_fmt " vs. min_byte: %" slint_fmt "", SL_DEFCON(me.sendrecv_replace_memsize), min_byte);
 
-#if 1
-  
   if (SL_DEFCON(me.sendrecv_replace_mem) == NULL || SL_DEFCON(me.sendrecv_replace_memsize) < min_byte)
   {
     replace = 1;
@@ -885,15 +883,16 @@ slint_t mpi_elements_sendrecv_replace(elements_t *s, int count, int dest, int se
     rmaxsize = SL_DEFCON(me.sendrecv_replace_memsize);
   }
 
-  /* make sure total MPI message sizes fit into "int" ("workaround" (at least) necessary for JUROPA) */
-  rmaxsize = z_min(rmaxsize, INT_MAX / 2);
-
   MPI_Sendrecv(&rmaxsize, 1, int_mpi_datatype, dest, sendtag, &smaxsize, 1, int_mpi_datatype, source, recvtag, comm, &status);
 
   Z_ASSERT(smaxsize != 0 && rmaxsize != 0);
 
+  /* we make sure that total MPI message sizes fit into "int" (halfed), this "workaround" was (at least) necessary for JUROPA */
+
 #define xelem_call \
-  maxc = z_min(smaxsize, rmaxsize) / xelem_byte; \
+  maxc = INT_MAX / 2 / xelem_byte; \
+  if (smaxsize > 0) maxc = z_min(maxc, smaxsize / xelem_byte); \
+  if (rmaxsize > 0) maxc = z_min(maxc, rmaxsize / xelem_byte); \
   Z_TRACE_IF(ME_TRACE_IF, xelem_name_str ": count: %d, maxc: %d", count, maxc); \
 \
   offset = 0; \
@@ -917,39 +916,6 @@ slint_t mpi_elements_sendrecv_replace(elements_t *s, int count, int dest, int se
     offset += current; \
   }
 #include "sl_xelem_call.h"
-
-#else
-
-  if (SL_DEFCON(me.sendrecv_replace_mem) == NULL || SL_DEFCON(me.sendrecv_replace_memsize) < min_byte)
-  {
-#define xelem_call \
-    maxc = SL_DEFCON(me.sendrecv_replace_mpi_maxsize) / xelem_byte; \
-    offset = 0; \
-    while (offset < count) \
-    { \
-      current = z_min(maxc, count - offset); \
-      MPI_Sendrecv_replace(xelem_buf_at(s, offset), current, xelem_mpi_datatype, dest, sendtag, source, recvtag, comm, &status); \
-      offset += current; \
-    }
-#include "sl_xelem_call.h"
-    return 0;
-  }
-
-#define xelem_call \
-  maxc = (INT_MAX / 2) / xelem_byte; \
-  xs.size = z_min(maxc, SL_DEFCON(me.sendrecv_replace_memsize) / xelem_byte); \
-  xelem_buf(&xs) = SL_DEFCON(me.sendrecv_replace_mem); \
-  offset = 0; \
-  while (offset < count) \
-  { \
-    current = z_min(xs.size, count - offset); \
-    MPI_Sendrecv(xelem_buf_at(s, offset), current, xelem_mpi_datatype, dest, sendtag, xelem_buf(&xs), current, xelem_mpi_datatype, source, recvtag, comm, &status); \
-    xelem_ncopy_at(&xs, 0, s, offset, current); \
-    offset += current; \
-  }
-#include "sl_xelem_call.h"
-
-#endif
 
   return 0;
 }

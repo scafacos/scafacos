@@ -58,7 +58,7 @@ MPI_DATATYPE_NULL
   {
  NULL,
  0,
- INT_MAX / 2,
+ -1,
   },
 #endif
 #ifdef SL_USE_MPI
