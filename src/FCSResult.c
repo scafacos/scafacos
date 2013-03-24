@@ -78,10 +78,8 @@ fcs_int fcsResult_destroy(FCSResult err) {
 }
 
 
-
 fcs_int fcsResult_getReturnCode(FCSResult err) {
-	if(err == NULL)
-		return -10000000;
+	if (err == NULL) return -1;
 	return err->code;
 }
 

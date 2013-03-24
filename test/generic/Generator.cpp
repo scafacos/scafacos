@@ -1459,7 +1459,7 @@ fcs_int FileParticles::get_local_particles(fcs_float *positions, fcs_float *char
     high = (fcs_int) (((fcs_float) params.total_nparticles * (fcs_float) (comm_rank + 1)) / (fcs_float) comm_size);
   }
 
-  return get_local_particles(positions, charges, potentials, field, high - low, comm_size, comm_rank, comm);
+  return get_local_particles(positions, charges, potentials, field, (fcs_int) (high - low), comm_size, comm_rank, comm);
 }
 
 fcs_int FileParticles::get_local_particles(fcs_float *positions, fcs_float *charges, fcs_float *potentials, fcs_float *field, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm)
