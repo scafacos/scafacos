@@ -202,7 +202,7 @@ int VMG_fcs_check()
   const Multigrid& multigrid = *MG::GetRhs();
   const Grid& grid = multigrid(multigrid.MaxLevel());
 
-  int error_code = 0;
+  vmg_int error_code = 0;
 
   if (!grid.Global().LocalSize().IsComponentwiseGreater(near_field_cells))
     error_code = 1;
