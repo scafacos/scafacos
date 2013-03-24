@@ -225,6 +225,8 @@ static void parse_commandline(int argc, char* argv[]) {
 #define STRCMP_FRONT(_s_, _t_) strncmp((_s_), (_t_), z_min(strlen(_s_), strlen(_t_)))
       if (STRCMP_FRONT("all_on_master", optarg) == 0 || STRCMP_FRONT("master", optarg) == 0)
         global_params.decomposition = DECOMPOSE_ALL_ON_MASTER;
+      if (STRCMP_FRONT("almost_all_on_master", optarg) == 0 || STRCMP_FRONT("almost", optarg) == 0)
+        global_params.decomposition = DECOMPOSE_ALMOST_ALL_ON_MASTER;
       else if (STRCMP_FRONT("atomistic", optarg) == 0)
         global_params.decomposition = DECOMPOSE_ATOMISTIC;
       else if (STRCMP_FRONT("random", optarg) == 0)
@@ -232,7 +234,7 @@ static void parse_commandline(int argc, char* argv[]) {
       else if (STRCMP_FRONT("domain", optarg) == 0)
         global_params.decomposition = DECOMPOSE_DOMAIN;
       else if (STRCMP_FRONT("randeq", optarg) == 0)
-        global_params.decomposition = DECOMPOSE_RANDEQ;
+        global_params.decomposition = DECOMPOSE_RANDOM_EQUAL;
       else
         cout << "WARNING: ignoring unknown decomposition mode '" << optarg << "'" << endl;
       break;
@@ -726,7 +728,7 @@ static void run_integration(particles_t *parts)
     if (r > 0)
     {
       MASTER(cout << "    Update velocities..." << endl);
-      integ_update_velocities(&integ, parts->nparticles, v_cur, f_old, f_cur);
+      integ_update_velocities(&integ, parts->nparticles, v_cur, f_old, f_cur, parts->charges);
     }
 
     MASTER(cout << "    Determine total energy..." << endl);
@@ -740,7 +742,7 @@ static void run_integration(particles_t *parts)
     MASTER(cout << "  Time-step #" << r << endl);
 
     MASTER(cout << "    Update positions..." << endl);
-    integ_update_positions(&integ, parts->nparticles, parts->positions, NULL, v_cur, f_cur, &max_particle_move);
+    integ_update_positions(&integ, parts->nparticles, parts->positions, NULL, v_cur, f_cur, parts->charges, &max_particle_move);
 
     if (resort_availability && integ.max_move)
     {

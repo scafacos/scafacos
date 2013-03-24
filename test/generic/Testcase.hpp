@@ -125,6 +125,7 @@ public:
 
   void decompose_particles(fcs_float minalloc = 0, fcs_float overalloc = 0);
   void equalize_particles();
+  void almost_master_particles();
   void gather_particles();
   bool compute_errors(errors_t *e);
   void free_decomp_particles(bool quiet = false);
