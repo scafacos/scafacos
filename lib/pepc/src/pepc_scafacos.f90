@@ -49,6 +49,7 @@ subroutine pepc_scafacos_run(nlocal, ntotal, positions, charges, &
   integer(kind = fcs_integer_kind_isoc) :: ip
   integer                               :: itime = 0
   integer                               :: rc
+  integer                               :: pepc_nlocal, pepc_ntotal
 
   !!! debug output, may be removed ...
   if(db_level .gt. 4) then
@@ -107,7 +108,10 @@ subroutine pepc_scafacos_run(nlocal, ntotal, positions, charges, &
   end do
 
   !!! call pepc routines
-  call pepc_grow_and_traverse(nlocal, ntotal, particles, itime, .false., .false.)
+  pepc_nlocal = INT(nlocal, KIND(pepc_nlocal))
+  pepc_ntotal = INT(ntotal, KIND(pepc_ntotal))
+  call pepc_grow_and_traverse(pepc_nlocal, pepc_ntotal, particles, itime, .false., .false.)
+  nlocal = INT(pepc_nlocal, KIND(nlocal))
 
   !!! copy result values (efield, pot), including scaling, into scafacos buffers
   do ip=1, nlocal
