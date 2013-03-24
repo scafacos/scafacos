@@ -89,7 +89,7 @@
 #define front_xq_aIl_sl_weight_type_c          REAL_C
 #define front_xq_aIl_sl_weight_type_mpi        REAL_MPI
 #define front_xq_aIl_sl_weight_size_mpi        1
-#define front_xq_aIl_sl_weight_type_fmt        "f"
+#define front_xq_aIl_sl_weight_type_fmt        REAL_FMT
 #define front_xq_aIl_sl_weight_intequiv
 
 #define front_xq_aIl_MSEG_BORDER_UPDATE_REDUCTION

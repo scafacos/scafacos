@@ -4038,7 +4038,7 @@ slint_t mpi_select_stats(elements_t *s, slint_t nparts, int *sdispls, int size, 
       if (fabs(1.0 - (partial_weights[i] * nparts / partial_weights[nparts])) > vmax) vmax = fabs(1.0 - (partial_weights[i] * nparts / partial_weights[nparts]));
     }
     printf("%d: weight min/max: %f / %f\n", rank, vmin, vmax);
-    printf("%d: weight average: %f - %f / %f\n", rank, (double) partial_weights[nparts] / nparts, v / nparts, v / partial_weights[nparts]);
+    printf("%d: weight average: %f - %f / %f\n", rank, (double) (partial_weights[nparts] / nparts), v / nparts, (double) (v / partial_weights[nparts]));
 #endif
   }
   
