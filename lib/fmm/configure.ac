@@ -169,19 +169,21 @@ AX_COMPILER_VENDOR
 AC_CHECK_SIZEOF([fcs_float])
 
 if test "x${ax_intrinsics_ibm_f}" = xyes -a "x${ac_cv_sizeof_fcs_float}" = x8 ; then
-  fmm_pass2_ppc450_64bit=yes
+  fmm_ppc450_64bit=yes
 fi
-if test "x${ax_intrinsics_sse2_c}" = xyes -a "x${ac_cv_sizeof_fcs_float}" = x8 -a "x${ax_cv_c_compiler_vendor}" = xintel ; then
-  fmm_pass2_sse2_64bit=yes
+if test "x${ax_intrinsics_sse2_c}" = xyes -a "x${ac_cv_sizeof_fcs_float}" = x8 ; then
+  if test "x${ax_cv_c_compiler_vendor}" = xintel ; then
+    fmm_sse2_64bit=yes
+  fi
 fi
 
 AM_CONDITIONAL([ENABLE_IBM_F_INTRINSICS],[test "x${ax_intrinsics_ibm_f}" = xyes])
 
-#AM_CONDITIONAL([ENABLE_PASS2_PPC450_32BIT],[test "x${fmm_pass2_ppc450_32bit}" = xyes])
-AM_CONDITIONAL([ENABLE_PASS2_PPC450_64BIT],[test "x${fmm_pass2_ppc450_64bit}" = xyes])
-#AM_CONDITIONAL([ENABLE_PASS2_SSE2_32BIT],[test "x${fmm_pass2_sse2_32bit}" = xyes])
-AM_CONDITIONAL([ENABLE_PASS2_SSE2_64BIT],[test "x${fmm_pass2_sse2_64bit}" = xyes])
-AM_CONDITIONAL([ENABLE_PASS2_GENERIC],[test "x${fmm_pass2_ppc450_32bit}${fmm_pass2_ppc450_64bit}${fmm_pass2_sse2_32bit}${fmm_pass2_sse2_64bit}" != xyes])
+#AM_CONDITIONAL([ENABLE_PPC450_32BIT],[test "x${fmm_ppc450_32bit}" = xyes])
+AM_CONDITIONAL([ENABLE_PPC450_64BIT],[test "x${fmm_ppc450_64bit}" = xyes])
+#AM_CONDITIONAL([ENABLE_SSE2_32BIT],[test "x${fmm_sse2_32bit}" = xyes])
+AM_CONDITIONAL([ENABLE_SSE2_64BIT],[test "x${fmm_sse2_64bit}" = xyes])
+AM_CONDITIONAL([ENABLE_GENERIC],[test "x${fmm_ppc450_32bit}${fmm_ppc450_64bit}${fmm_sse2_32bit}${fmm_sse2_64bit}" != xyes])
 
 # Add FMM solver stuff to main FCS package.
 AX_FCS_PACKAGE_RESET
