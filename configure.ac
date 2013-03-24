@@ -224,14 +224,12 @@ AC_FOREACH([solver], all_solver_methods,[
 #  echo "[]solver[]: $use_fcs_[]solver[]"
 #])
 
-# FIXME: disable near field, gridsort, and resort(?) by default
-#AC_ARG_ENABLE([fcs-near],
-# [AS_HELP_STRING([--enable-fcs-near],[enable near field module])],,
-# [enable_fcs_near=no]) 
+enable_fcs_gridsort=yes # always enabled, because scafacos_test uses gridsort
 
-enable_fcs_near=yes
-enable_fcs_gridsort=yes
-enable_fcs_resort=yes
+if test "x$enable_dist" = xyes ; then
+  enable_fcs_near=yes
+  enable_fcs_resort=yes
+fi
 
 # Check prerequisites.
 
@@ -241,9 +239,9 @@ requires_fftw3="p2nfft p3m"
 requires_fftw3_mpi="p2nfft"
 requires_pfft="p2nfft"
 requires_pnfft="p2nfft"
-requires_near="ewald mmm1d mmm2d p2nfft p3m pp3mg_pmg vmg"
-requires_gridsort="p2nfft p3m"
-requires_resort="direct p2nfft fmm"
+requires_near="direct ewald p2nfft p3m"
+requires_gridsort="ewald memd mmm1d mmm2d p2nfft p3m near"
+requires_resort="gridsort"
 
 AC_FOREACH([prereq], all_common_methods,[
   if test "x$enable_fcs_[]prereq[]" = xyes ; then
