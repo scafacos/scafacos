@@ -29,7 +29,7 @@
 
 #define PNFFT_ENABLE_CALC_INTPOL_NODES 0
 #define USE_EWALD_SPLITTING_FUNCTION_AS_WINDOW 0
-#define TUNE_B_FOR_EWALD_SPLITTING 1
+#define TUNE_B_FOR_EWALD_SPLITTING 0
 #define PNFFT_TUNE_LOOP_ADJ_B 0
 
 static void loop_over_particles_adj(
@@ -979,7 +979,7 @@ void PNX(trafo_F)(
   csum = 0.0;
   for(INT t=0; t<ths->local_N[0]*ths->local_N[1]*ths->local_N[2]; t++)
     csum += pnfft_fabs(pnfft_creal(ths->g1[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g1[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT: Sum of Fourier coefficients before FFT: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
 #endif
 
@@ -1000,7 +1000,7 @@ void PNX(adjoint_F)(
   csum = 0.0;
   for(INT t=0; t<ths->local_N[0]*ths->local_N[1]*ths->local_N[2]; t++)
     csum += pnfft_fabs(pnfft_creal(ths->g1[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g1[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT^H: Sum of Fourier coefficients after FFT: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
 #endif
 }
@@ -1924,7 +1924,7 @@ void PNX(trafo_B_grad_ad)(
   csum = 0.0;
   for(INT t=0; t<local_no[0]*local_no[1]*local_no[2]; t++)
     csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT: Sum of Fourier coefficients before twiddles: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
 #endif
 
@@ -1944,7 +1944,7 @@ void PNX(trafo_B_grad_ad)(
   csum = 0.0;
   for(INT t=0; t<local_no[0]*local_no[1]*local_no[2]; t++)
     csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT: Sum of Fourier coefficients before ghostcell send: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
 #endif
 
@@ -1961,7 +1961,7 @@ void PNX(trafo_B_grad_ad)(
   csum = 0.0;
   for(INT t=0; t<local_ngc_total; t++)
     csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT: Sum of Fourier coefficients after ghostcell send: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
 #endif  
 
@@ -1969,7 +1969,7 @@ void PNX(trafo_B_grad_ad)(
   rsum = 0.0;
   for(j=0; j<3*ths->local_M; j++)
     rsum += pnfft_fabs(ths->x[j]);
-  MPI_Reduce(&rsum, &grsum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT: Sum of x before sort: %e\n", grsum);
 #endif
 
@@ -1987,7 +1987,7 @@ void PNX(trafo_B_grad_ad)(
   rsum = 0.0;
   for(j=0; j<3*ths->local_M; j++)
     rsum += pnfft_fabs(ths->x[j]);
-  MPI_Reduce(&rsum, &grsum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT: Sum of x after sort: %e\n", grsum);
 #endif
 
@@ -2164,13 +2164,13 @@ void PNX(trafo_B_grad_ad)(
   ths->timer_trafo[PNFFT_TIMER_LOOP_B] += MPI_Wtime();
 
 #if PNFFT_ENABLE_DEBUG
-  MPI_Reduce(&rsum, &grsum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT: Sum of pre_psi: %e\n", grsum);
 #endif  
 
 #if PNFFT_ENABLE_DEBUG
   if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
-    MPI_Reduce(&rsum_derive, &grsum_derive, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&rsum_derive, &grsum_derive, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
     if(!myrank) fprintf(stderr, "PNFFT: Sum of pre_dpsi: %e\n", grsum_derive);
   }
 #endif  
@@ -2179,7 +2179,7 @@ void PNX(trafo_B_grad_ad)(
   csum = 0.0;
   for(j=0; j<ths->local_M; j++)
     csum += pnfft_fabs(pnfft_creal(ths->f[j])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->f[j]));
-  MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT: Sum of f: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
 #endif
 #if PNFFT_ENABLE_DEBUG
@@ -2187,7 +2187,7 @@ void PNX(trafo_B_grad_ad)(
     csum = 0.0;
     for(j=0; j<ths->local_M; j++)
       csum += pnfft_fabs(pnfft_creal(ths->grad_f[3*j+0])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->grad_f[3*j+0]));
-    MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
     if(!myrank) fprintf(stderr, "PNFFT: Sum of 1st component of grad_f: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
   }
 #endif
@@ -2196,7 +2196,7 @@ void PNX(trafo_B_grad_ad)(
     csum = 0.0;
     for(j=0; j<ths->local_M; j++)
       csum += pnfft_fabs(pnfft_creal(ths->grad_f[3*j+1])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->grad_f[3*j+1]));
-    MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
     if(!myrank) fprintf(stderr, "PNFFT: Sum of 2nd component of grad_f: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
   }
 #endif
@@ -2205,7 +2205,7 @@ void PNX(trafo_B_grad_ad)(
     csum = 0.0;
     for(j=0; j<ths->local_M; j++)
       csum += pnfft_fabs(pnfft_creal(ths->grad_f[3*j+2])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->grad_f[3*j+2]));
-    MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
     if(!myrank) fprintf(stderr, "PNFFT: Sum of 3rd component of grad_f: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
   }
 #endif
@@ -2254,7 +2254,7 @@ void PNX(adjoint_B)(
   rsum = 0.0;
   for(INT j=0; j<3*ths->local_M; j++)
     rsum += pnfft_fabs(ths->x[j]);
-  MPI_Reduce(&rsum, &grsum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT^H: Sum of x before sort: %e\n", grsum);
 #endif
 
@@ -2272,7 +2272,7 @@ void PNX(adjoint_B)(
   rsum = 0.0;
   for(INT j=0; j<3*ths->local_M; j++)
     rsum += pnfft_fabs(ths->x[j]);
-  MPI_Reduce(&rsum, &grsum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT^H: Sum of x after sort: %e\n", grsum);
 #endif
   
@@ -2280,7 +2280,7 @@ void PNX(adjoint_B)(
   csum = 0.0;
   for(INT j=0; j<ths->local_M; j++)
     csum += pnfft_fabs(pnfft_creal(ths->f[j])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->f[j]));
-  MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT^H: Sum of f: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
 #endif
   
@@ -2300,7 +2300,7 @@ void PNX(adjoint_B)(
   csum = 0.0;
   for(INT t=0; t<local_ngc_total; t++)
     csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT^H: Sum of Fourier coefficients before ghostcell reduce: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
 #endif  
 
@@ -2313,7 +2313,7 @@ void PNX(adjoint_B)(
   csum = 0.0;
   for(INT t=0; t<local_no[0]*local_no[1]*local_no[2]; t++)
     csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT^H: Sum of Fourier coefficients after ghostcell reduce: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
 #endif
 
@@ -2328,7 +2328,7 @@ void PNX(adjoint_B)(
   csum = 0.0;
   for(INT t=0; t<local_no[0]*local_no[1]*local_no[2]; t++)
     csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT^H: Sum of Fourier coefficients after twiddles: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
 #endif
   
@@ -2380,7 +2380,7 @@ static void loop_over_particles_adj(
   }
 
 #if PNFFT_ENABLE_DEBUG
-  MPI_Reduce(&rsum, &grsum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   PX(fprintf)(MPI_COMM_WORLD, stderr, "PNFFT^H: Sum of pre_psi: %e\n", grsum);
 #endif  
 

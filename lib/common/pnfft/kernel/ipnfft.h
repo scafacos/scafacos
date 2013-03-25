@@ -28,7 +28,7 @@
 
 #include "config.h"
 
-#define PNFFT_ENABLE_DEBUG 1
+#define PNFFT_ENABLE_DEBUG 0
 
 #define PNFFT_DEBUG_USE_KAISER_BESSEL 0
 #define PNFFT_DEBUG_USE_GAUSSIAN      0
@@ -76,7 +76,7 @@ typedef ptrdiff_t INT;
 #if defined(PNFFT_SINGLE)
   typedef float R;
   typedef pnfftf_complex C;
-#  define PNFFT_MPI_TYPE MPI_FLOAT
+#  define PNFFT_MPI_REAL_TYPE MPI_FLOAT
 #  define PNX(name) CONCAT(pnfftf_, name)
 #  define PX(name) PFFT_MANGLE_FLOAT(name)
 #  define X(name)  FFTW_MANGLE_FLOAT(name)
@@ -85,7 +85,7 @@ typedef ptrdiff_t INT;
 #elif defined(PNFFT_LDOUBLE)
   typedef long double R;
   typedef pnfftl_complex C;
-#  define PNFFT_MPI_TYPE MPI_LONG_DOUBLE
+#  define PNFFT_MPI_REAL_TYPE MPI_LONG_DOUBLE
 #  define PNX(name) CONCAT(pnfftl_, name)
 #  define PX(name) PFFT_MANGLE_LONG_DOUBLE(name)
 #  define X(name)  FFTW_MANGLE_LONG_DOUBLE(name)
@@ -94,7 +94,7 @@ typedef ptrdiff_t INT;
 #else
   typedef double R;
   typedef pnfft_complex C;
-#  define PNFFT_MPI_TYPE MPI_DOUBLE
+#  define PNFFT_MPI_REAL_TYPE MPI_DOUBLE
 #  define PNX(name) CONCAT(pnfft_, name)
 #  define PX(name) PFFT_MANGLE_DOUBLE(name)
 #  define X(name)  FFTW_MANGLE_DOUBLE(name)

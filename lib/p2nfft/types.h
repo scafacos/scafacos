@@ -28,7 +28,7 @@
 #include "pnfft.h"
 #include <float.h>
 
-#define FCS_P2NFFT_DEBUG 1
+#define FCS_P2NFFT_DEBUG 0
 #define FCS_P2NFFT_DEBUG_RETUNE 0
 
 #define CONCAT2(prefix, name)  prefix ## name
