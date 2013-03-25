@@ -143,27 +143,25 @@ static fcs_float compute_alias_k(
 
 #endif
 
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_nonperiodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
     const ptrdiff_t *N, fcs_float epsI, fcs_float epsB, fcs_float box_scale,
     fcs_int interpolation_order, fcs_int interpolation_num_nodes,
     const fcs_float *near_interpolation_table_potential,
     const fcs_float *far_interpolation_table_potential,
     MPI_Comm comm_cart);
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_periodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
     fcs_float *box_l, fcs_float alpha);
 
-#if FCS_P2NFFT_MIXED_PERIODICITY_TEST
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic_simple(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_simple(
     const ptrdiff_t *N, const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
     const fcs_int *periodicity,
     fcs_float *box_l, fcs_float alpha);
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_l, fcs_float alpha,
     const fcs_int *periodicity, fcs_int p,
     MPI_Comm comm_cart);
-#endif
 
 FCSResult ifcs_p2nfft_tune_2dp(
     void *rd, fcs_int *periodicity,
@@ -216,9 +214,7 @@ FCSResult ifcs_p2nfft_tune_2dp(
     d->periodicity[t] = periodicity[t];
   }
   d->use_ewald = periodicity[0] || periodicity[1] || periodicity[2];  
-#if FCS_P2NFFT_MIXED_PERIODICITY_TEST
   d->num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
-#endif
 
   /* Now, after the periodicity is clear, we can set the default tolerance type. */
   default_tolerance_type(d->periodicity,
@@ -780,20 +776,18 @@ FCSResult ifcs_p2nfft_tune_2dp(
     }
 
     /* precompute Fourier coefficients for convolution */
-#if FCS_P2NFFT_MIXED_PERIODICITY_TEST
     if (d->num_nonperiodic_dims == 1)
-//       d->regkern_hat = malloc_and_precompute_regkern_hat_2d_periodic_simple(
+//       d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_simple(
 //           d->N, d->local_N, d->local_N_start, d->periodicity, d->box_l, d->alpha);
-      d->regkern_hat = malloc_and_precompute_regkern_hat_2d_periodic(
+      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp(
           d->N, d->epsB, d->box_l, d->alpha, d->periodicity, d->p,
           d->cart_comm_pnfft);
     else 
-#endif
     if(d->use_ewald)
-      d->regkern_hat = malloc_and_precompute_regkern_hat_periodic(
+      d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
           d->local_N, d->local_N_start, d->box_l, d->alpha);
     else
-      d->regkern_hat = malloc_and_precompute_regkern_hat_nonperiodic(
+      d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
           d->N, d->epsI, d->epsB, d->box_scales[0],
           d->interpolation_order, d->interpolation_num_nodes, 
           d->near_interpolation_table_potential,
@@ -1248,7 +1242,7 @@ static void init_pnfft(
   
 
 /* scale epsI and epsB according to box_size == 1 */
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_nonperiodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
     const ptrdiff_t *N, fcs_float epsI, fcs_float epsB, fcs_float box_scale,
     fcs_int interpolation_order, fcs_int interpolation_num_nodes,
     const fcs_float *near_interpolation_table_potential,
@@ -1365,7 +1359,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_nonperiodic(
   return regkern_hat;
 }
 
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_periodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
     fcs_float *box_l, fcs_float alpha
     )
@@ -1395,8 +1389,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_periodic(
 }
 
 
-#if FCS_P2NFFT_MIXED_PERIODICITY_TEST
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic_simple(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_simple(
     const ptrdiff_t *N, const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
     const fcs_int *periodicity,
     fcs_float *box_l, fcs_float alpha
@@ -1478,7 +1471,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic_simple(
   return regkern_hat;
 }
 /* scale epsI and epsB according to box_size == 1 */
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_l, fcs_float alpha,
     const fcs_int *periodicity, fcs_int p,
@@ -1634,7 +1627,6 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2d_periodic(
 
   return regkern_hat;
 }
-#endif
 
 static int pnfft_is_up_to_date(
     const FCS_PNFFT(plan) ths, int dim, const ptrdiff_t *N, const ptrdiff_t *n,
@@ -1742,15 +1734,9 @@ static FCSResult check_tolerance(
     if( periodicity[0] || periodicity[1] || periodicity[2] )
       return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_POTENTIAL only for non-periodic boundary conditions. Use FCS_TOLERANCE_FIELD instead.");
 
-#if FCS_P2NFFT_MIXED_PERIODICITY_TEST
   if(tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
     if( !periodicity[0] && !periodicity[1] && !periodicity[2] )
       return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_FIELD only for 1d-, 2d- and 3d-periodic boundary conditions. Use FCS_TOLERANCE_POTENTIAL instead.");
-#else  
-  if(tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
-    if( !periodicity[0] || !periodicity[1] || !periodicity[2] )
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_FIELD only for 3d-periodic boundary conditions. Use FCS_TOLERANCE_POTENTIAL instead.");
-#endif
 
   if(tolerance < 0.0)
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"Tolerance must be non-negative.");

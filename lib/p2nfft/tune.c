@@ -152,13 +152,13 @@ static fcs_float compute_alias_k(
 
 #endif
 
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_nonperiodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
     const ptrdiff_t *N, fcs_float epsI, fcs_float epsB, fcs_float box_scale,
     fcs_int interpolation_order, fcs_int interpolation_num_nodes,
     const fcs_float *near_interpolation_table_potential,
     const fcs_float *far_interpolation_table_potential,
     MPI_Comm comm_cart);
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_periodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
     fcs_float *box_l, fcs_float alpha);
 
@@ -743,10 +743,10 @@ FCSResult ifcs_p2nfft_tune(
 
     /* precompute Fourier coefficients for convolution */
     if(d->use_ewald)
-      d->regkern_hat = malloc_and_precompute_regkern_hat_periodic(
+      d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
           d->local_N, d->local_N_start, d->box_l, d->alpha);
     else
-      d->regkern_hat = malloc_and_precompute_regkern_hat_nonperiodic(
+      d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
           d->N, d->epsI, d->epsB, d->box_scales[0],
           d->interpolation_order, d->interpolation_num_nodes, 
           d->near_interpolation_table_potential,
@@ -1201,7 +1201,7 @@ static void init_pnfft(
   
 
 /* scale epsI and epsB according to box_size == 1 */
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_nonperiodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
     const ptrdiff_t *N, fcs_float epsI, fcs_float epsB, fcs_float box_scale,
     fcs_int interpolation_order, fcs_int interpolation_num_nodes,
     const fcs_float *near_interpolation_table_potential,
@@ -1318,7 +1318,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_nonperiodic(
   return regkern_hat;
 }
 
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_periodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
     fcs_float *box_l, fcs_float alpha
     )

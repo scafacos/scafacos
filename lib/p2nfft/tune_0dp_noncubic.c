@@ -43,11 +43,11 @@
 #define FCS_P2NFFT_ENABLE_TUNING_BUG 0
 
 /* FORWARD DECLARATIONS OF STATIC FUNCTIONS */
-static void init_near_interpolation_table_potential_periodic(
+static void init_near_interpolation_table_potential_3dp(
     fcs_int num_nodes,
     fcs_float r_cut, fcs_float alpha,
     fcs_float *table);
-static void init_near_interpolation_table_force_periodic(
+static void init_near_interpolation_table_force_3dp(
     fcs_int num_nodes,
     fcs_float r_cut, fcs_float alpha,
     fcs_float *table);
@@ -98,7 +98,7 @@ static fcs_float p2nfft_k_space_error_approx(
     fcs_float box_l[3], ptrdiff_t grid[3],
     fcs_float alpha, fcs_int cao);
 
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_periodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
     fcs_float *box_l, fcs_float alpha);
 
@@ -313,7 +313,7 @@ FCSResult ifcs_p2nfft_tune_0dp_noncubic(
     if(d->near_interpolation_table_potential != NULL)
       free(d->near_interpolation_table_potential);
     d->near_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
-    init_near_interpolation_table_potential_periodic(
+    init_near_interpolation_table_potential_3dp(
         d->interpolation_num_nodes,
         d->r_cut, d->alpha, 
         d->near_interpolation_table_potential);
@@ -321,7 +321,7 @@ FCSResult ifcs_p2nfft_tune_0dp_noncubic(
     if(d->near_interpolation_table_force != NULL)
       free(d->near_interpolation_table_force);
     d->near_interpolation_table_force = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
-    init_near_interpolation_table_force_periodic(
+    init_near_interpolation_table_force_3dp(
         d->interpolation_num_nodes,
         d->r_cut, d->alpha,
         d->near_interpolation_table_force);
@@ -353,7 +353,7 @@ FCSResult ifcs_p2nfft_tune_0dp_noncubic(
     }
 
     /* precompute Fourier coefficients for convolution */
-    d->regkern_hat = malloc_and_precompute_regkern_hat_periodic(
+    d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
         d->local_N, d->local_N_start, d->box_l, d->alpha);
   }
 
@@ -374,7 +374,7 @@ FCSResult ifcs_p2nfft_tune_0dp_noncubic(
   return NULL;
 }
 
-static void init_near_interpolation_table_potential_periodic(
+static void init_near_interpolation_table_potential_3dp(
     fcs_int num_nodes,
     fcs_float r_cut, fcs_float alpha,
     fcs_float *table
@@ -391,7 +391,7 @@ static void init_near_interpolation_table_potential_periodic(
   }
 }
 
-static void init_near_interpolation_table_force_periodic(
+static void init_near_interpolation_table_force_3dp(
     fcs_int num_nodes,
     fcs_float r_cut, fcs_float alpha,
     fcs_float *table
@@ -525,7 +525,7 @@ static void init_pnfft(
   FCS_P2NFFT_FINISH_TIMING(cart_comm_pnfft, "PNFFT tuning");
 }
 
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_periodic(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
     fcs_float *box_l, fcs_float alpha
     )
