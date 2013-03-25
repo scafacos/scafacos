@@ -370,17 +370,9 @@ FCSResult ifcs_p2nfft_run(
 //   fprintf(stderr, "myrank = %d, sorted_num_particles = %d\n", myrank, sorted_num_particles);
 // #endif
 
-#if FCS_ENABLE_INFO && !FCS_P2NFFT_DISABLE_PNFFT_INFO
-  /* Start print timing */
   FCS_P2NFFT_START_TIMING();
-#endif
-
   FCS_PNFFT(precompute_psi)(d->pnfft);
-
-#if FCS_ENABLE_INFO && !FCS_P2NFFT_DISABLE_PNFFT_INFO
-  /* Finish print timing */
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "pnfft_precompute_psi");
-#endif
 
   /* Reset pnfft timer (delete timings from fcs_init and fcs_tune) */  
 #if FCS_ENABLE_INFO && !FCS_P2NFFT_DISABLE_PNFFT_INFO
@@ -472,14 +464,10 @@ FCSResult ifcs_p2nfft_run(
   /* Finish far field timing */
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Far field computation");
 
-#if FCS_ENABLE_INFO && !FCS_P2NFFT_DISABLE_PNFFT_INFO
-  /* Start print timing */
-  FCS_P2NFFT_START_TIMING();
-
+#if FCS_ENABLE_TIMING
   /* Print pnfft timer */
+  FCS_P2NFFT_START_TIMING();
   FCS_PNFFT(print_average_timer_adv)(d->pnfft, d->cart_comm_3d);
-
-  /* Finish print timing */
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Printing of PNFFT timings");
 #endif
 

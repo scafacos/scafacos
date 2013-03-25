@@ -1173,7 +1173,7 @@ static void init_pnfft(
       printf("P2NFFT_INFO: Interpolation order: %" FCS_LMOD_INT "d (-c pnfft_intpol_order,%" FCS_LMOD_INT "d)\n", pnfft_intpol_order, pnfft_intpol_order);
   }
 #endif
-#if FCS_ENABLE_INFO
+#if FCS_ENABLE_DEBUG
   if(!myrank){
     printf("PNFFT_INIT: N = [%td, %td, %td]\n", N[0], N[1], N[2]);
     printf("PNFFT_INIT: n = [%td, %td, %td]\n", n[0], n[1], n[2]);
