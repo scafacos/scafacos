@@ -37,13 +37,14 @@ for filename in sys.argv[1:]:
     aid = 0
     for particle in configuration.getElementsByTagName("particle"):
         q = float(particle.attributes['q'].value)
+        potential = float(particle.attributes['potential'].value)
         if q < 0.001: 
             name = "N"
         elif q > 0.001:
             name = "O"
         else:
             name = "C"
-        vtffile.write("atom %d name %s q %f radius 0.1\n" % (aid, name, q))
+        vtffile.write("atom {} name {} q {} b {} radius 0.1\n".format(aid, name, q, potential))
         aid = aid + 1
 
     # Output timesteps

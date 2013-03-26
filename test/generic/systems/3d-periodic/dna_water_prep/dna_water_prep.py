@@ -3,7 +3,7 @@
 #
 # Script that creates a testcase template and includes data from a PDB file.
 #
-import gzip, sys, re
+import gzip, sys, re, math
 import xml.dom.minidom
 
 # input files
@@ -14,26 +14,11 @@ itpfilename = '1ART6_A.itp'
 vtffilename = 'dna_water.vtf.gz'
 xmlfilename = 'dna_water_prep.xml.gz'
 
-template = """<?xml version="1.0" ?>
-<!DOCTYPE scafacos_test  SYSTEM 'scafacos_test.dtd'>
-<scafacos_test name="dna_water"
-               description="A short DNA fragment (i-motif hairpin) in water" 
-               reference_method="ewald"
-               error_field="1.0e-7" error_potential="1.0e-7" 
-               ></scafacos_test>"""
-doc = xml.dom.minidom.parseString(template)
+# box length
+L = 54.104
 
-testcase = doc.documentElement
-
-config_node = doc.createElement('configuration')
-testcase.appendChild(config_node)
-
-config_node.attributes['offset'] = '0.0 0.0 0.0'
-config_node.attributes['box_a'] = '54.104 0.0 0.0'
-config_node.attributes['box_b'] = '0.0 54.104 0.0'
-config_node.attributes['box_c'] = '0.0 0.0 54.104'
-config_node.attributes['epsilon'] = 'metallic'
-config_node.attributes['periodicity'] = '1 1 1'
+# prefactor for lengths in scafacos system
+length_prefactor = 1.0/(4.0*math.pi)
 
 # READ PDB FILE
 print('Reading %s...' % pdbfilename)
@@ -57,9 +42,9 @@ for line in pdbfile.readlines():
         else:
             chain = 'X'
         resid = int(line[22:28])
-        x = line[31:38]
-        y = line[39:46]
-        z = line[47:54]
+        x = float(line[31:38])
+        y = float(line[39:46])
+        z = float(line[47:54])
 
         atoms[no] = {
             'name': name,
@@ -126,24 +111,50 @@ for no in range(703, 15544, 3):
     bonds.append((no, no+1))
     bonds.append((no, no+2))
 
+# GENERATE XML
 print "Writing to {}...".format(xmlfilename)
 xmlfile = gzip.open(xmlfilename, 'w')
+
+template = """<?xml version="1.0" ?>
+<!DOCTYPE scafacos_test  SYSTEM 'scafacos_test.dtd'>
+<scafacos_test name="dna_water"
+               description="A short DNA fragment (i-motif hairpin) in water" 
+               reference_method="??"
+               error_field="1" error_potential="1" 
+               ></scafacos_test>"""
+
+doc = xml.dom.minidom.parseString(template)
+
+testcase = doc.documentElement
+
+config_node = doc.createElement('configuration')
+testcase.appendChild(config_node)
+
+config_node.attributes['offset'] = '0.0 0.0 0.0'
+config_node.attributes['box_a'] = '{} 0.0 0.0'.format(length_prefactor*L)
+config_node.attributes['box_b'] = '0.0 {} 0.0'.format(length_prefactor*L)
+config_node.attributes['box_c'] = '0.0 0.0 {}'.format(length_prefactor*L)
+config_node.attributes['epsilon'] = 'metallic'
+config_node.attributes['periodicity'] = '1 1 1'
 
 sum_q = 0.0
 for no in range(1, 15544):
     particle = doc.createElement('particle')
     config_node.appendChild(particle)
-    particle.attributes['position'] = "{} {} {}".format(atoms[no]['x'], 
-                                                        atoms[no]['y'], 
-                                                        atoms[no]['z'])
-    particle.attributes['q'] = str(atoms[no]['q'])
-    sum_q += atoms[no]['q']
+    atom = atoms[no]
+    particle.attributes['position'] = \
+        "{} {} {}".format(atom['x']*length_prefactor, 
+                          atom['y']*length_prefactor, 
+                          atom['z']*length_prefactor)
+    particle.attributes['q'] = str(atom['q'])
+    sum_q += atom['q']
 
 print "sum =", sum_q
 
 xmlfile.write(doc.toprettyxml())
 xmlfile.close()
 
+# GENERATE VTF
 print "Writing to {}...".format(vtffilename)
 vtffile = gzip.open(vtffilename, 'w')
 vtffile.write('pbc 54.104 54.104 54.104\n')
