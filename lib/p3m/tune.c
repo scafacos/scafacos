@@ -50,6 +50,26 @@ ifcs_p3m_get_error(ifcs_p3m_data_struct *d,
 		   fcs_float *_rs_err, 
 		   fcs_float *_ks_err);
 
+/** Good mesh sizes for fftw. 
+    -1 denotes end of list.
+**/
+static const int good_gridsize[] = 
+  {4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 0,
+   36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 0,
+   66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128, 0,
+   130, 132, 140, 144, 150, 154, 156, 160, 162, 168, 176, 180, 182, 192, 0,
+   196, 198, 200, 208, 210, 216, 220, 224, 234, 240, 242, 250, 252, 256, 0,
+   260, 264, 270, 280, 288, 294, 0,
+   300, 360, 400, 480, 512, 0,
+   576, 648, 729, 768, 864, 972, 1024, 0,
+   1152, 1296, 1458, 1536, 0,
+   1728, 1944, 2048, 0,
+   2187, 2304, 2592, 0,
+   2916, 3072, 0,
+   3456, 0,
+   3888, 0,
+   -1};
+
 /***************************************************/
 /* IMPLEMENTATION */
 /***************************************************/
@@ -152,8 +172,6 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
 		fcs_float *charges) {
   const char* fnc_name="ifcs_p3m_tuneit";
   fcs_int grid1d;
-  const fcs_int grid1d_min = 4;
-  const fcs_int grid1d_max = 1024;
   #ifdef P3M_AD
   const fcs_int cao_min = 2;
   #else
@@ -195,27 +213,67 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
       P3M_INFO(printf( "    Tuning grid and cao.\n"));
       d->cao = cao_max;
       /* find smallest possible grid */
-      P3M_DEBUG(printf( "    Finding minimal grid at maximal cao...\n"));
-      for (grid1d = grid1d_min; 
-	   grid1d <= grid1d_max;
-	   grid1d *= 2) {
+      P3M_DEBUG(printf( "    Finding the minimal grid at maximal cao...\n"));
+      fcs_int lower_ix = 0;
+      fcs_int upper_ix = 0;
+      while (1) {
+        /* advance to next good gridsize step */
+        while (good_gridsize[upper_ix] > 0) upper_ix++;
+        fcs_int grid1d = good_gridsize[upper_ix-1];
+        if (grid1d == -1) break;
+
+        /* test the gridsize */
 	d->grid[0] = grid1d;
 	d->grid[1] = grid1d;
 	d->grid[2] = grid1d;
-	P3M_DEBUG(printf( "      Testing grid=%d...\n", grid1d));
+	P3M_INFO(printf( "      Testing grid=%d...\n", grid1d));
 	d->error = ifcs_p3m_get_error(d, d->grid, d->cao, d->r_cut, 
                                       &d->rs_error, &d->ks_error);
-	if (d->error < d->tolerance_field) break;
+	if (d->error < d->tolerance_field) {
+          upper_ix--;
+          break;
+        }
+
+        lower_ix = upper_ix+1;
+        upper_ix++;
       }
 
       if (d->error < d->tolerance_field) {
+        /* now the right gridsize is between lower_ix and upper_ix */
+        /* bisect to find the right size */
+        while (lower_ix+1 < upper_ix) {
+          fcs_int test_ix = (lower_ix+upper_ix)/2;
+          fcs_int grid1d = good_gridsize[test_ix];
+
+          /* test the gridsize */
+          d->grid[0] = grid1d;
+          d->grid[1] = grid1d;
+          d->grid[2] = grid1d;
+          P3M_INFO(printf( "      Testing grid=%d...\n",grid1d));
+          fcs_float error, rs_error, ks_error;
+          error = ifcs_p3m_get_error(d, d->grid, d->cao, d->r_cut, 
+                                     &rs_error, &ks_error);
+          if (error < d->tolerance_field) {
+            upper_ix = test_ix;
+            d->error = error;
+            d->ks_error = ks_error;
+            d->rs_error = rs_error;
+          } else {
+            lower_ix = test_ix;
+          }
+        }
+        /* now the right size is at upper_ix */
+        fcs_int grid1d = good_gridsize[upper_ix];
+        d->grid[0] = grid1d;
+        d->grid[1] = grid1d;
+        d->grid[2] = grid1d;
 	P3M_DEBUG(printf( "    => minimal grid=(%d, %d, %d)\n", \
 			  d->grid[0], d->grid[1], d->grid[2]));
       
 	/* find smallest possible value of cao */
 	P3M_DEBUG(printf( "    Finding minimal cao...\n"));
 	for (d->cao = cao_min; d->cao <= cao_max; d->cao++) {
-	  P3M_DEBUG(printf( "      Testing cao=%d\n", d->cao));
+	  P3M_INFO(printf( "      Testing cao=%d\n", d->cao));
 	  d->error = ifcs_p3m_get_error(d, d->grid, d->cao, d->r_cut, 
                                         &d->rs_error, &d->ks_error);
 	  if (d->error < d->tolerance_field) break;
