@@ -89,6 +89,7 @@ static R random_number_less_than_one(
 
 void PNX(local_size_adv)(
     int d, const INT *N, MPI_Comm comm_cart,
+    unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,
     R *lower_border, R *upper_border
     )
@@ -102,7 +103,7 @@ void PNX(local_size_adv)(
       n, x_max);
 
   PNX(local_size_guru)(
-      d, N, n, x_max, m, comm_cart,
+      d, N, n, x_max, m, comm_cart, pnfft_flags,
       local_N, local_N_start, lower_border, upper_border);
 }
 

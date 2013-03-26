@@ -118,8 +118,8 @@ sub canonicalize_name {
     # gfortran complains.  Instead, since MPI also requires the C type
     # MPI_Fint to match Fortran integers, we use the size of this type
     # (extracted by configure and substituted by the Makefile).
-    "MPI_Comm" => "integer(C_MPI_FINT), value",
-    "MPI_Comm *" => "integer(C_MPI_FINT), intent(out)"
+    "MPI_Comm" => "integer(\@C_MPI_FINT\@), value",
+    "MPI_Comm *" => "integer(\@C_MPI_FINT\@), intent(out)"
     );
 
 while (<>) {

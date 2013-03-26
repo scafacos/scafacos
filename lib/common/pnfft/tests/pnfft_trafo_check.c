@@ -118,12 +118,15 @@ static void pnfft_perform_guru(
     pfft_fprintf(comm, stderr, "Error: Procmesh of size %d x %d x %d does not fit to number of allocated processes.\n", np[0], np[1], np[2]);
     pfft_fprintf(comm, stderr, "       Please allocate %d processes (mpiexec -np %d ...) or change the procmesh (with -pnfft_np * * *).\n", np[0]*np[1]*np[2], np[0]*np[1]*np[2]);
     MPI_Finalize();
-    return;
+    exit(1);
   }
 
   /* get parameters of data distribution */
-  pnfft_local_size_guru(3, N, n, x_max, m, comm_cart_3d,
+  pnfft_local_size_guru(3, N, n, x_max, m, comm_cart_3d, PNFFT_TRANSPOSED_NONE,
       local_N, local_N_start, lower_border, upper_border);
+
+printf("local_N = [%td, %td, %td]\n", local_N[0], local_N[1], local_N[2]);
+printf("local_N_start = [%td, %td, %td]\n", local_N_start[0], local_N_start[1], local_N_start[2]);
 
   /* plan parallel NFFT */
   pnfft = pnfft_init_guru(3, N, n, x_max, local_M, m,
@@ -137,7 +140,7 @@ static void pnfft_perform_guru(
   x     = pnfft_get_x(pnfft);
 
   /* initialize Fourier coefficients */
-  pnfft_init_f_hat_3d(N, local_N, local_N_start,
+  pnfft_init_f_hat_3d(N, local_N, local_N_start, PNFFT_TRANSPOSED_NONE,
       f_hat);
 
   /* initialize nonequispaced nodes */

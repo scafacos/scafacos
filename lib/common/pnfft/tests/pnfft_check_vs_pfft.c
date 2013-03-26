@@ -87,15 +87,14 @@ int main(int argc, char **argv){
   }
 
   /* get parameters of data distribution */
-  pnfft_local_size_3d(N, comm_cart_3d,
+  pnfft_local_size_3d(N, comm_cart_3d, PNFFT_TRANSPOSED_NONE,
       local_N, local_N_start, lower_border, upper_border);
 
   local_M = local_N[0]*local_N[1]*local_N[2];
 
   /* plan parallel NFFT */
   pnfft = pnfft_init_guru(3, N, n, x_max, local_M, m,
-                         PNFFT_MALLOC_X| PNFFT_MALLOC_F_HAT| PNFFT_MALLOC_F| window_flag, PFFT_ESTIMATE,
-//       PNFFT_PRE_KUB_PSI| PNFFT_MALLOC_X| PNFFT_MALLOC_F_HAT| PNFFT_MALLOC_F| window_flag, PFFT_ESTIMATE,
+      PNFFT_MALLOC_X| PNFFT_MALLOC_F_HAT| PNFFT_MALLOC_F| window_flag, PFFT_ESTIMATE,
       comm_cart_3d);
 
   double t=0.1;

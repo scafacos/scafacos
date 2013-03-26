@@ -97,12 +97,14 @@ static void convolution_with_general_window(
     const C *in,
     const INT *n, const INT *no,
     const INT *local_N, const INT *local_N_start,
+    unsigned pnfft_flags,
     const PNX(plan) window_param, int sign,
     C *out);
 static void convolution_with_pre_inv_phi_hat(
     const C *in,
     const INT *local_N,
     const C *pre_inv_phi_hat,
+    unsigned pnfft_flags,
     C *out);
 static void precompute_inv_phi_hat_general_window(
     const INT *local_N, const INT *local_N_start,
@@ -167,11 +169,11 @@ void PNX(trafo_D)(
   /* use precomputed window Fourier coefficients if possible */
   if(ths->pnfft_flags & PNFFT_PRE_PHI_HAT){
     convolution_with_pre_inv_phi_hat(
-        ths->f_hat, ths->local_N, ths->pre_inv_phi_hat_trafo,
+        ths->f_hat, ths->local_N, ths->pre_inv_phi_hat_trafo, ths->pnfft_flags,
         ths->g1);
   } else {
     convolution_with_general_window(
-        ths->f_hat, ths->n, ths->no, ths->local_N, ths->local_N_start, ths, FFTW_FORWARD,
+        ths->f_hat, ths->n, ths->no, ths->local_N, ths->local_N_start, ths->pnfft_flags, ths, FFTW_FORWARD,
         ths->g1);
   }
 }
@@ -184,11 +186,11 @@ void PNX(adjoint_D)(
   /* use precomputed window Fourier coefficients if possible */
   if(ths->pnfft_flags & PNFFT_PRE_PHI_HAT){
     convolution_with_pre_inv_phi_hat(
-        ths->g1, ths->local_N, ths->pre_inv_phi_hat_adj,
+        ths->g1, ths->local_N, ths->pre_inv_phi_hat_adj, ths->pnfft_flags,
         ths->f_hat);
   } else {
     convolution_with_general_window(
-        ths->g1, ths->n, ths->no, ths->local_N, ths->local_N_start, ths, FFTW_BACKWARD,
+        ths->g1, ths->n, ths->no, ths->local_N, ths->local_N_start, ths->pnfft_flags, ths, FFTW_BACKWARD,
         ths->f_hat);
   }
 
@@ -209,21 +211,36 @@ static void convolution_with_general_window(
     const C *in,
     const INT *n, const INT *no,
     const INT *local_N, const INT *local_N_start,
+    unsigned pnfft_flags,
     const PNX(plan) window_param, int sign,
     C *out
     )
 {
   INT k0, k1, k2, k=0;
-  C inv_phi_k1, inv_phi_k1k2, inv_phi_k1k2k0;
+  C inv_phi_x, inv_phi_xy, inv_phi_xyz;
 
-  /* g_hat is transposed N1 x N2 x N0 */
-  for(k1=local_N_start[1]; k1<local_N_start[1] + local_N[1]; k1++){
-    inv_phi_k1 = PNX(inv_phi_hat)(window_param, 1, k1) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k1*no[1]/((R)n[1]) ) );
-    for(k2=local_N_start[2]; k2<local_N_start[2] + local_N[2]; k2++){
-      inv_phi_k1k2 = inv_phi_k1 * PNX(inv_phi_hat)(window_param, 2, k2) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k1*no[2]/((R)n[2]) ) );
-      for(k0=local_N_start[0]; k0<local_N_start[0] + local_N[0]; k0++, k++){
-        inv_phi_k1k2k0 = inv_phi_k1k2 * PNX(inv_phi_hat)(window_param, 0, k0) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k1*no[0]/((R)n[0]) ) );
-        out[k] = in[k] * inv_phi_k1k2k0;
+  if(pnfft_flags & PNFFT_TRANSPOSED_F_HAT){
+    /* g_hat is transposed N1 x N2 x N0 */
+    for(k1=local_N_start[1]; k1<local_N_start[1] + local_N[1]; k1++){
+      inv_phi_x = PNX(inv_phi_hat)(window_param, 1, k1) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k1*no[1]/((R)n[1]) ) );
+      for(k2=local_N_start[2]; k2<local_N_start[2] + local_N[2]; k2++){
+        inv_phi_xy = inv_phi_x * PNX(inv_phi_hat)(window_param, 2, k2) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k2*no[2]/((R)n[2]) ) );
+        for(k0=local_N_start[0]; k0<local_N_start[0] + local_N[0]; k0++, k++){
+          inv_phi_xyz = inv_phi_xy * PNX(inv_phi_hat)(window_param, 0, k0) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k0*no[0]/((R)n[0]) ) );
+          out[k] = in[k] * inv_phi_xyz;
+        }
+      }
+    }
+  } else {
+    /* g_hat is non-transposed N0 x N1 x N2 */
+    for(k0=local_N_start[0]; k0<local_N_start[0] + local_N[0]; k0++){
+      inv_phi_x = PNX(inv_phi_hat)(window_param, 0, k0) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k0*no[0]/((R)n[0]) ) );
+      for(k1=local_N_start[1]; k1<local_N_start[1] + local_N[1]; k1++){
+        inv_phi_xy = inv_phi_x * PNX(inv_phi_hat)(window_param, 1, k1) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k1*no[1]/((R)n[1]) ) );
+        for(k2=local_N_start[2]; k2<local_N_start[2] + local_N[2]; k2++, k++){
+          inv_phi_xyz = inv_phi_xy * PNX(inv_phi_hat)(window_param, 2, k2) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k2*no[2]/((R)n[2]) ) );
+          out[k] = in[k] * inv_phi_xyz;
+        }
       }
     }
   }
@@ -233,6 +250,7 @@ static void convolution_with_pre_inv_phi_hat(
     const C *in,
     const INT *local_N,
     const C *pre_inv_phi_hat,
+    unsigned pnfft_flags,
     C *out
     )
 {
@@ -241,11 +259,19 @@ static void convolution_with_pre_inv_phi_hat(
   const C *inv_phi_hat1 = inv_phi_hat0 + local_N[0];
   const C *inv_phi_hat2 = inv_phi_hat1 + local_N[1];
 
-  /* g_hat is transposed N1 x N2 x N0 */
-  for(k1=0; k1<local_N[1]; k1++)
-    for(k2=0; k2<local_N[2]; k2++)
-      for(k0=0; k0<local_N[0]; k0++, k++)
-        out[k] = in[k] * inv_phi_hat0[k0] * inv_phi_hat1[k1] * inv_phi_hat2[k2];
+  if(pnfft_flags & PNFFT_TRANSPOSED_F_HAT){
+    /* g_hat is transposed N1 x N2 x N0 */
+    for(k1=0; k1<local_N[1]; k1++)
+      for(k2=0; k2<local_N[2]; k2++)
+        for(k0=0; k0<local_N[0]; k0++, k++)
+          out[k] = in[k] * inv_phi_hat0[k0] * inv_phi_hat1[k1] * inv_phi_hat2[k2];
+  } else {
+    /* g_hat is non-transposed N0 x N1 x N2 */
+    for(k0=0; k0<local_N[0]; k0++)
+      for(k1=0; k1<local_N[1]; k1++)
+        for(k2=0; k2<local_N[2]; k2++, k++)
+          out[k] = in[k] * inv_phi_hat0[k0] * inv_phi_hat1[k1] * inv_phi_hat2[k2];
+  }
 }
 
 void PNX(precompute_inv_phi_hat_trafo)(

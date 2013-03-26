@@ -51,7 +51,7 @@ int main(int argc, char **argv){
   }
 
   /* Get parameters of data distribution */
-  pnfft_local_size_3d(N, comm_cart_3d,
+  pnfft_local_size_3d(N, comm_cart_3d, PNFFT_TRANSPOSED_NONE,
       local_N, local_N_start, lower_border, upper_border);
 
   /* Plan parallel NFFT */

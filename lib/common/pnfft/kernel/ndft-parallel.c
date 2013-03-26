@@ -386,25 +386,25 @@ static void local_size_B(
 
 void PNX(local_size_internal)(
     const INT *N, const INT *n, const INT *no,
-    MPI_Comm comm_cart,
-//     MPI_Comm comm_cart, unsigned pnfft_flags,
+    MPI_Comm comm_cart, unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,
     INT *local_no, INT *local_no_start
     )
 {
   INT howmany = 1;
+  unsigned pfft_flags = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
 
   PX(local_size_many_dft)(3, n, N, no, howmany,
-      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, PFFT_TRANSPOSED_IN,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags,
       local_N, local_N_start, local_no, local_no_start);
 
   /* map input index set from 0:N/2-1 to -N/2:N/2-1 */
-//   if(pnfft_flags & PNFFT_SHIFTED_IN)
+//   if(pnfft_flags & PNFFT_SHIFTED_F_HAT)
     for(int t=0; t<3; t++)
       local_N_start[t] -= N[t]/2;
 
   /* map output index set from 0:no/2-1 to -no/2:no/2-1 */
-//   if(pnfft_flags & PNFFT_SHIFTED_OUT)
+//   if(pnfft_flags & PNFFT_SHIFTED_X)
     for(int t=0; t<3; t++)
       local_no_start[t] -= no[t]/2;
 }
@@ -421,6 +421,7 @@ PNX(plan) PNX(init_internal)(
     MPI_Comm comm_cart
     )
 {
+  unsigned pfft_flags=0;
   INT howmany = 1;
   INT alloc_local_data_in, alloc_local_gc;
   INT gcells_below[3], gcells_above[3];
@@ -535,8 +536,9 @@ PNX(plan) PNX(init_internal)(
   get_size_gcells(m, ths->cutoff, pnfft_flags,
       gcells_below, gcells_above);
 
+  pfft_flags = (ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
   alloc_local_data_in = PX(local_size_many_dft)(3, n, N, no, howmany,
-      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, PFFT_TRANSPOSED_IN,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags,
       ths->local_N, ths->local_N_start, local_no, local_no_start);
 
   alloc_local_gc = PX(local_size_many_gc)(3, local_no, local_no_start,
@@ -544,7 +546,7 @@ PNX(plan) PNX(init_internal)(
       local_ngc, local_gc_start);
 
   /* update offsets such that they run from -N/2,...,N/2-1 */
-  PNX(local_size_internal)(N, n, no, comm_cart,
+  PNX(local_size_internal)(N, n, no, comm_cart, ths->pnfft_flags,
       ths->local_N, ths->local_N_start, ths->local_no, ths->local_no_start);
   
   ths->local_N_total  = PNX(prod_INT)(d, ths->local_N);
@@ -569,13 +571,19 @@ PNX(plan) PNX(init_internal)(
     ths->g1_buffer = NULL;
 
   /* plan PFFT */
+  pfft_flags = pfft_opt_flags;
+  if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT)
+    pfft_flags |= PFFT_TRANSPOSED_IN;
   ths->pfft_forw = PX(plan_many_dft)(3, n, N, no, howmany,
       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, ths->g1, ths->g2, comm_cart,
-      PFFT_FORWARD, PFFT_TRANSPOSED_IN| pfft_opt_flags);
+      PFFT_FORWARD, pfft_flags);
   
+  pfft_flags = pfft_opt_flags;
+  if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT) 
+    pfft_flags |= PFFT_TRANSPOSED_OUT;
   ths->pfft_back = PX(plan_many_dft)(3, n, no, N, howmany,
       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, ths->g2, ths->g1, comm_cart,
-      PFFT_BACKWARD, PFFT_TRANSPOSED_OUT| pfft_opt_flags);
+      PFFT_BACKWARD, pfft_flags);
 
   /* plan ghost cell send and receive */
   ths->gcplan = PX(plan_many_cgc)(3, no, howmany, PFFT_DEFAULT_BLOCKS,
@@ -623,21 +631,7 @@ PNX(plan) PNX(init_internal)(
         init_intpol_table_dpsi(ths->intpol_num_nodes, ths->intpol_order, ths->cutoff, ths->n[t], ths->m, t, ths,
             ths->intpol_tables_dpsi[t]);
       }
-//     ths->intpol_tables_psi  = (R**) PNX(malloc)(sizeof(R*) * (size_t) d);
-//     for(int t=0; t<d; t++){
-//       ths->intpol_tables_psi[t] = (R*) PNX(malloc)(sizeof(R)*(ths->intpol_num_nodes+3));
-//       init_intpol_table_psi(ths->intpol_num_nodes, ths->n[t], ths->m, t, ths,
-//           ths->intpol_tables_psi[t]);
-//     }
-//     if( !(pnfft_flags & (PNFFT_GRAD_IK | PNFFT_GRAD_NONE) ) ){
-//       ths->intpol_tables_dpsi = (R**) PNX(malloc)(sizeof(R*) * (size_t) ths->d);
-//       for(int t=0; t<d; t++){
-//         ths->intpol_tables_dpsi[t] = (R*) PNX(malloc)(sizeof(R)*(ths->intpol_num_nodes+3));
-//         init_intpol_table_dpsi(ths->intpol_num_nodes, ths->n[t], ths->m, t, ths,
-//             ths->intpol_tables_dpsi[t]);
-//       }
     }
-
   }
 
   /* init compute flags before malloc f and f_grad */

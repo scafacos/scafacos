@@ -105,7 +105,7 @@ FCSResult ifcs_p2nfft_init(
   d->tune_p = 1;
   d->flags = FCS_P2NFFT_CHECK_TOLERANCE; /* 1: continue even if accuracy estimation fails */
 
-  d->pnfft_flags = PNFFT_MALLOC_F_HAT| PNFFT_PRE_PHI_HAT | PNFFT_FFT_OUT_OF_PLACE;
+  d->pnfft_flags = PNFFT_MALLOC_F_HAT| PNFFT_PRE_PHI_HAT | PNFFT_FFT_OUT_OF_PLACE | PNFFT_TRANSPOSED_F_HAT;
   d->pnfft_interpolation_order = 3;
   d->pnfft_window = FCS_P2NFFT_DEFAULT_PNFFT_WINDOW;
   d->pfft_flags = PFFT_NO_TUNE | PFFT_DESTROY_INPUT;

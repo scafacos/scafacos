@@ -751,7 +751,7 @@ FCSResult ifcs_p2nfft_tune_2dp(
 
     /* calculate local data distribution according to PNFFT:
      * local_N, local_N_start, lower_border, upper_border */
-    FCS_PNFFT(local_size_guru)(3, d->N, d->n, d->x_max, d->m, d->cart_comm_pnfft,
+    FCS_PNFFT(local_size_guru)(3, d->N, d->n, d->x_max, d->m, d->cart_comm_pnfft, d->pnfft_flags,
         d->local_N, d->local_N_start, d->lower_border, d->upper_border);
     
     /* shift and scale decomposition of the torus with box lengths */
@@ -2135,13 +2135,13 @@ static fcs_float p2nfft_k_space_error_general_window(
   fcs_float alias_k, alias_sum, local_alias_sum = 0.0;
   ptrdiff_t k[3];
 
-  FCS_PNFFT(local_size_guru)(3, N, N, x_max, m, comm,
+  FCS_PNFFT(local_size_guru)(3, N, N, x_max, m, comm, PNFFT_TRANSPOSED_F_HAT,
       local_N, local_N_start, lower_border, upper_border);
 
   /* Fast initialize of PNFFT, since we want to get the inverse Fourier coefficients.
    * Do not allocate arrays and do not tune PFFT */
   FCS_PNFFT(init_guru)(&pnfft, 3, N, N, x_max, local_M, m,
-      window_flag, PFFT_ESTIMATE, comm);
+      PNFFT_TRANSPOSED_F_HAT | window_flag, PFFT_ESTIMATE, comm);
 
   for(k[0]=local_N_start[0]; k[0]<local_N_start[0]+local_N[0]; k[0]++){
     for(k[1]=local_N_start[1]; k[1]<local_N_start[1]+local_N[1]; k[1]++){

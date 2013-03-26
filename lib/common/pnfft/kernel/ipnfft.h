@@ -265,7 +265,7 @@ void PNX(rmplan)(
     PNX(plan) ths);
 void PNX(local_size_internal)(
     const INT *N, const INT *n, const INT *no,
-    MPI_Comm comm_cart_2d,
+    MPI_Comm comm_cart_2d, unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,
     INT *local_no, INT *local_no_start);
 PNX(plan) PNX(init_internal)(

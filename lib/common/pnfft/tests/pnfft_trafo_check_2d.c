@@ -121,7 +121,7 @@ static void pnfft_perform_guru(
   }
 
   /* get parameters of data distribution */
-  pnfft_local_size_guru(3, N, n, x_max, m, comm_cart_2d,
+  pnfft_local_size_guru(3, N, n, x_max, m, comm_cart_2d, PNFFT_TRANSPOSED_NONE,
       local_N, local_N_start, lower_border, upper_border);
 
   /* plan parallel NFFT */
@@ -135,7 +135,7 @@ static void pnfft_perform_guru(
   x     = pnfft_get_x(pnfft);
 
   /* initialize Fourier coefficients */
-  pnfft_init_f_hat_3d(N, local_N, local_N_start,
+  pnfft_init_f_hat_3d(N, local_N, local_N_start, PNFFT_TRANSPOSED_NONE,
       f_hat);
 
   /* initialize nonequispaced nodes */

@@ -30,7 +30,7 @@ static void fft_output_size(
 
 void PNX(local_size_guru)(
     int d, const INT *N, const INT *n, const R *x_max, int m,
-    MPI_Comm comm_cart,
+    MPI_Comm comm_cart, unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,
     R *lower_border, R *upper_border
     )
@@ -45,7 +45,7 @@ void PNX(local_size_guru)(
   fft_output_size(n, x_max, m,
       no);
 
-  PNX(local_size_internal)(N, n, no, comm_cart,
+  PNX(local_size_internal)(N, n, no, comm_cart, pnfft_flags,
       local_N, local_N_start, local_no, local_no_start);
 
   PNX(node_borders)(n, local_no, local_no_start, x_max,

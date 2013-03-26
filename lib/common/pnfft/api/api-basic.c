@@ -36,6 +36,7 @@ void PNX(cleanup) (void){
 
 void PNX(local_size_3d)(
     const INT *N, MPI_Comm comm_cart,
+    unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,
     R *lower_border, R *upper_border
     )
@@ -43,7 +44,7 @@ void PNX(local_size_3d)(
   const int d=3;
 
   PNX(local_size_adv)(
-      d, N, comm_cart,
+      d, N, comm_cart, pnfft_flags,
       local_N, local_N_start, lower_border, upper_border);
 }
 
@@ -84,17 +85,25 @@ void PNX(init_nodes)(
 }
 
 static void scale_ik_diff_c2c(
-    const C* g1_buffer, INT *local_N_start, INT *local_N, int dim,
+    const C* g1_buffer, INT *local_N_start, INT *local_N, int dim, unsigned pnfft_flags,
     C* g1
     )
 {
   INT k[3], m=0;
 
-  /* g_hat is transposed N1 x N2 x N0 */
-  for(k[1]=local_N_start[1]; k[1]<local_N_start[1] + local_N[1]; k[1]++)
-    for(k[2]=local_N_start[2]; k[2]<local_N_start[2] + local_N[2]; k[2]++)
-      for(k[0]=local_N_start[0]; k[0]<local_N_start[0] + local_N[0]; k[0]++, m++)
-        g1[m] = -2*PNFFT_PI * I * k[dim] * g1_buffer[m];
+  if(pnfft_flags & PNFFT_TRANSPOSED_F_HAT){
+    /* g_hat is transposed N1 x N2 x N0 */
+    for(k[1]=local_N_start[1]; k[1]<local_N_start[1] + local_N[1]; k[1]++)
+      for(k[2]=local_N_start[2]; k[2]<local_N_start[2] + local_N[2]; k[2]++)
+        for(k[0]=local_N_start[0]; k[0]<local_N_start[0] + local_N[0]; k[0]++, m++)
+          g1[m] = -2*PNFFT_PI * I * k[dim] * g1_buffer[m];
+  } else {
+    /* g_hat is non-transposed N0 x N1 x N2 */
+    for(k[0]=local_N_start[0]; k[0]<local_N_start[0] + local_N[0]; k[0]++)
+      for(k[1]=local_N_start[1]; k[1]<local_N_start[1] + local_N[1]; k[1]++)
+        for(k[2]=local_N_start[2]; k[2]<local_N_start[2] + local_N[2]; k[2]++, m++)
+          g1[m] = -2*PNFFT_PI * I * k[dim] * g1_buffer[m];
+  }
 }
 
 static void grad_ik_complex_input(
@@ -119,7 +128,7 @@ static void grad_ik_complex_input(
   /* calculate gradient component wise */
   for(int dim =0; dim<3; dim++){
     ths->timer_trafo[PNFFT_TIMER_MATRIX_D] -= MPI_Wtime();
-    scale_ik_diff_c2c(ths->g1_buffer, ths->local_N_start, ths->local_N, dim,
+    scale_ik_diff_c2c(ths->g1_buffer, ths->local_N_start, ths->local_N, dim, ths->pnfft_flags,
       ths->g1);
     ths->timer_trafo[PNFFT_TIMER_MATRIX_D] += MPI_Wtime();
     
@@ -395,10 +404,19 @@ unsigned PNX(get_pfft_flags)(
 
 void PNX(init_f_hat_3d)(
     const INT *N, const INT *local_N, const INT *local_N_start,
+    unsigned pnfft_flags,
     C *data
     )
 {
-  PX(init_input_c2c_3d)(N, local_N, local_N_start,
+  INT local_Nt[3], local_Nt_start[3];
+  int shift = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? 1 : 0;
+
+  for(int t=0; t<3; t++){
+    local_Nt[t] = local_N[(t + shift) % 3];
+    local_Nt_start[t] = local_N_start[(t + shift) % 3];
+  }
+
+  PX(init_input_c2c_3d)(N, local_Nt, local_Nt_start,
       data);
 }
 
@@ -496,10 +514,18 @@ void PNX(vpr_real)(
 
 
 void PNX(apr_complex_3d)(
-     C *data, INT *local_N, INT *local_N_start,
+     C *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,
      const char *name, MPI_Comm comm
      )
 {
+  INT local_Nt[3], local_Nt_start[3];
+  int shift = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? 1 : 0;
+
+  for(int t=0; t<3; t++){
+    local_Nt[t] = local_N[(t + shift) % 3];
+    local_Nt_start[t] = local_N_start[(t + shift) % 3];
+  }
+
   PX(apr_complex_3d)(
-     data, local_N, local_N_start, name, comm);
+     data, local_Nt, local_Nt_start, name, comm);
 }

@@ -35,7 +35,7 @@ int main(int argc, char **argv)
   }
   
   /* Get parameters of data distribution */
-  pnfft_local_size_3d(N, comm_cart_2d,
+  pnfft_local_size_3d(N, comm_cart_2d, PNFFT_TRANSPOSED_NONE,
       local_N, local_N_start, lower_border, upper_border);
   
   /* Plan parallel NFFT */
@@ -46,12 +46,12 @@ int main(int argc, char **argv)
   x     = pnfft_get_x(plan);
 
   /* Initialize Fourier coefficients with random numbers */
-  pnfft_init_f_hat_3d(N, local_N, local_N_start,
+  pnfft_init_f_hat_3d(N, local_N, local_N_start, PNFFT_TRANSPOSED_NONE,
       f_hat);
   
   /* Print input data */
   pnfft_apr_complex_3d(
-      f_hat, local_N, local_N_start, "PNFFT, f_hat", MPI_COMM_WORLD);
+      f_hat, local_N, local_N_start, 0, "PNFFT, f_hat", MPI_COMM_WORLD);
   
   /* Initialize nodes with random numbers */
   pnfft_init_x_3d(lower_border, upper_border, local_M,
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
   
   /* Print result of adjoint NFFT */
   pnfft_apr_complex_3d(
-      f_hat, local_N, local_N_start, "PNFFT^H, f_hat", MPI_COMM_WORLD);
+      f_hat, local_N, local_N_start, 0, "PNFFT^H, f_hat", MPI_COMM_WORLD);
 
   /* free mem and finalize */
   pnfft_finalize(plan, PNFFT_FREE_X | PNFFT_FREE_F_HAT | PNFFT_FREE_F);

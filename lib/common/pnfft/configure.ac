@@ -427,12 +427,12 @@ AC_CONFIG_LINKS([tests/plot_m_vs_error.py:tests/plot_m_vs_error.py])
 # The output files to be generated
 AC_CONFIG_FILES(Makefile \
                 pnfft.pc \
-                api/pnfft.f \
+                api/pnfft.f03 \
+                api/pnfftl.f03 \
 		kernel/Makefile \
 		util/Makefile \
 		api/Makefile \
 		tests/Makefile \
 		tests/f03/Makefile)
-# 		tests/fortran/Makefile)
 
 AC_OUTPUT

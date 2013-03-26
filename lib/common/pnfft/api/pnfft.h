@@ -59,15 +59,17 @@
                                                                                         \
   PNFFT_EXTERN void PNX(local_size_3d)(                                                 \
       const INT *N, MPI_Comm comm_cart,                                                 \
+      unsigned pnfft_flags,                                                             \
       INT *local_N, INT *local_N_start,                                                 \
       R *lower_border, R *upper_border);                                                \
   PNFFT_EXTERN void PNX(local_size_adv)(                                                \
       int d, const INT *N, MPI_Comm comm_cart,                                          \
+      unsigned pnfft_flags,                                                             \
       INT *local_N, INT *local_N_start,                                                 \
       R *lower_border, R *upper_border);                                                \
   PNFFT_EXTERN void PNX(local_size_guru)(                                               \
       int d, const INT *N, const INT *n, const R *x_max, int m,                         \
-      MPI_Comm comm_cart,                                                               \
+      MPI_Comm comm_cart, unsigned pnfft_flags,                                         \
       INT *local_N, INT *local_N_start,                                                 \
       R *lower_border, R *upper_border);                                                \
                                                                                         \
@@ -144,7 +146,7 @@
                                                                                         \
   PNFFT_EXTERN void PNX(init_f_hat_3d)(                                                 \
       const INT *N, const INT *local_N,                                                 \
-      const INT *local_N_start,                                                         \
+      const INT *local_N_start, unsigned pnfft_flags,                                   \
       C *data);                                                                         \
   PNFFT_EXTERN void PNX(init_f)(                                                        \
       INT local_M,                                                                      \
@@ -170,7 +172,7 @@
   PNFFT_EXTERN void PNX(vpr_real)(                                                      \
       R *data, INT N, const char *name, MPI_Comm comm);                                 \
   PNFFT_EXTERN void PNX(apr_complex_3d)(                                                \
-      C *data, INT *local_N, INT *local_N_start,                                        \
+      C *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,                  \
       const char *name, MPI_Comm comm);                                                 \
                                                                                         \
   PNFFT_EXTERN double *PNX(get_timer_trafo)(                                            \
@@ -247,22 +249,25 @@ PNFFT_DEFINE_API(PNFFT_MANGLE_LONG_DOUBLE, PFFT_MANGLE_LONG_DOUBLE, FFTW_MANGLE_
 #define PNFFT_FFT_IN_PLACE     (1U<< 12)
 #define PNFFT_SORT_NODES       (1U<< 13)
 #define PNFFT_INTERLACED       (1U<< 14)
-#define PNFFT_SHIFTED_IN       (1U<< 15)
-#define PNFFT_SHIFTED_OUT      (1U<< 16)
+#define PNFFT_SHIFTED_F_HAT    (1U<< 15)
+#define PNFFT_SHIFTED_X        (1U<< 16)
+#define PNFFT_TRANSPOSED_NONE  (0U)
+#define PNFFT_TRANSPOSED_F_HAT (1U<< 17)
 
 #define PNFFT_GRAD_AD          (0U)
-#define PNFFT_GRAD_IK          (1U<< 17)
-#define PNFFT_GRAD_NONE        (1U<< 18) /* turn off gradient NFFT and save memory for buffers */
+#define PNFFT_GRAD_IK          (1U<< 18)
+#define PNFFT_GRAD_NONE        (1U<< 19) /* turn off gradient NFFT and save memory for buffers */
 
 /* enable some optimizations for real inputs */
-#define PNFFT_REAL_F           (1U<< 19)
+#define PNFFT_REAL_F           (1U<< 20)
 
 /* default window function is Kaiser-Bessel */
 #define PNFFT_WINDOW_KAISER_BESSEL  (0U)
-#define PNFFT_WINDOW_GAUSSIAN       (1U<< 20)
-#define PNFFT_WINDOW_BSPLINE        (1U<< 21)
-#define PNFFT_WINDOW_SINC_POWER     (1U<< 22)
-#define PNFFT_WINDOW_BESSEL_I0      (1U<< 23)
+#define PNFFT_WINDOW_GAUSSIAN       (1U<< 21)
+#define PNFFT_WINDOW_BSPLINE        (1U<< 22)
+#define PNFFT_WINDOW_SINC_POWER     (1U<< 23)
+#define PNFFT_WINDOW_BESSEL_I0      (1U<< 24)
+
 
 #define PNFFT_PRE_INTPOL_PSI ((PNFFT_PRE_CONST_PSI| PNFFT_PRE_LIN_PSI| PNFFT_PRE_QUAD_PSI| PNFFT_PRE_KUB_PSI))
 #define PNFFT_PRE_ONE_PSI    ((PNFFT_PRE_INTPOL_PSI| PNFFT_PRE_FG_PSI| PNFFT_PRE_PSI| PNFFT_PRE_FULL_PSI))

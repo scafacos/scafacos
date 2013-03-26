@@ -46,7 +46,7 @@ int main(int argc, char **argv){
   }
 
   /* Get parameters of data distribution */
-  pnfft_local_size_3d(N, comm_cart_3d,
+  pnfft_local_size_3d(N, comm_cart_3d, PNFFT_TRANSPOSED_NONE,
       local_N, local_N_start, lower_border, upper_border);
 
   /* Plan parallel NFFT */
@@ -58,7 +58,7 @@ int main(int argc, char **argv){
   x     = pnfft_get_x(pnfft);
 
   /* Initialize Fourier coefficients */
-  pnfft_init_f_hat_3d(N, local_N, local_N_start,
+  pnfft_init_f_hat_3d(N, local_N, local_N_start, PNFFT_TRANSPOSED_NONE,
       f_hat);
 
   /* Initialize nonequispaced nodes */

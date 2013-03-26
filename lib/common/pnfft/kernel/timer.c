@@ -282,10 +282,12 @@ static void write_run_specific_infos(
     PX(fprintf)(comm, file, " | PNFFT_SORT_NODES");
   if(ths->pnfft_flags & PNFFT_INTERLACED)
     PX(fprintf)(comm, file, " | PNFFT_INTERLACED");
-  if(ths->pnfft_flags & PNFFT_SHIFTED_IN)
-    PX(fprintf)(comm, file, " | PNFFT_SHIFTED_IN");
-  if(ths->pnfft_flags & PNFFT_SHIFTED_OUT)
-    PX(fprintf)(comm, file, " | PNFFT_SHIFTED_OUT");
+  if(ths->pnfft_flags & PNFFT_SHIFTED_F_HAT)
+    PX(fprintf)(comm, file, " | PNFFT_SHIFTED_F_HAT");
+  if(ths->pnfft_flags & PNFFT_SHIFTED_X)
+    PX(fprintf)(comm, file, " | PNFFT_SHIFTED_X");
+  if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT)
+    PX(fprintf)(comm, file, " | PNFFT_TRANSPOSED_F_HAT");
 
   if(ths->pnfft_flags & PNFFT_GRAD_IK)
     PX(fprintf)(comm, file, " | PNFFT_GRAD_IK");

@@ -41,7 +41,7 @@ program main
   endif
 
 ! Get parameters of data distribution
-  call pnfft_local_size_3d(N, comm_cart_3d, &
+  call pnfft_local_size_3d(N, comm_cart_3d, PNFFT_TRANSPOSED_NONE, &
       local_N, local_N_start, lower_border, upper_border)
 
 ! Plan parallel NFFT

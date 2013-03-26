@@ -126,7 +126,7 @@ static void pnfft_perform_guru(
     return;
   }
 
-  pnfft_local_size_guru(3, N, n, x_max, m, comm_cart_3d,
+  pnfft_local_size_guru(3, N, n, x_max, m, comm_cart_3d, PNFFT_TRANSPOSED_NONE,
       local_N, local_N_start, lower_border, upper_border);
 
   pnfft = pnfft_init_guru(3, N, n, x_max, local_M, m,
@@ -140,7 +140,7 @@ static void pnfft_perform_guru(
   *grad_f = pnfft_get_grad_f(pnfft);
   x       = pnfft_get_x(pnfft);
 
-  pnfft_init_f_hat_3d(N, local_N, local_N_start,
+  pnfft_init_f_hat_3d(N, local_N, local_N_start, PNFFT_TRANSPOSED_NONE,
       f_hat);
 
   srand(0);
