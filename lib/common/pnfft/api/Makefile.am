@@ -12,7 +12,7 @@ endif
 	
 noinst_LTLIBRARIES = libapi.la
 
-EXTRA_DIST = f03-api.sh f03-wrap.sh genf03-api.pl genf03-wrap.pl build-f03-interface.sh
+EXTRA_DIST = f03-api.sh f03-wrap.sh genf03-api.pl genf03-wrap.pl build-f03-api.sh
 
 # Group local sources into convenience lib.
 libapi_la_SOURCES = \
