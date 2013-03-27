@@ -2,8 +2,6 @@
 #include <complex.h>
 #include <pnfft.h>
 
-double pnfft_bessel_i0(double x);
-
 static void init_equispaced_x(
     const ptrdiff_t *N, const double *lo, const double *up,
     double *x);
@@ -87,7 +85,7 @@ int main(int argc, char **argv){
   }
 
   /* get parameters of data distribution */
-  pnfft_local_size_3d(N, comm_cart_3d, PNFFT_TRANSPOSED_NONE,
+  pnfft_local_size_guru(3, N, n, x_max, m, comm_cart_3d, PNFFT_TRANSPOSED_NONE,
       local_N, local_N_start, lower_border, upper_border);
 
   local_M = local_N[0]*local_N[1]*local_N[2];
@@ -96,19 +94,6 @@ int main(int argc, char **argv){
   pnfft = pnfft_init_guru(3, N, n, x_max, local_M, m,
       PNFFT_MALLOC_X| PNFFT_MALLOC_F_HAT| PNFFT_MALLOC_F| window_flag, PFFT_ESTIMATE,
       comm_cart_3d);
-
-  double t=0.1;
-  pfft_printf(MPI_COMM_WORLD, "Psi(%f) = %.16e\n", t, pnfft_psi(pnfft, 0, t));
-  ptrdiff_t kt=5;
-  pfft_printf(MPI_COMM_WORLD, "Phi_hat(%td) = %.16e\n", kt, pnfft_phi_hat(pnfft, 0, kt));
-
-  t=0.1;  pfft_printf(MPI_COMM_WORLD, "pnfft_bessel_i0(%f) = %.16e\n", t, pnfft_bessel_i0(t));
-  t=0.0;  pfft_printf(MPI_COMM_WORLD, "pnfft_bessel_i0(%f) = %.16e\n", t, pnfft_bessel_i0(t));
-  t=10.0; pfft_printf(MPI_COMM_WORLD, "pnfft_bessel_i0(%f) = %.16e\n", t, pnfft_bessel_i0(t));
-  t=15.0; pfft_printf(MPI_COMM_WORLD, "pnfft_bessel_i0(%f) = %.16e\n", t, pnfft_bessel_i0(t));
-  t=16.0; pfft_printf(MPI_COMM_WORLD, "pnfft_bessel_i0(%f) = %.16e\n", t, pnfft_bessel_i0(t));
-  t=20.0; pfft_printf(MPI_COMM_WORLD, "pnfft_bessel_i0(%f) = %.16e\n", t, pnfft_bessel_i0(t));
-  t=2000; pfft_printf(MPI_COMM_WORLD, "pnfft_bessel_i0(%f) = %.16e\n", t, pnfft_bessel_i0(t));
 
   /* get data pointers */
   f_hat = pnfft_get_f_hat(pnfft);
@@ -124,15 +109,15 @@ int main(int argc, char **argv){
       x);
 
   /* print input Fourier coefficents */
-  vpr_complex(comm_cart_3d, 8, f_hat,
-      "Input Fourier coefficients on process 1:");
+//   vpr_complex(comm_cart_3d, 8, f_hat,
+//       "Input Fourier coefficients on process 1:");
 
   /* execute parallel NFFT */
   pnfft_trafo(pnfft);
 
   /* print NFFT results */
-  vpr_complex(comm_cart_3d, 8, f,
-      "PNFFT Results on process 1:");
+//   vpr_complex(comm_cart_3d, 8, f,
+//       "PNFFT Results on process 1:");
 
   /* execute parallel adjoint NFFT */
   pnfft_adj(pnfft);
@@ -142,8 +127,8 @@ int main(int argc, char **argv){
     f_hat[k] /= (N[0]*N[1]*N[2]);
 
   /* print output Fourier coefficents */
-  vpr_complex(comm_cart_3d, 8, f_hat,
-      "Fourier coefficients after one forward and backward PNFFT on process 1:");
+//   vpr_complex(comm_cart_3d, 8, f_hat,
+//       "Fourier coefficients after one forward and backward PNFFT on process 1:");
 
   /* calculate norm of Fourier coefficients for calculation of relative error */ 
   local_f_hat_sum = 0.0;
@@ -177,6 +162,7 @@ static void init_input_c2c_3d(
       for(ptrdiff_t k2=local_start[2]; k2<local_start[2]+local_n[2]; k2++, m++){
         glob_ind = (k0+n[0]/2)*n[1]*n[2] + (k1+n[1]/2)*n[2] + (k2+n[2]/2);
         data[m] = 1000.0/(2*glob_ind+1) + 1000.0/(2*glob_ind+2)*I;
+        fprintf(stderr, "data[%td] = %f + I * %f\n", m, creal(data[m]), cimag(data[m]));
       }
 }
 
@@ -236,7 +222,7 @@ static void init_equispaced_x(
     local_N[t] = ((up[t]-lo[t]) * N[t]);
     local_N_start[t] = lo[t] * N[t];
   }
-  
+
   m=0;
   for(ptrdiff_t k0=local_N_start[0]; k0<local_N_start[0] + local_N[0]; k0++)
     for(ptrdiff_t k1=local_N_start[1]; k1<local_N_start[1] + local_N[1]; k1++)

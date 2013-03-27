@@ -23,14 +23,13 @@ check_PROGRAMS = \
 # do not compile checks
 #else
 check_PROGRAMS += \
-	pnfft_trafo_check \
-	pnfft_trafo_check_grad \
-	pnfft_trafo_check_2d \
-	pnfft_adj_check \
-	pnfft_check_vs_pfft \
+	check_trafo check_trafo_transposed \
+	check_trafo_grad check_trafo_transposed_grad \
+	check_trafo_2d check_trafo_transposed_2d \
+	check_adj check_adj_transposed \
+	check_vs_pfft \
 	pnfft_test \
-	pnfft_test_adv \
-	pnfft_check_trafo_transposed 
+	pnfft_test_adv
 #endif
 
 EXTRA_DIST = \

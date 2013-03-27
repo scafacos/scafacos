@@ -300,6 +300,9 @@ void PNX(node_borders)(
     const INT *local_no, const INT *local_no_start,
     const R* x_max,
     R *lo, R *up);
+void PNX(scale_ik_diff_c2c)(
+    const C* g1_buffer, INT *local_N_start, INT *local_N, int dim, unsigned pnfft_flags,
+    C* g1);
 
 /* assgin.c */
 void PNX(spread_f_c2c)(

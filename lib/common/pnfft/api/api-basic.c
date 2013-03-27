@@ -84,28 +84,6 @@ void PNX(init_nodes)(
   PNX(malloc_grad_f)(ths, pnfft_flags);
 }
 
-static void scale_ik_diff_c2c(
-    const C* g1_buffer, INT *local_N_start, INT *local_N, int dim, unsigned pnfft_flags,
-    C* g1
-    )
-{
-  INT k[3], m=0;
-
-  if(pnfft_flags & PNFFT_TRANSPOSED_F_HAT){
-    /* g_hat is transposed N1 x N2 x N0 */
-    for(k[1]=local_N_start[1]; k[1]<local_N_start[1] + local_N[1]; k[1]++)
-      for(k[2]=local_N_start[2]; k[2]<local_N_start[2] + local_N[2]; k[2]++)
-        for(k[0]=local_N_start[0]; k[0]<local_N_start[0] + local_N[0]; k[0]++, m++)
-          g1[m] = -2*PNFFT_PI * I * k[dim] * g1_buffer[m];
-  } else {
-    /* g_hat is non-transposed N0 x N1 x N2 */
-    for(k[0]=local_N_start[0]; k[0]<local_N_start[0] + local_N[0]; k[0]++)
-      for(k[1]=local_N_start[1]; k[1]<local_N_start[1] + local_N[1]; k[1]++)
-        for(k[2]=local_N_start[2]; k[2]<local_N_start[2] + local_N[2]; k[2]++, m++)
-          g1[m] = -2*PNFFT_PI * I * k[dim] * g1_buffer[m];
-  }
-}
-
 static void grad_ik_complex_input(
     PNX(plan) ths
     )
@@ -128,7 +106,7 @@ static void grad_ik_complex_input(
   /* calculate gradient component wise */
   for(int dim =0; dim<3; dim++){
     ths->timer_trafo[PNFFT_TIMER_MATRIX_D] -= MPI_Wtime();
-    scale_ik_diff_c2c(ths->g1_buffer, ths->local_N_start, ths->local_N, dim, ths->pnfft_flags,
+    PNX(scale_ik_diff_c2c)(ths->g1_buffer, ths->local_N_start, ths->local_N, dim, ths->pnfft_flags,
       ths->g1);
     ths->timer_trafo[PNFFT_TIMER_MATRIX_D] += MPI_Wtime();
     
@@ -416,19 +394,22 @@ void PNX(init_f_hat_3d)(
     local_Nt_start[t] = local_N_start[(t + shift) % 3];
   }
 
+  printf("local_Nt = [%td, %td, %td], local_Nt_start = [%td, %td, %td]\n", local_Nt[0], local_Nt[1], local_Nt[2], local_Nt_start[0], local_Nt_start[1], local_Nt_start[2]);
+
   PX(init_input_c2c_3d)(N, local_Nt, local_Nt_start,
       data);
 }
 
 void PNX(init_f)(
     INT local_M,
-    C *data
+    fftw_complex *data
     )
 {
-  INT local_M_start = 0;
-
-  PX(init_input_c2c)(1, &local_M, &local_M, &local_M_start,
-      data);
+  for (INT j=0; j<local_M; j++){
+    R real = 100.0 * (R) rand() / RAND_MAX;
+    R imag = 100.0 * (R) rand() / RAND_MAX;
+    data[j] = real + imag * I;
+  }
 }
 
 void PNX(init_x_3d)(

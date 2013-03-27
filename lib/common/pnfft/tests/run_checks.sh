@@ -4,10 +4,10 @@
 test_files_4="$test_files simple_test"
 
 ## 3D:
-test_files_2="$test_files pnfft_check_2d"
+test_files_2="$test_files check_trafo_2d"
 
 ## 3D on 3D procmesh:
-test_files_8="$test_files pnfft_check pnfft_check_grad"
+test_files_8="$test_files check_trafo check_trafo_grad"
 test_files_8="$test_files pnfft_test pnfft_test_adv"
 
 

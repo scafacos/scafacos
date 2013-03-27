@@ -5,7 +5,7 @@ import subprocess
 def compute_error(window, m, fname):
     """Compute the relative NFFT error for given window and cutoff parameter 'm'."""
 
-    line="mpirun -np 8 pnfft_check_vs_pfft -pnfft_m " + str(m) + " -pnfft_window " + str(window)
+    line="mpirun -np 8 check_vs_pfft -pnfft_m " + str(m) + " -pnfft_window " + str(window)
 #     print(line)
     print m
 

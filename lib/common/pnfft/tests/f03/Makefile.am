@@ -22,3 +22,7 @@ check_PROGRAMS += \
 	pnfft_test \
 	pnfft_trafo_check
 #endif
+
+mostlyclean-local:
+	-rm -f subs.mod
+	-rm -f pnfftmod.mod
