@@ -96,7 +96,7 @@ include_HEADERS += \
   fcs_pepc_p.h
 endif
 
-if ENABLE_PP3MG_PMG
+if ENABLE_PP3MG
 libfcs_a_SOURCES += \
   fcs_pp3mg.h \
   fcs_pp3mg.c

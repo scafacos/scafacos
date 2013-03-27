@@ -58,7 +58,7 @@ int main (int argc, char **argv)
 #if FCS_ENABLE_FMM
   char FMM_parameters[] = "fmm_absrel,2,fmm_dipole_correction,0,fmm_tolerance_energy,1e-6,fmm_internal_tuning,0ll";
 #endif
-#if FCS_ENABLE_PP3MG_PMG
+#if FCS_ENABLE_PP3MG
   char PP3MG_parameters[] = "pp3mg_cells_x,128,pp3mg_cells_y,128,pp3mg_cells_z,128,pp3mg_ghosts,4";
 #endif
 #if FCS_ENABLE_P2NFFT
@@ -94,7 +94,7 @@ int main (int argc, char **argv)
 #if FCS_ENABLE_P3M
   FCS handle_p3m    = NULL;
 #endif
-#if FCS_ENABLE_PP3MG_PMG
+#if FCS_ENABLE_PP3MG
   FCS handle_pp3mg = NULL;
 #endif
 #if FCS_ENABLE_VMG
@@ -224,7 +224,7 @@ int main (int argc, char **argv)
 
   if (comm_rank == 0)
     printf ("\n");
-#if FCS_ENABLE_PP3MG_PMG
+#if FCS_ENABLE_PP3MG
   if (comm_rank == 0)
     printf ("Initializing %s method...\n", "pp3mg");
   result = fcs_init (&handle_pp3mg, "pp3mg", communicator);
@@ -288,11 +288,11 @@ int main (int argc, char **argv)
 
   MPI_Barrier(communicator);         
 
-#if FCS_ENABLE_PP3MG_PMG
+#if FCS_ENABLE_PP3MG
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
-    printf ("Setting common data for pp3mg_pmg...\n");
+    printf ("Setting common data for pp3mg...\n");
   result = fcs_parser(handle_pp3mg, common_parameters, FCS_FALSE);
   if (comm_rank == 0)
     fcsResult_printResult (result);
@@ -504,7 +504,7 @@ int main (int argc, char **argv)
     {
       switch(i%6)
       {
-#if FCS_ENABLE_PP3MG_PMG        
+#if FCS_ENABLE_PP3MG
         case 0:
           if (comm_rank == 0)
             printf ("\n");
@@ -659,7 +659,7 @@ int main (int argc, char **argv)
   free (box_c);
   free (offset);
 
-#if FCS_ENABLE_PP3MG_PMG  
+#if FCS_ENABLE_PP3MG
   fcs_destroy (handle_pp3mg);
 #endif
 #if FCS_ENABLE_FMM  

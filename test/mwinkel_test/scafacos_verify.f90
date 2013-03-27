@@ -26,7 +26,7 @@ module globals
   integer, parameter :: rk = kind(dummy)
 
   ! default values taken from interface test
-#if FCS_ENABLE_PP3MG_PMG
+#if FCS_ENABLE_PP3MG
     integer :: PP3MG_dims(0:2)
     fcs_integer :: PP3MG_cells_x = 64! 64
     fcs_integer :: PP3MG_cells_y = 64! 64
@@ -87,7 +87,7 @@ subroutine setup_methodspecific(handle, my_rank, num_ranks)
   call fcshandle_get_method(handle, method)
 
   select case (method)
-#if FCS_ENABLE_PP3MG_PMG
+#if FCS_ENABLE_PP3MG
     case (FCS_PP3MG)
         if (num_ranks > 1) then
             PP3MG_dims(0:2) = 0

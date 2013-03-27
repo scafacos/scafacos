@@ -172,7 +172,7 @@ FCSResult fcs_init ( FCS *handle, const char* method, MPI_Comm communicator )
 #ifdef FCS_ENABLE_PEPC
   (*handle)->pepc_param = NULL;
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
   (*handle)->pp3mg_param = NULL;
 #endif
 #ifdef FCS_ENABLE_VMG
@@ -264,7 +264,7 @@ FCSResult fcs_init ( FCS *handle, const char* method, MPI_Comm communicator )
   }
 #endif
 
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
   if (strcmp(method, "pp3mg") == 0) {
     (*handle)->method = FCS_PP3MG;
     (*handle)->pp3mg_param = (fcs_pp3mg_parameters)malloc(sizeof(fcs_pp3mg_parameters_t));
@@ -379,7 +379,7 @@ FCSResult fcs_destroy(FCS handle) {
     return result;
       break;
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
     case FCS_PP3MG:
       result = fcs_pp3mg_destroy(handle);
       free(handle->pp3mg_param);
@@ -474,7 +474,7 @@ FCSResult fcs_tune(FCS handle, fcs_int local_particles, fcs_int local_max_partic
                 result = fcs_pepc_tune(handle, local_particles, local_max_particles, positions, charges);
                 return result;
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
             case FCS_PP3MG:
                 result = fcs_pp3mg_tune(handle, local_particles, local_max_particles, positions, charges);
                 return result;
@@ -566,7 +566,7 @@ FCSResult fcs_run(FCS handle, fcs_int local_particles, fcs_int local_max_particl
                 result = fcs_p3m_run(handle, local_particles, local_max_particles, positions, charges, field, potentials);
                 return result;
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
             case FCS_PP3MG:
                 result = fcs_pp3mg_run(handle, local_particles, local_max_particles, positions, charges, field, potentials);
                 return result;
@@ -638,7 +638,7 @@ FCSResult fcs_method_has_near(FCS handle, fcs_int *has_near)
                 *has_near = 1; 
                 return NULL;
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
             case FCS_PP3MG:
                 *has_near = 0;
                 return NULL;
@@ -1190,7 +1190,7 @@ void fcs_printHandle(FCS handle)
       printf("chosen method: p3m\n");
       break;
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
     case FCS_PP3MG:
       printf("chosen method: pp3mg\n");
       break;
@@ -1344,7 +1344,7 @@ void fcs_printHandle(FCS handle)
         break;
       }
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
     case FCS_PP3MG:
       {
 	fcs_int cells_x, cells_y, cells_z;
@@ -1712,7 +1712,7 @@ FCSResult fcs_parser(FCS handle, const char *parameters, fcs_bool continue_on_er
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_npm",               pepc_set_npm,               PARSE_VAL(fcs_float));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_debug_level",       pepc_set_debug_level,       PARSE_VAL(fcs_int));
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_x",        pp3mg_set_cells_x,        PARSE_VAL(fcs_int));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_y",        pp3mg_set_cells_y,        PARSE_VAL(fcs_int));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_z",        pp3mg_set_cells_z,        PARSE_VAL(fcs_int));
@@ -1791,7 +1791,7 @@ FCSResult fcs_require_virial(FCS handle, fcs_int flag)
         case FCS_P2NFFT:
             return fcs_p2nfft_require_virial(handle, flag);
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
         case FCS_PP3MG:
             return fcs_pp3mg_require_virial(handle, flag);
 #endif
@@ -1848,7 +1848,7 @@ FCSResult fcs_get_virial(FCS handle, fcs_float *virial)
         case FCS_P2NFFT:
             return fcs_p2nfft_get_virial(handle, virial);
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
         case FCS_PP3MG:
             return fcs_pp3mg_get_virial(handle, virial);
 #endif
@@ -1902,7 +1902,7 @@ FCSResult fcs_set_r_cut(FCS handle, fcs_float r_cut)
         case FCS_P2NFFT:
             return fcs_p2nfft_set_r_cut(handle, r_cut);
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
         case FCS_PP3MG:
             return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"Change of r_cut not implemented");
 #endif
@@ -1956,7 +1956,7 @@ FCSResult fcs_unset_r_cut(FCS handle)
         case FCS_P2NFFT:
             return fcs_p2nfft_set_r_cut_tune(handle);
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
         case FCS_PP3MG:
             return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"Change of r_cut not implemented");
 #endif
@@ -2010,7 +2010,7 @@ FCSResult fcs_get_r_cut(FCS handle, fcs_float *r_cut)
         case FCS_P2NFFT:
             return fcs_p2nfft_get_r_cut(handle, r_cut);
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
         case FCS_PP3MG:
             return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"Change of r_cut not implemented");
 #endif
@@ -2091,7 +2091,7 @@ FCSResult fcs_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolera
         case FCS_PEPC:
             return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"Change of tolerance not implemented");
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
         case FCS_PP3MG:
             return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"Change of tolerance not implemented");
 #endif
@@ -2180,7 +2180,7 @@ FCSResult fcs_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tole
             return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"Getter for tolerance not implemented");
           }
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
         case FCS_PP3MG:
           {
             *tolerance_type = FCS_TOLERANCE_TYPE_UNDEFINED;

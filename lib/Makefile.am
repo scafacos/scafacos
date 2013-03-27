@@ -46,8 +46,8 @@ endif
 if ENABLE_PEPC
 SUBDIRS += pepc
 endif
-if ENABLE_PP3MG_PMG
-SUBDIRS += pp3mg_pmg
+if ENABLE_PP3MG
+SUBDIRS += pp3mg
 endif
 if ENABLE_VMG
 SUBDIRS += vmg

@@ -103,7 +103,7 @@ main (int argc, char **argv)
   */
   char PEPC_parameters[] = "PEPC_debuglevel,-1,PEPC_epsilon,0.5,PEPC_theta,0.5";
 #endif
-#if FCS_ENABLE_PP3MG_PMG
+#if FCS_ENABLE_PP3MG
   /*
   int *PP3MG_dims;
   fcs_int PP3MG_cells_x = 128;  
@@ -418,7 +418,7 @@ main (int argc, char **argv)
       fcsResult_destroy (result);
       break;
 #endif
-#if FCS_ENABLE_PP3MG_PMG
+#if FCS_ENABLE_PP3MG
     case FCS_PP3MG:
       if (comm_rank == 0)
     printf ("\n");

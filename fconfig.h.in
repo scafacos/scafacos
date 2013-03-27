@@ -63,8 +63,8 @@
 ! Whether solver method pepc is enabled.
 #undef FCS_ENABLE_PEPC
 
-! Whether solver method pp3mg_pmg is enabled.
-#undef FCS_ENABLE_PP3MG_PMG
+! Whether solver method pp3mg is enabled.
+#undef FCS_ENABLE_PP3MG
 
 ! Whether solver method vmg is enabled.
 #undef FCS_ENABLE_VMG

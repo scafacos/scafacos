@@ -59,7 +59,7 @@ extern "C" {
 #ifdef FCS_ENABLE_PEPC
 #include "fcs_pepc_p.h"
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
 #include "fcs_pp3mg_p.h"
 #endif
 #ifdef FCS_ENABLE_VMG

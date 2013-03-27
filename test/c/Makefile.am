@@ -97,7 +97,7 @@ endif
 if ENABLE_P3M
 dist_check_SCRIPTS += start_p3m.sh
 endif
-if ENABLE_PP3MG_PMG
+if ENABLE_PP3MG
 dist_check_SCRIPTS += start_pp3mg.sh
 endif
 if ENABLE_VMG

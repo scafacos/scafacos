@@ -13,14 +13,14 @@ ACLOCAL_AMFLAGS = -I m4
 include $(top_srcdir)/build-aux/lib_a_support.am
 
 if ENABLE_LIBRARY_INSTALL
-lib_LIBRARIES = libfcs_pp3mg_pmg.a
+lib_LIBRARIES = libfcs_pp3mg.a
 else
-noinst_LIBRARIES = libfcs_pp3mg_pmg.a
+noinst_LIBRARIES = libfcs_pp3mg.a
 endif
 
-libfcs_pp3mg_pmg_a_SOURCES =
+libfcs_pp3mg_a_SOURCES =
 
-libfcs_pp3mg_pmg.a: $(sublibs)
+libfcs_pp3mg.a: $(sublibs)
 	$(mkinstalldirs) .libs
 	rm -f $@
 	for l in $^ ; do l="./$${l}" lib="$${l##*/}" ; dir="$${l%$${lib}}" ; $(add_lib_objects) ; done

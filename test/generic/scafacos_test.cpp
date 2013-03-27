@@ -109,8 +109,8 @@ static void usage(char** argv, int argc, int c) {
 #ifdef FCS_ENABLE_PEPC
   cout << " pepc";
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
-  cout << " pp3mg_pmg";
+#ifdef FCS_ENABLE_PP3MG
+  cout << " pp3mg";
 #endif
 #ifdef FCS_ENABLE_VMG
   cout << " vmg";

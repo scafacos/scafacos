@@ -35,7 +35,7 @@
 #include "FCSResult.h"
 #include "FCSInterface.h"
 
-#include "pp3mg_pmg/pp3mg/pp3mg.h"
+#include "pp3mg/pp3mg/pp3mg.h"
 
 /**
  * @file fcs_pp3mg.h

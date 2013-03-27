@@ -3,7 +3,7 @@ AC_PREREQ([2.59])
 AC_INIT([pmg], [1.0])
 
 AC_MSG_NOTICE([****************************************************************])
-AC_MSG_NOTICE([*      Configuring solver PP3MG_PMG                            *])
+AC_MSG_NOTICE([*      Configuring solver PP3MG                                *])
 AC_MSG_NOTICE([****************************************************************])
 
 # Share macro files with the rest of scafacos.
@@ -83,8 +83,8 @@ m4_ifdef([AX_FCS_CONFIG_SOLVER],[AX_FCS_CONFIG_SOLVER])
 # Set up information for FCS package if inside the FCS tree.
 m4_ifdef([AX_FCS_PACKAGE_RESET],[
 AX_FCS_PACKAGE_RESET
-AX_FCS_PACKAGE_ADD([pp3mg_pmg_LIBS],[-lfcs_pp3mg_pmg])
-AX_FCS_PACKAGE_ADD([pp3mg_pmg_LIBS_A],[libfcs_pp3mg_pmg.a])
+AX_FCS_PACKAGE_ADD([pp3mg_LIBS],[-lfcs_pp3mg])
+AX_FCS_PACKAGE_ADD([pp3mg_LIBS_A],[libfcs_pp3mg.a])
 ])
 
 # ranlib is needed for creating libraries.

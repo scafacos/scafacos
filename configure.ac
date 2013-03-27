@@ -39,10 +39,10 @@ AM_INIT_AUTOMAKE([1.9.6 -Wall -Wno-override foreign])
 m4_pattern_forbid([^A[C]?X_])
 
 # List of all solvers.
-m4_define([all_solver_methods], [direct ewald fmm memd mmm1d mmm2d p2nfft p3m pepc pp3mg_pmg vmg])
+m4_define([all_solver_methods], [direct ewald fmm memd mmm1d mmm2d p2nfft p3m pepc pp3mg vmg])
 
 # List of solvers that have their own configure
-m4_define([subconfigure_solver_methods], [fmm p2nfft pepc pp3mg_pmg vmg])
+m4_define([subconfigure_solver_methods], [fmm p2nfft pepc pp3mg vmg])
 
 # Solvers which are licensed under GPL or depend on GPL software.
 m4_define([gpl_solver_methods], [p2nfft p3m mmm1d mmm2d])
@@ -574,7 +574,7 @@ AX_FCS_FMM_TOP([test "x$use_fcs_fmm" = xyes])
 
 # pepc prerequisites
 
-# pp3mg_pmg prerequisites
+# pp3mg prerequisites
 
 # vmg prerequisites
 

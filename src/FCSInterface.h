@@ -45,7 +45,7 @@
 #ifdef FCS_ENABLE_MMM2D
 #include "fcs_mmm2d.h"
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
 #include "fcs_pp3mg.h"
 #endif
 #ifdef FCS_ENABLE_VMG
@@ -117,7 +117,7 @@ typedef struct FCS_t
 #ifdef FCS_ENABLE_PEPC
   fcs_pepc_parameters pepc_param;
 #endif
-#ifdef FCS_ENABLE_PP3MG_PMG
+#ifdef FCS_ENABLE_PP3MG
   fcs_pp3mg_parameters pp3mg_param;
 #endif
 #ifdef FCS_ENABLE_VMG

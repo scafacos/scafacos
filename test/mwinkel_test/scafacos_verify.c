@@ -42,7 +42,7 @@ const char *test_setup[NUMSETUPS]  = {"TRIVIAL", "NACL", "SIO2"};
 
 
 // default values taken from interface test
-#if FCS_ENABLE_PP3MG_PMG
+#if FCS_ENABLE_PP3MG
     int PP3MG_dims[3];
     fcs_int PP3MG_cells_x = 64;/*64;*/
     fcs_int PP3MG_cells_y = 64;/*64;*/
@@ -75,7 +75,7 @@ FCSResult setup_methodspecific(FCS handle, int my_rank, int num_ranks)
 {
   switch (fcs_get_method(handle))
     {
-#if FCS_ENABLE_PP3MG_PMG
+#if FCS_ENABLE_PP3MG
     case FCS_PP3MG:
         PP3MG_dims[0] = PP3MG_dims[1] = PP3MG_dims[2] = 0;
         if (num_ranks > 1)
