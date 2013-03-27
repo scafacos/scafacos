@@ -103,4 +103,14 @@ void maggs_update_plaquette(fcs_int mue, fcs_int nue, fcs_int* Neighbor, fcs_int
  */
 FCSResult maggs_sanity_checks(memd_struct* memd);
 
+/** counts the total number of charges in the system
+ @param memd            MEMD struct
+ @param num_particles   Number of particles on node
+ @return                total number of charges
+ */
+fcs_int memd_count_total_charges(memd_struct *memd, fcs_int num_particles);
+
+/** Calculate closest upper number that is 2^n */
+fcs_int memd_get_next_higher_power_of_two(fcs_float number);
+
 #endif

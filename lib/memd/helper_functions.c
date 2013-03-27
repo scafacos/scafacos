@@ -236,4 +236,23 @@ FCSResult maggs_sanity_checks(memd_struct* memd)
 }
 
 
+/** Calculate number of charged particles, the sum of the squared
+ charges and the squared sum of the charges. */
+fcs_int memd_count_total_charges(memd_struct *memd, fcs_int num_particles) {
+    int i;
+    
+    fcs_int node_sum, total_sum;
+
+    node_sum = num_particles;
+    total_sum = 0;
+
+    MPI_Allreduce(&node_sum, &total_sum, 1, FCS_MPI_INT, MPI_SUM, memd->mpiparams.communicator);
+    
+    return total_sum;
+}
+
+/** Calculate closest upper number that is 2^n */
+fcs_int memd_get_next_higher_power_of_two(fcs_float number) {
+    return pow(2, ceil(log(number)/log(2)));
+}
 

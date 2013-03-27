@@ -20,7 +20,9 @@
 #include <stdio.h>
 
 #include "getter_setter.h"
+#include "communication.h"
 #include "data_types.h"
+#include "helper_functions.h"
 #include "FCSCommon.h"
 #include <math.h>
 
@@ -152,6 +154,7 @@ FCSResult memd_set_box_size(void* rawdata, fcs_float length_x, fcs_float length_
     const char* fnc_name = "memd_set_box_size";
     memd_struct* memd = (memd_struct*) rawdata;
 
+    /* Set boxlength parameter in memd struct */
     if ( ( ! fcs_float_is_equal(length_x, length_y) ) || ( ! fcs_float_is_equal(length_y, length_z) ) ) {
         return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
                                 "Only cubic boxes are allowed at this stage.");
@@ -162,6 +165,22 @@ FCSResult memd_set_box_size(void* rawdata, fcs_float length_x, fcs_float length_
         memd->parameters.box_length[2] = length_z;
         return NULL;
     }
+
+    /* set all dependent parameters */
+    if ( (memd->parameters.mesh>0) && (memd->parameters.box_length[0]>0.0) ) {
+        memd->parameters.inva  = (fcs_float) memd->parameters.mesh/memd->parameters.box_length[0];
+        memd->parameters.a     = 1.0/memd->parameters.inva;
+    } else {
+        int k;
+        //        fprintf(stdout, "box_l: %f\n", memd->parameters.box_length[0]); fflush(stdout);
+        memd->parameters.mesh=32;
+        if (memd->parameters.box_length[0]<ROUND_ERROR_PREC) {
+            FOR3D(k) memd->parameters.box_length[k] = 10.0;
+        }
+        memd->parameters.inva  = (fcs_float) memd->parameters.mesh/memd->parameters.box_length[0];
+        memd->parameters.a     = 1.0/memd->parameters.inva;
+    }
+    
 }
 
 FCSResult memd_set_mesh_size_1D(void* rawdata, fcs_int mesh_size)
@@ -190,5 +209,42 @@ FCSResult memd_tune_method(void* rawdata, fcs_int local_particles, fcs_float* po
 {
     const char* fnc_name = "memd_tune_method";
     memd_struct* memd = (memd_struct*) rawdata;
+    fcs_int n_part_total = memd->parameters.n_part_total;
+
+    if (n_part_total < 1) {
+        n_part_total = memd_count_total_charges(memd, local_particles);
+        memd->parameters.n_part_total = n_part_total;
+    }
+    
+    fcs_float boxlength = memd->parameters.box_length[0];
+    printf("boxlength: %f\n",boxlength);
+    
+    fcs_int meshsize1D = 16;
+    fcs_float lightspeed = 1.0;
+    fcs_float timestep = 0.01;
+    
+    fcs_float avg_dist = pow((boxlength*boxlength*boxlength) / (fcs_float)n_part_total, 0.33333);
+    fcs_float dists_per_box = avg_dist/boxlength;
+
+    fcs_float epsilon = 1.0;
+    fcs_float temperature = 1.0;
+    
+    printf("dists_per_box: %f\n",dists_per_box);
+    
+    meshsize1D = memd_get_next_higher_power_of_two(dists_per_box);
+    printf("meshsize1D: %d\n",meshsize1D);
+    
+    /* The factor 0.01 is "<<" for the stability criterion */
+    lightspeed = 0.01 * (boxlength/meshsize1D) / timestep;
+    
+    memd_set_speed_of_light(rawdata, lightspeed);
+    memd_set_mesh_size_1D(rawdata, meshsize1D);
+    memd_set_time_step(rawdata, timestep);
+    
+    memd_set_permittivity(rawdata, epsilon);
+    memd_set_temperature(rawdata, temperature);
+    
+    maggs_setup_local_lattice(memd);
+    
     return NULL;    
 }

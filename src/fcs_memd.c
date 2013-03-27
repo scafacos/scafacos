@@ -52,13 +52,36 @@ extern FCSResult fcs_memd_init(FCS handle, MPI_Comm communicator)
     if (result != NULL) return result;
 
     maggs_init(&handle->method_context, communicator);
-
+    
     return NULL;
 }
 
 
 extern FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges)
 {
+    char* fnc_name = "fcs_memd_tune";
+    FCSResult result;
+    
+    /* Handle periodicity */
+    fcs_int *periodicity = fcs_get_periodicity(handle);
+    if (! (periodicity[0] && periodicity[1] && periodicity[2]))
+        return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+                                "memd requires periodic boundary conditions.");
+    
+    /* Handle box size */
+    fcs_float *a = fcs_get_box_a(handle);
+    fcs_float *b = fcs_get_box_b(handle);
+    fcs_float *c = fcs_get_box_c(handle);
+    if (!fcs_is_orthogonal(a, b, c))
+        return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+                                "memd requires the box to be orthorhombic.");
+    
+    if (!fcs_uses_principal_axes(a, b, c))
+        return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+                                "memd requires the box vectors to be parallel to the principal axes.");
+    
+    memd_set_box_size(handle->method_context, a[0], b[0], c[0]);
+    
     /* tune mesh and f_mass, calculate initial fields */
     return memd_tune_method(handle->method_context, local_particles, positions, charges);
 }
@@ -69,7 +92,7 @@ extern FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_int local
     /* retune if needed */
 /*    if (memd_needs_retuning(handle->method_context, local_particles, positions, charges))
         fcs_memd_tune(handle, local_particles, local_max_particles, positions, charges);
-*/    
+*/
     memd_run(handle->method_context,
             local_particles, local_max_particles, positions, charges, fields, potentials);
         

@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #include "init.h"
 #include "data_types.h"
@@ -43,6 +44,7 @@ FCSResult maggs_init(void** rawdata, MPI_Comm communicator)
     memd_struct* memd;
     if (*rawdata == NULL) {
         memd = calloc(1,sizeof(memd_struct));
+        memset(memd, 0, sizeof(memd_struct));
         *rawdata = memd;
         printf("New handle created!\n"); fflush(stdout);
     } else {
@@ -50,29 +52,10 @@ FCSResult maggs_init(void** rawdata, MPI_Comm communicator)
     }
 
 
-    FCSResult result;
-    if ( (memd->parameters.mesh>0) && (memd->parameters.box_length[0]>0.0) ) {
-        memd->parameters.inva  = (fcs_float) memd->parameters.mesh/memd->parameters.box_length[0];
-        memd->parameters.a     = 1.0/memd->parameters.inva;
-        maggs_setup_local_lattice(memd);
-    } else {
-        int k;
-//        fprintf(stdout, "box_l: %f\n", memd->parameters.box_length[0]); fflush(stdout);
-        memd->parameters.mesh=32;
-        if (memd->parameters.box_length[0]<ROUND_ERROR_PREC) {
-            FOR3D(k) memd->parameters.box_length[k] = 10.0;
-        }
-        memd->parameters.inva  = (fcs_float) memd->parameters.mesh/memd->parameters.box_length[0];
-        memd->parameters.a     = 1.0/memd->parameters.inva;
-        maggs_setup_local_lattice(memd);        
-    }
-    
     maggs_setup_communicator(memd, communicator);
     
-    result = maggs_sanity_checks(memd);
-
     //if(!this_node) fprintf(stderr, "%d: Electric field is initialized\n", this_node);
-    return result;
+    return maggs_sanity_checks(memd);
 }
 
 /** Frees the dynamically allocated memory
