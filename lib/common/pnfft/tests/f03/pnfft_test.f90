@@ -9,15 +9,14 @@ program main
   include "pfft.f"
   include "pnfft.f03"
 
-  integer np(3), m, window, window_flag, ierror, l1, l2, l3
+  integer np(3), ierror, l1, l2, l3
   integer(C_INTPTR_T) :: N(3), local_N(3), local_N_start(3)
-  integer(C_INTPTR_T) :: num_nodes, local_M
+  integer(C_INTPTR_T) :: local_M, d=3
   real(C_DOUBLE) :: lower_border(3), upper_border(3)
   type(C_PTR) :: pnfft, cf_hat, cf, cx
   complex(C_DOUBLE_COMPLEX), pointer :: f_hat(:,:,:), f(:)
   real(C_DOUBLE), pointer :: x(:,:)
 
-  real(C_DOUBLE) f_hat_sum, x_max(3)
   integer comm_cart_3d, myrank
 
   N = (/ 16,16,16 /)
@@ -55,7 +54,7 @@ program main
 ! Convert data pointers to Fortran format
   call c_f_pointer(cf_hat, f_hat, [local_N])
   call c_f_pointer(cf,     f,     [local_M])
-  call c_f_pointer(cx,     x,     [integer(C_INTPTR_T)::3,local_M])
+  call c_f_pointer(cx,     x,     [d,local_M])
 
 ! Initialize Fourier coefficients
   call init_f_hat(N, local_N, local_N_start, &

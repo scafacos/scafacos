@@ -101,9 +101,9 @@ contains
     real(C_DOUBLE),      intent(in)  :: x_max(3)
     complex(C_DOUBLE_COMPLEX), pointer, intent(inout) :: f(:)
     type(C_PTR),                        intent(inout) :: cf
-    real(C_DOUBLE),             intent(out) :: f_hat_sum
+    real(C_DOUBLE),      intent(out) :: f_hat_sum
 
-    integer(C_INTPTR_T) :: local_N(3), local_N_start(3), k1, k2, k3
+    integer(C_INTPTR_T) :: local_N(3), local_N_start(3), k1, k2, k3, d=3
     complex(C_DOUBLE_COMPLEX), pointer :: f_hat(:,:,:)
     real(C_DOUBLE), pointer :: x(:,:)
     real(C_DOUBLE) :: lower_border(3), upper_border(3)
@@ -143,7 +143,7 @@ contains
     ! Convert data pointers to Fortran format
     call c_f_pointer(cf_hat, f_hat, [local_N(3),local_N(2),local_N(1)])
     call c_f_pointer(cf,     f,     [local_M])
-    call c_f_pointer(cx,     x,     [integer(C_INTPTR_T)::3,local_M])
+    call c_f_pointer(cx,     x,     [d,local_M])
 
     ! Initialize Fourier coefficients
     call init_f_hat(N, local_N, local_N_start, &
