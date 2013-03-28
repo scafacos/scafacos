@@ -402,7 +402,7 @@ void PNX(init_f_hat_3d)(
 
 void PNX(init_f)(
     INT local_M,
-    fftw_complex *data
+    C *data
     )
 {
   for (INT j=0; j<local_M; j++){
