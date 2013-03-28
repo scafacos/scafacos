@@ -30,11 +30,16 @@ AS_IF([test "$enable_one_sided" = "yes"], [
 ])
 
 # several debug output switches
+AS_IF([test "x$enable_fcs_info" != "x"], [
+	    AC_DEFINE([DEBUG_INFO], [1], [Debugging info output])
+])
+
 AC_MSG_CHECKING(whether to enable debugging)
 AC_ARG_ENABLE([debug], 
 	AS_HELP_STRING([--enable-debug], [Enable debugging]),
 	enable_debug=$enableval,
 	enable_debug="no")
+AS_IF([test "x$enable_fcs_debug" != "x"],[enable_debug="yes"])
 AC_MSG_RESULT($enable_debug)
 AS_IF([test "$enable_debug" = "yes"], [
 	    CXXFLAGS=${CXXFLAGS-"-g -O0 -Wall"}
@@ -56,6 +61,7 @@ AC_ARG_ENABLE([debug-output],
 	AS_HELP_STRING([--enable-debug-output], [Enable debugging output]),
 	enable_debug_output=$enableval,
 	enable_debug_output="no")
+AS_IF([test "x$enable_fcs_debug" != "x"],[enable_debug_output="yes"])
 AC_MSG_RESULT($enable_debug_output)
 AS_IF([test "$enable_debug_output" = "yes"], [
 	    AC_DEFINE([DEBUG_OUTPUT], [1], [Debugging output])
@@ -73,6 +79,7 @@ AC_ARG_ENABLE([timer],
 	AS_HELP_STRING([--enable-timer], [Enable runtime measurement]),
 	enable_timer=$enableval,
 	enable_timer="no")
+AS_IF([test "x$enable_fcs_timing" != "x"],[enable_timer="yes"])
 AC_MSG_RESULT($enable_timer)
 AS_IF([test "$enable_timer" = "yes"], [
 	    AC_DEFINE([DEBUG_MEASURE_TIME], [1], [Runtime measurement])
@@ -83,6 +90,7 @@ AC_ARG_ENABLE([timer-output],
         AS_HELP_STRING([--enable-timer-output], [Enable runtime measurement output]),
         enable_timer_output=$enableval,
         enable_timer_output="no")
+AS_IF([test "x$enable_fcs_timing" != "x"],[enable_timer_output="yes"])
 AC_MSG_RESULT($enable_timer_output)
 AS_IF([test "$enable_timer_output" = "yes"], [
             AC_DEFINE([DEBUG_MEASURE_TIME_OUTPUT], [1], [Output of runtime measurement])

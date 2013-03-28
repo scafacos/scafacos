@@ -52,8 +52,14 @@ m4_define([fcs_modules], [near gridsort resort sl_fmm])
 # add configure options --enable-fcs-info, --enable-fcs-debug, and --enable-fcs-timing
 AC_DEFUN_ONCE([AX_FCS_ENABLE_INFODEBUG_ARG],[
 AC_FOREACH([switch], fcs_switches,[
+  AC_MSG_CHECKING([whether to enable ]switch) 
   AC_ARG_ENABLE(fcs-switch,
     AC_HELP_STRING([--enable-fcs-]switch,[enable ]switch[ output]),,[enable_fcs_]switch[=no])
+  AC_MSG_RESULT([$enable_fcs_]switch)
+  AC_CACHE_VAL([ac_cv_enable_fcs_]switch,[
+	ac_cv_enable_fcs_]switch[=no
+	test "x$enable_fcs_]switch[" != xno && ac_cv_enable_fcs_]switch[=yes
+	])
   ])
 ])
 
