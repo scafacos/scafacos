@@ -12,8 +12,8 @@
 
 # pnfft.h depends on fftw3-mpi.h, fftw3.h and pfft.h
 # set these paths such that the preprocessor can find the required headers
-FFTW_INC=$HOME/local/pfft-1.0.6-alpha/include
-PFFT_INC=$HOME/local/fftw-3.3.3/include
+PFFT_INC=$HOME/local/pfft-1.0.6-alpha/include
+FFTW_INC=$HOME/local/fftw-3.3.3/include
 
 echo "! Generated automatically.  DO NOT EDIT!"
 

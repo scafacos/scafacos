@@ -394,8 +394,6 @@ void PNX(local_size_internal)(
   INT howmany = 1;
   unsigned pfft_flags = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
 
-  printf("local_size_internal: N = [%td, %td, %td], n = [%td, %td, %td], no = [%td, %td, %td]\n", N[0], N[1], N[2], n[0], n[1], n[2], no[0], no[1], no[2]);
-
   PX(local_size_many_dft)(3, n, N, no, howmany,
       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags,
       local_N, local_N_start, local_no, local_no_start);
@@ -409,10 +407,6 @@ void PNX(local_size_internal)(
 //   if(pnfft_flags & PNFFT_SHIFTED_X)
     for(int t=0; t<3; t++)
       local_no_start[t] -= no[t]/2;
-
-  printf("N = [%td, %td, %td], n = [%td, %td, %td], no = [%td, %td, %td]\n", N[0], N[1], N[2], n[0], n[1], n[2], no[0], no[1], no[2]);
-  printf("local_N = [%td, %td, %td], local_N_start = [%td, %td, %td]\n", local_N[0], local_N[1], local_N[2], local_N_start[0], local_N_start[1], local_N_start[2]);
-  printf("local_no = [%td, %td, %td], local_no_start = [%td, %td, %td]\n", local_no[0], local_no[1], local_no[2], local_no_start[0], local_no_start[1], local_no_start[2]);
 }
 
 
@@ -550,8 +544,6 @@ PNX(plan) PNX(init_internal)(
   alloc_local_gc = PX(local_size_many_gc)(3, local_no, local_no_start,
       alloc_local_data_in, howmany, gcells_below, gcells_above,
       local_ngc, local_gc_start);
-
-  printf("PNFFT_init: N = [%td, %td, %td], n = [%td, %td, %td], no = [%td, %td, %td]\n", N[0], N[1], N[2], n[0], n[1], n[2], no[0], no[1], no[2]);
 
   /* update offsets such that they run from -N/2,...,N/2-1 */
   PNX(local_size_internal)(N, n, no, comm_cart, ths->pnfft_flags,

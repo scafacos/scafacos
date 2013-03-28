@@ -70,15 +70,15 @@ contains
     implicit none
 
     integer(C_INTPTR_T),       intent(in) :: N(3), local_N(3), local_N_start(3)
-    ! transposed FFT output AND C-like memory order
-    complex(C_DOUBLE_COMPLEX), intent(out) :: f_hat(local_N(1),local_N(3),local_N(2))
+    ! C-like memory order
+    complex(C_DOUBLE_COMPLEX), intent(out) :: f_hat(local_N(3),local_N(2),local_N(1))
     integer(C_INTPTR_T) :: l1, l2, l3
 
     ! use C-like row-major order here  
-    do l2 = 1,local_N(2)
-      do l3 = 1,local_N(3)
-        do l1 = 1,local_N(1)
-          f_hat(l1,l3,l2) = &
+    do l1 = 1,local_N(1)
+      do l2 = 1,local_N(2)
+        do l3 = 1,local_N(3)
+          f_hat(l3,l2,l1) = &
               func(l1 + local_N_start(1), N(1)) & 
             * func(l2 + local_N_start(2), N(2)) &
             * func(l3 + local_N_start(3), N(3)) 
@@ -110,7 +110,7 @@ contains
     real(C_DOUBLE) :: local_f_hat_sum
     type(C_PTR) :: pnfft, cf_hat, cx
     integer ierror, myrank, comm_cart_3d
-    double precision time
+    double precision time, max_time
 
     call MPI_Comm_rank(comm, myrank, ierror)
 
@@ -158,7 +158,10 @@ contains
     call pnfft_trafo(pnfft)
     time = time + MPI_Wtime()
 
-    write(*,*) "pnfft_trafo needs ", time, " s"
+    call MPI_Reduce(time, max_time, 1, MPI_DOUBLE_PRECISION, MPI_MAX, 0, comm_cart_3d, ierror)
+    if(myrank .eq. 0) then
+      write(*,*) "pnfft_trafo needs ", max_time, " s"
+    endif
 
     local_f_hat_sum = 0d0;
     do k1=1,local_N(1)

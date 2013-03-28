@@ -20,7 +20,7 @@ check_PROGRAMS =
 #else
 check_PROGRAMS += \
 	pnfft_test \
-	pnfft_trafo_check
+	check_trafo check_trafo_transposed
 #endif
 
 mostlyclean-local:
