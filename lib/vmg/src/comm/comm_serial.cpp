@@ -125,10 +125,6 @@ void CommSerial::CommFromGhosts(Grid& grid)
       grid((*iter).X(), (*iter).Y(), (*iter).Z()-size.Z()) += grid.GetVal(*iter);
 
   }
-
-#ifdef DEBUG_MATRIX_CHECKS
-  grid.IsConsistent();
-#endif
 }
 
 void CommSerial::CommToGhosts(Grid& grid)
@@ -167,10 +163,6 @@ void CommSerial::CommToGhosts(Grid& grid)
       grid(*iter) = grid.GetVal((*iter).X()-size.X(), (*iter).Y(), (*iter).Z());
 
   }
-
-#ifdef DEBUG_MATRIX_CHECKS
-  grid.IsConsistent();
-#endif
 }
 
 void CommSerial::CommToGhostsAsyncStart(Grid& grid)
@@ -191,22 +183,50 @@ void CommSerial::CommFromGhostsAsyncFinish(Grid& grid)
 {
 }
 
-void CommSerial::PrintString(const char* format, ...)
+void CommSerial::Print(const OutputLevel level, const char* format, ...)
 {
-  va_list args;
-  va_start(args, format);
-  vsprintf(print_buffer, format, args);
-  printf("VMG: %s\n", print_buffer);
-  va_end(args);
+  bool print = (level == Output);
+
+#ifdef OUTPUT_INFO
+  print |= (level == Info);
+#endif
+#ifdef OUTPUT_DEBUG
+  print |= (level == Debug);
+#endif
+#ifdef OUTPUT_TIMING
+  print |= (level == Timing);
+#endif
+
+  if (print) {
+    va_list args;
+    va_start(args, format);
+    vsprintf(print_buffer, format, args);
+    printf("VMG: %s\n", print_buffer);
+    va_end(args);
+  }
 }
 
-void CommSerial::PrintStringOnce(const char* format, ...)
+void CommSerial::PrintOnce(const OutputLevel level, const char* format, ...)
 {
-  va_list args;
-  va_start(args, format);
-  vsprintf(print_buffer, format, args);
-  printf("VMG: %s\n", print_buffer);
-  va_end(args);
+  bool print = (level == Output);
+
+#ifdef OUTPUT_INFO
+  print |= (level == Info);
+#endif
+#ifdef OUTPUT_DEBUG
+  print |= (level == Debug);
+#endif
+#ifdef OUTPUT_TIMING
+  print |= (level == Timing);
+#endif
+
+  if (print) {
+    va_list args;
+    va_start(args, format);
+    vsprintf(print_buffer, format, args);
+    printf("VMG: %s\n", print_buffer);
+    va_end(args);
+  }
 }
 
 void CommSerial::PrintXML(const std::string& filename, const std::string& xml_data)
@@ -496,9 +516,7 @@ void CommSerial::DebugPrintGridStructure(Multigrid& grid)
   out.open(path_str, std::ios::trunc);
 
   if (!out.good()) {
-#ifdef DEBUG_OUTPUT
-    printf("Multigrid: File %s not accessible.\n", path_str);
-#endif /* DEBUG_OUTPUT */
+    Print(Info, "File %s not accessible.", path_str);
     return;
   }
 

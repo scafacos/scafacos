@@ -130,9 +130,7 @@ void Grid::SetAverageToZero()
   avg = MG::GetComm()->GlobalSum(avg);
   avg /= Global().GlobalSize().Product();
 
-#ifdef DEBUG_OUTPUT
-  MG::GetComm()->PrintStringOnce("Global constraint enforcement: %e", avg);
-#endif
+  MG::GetComm()->PrintOnce(Info, "Global constraint enforcement: %e", avg);
 
   if (std::abs(avg) > std::numeric_limits<vmg_float>::epsilon())
     for (iter = Iterators().Local().Begin(); iter != Iterators().Local().End(); ++iter)
@@ -151,22 +149,19 @@ void Grid::ForceDiscreteCompatibilityCondition()
 
   if (std::abs(val) > std::numeric_limits<vmg_float>::epsilon()) {
 
-#ifdef DEBUG_OUTPUT
-    MG::GetComm()->PrintStringOnce("WARNING: Right hand side does not satisfy the compatibility condition.");
-#endif
+    MG::GetComm()->PrintOnce(Info, "Right hand side does not satisfy the compatibility condition. Trying to enforce.");
 
     for (iter = Iterators().Local().Begin(); iter != Iterators().Local().End(); ++iter)
       (*this)(*iter) -= val;
 
-#ifdef DEBUG_OUTPUT
+#ifdef OUPUT_DEBUG
     val = 0.0;
     for (iter = Iterators().Local().Begin(); iter != Iterators().Local().End(); ++iter)
       val += GetVal(*iter);
     val = MG::GetComm()->GlobalSumRoot(val);
-    MG::GetComm()->PrintStringOnce("Sum of grid charges after forcing the discrete compatibility condition: %e", val);
+    MG::GetComm()->PrintOnce(Debug, "Sum of grid charges after forcing the discrete compatibility condition: %e", val);
 #endif
   }
-
 }
 
 void Grid::SetGrid(const Grid& rhs)

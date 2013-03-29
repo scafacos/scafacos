@@ -85,13 +85,13 @@ void InterfaceParticles::ImportRightHandSide(Multigrid& multigrid)
    */
   std::list<Particle::Particle>::iterator iter;
 
-#ifdef DEBUG_OUTPUT
+#ifdef OUTPUT_DEBUG
   vmg_float particle_charges = 0.0;
   for (iter=particles.begin(); iter!=particles.end(); ++iter)
     particle_charges += iter->Charge();
   particle_charges = MG::GetComm()->GlobalSumRoot(particle_charges);
-  comm.PrintStringOnce("Particle list charge sum: %e", particle_charges);
-  comm.PrintString("Local number of particles: %d", particles.size());
+  comm.PrintOnce(Debug, "Particle list charge sum: %e", particle_charges);
+  comm.Print(Debug, "Local number of particles: %d", particles.size());
 #endif
 
   for (iter=particles.begin(); iter!=particles.end(); ++iter)
@@ -111,13 +111,13 @@ void InterfaceParticles::ImportRightHandSide(Multigrid& multigrid)
 			       particle_grid.Local().Begin().Y() + j,
 			       particle_grid.Local().Begin().Z() + k);
 
-#ifdef DEBUG_OUTPUT
+#ifdef OUTPUT_DEBUG
   Grid::iterator grid_iter;
   vmg_float charge_sum = 0.0;
   for (grid_iter=grid.Iterators().Local().Begin(); grid_iter!=grid.Iterators().Local().End(); ++grid_iter)
     charge_sum += grid.GetVal(*grid_iter);
   charge_sum = MG::GetComm()->GlobalSum(charge_sum);
-  comm.PrintStringOnce("Grid charge sum: %e", charge_sum);
+  comm.PrintOnce(Debug, "Grid charge sum: %e", charge_sum);
 #endif
 }
 
@@ -125,7 +125,7 @@ void InterfaceParticles::ExportSolution(Grid& grid)
 {
   Index i;
 
-#ifdef DEBUG_OUTPUT
+#ifdef OUTPUT_DEBUG
   vmg_float e = 0.0;
   vmg_float e_long = 0.0;
   vmg_float e_self = 0.0;
@@ -184,7 +184,7 @@ void InterfaceParticles::ExportSolution(Grid& grid)
 	  // Subtract self-induced potential
 	  (*p1)->Pot() -= (*p1)->Charge() * spl.GetAntiDerivativeAtZero();
 
-#ifdef DEBUG_OUTPUT
+#ifdef OUTPUT_DEBUG
 	  e_long += 0.5 * (*p1)->Charge() * ip.EvaluatePotentialLR(**p1);
 	  e_self += 0.5 * (*p1)->Charge() * (*p1)->Charge() * spl.GetAntiDerivativeAtZero();
 #endif
@@ -205,7 +205,7 @@ void InterfaceParticles::ExportSolution(Grid& grid)
 		      (*p1)->Pot() += (*p2)->Charge() / length * (1.0 + spl.EvaluatePotential(length));
 		      (*p1)->Field() += (*p2)->Charge() * dir * spl.EvaluateField(length);
 
-#ifdef DEBUG_OUTPUT
+#ifdef OUTPUT_DEBUG
 		      e_short_peak += 0.5 * (*p1)->Charge() * (*p2)->Charge() / length;
 		      e_short_spline += 0.5 * (*p1)->Charge() * (*p2)->Charge() / length * spl.EvaluatePotential(length);
 #endif
@@ -228,7 +228,7 @@ void InterfaceParticles::ExportSolution(Grid& grid)
 
   comm.CommParticlesBack(particles);
 
-#ifdef DEBUG_OUTPUT
+#ifdef OUTPUT_DEBUG
   vmg_float* q = factory.GetObjectStorageArray<vmg_float>("PARTICLE_CHARGE_ARRAY");
   const vmg_int& num_particles_local = factory.GetObjectStorageVal<vmg_int>("PARTICLE_NUM_LOCAL");
   const vmg_float* p = factory.GetObjectStorageArray<vmg_float>("PARTICLE_POTENTIAL_ARRAY");
@@ -244,13 +244,11 @@ void InterfaceParticles::ExportSolution(Grid& grid)
     e += 0.5 * p[j] * q[j];
   e = comm.GlobalSumRoot(e);
 
-  comm.PrintStringOnce("E_long:         %e", e_long);
-  comm.PrintStringOnce("E_short_peak:   %e", e_short_peak);
-  comm.PrintStringOnce("E_short_spline: %e", e_short_spline);
-  comm.PrintStringOnce("E_self:         %e", e_self);
-  comm.PrintStringOnce("E_total:        %e", e);
-  comm.PrintStringOnce("E_total*:       %e", e_long + e_short_peak + e_short_spline - e_self);
-
-#endif /* DEBUG_OUTPUT */
-
+  comm.PrintOnce(Debug, "E_long:         %e", e_long);
+  comm.PrintOnce(Debug, "E_short_peak:   %e", e_short_peak);
+  comm.PrintOnce(Debug, "E_short_spline: %e", e_short_spline);
+  comm.PrintOnce(Debug, "E_self:         %e", e_self);
+  comm.PrintOnce(Debug, "E_total:        %e", e);
+  comm.PrintOnce(Debug, "E_total*:       %e", e_long + e_short_peak + e_short_spline - e_self);
+#endif
 }

@@ -17,8 +17,6 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 
-
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -34,7 +32,6 @@
 
 FCSResult fcs_vmg_init(FCS handle)
 {
-
   return NULL;
 }
 
@@ -224,8 +221,10 @@ extern FCSResult fcs_vmg_set_default(FCS handle)
   fcs_vmg_get_max_level(handle, &max_level);
   if (max_level < 0) {
     max_level = 6;
+#ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("Warning: %s: Parameter %s not set. Set default to %d.\n", fnc_name, "max_level", max_level);
+      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "max_level", max_level);
+#endif
     fcs_vmg_set_max_level(handle, max_level);
   }
 
@@ -233,8 +232,10 @@ extern FCSResult fcs_vmg_set_default(FCS handle)
   fcs_vmg_get_max_iterations(handle, &max_iter);
   if (max_iter < 0) {
     max_iter = 15;
+#ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("Warning: %s: Parameter %s not set. Set default to %d.\n", fnc_name, "max_iterations", max_iter);
+      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "max_iterations", max_iter);
+#endif
     fcs_vmg_set_max_iterations(handle, max_iter);
   }
 
@@ -242,8 +243,10 @@ extern FCSResult fcs_vmg_set_default(FCS handle)
   fcs_vmg_get_smoothing_steps(handle, &smoothing_steps);
   if (smoothing_steps < 0) {
     smoothing_steps = 3;
+#ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("Warning: %s: Parameter %s not set. Set default to %d.\n", fnc_name, "smoothing_steps", smoothing_steps);
+      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "smoothing_steps", smoothing_steps);
+#endif
     fcs_vmg_set_smoothing_steps(handle, smoothing_steps);
   }
 
@@ -251,8 +254,10 @@ extern FCSResult fcs_vmg_set_default(FCS handle)
   fcs_vmg_get_cycle_type(handle, &cycle_type);
   if (cycle_type < 0) {
     cycle_type = 1;
+#ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("Warning: %s: Parameter %s not set. Set default to %d.\n", fnc_name, "cycle_type", cycle_type);
+      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "cycle_type", cycle_type);
+#endif
     fcs_vmg_set_cycle_type(handle, cycle_type);
   }
 
@@ -260,8 +265,10 @@ extern FCSResult fcs_vmg_set_default(FCS handle)
   fcs_vmg_get_precision(handle, &precision);
   if (precision < 0.0) {
     precision = 1.0e-8;
+#ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("Warning: %s: Parameter %s not set. Set default to %e.\n", fnc_name, "precision", precision);
+      printf("%s: Parameter %s not set. Set default to %e.\n", fnc_name, "precision", precision);
+#endif
     fcs_vmg_set_precision(handle, precision);
   }
 
@@ -269,8 +276,10 @@ extern FCSResult fcs_vmg_set_default(FCS handle)
   fcs_vmg_get_near_field_cells(handle, &near_field_cells);
   if (near_field_cells < 0) {
     near_field_cells = 4;
+#ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("Warning: %s: Parameter %s not set. Set default to %d.\n", fnc_name, "near_field_cells", near_field_cells);
+      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "near_field_cells", near_field_cells);
+#endif
     fcs_vmg_set_near_field_cells(handle, near_field_cells);
   }
 
@@ -278,8 +287,10 @@ extern FCSResult fcs_vmg_set_default(FCS handle)
   fcs_vmg_get_interpolation_order(handle, &interpolation_order);
   if (interpolation_order < 0) {
     interpolation_order = 5;
+#ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("Warning: %s: Parameter %s not set. Set default to %d.\n", fnc_name, "interpolation_order", interpolation_order);
+      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "interpolation_order", interpolation_order);
+#endif
     fcs_vmg_set_interpolation_order(handle, interpolation_order);
   }
 
@@ -287,8 +298,10 @@ extern FCSResult fcs_vmg_set_default(FCS handle)
   fcs_vmg_get_discretization_order(handle, &discretization_order);
   if (discretization_order < 0) {
     discretization_order = 4;
+#ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("Warning: %s: Parameter %s not set. Set default to %d.\n", fnc_name, "discretization_order", discretization_order);
+      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "discretization_order", discretization_order);
+#endif
     fcs_vmg_set_discretization_order(handle, discretization_order);
   }
 

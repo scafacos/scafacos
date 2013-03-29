@@ -63,8 +63,8 @@ public:
   void CommFromGhostsAsyncStart(Grid& grid);
   void CommFromGhostsAsyncFinish(Grid& grid);
 
-  void PrintString(const char* format, ...);
-  void PrintStringOnce(const char* format, ...);
+  void Print(const OutputLevel level, const char* format, ...);
+  void PrintOnce(const OutputLevel level, const char* format, ...);
   void PrintXML(const std::string& filename, const std::string& xml_data);
   void PrintXMLAll(const std::string& filename, const std::string& xml_data);
   void PrintAllSettings();

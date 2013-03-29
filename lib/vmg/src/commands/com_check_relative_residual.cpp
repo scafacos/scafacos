@@ -55,9 +55,7 @@ public:
     const vmg_float& precision = factory.GetObjectStorageVal<vmg_float>("PRECISION");
     const vmg_float rel_res = std::fabs(res / init_res);
 
-#ifdef DEBUG_OUTPUT
-    MG::GetComm()->PrintStringOnce("Relative residual: %e", rel_res);
-#endif /* DEBUG_OUTPUT */
+    MG::GetComm()->PrintOnce(Info, "Relative residual: %e", rel_res);
 
     MPE_EVENT_END()
 

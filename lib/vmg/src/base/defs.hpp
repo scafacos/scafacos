@@ -35,6 +35,17 @@ namespace VMG
 {
 
 /**
+ * Controls console output
+ *
+ */
+enum OutputLevel {
+  Output,
+  Info,
+  Debug,
+  Timing
+};
+
+/**
  * Some commands may want to control the control flow of
  * the command list they belong to. This can be achieved
  * by returning one of these values.

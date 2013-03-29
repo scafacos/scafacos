@@ -32,7 +32,7 @@
 #include <config.h>
 #endif
 
-#ifdef DEBUG_MEASURE_TIME
+#ifdef OUTPUT_TIMING
 #ifdef HAVE_MPI
 #include <mpi.h>
 #ifdef HAVE_MARMOT
@@ -160,10 +160,8 @@ void MG::PostInit()
  */
 void MG::Solve()
 {
-#ifdef DEBUG_MEASURE_TIME
-#ifdef HAVE_MPI
+#ifdef OUTPUT_TIMING
   GetComm()->Barrier();
-#endif
   Timer::Start("CompleteRunningTime");
 #endif
 
@@ -177,17 +175,13 @@ void MG::Solve()
 
   cl_finalize->ExecuteList();
 
-#ifdef DEBUG_MEASURE_TIME
-#ifdef HAVE_MPI
+#ifdef OUTPUT_TIMING
   GetComm()->Barrier();
-#endif
   Timer::Stop("CompleteRunningTime");
-#ifdef DEBUG_MEASURE_TIME_OUTPUT
 #ifdef HAVE_MPI
   Timer::PrintGlobal();
 #else
   Timer::Print();
-#endif
 #endif
 #endif
 }

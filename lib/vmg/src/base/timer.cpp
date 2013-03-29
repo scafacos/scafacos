@@ -51,10 +51,48 @@ using namespace VMG;
 
 std::map<std::string, TimerData> Timer::td;
 
+template <class T>
+static T min(T* data, int num_data, int& at_rank)
+{
+  at_rank = 0;
+  T min = data[0];
+
+  for (int i=1; i<num_data; ++i)
+    if (data[i] < min) {
+      at_rank = i;
+      min = data[i];
+    }
+  return min;
+}
+
+template <class T>
+static T max(T* data, int num_data, int& at_rank)
+{
+  at_rank = 0;
+  T max = data[0];
+
+  for (int i=1; i<num_data; ++i)
+    if (data[i] > max) {
+      at_rank = i;
+      max = data[i];
+    }
+  return max;
+}
+
+template <class T>
+static vmg_float avg(T* data, int num_data)
+{
+  vmg_float average = 0.0;
+  vmg_float num_data_inv = 1.0 / static_cast<vmg_float>(num_data);
+  for (int i=0; i<num_data; ++i)
+    average += data[i] * num_data_inv;
+  return average;
+}
+
 void Timer::Start(std::string event)
 {
 #ifdef HAVE_MPI
-#ifdef DEBUG_MEASURE_TIME
+#ifdef OUTPUT_TIMING
   std::map<std::string, TimerData>::iterator iter = td.find(event);
   if (iter == td.end())
     iter = td.insert(std::make_pair(event, TimerData())).first;
@@ -67,7 +105,7 @@ void Timer::Start(std::string event)
 void Timer::Stop(std::string event)
 {
 #ifdef HAVE_MPI
-#ifdef DEBUG_MEASURE_TIME
+#ifdef OUTPUT_TIMING
   double time_end = MPI_Wtime();
 
   std::map<std::string, TimerData>::iterator iter = td.find(event);
@@ -128,59 +166,19 @@ std::string Timer::ToString()
 
 void Timer::Print()
 {
-#ifdef DEBUG_MEASURE_TIME
- std::map<std::string, TimerData>::const_iterator iter;
- Comm& comm = *MG::GetComm();
-
- if (comm.GlobalRank() == 0) {
-   comm.PrintStringOnce("Running times:");
-   for (iter=Timer::td.begin(); iter!=Timer::td.end(); ++iter)
-     comm.PrintStringOnce("  %s: %e s (%d)", iter->first.c_str(), iter->second.duration, iter->second.total);
- }
+#ifdef OUTPUT_TIMING
+  Comm& comm = *MG::GetComm();
+  if (comm.GlobalRank() == 0) {
+    std::map<std::string, TimerData>::const_iterator iter;
+    comm.PrintOnce(Timing, "Running times:");
+    for (iter=Timer::td.begin(); iter!=Timer::td.end(); ++iter)
+      comm.PrintOnce(Timing, "  %s: %e s (%d)", iter->first.c_str(), iter->second.duration, iter->second.total);
+  }
 #endif
 }
-
-template <class T>
-static T min(T* data, int num_data, int& at_rank)
-{
-  at_rank = 0;
-  T min = data[0];
-
-  for (int i=1; i<num_data; ++i)
-    if (data[i] < min) {
-      at_rank = i;
-      min = data[i];
-    }
-  return min;
-}
-
-template <class T>
-static T max(T* data, int num_data, int& at_rank)
-{
-  at_rank = 0;
-  T max = data[0];
-
-  for (int i=1; i<num_data; ++i)
-    if (data[i] > max) {
-      at_rank = i;
-      max = data[i];
-    }
-  return max;
-}
-
-template <class T>
-static vmg_float avg(T* data, int num_data)
-{
-  vmg_float average = 0.0;
-  vmg_float num_data_inv = 1.0 / static_cast<vmg_float>(num_data);
-  for (int i=0; i<num_data; ++i)
-    average += data[i] * num_data_inv;
-  return average;
-}
-
 void Timer::PrintGlobal()
 {
-#ifdef DEBUG_MEASURE_TIME
+#ifdef OUTPUT_TIMING
   std::map<std::string, TimerData>::const_iterator iter;
   Comm& comm = *MG::GetComm();
   char name[80];
@@ -191,7 +189,7 @@ void Timer::PrintGlobal()
   vmg_float times[size];
   int calls[size];
 
-  comm.PrintStringOnce("Running times (global):");
+  comm.PrintOnce(Timing, "Running times (global):");
 
   int timer_size = Timer::td.size();
   comm.GlobalBroadcast(timer_size);
@@ -215,13 +213,13 @@ void Timer::PrintGlobal()
 	max_calls = max(calls, size, rank_max_calls);
 	avg_calls = avg(calls, size);
 
-	comm.PrintStringOnce("  %s: %e s (%d)", iter->first.c_str(), iter->second.duration, iter->second.total);
-	comm.PrintStringOnce("    Min: %e s @ %d", min_duration, rank_min_duration);
-	comm.PrintStringOnce("    Max: %e s @ %d", max_duration, rank_max_duration);
-	comm.PrintStringOnce("    Avg: %e s", avg_duration);
-	comm.PrintStringOnce("    Min calls: %d @ %d", min_calls, rank_min_calls);
-	comm.PrintStringOnce("    Max calls: %d @ %d", max_calls, rank_max_calls);
-	comm.PrintStringOnce("    Avg calls: %f", avg_calls);
+	comm.PrintOnce(Timing, "  %s: %e s (%d)", iter->first.c_str(), iter->second.duration, iter->second.total);
+	comm.PrintOnce(Timing, "    Min: %e s @ %d", min_duration, rank_min_duration);
+	comm.PrintOnce(Timing, "    Max: %e s @ %d", max_duration, rank_max_duration);
+	comm.PrintOnce(Timing, "    Avg: %e s", avg_duration);
+	comm.PrintOnce(Timing, "    Min calls: %d @ %d", min_calls, rank_min_calls);
+	comm.PrintOnce(Timing, "    Max calls: %d @ %d", max_calls, rank_max_calls);
+	comm.PrintOnce(Timing, "    Avg calls: %f", avg_calls);
     }
   }else {
     for (int i=0; i<timer_size; ++i) {

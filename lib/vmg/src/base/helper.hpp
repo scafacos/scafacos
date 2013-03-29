@@ -71,12 +71,7 @@ namespace Helper
     std::stringstream str(val_str);
     str >> val;
 
-    if (str.fail() || str.bad() || !str.eof()) {
-#ifdef DEBUG_VERBOSE
-      std::printf("VMG::Helper::ToValWithDefault: Using default value.\n");
-#endif
-      val = def;
-    }
+    if (str.fail() || str.bad() || !str.eof()) val = def;
 
     return val;
   }
@@ -174,12 +169,11 @@ namespace Helper
   {
     bool rval = (val1 == val2);
 
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG
     if (!rval)
-      printf("WARNING: Values are not equal (%s)\n", name);
-#endif /* DEBUG_OUTPUT */
-
+      printf("Equality test failed (%s)\n", name);
     assert(rval);
+#endif /* DEBUG */
 
     return rval;
   }

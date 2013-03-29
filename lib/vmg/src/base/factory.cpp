@@ -32,6 +32,7 @@
 #include <iostream>
 
 #include "base/command.hpp"
+#include "base/defs.hpp"
 #include "base/discretization.hpp"
 #include "base/factory.hpp"
 #include "base/object.hpp"
@@ -68,7 +69,7 @@ Object* Factory::Get(std::string id)
   if (iter != object_map.end())
     return iter->second;
 
-  MG::GetComm()->PrintStringOnce("Error: Object %s is not registered", id.c_str());
+  MG::GetComm()->PrintOnce(Debug, "Error: Object %s is not registered", id.c_str());
   assert(0);
 
   return NULL;
@@ -86,9 +87,9 @@ void Factory::Delete(std::string id)
 
 void Factory::PrintAvailableObjects()
 {
-  MG::GetComm()->PrintString("Registered objects:");
+  MG::GetComm()->Print(Debug, "Registered objects:");
   for (std::map<std::string, Object*>::iterator iter=object_map.begin(); iter!=object_map.end(); ++iter)
-    MG::GetComm()->PrintString("%s", iter->second->Name().c_str());
+    MG::GetComm()->Print(Debug, "%s", iter->second->Name().c_str());
 }
 
 bool Factory::TestObject(std::string id) const

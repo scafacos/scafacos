@@ -101,8 +101,9 @@ public:
   virtual vmg_int LevelSumRoot(const Grid& grid, vmg_int value) {return value;}
   virtual void LevelSumArray(const Grid& grid, vmg_int* array, const vmg_int& size) {}
 
-  virtual void PrintString(const char* format, ...) = 0;
-  virtual void PrintStringOnce(const char* format, ...) = 0;
+  virtual void Print(const OutputLevel level, const char* format, ...) = 0;
+  virtual void PrintOnce(const OutputLevel level, const char* format, ...) = 0;
+
   virtual void PrintXML(const std::string& filename, const std::string& xml_data) = 0;
   virtual void PrintXMLAll(const std::string& filename, const std::string& xml_data) = 0;
   virtual void PrintAllSettings() = 0;

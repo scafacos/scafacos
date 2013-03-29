@@ -62,10 +62,8 @@ Request CommandList::ExecuteList()
 
 #ifdef DEBUG_BARRIER
     Comm& comm = *MG::GetComm();
-#ifdef HAVE_MPI
     comm.Barrier();
-#endif
-    comm.PrintStringOnce("Command \"%s\" start", iter->first.c_str());
+    comm.PrintOnce(Debug, "Command \"%s\" start", iter->first.c_str());
 #endif
 
     Timer::Start(iter->first);
@@ -73,10 +71,8 @@ Request CommandList::ExecuteList()
     Timer::Stop(iter->first);
 
 #ifdef DEBUG_BARRIER
-#ifdef HAVE_MPI
     comm.Barrier();
-#endif
-    comm.PrintStringOnce("Command \"%s\" done", iter->first.c_str());
+    comm.PrintOnce(Debug, "Command \"%s\" done", iter->first.c_str());
 #endif
 
     if (request == StopCycleLater)

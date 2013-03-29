@@ -48,9 +48,7 @@ public:
     vmg_float residual = MG::GetComm()->ComputeResidualNorm(*MG::GetSol(), *MG::GetRhs());
     new ObjectStorage<vmg_float>(arguments[0], residual);
 
-#ifdef DEBUG_OUTPUT
-    MG::GetComm()->PrintStringOnce("Initial residual: %e", residual);
-#endif /* DEBUG_OUTPUT */
+    MG::GetComm()->PrintOnce(Info, "Initial residual: %e", residual);
 
     MPE_EVENT_END()
 

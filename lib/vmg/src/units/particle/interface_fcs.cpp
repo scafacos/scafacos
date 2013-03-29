@@ -226,9 +226,7 @@ void VMG_fcs_run(vmg_float* x, vmg_float* q, vmg_float* p, vmg_float* f, vmg_int
    */
   MG::Solve();
 
-#ifdef DEBUG_MEASURE_TIME
   Timer::Print();
-#endif
 }
 
 void VMG_fcs_print_timer()

@@ -18,7 +18,19 @@ AM_INIT_AUTOMAKE([1.7 -Wall foreign])
 # We use mostly C++, but may need Fortran compiler infos for Lapack.
 AC_LANG([C++])
 
-# switch for one-sided communications
+# Release version switch
+AC_MSG_CHECKING(whether to enable release version)
+AC_ARG_ENABLE([release], 
+	AS_HELP_STRING([--enable-release], [Compile with release settings]),
+	enable_release=$enableval,
+	enable_release="no")
+AC_MSG_RESULT($enable_release)
+AS_IF([test "$enable_release" = "yes"], [
+	    AC_DEFINE([RELEASE], [1], [Release])
+	    AC_DEFINE([NDEBUG], [1], [Skip asserts])
+])
+
+# One-sided communications
 AC_MSG_CHECKING(whether to enable one-sided MPI2 communications)
 AC_ARG_ENABLE([one_sided], 
 	AS_HELP_STRING([--enable-one-sided], [Enable use of one-sided communications as according to MPI2 standard]),
@@ -29,11 +41,17 @@ AS_IF([test "$enable_one_sided" = "yes"], [
 	    AC_DEFINE([VMG_ONE_SIDED], [1], [Enable use of one-sided MPI2 communications])
 ])
 
-# several debug output switches
-AS_IF([test "x$enable_fcs_info" != "x"], [
-	    AC_DEFINE([DEBUG_INFO], [1], [Debugging info output])
-])
+# Interpolating B-Spline degree
+AC_ARG_VAR(BSPLINE_DEG, [Degree of interpolating B-Splines. Must be in [3-6].])
+if test -z "$BSPLINE_DEG"
+then
+	BSPLINE_DEG=3
+fi
+AC_MSG_CHECKING(interpolation b-spline degree)
+AC_DEFINE_UNQUOTED([BSPLINE_DEGREE], ${BSPLINE_DEG}, [Interpolating B-Spline degree])
+AC_MSG_RESULT(${BSPLINE_DEG})
 
+# Debugging switches
 AC_MSG_CHECKING(whether to enable debugging)
 AC_ARG_ENABLE([debug], 
 	AS_HELP_STRING([--enable-debug], [Enable debugging]),
@@ -43,7 +61,7 @@ AS_IF([test "x$enable_fcs_debug" != "x"],[enable_debug="yes"])
 AC_MSG_RESULT($enable_debug)
 AS_IF([test "$enable_debug" = "yes"], [
 	    CXXFLAGS=${CXXFLAGS-"-g -O0 -Wall"}
-	    AC_DEFINE([DEBUG], [1], [Debugging output])
+	    AC_DEFINE([DEBUG], [1], [Debugging])
 ])
 
 AC_MSG_CHECKING(whether to enable debug checking of matrices)
@@ -56,45 +74,12 @@ AS_IF([test "$enable_debug_check_matrices" = "yes"], [
 	    AC_DEFINE([DEBUG_MATRIX_CHECKS], [1], [Matrix validity checks])
 ])
 
-AC_MSG_CHECKING(whether to enable debug output)
-AC_ARG_ENABLE([debug-output], 
-	AS_HELP_STRING([--enable-debug-output], [Enable debugging output]),
-	enable_debug_output=$enableval,
-	enable_debug_output="no")
-AS_IF([test "x$enable_fcs_debug" != "x"],[enable_debug_output="yes"])
-AC_MSG_RESULT($enable_debug_output)
-AS_IF([test "$enable_debug_output" = "yes"], [
-	    AC_DEFINE([DEBUG_OUTPUT], [1], [Debugging output])
-])
-
 AC_MSG_CHECKING(whether to enable MPE profiling)
 AC_ARG_ENABLE([mpe], 
 	AS_HELP_STRING([--enable-mpe], [Enable MPE parallel profiling]),
 	enable_mpe=$enableval,
 	enable_mpe="no")
 AC_MSG_RESULT($enable_mpe)
-
-AC_MSG_CHECKING(whether to enable runtime measurement)
-AC_ARG_ENABLE([timer], 
-	AS_HELP_STRING([--enable-timer], [Enable runtime measurement]),
-	enable_timer=$enableval,
-	enable_timer="no")
-AS_IF([test "x$enable_fcs_timing" != "x"],[enable_timer="yes"])
-AC_MSG_RESULT($enable_timer)
-AS_IF([test "$enable_timer" = "yes"], [
-	    AC_DEFINE([DEBUG_MEASURE_TIME], [1], [Runtime measurement])
-])
-
-AC_MSG_CHECKING(whether to enable runtime measurement output)
-AC_ARG_ENABLE([timer-output],
-        AS_HELP_STRING([--enable-timer-output], [Enable runtime measurement output]),
-        enable_timer_output=$enableval,
-        enable_timer_output="no")
-AS_IF([test "x$enable_fcs_timing" != "x"],[enable_timer_output="yes"])
-AC_MSG_RESULT($enable_timer_output)
-AS_IF([test "$enable_timer_output" = "yes"], [
-            AC_DEFINE([DEBUG_MEASURE_TIME_OUTPUT], [1], [Output of runtime measurement])
-])
 
 AC_MSG_CHECKING(whether to enable MPI_Barrier debugging)
 AC_ARG_ENABLE([debug-barrier], 
@@ -106,27 +91,40 @@ AS_IF([test "$enable_debug_barrier" = "yes"], [
 	    AC_DEFINE([DEBUG_BARRIER], [1], [MPI_Barrier debugging])
 ])
 
-AC_MSG_CHECKING(whether to enable release version)
-AC_ARG_ENABLE([release], 
-	AS_HELP_STRING([--enable-release], [Compile with release settings]),
-	enable_release=$enableval,
-	enable_release="no")
-AC_MSG_RESULT($enable_release)
-AS_IF([test "$enable_release" = "yes"], [
-	    AC_DEFINE([RELEASE], [1], [Release])
-	    AC_DEFINE([NDEBUG], [1], [Skip asserts])
+# Several output switches
+AC_MSG_CHECKING(whether to enable info output)
+AC_ARG_ENABLE([output-info], 
+	AS_HELP_STRING([--enable-output-info], [Enable info output]),
+	enable_output_info=$enableval,
+	enable_output_info="no")
+AS_IF([test "x$enable_fcs_info" != "x"],[enable_output_info="yes"])
+AC_MSG_RESULT($enable_output_info)
+AS_IF([test "$enable_output_info" = "yes"], [
+	    AC_DEFINE([OUTPUT_INFO], [1], [Output level info])
 ])
 
-AC_ARG_VAR(BSPLINE_DEG, [Degree of interpolating B-Splines. Must be [3].])
+AC_MSG_CHECKING(whether to enable debug output)
+AC_ARG_ENABLE([output-debug], 
+	AS_HELP_STRING([--enable-output-debug], [Enable debug output]),
+	enable_output_debug=$enableval,
+	enable_output_debug="no")
+AS_IF([test "x$enable_fcs_debug" != "x"],[enable_output_debug="yes"])
+AC_MSG_RESULT($enable_output_debug)
+AS_IF([test "$enable_output_debug" = "yes"], [
+	    AC_DEFINE([OUTPUT_DEBUG], [1], [Output level debug])
+])
 
-if test -z "$BSPLINE_DEG"
-then
-	BSPLINE_DEG=3
-fi
+AC_MSG_CHECKING(whether to enable timing output)
+AC_ARG_ENABLE([output-timing], 
+	AS_HELP_STRING([--enable-output-timing], [Enable timing output]),
+	enable_output_timing=$enableval,
+	enable_output_timing="no")
+AS_IF([test "x$enable_fcs_timing" != "x"],[enable_output_timing="yes"])
+AC_MSG_RESULT($enable_output_timing)
+AS_IF([test "$enable_output_timing" = "yes"], [
+	    AC_DEFINE([OUTPUT_TIMING], [1], [Output level timing])
+])
 
-AC_MSG_CHECKING(interpolation b-spline degree)
-AC_DEFINE_UNQUOTED([BSPLINE_DEGREE], ${BSPLINE_DEG}, [Interpolating B-Spline degree])
-AC_MSG_RESULT(${BSPLINE_DEG})
 
 # Checks for programs.
 AM_MISSING_PROG([DOXYGEN], [doxygen])

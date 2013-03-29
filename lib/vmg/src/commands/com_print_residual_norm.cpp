@@ -46,6 +46,8 @@ class VMGCommandPrintResidualNorm : public Command
 public:
   Request Run(Command::argument_vector arguments)
   {
+
+#ifdef OUTPUT_DEBUG
     MPE_EVENT_BEGIN()
 
     Multigrid* sol = MG::GetSol();
@@ -54,10 +56,11 @@ public:
 
     if ((*sol)(sol->MaxLevel()).IsActive()) {
       vmg_float residual = comm->ComputeResidualNorm(*sol, *rhs);
-      comm->PrintStringOnce("Residual: %e", residual);
+      comm->PrintOnce(Debug, "Residual: %e", residual);
     }
 
     MPE_EVENT_END()
+#endif
 
     return Continue;
   }

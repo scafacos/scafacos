@@ -343,18 +343,44 @@ void CommMPI::LevelSumArray(const Grid& grid, vmg_int* array, const vmg_int& siz
   MPI_Allreduce(MPI_IN_PLACE, array, size, MPI_INT, MPI_SUM, comm);
 }
 
-void CommMPI::PrintString(const char* format, ...)
+void CommMPI::Print(const OutputLevel level, const char* format, ...)
 {
-  va_list args;
-  va_start(args, format);
-  vsprintf(print_buffer, format, args);
-  printf("VMG: Rank %d: %s\n", GlobalRank(), print_buffer);
-  va_end(args);
+  bool print = (level == Output);
+
+#ifdef OUTPUT_INFO
+  print |= (level == Info);
+#endif
+#ifdef OUTPUT_DEBUG
+  print |= (level == Debug);
+#endif
+#ifdef OUTPUT_TIMING
+  print |= (level == Timing);
+#endif
+
+  if (print) {
+    va_list args;
+    va_start(args, format);
+    vsprintf(print_buffer, format, args);
+    printf("VMG: Rank %d: %s\n", GlobalRank(), print_buffer);
+    va_end(args);
+  }
 }
 
-void CommMPI::PrintStringOnce(const char* format, ...)
+void CommMPI::PrintOnce(const OutputLevel level, const char* format, ...)
 {
-  if (GlobalRank() == 0) {
+  bool print = (level == Output);
+
+#ifdef OUTPUT_INFO
+  print |= (level == Info);
+#endif
+#ifdef OUTPUT_DEBUG
+  print |= (level == Debug);
+#endif
+#ifdef OUTPUT_TIMING
+  print |= (level == Timing);
+#endif
+
+  if (GlobalRank() == 0 && print) {
     va_list args;
     va_start(args, format);
     vsprintf(print_buffer, format, args);
@@ -899,9 +925,9 @@ void CommMPI::InitCommMPI(const MPI_Comm& comm)
       MPI_Dims_create(size, 3, dims);
     }
 
-#ifdef DEBUG_OUTPUT
+#ifdef OUTPUT_DEBUG
     if (rank == 0)
-      std::printf("Dims: %d %d %d\n", dims[0], dims[1], dims[2]);
+      std::printf("Process grid: %d %d %d\n", dims[0], dims[1], dims[2]);
 #endif
 
     MPI_Cart_create(comm, 3, dims, periods, 1, &comm_global);
