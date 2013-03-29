@@ -65,7 +65,7 @@ program test
     integer(kind = fcs_integer_kind_isoc)                         ::  vmg_max_level = 6
     integer(kind = fcs_integer_kind_isoc)                         ::  vmg_max_iteration = 6
     integer(kind = fcs_integer_kind_isoc)                         ::  vmg_smooth_steps = 3
-    integer(kind = fcs_integer_kind_isoc)                         ::  vmg_gamma = 2
+    integer(kind = fcs_integer_kind_isoc)                         ::  vmg_cycle_type = 2
     real(kind = fcs_real_kind_isoc)                               ::  vmg_precision = 0.001
     integer(kind = fcs_integer_kind_isoc)                         ::  vmg_near_cells = 8
 #endif
@@ -136,7 +136,7 @@ program test
 #endif
 #if FCS_ENABLE_VMG
     character(len=256, kind = c_char)                             ::  vmg_parameters = & 
-"vmg_gamma,2,vmg_max_iterations,20,vmg_max_level,6,vmg_near_field_cells, 6,vmg_precision,1e-6,vmg_smoothing_steps,3"
+"vmg_cycle_type,2,vmg_max_iterations,20,vmg_max_level,6,vmg_near_field_cells,6,vmg_precision,1e-6,vmg_smoothing_steps,3"
 #endif
     character(len=256, kind = c_char)                             ::  common_parameters = &
 "box_a,1.01,0.0,0.0,box_b,0.0,1.01,0.0,box_c,0.0,0.0,1.01,periodicity,1,1,1,offset,0.0,0.0,0.0,near_field_flag,0"
@@ -353,7 +353,7 @@ program test
 #endif
 #ifdef FCS_ENABLE_VMG
       case (FCS_VMG)
-        !ret = fcs_vmg_setup(handle, vmg_max_level, vmg_max_iteration, vmg_smooth_steps, vmg_gamma, vmg_precision, vmg_near_cells)
+        !ret = fcs_vmg_setup(handle, vmg_max_level, vmg_max_iteration, vmg_smooth_steps, vmg_cycle_type, vmg_precision, vmg_near_cells)
         ret = fcs_parser(handle, trim(adjustl(vmg_parameters)) // c_null_char, FCS_FALSE)
 #endif
       case (FCS_NO_METHOD_CHOSEN)
