@@ -113,6 +113,7 @@ static int mixed_periodicity(
 }
 #endif
 
+#if !FCS_P2NFFT_NONCUBIC_TEST
 static int periodicity_3d(
     fcs_int *periodicity
     )
@@ -122,7 +123,7 @@ static int periodicity_3d(
 
   return 0;
 }
-
+#endif
 
 /* internal p2nfft-specific tuning function */
 extern FCSResult fcs_p2nfft_tune(
@@ -154,9 +155,11 @@ extern FCSResult fcs_p2nfft_tune(
     return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
         "The p2nfft method needs a rectangular box with box vectors parallel to the principal axes.");
 
+#if !FCS_P2NFFT_NONCUBIC_TEST
   if (!fcs_is_cubic(a, b, c) && !periodicity_3d(periodicity))
     return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
         "The p2nfft method currently only supports noncubic boxes with fully 3d-periodic boundary conditions.");
+#endif
    
   /* Get box size */ 
   box_l[0] = fcs_norm(a);
