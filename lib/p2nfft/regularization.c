@@ -122,6 +122,68 @@ static fcs_float IntBasisPoly(fcs_int p, fcs_int j, fcs_float y)
 //   return sum;
 // }
 
+
+/*
+ * Calculates regularized kernel 1/x at x. Uses 2p-taylor polynomial for
+ * near field part.
+ * Implemented for p=3,4,5,6.
+ */
+fcs_float ifcs_regkern3_2ptaylor_x_inv(fcs_float *x, fcs_int p, fcs_float a, fcs_float b, fcs_float *n)
+{
+  fcs_int r;
+  fcs_int t;
+  fcs_float sum=0.0;
+  fcs_float xx_2=0.0;
+  fcs_float xx_e=0.0;
+  fcs_float xx_outer=0.0;
+  fcs_float param[] = {0.0};
+
+  for (t=0; t<3; t++) {
+    xx_2 += x[t] * x[t];
+    xx_e += x[t] * x[t] / n[t] / n[t];
+    if (n[t] / 2.0 > xx_outer)
+      xx_outer = n[t] / 2.0;
+  }
+
+  xx_2 = fcs_sqrt(xx_2);
+  xx_e = fcs_sqrt(xx_e);
+
+  if (xx_e>=0.5) {
+    return ifcs_p2nfft_one_over_modulus(xx_outer,0,param);
+  }
+  /* else */
+  if ((a<=xx_2) && (xx_e<=0.5-b)) {
+    return ifcs_p2nfft_one_over_modulus(xx_2,0,param);
+  }
+  else if (xx_2<a) {
+    for (r=0; r<p; r++) {
+      sum += fcs_pow(-a,(fcs_float)r) * ifcs_p2nfft_one_over_modulus(a,r,param)
+          * (BasisPoly(p-1,r,xx_2/a)+BasisPoly(p-1,r,-xx_2/a));
+    }
+    return sum;
+  }
+  else if ((0.5-b<xx_e) && (xx_e<=0.5)) {
+    fcs_float beta;
+    fcs_float x_outer;
+
+    x_outer = 0.5 / xx_e * xx_2;
+    beta = x_outer - (0.5 - b) / xx_e * xx_2;
+
+    sum = ifcs_p2nfft_one_over_modulus(xx_outer,0,param)*BasisPoly(p-1,0,-2.0*xx_2/beta+(2*x_outer-beta)/beta);
+    for (r=0; r<p; r++) {
+      sum += fcs_pow(beta/2.0,(fcs_float)r)
+          * ifcs_p2nfft_one_over_modulus(x_outer-beta,r,param)
+          * BasisPoly(p-1,r,2.0*xx_2/beta-(2*x_outer-beta)/beta);
+    }
+    return sum;
+  }
+  return 0.0;
+}
+
+
+
+
+
 /** regularized kernel for even kernels with K_I even
  *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)
  */
@@ -267,7 +329,7 @@ fcs_float ifcs_p2nfft_nearfield_correction_taylor2p(
 
   xx=fabs(xx);
 
-  /* use horner schema for next p-2 coefficients */
+  /* use horner scheme for next p-2 coefficients */
   for(fcs_int t=1; t<p; t++)
     horner = xx * xx * horner + param[t];
 

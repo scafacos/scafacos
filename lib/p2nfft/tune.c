@@ -292,7 +292,7 @@ FCSResult ifcs_p2nfft_tune(
     }
   }
 
-  /* FIXME: number of charged particles may be smaller then number of all particles */
+  /* FIXME: number of charged particles may be smaller than number of all particles */
   d->sum_qpart = num_particles;
 
   /* compute the average distance between two charges  */
@@ -310,7 +310,7 @@ FCSResult ifcs_p2nfft_tune(
     if(d->use_ewald){
       fcs_float ks_error, rs_error;
       /* PNFFT calculates with real space cutoff 2*m+2
-       * Therefore m is one smaller then the P3M cao. */
+       * Therefore m is one smaller than the P3M cao. */
 //      fcs_int cao = d->m + 1;
       fcs_int cao = 2*d->m;
 
@@ -652,7 +652,7 @@ FCSResult ifcs_p2nfft_tune(
       /*   accuracy of 1e-16 needs 14000 interpolation nodes */
       /*   accuracy of 1e-17 needs 24896 interpolation nodes */
       if(d->interpolation_order < 0)
-        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "No support of direct evaluation for CG approximtation. Choose non-negative interpolation order!");
+        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "No support of direct evaluation for non-periodic approximtation. Choose non-negative interpolation order!");
       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
 //       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
 
@@ -1852,7 +1852,7 @@ static fcs_float p2nfft_k_space_error_general_window(
   fcs_float lower_border[3], upper_border[3];
   fcs_float x_max[3] = {0.5, 0.5, 0.5};
   /* PNFFT calculates with real space cutoff 2*m+2
-   * Therefore m is one smaller then the P3M cao. */
+   * Therefore m is one smaller than the P3M cao. */
   FCS_PNFFT(plan) pnfft;
 
   fcs_float alias_k, alias_sum, local_alias_sum = 0.0;

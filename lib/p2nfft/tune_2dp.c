@@ -686,7 +686,7 @@ FCSResult ifcs_p2nfft_tune_2dp(
       /*   accuracy of 1e-16 needs 14000 interpolation nodes */
       /*   accuracy of 1e-17 needs 24896 interpolation nodes */
       if(d->interpolation_order < 0)
-        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "No support of direct evaluation for CG approximtation. Choose non-negative interpolation order!");
+        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "No support of direct evaluation for non-periodic approximtation. Choose non-negative interpolation order!");
       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
 //       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
 

@@ -38,6 +38,8 @@ fcs_float ifcs_p2nfft_regkernel_wo_singularity(
     const fcs_float *param, fcs_float epsB);
 #endif
 
+fcs_float ifcs_regkern3_2ptaylor_x_inv(fcs_float *x, fcs_int p, fcs_float a, fcs_float b, fcs_float *n);
+
 fcs_float ifcs_p2nfft_interpolation(
     fcs_float x, fcs_float one_over_epsI,
     fcs_int order, fcs_int num_nodes,

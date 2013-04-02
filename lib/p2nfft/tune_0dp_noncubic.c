@@ -163,7 +163,7 @@ FCSResult ifcs_p2nfft_tune_0dp_noncubic(
     )
 {
   int comm_rank;
-  const char* fnc_name = "ifcs_p2nfft_tune_3dp_noncubic";
+  const char* fnc_name = "ifcs_p2nfft_tune_0dp_noncubic";
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
   fcs_int local_needs_retune = d->needs_retune;
   fcs_int i, num_particles;
@@ -489,7 +489,7 @@ FCSResult ifcs_p2nfft_tune_0dp_noncubic(
             d->N[t] = 64;
  
         if(d->tune_epsI){
-          d->log2epsI = 5;  //  1.0/16 == 4.0/64
+          d->log2epsI = 5;
           d->epsI = fcs_pow(0.5, d->log2epsI);
         }
   
@@ -631,7 +631,7 @@ FCSResult ifcs_p2nfft_tune_0dp_noncubic(
       /*   accuracy of 1e-16 needs 14000 interpolation nodes */
       /*   accuracy of 1e-17 needs 24896 interpolation nodes */
       if(d->interpolation_order < 0)
-        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "No support of direct evaluation for CG approximtation. Choose non-negative interpolation order!");
+        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "No support of direct evaluation for non-periodic approximtation. Choose non-negative interpolation order!");
       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
 //       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
 
@@ -1203,7 +1203,6 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
   pfft = FCS_PFFT(plan_many_dft)(3, N, N, N, howmany,
       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, regkern_hat, regkern_hat, comm_cart,
       PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_ESTIMATE);
-//       PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT| PFFT_ESTIMATE);
 
   for(int t=0; t<3; t++)
     scale *= 1.0 / N[t];
@@ -1234,14 +1233,18 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
         xnorm = (xnorm < 0.5) ? xnorm : 0.5;
 
         /* calculate near and farfield regularization via interpolation */
-        if(xnorm < epsI)
+        if(xnorm < epsI){
           regkern_hat[m] = box_scale * ifcs_p2nfft_interpolation(
               xnorm, 1.0/epsI, interpolation_order, interpolation_num_nodes, near_interpolation_table_potential);
-        else if(xnorm < 0.5-epsB)
+          /* vgl. regularization.c, Zeile 262  */
+//           = ifcs_p2nfft_nearfield_correction_taylor2p(
+//           epsI * (fcs_float) k / num_nodes, p, taylor2p_coeff) / box_scale;
+        } else if(xnorm < 0.5-epsB) {
           regkern_hat[m] = 1.0/xnorm;
-        else
+        } else {
           regkern_hat[m] = ifcs_p2nfft_interpolation(
               xnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, interpolation_num_nodes, far_interpolation_table_potential);
+        }
         
         regkern_hat[m] *= scale * twiddle;
 
