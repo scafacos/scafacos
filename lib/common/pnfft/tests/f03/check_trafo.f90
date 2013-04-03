@@ -24,6 +24,19 @@ program main
       integer(C_INTPTR_T),       intent(in) :: N(3), local_N(3), local_N_start(3)
       complex(C_DOUBLE_COMPLEX), intent(out) :: f_hat(local_N(3),local_N(2),local_N(1))
     end subroutine init_f_hat
+    subroutine pnfft_perform_guru( &
+        N, Nos, local_M, m, x_max, window_flag, &
+        np, comm, &
+        f, cf, f_hat_sum &
+    )
+      use, intrinsic :: iso_c_binding
+      integer(C_INTPTR_T), intent(in)  :: N(3), Nos(3), local_M
+      integer,             intent(in)  :: m, window_flag, np(3), comm
+      real(C_DOUBLE),      intent(in)  :: x_max(3)
+      complex(C_DOUBLE_COMPLEX), pointer, intent(inout) :: f(:)
+      type(C_PTR),                        intent(inout) :: cf
+      real(C_DOUBLE),      intent(out) :: f_hat_sum
+    end subroutine pnfft_perform_guru
   end interface
 
   integer np(3), m, window_flag, ierror
@@ -38,7 +51,7 @@ program main
 
   N   = (/ 16,16,16 /)
   Nos = (/ 32,32,32 /)
-  np  = (/ 1,1,1 /)
+  np  = (/ 2,2,2 /)
   local_M = N(1)*N(2)*N(3) / (np(1)*np(2)*np(3))
   m = 6
   window_flag = PNFFT_WINDOW_KAISER_BESSEL
