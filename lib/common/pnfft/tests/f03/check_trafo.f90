@@ -1,7 +1,7 @@
 program main
   use, intrinsic :: iso_c_binding
+  use mpi
   implicit none
-  include "mpif.h"
   include "fftw3-mpi.f03"
   include "pfft.f03"
   include "pnfft.f03"
@@ -109,8 +109,8 @@ end program main
 
 subroutine compare_f(f1, f2, local_M, f_hat_sum, comm)
   use, intrinsic :: iso_c_binding
+  use mpi
   implicit none
-  include "mpif.h"
   include "fftw3-mpi.f03"
   include "pfft.f03"
   include "pnfft.f03"
@@ -200,8 +200,8 @@ subroutine pnfft_perform_guru( &
     f, cf, f_hat_sum &
   )
   use, intrinsic :: iso_c_binding
+  use mpi
   implicit none
-  include "mpif.h"
   include "fftw3-mpi.f03"
   include "pfft.f03"
   include "pnfft.f03"
