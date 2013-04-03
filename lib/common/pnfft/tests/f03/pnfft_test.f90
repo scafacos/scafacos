@@ -2,11 +2,10 @@
 program main
 
   use, intrinsic :: iso_c_binding
-
   implicit none
   include "mpif.h"
-  include "fftw3.f"
-  include "pfft.f"
+  include "fftw3-mpi.f03"
+  include "pfft.f03"
   include "pnfft.f03"
 
   integer np(3), ierror, l1, l2, l3

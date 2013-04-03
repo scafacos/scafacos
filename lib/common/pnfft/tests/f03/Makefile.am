@@ -23,6 +23,3 @@ check_PROGRAMS += \
 	check_trafo check_trafo_transposed
 #endif
 
-mostlyclean-local:
-	-rm -f subs.mod
-	-rm -f pnfftmod.mod
