@@ -394,8 +394,6 @@ void PNX(init_f_hat_3d)(
     local_Nt_start[t] = local_N_start[(t + shift) % 3];
   }
 
-  printf("local_Nt = [%td, %td, %td], local_Nt_start = [%td, %td, %td]\n", local_Nt[0], local_Nt[1], local_Nt[2], local_Nt_start[0], local_Nt_start[1], local_Nt_start[2]);
-
   PX(init_input_c2c_3d)(N, local_Nt, local_Nt_start,
       data);
 }
