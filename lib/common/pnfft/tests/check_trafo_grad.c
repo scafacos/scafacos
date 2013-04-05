@@ -30,7 +30,7 @@ static double random_number_less_than_one(
 int main(int argc, char **argv){
   int np[3], m, window;
   unsigned window_flag;
-  ptrdiff_t N[3], n[3], M;
+  ptrdiff_t N[3], n[3], local_M;
   double f_hat_sum, x_max[3];
   pnfft_complex *f1, *f2, *grad_f1, *grad_f2;
   
@@ -40,17 +40,17 @@ int main(int argc, char **argv){
   /* default values */
   N[0] = N[1] = N[2] = 16;
   n[0] = n[1] = n[2] = 0;
-  M = 0;
+  local_M = 0;
   m = 6;
   window = 4;
   x_max[0] = x_max[1] = x_max[2] = 0.5;
   np[0]=2; np[1]=2; np[2]=2;
   
   /* set values by commandline */
-  init_parameters(argc, argv, N, n, &M, &m, &window, x_max, np);
+  init_parameters(argc, argv, N, n, &local_M, &m, &window, x_max, np);
 
   /* if M or n are set to zero, we choose nice values */
-  M = (M==0) ? N[0]*N[1]*N[2] : M;
+  local_M = (local_M==0) ? N[0]*N[1]*N[2]/(np[0]*np[1]*np[2]) : local_M;
   for(int t=0; t<3; t++)
     n[t] = (n[t]==0) ? 2*N[t] : n[t];
 
@@ -65,7 +65,7 @@ int main(int argc, char **argv){
   pfft_printf(MPI_COMM_WORLD, "******************************************************************************************************\n");
   pfft_printf(MPI_COMM_WORLD, "* Computation of parallel NFFT\n");
   pfft_printf(MPI_COMM_WORLD, "* for  N[0] x N[1] x N[2] = %td x %td x %td Fourier coefficients (change with -pnfft_N * * *)\n", N[0], N[1], N[2]);
-  pfft_printf(MPI_COMM_WORLD, "* at   M = %td nodes per process (change with -pnfft_M *)\n", M);
+  pfft_printf(MPI_COMM_WORLD, "* at   local_M = %td nodes per process (change with -pnfft_local_M *)\n", local_M);
   pfft_printf(MPI_COMM_WORLD, "* with n[0] x n[1] x n[2] = %td x %td x %td FFT grid size (change with -pnfft_n * * *),\n", n[0], n[1], n[2]);
   pfft_printf(MPI_COMM_WORLD, "*      m = %td real space cutoff (change with -pnfft_m *),\n", m);
   pfft_printf(MPI_COMM_WORLD, "*      window = %d window function ", window);
@@ -83,16 +83,16 @@ int main(int argc, char **argv){
 //  window_flag |= PNFFT_PRE_KUB_PSI;
 
   /* calculate parallel NFFT */
-  pnfft_perform_guru(N, n, M, m,   x_max, window_flag, np, MPI_COMM_WORLD,
+  pnfft_perform_guru(N, n, local_M, m,   x_max, window_flag, np, MPI_COMM_WORLD,
       &f1, &grad_f1, &f_hat_sum);
 
   /* calculate parallel NFFT with higher accuracy */
-  pnfft_perform_guru(N, n, M, m+2, x_max, window_flag, np, MPI_COMM_WORLD,
+  pnfft_perform_guru(N, n, local_M, m+2, x_max, window_flag, np, MPI_COMM_WORLD,
       &f2, &grad_f2, &f_hat_sum);
 
   /* calculate error of PNFFT */
-  compare_f(f1, f2, M, f_hat_sum, "* Results in f", MPI_COMM_WORLD);
-  compare_grad_f(grad_f1, grad_f2, M, f_hat_sum, "* Results in grad_f", MPI_COMM_WORLD);
+  compare_f(f1, f2, local_M, f_hat_sum, "* Results in f", MPI_COMM_WORLD);
+  compare_grad_f(grad_f1, grad_f2, local_M, f_hat_sum, "* Results in grad_f", MPI_COMM_WORLD);
 
   /* free mem and finalize */
   pnfft_free(f1); pnfft_free(f2);
