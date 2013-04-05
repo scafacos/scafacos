@@ -26,71 +26,99 @@
 #include "bspline.h"
 #include "sinc.h"
 
-//static R PNX(fmax)(R arg1, R arg2){ return (arg1>arg2) ? arg1 : arg2; }
-
 /* The factor 1/n from matrix D cancels with the factor n of the inverse Fourier coefficients. */
 #define PNFFT_INV_PHI_HAT_GAUSS(k,n,b) \
-  (pnfft_exp( PNFFT_PI*PNFFT_PI*(k)*(k)*1.0/((n)*(n))*(b) ))
+  pnfft_exp( PNFFT_SQR(PNFFT_PI*(R)(k)/(n)) * (b) )
 
 #define PNFFT_PHI_HAT_GAUSS(k,n,b) \
-  (pnfft_exp(-PNFFT_PI*PNFFT_PI*(k)*(k)*1.0/((n)*(n))*(b) ))
+  pnfft_exp(-PNFFT_SQR(PNFFT_PI*(R)(k)/(n)) * (b) )
 
-/* define this macro to keep the notation short for Kaiser-Bessel and BesselI0 windows */
-#define PNFFT_KAISER_SQRT1(k,n,b) ( pnfft_sqrt( PNFFT_SQR(b) - PNFFT_SQR(2.0*PNFFT_PI*(k)/(n)) ) )
-#define PNFFT_KAISER_SQRT2(k,n,b) ( pnfft_sqrt( PNFFT_SQR(2.0*PNFFT_PI*(k)/(n)) - PNFFT_SQR(b) ) )
-
-/* For oversampling factor sigma==1 we have to assure that the argument of the square root is not less than zero.
- * This is theoretically true (since k runs between -n/2 and n/2-1), but can be numerically wrong for k=-n/2. */
 /* The factor 1/n from matrix D cancels with the factor n of the inverse Fourier coefficients. */
-#define PNFFT_INV_PHI_HAT_KAISER(k,N,n,b,m) \
-  ( (PNFFT_ABS(k) >= (n) - (N)/2) ? 0.0 : 1.0 / PNX(bessel_i0)( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) )
+static inline R inv_phi_hat_kaiser(
+    INT k, INT n, R b, int m
+    )
+{
+  R d = PNFFT_SQR( b ) - PNFFT_SQR( 2.0 * PNFFT_PI * (R)k / (R)n );
 
-#define PNFFT_PHI_HAT_KAISER(k,N,n,b,m) \
-  ( (PNFFT_ABS(k) >= (n) - (N)/2) ? 0.0 : PNX(bessel_i0)( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) )
+  /* compact support in Fourier space */
+  if(d<0)
+    return 0.0;
 
+  return (d>0) ? 1.0 / PNX(bessel_i0)(m*pnfft_sqrt(d)) : 1.0;
+}
 
-/* #define PNFFT_INV_PHI_HAT_BESSEL_I0(k,N,n,b,m) \
-   ( (PNFFT_ABS(k) == (n) - (N)/2) ? 1.0/(m) : PNFFT_KAISER_SQRT1(k,n,b) / pnfft_sinh( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) ) */
+static inline R phi_hat_kaiser(
+    INT k, INT n, R b, int m
+    )
+{
+  R d = PNFFT_SQR( b ) - PNFFT_SQR( 2.0 * PNFFT_PI * (R)k / (R)n );
 
-#define PNFFT_INV_PHI_HAT_BESSEL_I0(k,N,n,b,m) \
-  ( (PNFFT_ABS(k) < (n) - (N)/2) \
-    ? PNFFT_KAISER_SQRT1(k,n,b) / pnfft_sinh( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) \
-    : (PNFFT_ABS(k) > (n) - (N)/2) \
-    ? PNFFT_KAISER_SQRT2(k,n,b) / pnfft_sin( (m) * PNFFT_KAISER_SQRT2(k,n,b) ) \
-    : 1.0 / (m) \
-  )
+  if(d<0)
+    return 0.0;
 
-#define PNFFT_PHI_HAT_BESSEL_I0(k,N,n,b,m) \
-  ( (PNFFT_ABS(k) < (n) - (N)/2) \
-    ? pnfft_sinh( (m) * PNFFT_KAISER_SQRT1(k,n,b) ) / PNFFT_KAISER_SQRT1(k,n,b) \
-    : (PNFFT_ABS(k) > (n) - (N)/2) \
-    ? pnfft_sin( (m) * PNFFT_KAISER_SQRT2(k,n,b) ) / PNFFT_KAISER_SQRT2(k,n,b) \
-    : (m) \
-  )
+  return (d>0) ? PNX(bessel_i0)(m*pnfft_sqrt(d)) : 1.0;
+}
 
-/* Usage of MAX:
- * For oversampling factor sigma==1 we have to assure that the argument of the square root is not less than zero.
- * This is theoretically true (since k runs between -n/2 and n/2-1), but can be numerically wrong for k=-n/2.
- * Attention: Usage of PNFFT_MAX in this macro results in NANs on Jugene with -O3 optimization  */
-/*
-#define PNFFT_INV_PHI_HAT_KAISER(k,n,b,m) \
-  ( 1.0 / PNX(bessel_i0)( (m) * pnfft_sqrt( PNX(fmax)( 0.0, PNFFT_SQR(b) - PNFFT_SQR(2.0*PNFFT_PI*(k)/(n))))))
-*/
+static inline R inv_phi_hat_bessel_i0(
+    INT k, INT n, R b, int m
+    )
+{
+  R d = PNFFT_SQR( b ) - PNFFT_SQR( 2.0 * PNFFT_PI * (R)k / (R)n );
+  R r = (d<0) ? pnfft_sqrt(-d) : pnfft_sqrt(d);
+
+  if(d<0)
+    return r / pnfft_sin(m*r);
+
+  return (d>0) ? r / pnfft_sinh(m*r) : 1.0/m;
+}
+
+static inline R phi_hat_bessel_i0(
+    INT k, INT n, R b, int m
+    )
+{
+  R d = PNFFT_SQR( b ) - PNFFT_SQR( 2.0 * PNFFT_PI * (R)k / (R)n );
+  R r = (d<0) ? pnfft_sqrt(-d) : pnfft_sqrt(d);
+
+  if(d<0)
+    return pnfft_sin(m*r) / r;
+
+  return (d>0) ? pnfft_sinh(m*r) / r : m;
+}
 
 /* The factor 1/n from matrix D cancels with the factor n of the inverse Fourier coefficients. */
 #define PNFFT_INV_PHI_HAT_BSPLINE(k,n,m) \
-  ( pnfft_pow( PNX(sinc)((k) * PNFFT_PI / (n)), K(-2.0) * (m)) )
+  pnfft_pow( PNX(sinc)((k) * PNFFT_PI / (n)), K(-2.0) * (m))
 
 #define PNFFT_PHI_HAT_BSPLINE(k,n,m) \
-  ( pnfft_pow( PNX(sinc)((k) * PNFFT_PI / (n)), K(2.0) * (m)) )
+  pnfft_pow( PNX(sinc)((k) * PNFFT_PI / (n)), K(2.0) * (m))
+
+static inline R inv_phi_hat_sinc_power(
+    INT k, INT n, R b, int m, R *spline_coeffs
+    )
+{
+  R d = pnfft_fabs(k * b / n);
+
+  /* avoid division by zero for d == m */
+  return (d < m) ? 1.0 / PNX(bspline)(2*m, d + m, spline_coeffs) : 0.0;
+}
+
+static inline R phi_hat_sinc_power(
+    INT k, INT n, R b, int m, R *spline_coeffs
+    )
+{
+  R d = pnfft_fabs(k * b / n);
+  return PNX(bspline)(2*m, d + m, spline_coeffs);
+}
+
+
 
 /* For oversampling factor sigma==1 avoid division by zero. */
 /* The factor 1/n from matrix D is computed in matrix B (There it cancels with the factor N of the window). */
-#define PNFFT_INV_PHI_HAT_SINC_POWER(k,n,b,m,spline_coeffs) \
-  ( ((k) == -(n)/2) ? 0.0 : 1.0 / PNX(bspline)(2 * (m), (R)(k) * (b) / ((R) n) + (R)(m), (spline_coeffs)) )
+#define PNFFT_INV_PHI_HAT_SINC_POWER(k,N,n,b,m,spline_coeffs) \
+  ( (PNFFT_ABS(k) >= (n) - (N)/2) ? 0.0 : 1.0 / PNX(bspline)(2 * (m), (R)(k) * (b) / ((R) n) + (R)(m), (spline_coeffs)) )
 
-#define PNFFT_PHI_HAT_SINC_POWER(k,n,b,m,spline_coeffs) \
-  ( (abs(k) >= (n)/2) ? 0.0 : PNX(bspline)(2 * (m), (R)(k) * (b) / ((R) n) + (R)(m), (spline_coeffs)) )
+#define PNFFT_PHI_HAT_SINC_POWER(k,N,n,b,m,spline_coeffs) \
+  ( (PNFFT_ABS(k) >= (n) - (N)/2) ? 0.0 : PNX(bspline)(2 * (m), (R)(k) * (b) / ((R) n) + (R)(m), (spline_coeffs)) )
 
 
 static void convolution_with_general_window(
@@ -127,11 +155,11 @@ R PNX(inv_phi_hat)(
   else if(ths->pnfft_flags & PNFFT_WINDOW_BSPLINE)
     return PNFFT_INV_PHI_HAT_BSPLINE(k, ths->n[dim], ths->m);
   else if(ths->pnfft_flags & PNFFT_WINDOW_SINC_POWER)
-    return PNFFT_INV_PHI_HAT_SINC_POWER(k, ths->n[dim], ths->b[dim], ths->m, ths->spline_coeffs);
+    return inv_phi_hat_sinc_power(k, ths->n[dim], ths->b[dim], ths->m, ths->spline_coeffs);
   else if(ths->pnfft_flags & PNFFT_WINDOW_BESSEL_I0)
-    return PNFFT_INV_PHI_HAT_BESSEL_I0(k, ths->N[dim], ths->n[dim], ths->b[dim], ths->m);
+    return inv_phi_hat_bessel_i0(k, ths->n[dim], ths->b[dim], ths->m);
   else
-    return PNFFT_INV_PHI_HAT_KAISER(k, ths->N[dim], ths->n[dim], ths->b[dim], ths->m);
+    return inv_phi_hat_kaiser(k, ths->n[dim], ths->b[dim], ths->m);
 }
 
 R PNX(phi_hat)(
@@ -143,11 +171,11 @@ R PNX(phi_hat)(
   else if(ths->pnfft_flags & PNFFT_WINDOW_BSPLINE)
     return PNFFT_PHI_HAT_BSPLINE(k, ths->n[dim], ths->m);
   else if(ths->pnfft_flags & PNFFT_WINDOW_SINC_POWER)
-    return PNFFT_PHI_HAT_SINC_POWER(k, ths->n[dim], ths->b[dim], ths->m, ths->spline_coeffs);
+    return phi_hat_sinc_power(k, ths->n[dim], ths->b[dim], ths->m, ths->spline_coeffs);
   else if(ths->pnfft_flags & PNFFT_WINDOW_BESSEL_I0)
-    return PNFFT_PHI_HAT_BESSEL_I0(k, ths->N[dim], ths->n[dim], ths->b[dim], ths->m);
+    return phi_hat_bessel_i0(k, ths->n[dim], ths->b[dim], ths->m);
   else
-    return PNFFT_PHI_HAT_KAISER(k, ths->N[dim], ths->n[dim], ths->b[dim], ths->m);
+    return phi_hat_kaiser(k, ths->n[dim], ths->b[dim], ths->m);
 }
 
 void PNX(trafo_D)(

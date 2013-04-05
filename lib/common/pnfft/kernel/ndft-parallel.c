@@ -486,7 +486,7 @@ PNX(plan) PNX(init_internal)(
       ths->b[t]= ((R)m / PNFFT_PI) * K(2.0)*ths->sigma[t] / (K(2.0)*ths->sigma[t]-K(1.0));
 #if TUNE_B_FOR_EWALD_SPLITTING
     for(int t=0; t<d; t++)
-      ths->b[t]= 0.65;
+      ths->b[t]= 0.715303;
 #endif
 #if USE_EWALD_SPLITTING_FUNCTION_AS_WINDOW
     for(int t=0; t<d; t++){
@@ -516,20 +516,26 @@ PNX(plan) PNX(init_internal)(
     ths->spline_coeffs= (R*) PNX(malloc)(sizeof(R)*2*ths->m);
     for(int t=0; t<d; t++)
       ths->b[t]= (R)m * (K(2.0)*ths->sigma[t]) / (K(2.0)*ths->sigma[t]-K(1.0));
+#if TUNE_B_FOR_EWALD_SPLITTING
+//     fprintf(stderr, "Sinc-Power: old b = %.4e\n", ths->b[0]);
+    for(int t=0; t<d; t++)
+      ths->b[t]= 2.25;
+//     fprintf(stderr, "Sinc-Power: new b = %.4e\n", ths->b[0]);
+#endif
   } else if(pnfft_flags & PNFFT_WINDOW_BESSEL_I0){
     for(int t=0; t<d; t++)
       ths->b[t] = (R) PNFFT_PI * (K(2.0) - K(1.0)/ths->sigma[t]);
 #if TUNE_B_FOR_EWALD_SPLITTING
     for(int t=0; t<d; t++)
-      ths->b[t]= 5.46637;
+      ths->b[t]= 5.45066;
 #endif
   } else { /* default window function is Kaiser-Bessel */
     for(int t=0; t<d; t++)
       ths->b[t] = (R) PNFFT_PI * (K(2.0) - K(1.0)/ths->sigma[t]);
 #if TUNE_B_FOR_EWALD_SPLITTING
     for(int t=0; t<d; t++)
-      ths->b[t]= 5.35;
-//       ths->b[t]= 5.65;
+//       ths->b[t]= 5.35;
+      ths->b[t]= 5.7177;
 #endif
   }
 
@@ -1585,9 +1591,14 @@ static R window_bessel_i0_derivative_1d(
     )
 {
   R d = PNFFT_SQR( (R)m ) - PNFFT_SQR( x*n );
+  R r = (d<0) ? pnfft_sqrt(-d) : pnfft_sqrt(d);
 
   /* Compact support in real space */
-  return (d<0) ? 0.0 : 0.5 * b * (R)n * (R)n * x * PNX(bessel_i1)(b*pnfft_sqrt(d)) / pnfft_sqrt(d);
+  if(d<0)
+   return 0.0;
+
+  /* avoid division by zero */
+  return (d>0) ? 0.5 * b * (R)n * (R)n * x * PNX(bessel_i1)(b*r) / r : PNFFT_SQR(0.5*b*n) * x;
 }
 
 static R kaiser_bessel_1d(
@@ -1595,10 +1606,8 @@ static R kaiser_bessel_1d(
     )
 {
   /* TODO: try to avoid case d<0, since in theory d >= 0 */
-  R d, r;
-
-  d = PNFFT_SQR( (R)m ) - PNFFT_SQR( x*n );
-  r = (d<0) ? pnfft_sqrt(-d) : pnfft_sqrt(d);
+  R d = PNFFT_SQR( (R)m ) - PNFFT_SQR( x*n );
+  R r = (d<0) ? pnfft_sqrt(-d) : pnfft_sqrt(d);
 
   if(d < 0)
     return pnfft_sin(b*r) / ((R)PNFFT_PI*r);
@@ -1612,10 +1621,8 @@ static R kaiser_bessel_derivative_1d(
     )
 {
   /* TODO: try to avoid case d<0, since in theory d >= 0 */
-  R d, r;
-
-  d = PNFFT_SQR( (R)m ) - PNFFT_SQR( x*n );
-  r = (d<0) ? pnfft_sqrt(-d) : pnfft_sqrt(d);
+  R d = PNFFT_SQR( (R)m ) - PNFFT_SQR( x*n );
+  R r = (d<0) ? pnfft_sqrt(-d) : pnfft_sqrt(d);
 
   if(d < 0) /* use of -d results in change of sign within the brackets */
     return n*n*x/d * (b*pnfft_cos(b*r)/PNFFT_PI - psi);
