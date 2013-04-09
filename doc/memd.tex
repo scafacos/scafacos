@@ -1,8 +1,128 @@
-\chapter{MEMD -- Maxwell Equation Molecular Dynamics}
+\chapter{\memd{} -- Maxwell Equation Molecular Dynamics}
 \label{cha:memd}
 
-\solvertoindex{MEMD}
+\solvertoindex{\memd{}}
 \solvertoindex{Maxwell Equation Molecular Dynamics}
+
+\memd{} is a young method for the calculation of electrostatics. Rather than directly solving the Poisson equation, it performs a discrete quasi electrodynamics simulation on a lattice. It comes with some benefits and some restrictions, which will be described here and should be considered before using the algorithm.
+
+\section{Description of the method}
+
+In most algorithms, the electrostatic problem is formulated as the solution to Poisson's equation $\nabla^2\Phi=-4\pi\rho$. This elliptic partial differential equation requires a global solution in space, which is where the high computational cost of electrostatics arises. It can however be seen as nothing but the static limit of full electrodynamics where the speed of light approaches infinity, and the magnetic fields within the system have completely vanished. If we therefore consider the Gauss law $\nabla \Vect{E} = 4\pi\rho$ of the Maxwell equations, we arrive at a solution of Poisson's equation while only left with a set of hyperbolic differential equations. The solution of these requires only local operations, no global solution in space.
+
+\subsection{Equations of motion}
+\label{sec:memd-equations-of-motion}
+
+Of course, full electrodynamics within a simulation are similarly costly, since the speed of field propagations is several orders of magnitude higher than the typical speed of charges within the system, requesting an unfeasably fine time discretization. However, Maggs and Pasichnyk \cite{maggs02a,pasichnyk04a} have shown that, in a Car-Parrinello manner, these degrees of freedom can be brought closer by drastically reducing the wave propagation speed. In the thermodynamic limit, the Coulomb interaction is fully recovered independently of this propagation speed.
+
+Denoting the particle masses with $m_i$, their charges with $q_i$, their coordinates and momentum with $\Vect{r}_i$ and $\Vect{p}_i$ respectively, the equations of motion for the coupled system of charges and fields read
+
+\begin{align}
+m_i\ddot{\Vect{r}}_i &= -\frac{\partial U}{\partial\Vect{r}_i} -q_i \Vect{E}
+     + q_i \Vect{v}_i\times\Vect{B}
+\label{eq:force}\\
+\Vect{B} &= \frac{1}{c^2}\dot{\Vect{\Theta}}
+\label{eq:theta}\\
+\dot{\Vect{D}} &= c^2\: \nabla \times \left( \nabla \times \Vect{B} \right) - \frac{\Vect{j}}{\varepsilon}
+\label{eq:dfield}\\
+\dot{\Vect{B}} &=  -\nabla\times\Vect{D}
+\label{eq:bfield}
+\end{align}
+
+where $\epsilon(\Vect{r})$ is the local dielectric constant, $c$ the wave propagation speed (speed of light), $\Vect{B}$ the magnetic field, $\Vect{D}=\varepsilon\Vect{E}$ the electric field, $\Vect{\Theta}$ an additional degree of freedom for the electric field (where $\nabla\times\Vect{\Theta}=0$), and $\Vect{j}$ the electric current density.
+
+\subsection{Discretization in space}
+\label{sec:memd-space-discretization}
+
+In this implementation, the given equations are dicretized in space on a regular lattice for numerical evaluation. For the electric currents (and therefore the fields as well), a linear interpolations scheme is introduced because it allows for arbitrary local changes of the dielectric background constant $\varepsilon(\Vect{R})$. The gradient and curl operators are implemented via finite differences. This linear interpolation leads to a larger numerical error, especially on short ranges, as will be further explored in section~\ref{sec:memd-error}.
+
+\subsection{Discretization in time}
+\label{sec:memd-time-discretization}
+
+The \memd{} algorithm is based on moving charges and wave propagation, so unlike all other method in the \project{} library, it depends on the dynamics of the system. Most notably on the time step of the Molecular Dynamics (MD) integrator and the resulting particle speeds.
+
+The calculation of the electric current and the propagation of the magnetic field are discretized in time. Thus, a time step is required by the user and it should match the integration time step of the simulation. If a different (non-MD) simulation includes the \project{} library, the \memd{} solver can be a problematic choice and should only be considered if you know what you are doing.
+
+To maintain the energy conservation feature of symplectic integrators, the field calculation within this algorithm features a time reversible scheme: First, the magnetic fields are propagated for half a time step, then the electric fields are calculated, and finally the magnetic fields are propagated another half time step.
+
+
+\subsection{Boundary conditions}
+\label{sec:memd-boundaries}
+
+A local algorithm offers the possibility for a real periodic three dimensional torus geometry by simply stitching together the wave propagation of opposite box surfaces. This however implies a real periodic geometry and does not have the possibility to manually neglect the dipole term of the system, like \eg{} Ewald-based methods do by omitting the dipole term in Fourier space. Even worse, the dipole term of the unfolded coordinate system is considered, since the history of the particle trajectories is stored in the magnetic fields.
+
+This implementation corrects for the unwanted dipole term by directly substracting it, and therefore features metallic boundary conditions at infinity. Multipole terms of higher order decay faster than $1/r^3$ and are of short ranged nature.
+
+\subsection{Calculation of the potential}
+\label{sec:memd-potential}
+
+The \memd{} algorithm does not solve the Poisson equation but only updates the electric field directly (see section~\ref{sec:memd-equations-of-motion}). The electrostatic potential is never actually calculated. If output of the potential is wanted, the \memd{} algorithm will integrate over the field strength at all particle positions
+
+\begin{equation}
+\Phi_\text{total} = \frac{1}{2}\int_{V}\Vect{E}\cdot\Vect{D}dV
+\end{equation}
+
+The potential energy within the magnetic fields are omitted, since the fields in this algorithm are artificial and only their curl will contribute. This results in variations in the energy since the magnetic fields act as an energy depot in the system, although the total energy is conserved over time.
+
+\subsection{Error estimate}
+\label{sec:memd-error}
+
+The main error of the \memd{} algorithm stems from the lattice interpolation and is proportional to the lattice size in three dimensions, which means $\Delta_\text{lattice} \propto a^3$.
+
+Without derivation here, the algorithmic error is proportional to $1/c^2$, where $c$ is the adjustable wave propagation speed. From the stability criterion, this yields
+
+\begin{equation}
+\Delta_\text{\memd{}} = A\cdot a^3 + B\cdot dt^2/a^2
+\label{eq:memderror}
+\end{equation}
+
+This means that increasing the lattice will help the algorithmic error, as we can set the wave propagation speed to a higher value. At the same time, it increases the interpolation error at an even higher rate. Therefore, momentarily it is advisable to choose the lattice with a rather fine mesh of approximately the size of the particles. The ideal wave propagation can then be tuned by the method.
+
+
+\section{Systems suited for the algorithm}
+\label{sec:memd-suited-systems}
+
+As stated in section~\ref{sec:memd-time-discretization}, \memd{} is a dynamic algorithm. It relies heavily on the system moving slowly between calculations and requires a time step as parameter. It should only be used to couple to an MD simulation with a symplectic integrator. With anything else, you might run into unexpected difficulties. It also has to be taken into account that for energy calculations, the results can vary significantly because of the energy stored temporarily in the magnetic fields (see~\ref{sec:memd-potential}). The algorithm being dynamic also implies that there should be no permanently fixed charges within the system. \memd{} works with electric currents, and a charge that does not move can produce unpredictable errors if its magnetic field radiation relaxes to zero over time. If you must feature fixed particles, try to keep them in a narrow potential minimum.
+
+It is also mentioned in section~\ref{sec:memd-boundaries} that \memd{} directly substracts the system's dipole moment to deploy metallic boundary conditions at infinite distance. This works fine unless the system is externally driven to create a particle flow (net electric current) in one direction. The dipole moment will then diverge and the system needs to be reinitialized regularly.
+
+Generally, the simulated system
+
+\begin{itemize}
+\item should be propagated in an MD like manner.
+\item should be periodic in all dimensions.
+\item should be of cubic geometry.
+\item should not be very inhomogenous.
+\item should not have a net electric current.
+\item should not contain fixed charges.
+\item should run for some time to make up for the slow initialization procedure.
+\end{itemize}
+
+These conditions seem very restrictive, but they are given for most straight forward MD simulations. And if given, the algorithm can compete with the other electrostatics methods in this software package.
+
+
+%\section{Features}
+%
+%\begin{description}
+%\item[Periodicity:] Only fully periodic are supported.
+%\item[Box shape:] Only cubic box shape is supported.
+%\item[Autotuning:] The parameters can be automatically tuned to the highest precision available.
+%\item[Virial:] No.
+%\end{description}
+
+\section{Solver-specific parameters}
+
+\section{Solver-specific functions}
+
+\section{Known bugs or missing features}
+
+Since the algorithm's main strength is its locality and with it the possibility to apply spatially varying dielectric background properties, the following missing features have not been included in the \project{} library.
+
+\begin{itemize}
+\item The initial solution can theoretically be calculated with one of the alternative methods. This would speed up the algorithm significantly. It has not been implemented yet since one would need to distinguish between a constant and varying dielectric background.
+\item For a constant dielectric background, an option could also be added to interpolate the charges over a wider area and calculate the short-range part of the electrostatic interaction seperately. This would increase the precision but would again not be compatible with varying dielectric properties.
+\end{itemize}
+
 
 %%% Local Variables: 
 %%% mode: latex
