@@ -111,8 +111,76 @@ These conditions seem very restrictive, but they are given for most straight for
 %\end{description}
 
 \section{Solver-specific parameters}
+\label{sec:memd-parameters}
+
+The tolerance parameters are common to all \project{} solvers. At the moment MEMD only supports automatic tuning to reach the lowest possible error. This is typically in the range of $10^{-3}$ for the RMS force error.
+
+In addition, MEMD has the following, partly mandatory, parameters, which can be adjusted by the MEMD-specific functions described in the next section. Alternatively, you can use the ScaFaCoS test program together with the optional command line argument \verb!-c! and a comma separated list of parameter settings, \eg{}, use
+\begin{verbatim}
+./scafacos_test memd systems/3d-periodic/cloud_wall.xml.gz \
+-c tolerance_field,1e-3,mesh,16,timestep,0.01,lightspeed,0.05
+\end{verbatim}
+
+\begin{itemize}
+  \item \verb!timestep! (mandatory) -- The time step (in simulation units) of the Molecular Dynamics (MD) integrator. This is a mandatory parameter, since without it, \memd{} does not have a frame of reference for particle and fiel propagation speeds.
+  \item \verb!mesh! -- The space discretization mesh size in one dimension. If not set, this is automatically tuned via the minimal particle pair distance of the first system state.
+  \item \verb!lightspeed! -- The propagation speed of the magnetic fields in the system. This parameter is connected via a stability criterion to \verb!timestep! and \verb!mesh!, as explained below this list.
+  \item \verb!permittivity! -- The background permittivity $\varepsilon$ of the system. Only two of the parameters \verb!permittivity!, \verb!temperature!, and \verb!bjerrum_length! can be set at the same time, since they are mathematically dependent.
+  \item \verb!temperature! -- The temperature of the system. This is important for the thermalization of the fields. Only two of the parameters \verb!permittivity!, \verb!temperature!, and \verb!bjerrum_length! can be set at the same time, since they are mathematically dependent.
+  \item \verb!bjerrum_length! -- The bjerrum length $l_B$ of the system's dielectric background. Only two of the parameters \verb!permittivity!, \verb!temperature!, and \verb!bjerrum_length! can be set at the same time, since they are mathematically dependent.
+\end{itemize}
+
+The three parameters \verb!timestep!, \verb!mesh! and \verb!lightspeed! are connected via the stability criterion for the algorithm. The condition that the propagation of the magnetic fields has to be significantly larger than the speed of the particles leads to the relation
+
+\begin{align}
+%f_\text{mass} & \gg  \frac{dt^2}{a^2} \notag \\
+c & \ll  \frac{a}{dt} \label{eq:memd-stability-criterion}
+\end{align}
+
+where $c$ is the propagation speed of the fields (light speed), $a$ is the lattice spacing, and $dt$ is the time step. Usually, the time step is a fixed property. To achieve a good performance with the algorithm, a rule of thumb would be to set the lattice spacing at about the size of the particles (minimal distance), divide the box length by that, and pick the closest power of two for the mesh size in the system. From the resulting lattice spacing and the fixed time step, calculate the right hand fraction in equation~\eqref{eq:memd-stability-criterion} and multiply it by $20$ to get a lightspeed estimate for an appropriately stable algorithm with minimal numerical error.
 
 \section{Solver-specific functions}
+\label{sec:memd-functions}
+
+\begin{itemize}
+\item
+\begin{alltt}
+FCSResult fcs_memd_set_box_size(FCS handle,
+    fcs_float length_x, fcs_float length_y, fcs_float length_z);
+FCSResult fcs_memd_set_total_number_of_particles(FCS handle,
+    fcs_int number_of_particles);
+FCSResult fcs_memd_set_local_number_of_particles(FCS handle,
+    fcs_int number_of_particles);
+\end{alltt}
+    Set system parameters, common for all methods.
+\item
+\begin{alltt}
+FCSResult fcs_memd_set_permittivity(FCS handle,
+    fcs_float epsilon);
+FCSResult fcs_memd_set_temperature(FCS handle,
+    fcs_float temperature);
+FCSResult fcs_memd_set_bjerrum_length(FCS handle,
+    fcs_float bjerrum);
+\end{alltt}
+    Set the dielectric background parameters for the method. See section~\ref{sec:memd-parameters} for instructions.
+
+\item
+\begin{alltt}
+FCSResult fcs_memd_set_time_step(FCS handle,
+    fcs_float timestep);
+FCSResult fcs_memd_set_mesh_size_1D(FCS handle,
+    fcs_int mesh_size);
+FCSResult fcs_memd_set_speed_of_light(FCS handle,
+    fcs_float lightspeed);
+\end{alltt}
+    Set the tuning parameters for the method. See section~\ref{sec:memd-parameters} for instructions.
+\item
+\begin{alltt}    
+FCSResult fcs_memd_set_init_flag(FCS handle,
+    fcs_int flagvalue);
+\end{alltt}
+    If the system changes major parameters, the initial solution routine will be called automatically. But if you add small particle numbers or change particle positions rapidly, this function will tell \memd{} to re-initialize the system and can prevent a crash.
+\end{itemize}
 
 \section{Known bugs or missing features}
 
