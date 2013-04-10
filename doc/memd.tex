@@ -137,7 +137,7 @@ The three parameters \verb!timestep!, \verb!mesh! and \verb!lightspeed! are conn
 c & \ll  \frac{a}{dt} \label{eq:memd-stability-criterion}
 \end{align}
 
-where $c$ is the propagation speed of the fields (light speed), $a$ is the lattice spacing, and $dt$ is the time step. Usually, the time step is a fixed property. To achieve a good performance with the algorithm, a rule of thumb would be to set the lattice spacing at about the size of the particles (minimal distance), divide the box length by that, and pick the closest power of two for the mesh size in the system. From the resulting lattice spacing and the fixed time step, calculate the right hand fraction in equation~\eqref{eq:memd-stability-criterion} and multiply it by $20$ to get a lightspeed estimate for an appropriately stable algorithm with minimal numerical error.
+where $c$ is the propagation speed of the fields (light speed), $a$ is the lattice spacing, and $dt$ is the time step. Usually, the time step is a fixed property. To achieve a good performance with the algorithm, a rule of thumb would be to set the lattice spacing at about the size of the particles (minimal distance), divide the box length by that, and pick the closest power of two for the mesh size in the system. From the resulting lattice spacing and the fixed time step, calculate the right hand fraction in equation~\eqref{eq:memd-stability-criterion} and multiply it by $0.01$ to get a lightspeed estimate for an appropriately stable algorithm with minimal numerical error.
 
 \section{Solver-specific functions}
 \label{sec:memd-functions}
