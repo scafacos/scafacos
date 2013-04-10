@@ -478,8 +478,8 @@ ewald_k_space_error(fcs_int N, fcs_float sum_q2, fcs_float box_l[3],
 
 static inline void
 ewald_tune_alpha(fcs_int N, fcs_float sum_q2, fcs_float box_l[3],
-		 fcs_float r_cut, fcs_int kmax, 
-		 fcs_float *alpha, fcs_float *error, int tune) {
+                 fcs_float r_cut, fcs_int kmax, 
+                 fcs_float *alpha, fcs_float *error, int tune) {
   fcs_float err_r, der_r;
   fcs_float err_k, der_k;
   fcs_float alpha_diff;

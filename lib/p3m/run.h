@@ -23,6 +23,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "types.h"
 
 void ifcs_p3m_run(void* rd,
 		  fcs_int num_particles,
@@ -31,5 +32,14 @@ void ifcs_p3m_run(void* rd,
 		  fcs_float *charges,
 		  fcs_float *fields,
 		  fcs_float *potentials);
+
+fcs_float
+ifcs_p3m_runit(ifcs_p3m_data_struct* d,
+               fcs_int _num_particles,
+               fcs_int _max_num_particles,
+               fcs_float *_positions, 
+               fcs_float *_charges,
+               fcs_float *_fields,
+               fcs_float *_potentials);
 
 #endif

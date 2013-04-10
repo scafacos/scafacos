@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012 Olaf Lenz
+  Copyright (C) 2011,2012,2013 Olaf Lenz
   
   This file is part of ScaFaCoS.
   
@@ -21,37 +21,26 @@
 #include <config.h>
 #endif
 
-#include "FCSCommon.h"
-#include "error_estimate.h"
 #include "tune.h"
+
+#include "FCSCommon.h"
+#include "tune_broadcast.h"
+#include "error_estimate.h"
+#include "run.h"
 #include "utils.h"
 #include "prepare.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 /***************************************************/
-/* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
+/* TYPES AND CONSTANTS */
 /***************************************************/
-static FCSResult 
-ifcs_p3m_tuneit(ifcs_p3m_data_struct *d, 
-		fcs_int num_particles,
-		fcs_float *positions, 
-		fcs_float *charges);
-static void  
-ifcs_p3m_count_charges(ifcs_p3m_data_struct *d, 
-		       fcs_int num_particles, 
-		       fcs_float *charges);
+/** Good mesh sizes for fftw; -1 denotes end of list; 0 denotes a
+    block end. 
 
-static fcs_float 
-ifcs_p3m_get_error(ifcs_p3m_data_struct *d,
-		   fcs_int grid[3], 
-		   fcs_int cao,
-		   fcs_float r_cut,		   
-		   fcs_float *_rs_err, 
-		   fcs_float *_ks_err);
-
-/** Good mesh sizes for fftw. 
-    -1 denotes end of list.
+    Tuning will first go from block end to block end and try to find
+    the smallest block where the error can be achieved. Then it will
+    bisect to find the optimal grid size.
 **/
 static const int good_gridsize[] = 
   {4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 0,
@@ -69,6 +58,38 @@ static const int good_gridsize[] =
    3456, 0,
    3888, 0,
    -1};
+
+typedef struct {
+  /** cutoff radius */
+  fcs_float r_cut;
+  /** Ewald splitting parameter */
+  fcs_float alpha;
+  /** number of grid points per coordinate direction (>0). */
+  fcs_int grid[3];
+  /** charge assignment order ([0,P3M_MAX_CAO]). */
+  fcs_int cao;
+} tune_params;
+
+/***************************************************/
+/* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
+/***************************************************/
+static FCSResult 
+ifcs_p3m_tuneit
+(ifcs_p3m_data_struct *d, 
+ fcs_int num_particles, fcs_int max_particles, 
+ fcs_float *positions, fcs_float *charges);
+
+static void  
+ifcs_p3m_count_charges
+(ifcs_p3m_data_struct *d, fcs_int num_particles, fcs_float *charges);
+
+/* static fcs_float */
+/* ifcs_p3m_test_run */
+/* (ifcs_p3m_data_struct *d, */
+/*  fcs_int _num_particles, fcs_int _max_num_particles, */
+/*  fcs_float *_positions, fcs_float *_charges,  */
+/*  fcs_int grid[3], fcs_int cao, fcs_float r_cut, fcs_float alpha); */
+
 
 /***************************************************/
 /* IMPLEMENTATION */
@@ -110,7 +131,7 @@ ifcs_p3m_tune(void* rd,
 
   /* Retune if the number of charges has changed */
   if (!d->needs_retune && !(fcs_float_is_equal(sum_q2_before, d->sum_q2))) {
-    P3M_INFO(printf( "  Number of charges changed.\n"));
+    P3M_INFO(printf( "  Number of charges changed, retuning is needed.\n"));
     d->needs_retune = 1;
   }
 
@@ -141,37 +162,44 @@ ifcs_p3m_tune(void* rd,
       return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "r_cut is too small!");
     }
     
-    /* * check whether cutoff is larger than half a box length */
+    /* check whether cutoff is larger than half a box length */
     if ((d->r_cut > 0.5*d->box_l[0]) ||
 	(d->r_cut > 0.5*d->box_l[1]) ||
 	(d->r_cut > 0.5*d->box_l[2]))
       return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "r_cut is larger than half a system box length.");
 
-    /* * check whether cutoff is larger than domain size */
+    /* check whether cutoff is larger than domain size */
   }
 
-  FCSResult result = ifcs_p3m_tuneit(d, num_particles, positions, charges);
-  if (result != NULL) return result;
+  FCSResult result = NULL;
+  if (d->comm.rank == 0) 
+    result = ifcs_p3m_tuneit(d, num_particles, max_particles, positions, charges);
+  else 
+    result = ifcs_p3m_tune_broadcast_slave(d, num_particles, max_particles, positions, charges);
 
-  P3M_INFO(printf( "  Tuning was successful, preparing the method.\n"));
+  if (result != NULL) {
+    P3M_INFO(printf( "  Tuning failed.\n"));
+  } else {
+    P3M_INFO(printf( "  Tuning was successful.\n"));
 
-  /* when the parameters were retuned, prepare the method */
-  ifcs_p3m_prepare(d, max_particles);
+    /* At the end of retuning, prepare the method */
+    ifcs_p3m_prepare(d, max_particles);
 
-  /* mark that method was retuned */
-  d->needs_retune = 0;
+    /* mark that the method was retuned */
+    d->needs_retune = 0;
+  }
 
   P3M_INFO(printf( "ifcs_p3m_tune() finished.\n"));
-  return NULL;
+  return result;
 }
 
+/* Tune the P3M parameters. This is only called on the master node, on
+   the slave nodes, ifcs_p3m_tune_broadcast_slave() is called. */
 static FCSResult
 ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
-		fcs_int num_particles,
-		fcs_float *positions,
-		fcs_float *charges) {
-  const char* fnc_name="ifcs_p3m_tuneit";
-  fcs_int grid1d;
+		fcs_int num_particles, fcs_int max_particles,
+		fcs_float *positions, fcs_float *charges) {
+  const char* fnc_name = "ifcs_p3m_tuneit";
   #ifdef P3M_AD
   const fcs_int cao_min = 2;
   #else
@@ -179,13 +207,22 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
   #endif
   const fcs_int cao_max = 7;
 
-  P3M_DEBUG(printf( "  ifcs_p3m_tuneit() started...\n"));
+  //  tune_params params_to_try[P3M_MAX_CAO];
 
+  if (d->comm.rank != 0) {
+    return fcsResult_create
+      (FCS_LOGICAL_ERROR, fnc_name, 
+       "Internal error: Function should not be called on slave node.");
+  }
+    
+  P3M_DEBUG(printf( "  ifcs_p3m_tuneit() started...\n"));
+  
   P3M_INFO(printf("  Tuning P3M to p3m_tolerance_field=%" FCS_LMOD_FLOAT "g.\n", \
 		  d->tolerance_field));
   if (d->tune_r_cut) {
     /* compute the average distance between two charges  */
-    fcs_float avg_dist = pow((d->box_l[0]*d->box_l[1]*d->box_l[2]) / d->sum_qpart, 0.33333);
+    fcs_float avg_dist = pow((d->box_l[0]*d->box_l[1]*d->box_l[2]) 
+                             / d->sum_qpart, 0.33333);
     /* set r_cut to 3 times the average distance between charges */
     d->r_cut = 3.0 * avg_dist;
     
@@ -200,116 +237,122 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
     P3M_INFO(printf( "    tuned r_cut to %" FCS_LMOD_FLOAT "f\n", d->r_cut));
   }
 
-  /* On master */
-  if (d->comm.rank == 0) {
-    /* @todo Non-cubic case */
-    /* @todo Tune only grid or only cao */
-    if (!d->tune_grid && !d->tune_cao) {
-      /* TUNE ONLY ALPHA */
+  /* @todo Non-cubic case */
+  /* @todo Tune only grid or only cao */
+  if (!d->tune_grid && !d->tune_cao) {
+    /* TUNE ONLY ALPHA */
+    ifcs_p3m_compute_error_and_tune_alpha(d);
+  } else if (d->tune_cao && d->tune_grid) {
+    /* TUNE CAO AND GRID */
+    P3M_INFO(printf( "    Tuning grid and cao.\n"));
+    d->cao = cao_max;
+    /* find smallest possible grid */
+    P3M_DEBUG(printf( "    Finding the minimal grid at maximal cao...\n"));
+    fcs_int lower_ix = 0;
+    fcs_int upper_ix = 0;
+    while (1) {
+      /* advance to next good gridsize step */
+      while (good_gridsize[upper_ix] > 0) upper_ix++;
+      fcs_int grid1d = good_gridsize[upper_ix-1];
+      if (grid1d == -1) break;
+      /* test the gridsize */
+      d->grid[0] = grid1d;
+      d->grid[1] = grid1d;
+      d->grid[2] = grid1d;
+      P3M_INFO(printf( "      Testing grid=%d...\n", grid1d));
       ifcs_p3m_compute_error_and_tune_alpha(d);
-    } else if (d->tune_cao && d->tune_grid) {
-      /* TUNE CAO AND GRID */
-      P3M_INFO(printf( "    Tuning grid and cao.\n"));
-      d->cao = cao_max;
-      /* find smallest possible grid */
-      P3M_DEBUG(printf( "    Finding the minimal grid at maximal cao...\n"));
-      fcs_int lower_ix = 0;
-      fcs_int upper_ix = 0;
-      while (1) {
-        /* advance to next good gridsize step */
-        while (good_gridsize[upper_ix] > 0) upper_ix++;
-        fcs_int grid1d = good_gridsize[upper_ix-1];
-        if (grid1d == -1) break;
-
-        /* test the gridsize */
-	d->grid[0] = grid1d;
-	d->grid[1] = grid1d;
-	d->grid[2] = grid1d;
-	P3M_INFO(printf( "      Testing grid=%d...\n", grid1d));
-	ifcs_p3m_compute_error_and_tune_alpha(d);
-	if (d->error < d->tolerance_field) {
-          upper_ix--;
-          break;
-        }
-
-        lower_ix = upper_ix+1;
-        upper_ix++;
-      }
-
       if (d->error < d->tolerance_field) {
-        /* now the right gridsize is between lower_ix and upper_ix */
-        /* bisect to find the right size */
-        while (lower_ix+1 < upper_ix) {
-          fcs_int test_ix = (lower_ix+upper_ix)/2;
-          fcs_int grid1d = good_gridsize[test_ix];
-
-          /* test the gridsize */
-          d->grid[0] = grid1d;
-          d->grid[1] = grid1d;
-          d->grid[2] = grid1d;
-          P3M_INFO(printf( "      Testing grid=%d...\n",grid1d));
-          fcs_float error_before = d->error;
-          fcs_float rs_error_before = d->rs_error;
-          fcs_float ks_error_before = d->ks_error;
-          ifcs_p3m_compute_error_and_tune_alpha(d);
-          if (d->error < d->tolerance_field) {
-            // parameters achieve error
-            upper_ix = test_ix;
-          } else {
-            // parameters do not achieve error
-            lower_ix = test_ix;
-            // return old errors
-            d->error = error_before;
-            d->ks_error = ks_error_before;
-            d->rs_error = rs_error_before;
-          }
-        }
-        /* now the right size is at upper_ix */
-        fcs_int grid1d = good_gridsize[upper_ix];
+        upper_ix--;
+        break;
+      }
+      
+      lower_ix = upper_ix+1;
+      upper_ix++;
+    }
+    
+    if (d->error < d->tolerance_field) {
+      /* now the right gridsize is between lower_ix and upper_ix */
+      /* bisect to find the right size */
+      while (lower_ix+1 < upper_ix) {
+        fcs_int test_ix = (lower_ix+upper_ix)/2;
+        fcs_int grid1d = good_gridsize[test_ix];
+        
+        /* test the gridsize */
         d->grid[0] = grid1d;
         d->grid[1] = grid1d;
         d->grid[2] = grid1d;
-	P3M_DEBUG(printf( "    => minimal grid=(%d, %d, %d)\n", \
-			  d->grid[0], d->grid[1], d->grid[2]));
-      
-	/* find smallest possible value of cao */
-	P3M_DEBUG(printf( "    Finding minimal cao...\n"));
-	for (d->cao = cao_min; d->cao <= cao_max; d->cao++) {
-	  P3M_INFO(printf( "      Testing cao=%d\n", d->cao));
-	  ifcs_p3m_compute_error_and_tune_alpha(d);
-	  if (d->error < d->tolerance_field) break;
-	}
-	if (d->error < d->tolerance_field)
-	  P3M_DEBUG(printf( "    => minimal cao=%d\n", d->cao));
+        P3M_INFO(printf( "      Testing grid=%d...\n", grid1d));
+        fcs_float error_before = d->error;
+        fcs_float rs_error_before = d->rs_error;
+        fcs_float ks_error_before = d->ks_error;
+        ifcs_p3m_compute_error_and_tune_alpha(d);
+        if (d->error < d->tolerance_field) {
+          // parameters achieve error
+          upper_ix = test_ix;
+        } else {
+          // parameters do not achieve error
+          lower_ix = test_ix;
+          // return old errors
+          d->error = error_before;
+          d->ks_error = ks_error_before;
+          d->rs_error = rs_error_before;
+        }
       }
+
+      /* now the right size is at upper_ix */
+      fcs_int grid1d = good_gridsize[upper_ix];
+      
+      d->grid[0] = grid1d;
+      d->grid[1] = grid1d;
+      d->grid[2] = grid1d;
+      P3M_DEBUG(printf( "    => minimal grid=(%d, %d, %d)\n",   \
+                        d->grid[0], d->grid[1], d->grid[2]));
+      
+      /* find smallest possible value of cao */
+      P3M_DEBUG(printf( "    Finding minimal cao...\n"));
+      for (d->cao = cao_min; d->cao <= cao_max; d->cao++) {
+        P3M_INFO(printf( "      Testing cao=%d\n", d->cao));
+        ifcs_p3m_compute_error_and_tune_alpha(d);
+        if (d->error < d->tolerance_field) break;
+      }
+      if (d->error < d->tolerance_field)
+        P3M_DEBUG(printf( "    => minimal cao=%d\n", d->cao));
     }
-
-    // send the final parameter set and end slave loop
-    ifcs_p3m_param_broadcast(d);
-
-  } else {
-    // start the slave loop and wait for parallel requests
-    ifcs_p3m_param_broadcast_slave(d);
   }
 
+  /* Now we should have the best possible set of parameters. */
+
+  /* If the error is still larger than the tolerance, we did not get a
+     valid parameter set, so we should bail out. */
   if (d->error > d->tolerance_field) {
+    /* Broadcast that tuning failed. */
+    ifcs_p3m_tune_broadcast_command(d, FAILED);
+
     char msg[255];
     sprintf(msg, 
-	    "Cannot achieve required accuracy (p3m_tolerance_field=%" FCS_LMOD_FLOAT "e) for given parameters.", 
+	    "Cannot achieve required accuracy (p3m_tolerance_field=%" 
+            FCS_LMOD_FLOAT 
+            "e) for given parameters.", 
 	    d->tolerance_field);
     return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, msg);
   }
 
-  P3M_INFO(printf( "    r_cut=%" FCS_LMOD_FLOAT "g cao=%d grid=(%d, %d, %d) alpha=%" FCS_LMOD_FLOAT "g\n", \
+  /* Broadcast the final parameters. */
+  ifcs_p3m_tune_broadcast_command(d, FINISHED);
+
+  P3M_INFO(printf( "    r_cut=%" FCS_LMOD_FLOAT                         \
+                   "g cao=%d grid=(%d, %d, %d) alpha=%" FCS_LMOD_FLOAT "g\n", \
 		   d->r_cut, d->cao, d->grid[0], d->grid[1], d->grid[2], d->alpha));
-  P3M_INFO(printf( "    error=%" FCS_LMOD_FLOAT "e rs_error=%" FCS_LMOD_FLOAT "e ks_error=%" FCS_LMOD_FLOAT "e\n", \
+  P3M_INFO(printf( "    error=%" FCS_LMOD_FLOAT "e rs_error=%" FCS_LMOD_FLOAT \
+                   "e ks_error=%" FCS_LMOD_FLOAT "e\n",                 \
 		   d->error, d->rs_error, d->ks_error));
   P3M_DEBUG(printf( "  ifcs_p3m_tuneit() finished.\n"));
   return NULL;
 }
 
 /** Calculate number of charged particles, the sum of the squared
-    charges and the squared sum of the charges. */
+    charges and the squared sum of the charges. Called in parallel at
+    the beginning of tuning. */
 static void 
 ifcs_p3m_count_charges(ifcs_p3m_data_struct *d, 
 		       fcs_int num_particles, fcs_float *charges) {  
@@ -335,11 +378,36 @@ ifcs_p3m_count_charges(ifcs_p3m_data_struct *d,
   d->square_sum_q = SQR(tot_sums[2]);
 
   P3M_DEBUG(printf("  ifcs_p3m_count_charges(): "			\
-		   "num_charged_particles=%d sum_squared_charges=%" FCS_LMOD_FLOAT "f sum_charges=%lf\n", \
+		   "num_charged_particles=%d sum_squared_charges=%"     \
+                   FCS_LMOD_FLOAT "f sum_charges=%lf\n",                \
 		   d->sum_qpart, d->sum_q2, sqrt(d->square_sum_q)));
 }
 
 
+/** Test run the method with the current parameters and return the elapsed CPU time. */
+/* static fcs_float */
+/* ifcs_p3m_test_run */
+/* (ifcs_p3m_data_struct *d, */
+/*  fcs_int _num_particles, fcs_int _max_num_particles, */
+/*  fcs_float *_positions, fcs_float *_charges) { */
+/*   d->cao = cao; */
+/*   d->alpha = alpha; */
+/*   for (int i = 0; i < 3; i++) */
+/*     d->grid[i] = grid[i]; */
+/*   d->r_cut = r_cut; */
 
+/*   ifcs_p3m_prepare(d, _max_num_particles); */
 
+/*   fcs_float *fields = malloc(_num_particles*3*sizeof(fcs_float)); */
+/*   fcs_float *potentials = malloc(_num_particles*sizeof(fcs_float)); */
+/*   fcs_float required_time =  */
+/*     ifcs_p3m_runit(d, _num_particles, _max_num_particles,  */
+/*                    _positions, _charges,  */
+/*                    fields, potentials); */
+
+/*   free(fields); */
+/*   free(potentials); */
+  
+/*   return required_time; */
+/* } */
 

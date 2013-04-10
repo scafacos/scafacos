@@ -33,19 +33,4 @@
 */
 void
 ifcs_p3m_compute_error_and_tune_alpha(ifcs_p3m_data_struct *d);
-
-/** Broadcast the final parameters at the end of tuning. Also ends the
-    slave loops.
-*/
-void
-ifcs_p3m_param_broadcast(ifcs_p3m_data_struct *d);
-
-/** Run the loop on the slaves that waits for requests from one of the
-    other functions. The loop will after when
-    ifcs_p3m_param_broadcast has been called on the
-    master. Afterwards, r_cut, grid, alpha, cao, error, rs_error and
-    ks_error will be set to their respective values on all nodes.
-*/
-void
-ifcs_p3m_param_broadcast_slave(ifcs_p3m_data_struct *d);
 #endif

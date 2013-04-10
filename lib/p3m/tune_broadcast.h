@@ -1,8 +1,5 @@
 /*
-  Copyright (C) 2010,2011 The ESPResSo project
-  Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010 
-    Max-Planck-Institute for Polymer Research, Theory Group
-  
+  Copyright (C) 2013 Olaf Lenz
   This file is part of ScaFaCoS.
   
   ScaFaCoS is free software: you can redistribute it and/or modify
@@ -18,15 +15,28 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_TUNE_H 
-#define _P3M_TUNE_H
+#ifndef _P3M_TUNE_BROADCAST_H 
+#define _P3M_TUNE_BROADCAST_H 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include "types.h"
 #include "FCSResult.h"
 
-FCSResult ifcs_p3m_tune
-(void* rd, fcs_int num_particles, fcs_int max_particles,
+/* Events during tuning */
+#define FAILED -1
+#define FINISHED 0
+#define COMPUTE_ERROR_ESTIMATE 1
+#define TEST_RUN 2
+
+void
+ifcs_p3m_tune_broadcast_command
+(ifcs_p3m_data_struct *d, fcs_int command);
+
+FCSResult
+ifcs_p3m_tune_broadcast_slave
+(ifcs_p3m_data_struct *d, fcs_int num_particles, fcs_int max_particles,
  fcs_float *positions, fcs_float *charges);
+
 #endif

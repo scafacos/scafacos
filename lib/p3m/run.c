@@ -33,13 +33,15 @@
 #include "fcs_p3m_p.h"
 #include "common/gridsort/gridsort.h"
 #include "common/near/near.h"
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #if FCS_ENABLE_INFO 
-#define FCS_P3M_INIT_TIMING(comm)               \
-  int tm_rank;                                  \
-  MPI_Comm_rank(comm, &tm_rank);                \
+#define FCS_P3M_INIT_TIMING(comm)               			\
+  int tm_rank;                                                          \
+  MPI_Comm_rank(comm, &tm_rank);                                        \
   double tm_timer, tm_global_timer;
 #define FCS_P3M_START_TIMING()                  \
   tm_timer = -MPI_Wtime();
@@ -151,11 +153,35 @@ void ifcs_p3m_run(void* rd,
 		  fcs_float *_charges,
 		  fcs_float *_fields,
 		  fcs_float *_potentials) {
-  /* Here we assume, that the method is tuned and that all parameters are valid */
+  /* Here we assume, that the method is already tuned and that all
+     parameters are valid */
+  
+  ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*)rd;
 
+  ifcs_p3m_runit(d, _num_particles, _max_num_particles, _positions, _charges, 
+                 _fields, _potentials);
+
+  return;
+}
+
+static fcs_float getcputime() {
+  struct rusage res;
+  getrusage(RUSAGE_SELF, &res);
+  return 1.0e-3*res.ru_utime.tv_usec + 1.0e3*res.ru_utime.tv_sec;
+}
+
+fcs_float
+ifcs_p3m_runit(ifcs_p3m_data_struct* d,
+               fcs_int _num_particles,
+               fcs_int _max_num_particles,
+               fcs_float *_positions, 
+               fcs_float *_charges,
+               fcs_float *_fields,
+               fcs_float *_potentials) {
   P3M_INFO(printf( "ifcs_p3m_run() started...\n"));
 
-  ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*)rd;
+  /* start timer */
+  fcs_float before = getcputime();
 
   P3M_INFO(printf("    system parameters: box_l=(%"                     \
                   FCS_LMOD_FLOAT "f, %"                                 \
@@ -269,7 +295,10 @@ void ifcs_p3m_run(void* rd,
   ifcs_fft_perform_forw(&d->fft, &d->comm, d->rs_grid);
   P3M_DEBUG(printf( "  returned from ifcs_fft_perform_forw().\n"));
   FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "fft_perform_forw");
-  
+
+  /********************************************/
+  /* POTENTIAL COMPUTATION */
+  /********************************************/
   if (d->require_total_energy || _potentials != NULL) {
     /* apply energy optimized influence function */
     FCS_P3M_START_TIMING();
@@ -321,6 +350,7 @@ void ifcs_p3m_run(void* rd,
                                  num_real_particles, positions,
                                  charges, 1, potentials);
       FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "assign_potentials_2");
+
 #else
       /* redistribute energy grid */
       FCS_P3M_START_TIMING();
@@ -337,6 +367,9 @@ void ifcs_p3m_run(void* rd,
     }
   }
 
+  /********************************************/
+  /* FIELD COMPUTATION */
+  /********************************************/
   if (_fields != NULL) {
     /* apply force optimized influence function */
     FCS_P3M_START_TIMING();
@@ -450,7 +483,6 @@ void ifcs_p3m_run(void* rd,
       /* 	    fprintf(outfile, "%e\n", charge); */
       /* 	  } */
       /* fclose(outfile); */
-      
       FCS_P3M_START_TIMING();
       ifcs_p3m_assign_fields_ik(d, d->rs_grid, dim, num_real_particles, 
                                 positions, 0, fields);
@@ -509,7 +541,16 @@ void ifcs_p3m_run(void* rd,
   if (fields != NULL) free(fields);
   if (potentials != NULL) free(potentials);
 
+  /* take time */
+  fcs_float required_time = getcputime() - before;
+  fcs_float global_required_time;
+  MPI_Reduce(&required_time, &global_required_time, 
+             1, FCS_MPI_FLOAT, MPI_MAX, 
+             0, d->comm.mpicomm);
+
   P3M_INFO(printf( "ifcs_p3m_run() finished.\n"));
+
+  return global_required_time;
 }
 
 /***************************************************/

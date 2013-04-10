@@ -172,14 +172,14 @@ typedef struct {
   fcs_int near_field_flag;
 
   /* TUNABLE PARAMETERS */
-  /** unscaled \ref r_cut_iL for use with fast inline functions only */
+  /** cutoff radius */
   fcs_float r_cut;
-  /** unscaled \ref alpha_L for use with fast inline functions only */
+  /** Ewald splitting parameter */
   fcs_float alpha;
   /** number of grid points per coordinate direction (>0). */
-  fcs_int    grid[3];
+  fcs_int grid[3];
   /** charge assignment order ([0,P3M_MAX_CAO]). */
-  fcs_int    cao;
+  fcs_int cao;
   
   /* Whether or not it is necessary to retune the method before running it. */
   int needs_retune;

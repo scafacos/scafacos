@@ -17,6 +17,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 #include "error_estimate.h"
+#include "tune_broadcast.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,36 +51,34 @@ static const fcs_float FULL_ESTIMATE_ALPHA_H_THRESHOLD = 0.5;
 /***************************************************/
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
 /***************************************************/
+#ifdef P3M_IK
 static fcs_float 
-ifcs_p3m_k_space_error_sum1(fcs_int n, fcs_float grid_i, 
-                            fcs_int cao);
+ifcs_p3m_k_space_error_sum1
+(fcs_int n, fcs_float grid_i, fcs_int cao);
+
+static void 
+ifcs_p3m_k_space_error_sum2
+(fcs_int nx, fcs_int ny, fcs_int nz, 
+ fcs_int grid[3], fcs_float grid_i[3], fcs_int cao, fcs_float alpha_L_i, 
+ fcs_float *alias1, fcs_float *alias2);
+#endif
 
 #ifdef P3M_AD
 #ifdef P3M_INTERLACE
 static void 
-ifcs_p3m_k_space_error_sum2_adi(fcs_int nx, fcs_int ny, fcs_int nz, 
-                                fcs_int grid[3], fcs_float grid_i[3], 
-                                fcs_int cao, fcs_float alpha_L_i, 
-                                fcs_float *alias1, fcs_float *alias2,
-                                fcs_float *alias3, fcs_float *alias4,
-                                fcs_float *alias5, fcs_float *alias6);
+ifcs_p3m_k_space_error_sum2_adi
+(fcs_int nx, fcs_int ny, fcs_int nz, 
+ fcs_int grid[3], fcs_float grid_i[3], fcs_int cao, fcs_float alpha_L_i, 
+ fcs_float *alias1, fcs_float *alias2, fcs_float *alias3, 
+ fcs_float *alias4, fcs_float *alias5, fcs_float *alias6);
 #endif
 #endif
-
-static void 
-ifcs_p3m_k_space_error_sum2(fcs_int nx, fcs_int ny, fcs_int nz, 
-                            fcs_int grid[3], fcs_float grid_i[3], 
-                            fcs_int cao, fcs_float alpha_L_i, 
-                            fcs_float *alias1, fcs_float *alias2);
 
 static void 
 ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d);
 
 static void 
 ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d);
-
-static void
-ifcs_p3m_ks_error_broadcast(ifcs_p3m_data_struct *d);
 
 /***************************************************/
 /* IMPLEMENTATION */
@@ -120,7 +119,7 @@ static inline fcs_float sinc(fcs_float d)
 /** Calculates the real space contribution to the rms error in the
     force (as described by Kolafa and Perram).
 */
-void 
+static void 
 ifcs_p3m_real_space_error(ifcs_p3m_data_struct *d) {
   d->rs_error = (2.0*d->sum_q2*exp(-SQR(d->r_cut*d->alpha))) 
     / (sqrt((fcs_float)d->sum_qpart*d->r_cut*d->box_l[0]*d->box_l[1]*d->box_l[2]));
@@ -140,19 +139,15 @@ ifcs_p3m_real_space_error(ifcs_p3m_data_struct *d) {
 */
 void 
 ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d) {
-  int comm_rank, comm_size;
-  MPI_Comm_rank(d->comm.mpicomm, &comm_rank);
-  MPI_Comm_size(d->comm.mpicomm, &comm_size);
-
-  // receiving function in ifcs_p3m_param_broadcast_slave
-  if (comm_rank == 0) ifcs_p3m_ks_error_broadcast(d);
-
 /* #ifdef FCS_ENABLE_DEBUG */
 /*   printf(  */
 /* 	  "        #%2d: N=%d Q2=%g box_l=(%g, %g, %g) grid=(%d, %d, %d) alpha=%g cao=%d\n",  */
 /* 	  comm_rank, N, sum_q2, box_l[0], box_l[1], box_l[2],  */
 /* 	  grid[0], grid[1], grid[2], alpha, cao); */
 /* #endif */
+
+  if (d->comm.rank == 0)
+    ifcs_p3m_tune_broadcast_command(d, COMPUTE_ERROR_ESTIMATE);
       
   fcs_float local_he_q = 0.0;
   fcs_float grid_i[3] = 
@@ -162,14 +157,14 @@ ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d) {
 
   // Distribute indices onto parallel tasks
   fcs_int num_ix = d->grid[0]*d->grid[1]*d->grid[2];
-  fcs_int ix_per_task = num_ix / comm_size;
-  fcs_int ix_rem = num_ix % comm_size;
+  fcs_int ix_per_task = num_ix / d->comm.size;
+  fcs_int ix_rem = num_ix % d->comm.size;
 
   // Determine minimal and maximal index
-  fcs_int min_ix = comm_rank * ix_per_task;
+  fcs_int min_ix = d->comm.rank * ix_per_task;
   fcs_int max_ix;
-  if (comm_rank < ix_rem) {
-    min_ix += comm_rank;
+  if (d->comm.rank < ix_rem) {
+    min_ix += d->comm.rank;
     max_ix = min_ix + ix_per_task + 1;
   } else {
     min_ix += ix_rem;
@@ -247,6 +242,7 @@ ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d) {
   d->ks_error = ks_error;
 }
 
+#ifdef P3M_IK
 /** One of the aliasing sums used by \ref fcs_fftcommon_k_space_error. 
     (fortunately the one which is most important (because it converges
     most slowly, since it is not damped exponentially)) can be
@@ -254,9 +250,8 @@ ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d) {
     the spline interpolation) can be written as an even trigonometric
     polynomial. The results are tabulated here (The employed formula
     is Eqn. 7.66 in the book of Hockney and Eastwood). */
-fcs_float 
-ifcs_p3m_k_space_error_sum1(fcs_int n, fcs_float grid_i, 
-                            fcs_int cao) {
+static fcs_float 
+ifcs_p3m_k_space_error_sum1(fcs_int n, fcs_float grid_i, fcs_int cao) {
   fcs_float c, res=0.0;
   c = SQR(cos(M_PI*grid_i*(fcs_float)n));
   
@@ -291,10 +286,42 @@ ifcs_p3m_k_space_error_sum1(fcs_int n, fcs_float grid_i,
   return res;
 }
 
+/** aliasing sum used by \ref ifcs_p3m_k_space_error. */
+static void 
+ifcs_p3m_k_space_error_sum2(fcs_int nx, fcs_int ny, fcs_int nz, 
+                            fcs_int grid[3], fcs_float grid_i[3], 
+                            fcs_int cao, fcs_float alpha_L_i, 
+                            fcs_float *alias1, fcs_float *alias2) {
+  fcs_float prefactor = SQR(M_PI*alpha_L_i);
+
+  *alias1 = *alias2 = 0.0;
+  for (fcs_int mx=-P3M_BRILLOUIN; mx<=P3M_BRILLOUIN; mx++) {
+    fcs_float nmx = nx + mx*grid[0];
+    fcs_float fnmx = grid_i[0] * nmx;
+    for (fcs_int my=-P3M_BRILLOUIN; my<=P3M_BRILLOUIN; my++) {
+      fcs_float nmy = ny + my*grid[1];
+      fcs_float fnmy = grid_i[1] * nmy;
+      for (fcs_int mz=-P3M_BRILLOUIN; mz<=P3M_BRILLOUIN; mz++) {
+	fcs_float nmz = nz + mz*grid[2];
+	fcs_float fnmz = grid_i[2] * nmz;
+
+	fcs_float nm2 = SQR(nmx) + SQR(nmy) + SQR(nmz);
+	fcs_float ex = exp(-prefactor*nm2);
+	
+	fcs_float U2 = pow(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*cao);
+	
+	*alias1 += ex*ex / nm2;
+	*alias2 += U2 * ex * (nx*nmx + ny*nmy + nz*nmz) / nm2;
+      }
+    }
+  }
+}
+#endif
+
 #ifdef P3M_AD
 #ifdef P3M_INTERLACE
 /** aliasing sum used by \ref ifcs_p3m_k_space_error. */
-void 
+static void 
 ifcs_p3m_k_space_error_sum2_adi(fcs_int nx, fcs_int ny, fcs_int nz, 
                                 fcs_int grid[3], fcs_float grid_i[3], 
                                 fcs_int cao, fcs_float alpha_L_i, 
@@ -339,42 +366,10 @@ ifcs_p3m_k_space_error_sum2_adi(fcs_int nx, fcs_int ny, fcs_int nz,
 #endif
 #endif
 
-/** aliasing sum used by \ref ifcs_p3m_k_space_error. */
-void 
-ifcs_p3m_k_space_error_sum2(fcs_int nx, fcs_int ny, fcs_int nz, 
-                            fcs_int grid[3], fcs_float grid_i[3], 
-                            fcs_int cao, fcs_float alpha_L_i, 
-                            fcs_float *alias1, fcs_float *alias2)
-{
-  fcs_float prefactor = SQR(M_PI*alpha_L_i);
-
-  *alias1 = *alias2 = 0.0;
-  for (fcs_int mx=-P3M_BRILLOUIN; mx<=P3M_BRILLOUIN; mx++) {
-    fcs_float nmx = nx + mx*grid[0];
-    fcs_float fnmx = grid_i[0] * nmx;
-    for (fcs_int my=-P3M_BRILLOUIN; my<=P3M_BRILLOUIN; my++) {
-      fcs_float nmy = ny + my*grid[1];
-      fcs_float fnmy = grid_i[1] * nmy;
-      for (fcs_int mz=-P3M_BRILLOUIN; mz<=P3M_BRILLOUIN; mz++) {
-	fcs_float nmz = nz + mz*grid[2];
-	fcs_float fnmz = grid_i[2] * nmz;
-
-	fcs_float nm2 = SQR(nmx) + SQR(nmy) + SQR(nmz);
-	fcs_float ex = exp(-prefactor*nm2);
-	
-	fcs_float U2 = pow(sinc(fnmx)*sinc(fnmy)*sinc(fnmz), 2.0*cao);
-	
-	*alias1 += ex*ex / nm2;
-	*alias2 += U2 * ex * (nx*nmx + ny*nmy + nz*nmz) / nm2;
-      }
-    }
-  }
-}
-
 
 /** Calculate the analytical approximation for the k-space part of the
     error (Eq. 38 in Deserno, Holm; JCP 109,18; 1998). */
-void
+static void
 ifcs_p3m_k_space_error_approx(ifcs_p3m_data_struct *d) {
   /* grid spacing */
   /* TODO: non-cubic case*/
@@ -436,13 +431,8 @@ ifcs_p3m_k_space_error_approx(ifcs_p3m_data_struct *d) {
     the book of Hockney and Eastwood (Eqn. 8.23) for a system of N
     randomly distributed particles.
 */
-void
+static void
 ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
-#ifdef FCS_ENABLE_DEBUG
-  int comm_rank;
-  MPI_Comm_rank(d->comm.mpicomm, &comm_rank);
-#endif
-
   /* calculate real space and k space error */
   ifcs_p3m_real_space_error(d);
 
@@ -452,7 +442,7 @@ ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
     fcs_float alpha_h = d->alpha * d->box_l[i] / d->grid[i];
     full_estimate = alpha_h > FULL_ESTIMATE_ALPHA_H_THRESHOLD;
 #ifdef FCS_ENABLE_DEBUG
-    if (comm_rank == 0) {
+    if (d->comm.rank == 0) {
       if (full_estimate)
 	printf( "        alpha*h[%d]=%" FCS_LMOD_FLOAT "g > %" 
                 FCS_LMOD_FLOAT "g => full estimate\n", 
@@ -461,7 +451,7 @@ ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
 #endif
   }
 #ifdef FCS_ENABLE_DEBUG
-  if (comm_rank == 0) {
+  if (d->comm.rank == 0) {
     if (!full_estimate)
       printf( "        alpha*h < %" FCS_LMOD_FLOAT "g => approximation\n", 
               FULL_ESTIMATE_ALPHA_H_THRESHOLD);
@@ -476,7 +466,7 @@ ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
   d->error = sqrt(SQR(d->rs_error)+SQR(d->ks_error));
 
 #ifdef FCS_ENABLE_DEBUG
-  if (comm_rank == 0)
+  if (d->comm.rank == 0)
     printf( "        error estimate: rs_err=%" FCS_LMOD_FLOAT 
             "e ks_err=%" FCS_LMOD_FLOAT "e err=%" FCS_LMOD_FLOAT "e\n",
 	    d->rs_error, d->ks_error, d->error);
@@ -488,7 +478,7 @@ ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
     parameters. Check whether wanted_error > achieved_error to see
     whether the required error can actually be met.
 */
-void
+static void
 ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d) {
   /* Get the real space error for alpha=0 */
   d->alpha = 0.0;
@@ -506,15 +496,19 @@ ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d) {
   }
   
 #ifdef FCS_ENABLE_DEBUG
-  int comm_rank;
-  MPI_Comm_rank(d->comm.mpicomm, &comm_rank);
-  if (comm_rank == 0)
+  if (d->comm.rank == 0)
     printf( "        determined alpha=%" FCS_LMOD_FLOAT "g\n", d->alpha);
 #endif
 
   ifcs_p3m_compute_error_estimate(d);
 }
 
+/** Get the error for this combination of parameters and tune alpha if
+    required. In fact, the real space error is tuned such that it
+    contributes half of the total error, and then the Fourier space
+    error is calculated. Returns the achieved error and the optimal
+    alpha.
+    */
 void
 ifcs_p3m_compute_error_and_tune_alpha(ifcs_p3m_data_struct *d) {
   if (d->tune_alpha)
@@ -522,83 +516,3 @@ ifcs_p3m_compute_error_and_tune_alpha(ifcs_p3m_data_struct *d) {
   else
     ifcs_p3m_compute_error_estimate(d);
 }
-
-void
-ifcs_p3m_ks_error_broadcast(ifcs_p3m_data_struct *d) {
-  fcs_int int_buffer[5];
-  
-  // pack int data
-  int_buffer[0] = 0;		/* param set for tuning */
-  int_buffer[1] = d->grid[0];
-  int_buffer[2] = d->grid[1];
-  int_buffer[3] = d->grid[2];
-  int_buffer[4] = d->cao;
-  MPI_Bcast(int_buffer, 5, FCS_MPI_INT, 0, d->comm.mpicomm);
-  
-  // pack float data
-  MPI_Bcast(&d->alpha, 1, FCS_MPI_FLOAT, 0, d->comm.mpicomm);
-}
-
-/* Broadcast final parameters */
-void
-ifcs_p3m_param_broadcast(ifcs_p3m_data_struct *d) {
-  // broadcast parameters and mark as final
-  fcs_int int_buffer[5];
-  fcs_float float_buffer[5];
-
-  // pack int data
-  int_buffer[0] = 1;		/* final param set */
-  int_buffer[1] = d->grid[0];
-  int_buffer[2] = d->grid[1];
-  int_buffer[3] = d->grid[2];
-  int_buffer[4] = d->cao;
-  MPI_Bcast(int_buffer, 5, FCS_MPI_INT, 0, d->comm.mpicomm);
-
-  // pack float data
-  float_buffer[0] = d->alpha;
-  float_buffer[1] = d->r_cut;
-  float_buffer[2] = d->error;
-  float_buffer[3] = d->rs_error;
-  float_buffer[4] = d->ks_error;
-  MPI_Bcast(float_buffer, 5, FCS_MPI_FLOAT, 0, d->comm.mpicomm);
-}
-
-/* Slave error estimation loop. 
-   Run this on a slave. When the function returns, r_cut, grid, alpha,
-   cao, error, rs_error and ks_error are set the same on all nodes.
-*/
-void
-ifcs_p3m_param_broadcast_slave(ifcs_p3m_data_struct *d) {
-  fcs_int int_buffer[5];
-  fcs_float float_buffer[5];
-  fcs_int final;
-
-  for (;;) {
-    // unpack int data
-    MPI_Bcast(int_buffer, 5, FCS_MPI_INT, 0, d->comm.mpicomm);
-    final = int_buffer[0];
-    d->grid[0] = int_buffer[1];
-    d->grid[1] = int_buffer[2];
-    d->grid[2] = int_buffer[3];
-    d->cao = int_buffer[4];
-
-    if (final) {
-      // unpack float data
-      MPI_Bcast(float_buffer, 5, FCS_MPI_FLOAT, 0, d->comm.mpicomm);
-      d->alpha = float_buffer[0];
-      d->r_cut = float_buffer[1];
-      d->error = float_buffer[2];
-      d->rs_error = float_buffer[3];
-      d->ks_error = float_buffer[4];
-
-      break;
-    } else {
-      MPI_Bcast(float_buffer, 1, FCS_MPI_FLOAT, 0, d->comm.mpicomm);
-      d->alpha = float_buffer[0];
-
-      // do slave portion of k_space error estimation
-      ifcs_p3m_k_space_error(d);
-    }
-  }
-}
-
