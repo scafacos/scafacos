@@ -80,7 +80,7 @@ extern FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int loca
         return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
                                 "memd requires the box vectors to be parallel to the principal axes.");
     
-    memd_set_box_size(handle->method_context, a[0], b[0], c[0]);
+    memd_set_box_size(handle->method_context, a[0], b[1], c[2]);
     
     /* tune mesh and f_mass, calculate initial fields */
     return memd_tune_method(handle->method_context, local_particles, positions, charges);

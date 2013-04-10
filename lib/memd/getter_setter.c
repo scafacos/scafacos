@@ -217,22 +217,19 @@ FCSResult memd_tune_method(void* rawdata, fcs_int local_particles, fcs_float* po
     }
     
     fcs_float boxlength = memd->parameters.box_length[0];
-    printf("boxlength: %f\n",boxlength);
     
     fcs_int meshsize1D = 16;
     fcs_float lightspeed = 1.0;
     fcs_float timestep = 0.01;
     
     fcs_float avg_dist = pow((boxlength*boxlength*boxlength) / (fcs_float)n_part_total, 0.33333);
-    fcs_float dists_per_box = avg_dist/boxlength;
+    fcs_float dists_per_box = boxlength/avg_dist;
 
     fcs_float epsilon = 1.0;
     fcs_float temperature = 1.0;
     
-    printf("dists_per_box: %f\n",dists_per_box);
     
     meshsize1D = memd_get_next_higher_power_of_two(dists_per_box);
-    printf("meshsize1D: %d\n",meshsize1D);
     
     /* The factor 0.01 is "<<" for the stability criterion */
     lightspeed = 0.01 * (boxlength/meshsize1D) / timestep;

@@ -42,6 +42,7 @@ void memd_assign_charges(memd_struct* memd, fcs_int local_num_real_particles, fc
                     (part_position[k] - memd->lparams.left_down_position[k])
                                              / memd->parameters.a );
         cell_id = maggs_get_linear_index(cell_shift[0], cell_shift[1], cell_shift[2], memd->lparams.dim);
+        printf("cell_id: %d\n", cell_id);
 /*
         fprintf(stdout, "cell_shift: %d %d %d\n", cell_shift[0], cell_shift[1], cell_shift[2]); fflush(stdout);
         fprintf(stdout, "position: %f %f %f\n", part_position[0], part_position[1], part_position[2]); fflush(stdout);
@@ -114,6 +115,7 @@ void memd_run(void* rawdata, fcs_int num_particles, fcs_int max_num_particles, f
     } else {
         maggs_setup_local_lattice(memd);
         memd_assign_charges(memd, local_num_real_particles, local_positions, local_charges, local_fields);
+        printf("charges assigned.\n");
     }
     
     printf("Charge transfer done\n"); fflush(stdout);
