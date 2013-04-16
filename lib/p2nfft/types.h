@@ -81,13 +81,13 @@ typedef ptrdiff_t INT;
 #define FCS_P2NFFT_DEFAULT_PNFFT_WINDOW  1 /* Bspline */
 #define FCS_P2NFFT_DEFAULT_PFFT_PATIENCE 1 /* Measure */
 
-#if FCS_ENABLE_TIMING 
+#if FCS_ENABLE_TIMING
 #define FCS_P2NFFT_INIT_TIMING(comm) \
   int tm_rank; \
   MPI_Comm_rank(comm, &tm_rank); \
   double tm_timer, tm_global_timer;
 #define FCS_P2NFFT_START_TIMING() \
-  tm_timer = -MPI_Wtime(); \
+  tm_timer = -MPI_Wtime();
 #define FCS_P2NFFT_FINISH_TIMING(comm, str) \
   tm_timer += MPI_Wtime(); \
   MPI_Reduce(&tm_timer, &tm_global_timer, 1, MPI_DOUBLE, MPI_MAX, 0, comm); \
