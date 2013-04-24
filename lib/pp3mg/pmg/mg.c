@@ -645,6 +645,7 @@ double mg(double ***u, double ***f, int maxiter, double tol, int m, int n, int o
   initres = sqrt(initres);
   
   /* Output */
+#ifdef FCS_ENABLE_INFO
   if (myid == 0 && verbose > 0) {
     printf("*************** MG with initres = %e ***************\n",initres);
   }
@@ -654,6 +655,7 @@ double mg(double ***u, double ***f, int maxiter, double tol, int m, int n, int o
     printf("| iter. | abs. res. | time     |\n");
     printf("+-------+-----------+----------+\n");
   }
+#endif
 
   for (iter=0;iter<maxiter;iter++) {
     /* Start date */
@@ -668,9 +670,11 @@ double mg(double ***u, double ***f, int maxiter, double tol, int m, int n, int o
     elapsed = (double) (stop.tv_sec - start.tv_sec) + ((double) (stop.tv_usec - start.tv_usec))/1000000.0;
 
     /* Output */
+#ifdef FCS_ENABLE_INFO
     if ((myid == 0 && verbose > 1) || (myid == 0 && verbose > 0 && iter+1 == maxiter)){
       printf("| %5d | %9.3e | %8.6f |\n", iter, initres == 0.0 ? 0.0 : res, elapsed);
     }
+#endif
 
     /* Relative residual */
     /* if (res/initres<tol) */
@@ -680,10 +684,12 @@ double mg(double ***u, double ***f, int maxiter, double tol, int m, int n, int o
   }
 
   /* Output */
+#ifdef FCS_ENABLE_INFO
   if (myid == 0 && verbose > 1) {
     printf("+-------+-----------+----------+\n");
     printf("\n");
   }
+#endif
 
   mg_result(u,data);
   mg_free(data,maxlevel);
