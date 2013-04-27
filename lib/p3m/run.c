@@ -106,6 +106,8 @@ ifcs_p3m_assign_potentials(ifcs_p3m_data_struct* d, fcs_float *data,
                            fcs_float* positions, fcs_float* charges,
                            fcs_int shifted,
                            fcs_float* potentials);
+
+#ifdef P3M_IK
 /* assign the fields to the positions in dimension dim [IK]*/
 static void 
 ifcs_p3m_assign_fields_ik(ifcs_p3m_data_struct* d, 
@@ -115,6 +117,8 @@ ifcs_p3m_assign_fields_ik(ifcs_p3m_data_struct* d,
                           fcs_float* positions,
                           fcs_int shifted,
                           fcs_float* fields);
+#endif
+#ifdef P3M_AD
 /* Backinterpolate the forces obtained from k-space to the positions [AD]*/
 static void 
 ifcs_p3m_assign_fields_ad(ifcs_p3m_data_struct* d,
@@ -123,6 +127,7 @@ ifcs_p3m_assign_fields_ad(ifcs_p3m_data_struct* d,
 			  fcs_float* positions,
 			  fcs_int shifted,
 			  fcs_float* fields);
+#endif
 
 /* callback function for near field computations */
 static inline void 
@@ -339,6 +344,7 @@ void ifcs_p3m_run(void* rd,
     FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "apply_force_influence_function");
     
 #ifdef P3M_AD
+#ifdef P3M_INTERLACE
     /* backtransform the grid */
     FCS_P3M_START_TIMING();
     P3M_DEBUG(printf( "  calling ifcs_fft_perform_back...\n"));
@@ -365,7 +371,7 @@ void ifcs_p3m_run(void* rd,
     P3M_INFO(printf("  computing shifted grid\n"));
     for (fcs_int i=0; i<d->local_grid.size; i++) {
       d->fft.data_buf[i] = d->ks_grid[2*i+1];
-    } 
+    }
     
     FCS_P3M_START_TIMING();
     ifcs_p3m_spread_grid(d, d->fft.data_buf);
@@ -375,84 +381,85 @@ void ifcs_p3m_run(void* rd,
     ifcs_p3m_assign_fields_ad(d, d->fft.data_buf, num_real_particles, 
                               positions, 1, fields);
     FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "assign_fields");
-  }
+#endif /* P3M_INTERLACE */
 #endif /* P3M_AD */
   
 #ifdef P3M_IK
-  /* result is in d->ks_grid */
-  for (int dim = 0; dim < 3; dim++) {
-    /* differentiate in direction dim */
-    /* result is stored in d->rs_grid */
-    FCS_P3M_START_TIMING();
-    ifcs_p3m_ik_diff(d, dim);
-    FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "ik_diff");
-    /* backtransform the grid */
-    FCS_P3M_START_TIMING();
-    P3M_DEBUG(printf( "  calling ifcs_fft_perform_back (field dim=%d)...\n", dim));
-    ifcs_fft_perform_back(&d->fft, &d->comm, d->rs_grid);
-    P3M_DEBUG(printf( "  returned from ifcs_fft_perform_back.\n"));
-    FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "fft_perform_back");
-    
-#ifdef P3M_INTERLACE
-    /** First (unshifted) run */
-    for(fcs_int i=0;i<d->local_grid.size;i++) {
-      d->fft.data_buf[i] = d->rs_grid[2*i];
-    } 
-    
-    FCS_P3M_START_TIMING();
-    ifcs_p3m_spread_grid(d, d->fft.data_buf);
-    FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "spread_grid");
-    
-    FCS_P3M_START_TIMING();
-    ifcs_p3m_assign_fields_ik(d, d->fft.data_buf, dim, num_real_particles, 
-                              positions, 0, fields);
-    FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "assign fields");
-    
-    /** Second (shifted) run */
-    for(fcs_int i=0;i<d->local_grid.size;i++) {
-      d->fft.data_buf[i] = d->rs_grid[2*i+1];
-    } 
-    
-    FCS_P3M_START_TIMING();
-    ifcs_p3m_spread_grid(d, d->fft.data_buf);
-    FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "spread_grid");
-    
-    FCS_P3M_START_TIMING();
-    ifcs_p3m_assign_fields_ik(d, d->fft.data_buf, dim, num_real_particles, 
-                              positions, 1, fields);
-    FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "assign fields");
-#else
-    /* redistribute force grid */
-    FCS_P3M_START_TIMING();
-    ifcs_p3m_spread_grid(d, d->rs_grid);
-    FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "spread_grid");
-    
-    /* Output force grid */
-    /* fcs_int i,j,k; */
-    /* fcs_float* ptr = d->rs_grid; */
-    /* char filename[30]; */
-    /* sprintf(filename, "field-%d.vtk", dim); */
-    /* FILE* outfile = fopen(filename, "w"); */
-    /* fprintf(outfile, "# vtk DataFile Version 2.0\ntest\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %d %d %d\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA %d\nSCALARS OutArray  floats 1\nLOOKUP_TABLE default\n", */
-    /* 	      d->local_grid.dim[0], d->local_grid.dim[1], d->local_grid.dim[2], */
-    /* 	      d->local_grid.dim[0]* d->local_grid.dim[1]* d->local_grid.dim[2]); */
+    /* result is in d->ks_grid */
+    for (int dim = 0; dim < 3; dim++) {
+      /* differentiate in direction dim */
+      /* result is stored in d->rs_grid */
+      FCS_P3M_START_TIMING();
+      ifcs_p3m_ik_diff(d, dim);
+      FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "ik_diff");
+      /* backtransform the grid */
+      FCS_P3M_START_TIMING();
+      P3M_DEBUG(printf( "  calling ifcs_fft_perform_back (field dim=%d)...\n", dim));
+      ifcs_fft_perform_back(&d->fft, &d->comm, d->rs_grid);
+      P3M_DEBUG(printf( "  returned from ifcs_fft_perform_back.\n"));
+      FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "fft_perform_back");
       
-    /* for (k=0; k < d->local_grid.dim[2]; k++) */
-    /* 	for (j=0; j < d->local_grid.dim[1]; j++) */
-    /* 	  for (i=0; i < d->local_grid.dim[0]; i++) { */
-    /* 	    fcs_float charge = d->rs_grid[get_linear_index(i, j, k, d->local_grid.dim)]; */
-    /* 	    fprintf(outfile, "%e\n", charge); */
-    /* 	  } */
-    /* fclose(outfile); */
-
-    FCS_P3M_START_TIMING();
-    ifcs_p3m_assign_fields_ik(d, d->rs_grid, dim, num_real_particles, 
-                              positions, 0, fields);
-    FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "assign fields");
+#ifdef P3M_INTERLACE
+      /** First (unshifted) run */
+      for(fcs_int i=0;i<d->local_grid.size;i++) {
+        d->fft.data_buf[i] = d->rs_grid[2*i];
+      } 
+      
+      FCS_P3M_START_TIMING();
+      ifcs_p3m_spread_grid(d, d->fft.data_buf);
+      FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "spread_grid");
+      
+      FCS_P3M_START_TIMING();
+      ifcs_p3m_assign_fields_ik(d, d->fft.data_buf, dim, num_real_particles, 
+                                positions, 0, fields);
+      FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "assign fields");
+      
+      /** Second (shifted) run */
+      for(fcs_int i=0;i<d->local_grid.size;i++) {
+        d->fft.data_buf[i] = d->rs_grid[2*i+1];
+    } 
+      
+      FCS_P3M_START_TIMING();
+      ifcs_p3m_spread_grid(d, d->fft.data_buf);
+      FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "spread_grid");
+      
+      FCS_P3M_START_TIMING();
+      ifcs_p3m_assign_fields_ik(d, d->fft.data_buf, dim, num_real_particles, 
+                                positions, 1, fields);
+      FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "assign fields");
+#else
+      /* redistribute force grid */
+      FCS_P3M_START_TIMING();
+      ifcs_p3m_spread_grid(d, d->rs_grid);
+      FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "spread_grid");
+      
+      /* Output force grid */
+      /* fcs_int i,j,k; */
+      /* fcs_float* ptr = d->rs_grid; */
+      /* char filename[30]; */
+      /* sprintf(filename, "field-%d.vtk", dim); */
+      /* FILE* outfile = fopen(filename, "w"); */
+      /* fprintf(outfile, "# vtk DataFile Version 2.0\ntest\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %d %d %d\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA %d\nSCALARS OutArray  floats 1\nLOOKUP_TABLE default\n", */
+      /* 	      d->local_grid.dim[0], d->local_grid.dim[1], d->local_grid.dim[2], */
+      /* 	      d->local_grid.dim[0]* d->local_grid.dim[1]* d->local_grid.dim[2]); */
+      
+      /* for (k=0; k < d->local_grid.dim[2]; k++) */
+      /* 	for (j=0; j < d->local_grid.dim[1]; j++) */
+      /* 	  for (i=0; i < d->local_grid.dim[0]; i++) { */
+      /* 	    fcs_float charge = d->rs_grid[get_linear_index(i, j, k, d->local_grid.dim)]; */
+      /* 	    fprintf(outfile, "%e\n", charge); */
+      /* 	  } */
+      /* fclose(outfile); */
+      
+      FCS_P3M_START_TIMING();
+      ifcs_p3m_assign_fields_ik(d, d->rs_grid, dim, num_real_particles, 
+                                positions, 0, fields);
+      FCS_P3M_FINISH_TIMING(d->comm.mpicomm, "assign fields");
 #endif /* P3M_INTERLACE */
-  }
+    }
 #endif /* P3M_IK */
-    
+  }   
+ 
   if (d->near_field_flag) {
     FCS_P3M_START_TIMING();
     /* compute near field */
@@ -1016,6 +1023,7 @@ ifcs_p3m_assign_fields_ik(ifcs_p3m_data_struct* d,
   P3M_DEBUG(printf( "  ifcs_p3m_assign_fields() finished.\n"));
 }
 
+#ifdef P3M_AD
 /* Backinterpolate the forces obtained from k-space to the positions */
 static void 
 ifcs_p3m_assign_fields_ad(ifcs_p3m_data_struct* d,
@@ -1087,4 +1095,4 @@ ifcs_p3m_assign_fields_ad(ifcs_p3m_data_struct* d,
   }
   P3M_DEBUG(printf( "  ifcs_p3m_assign_fields() finished.\n"));
 }
-
+#endif

@@ -206,8 +206,7 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
     /* @todo Tune only grid or only cao */
     if (!d->tune_grid && !d->tune_cao) {
       /* TUNE ONLY ALPHA */
-      d->error = ifcs_p3m_get_error(d, d->grid, d->cao, d->r_cut, 
-                                    &d->rs_error, &d->ks_error);
+      ifcs_p3m_compute_error_and_tune_alpha(d);
     } else if (d->tune_cao && d->tune_grid) {
       /* TUNE CAO AND GRID */
       P3M_INFO(printf( "    Tuning grid and cao.\n"));
@@ -227,8 +226,7 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
 	d->grid[1] = grid1d;
 	d->grid[2] = grid1d;
 	P3M_INFO(printf( "      Testing grid=%d...\n", grid1d));
-	d->error = ifcs_p3m_get_error(d, d->grid, d->cao, d->r_cut, 
-                                      &d->rs_error, &d->ks_error);
+	ifcs_p3m_compute_error_and_tune_alpha(d);
 	if (d->error < d->tolerance_field) {
           upper_ix--;
           break;
@@ -250,16 +248,20 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
           d->grid[1] = grid1d;
           d->grid[2] = grid1d;
           P3M_INFO(printf( "      Testing grid=%d...\n",grid1d));
-          fcs_float error, rs_error, ks_error;
-          error = ifcs_p3m_get_error(d, d->grid, d->cao, d->r_cut, 
-                                     &rs_error, &ks_error);
-          if (error < d->tolerance_field) {
+          fcs_float error_before = d->error;
+          fcs_float rs_error_before = d->rs_error;
+          fcs_float ks_error_before = d->ks_error;
+          ifcs_p3m_compute_error_and_tune_alpha(d);
+          if (d->error < d->tolerance_field) {
+            // parameters achieve error
             upper_ix = test_ix;
-            d->error = error;
-            d->ks_error = ks_error;
-            d->rs_error = rs_error;
           } else {
+            // parameters do not achieve error
             lower_ix = test_ix;
+            // return old errors
+            d->error = error_before;
+            d->ks_error = ks_error_before;
+            d->rs_error = rs_error_before;
           }
         }
         /* now the right size is at upper_ix */
@@ -274,8 +276,7 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
 	P3M_DEBUG(printf( "    Finding minimal cao...\n"));
 	for (d->cao = cao_min; d->cao <= cao_max; d->cao++) {
 	  P3M_INFO(printf( "      Testing cao=%d\n", d->cao));
-	  d->error = ifcs_p3m_get_error(d, d->grid, d->cao, d->r_cut, 
-                                        &d->rs_error, &d->ks_error);
+	  ifcs_p3m_compute_error_and_tune_alpha(d);
 	  if (d->error < d->tolerance_field) break;
 	}
 	if (d->error < d->tolerance_field)
@@ -284,19 +285,11 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
     }
 
     // send the final parameter set and end slave loop
-    ifcs_p3m_param_broadcast(d->r_cut, d->grid, d->alpha, d->cao,
-				   d->error, d->rs_error, d->ks_error,
-				   d->comm.mpicomm);
+    ifcs_p3m_param_broadcast(d);
 
   } else {
     // start the slave loop and wait for parallel requests
-    ifcs_p3m_param_broadcast_slave(d->sum_qpart, d->sum_q2, 
-					 d->box_l,
-					 &d->r_cut, d->grid, 
-					 &d->alpha, &d->cao,
-					 &d->error, 
-					 &d->rs_error, &d->ks_error,
-					 d->comm.mpicomm);
+    ifcs_p3m_param_broadcast_slave(d);
   }
 
   if (d->error > d->tolerance_field) {
@@ -346,29 +339,6 @@ ifcs_p3m_count_charges(ifcs_p3m_data_struct *d,
 		   d->sum_qpart, d->sum_q2, sqrt(d->square_sum_q)));
 }
 
-/** Get the error for this combination of parameters and tune alpha if
-    required. In fact, the real space error is tuned such that it
-    contributes half of the total error, and then the Fourier space
-    error is calculated. Returns the achieved error and the optimal
-    alpha.
-    */
-static fcs_float 
-ifcs_p3m_get_error(ifcs_p3m_data_struct *d,
-		   fcs_int grid[3], fcs_int cao, fcs_float r_cut,
-		   fcs_float *_rs_err, fcs_float *_ks_err) {
-  fcs_float err;
-  if (d->tune_alpha)
-    ifcs_p3m_determine_good_alpha(d->sum_qpart, d->sum_q2, d->box_l, 
-					r_cut, grid, cao, 
-					d->tolerance_field, &d->alpha,
-					&err, _rs_err, _ks_err, d->comm.mpicomm);
-  else
-    ifcs_p3m_compute_error_estimate(d->sum_qpart, d->sum_q2, d->box_l, 
-					  r_cut, grid, d->alpha, cao, 
-					  &err, _rs_err, _ks_err, d->comm.mpicomm);
-
-  return err;
-}
 
 
 
