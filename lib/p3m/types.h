@@ -39,7 +39,7 @@
     corner of the simulation box. */
 #define P3M_DEFAULT_GRIDOFF 0.5
 /** Default for the accuracy. */
-#define P3M_DEFAULT_TOLERANCE_FIELD 1.0e-4
+#define P3M_DEFAULT_TOLERANCE_FIELD 1.0e-3
 
 /* COMPILE TIME SWITCHES */
 /* Differentiation method */
@@ -201,7 +201,7 @@ typedef struct {
   fcs_float total_energy;
 
   /****************************************************
-   * Derived parameters
+   * DERIVED PARAMETERS
    ****************************************************/
   /** The errors of the method according to the error formula. */
   fcs_float error, ks_error, rs_error;
@@ -221,7 +221,7 @@ typedef struct {
   fcs_float additional_grid[3];
 
   /****************************************************
-   * Method data
+   * METHOD DATA
    ****************************************************/
   ifcs_fft_data_struct fft;
   ifcs_p3m_comm_struct comm;
@@ -233,11 +233,11 @@ typedef struct {
   /** k space grid (local) for k space calculation and FFT.*/
   fcs_float *ks_grid;
   
-  /** number of charged particles (only on master node). */
+  /** number of charged particles */
   fcs_int sum_qpart;
-  /** Sum of square of charges (only on master node). */
+  /** Sum of square of charges */
   fcs_float sum_q2;
-  /** square of sum of charges (only on master node). */
+  /** square of sum of charges */
   fcs_float square_sum_q;
 
   /** interpolation of the charge assignment function. */
