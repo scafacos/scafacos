@@ -29,4 +29,5 @@
 FCSResult ifcs_p3m_tune
 (void* rd, fcs_int num_particles, fcs_int max_particles,
  fcs_float *positions, fcs_float *charges);
+
 #endif

@@ -26,6 +26,7 @@
 #include "FCSCommon.h"
 #include "tune_broadcast.h"
 #include "error_estimate.h"
+#include "timing.h"
 #include "run.h"
 #include "utils.h"
 #include "prepare.h"
@@ -59,7 +60,8 @@ static const int good_gridsize[] =
    3888, 0,
    -1};
 
-typedef struct {
+struct tune_params_t;
+typedef struct tune_params_t {
   /** cutoff radius */
   fcs_float r_cut;
   /** Ewald splitting parameter */
@@ -68,28 +70,25 @@ typedef struct {
   fcs_int grid[3];
   /** charge assignment order ([0,P3M_MAX_CAO]). */
   fcs_int cao;
+  /** pointer to next param set */
+  struct tune_params_t *next_params;
 } tune_params;
 
 /***************************************************/
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
 /***************************************************/
 static FCSResult 
-ifcs_p3m_tuneit
-(ifcs_p3m_data_struct *d, 
- fcs_int num_particles, fcs_int max_particles, 
- fcs_float *positions, fcs_float *charges);
+ifcs_p3m_tuneit(ifcs_p3m_data_struct *d, tune_params **params_to_try);
+
+static FCSResult
+ifcs_p3m_time_params(ifcs_p3m_data_struct *d,
+                     fcs_int num_particles, fcs_int max_particles,
+                     fcs_float *positions, fcs_float *charges,
+                     tune_params **params_to_try);
 
 static void  
 ifcs_p3m_count_charges
 (ifcs_p3m_data_struct *d, fcs_int num_particles, fcs_float *charges);
-
-/* static fcs_float */
-/* ifcs_p3m_test_run */
-/* (ifcs_p3m_data_struct *d, */
-/*  fcs_int _num_particles, fcs_int _max_num_particles, */
-/*  fcs_float *_positions, fcs_float *_charges,  */
-/*  fcs_int grid[3], fcs_int cao, fcs_float r_cut, fcs_float alpha); */
-
 
 /***************************************************/
 /* IMPLEMENTATION */
@@ -172,9 +171,14 @@ ifcs_p3m_tune(void* rd,
   }
 
   FCSResult result = NULL;
-  if (d->comm.rank == 0) 
-    result = ifcs_p3m_tuneit(d, num_particles, max_particles, positions, charges);
-  else 
+  if (d->comm.rank == 0) {
+    tune_params *params_to_try = NULL;
+    result = ifcs_p3m_tuneit(d, &params_to_try);
+    if (result != NULL) return result;
+    result = ifcs_p3m_time_params(d, num_particles, max_particles, 
+                                  positions, charges, &params_to_try);
+    if (result != NULL) return result;
+  } else 
     result = ifcs_p3m_tune_broadcast_slave(d, num_particles, max_particles, positions, charges);
 
   if (result != NULL) {
@@ -196,9 +200,7 @@ ifcs_p3m_tune(void* rd,
 /* Tune the P3M parameters. This is only called on the master node, on
    the slave nodes, ifcs_p3m_tune_broadcast_slave() is called. */
 static FCSResult
-ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
-		fcs_int num_particles, fcs_int max_particles,
-		fcs_float *positions, fcs_float *charges) {
+ifcs_p3m_tuneit(ifcs_p3m_data_struct *d, tune_params **params_to_try) {
   const char* fnc_name = "ifcs_p3m_tuneit";
   #ifdef P3M_AD
   const fcs_int cao_min = 2;
@@ -206,8 +208,6 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
   const fcs_int cao_min = 1;
   #endif
   const fcs_int cao_max = 7;
-
-  //  tune_params params_to_try[P3M_MAX_CAO];
 
   if (d->comm.rank != 0) {
     return fcsResult_create
@@ -315,8 +315,20 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
         ifcs_p3m_compute_error_and_tune_alpha(d);
         if (d->error < d->tolerance_field) break;
       }
-      if (d->error < d->tolerance_field)
+      if (d->error < d->tolerance_field) {
         P3M_DEBUG(printf( "    => minimal cao=%d\n", d->cao));
+
+        tune_params *params = malloc(sizeof(tune_params));
+        params->cao = d->cao;
+        params->grid[0] = d->grid[0];
+        params->grid[1] = d->grid[1];
+        params->grid[2] = d->grid[2];
+        params->alpha = d->alpha;
+        params->r_cut = d->r_cut;
+
+        params->next_params = *params_to_try;
+        *params_to_try = params;
+      }
     }
   }
 
@@ -337,16 +349,75 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
     return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, msg);
   }
 
-  /* Broadcast the final parameters. */
+  P3M_DEBUG(printf( "  ifcs_p3m_tuneit() finished.\n"));
+
+  return NULL;
+}
+
+static FCSResult
+ifcs_p3m_time_params(ifcs_p3m_data_struct *d,
+                     fcs_int num_particles, fcs_int max_particles,
+                     fcs_float *positions, fcs_float *charges,
+                     tune_params **params_to_try) {
+  const char* fnc_name = "ifcs_p3m_time_params";
+
+  /* Now time the different parameter sets */
+  tune_params *best_params = NULL;
+  tune_params *current_params = *params_to_try;
+  double best_time = 1.e100;
+
+  while (current_params != NULL) {
+    /* use the parameters */
+    d->r_cut = current_params->r_cut;
+    d->alpha = current_params->alpha;
+    d->grid[0] = current_params->grid[0];
+    d->grid[1] = current_params->grid[1];
+    d->grid[2] = current_params->grid[2];
+    d->cao = current_params->cao;
+    
+    fcs_float timing = 
+      ifcs_p3m_timing(d, num_particles, max_particles, positions, charges);
+    P3M_INFO(printf( "  Timing (r_cut=%" FCS_LMOD_FLOAT                 \
+                     "f, alpha=%" FCS_LMOD_FLOAT                        \
+                     "f, grid=(%" FCS_LMOD_INT                          \
+                     "d, %" FCS_LMOD_INT                                \
+                     "d, %" FCS_LMOD_INT                                \
+                     "d), cao=%" FCS_LMOD_INT                           \
+                     "d => timing=%" FCS_LMOD_FLOAT                     \
+                     "f)\n",                                            \
+                     d->r_cut, d->alpha,                                \
+                     d->grid[0], d->grid[1], d->grid[2],                \
+                     d->cao, timing));
+
+    if (timing < best_time) {
+      best_time = timing;
+      best_params = current_params;
+    }
+
+    current_params = current_params->next_params;
+  }
+
+  if (best_params == NULL)
+    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Internal error: No best timing.");
+
+  /* Set and broadcast the final parameters. */
+  d->r_cut = best_params->r_cut;
+  d->alpha = best_params->alpha;
+  d->grid[0] = best_params->grid[0];
+  d->grid[1] = best_params->grid[1];
+  d->grid[2] = best_params->grid[2];
+  d->cao = best_params->cao;
   ifcs_p3m_tune_broadcast_command(d, FINISHED);
 
-  P3M_INFO(printf( "    r_cut=%" FCS_LMOD_FLOAT                         \
-                   "g cao=%d grid=(%d, %d, %d) alpha=%" FCS_LMOD_FLOAT "g\n", \
-		   d->r_cut, d->cao, d->grid[0], d->grid[1], d->grid[2], d->alpha));
-  P3M_INFO(printf( "    error=%" FCS_LMOD_FLOAT "e rs_error=%" FCS_LMOD_FLOAT \
-                   "e ks_error=%" FCS_LMOD_FLOAT "e\n",                 \
-		   d->error, d->rs_error, d->ks_error));
-  P3M_DEBUG(printf( "  ifcs_p3m_tuneit() finished.\n"));
+  /* Free the list */
+  current_params = *params_to_try;
+  while (current_params != NULL) {
+    tune_params *next_params = current_params->next_params;
+    free(current_params);
+    current_params = next_params;
+  }
+  *params_to_try = NULL;
+
   return NULL;
 }
 
@@ -382,32 +453,3 @@ ifcs_p3m_count_charges(ifcs_p3m_data_struct *d,
                    FCS_LMOD_FLOAT "f sum_charges=%lf\n",                \
 		   d->sum_qpart, d->sum_q2, sqrt(d->square_sum_q)));
 }
-
-
-/** Test run the method with the current parameters and return the elapsed CPU time. */
-/* static fcs_float */
-/* ifcs_p3m_test_run */
-/* (ifcs_p3m_data_struct *d, */
-/*  fcs_int _num_particles, fcs_int _max_num_particles, */
-/*  fcs_float *_positions, fcs_float *_charges) { */
-/*   d->cao = cao; */
-/*   d->alpha = alpha; */
-/*   for (int i = 0; i < 3; i++) */
-/*     d->grid[i] = grid[i]; */
-/*   d->r_cut = r_cut; */
-
-/*   ifcs_p3m_prepare(d, _max_num_particles); */
-
-/*   fcs_float *fields = malloc(_num_particles*3*sizeof(fcs_float)); */
-/*   fcs_float *potentials = malloc(_num_particles*sizeof(fcs_float)); */
-/*   fcs_float required_time =  */
-/*     ifcs_p3m_runit(d, _num_particles, _max_num_particles,  */
-/*                    _positions, _charges,  */
-/*                    fields, potentials); */
-
-/*   free(fields); */
-/*   free(potentials); */
-  
-/*   return required_time; */
-/* } */
-

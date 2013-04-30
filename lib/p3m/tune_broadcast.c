@@ -17,9 +17,11 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 #include "tune_broadcast.h"
-#include "error_estimate.h"
+
 #include "utils.h"
 #include <stdio.h>
+#include "error_estimate.h"
+#include "timing.h"
 
 /***************************************************/
 /* TYPES AND CONSTANTS */
@@ -43,13 +45,13 @@ void
 ifcs_p3m_tune_broadcast_command
 (ifcs_p3m_data_struct *d, fcs_int command) {
   /* First send the command */
-  P3M_INFO_LOCAL(printf("       %2d: Broadcasting command %d.\n", d->comm.rank, command));
+  P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %d.\n", d->comm.rank, command));
   MPI_Bcast(&command, 1, FCS_MPI_INT, 0, d->comm.mpicomm);
 
   /* Now send the parameters, depending on the command */
   switch (command) {
   case FINISHED:
-  case TEST_RUN:
+  case TIMING:
   case COMPUTE_ERROR_ESTIMATE:
     ifcs_p3m_tune_broadcast_params(d);
     return;
@@ -64,7 +66,7 @@ ifcs_p3m_tune_broadcast_slave
  fcs_float *positions, fcs_float *charges) {
   const char* fnc_name = "ifcs_p3m_tune_broadcast_slave";
 
-  P3M_INFO(printf( "ifcs_p3m_tune_broadcast_slave() started...\n"));
+  P3M_DEBUG(printf( "ifcs_p3m_tune_broadcast_slave() started...\n"));
   if (d->comm.rank == 0) {
     return fcsResult_create
       (FCS_LOGICAL_ERROR, fnc_name, 
@@ -74,18 +76,18 @@ ifcs_p3m_tune_broadcast_slave
   for (;;) {
     /* Receive the command */
     fcs_int command;
-    P3M_INFO_LOCAL(printf("      %2d: Waiting to receive command.\n", d->comm.rank));
+    P3M_DEBUG_LOCAL(printf("      %2d: Waiting to receive command.\n", d->comm.rank));
     MPI_Bcast(&command, 1, FCS_MPI_INT, 0, d->comm.mpicomm);
-    P3M_INFO_LOCAL(printf("      %2d: Received command %d.\n", d->comm.rank, command));
+    P3M_DEBUG_LOCAL(printf("      %2d: Received command %d.\n", d->comm.rank, command));
 
     switch (command) {
     case COMPUTE_ERROR_ESTIMATE:
       ifcs_p3m_tune_receive_params(d);
       ifcs_p3m_k_space_error(d);
       break;
-    case TEST_RUN:
+    case TIMING:
       ifcs_p3m_tune_receive_params(d);
-      //ifcs_p3m_test_run();
+      ifcs_p3m_timing(d, num_particles, max_particles, positions, charges);
       break;
     case FINISHED:
       ifcs_p3m_tune_receive_params(d);
@@ -101,7 +103,7 @@ ifcs_p3m_tune_broadcast_slave
     }
     }
   }
-  P3M_INFO(printf( "ifcs_p3m_tune_broadcast_slave() finished.\n"));
+  P3M_DEBUG(printf( "ifcs_p3m_tune_broadcast_slave() finished.\n"));
 }
 
 static void

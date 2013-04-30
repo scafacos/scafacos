@@ -1,5 +1,6 @@
 /*
   Copyright (C) 2013 Olaf Lenz
+  
   This file is part of ScaFaCoS.
   
   ScaFaCoS is free software: you can redistribute it and/or modify
@@ -15,28 +16,20 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_TUNE_BROADCAST_H 
-#define _P3M_TUNE_BROADCAST_H 
+#ifndef _P3M_TIMING_H
+#define _P3M_TIMING_H
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
+#include <mpi.h>
 #include "types.h"
-#include "FCSResult.h"
 
-/* Events during tuning */
-#define FAILED -1
-#define FINISHED 0
-#define COMPUTE_ERROR_ESTIMATE 1
-#define TIMING 2
-
-void
-ifcs_p3m_tune_broadcast_command
-(ifcs_p3m_data_struct *d, fcs_int command);
-
-FCSResult
-ifcs_p3m_tune_broadcast_slave
-(ifcs_p3m_data_struct *d, fcs_int num_particles, fcs_int max_particles,
- fcs_float *positions, fcs_float *charges);
+/** Test run the method with the current parameters and return the elapsed CPU time. */
+fcs_float
+ifcs_p3m_timing
+(ifcs_p3m_data_struct *d,
+ fcs_int _num_particles, fcs_int _max_num_particles,
+ fcs_float *_positions, fcs_float *_charges);
 
 #endif

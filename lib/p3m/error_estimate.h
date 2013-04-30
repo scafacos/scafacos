@@ -18,7 +18,6 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-
 #ifndef _P3M_ERROR_ESTIMATE_H
 #define _P3M_ERROR_ESTIMATE_H
 
