@@ -784,7 +784,7 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 		      switch (params->distribution) {
 		      case spline_deg_4:
 			if( r < params->radius / 3.0 )
-			  val = (-9.0) * ( 385 * params->radius_4 -
+			  val = (-9.0) * r * ( 385 * params->radius_4 -
 					   1134 * params->radius_2 * r_2 + 
 					   1215 * r_4 ) /
 			    ( 280 * params->radius_7 );
@@ -795,7 +795,7 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 				 214326 * params->radius_2 * r * r_4 -
 				 255150 * params->radius * r_6 +
 				 98415 * r * r_6  ) /
-			    ( 1680 * params->radius_7 * r * r_2 );
+			    ( 1680 * params->radius_7 * r_2 );
 			else 
 			  val = -( (-169.0) * params->radius_7 +
 				   25515 * params->radius_4 * r * r_2 -
@@ -803,23 +803,32 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 				   91854 * params->radius_2 * r * r_4 -
 				   51030 * params->radius * r_6 + 
 				   10935 * r * r_6 ) /
-			    ( 560 * params->radius_7 * r * r_2 );
+			    ( 560 * params->radius_7 * r_2 );
+			break;
+		      case polynomial_deg_6:
+			val = ((((71680.0*r_2-69120.0*d_2)*r_2+24192.0*d_4)*r_2-3360.0*d_6)*r)/(64.0*d_9);
+			break;
+		      case polynomial_deg_10:
+			val = ((((((11354112.0*r_2-16773120.0*d_2)*r_2+10250240.0*d_4)*r_2-3294720.0*d_6)*r_2+576576.0*d_8)*r_2-48048.0*d_10)*r)/(512.0*d_13);
+			break;
+		      case polynomial_deg_14:
+			val = ((((((((6747586560.0*r_2-13382713344.0*d_2)*r_2+11581194240.0*d_4)*r_2-5702860800.0*d_6)*r_2+1742540800.0*d_8)*r_2-336061440.0*d_10)*r_2+39207168.0*d_12)*r_2-2333760.0*d_14)*r)/(16384.0*d_17);
 			break;
 		      }
 			
-		      val = val + 1.0/r / r_2;
+		      val = val/r + 1.0/r / r_2;
 		      data->particles[p1].fx += 
 			1.0 / ( 4.0 * PP3MG_PI ) * data->particles[p1].q *
 			data->particles[p2].q * 
-			rx * (val);// - 0.5/pow(r,3) * rx);
+			rx * val;
 		      data->particles[p1].fy +=
 			1.0 / ( 4.0 * PP3MG_PI ) * data->particles[p1].q *
 			data->particles[p2].q * 
-			ry * (val);// - 0.5/pow(r,3) * ry);
+			ry * val;
 		      data->particles[p1].fz += 
 			1.0 / ( 4.0 * PP3MG_PI ) * data->particles[p1].q *
 			data->particles[p2].q * 
-			rz * (val);// - 0.5/pow(r,3) * rz);
+			rz * val;
 		    }
 		  } /* if( p1 != p2) */
 		  else{
