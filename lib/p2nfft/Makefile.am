@@ -39,11 +39,7 @@ libfcs_p2nfft_a_SOURCES = \
 	kernels.c kernels.h \
 	regularization.c regularization.h \
 	cg_cos_coeff.c cg_cos_coeff.h \
-	cg_cos_err.c cg_cos_err.h \
-	tune_2dp.c tune_2dp.h \
-	run_2dp.c run_2dp.h \
-	tune_0dp_noncubic.c tune_0dp_noncubic.h \
-	run_0dp_noncubic.c run_0dp_noncubic.h 
+	cg_cos_err.c cg_cos_err.h
 
 #libfcs_p2nfft_a_LIBADD = $(pnfft_LIBS) $(pfft_LIBS) $(fftw3_mpi_LIBS) $(fftw3_LIBS) ../common/near/libnear.a ../direct/libdirect.a
 
