@@ -271,7 +271,7 @@ FCSResult ifcs_p2nfft_tune(
     }
   }
 
-  /* FIXME: number of charged particles may be smaller than number of all particles */
+  /* FIXME: number of charged particles may be less than number of all particles */
   d->sum_qpart = num_particles;
 
   /* compute the average distance between two charges  */
@@ -289,7 +289,7 @@ FCSResult ifcs_p2nfft_tune(
     if(d->use_ewald){
       fcs_float ks_error, rs_error;
       /* PNFFT calculates with real space cutoff 2*m+2
-       * Therefore m is one smaller than the P3M cao. */
+       * Therefore m is one less than the P3M cao. */
 //      fcs_int cao = d->m + 1;
       fcs_int cao = 2*d->m;
 
@@ -420,7 +420,7 @@ FCSResult ifcs_p2nfft_tune(
         /* check user defined oversampling */
         for(int t=0; t<3; t++)
           if(d->N[t] > d->n[t] )
-            return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize is not allowed to be smaller than normal gridsize.");
+            return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize is not allowed to be less than normal gridsize.");
       }
       
 #if FCS_ENABLE_INFO
@@ -620,7 +620,7 @@ FCSResult ifcs_p2nfft_tune(
         /* check user defined oversampling */
         for(int t=0; t<3; t++)
           if(d->N[t] > d->n[t] )
-            return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize 'n' is not allowed to be smaller than normal gridsize 'N'.");
+            return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize 'n' is not allowed to be less than normal gridsize 'N'.");
       }
 
       /* TODO: Optimize m for the field error. */
@@ -1831,7 +1831,7 @@ static fcs_float p2nfft_k_space_error_general_window(
   fcs_float lower_border[3], upper_border[3];
   fcs_float x_max[3] = {0.5, 0.5, 0.5};
   /* PNFFT calculates with real space cutoff 2*m+2
-   * Therefore m is one smaller than the P3M cao. */
+   * Therefore m is one less than the P3M cao. */
   FCS_PNFFT(plan) pnfft;
 
   fcs_float alias_k, alias_sum, local_alias_sum = 0.0;
