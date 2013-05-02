@@ -28,14 +28,6 @@
 
 #include "tune.h"
 #include "types.h"
-
-#if FCS_P2NFFT_NONCUBIC_TEST
-#include "tune_0dp_noncubic.h"
-#endif
-#if FCS_P2NFFT_MIXED_PERIODICITY_TEST
-#include "tune_2dp.h"
-#endif
-
 #include "utils.h"
 #include "constants.h"
 #include "FCSCommon.h"
@@ -170,19 +162,6 @@ FCSResult ifcs_p2nfft_tune(
     fcs_float *box_l, fcs_int short_range_flag
     )
 {
-  /* redirect to implemetation of noncubic case */
-#if FCS_P2NFFT_NONCUBIC_TEST
-  return ifcs_p2nfft_tune_0dp_noncubic(
-      rd, periodicity, local_particles, positions, charges,
-      box_l, short_range_flag);
-#endif
-  /* redirect to test implemetation of 2d-periodic case */
-#if FCS_P2NFFT_MIXED_PERIODICITY_TEST
-  return ifcs_p2nfft_tune_2dp(
-      rd, periodicity, local_particles, positions, charges,
-      box_l, short_range_flag);
-#endif
-
   int comm_rank;
   const char* fnc_name = "ifcs_p2nfft_tune";
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;

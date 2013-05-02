@@ -25,14 +25,6 @@
 
 #include "run.h"
 #include "types.h"
-
-#if FCS_P2NFFT_NONCUBIC_TEST
-#include "run_0dp_noncubic.h"
-#endif
-#if FCS_P2NFFT_MIXED_PERIODICITY_TEST
-#include "run_2dp.h"
-#endif
-
 #include "utils.h"
 #include "nearfield.h"
 #include <common/near/near.h>
@@ -64,21 +56,6 @@ FCSResult ifcs_p2nfft_run(
     fcs_float *potentials, fcs_float *field
     )
 {
-  /* redirect to implemetation of noncubic case */
-#if FCS_P2NFFT_NONCUBIC_TEST
-  return ifcs_p2nfft_run_0dp_noncubic(
-    rd, local_num_particles, max_local_num_particles,
-    positions, charges,
-    potentials, field);
-#endif  
-  /* redirect to test implemetation of 2d-periodic case */
-#if FCS_P2NFFT_MIXED_PERIODICITY_TEST
-  return ifcs_p2nfft_run_2dp(
-    rd, local_num_particles, max_local_num_particles,
-    positions, charges,
-    potentials, field);
-#endif  
-
   const char* fnc_name = "ifcs_p2nfft_run";
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
   fcs_float box_vol = d->box_l[0]*d->box_l[1]*d->box_l[2];
