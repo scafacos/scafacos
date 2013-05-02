@@ -253,6 +253,47 @@ fcs_float ifcs_p2nfft_regkernel(
 }
 
 
+/** regularized kernel for even kernels without singularity, e.g. no K_I needed,
+ *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)
+ */
+static fcs_float regkern5(ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p, const fcs_float *param, fcs_float b)
+{
+  fcs_int j;
+  fcs_float sum=0.0;
+
+  xx=fabs(xx);
+
+  /* constant continuation for radii > 0.5 */
+  if (xx>=0.5)
+    xx=0.5;
+
+  /* regularization at farfield border */
+  if ( 0.5-b<xx ) {
+    for (j=0; j<=p-2; j++) {
+      sum += 
+        creal(pow(b/2.0,(fcs_float)j+1)
+          *k(0.5-b,j+1,param)
+          *(IntBasisPoly(p-1,j,2.0*xx/b-(1.0-b)/b)
+              -IntBasisPoly(p-1,j,-1))
+//       *IntBasisPoly(p-1,j,2.0*xx/b-(1.0-b)/b)
+       );
+    }
+//     return sum+const_regkern4(k, p, param, b);
+    return sum + k(0.5-b,0,param);
+  }
+ 
+  /* near- and farfield (no singularity): original kernel function */ 
+  return k(xx,0,param);
+} 
+
+fcs_float ifcs_p2nfft_regkernel_wo_singularity(
+    ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p, const fcs_float *param, fcs_float epsB
+    )
+{
+  return regkern5(k, xx, p, param, epsB);
+}
+
+
 fcs_float ifcs_p2nfft_interpolation(
     fcs_float x, fcs_float one_over_epsI,
     fcs_int order, fcs_int num_nodes,

@@ -78,14 +78,12 @@ FCSResult ifcs_p2nfft_run(
 
   /* handle particles, that left the box [0,L] */
   /* for non-periodic boundary conditions: user must increase the box */
-  if(!d->use_ewald)
-    for(fcs_int j=0; j<local_num_particles; j++)
-      for(fcs_int t=0; t<3; t++)
-        if( (positions[3*j+t] < 0) || (positions[3*j+t] > d->box_l[t]) ){
-//        if( (positions[3*j+t] < 0) || fcs_float_is_zero(d->box_l[t] - positions[3*j+t])  || (positions[3*j+t] > d->box_l[t]) )
-          fprintf(stderr, "j = %d, t = %d, position = %f, box_l = %f\n", j, t, positions[3*j+t], d->box_l[t]);
+  for(fcs_int j=0; j<local_num_particles; j++)
+    for(fcs_int t=0; t<3; t++)
+      if(!d->periodicity[t]) /* for mixed periodicity: only handle the non-periodic dimensions */
+        if( (positions[3*j+t] < 0) || (positions[3*j+t] > d->box_l[t]) )
+//        if( (positions[3*j+t] < 0) || fcs_float_is_zero(d->box_[t] - positions[3*j+t])  || (positions[3*j+t] > d->box_l[t]) )
           return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box or reached the upper border.");
-        }
   /* TODO: implement additional scaling of particles to ensure x \in [0,L)
    * Idea: use allreduce to get min and max coordinates, adapt scaling of particles for every time step */
 
@@ -97,7 +95,7 @@ FCSResult ifcs_p2nfft_run(
   for(int t=0; t<3; t++){
     lo[t] = d->lower_border[t];
     up[t] = d->upper_border[t];
-    if(!d->use_ewald){
+    if(!d->periodicity[t]){ /* for mixed periodicity: only handle the non-periodic dimensions */
       if(fcs_float_is_zero(lo[t]-d->box_l[t]))
         lo[t] += 0.1;
       if(fcs_float_is_zero(up[t]-d->box_l[t]))
@@ -114,11 +112,10 @@ FCSResult ifcs_p2nfft_run(
   fcs_near_t near;
 
 #if WORKAROUND_GRIDSORT_BUG
-  if(!d->use_ewald){
-    box_a[0] += 0.1;
-    box_b[1] += 0.1;
-    box_c[2] += 0.1;
-  }
+  /* for mixed periodicity: only handle the non-periodic dimensions */
+  if(!d->periodicity[0]) box_a[0] += 0.1;
+  if(!d->periodicity[1]) box_b[1] += 0.1;
+  if(!d->periodicity[2]) box_c[2] += 0.1;
 #endif
 
   fcs_int sorted_num_particles, ghost_num_particles;
@@ -164,14 +161,17 @@ FCSResult ifcs_p2nfft_run(
 #endif
 
   /* Handle particles, that left the box [0,L] */
-  /* For periodic boundary conditions: just fold them back  */
-  if(d->use_ewald){
+  /* For periodic boundary conditions: just fold them back.
+   * We change sorted_positions (and not positions), since we are allowed to overwrite them. */
+  if(d->periodicity[0] || d->periodicity[1] || d->periodicity[2]){
     for(fcs_int j=0; j<sorted_num_particles; j++){
       for(fcs_int t=0; t<3; t++){
-        while(sorted_positions[3*j+t] < 0)
-          sorted_positions[3*j+t] += d->box_l[t];
-        while(sorted_positions[3*j+t] >= d->box_l[t])
-          sorted_positions[3*j+t] -= d->box_l[t];
+        if(d->periodicity[t]){
+          while(sorted_positions[3*j+t] < 0)
+            sorted_positions[3*j+t] += d->box_l[t];
+          while(sorted_positions[3*j+t] >= d->box_l[t])
+            sorted_positions[3*j+t] -= d->box_l[t];
+        }
       }
     }
   }
@@ -198,7 +198,7 @@ FCSResult ifcs_p2nfft_run(
 
   if(d->short_range_flag){
     fcs_near_create(&near);
- 
+  
     if(d->interpolation_order >= 0){
       switch(d->interpolation_order){
         case 0: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_const_loop); break;
@@ -414,10 +414,11 @@ FCSResult ifcs_p2nfft_run(
   /* Copy the results to the output vector and rescale */
   for (fcs_int j = 0; j < sorted_num_particles; ++j){
     if(d->use_ewald){
-      sorted_potentials[j] += creal(f[j]) / (FCS_P2NFFT_PI * box_vol);
+      sorted_potentials[j] += creal(f[j]) / (d->box_scales[0] * d->box_scales[1] * d->box_scales[2]);
       for(fcs_int t=0; t<3; t++)
-        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (FCS_P2NFFT_PI * box_vol * d->box_l[t]);
+        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]);
     } else {
+
       sorted_potentials[j] += creal(f[j]) / d->box_scales[0];
       for(fcs_int t=0; t<3; t++)
         sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (d->box_scales[0] * d->box_scales[0]);
@@ -454,7 +455,7 @@ FCSResult ifcs_p2nfft_run(
   fcs_float far_global;
   for(fcs_int j = 0; j < sorted_num_particles; ++j)
     if(d->use_ewald)
-      far_energy += 0.5 * sorted_charges[j] * f[j] / (FCS_P2NFFT_PI * box_vol);
+      far_energy += 0.5 * sorted_charges[j] * f[j] / (d->box_scales[0] * d->box_scales[1] * d->box_scales[2]);
     else
       far_energy += 0.5 * sorted_charges[j] * f[j] / d->box_scales[0];
 
@@ -583,8 +584,11 @@ static void convolution(
 
   for (INT k0 = 0; k0 < local_N[0]; ++k0)
     for (INT k1 = 0; k1 < local_N[1]; ++k1)
-      for (INT k2 = 0; k2 < local_N[2]; ++k2, ++m)
+      for (INT k2 = 0; k2 < local_N[2]; ++k2, ++m){
+//         fprintf(stderr, "f_hat[%td, %td, %td] = %e + I * %e, regkern_hat[%td, %td, %td] = %e I * %e\n", k0, k1, k2, creal(f_hat[m]), cimag(f_hat[m]), k0, k1, k2, creal(regkern_hat[m]), cimag(regkern_hat[m]));
+//         fprintf(stderr, "regkern_hat[%td, %td, %td] = %e I * %e\n", k0, k1, k2, creal(regkern_hat[m]), cimag(regkern_hat[m]));
         f_hat[m] *= regkern_hat[m];
+      }
 }
 
 

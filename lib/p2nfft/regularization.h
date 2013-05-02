@@ -32,6 +32,9 @@
 fcs_float ifcs_p2nfft_regkernel(
     ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p,
     const fcs_float *param, fcs_float epsI, fcs_float epsB);
+fcs_float ifcs_p2nfft_regkernel_wo_singularity(
+    ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p,
+    const fcs_float *param, fcs_float epsB);
 
 fcs_float ifcs_regkern3_2ptaylor_x_inv(fcs_float *x, fcs_int p, fcs_float a, fcs_float b, fcs_float *n);
 
