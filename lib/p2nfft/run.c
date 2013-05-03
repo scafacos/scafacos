@@ -414,7 +414,7 @@ FCSResult ifcs_p2nfft_run(
   /* Copy the results to the output vector and rescale */
   for (fcs_int j = 0; j < sorted_num_particles; ++j){
     if(d->use_ewald){
-      sorted_potentials[j] += creal(f[j]) / (d->box_scales[0] * d->box_scales[1] * d->box_scales[2]);
+      sorted_potentials[j] += creal(f[j]) / (d->box_scales[0] * d->box_scales[1]);
       for(fcs_int t=0; t<3; t++)
         sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]);
     } else {
@@ -455,7 +455,7 @@ FCSResult ifcs_p2nfft_run(
   fcs_float far_global;
   for(fcs_int j = 0; j < sorted_num_particles; ++j)
     if(d->use_ewald)
-      far_energy += 0.5 * sorted_charges[j] * f[j] / (d->box_scales[0] * d->box_scales[1] * d->box_scales[2]);
+      far_energy += 0.5 * sorted_charges[j] * f[j] / (d->box_scales[0] * d->box_scales[1]);
     else
       far_energy += 0.5 * sorted_charges[j] * f[j] / d->box_scales[0];
 
