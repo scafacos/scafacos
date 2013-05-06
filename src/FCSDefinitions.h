@@ -109,9 +109,4 @@ typedef fcs_int fcs_bool;
 #define FCS_TOLERANCE_TYPE_FIELD          5
 #define FCS_TOLERANCE_TYPE_FIELD_REL      6
 
-
-/* TODO: Remove after P2NFFT tests finished */
-#define FCS_P2NFFT_MIXED_PERIODICITY_TEST 0
-#define FCS_P2NFFT_NONCUBIC_TEST 0
-
 #endif

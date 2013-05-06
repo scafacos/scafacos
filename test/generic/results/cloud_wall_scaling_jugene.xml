@@ -417,6 +417,9 @@
       method="P2NFFT"
       charges="8100"
       tolerance="1e-3">
+    <parameters>
+      tolerance_field,1e-3,pnfft_N,64,64,64,pnfft_n,64,64,64,pnfft_m,2,p2nfft_r_cut,4.481387,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.573076
+    </parameters>
     <data>
       4096	 5.295432e-02
       2048	 4.724707e-02
@@ -438,6 +441,9 @@
       method="P2NFFT"
       charges="8100"
       tolerance="1e-5">
+    <parameters>
+      tolerance_field,1e-5,pnfft_N,64,64,64,pnfft_n,64,64,64,pnfft_m,3,p2nfft_r_cut,5.4,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.617183
+    </parameters>
     <data>
       4096	 5.696348e-02
       2048	 5.031082e-02
@@ -459,6 +465,9 @@
       method="P2NFFT"
       charges="102900"
       tolerance="1e-3">
+    <parameters>
+      tolerance_field,1e-3,pnfft_N,128,128,128,pnfft_n,128,128,128,pnfft_m,2,p2nfft_r_cut,4.481387,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.573076
+    </parameters>
     <data>
       16384	 1.685782e-01
       8192	 8.485466e-02
@@ -482,6 +491,9 @@
       method="P2NFFT"
       charges="102900"
       tolerance="1e-5">
+    <parameters>
+      tolerance_field,1e-5,pnfft_N,128,128,128,pnfft_n,128,128,128,pnfft_m,4,p2nfft_r_cut,5.4,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.617183
+    </parameters>
     <data>
       16384	 1.785992e-01
       8192	 9.441269e-02
@@ -505,6 +517,9 @@
       method="P2NFFT"
       charges="1012500"
       tolerance="1e-3">
+    <parameters>
+      tolerance_field,1e-3,pnfft_N,256,256,256,pnfft_n,256,256,256,pnfft_m,2,p2nfft_r_cut,4.481387,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.573076
+    </parameters>
     <data>
       16384	 1.913756e-01
       8192	 1.206652e-01
@@ -526,6 +541,9 @@
       method="P2NFFT"
       charges="1012500"
       tolerance="1e-5">
+    <parameters>
+      tolerance_field,1e-5,pnfft_N,256,256,256,pnfft_n,256,256,256,pnfft_m,4,p2nfft_r_cut,5.4,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.617183
+    </parameters>
     <data>
       16384	 2.114457e-01
       8192	 1.525240e-01
@@ -547,6 +565,9 @@
       method="P2NFFT"
       charges="9830400"
       tolerance="1e-3">
+    <parameters>
+      p2nfft_ignore_tolerance,1,tolerance_field,1e-3,pnfft_N,512,512,512,pnfft_n,512,512,512,pnfft_m,3,p2nfft_r_cut,4.481387,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.573076
+    </parameters>
     <data>
       65536	 5.898978e-01
       32768	 4.065192e-01
@@ -564,6 +585,9 @@
       method="P2NFFT"
       charges="9830400"
       tolerance="1e-5">
+    <parameters>
+      p2nfft_ignore_tolerance,1,tolerance_field,1e-5,pnfft_N,512,512,512,pnfft_n,512,512,512,pnfft_m,4,p2nfft_r_cut,5.4,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.617183
+    </parameters>
     <data>
       65536	 6.215589e-01
       32768	 4.671512e-01
@@ -581,6 +605,9 @@
       method="P2NFFT"
       charges="102900000"
       tolerance="1e-3">
+    <parameters>
+      p2nfft_ignore_tolerance,1,tolerance_field,1e-3,pnfft_N,1024,1024,1024,pnfft_n,1024,1024,1024,pnfft_m,2,p2nfft_r_cut,4.481387,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.573076
+    </parameters>
     <data>
       65536	 1.068237e+00
       32768	 1.215190e+00
@@ -595,6 +622,9 @@
       method="P2NFFT"
       charges="102900000"
       tolerance="1e-5">
+    <parameters>
+      p2nfft_ignore_tolerance,1,tolerance_field,1e-5,pnfft_N,1024,1024,1024,pnfft_n,1024,1024,1024,pnfft_m,4,p2nfft_r_cut,5.4,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.617183
+    </parameters>
     <data>
       65536	 1.448936e+00
       32768	 1.925968e+00
@@ -609,6 +639,9 @@
       method="P2NFFT"
       charges="1012500000"
       tolerance="1e-3">
+    <parameters>
+      p2nfft_ignore_tolerance,1,tolerance_field,1e-3,pnfft_N,2048,2048,2048,pnfft_n,2048,2048,2048,pnfft_m,2,p2nfft_r_cut,4.481387,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.573076
+    </parameters>
     <data>
       65536	 7.461792e+00
       32768	 1.330491e+01
@@ -621,6 +654,9 @@
       method="P2NFFT"
       charges="1012500000"
       tolerance="1e-5">
+    <parameters>
+      p2nfft_ignore_tolerance,1,tolerance_field,1e-5,pnfft_N,2048,2048,2048,pnfft_n,2048,2048,2048,pnfft_m,4,p2nfft_r_cut,5.4,p2nfft_intpol_order,3,pnfft_window,bspline,p2nfft_alpha,0.617183
+    </parameters>
     <data>
       65536	 1.078506e+01
       32768	 1.926500e+01
