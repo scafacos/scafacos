@@ -1900,7 +1900,7 @@ c
          mem_m2 = maxint
       endif
 c
-      copyxyz = .false.
+      copyxyz = .true.
       sh4 = .true.
       sh3 = .false.
       useqinsh = .true.
