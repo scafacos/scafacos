@@ -416,7 +416,8 @@ static fcs_float theta_m(
 FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_2dp_kneq0(fcs_float x, fcs_int der, const fcs_float *param) /* K(x) = exp(2*pi*k*x) * erf(pi*k/alpha + alpha*x) */
 {
   fcs_float alpha = param[0]; /* Ewald splitting parameter alpha */
-  fcs_float k     = param[1]; /* norm of (k_0,k_1)^T */
+  fcs_float k     = param[1]; /* norm of (k_0/B_0,k_1/B_1) */
+  fcs_float z     = param[2]; /* norm of (x_2/box_scale[2]) */
   fcs_float one_over_alpha = 1.0 / alpha;
 
   fcs_float b = FCS_PI*k/alpha;
