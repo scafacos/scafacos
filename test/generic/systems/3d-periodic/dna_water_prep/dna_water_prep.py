@@ -118,7 +118,7 @@ xmlfile = gzip.open(xmlfilename, 'w')
 template = """<?xml version="1.0" ?>
 <!DOCTYPE scafacos_test  SYSTEM 'scafacos_test.dtd'>
 <scafacos_test name="dna_water"
-               description="A short DNA fragment (i-motif hairpin) in water" 
+               description="A short DNA fragment (i-motif hairpin) in water. More details in http://pubs.acs.org/doi/abs/10.1021/jp208640a." 
                reference_method="??"
                error_field="1" error_potential="1" 
                ></scafacos_test>"""

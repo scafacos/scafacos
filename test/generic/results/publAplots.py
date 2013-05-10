@@ -2,6 +2,11 @@ from matplotlib.pyplot import *
 from numpy import *
 import benchmarks
 
+matplotlib.rc('font', family='serif', size=18)
+matplotlib.rc('text', usetex=True)
+matplotlib.rc('axes.formatter', limits=(-3,+3))
+matplotlib.rc('legend', fontsize='small')
+
 def plot_timing(charges, tolerance):
     ixcha = all_charges.index(charges)
     ixtol = all_tolerances.index(tolerance)
@@ -28,8 +33,8 @@ def plot_timing(charges, tolerance):
                    label=method, **benchmarks.fmt(method))
 
     xlim((1, charges/200.))
-    xlabel('#cores')
-    ylabel('Time [s]')
+    xlabel('\#Cores $P$')
+    ylabel('Time $t$ [s]')
 
 def plot_efficiency(charges, tolerance):
     ixcha = all_charges.index(charges)
@@ -59,8 +64,8 @@ def plot_efficiency(charges, tolerance):
 
         #    legend()
     xlim((1, charges/200.))
-    xlabel('#cores')
-    ylabel('Efficiency')
+    xlabel(r'\#Cores $P$')
+    ylabel(r'Relative Parallel Efficiency $e(P)$')
 
 def create_legend():
   # create legend
@@ -97,8 +102,8 @@ for method in data['methods']:
     loglog(all_charges, time_per_particle,
            label=method, **benchmarks.fmt(method))
 
-xlabel('#Charges')
-ylabel('Time/Charge [s]')
+xlabel(r'\#Charges')
+ylabel(r'Time $t$/\#Charges [s]')
 create_legend()
 savefig('complexity.pdf')
 
@@ -119,11 +124,11 @@ for charges in data['charges']:
     ixcha = data['charges'].index(charges)
     for method in all_methods:
         loglog(all_tolerances, 
-               timing[method][ixcha, :, ixcor], 
+               timing[method][ixcha, :, ixcor]/charges, 
                label=method, **benchmarks.fmt(method))
 
-xlabel('tolerance')
-ylabel('Time [s]')
+xlabel(r'Relative RMS potential error $\varepsilon_\mathrm{pot}$')
+ylabel(r'Time $t$/\#Charges [s]')
 create_legend()
 savefig('accuracy.pdf')
 
