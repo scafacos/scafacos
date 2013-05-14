@@ -58,7 +58,6 @@ FCSResult ifcs_p2nfft_run(
 {
   const char* fnc_name = "ifcs_p2nfft_run";
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
-  fcs_float box_vol = d->box_l[0]*d->box_l[1]*d->box_l[2];
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   C csum;
   C csum_global;
@@ -411,14 +410,18 @@ FCSResult ifcs_p2nfft_run(
   /* Perform NFFT */
   FCS_PNFFT(trafo)(d->pnfft);
 
+  fcs_float box_surf = 1.0;
+  for(fcs_int t=0; t<3; t++)
+    if(d->periodicity[t])
+      box_surf *= d->box_scales[t];
+
   /* Copy the results to the output vector and rescale */
   for (fcs_int j = 0; j < sorted_num_particles; ++j){
     if(d->use_ewald){
-      sorted_potentials[j] += creal(f[j]) / (d->box_scales[0] * d->box_scales[1]);
+      sorted_potentials[j] += creal(f[j]) / box_surf;
       for(fcs_int t=0; t<3; t++)
-        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]);
+        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (box_surf * d->box_scales[t]);
     } else {
-
       sorted_potentials[j] += creal(f[j]) / d->box_scales[0];
       for(fcs_int t=0; t<3; t++)
         sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (d->box_scales[0] * d->box_scales[0]);

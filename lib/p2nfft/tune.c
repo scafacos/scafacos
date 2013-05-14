@@ -156,7 +156,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
 
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
     const ptrdiff_t *N, fcs_float epsB,
-    const fcs_float *box_l, fcs_float alpha,
+    const fcs_float *box_l, const fcs_float *box_scales, fcs_float alpha,
     const fcs_int *periodicity, fcs_int p,
     MPI_Comm comm_cart);
 
@@ -775,7 +775,7 @@ FCSResult ifcs_p2nfft_tune(
           d->local_N, d->local_N_start, d->box_l, d->alpha);
     if (d->num_nonperiodic_dims == 1)
       d->regkern_hat = malloc_and_precompute_regkern_hat_2dp(
-          d->N, d->epsB, d->box_l, d->alpha, d->periodicity, d->p,
+          d->N, d->epsB, d->box_l, d->box_scales, d->alpha, d->periodicity, d->p,
           d->cart_comm_pnfft);
     if (d->num_nonperiodic_dims == 2)
       return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT does not yet support 1d-periodic boundary conditions.");
@@ -1395,8 +1395,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
   ptrdiff_t local_Ni[3], local_Ni_start[3], local_No[3], local_No_start[3];
   ptrdiff_t k[3];
   fcs_float scale = 1.0, twiddle, twiddle_k0=1.0, twiddle_k1=1.0, twiddle_k2=1.0;
-  fcs_float vol_2dp = 1.0;
-  fcs_float x[3];
+  fcs_float x[3], xh[3];
   pfft_plan pfft;
   fcs_pnfft_complex *regkern_hat;
 
@@ -1418,8 +1417,6 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
   for(int t=0; t<3; t++){
     if(!periodicity[t])
       scale *= 1.0 / N[t];
-    else
-      vol_2dp *= box_l[t];
   }
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
@@ -1448,38 +1445,48 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
         twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
 
         /* New regularization for mixed boundary conditions */
-        fcs_float knorm = 0.0, xnorm = 0.0;
+        fcs_float kbnorm = 0.0, x2norm = 0.0, xhnorm = 0.0, h = 1.0;
 
         for(fcs_int t=0; t<3; t++){
-          knorm += k[t] / box_l[t] * k[t] / box_l[t];
-//           xsnorm += xs[t] * xs[t];
-//           x[t] = xs[t] * box_scales[t]; 
-          xnorm_ += x[t] * x[t];
+          kbnorm += k[t] / box_l[t] * k[t] / box_l[t];
+          x2norm += x[t] * x[t];
+          xh[t] = (periodicity[t]) ? 0.0 : x[t] * box_scales[t];
+          xhnorm += xh[t] * xh[t];
           if(!periodicity[t])
-            h = box_scales[t];
+           h = box_scales[t];
         }
-        knorm  = fcs_sqrt(knorm);
-        xnorm  = fcs_sqrt(xnorm);
-//         xsnorm = fcs_sqrt(xsnorm);
+        kbnorm = fcs_sqrt(kbnorm);
+        x2norm = fcs_sqrt(x2norm);
+        xhnorm = fcs_sqrt(xhnorm);
 
-        fcs_float params[3];
-        params[0] = alpha;
-        params[1] = knorm;
-        params[2] = h;
+        fcs_float param[3];
+        param[0] = alpha;
+        param[1] = kbnorm;
+        param[2] = h;
 
         /* simplify for pure 2d geometry with periodic boundary conditions */
 
         /* Check if all indices corresponding to periodic dims are 0.
          * Index correspoding to non-periodic dim will be 0 per default. */
         if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0)){
-          regkern_hat[m] = -2.0 * FCS_SQRTPI / vol_2dp * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_keq0, xnorm, p, params, epsB);
+          regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_keq0, xhnorm, p, param, epsB);
 //           regkern_hat[m] = 0;
         }
         else{
-//           regkern_hat[m] = erfc(FCS_P2NFFT_PI * knorm/alpha) / knorm;
-          /* knorm includes 1.0/B for cubic case */ 
-          regkern_hat[m] = 0.5 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, xnorm, p, params, epsB) / knorm;
+//           regkern_hat[m] = erfc(FCS_P2NFFT_PI * kbnorm/alpha) / kbnorm;
+          /* kbnorm includes 1.0/B for cubic case */ 
+          regkern_hat[m] = 0.5 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, xhnorm, p, param, epsB) / kbnorm;
         }
+
+
+        if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0)){
+          fprintf(stderr, "x2 = %f, x2norm = %f, reg = %f, epsB = %f, h = %f, xh = %f\n", x[2], x2norm, creal(regkern_hat[m]), epsB, h, xhnorm);
+        }
+        if ((k[0] == 1) && (k[1] == 1)){
+          fprintf(stderr, "x2 = %f, x2norm = %f, reg = %f, epsB = %f, h = %f, xh = %f, kbnorm = %f\n", x[2], x2norm, creal(regkern_hat[m]), epsB, h, xhnorm, kbnorm);
+        }
+        
+
 
         regkern_hat[m] *= scale * twiddle;
 

@@ -413,11 +413,10 @@ static fcs_float theta_m(
 }
 
 /* Fourier space part of 2d-periodic Ewald and k<>0 */
-FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_2dp_kneq0(fcs_float x, fcs_int der, const fcs_float *param) /* K(x) = exp(2*pi*k*x) * erf(pi*k/alpha + alpha*x) */
+FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_2dp_kneq0(fcs_float r, fcs_int der, const fcs_float *param) /* K(x) = exp(2*pi*k*r) * erfc(pi*k/alpha + alpha*r) */
 {
   fcs_float alpha = param[0]; /* Ewald splitting parameter alpha */
   fcs_float k     = param[1]; /* norm of (k_0/B_0,k_1/B_1) */
-  fcs_float z     = param[2]; /* norm of (x_2/box_scale[2]) */
   fcs_float one_over_alpha = 1.0 / alpha;
 
   fcs_float b = FCS_PI*k/alpha;
@@ -430,9 +429,9 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_2dp_kneq0(fcs_float x, fcs_int der, con
 
   switch (der)
   {
-    case  0 : value = theta_p(x,k,alpha); break;
-    case  1 : value = c*theta_m(x,k,alpha); break;
-    default : value = c*c * ifcs_p2nfft_ewald_2dp_kneq0(x,der-2,param) - 8*alpha*FCS_SQRTPI*k* exp(-b*b) * ifcs_p2nfft_gaussian(x,der-2,&one_over_alpha);
+    case  0 : value = theta_p(r,k,alpha); break;
+    case  1 : value = c*theta_m(r,k,alpha); break;
+    default : value = c*c * ifcs_p2nfft_ewald_2dp_kneq0(r,der-2,param) - 8*alpha*FCS_SQRTPI*k* exp(-b*b) * ifcs_p2nfft_gaussian(r,der-2,&one_over_alpha);
   }
 
   return value;
@@ -483,6 +482,7 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_x_times_erf(fcs_float x, fcs_int der, const f
     default : value = 0.0;
   }
 
-  return pow(alpha, der) * value;
+  /* reduce order of alpha by one because of substitution x := alpha*x  */
+  return pow(alpha, der-1) * value;
 }
 

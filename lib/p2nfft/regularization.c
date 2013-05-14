@@ -256,35 +256,39 @@ fcs_float ifcs_p2nfft_regkernel(
 /** regularized kernel for even kernels without singularity, e.g. no K_I needed,
  *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)
  */
-static fcs_float regkern5(ifcs_p2nfft_kernel k, fcs_float xh, fcs_int p, const fcs_float *param, fcs_float b)
+static fcs_float regkern5(ifcs_p2nfft_kernel k, fcs_float x, fcs_int p, const fcs_float *param, fcs_float b)
 {
   fcs_int j;
   fcs_float sum=0.0;
-  fcs_float h = params[2];
+  fcs_float h = param[2];
 
-  xx = fabs(xh/h);
+  x = fabs(x);
 
-  /* constant continuation for radii > 0.5 */
-  if (xx >= 0.5)
-    xx = 0.5;
+  /* inner and outer border of regularization area */
+  fcs_float xi = h * (0.5 - b);
+  fcs_float xo = h * 0.5;
+
+  /* canonicalize x to y \in [-1,1] */
+  fcs_float r = 0.5 * (xo - xi);
+  fcs_float m = 0.5 * (xo + xi);
+  fcs_float y = (x-m)/r;
+
+  /* constant continuation for radii > xo */
+  if (x >= xo)
+    x = xo;
 
   /* regularization at farfield border */
-  if ( 0.5-b < xx ) {
+  if ( xi < x ) {
     for (j=0; j<=p-2; j++) {
       sum += 
-        creal(pow(h*b/2.0,(fcs_float)j+1)
-          *k(h*(0.5-b),j+1,param)
-          *(IntBasisPoly(p-1,j,2.0*xx/b-(1.0-b)/b)
-              -IntBasisPoly(p-1,j,-1))
-//       *IntBasisPoly(p-1,j,2.0*xx/b-(1.0-b)/b)
-       );
+        pow(r,j+1.0) * k(xi,j+1,param)
+        * (IntBasisPoly(p-1,j,y) - IntBasisPoly(p-1,j,-1));
     }
-//     return sum+const_regkern4(k, p, param, b);
-    return sum + k(h*(0.5-b),0,param);
+    return sum + k(xi,0,param);
   }
  
   /* near- and farfield (no singularity): original kernel function */ 
-  return k(xx,0,param);
+  return k(x,0,param);
 } 
 
 fcs_float ifcs_p2nfft_regkernel_wo_singularity(
