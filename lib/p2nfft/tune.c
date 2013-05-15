@@ -370,7 +370,6 @@ FCSResult ifcs_p2nfft_tune(
           d->x_max[t] = 0.5;
         else
           d->x_max[t] = 0.5 * d->box_l[t] / d->box_scales[t];
-        fprintf(stderr, "x_max = %f, box_l = %f, box_scale = %f\n", d->x_max[t], d->box_l[t], d->box_scales[t]);
       }
       
       /* Tune alpha for fixed N and m. */
