@@ -458,7 +458,7 @@ FCSResult ifcs_p2nfft_run(
   fcs_float far_global;
   for(fcs_int j = 0; j < sorted_num_particles; ++j)
     if(d->use_ewald)
-      far_energy += 0.5 * sorted_charges[j] * f[j] / (d->box_scales[0] * d->box_scales[1]);
+      far_energy += 0.5 * sorted_charges[j] * f[j] / box_surf;
     else
       far_energy += 0.5 * sorted_charges[j] * f[j] / d->box_scales[0];
 

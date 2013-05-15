@@ -98,14 +98,16 @@ extern FCSResult fcs_p2nfft_init(
   return NULL;
 }
 
-static int periodicity_3d(
+static int num_periodic_dims(
     fcs_int *periodicity
     )
 {
-  if(periodicity[0] && periodicity[1] && periodicity[2])
-    return 1;
+  int num = 0;
+  for(int t=0; t<3; t++)
+    if(periodicity[t])
+      num += 1;
 
-  return 0;
+  return num;
 }
 
 /* internal p2nfft-specific tuning function */
@@ -133,9 +135,9 @@ extern FCSResult fcs_p2nfft_tune(
     return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
         "The p2nfft method needs a rectangular box with box vectors parallel to the principal axes.");
 
-  if (!fcs_is_cubic(a, b, c) && !periodicity_3d(periodicity))
+  if (!fcs_is_cubic(a, b, c) && (num_periodic_dims(periodicity) < 2) )
     return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
-        "The p2nfft method currently only supports noncubic boxes with fully 3d-periodic boundary conditions.");
+        "The p2nfft method currently only supports noncubic boxes with 2d-, or 3d-periodic boundary conditions.");
    
   /* Get box size */ 
   box_l[0] = fcs_norm(a);
