@@ -118,6 +118,7 @@ typedef struct {
   fcs_int tune_alpha;
   fcs_int tune_r_cut;
   fcs_int tune_epsI;
+  fcs_int tune_epsB;
   fcs_int tune_N;
   fcs_int tune_n;
   fcs_int tune_m;

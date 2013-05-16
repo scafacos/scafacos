@@ -1659,6 +1659,7 @@ FCSResult fcs_parser(FCS handle, const char *parameters, fcs_bool continue_on_er
     /* P2NFFT specific parameters */
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_r_cut",                p2nfft_set_r_cut,                     PARSE_VAL(fcs_float));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsI",                 p2nfft_set_epsI,                      PARSE_VAL(fcs_float));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsB",                 p2nfft_set_epsB,                      PARSE_VAL(fcs_float));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_alpha",                p2nfft_set_alpha,                     PARSE_VAL(fcs_float));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_intpol_order",         p2nfft_set_interpolation_order,       PARSE_VAL(fcs_int));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg",                  p2nfft_set_regularization,            PARSE_VAL(fcs_int));

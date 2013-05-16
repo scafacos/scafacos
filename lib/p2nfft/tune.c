@@ -298,6 +298,12 @@ FCSResult ifcs_p2nfft_tune(
   MPI_Allreduce(&local_needs_retune, &d->needs_retune, 1, FCS_MPI_INT, MPI_MAX, d->cart_comm_3d);
 
   if (d->needs_retune) {
+    /* check user defined epsI and epsB */
+    if(d->num_nonperiodic_dims)
+      if(!d->tune_epsI && !d->tune_epsB)
+        if(d->epsI + d->epsB >= 0.5)
+          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Sum of epsI and epsB must be less than 0.5.");
+
     if(d->use_ewald){
       fcs_float ks_error, rs_error;
       /* PNFFT calculates with real space cutoff 2*m+2
@@ -350,7 +356,8 @@ FCSResult ifcs_p2nfft_tune(
           if(!d->periodicity[t])
             d->epsI = 0.5 / (d->box_l[t] / d->r_cut * sqrt(3) + 1.0);
       }
-      d->epsB = d->epsI;
+      if(d->tune_epsB)
+        d->epsB = d->epsI;
 
       for(int t=0; t<3; t++){
         /* calculate box_scales depending on boundary condition */
@@ -491,8 +498,8 @@ FCSResult ifcs_p2nfft_tune(
         printf("P2NFFT_INFO: Tuned alpha: %" FCS_LMOD_FLOAT "f, leading to an error of %" FCS_LMOD_FLOAT "e.\n",
             d->alpha, error);
       if(!comm_rank)
-        printf("P2NFFT_INFO: Tuned N: %td, n = [%td, %td, %td], tuned m: %" FCS_LMOD_INT "d, r_cut: %" FCS_LMOD_FLOAT "f, epsI: %" FCS_LMOD_FLOAT "f.\n",
-            d->N[0], d->n[0], d->n[1], d->n[2], d->m, d->r_cut, d->epsI);
+        printf("P2NFFT_INFO: Tuned N: %td, n = [%td, %td, %td], tuned m: %" FCS_LMOD_INT "d, r_cut: %" FCS_LMOD_FLOAT "f, epsI: %" FCS_LMOD_FLOAT "f, epsB: %" FCS_LMOD_FLOAT "f.\n",
+            d->N[0], d->n[0], d->n[1], d->n[2], d->m, d->r_cut, d->epsI, d->epsB);
 #endif
 
       /* Initialize the tables for near field interpolation */
@@ -553,9 +560,11 @@ FCSResult ifcs_p2nfft_tune(
           d->epsI = fcs_pow(0.5, d->log2epsI);
         }
   
-        d->log2epsB = d->log2epsI;
-        d->epsB = d->epsI;
-  
+        if(d->tune_epsB){
+          d->log2epsB = d->log2epsI;
+          d->epsB = d->epsI;
+        }
+
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
         for(int t=0; t<3; t++){
           d->box_scales[t] = d->box_l[t] * fcs_sqrt(3) / (0.5 - d->epsB);

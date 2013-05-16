@@ -99,6 +99,7 @@ FCSResult ifcs_p2nfft_init(
   d->tune_alpha = 1;
   d->tune_r_cut = 1;
   d->tune_epsI = 1;
+  d->tune_epsB = 1;
   d->tune_N = 1;
   d->tune_n = 1;
   d->tune_m = 1;
@@ -120,10 +121,6 @@ FCSResult ifcs_p2nfft_init(
   d->m = 4;
   d->p = 8;
 
-/* DEBUG: */
-//  d->N[0] = d->N[1] = d->N[2] = 4;
-//  d->m = 1;
-  
   /* init to same nonsense on all processes */
   d->alpha = -1.0;
   d->r_cut = -1.0;
@@ -169,10 +166,8 @@ static ifcs_p2nfft_data_struct* mkplan_p2nfft(
 {
   ifcs_p2nfft_data_struct *d; 
 
-//fprintf(stderr, "d = %td\n", sizeof(ifcs_p2nfft_data_struct));
   /* allocate the memory for the p2nfft data structure */
   d = (ifcs_p2nfft_data_struct*) malloc(sizeof(ifcs_p2nfft_data_struct));
-//fprintf(stderr, "d = %p, d->n = %p, success\n", d, d->n);
 
   /* set PNFFT plan to NULL to avoid senseless references */
   d->pnfft = NULL;
