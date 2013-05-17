@@ -286,7 +286,8 @@ FCSResult ifcs_p2nfft_tune(
   /* FIXME: number of charged particles may be less than number of all particles */
   d->sum_qpart = num_particles;
 
-  /* compute the average distance between two charges  */
+  /* compute the average distance between two charges 
+   * (needed for computation of default r_cut) */
   avg_dist = fcs_pow((d->box_l[0]*d->box_l[1]*d->box_l[2]) / d->sum_qpart, 0.33333);
 
 #if FCS_P2NFFT_DEBUG_RETUNE
@@ -304,6 +305,10 @@ FCSResult ifcs_p2nfft_tune(
         if(d->epsI + d->epsB >= 0.5)
           return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Sum of epsI and epsB must be less than 0.5.");
 
+    /* At this point we hoose default value 7. */
+    if(d->tune_p)
+      d->p = 8;
+
     if(d->use_ewald){
       fcs_float ks_error, rs_error;
       /* PNFFT calculates with real space cutoff 2*m+2
@@ -315,49 +320,25 @@ FCSResult ifcs_p2nfft_tune(
       fcs_int dim_tune = get_dim_of_smallest_box_l(d->periodicity, d->box_l);
   
       if(d->tune_r_cut){
-        if(d->tune_epsI){
-          /* set r_cut to 3 times the average distance between charges */
-          d->r_cut = 3.0 * avg_dist;
+        /* set r_cut to 3 times the average distance between charges */
+        d->r_cut = 3.0 * avg_dist;
 
-          /* fulfill minimum image convention for periodic dims */
-          for(int t=0; t<3; t++)
-            if(periodicity[t])
-              if (d->r_cut > d->box_l[t])
-                d->r_cut = d->box_l[t];
-
-          /* set epsI corresponding to r_cut */
-          d->epsI = 1.0; /* At the end, epsI will be less than 0.5 because of minimal image convention. */
-          for(int t=0; t<3; t++){
-            fcs_float epsI;
-            if(periodicity[t]){
-              epsI = d->r_cut / box_l[t];
-            } else {
-              /* invert r_cut = box_scale * epsI, where box_scale = box_l*sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
-              epsI = 0.5 / (d->box_l[t] / d->r_cut * sqrt(d->num_nonperiodic_dims) + 1.0);
-
-              /* Check epsI <= 1/8 for proper definition of the interval [epsI,0.5-epsB].
-               * We do not need this for fully-periodic boundary conditions. */
-              if(epsI > 0.125) epsI = 0.125;
-            }
-
-            /* Choose the smallest epsI of all dimensions. */
-            if(epsI < d->epsI)
-             d->epsI = epsI; 
-          }
-        } else {
-          for(int t=0; t<3; t++)
-            if(!d->periodicity[t])
-              d->r_cut = d->epsI * d->box_l[t];
-        }
-        d->one_over_r_cut = 1.0/d->r_cut;
-      } else {
-        /* invert r_cut = box_scale * epsI, where box_scale = box_l*sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
+        /* fulfill minimum image convention for periodic dims */
         for(int t=0; t<3; t++)
-          if(!d->periodicity[t])
-            d->epsI = 0.5 / (d->box_l[t] / d->r_cut * sqrt(3) + 1.0);
+          if(periodicity[t])
+            if (d->r_cut > d->box_l[t])
+              d->r_cut = d->box_l[t];
       }
-      if(d->tune_epsB)
-        d->epsB = d->epsI;
+      d->one_over_r_cut = 1.0/d->r_cut;
+
+      if(d->tune_epsB){
+        /* only one dimension has npbc, choose this one to set epsB */
+        for(int t=0; t<3; t++)
+          if(!periodicity[t])
+            d->epsB = (fcs_float)d->p/d->N[t];
+        if(d->epsB > 0.125)
+          d->epsB = 0.125;
+      }
 
       for(int t=0; t<3; t++){
         /* calculate box_scales depending on boundary condition */
@@ -547,9 +528,10 @@ FCSResult ifcs_p2nfft_tune(
         /* error = 2.782434e-03                                          */      
         /*****************************************************************/
         m = 4;
-  
-        if(d->tune_p)
-          d->p = 7;
+ 
+        /* default value of p is set earlier for all variants of mixed boundary conditions */ 
+//         if(d->tune_p)
+//           d->p = 8;
   
         if(d->tune_N)
           for(int t=0; t<3; t++)
@@ -875,6 +857,8 @@ static void print_command_line_arguments(
       printf("p2nfft_r_cut,%" FCS_LMOD_FLOAT "f,", d->r_cut);
     if(verbose || !d->tune_epsI || !d->tune_r_cut)
       printf("p2nfft_epsI,%" FCS_LMOD_FLOAT "f,", d->epsI);
+    if(verbose || !d->tune_epsB)
+      printf("p2nfft_epsB,%" FCS_LMOD_FLOAT "f,", d->epsB);
     if(verbose || !d->tune_alpha)
       printf("p2nfft_alpha,%" FCS_LMOD_FLOAT "f,", d->alpha);
     if(verbose || d->interpolation_order != 3)
