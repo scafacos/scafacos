@@ -33,6 +33,7 @@ def plot_timing(charges, tolerance):
                    label=method, **benchmarks.fmt(method))
 
     xlim((1, charges/200.))
+    xscale('log', basex=2)
     xlabel('\#Cores $P$')
     ylabel('Time $t$ [s]')
 
@@ -64,6 +65,7 @@ def plot_efficiency(charges, tolerance):
 
         #    legend()
     xlim((1, charges/200.))
+    xscale('log', basex=2)
     xlabel(r'\#Cores $P$')
     ylabel(r'Relative Parallel Efficiency $e(P)$')
 
@@ -129,6 +131,7 @@ for charges in data['charges']:
 
 xlabel(r'Relative RMS potential error $\varepsilon_\mathrm{pot}$')
 ylabel(r'Time $t$/\#Charges [s]')
+gca().xaxis.set_ticks([1e-13,1e-11,1e-9,1e-7,1e-5,1e-3,1e-1])
 create_legend()
 savefig('accuracy.pdf')
 
