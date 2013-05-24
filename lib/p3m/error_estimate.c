@@ -18,33 +18,10 @@
 */
 #include "error_estimate.h"
 #include "tune_broadcast.h"
+#include "utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-/* Mathematical constants, from gcc's math.h */
-#ifndef M_PI
-#define M_E             2.7182818284590452353602874713526625L  /* e */
-#define M_LOG2E         1.4426950408889634073599246810018921L  /* log_2 e */
-#define M_LOG10E        0.4342944819032518276511289189166051L  /* log_10 e */
-#define M_LN2           0.6931471805599453094172321214581766L  /* log_e 2 */
-#define M_LN10          2.3025850929940456840179914546843642L  /* log_e 10 */
-#define M_PI            3.1415926535897932384626433832795029L  /* pi */
-#define M_PI_2          1.5707963267948966192313216916397514L  /* pi/2 */
-#define M_PI_4          0.7853981633974483096156608458198757L  /* pi/4 */
-#define M_1_PI          0.3183098861837906715377675267450287L  /* 1/pi */
-#define M_2_PI          0.6366197723675813430755350534900574L  /* 2/pi */
-#define M_2_SQRTPI      1.1283791670955125738961589031215452L  /* 2/sqrt(pi) */
-#define M_SQRT2         1.4142135623730950488016887242096981L  /* sqrt(2) */
-#define M_SQRT1_2       0.7071067811865475244008443621048490L  /* 1/sqrt(2) */
-#endif
-
-/** maximal precision */
-#ifdef FCS_FLOAT_IS_DOUBLE
-static const fcs_float ROUND_ERROR_PREC = 1.0e-14;
-#else
-static const fcs_float ROUND_ERROR_PREC = 1.0e-6;
-#endif
 
 static const fcs_float FULL_ESTIMATE_ALPHA_H_THRESHOLD = 0.5;
 
@@ -83,39 +60,6 @@ ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d);
 /***************************************************/
 /* IMPLEMENTATION */
 /***************************************************/
-/** Calculates the SQuaRe of 'fcs_float' x, returning 'fcs_float'. */
-static inline fcs_float SQR(fcs_float x) { return x*x; }
-
-/** Calculates the sinc-function as sin(PI*x)/(PI*x).
- *
- * (same convention as in Hockney/Eastwood). In order to avoid
- * divisions by 0, arguments, whose modulus is smaller than epsi, will
- * be evaluated by an 8th order Taylor expansion of the sinc
- * function. Note that the difference between sinc(x) and this
- * expansion is smaller than 0.235e-12, if x is smaller than 0.1. (The
- * next term in the expansion is the 10th order contribution
- * PI^10/39916800 * x^10 = 0.2346...*x^12).  This expansion should
- * also save time, since it reduces the number of function calls to
- * sin().  
-*/
-static inline fcs_float sinc(fcs_float d)
-{
-  const fcs_float epsi = 0.1;
-  const fcs_float c2 = -0.1666666666667e-0;
-  const fcs_float c4 = 0.8333333333333e-2;
-  const fcs_float c6 = -0.1984126984127e-3;
-  const fcs_float c8 = 0.2755731922399e-5;
-
-  fcs_float PId = M_PI*d, PId2;
-
-  if (fabs(d)>epsi)
-    return sin(PId)/PId;
-  else {
-    PId2 = SQR(PId);
-    return 1.0 + PId2*(c2+PId2*(c4+PId2*(c6+PId2*c8)));
-  }
-}
-
 /** Calculates the real space contribution to the rms error in the
     force (as described by Kolafa and Perram).
 */

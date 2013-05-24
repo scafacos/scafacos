@@ -38,23 +38,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#if FCS_ENABLE_INFO 
-#define FCS_P3M_INIT_TIMING(comm)               			\
-  int tm_rank;                                                          \
-  MPI_Comm_rank(comm, &tm_rank);                                        \
-  double tm_timer, tm_global_timer;
-#define FCS_P3M_START_TIMING()                  \
-  tm_timer = -MPI_Wtime();
-#define FCS_P3M_FINISH_TIMING(comm, str)                                \
-  tm_timer += MPI_Wtime();                                              \
-  MPI_Reduce(&tm_timer, &tm_global_timer, 1,                            \
-             MPI_DOUBLE, MPI_MAX, 0, comm);                             \
-  if(!tm_rank) printf("P3M_TIMING: %s takes %e s\n", str, tm_global_timer);
-#else
-#define FCS_P3M_INIT_TIMING(comm)
-#define FCS_P3M_START_TIMING()
-#define FCS_P3M_FINISH_TIMING(comm, str)
-#endif
 
 /***************************************************/
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */

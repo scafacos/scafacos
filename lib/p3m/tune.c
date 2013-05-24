@@ -36,40 +36,45 @@
 /***************************************************/
 /* TYPES AND CONSTANTS */
 /***************************************************/
-/** Good mesh sizes for fftw; -1 denotes end of list; 0 denotes a
-    block end. 
+/** Good mesh sizes for fftw 
+ */
+static const fcs_int good_gridsize[] = 
+  {0, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
+   36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64,
+   66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128,
+   130, 132, 140, 144, 150, 154, 156, 160, 162, 168, 176, 180, 182, 192,
+   196, 198, 200, 208, 210, 216, 220, 224, 234, 240, 242, 250, 252, 256,
+   260, 264, 270, 280, 288, 294,
+   300, 360, 400, 480, 512,
+   576, 648, 729, 768, 864, 972, 1024,
+   1152, 1296, 1458, 1536,
+   1728, 1944, 2048,
+   2187, 2304, 2592,
+   2916, 3072,
+   3456,
+   3888};
 
-    Tuning will first go from block end to block end and try to find
-    the smallest block where the error can be achieved. Then it will
-    bisect to find the optimal grid size.
-**/
-static const int good_gridsize[] = 
-  {4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 0,
-   36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 0,
-   66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128, 0,
-   130, 132, 140, 144, 150, 154, 156, 160, 162, 168, 176, 180, 182, 192, 0,
-   196, 198, 200, 208, 210, 216, 220, 224, 234, 240, 242, 250, 252, 256, 0,
-   260, 264, 270, 280, 288, 294, 0,
-   300, 360, 400, 480, 512, 0,
-   576, 648, 729, 768, 864, 972, 1024, 0,
-   1152, 1296, 1458, 1536, 0,
-   1728, 1944, 2048, 0,
-   2187, 2304, 2592, 0,
-   2916, 3072, 0,
-   3456, 0,
-   3888, 0,
-   -1};
+/** Steps to do when trying to determine smallest possible grid size. */
+static const fcs_int step_good_gridsize[] =
+  { 0, 16, 27, 45, 59, 73, 79, 84, 91, 95, 99, 102, 104, 105 } ;
+static const fcs_int num_steps_good_gridsize = 14;
 
 struct tune_params_t;
 typedef struct tune_params_t {
   /** cutoff radius */
   fcs_float r_cut;
-  /** Ewald splitting parameter */
-  fcs_float alpha;
-  /** number of grid points per coordinate direction (>0). */
-  fcs_int grid[3];
   /** charge assignment order ([0,P3M_MAX_CAO]). */
   fcs_int cao;
+  /** number of grid points per coordinate direction (>0). */
+  fcs_int grid[3];
+  /** Ewald splitting parameter */
+  fcs_float alpha;
+
+  /** Errors */
+  fcs_float rs_error, ks_error, error;
+  /** Timings */
+  fcs_float rs_timing, ks_timing, timing;
+
   /** pointer to next param set */
   struct tune_params_t *next_params;
 } tune_params;
@@ -77,9 +82,25 @@ typedef struct tune_params_t {
 /***************************************************/
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
 /***************************************************/
-static FCSResult 
-ifcs_p3m_tuneit(ifcs_p3m_data_struct *d, tune_params **params_to_try);
-
+static FCSResult
+ifcs_p3m_tune_broadcast_master(ifcs_p3m_data_struct *d, 
+                               fcs_int num_particles, fcs_int max_num_particles,
+                               fcs_float *positions, fcs_float *charges);
+static FCSResult
+ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d, 
+                             fcs_int num_particles, fcs_int max_num_particles,
+                             fcs_float *positions, fcs_float *charges,
+                             tune_params **params);
+static FCSResult
+ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d, 
+                       fcs_int num_particles, fcs_int max_num_particles,
+                       fcs_float *positions, fcs_float *charges,
+                       tune_params **params);
+static FCSResult
+ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d, 
+                   fcs_int num_particles, fcs_int max_num_particles,
+                   fcs_float *positions, fcs_float *charges,
+                   tune_params **params);
 static FCSResult
 ifcs_p3m_time_params(ifcs_p3m_data_struct *d,
                      fcs_int num_particles, fcs_int max_particles,
@@ -171,16 +192,10 @@ ifcs_p3m_tune(void* rd,
   }
 
   FCSResult result = NULL;
-  if (d->comm.rank == 0) {
-    tune_params *params_to_try = NULL;
-    result = ifcs_p3m_tuneit(d, &params_to_try);
-    if (result != NULL) return result;
-    result = ifcs_p3m_time_params(d, num_particles, max_particles, 
-                                  positions, charges, &params_to_try);
-    if (result != NULL) return result;
-  } else 
+  if (d->comm.rank == 0)
+    result = ifcs_p3m_tune_broadcast_master(d, num_particles, max_particles, positions, charges);
+  else 
     result = ifcs_p3m_tune_broadcast_slave(d, num_particles, max_particles, positions, charges);
-
   if (result != NULL) {
     P3M_INFO(printf( "  Tuning failed.\n"));
   } else {
@@ -197,176 +212,288 @@ ifcs_p3m_tune(void* rd,
   return result;
 }
 
-/* Tune the P3M parameters. This is only called on the master node, on
-   the slave nodes, ifcs_p3m_tune_broadcast_slave() is called. */
-static FCSResult
-ifcs_p3m_tuneit(ifcs_p3m_data_struct *d, tune_params **params_to_try) {
-  const char* fnc_name = "ifcs_p3m_tuneit";
-  #ifdef P3M_AD
-  const fcs_int cao_min = 2;
-  #else
-  const fcs_int cao_min = 1;
-  #endif
-  const fcs_int cao_max = 7;
 
-  if (d->comm.rank != 0) {
-    return fcsResult_create
-      (FCS_LOGICAL_ERROR, fnc_name, 
-       "Internal error: Function should not be called on slave node.");
-  }
-    
-  P3M_DEBUG(printf( "  ifcs_p3m_tuneit() started...\n"));
-  
+static FCSResult
+ifcs_p3m_tune_broadcast_master(ifcs_p3m_data_struct *d, 
+                               fcs_int num_particles, fcs_int max_num_particles,
+                               fcs_float *positions, fcs_float *charges) {
   P3M_INFO(printf("  Tuning P3M to p3m_tolerance_field=%" FCS_LMOD_FLOAT "g.\n", \
-		  d->tolerance_field));
+                  d->tolerance_field));
+
+  tune_params *params = NULL;
+  FCSResult result = NULL;
+  
+  result = ifcs_p3m_tune_r_cut_cao_grid(d, num_particles, max_num_particles, 
+                                        positions, charges, &params);
+  
+  /* Set and broadcast the final parameters. */
+  d->r_cut = params->r_cut;
+  d->alpha = params->alpha;
+  d->grid[0] = params->grid[0];
+  d->grid[1] = params->grid[1];
+  d->grid[2] = params->grid[2];
+  d->cao = params->cao;
+  ifcs_p3m_tune_broadcast_command(d, FINISHED);
+
+  /* free the final param set */
+  free(params);
+
+  return result;
+}
+
+static FCSResult
+ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d, 
+                             fcs_int num_particles, fcs_int max_num_particles,
+                             fcs_float *positions, fcs_float *charges,
+                             tune_params **params) {
+  *params = malloc(sizeof(tune_params));
+  (*params)->next_params = NULL;
+  
   if (d->tune_r_cut) {
     /* compute the average distance between two charges  */
     fcs_float avg_dist = pow((d->box_l[0]*d->box_l[1]*d->box_l[2]) 
                              / d->sum_qpart, 0.33333);
-    /* set r_cut to 3 times the average distance between charges */
-    d->r_cut = 3.0 * avg_dist;
+    /* set the initial r_cut to 3 times the average distance between charges */
+    (*params)->r_cut = 3.0 * avg_dist;
     
     /* tune r_cut to half the box length */
-    if (0.5*d->box_l[1]-d->skin < d->r_cut)
-      d->r_cut = 0.5*d->box_l[0] - d->skin;
-    if (0.5*d->box_l[1]-d->skin < d->r_cut)
-      d->r_cut = 0.5*d->box_l[1] - d->skin;
-    if (0.5*d->box_l[2]-d->skin < d->r_cut)
-      d->r_cut = 0.5*d->box_l[2] - d->skin;
+    if (0.5*d->box_l[1]-d->skin < (*params)->r_cut)
+      (*params)->r_cut = 0.5*d->box_l[0] - d->skin;
+    if (0.5*d->box_l[1]-d->skin < (*params)->r_cut)
+      (*params)->r_cut = 0.5*d->box_l[1] - d->skin;
+    if (0.5*d->box_l[2]-d->skin < (*params)->r_cut)
+      (*params)->r_cut = 0.5*d->box_l[2] - d->skin;
 
-    P3M_INFO(printf( "    tuned r_cut to %" FCS_LMOD_FLOAT "f\n", d->r_cut));
+    P3M_INFO(printf( "    Tuned r_cut to %" FCS_LMOD_FLOAT "f\n", (*params)->r_cut));
+  } else {
+    (*params)->r_cut = d->r_cut;
+  }
+   
+  return ifcs_p3m_tune_cao_grid(d, num_particles, max_num_particles, 
+                                positions, charges,
+                                params);
+}
+
+static FCSResult
+ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d, 
+                       fcs_int num_particles, fcs_int max_num_particles,
+                       fcs_float *positions, fcs_float *charges,
+                       tune_params **params) {
+#ifdef P3M_AD
+  const fcs_int cao_min = 2;
+#else
+  const fcs_int cao_min = 1;
+#endif
+
+  if (d->tune_cao) {
+    for (tune_params *p = *params; p != NULL; p = p->next_params) {
+      p->cao = P3M_MAX_CAO;
+      for (fcs_int cao = P3M_MAX_CAO-1; cao >= cao_min; cao--) {
+        // Insert new param set
+        tune_params *pnew = malloc(sizeof(tune_params));
+        pnew->r_cut = p->r_cut;
+        pnew->cao = cao;
+        pnew->next_params = p->next_params;
+        p->next_params = pnew;
+        p = pnew;
+      }
+    }
+  } else {
+    // Set cao in param set
+    for (tune_params *p = *params; p != NULL; p = p->next_params)
+      p->cao = d->cao;
   }
 
-  /* @todo Non-cubic case */
-  /* @todo Tune only grid or only cao */
-  if (!d->tune_grid && !d->tune_cao) {
-    /* TUNE ONLY ALPHA */
-    ifcs_p3m_compute_error_and_tune_alpha(d);
-  } else if (d->tune_cao && d->tune_grid) {
-    /* TUNE CAO AND GRID */
-    P3M_INFO(printf( "    Tuning grid and cao.\n"));
-    d->cao = cao_max;
-    /* find smallest possible grid */
-    P3M_DEBUG(printf( "    Finding the minimal grid at maximal cao...\n"));
-    fcs_int lower_ix = 0;
-    fcs_int upper_ix = 0;
-    while (1) {
-      /* advance to next good gridsize step */
-      while (good_gridsize[upper_ix] > 0) upper_ix++;
-      fcs_int grid1d = good_gridsize[upper_ix-1];
-      if (grid1d == -1) break;
-      /* test the gridsize */
-      d->grid[0] = grid1d;
-      d->grid[1] = grid1d;
-      d->grid[2] = grid1d;
-      P3M_INFO(printf( "      Testing grid=%d...\n", grid1d));
-      ifcs_p3m_compute_error_and_tune_alpha(d);
-      if (d->error < d->tolerance_field) {
-        upper_ix--;
-        break;
-      }
+  return ifcs_p3m_tune_grid(d, num_particles, max_num_particles, 
+                            positions, charges,
+                            params);
+}
+
+/* params_to_try with identical r_cut should be adjacent and have decreasing cao */
+static FCSResult
+ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d, 
+                   fcs_int num_particles, fcs_int max_num_particles,
+                   fcs_float *positions, fcs_float *charges,
+                   tune_params **params) {
+  if (d->tune_grid) {
+    fcs_int step_ix = 0;
+    // store the minimal grid size seen so far
+    fcs_int min_grid1d = good_gridsize[step_good_gridsize[num_steps_good_gridsize-1]];
+    // store the last param set, so that we can compare it to the current one
+    tune_params **last_p = NULL;
+    tune_params **p = params;
+    while (*p != NULL) {
+
+      // Find smallest possible grid for this set of parameters
+      // Test whether accuracy can be achieved with given parameters
+      d->r_cut = (*p)->r_cut;
+      d->cao = (*p)->cao;
+
+      // reset the step only if r_cut has changed
+      if (last_p == NULL || (*last_p)->r_cut != (*p)->r_cut)
+        step_ix = 0;
       
-      lower_ix = upper_ix+1;
-      upper_ix++;
-    }
-    
-    if (d->error < d->tolerance_field) {
-      /* now the right gridsize is between lower_ix and upper_ix */
-      /* bisect to find the right size */
-      while (lower_ix+1 < upper_ix) {
-        fcs_int test_ix = (lower_ix+upper_ix)/2;
-        fcs_int grid1d = good_gridsize[test_ix];
-        
-        /* test the gridsize */
+      fcs_int upper_ix;
+      // test this step
+      P3M_INFO(printf("    Trying to find grid for r_cut=%" FCS_LMOD_FLOAT \
+                      "f cao=%" FCS_LMOD_INT "d\n",                     \
+                      d->r_cut, d->cao));
+      do {
+        step_ix++;
+        if (step_ix >= num_steps_good_gridsize) break;
+        upper_ix = step_good_gridsize[step_ix];
+        fcs_int grid1d = good_gridsize[upper_ix];
         d->grid[0] = grid1d;
         d->grid[1] = grid1d;
         d->grid[2] = grid1d;
-        P3M_INFO(printf( "      Testing grid=%d...\n", grid1d));
-        fcs_float error_before = d->error;
-        fcs_float rs_error_before = d->rs_error;
-        fcs_float ks_error_before = d->ks_error;
+        P3M_DEBUG(printf("      rough grid=%" FCS_LMOD_INT "d\n", grid1d));
         ifcs_p3m_compute_error_and_tune_alpha(d);
+        (*p)->error = d->error;
+        (*p)->rs_error = d->rs_error;
+        (*p)->ks_error = d->ks_error;
+        P3M_DEBUG(printf("        => alpha=%" FCS_LMOD_FLOAT \
+                         "f error=%" FCS_LMOD_FLOAT "e\n", d->alpha, d->error));
+      } while (d->error > d->tolerance_field);
+
+      // reached largest possible grid, remove this parameter set
+      if (step_ix >= num_steps_good_gridsize) {
+        P3M_INFO(printf("    Too large grid size, skipping parameter set.\n"));
+        tune_params *ptmp = *p;
+        *p = (*p)->next_params;
+        free(ptmp);
+        // also remove all params with the same r_cut
+        while (*p != NULL && (*p)->r_cut == d->r_cut) {
+          ptmp = *p;
+          *p = (*p)->next_params;
+          free(ptmp);
+        }
+        continue;
+      }
+
+      // error would be small enough at upper_ix, but not at lower_ix,
+      // so bisect to find optimal gridsize
+      fcs_int lower_ix = step_good_gridsize[step_ix-1];
+      while (lower_ix+1 < upper_ix) {
+        fcs_int test_ix = (lower_ix+upper_ix)/2;
+        fcs_int grid1d = good_gridsize[test_ix];
+        d->grid[0] = grid1d;
+        d->grid[1] = grid1d;
+        d->grid[2] = grid1d;
+        P3M_DEBUG(printf("      fine grid=%" FCS_LMOD_INT "d\n", grid1d));
+        ifcs_p3m_compute_error_and_tune_alpha(d);
+        P3M_DEBUG(printf("          => alpha=%" FCS_LMOD_FLOAT          \
+                         "f error=%" FCS_LMOD_FLOAT "e\n", d->alpha, d->error));
         if (d->error < d->tolerance_field) {
           // parameters achieve error
           upper_ix = test_ix;
+          (*p)->error = d->error;
+          (*p)->rs_error = d->rs_error;
+          (*p)->ks_error = d->ks_error;
         } else {
           // parameters do not achieve error
           lower_ix = test_ix;
-          // return old errors
-          d->error = error_before;
-          d->ks_error = ks_error_before;
-          d->rs_error = rs_error_before;
         }
       }
 
-      /* now the right size is at upper_ix */
+      // now the right size is at upper_ix
       fcs_int grid1d = good_gridsize[upper_ix];
-      
-      d->grid[0] = grid1d;
-      d->grid[1] = grid1d;
-      d->grid[2] = grid1d;
-      P3M_DEBUG(printf( "    => minimal grid=(%d, %d, %d)\n",   \
-                        d->grid[0], d->grid[1], d->grid[2]));
-      
-      /* find smallest possible value of cao */
-      P3M_DEBUG(printf( "    Finding minimal cao...\n"));
-      for (d->cao = cao_min; d->cao <= cao_max; d->cao++) {
-        P3M_INFO(printf( "      Testing cao=%d\n", d->cao));
-        ifcs_p3m_compute_error_and_tune_alpha(d);
-        if (d->error < d->tolerance_field) break;
+
+      // store the new grid size and alpha
+      if (min_grid1d > grid1d) min_grid1d = grid1d;
+
+      (*p)->alpha = d->alpha;
+      (*p)->grid[0] = grid1d;
+      (*p)->grid[1] = grid1d;
+      (*p)->grid[2] = grid1d;
+      P3M_INFO(printf( "      => grid=(%" FCS_LMOD_INT                    \
+                       "d, %" FCS_LMOD_INT                              \
+                       "d, %" FCS_LMOD_INT                              \
+                       "d), alpha=%" FCS_LMOD_FLOAT                     \
+                       "f error=%" FCS_LMOD_FLOAT "e\n",                \
+                       (*p)->grid[0], (*p)->grid[1], (*p)->grid[2],     \
+                       (*p)->alpha, (*p)->error));
+
+      // decrease step_ix so that the same step_ix is tested for the
+      // next param set
+      step_ix--;
+
+      // compare grid size to previous data set
+      // if it is larger than double any previous size, remove it
+      if (2*min_grid1d < grid1d) {
+        P3M_INFO(printf("      grid to large => removing data set\n"));
+        tune_params *tmp = *p;
+        *p = (*p)->next_params;
+        free(tmp);
+        continue;
+      } 
+      // compare grid size and cao to previous data set
+      // if previous param set has identical r_cut but larger or equal cao and/or grid, 
+      // remove it
+      else if (last_p != NULL && (*last_p)->r_cut == (*p)->r_cut 
+               && (*last_p)->cao >= (*p)->cao && (*last_p)->grid[0] >= (*p)->grid[0]) {
+        P3M_INFO(printf("      better than previous => removing previous data set\n"));
+        tune_params *tmp = *last_p;
+        *last_p = *p;
+        free(tmp);
+      } else {
+        last_p = p;
       }
+
+      // advance to next parameter set
+      p = &((*p)->next_params);
+    }
+
+  } else {
+
+    // fixed grid
+    for (tune_params **p = params; *p != NULL; p = &((*p)->next_params)) {
+      // test whether accuracy can be achieved with given parameters
+      // d->grid already contains the wanted grid
+      d->cao = (*p)->cao;
+      d->r_cut = (*p)->r_cut;
+      ifcs_p3m_compute_error_and_tune_alpha(d);
       if (d->error < d->tolerance_field) {
-        P3M_DEBUG(printf( "    => minimal cao=%d\n", d->cao));
-
-        tune_params *params = malloc(sizeof(tune_params));
-        params->cao = d->cao;
-        params->grid[0] = d->grid[0];
-        params->grid[1] = d->grid[1];
-        params->grid[2] = d->grid[2];
-        params->alpha = d->alpha;
-        params->r_cut = d->r_cut;
-
-        params->next_params = *params_to_try;
-        *params_to_try = params;
+        // error is small enough for this parameter set, so keep it
+        (*p)->grid[0] = d->grid[0];
+        (*p)->grid[1] = d->grid[1];
+        (*p)->grid[2] = d->grid[2];
+      } else {
+        // otherwise remove this parameter set
+        tune_params *ptmp = *p;
+        p = &((*p)->next_params);
+        free(ptmp);
       }
     }
   }
 
-  /* Now we should have the best possible set of parameters. */
-
-  /* If the error is still larger than the tolerance, we did not get a
-     valid parameter set, so we should bail out. */
-  if (d->error > d->tolerance_field) {
-    /* Broadcast that tuning failed. */
-    ifcs_p3m_tune_broadcast_command(d, FAILED);
-
-    char msg[255];
-    sprintf(msg, 
-	    "Cannot achieve required accuracy (p3m_tolerance_field=%" 
-            FCS_LMOD_FLOAT 
-            "e) for given parameters.", 
-	    d->tolerance_field);
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, msg);
-  }
-
-  P3M_DEBUG(printf( "  ifcs_p3m_tuneit() finished.\n"));
-
-  return NULL;
+  return ifcs_p3m_time_params(d, num_particles, max_num_particles, 
+                              positions, charges,
+                              params);
 }
 
 static FCSResult
 ifcs_p3m_time_params(ifcs_p3m_data_struct *d,
                      fcs_int num_particles, fcs_int max_particles,
                      fcs_float *positions, fcs_float *charges,
-                     tune_params **params_to_try) {
+                     tune_params **params) {
   const char* fnc_name = "ifcs_p3m_time_params";
 
   /* Now time the different parameter sets */
   tune_params *best_params = NULL;
-  tune_params *current_params = *params_to_try;
   double best_time = 1.e100;
 
-  while (current_params != NULL) {
+#ifdef FCS_ENABLE_INFO
+  fcs_int num_params=0;
+  for (tune_params *current_params = *params;
+       current_params != NULL;  
+       current_params = current_params->next_params)
+    num_params++;
+  printf("Timing %d param sets...\n", num_params);
+#endif
+
+  for (tune_params *current_params = *params;
+       current_params != NULL;  
+       current_params = current_params->next_params) {
     /* use the parameters */
     d->r_cut = current_params->r_cut;
     d->alpha = current_params->alpha;
@@ -377,14 +504,15 @@ ifcs_p3m_time_params(ifcs_p3m_data_struct *d,
     
     fcs_float timing = 
       ifcs_p3m_timing(d, num_particles, max_particles, positions, charges);
-    P3M_INFO(printf( "  Timing (r_cut=%" FCS_LMOD_FLOAT                 \
+    current_params->timing = timing;
+    P3M_INFO(printf( "  Timing r_cut=%" FCS_LMOD_FLOAT                  \
                      "f, alpha=%" FCS_LMOD_FLOAT                        \
                      "f, grid=(%" FCS_LMOD_INT                          \
                      "d, %" FCS_LMOD_INT                                \
                      "d, %" FCS_LMOD_INT                                \
                      "d), cao=%" FCS_LMOD_INT                           \
                      "d => timing=%" FCS_LMOD_FLOAT                     \
-                     "f)\n",                                            \
+                     "f\n",                                             \
                      d->r_cut, d->alpha,                                \
                      d->grid[0], d->grid[1], d->grid[2],                \
                      d->cao, timing));
@@ -393,30 +521,22 @@ ifcs_p3m_time_params(ifcs_p3m_data_struct *d,
       best_time = timing;
       best_params = current_params;
     }
-
-    current_params = current_params->next_params;
   }
 
   if (best_params == NULL)
     return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Internal error: No best timing.");
 
-  /* Set and broadcast the final parameters. */
-  d->r_cut = best_params->r_cut;
-  d->alpha = best_params->alpha;
-  d->grid[0] = best_params->grid[0];
-  d->grid[1] = best_params->grid[1];
-  d->grid[2] = best_params->grid[2];
-  d->cao = best_params->cao;
-  ifcs_p3m_tune_broadcast_command(d, FINISHED);
-
-  /* Free the list */
-  current_params = *params_to_try;
+  /* Free the list, keep only the best */
+  tune_params *current_params = *params;
   while (current_params != NULL) {
     tune_params *next_params = current_params->next_params;
-    free(current_params);
+    if (current_params != best_params)
+      free(current_params);
     current_params = next_params;
   }
-  *params_to_try = NULL;
+
+  best_params->next_params = NULL;
+  *params = best_params;
 
   return NULL;
 }
