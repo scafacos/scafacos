@@ -395,7 +395,8 @@ static fcs_float theta(
     fcs_float x, fcs_float k, fcs_float alpha
     )
 {
-  return exp(2*FCS_PI*k*x) * (1-erf(FCS_PI*k/alpha + alpha*x)); /* use erf instead of erfc to fix ICC performance problems */
+  fcs_float arg = FCS_PI*k*x;
+  return (arg > 18) ? 0.0 : exp(2*arg) * (1-erf(FCS_PI*k/alpha + alpha*x)); /* use erf instead of erfc to fix ICC performance problems */
 }
 
 static fcs_float theta_p(
