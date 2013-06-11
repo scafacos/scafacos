@@ -237,6 +237,7 @@ FCSResult memd_tune_method(void* rawdata, fcs_int local_particles, fcs_float* po
     memd_set_speed_of_light(rawdata, lightspeed);
     memd_set_mesh_size_1D(rawdata, meshsize1D);
     memd_set_time_step(rawdata, timestep);
+//    printf("mesh_size_1D: %d\n", meshsize1D);
     
     memd_set_permittivity(rawdata, epsilon);
     memd_set_temperature(rawdata, temperature);
