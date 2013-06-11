@@ -331,35 +331,6 @@ FCSResult ifcs_p2nfft_tune(
       }
       d->one_over_r_cut = 1.0/d->r_cut;
 
-      if(d->tune_epsB){
-        /* only one dimension has npbc, choose this one to set epsB */
-        for(int t=0; t<3; t++)
-          if(!periodicity[t])
-            d->epsB = (fcs_float)d->p/d->n[t];
-        if(d->epsB > 0.125)
-          d->epsB = 0.125;
-      }
-
-      for(int t=0; t<3; t++){
-        /* calculate box_scales depending on boundary condition */
-        if(d->periodicity[t]){
-          /* shift and scale coordinates into [-0.5,0.5) */
-          d->box_scales[t] = d->box_l[t];
-        } else {
-          /* shift and scale coordinates into sphere with radius (0.5-epsB) */
-          d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB) * fcs_sqrt(d->num_nonperiodic_dims) ;
-        }
-
-        /* calculate box_shifts are the same for periodic and non-periodic boundary conditions */
-        d->box_shifts[t] = d->box_l[t] / 2.0;
-        
-        /* use full torus for periodic boundary conditions, otherwise use appropriate scaling */
-        if(d->periodicity[t])
-          d->x_max[t] = 0.5;
-        else
-          d->x_max[t] = 0.5 * d->box_l[t] / d->box_scales[t];
-      }
-      
       /* Tune alpha for fixed N and m. */
       if(!d->tune_N && !d->tune_m){
         if(d->tune_alpha)
@@ -469,6 +440,35 @@ FCSResult ifcs_p2nfft_tune(
         for(int t=0; t<3; t++)
           if(d->N[t] > d->n[t] )
             return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize is not allowed to be less than normal gridsize.");
+      }
+
+      if(d->tune_epsB){
+        /* only one dimension has npbc, choose this one to set epsB */
+        for(int t=0; t<3; t++)
+          if(!periodicity[t])
+            d->epsB = (fcs_float)d->p/d->n[t];
+        if(d->epsB > 0.125)
+          d->epsB = 0.125;
+      }
+
+      for(int t=0; t<3; t++){
+        /* calculate box_scales depending on boundary condition */
+        if(d->periodicity[t]){
+          /* shift and scale coordinates into [-0.5,0.5) */
+          d->box_scales[t] = d->box_l[t];
+        } else {
+          /* shift and scale coordinates into sphere with radius (0.5-epsB) */
+          d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB) * fcs_sqrt(d->num_nonperiodic_dims) ;
+        }
+
+        /* calculate box_shifts are the same for periodic and non-periodic boundary conditions */
+        d->box_shifts[t] = d->box_l[t] / 2.0;
+        
+        /* use full torus for periodic boundary conditions, otherwise use appropriate scaling */
+        if(d->periodicity[t])
+          d->x_max[t] = 0.5;
+        else
+          d->x_max[t] = 0.5 * d->box_l[t] / d->box_scales[t];
       }
       
 #if FCS_ENABLE_INFO
