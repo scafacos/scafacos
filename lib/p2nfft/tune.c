@@ -42,6 +42,9 @@
 #define FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE 0
 #define FCS_P2NFFT_ENABLE_TUNING_BUG 0
 
+fcs_float inc_bessel_k(
+    fcs_int nu, fcs_float x, fcs_float y);
+
 /* FORWARD DECLARATIONS OF STATIC FUNCTIONS */
 #if FCS_ENABLE_INFO 
 static void print_command_line_arguments(
@@ -180,6 +183,20 @@ FCSResult ifcs_p2nfft_tune(
   fcs_int i, num_particles;
   fcs_float sum_q, sum_q2, sum_q_abs, avg_dist, error=0;
   FCSResult result;
+
+  fcs_int nu = 1;
+  fcs_float x = 0.01, y = 4;
+  nu = 0; x = 0.01; y = 4;
+  fprintf(stderr, "inc_bessel_K(%d, %f, %f) = %e\n", nu, x, y, inc_bessel_k(nu, x, y));
+  nu = 1; x = 0.01; y = 4;
+  fprintf(stderr, "inc_bessel_K(%d, %f, %f) = %e\n", nu, x, y, inc_bessel_k(nu, x, y));
+  nu = 2; x = 0.01; y = 4;
+  fprintf(stderr, "inc_bessel_K(%d, %f, %f) = %e\n", nu, x, y, inc_bessel_k(nu, x, y));
+  nu = 6; x = 10; y = 2;
+  fprintf(stderr, "inc_bessel_K(%d, %f, %f) = %e\n", nu, x, y, inc_bessel_k(nu, x, y));
+  nu = 8; x = 1; y = 1;
+  fprintf(stderr, "inc_bessel_K(%d, %f, %f) = %e\n", nu, x, y, inc_bessel_k(nu, x, y));
+
 
 #if FCS_P2NFFT_DEBUG_RETUNE
   if(local_needs_retune)
@@ -2219,4 +2236,104 @@ static fcs_float compute_alias_k(
   return alias_k;
 }
 #endif
+
+
+/** factorial */
+static fcs_float fac(fcs_int n)
+{
+  if (n<=1) return 1.0;
+  else return (fcs_float)n*fac(n-1);
+}
+
+/** binomial coefficient */
+static fcs_float binom(fcs_int n, fcs_int m)
+{
+  return fac(n)/fac(m)/fac(n-m);
+}
+
+/* General recursion formula for coefficients of the G transform */
+static fcs_int A(
+    fcs_int nu, fcs_int i, fcs_int k
+    )
+{
+  /* Set mu and m suitable to the Bessel-K approximation */
+  fcs_int mu = -2, m = 0, n = 0;
+
+  if(k<i)
+    fprintf(stderr, "Error in computation of G transform coefficients A(i,k): k < i is not valid\n");
+
+  if(i==k)
+    return 1;
+
+  if(i==0)
+    return (n - nu - (k-1)*(mu+1)) * A(nu, 0, k-1);
+  else
+    return (n - nu + i*(m+1) - (k-1)*(mu+1)) * A(nu, i, k-1) + A(nu, i-1, k-1);
+}
+
+static fcs_float D(
+    fcs_int k, fcs_float x, fcs_float y, fcs_int nu
+    )
+{
+  fcs_float sum = 0.0;
+
+  for(int i=0; i<=k; i++)
+    sum += A(-nu-1, i, k) * fcs_pow(x,i);
+
+  return fcs_pow(x,nu+1+k) * fcs_exp(x+y) * sum;
+}
+static fcs_float D_tilde(
+    fcs_int n, fcs_float x, fcs_float y, fcs_int nu
+    )
+{
+  fcs_float sum1, sum2;
+
+  sum1 = 0.0;
+  for(fcs_int r=0; r<=n; r++){
+    sum2 = 0.0;
+    for(fcs_int i=0; i<=r; i++)
+      sum2 += A(-nu-1,i,r) * fcs_pow(x,i);
+    sum1 += binom(n,r) * fcs_pow(-y,-r) * sum2;
+  }
+
+  return fcs_pow(-x*y,n) * fcs_pow(x,nu+1) * fcs_exp(x+y) * sum1;
+}
+
+static fcs_float N_tilde(
+    fcs_int n, fcs_float x, fcs_float y, fcs_int nu
+    )
+{
+  fcs_float sum1, sum2, sum3;
+
+  sum1 = 0.0;
+  for(fcs_int r=1; r<=n; r++){
+    sum2 = 0.0;
+    for(fcs_int s=0; s<=r-1; s++){
+      sum3 = 0.0;
+      for(fcs_int i=0; i<=s; i++)
+        sum3 += A(nu-1,i,s) * fcs_pow(-x,i);
+      sum2 += binom(r-1,s) * fcs_pow(y,-s) * sum3;
+    }
+    sum1 += binom(n,r) * D(n-r,x,y,nu) * fcs_pow(x*y,r) * sum2;
+  }
+
+  return fcs_exp(-x-y)/(fcs_pow(x,nu)*y) * sum1;
+}
+
+static fcs_float G_tilde(
+    fcs_int n, fcs_float x, fcs_float y, fcs_int nu
+    )
+{
+  return fcs_pow(x,nu) * N_tilde(n,x,y,nu) / D_tilde(n,x,y,nu);
+} 
+
+fcs_float inc_bessel_k(
+    fcs_int nu, fcs_float x, fcs_float y
+    )
+{
+  fcs_int n = 2;
+  return G_tilde(n,x,y,nu);
+}
+
+
 
