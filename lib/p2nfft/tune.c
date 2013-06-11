@@ -335,7 +335,7 @@ FCSResult ifcs_p2nfft_tune(
         /* only one dimension has npbc, choose this one to set epsB */
         for(int t=0; t<3; t++)
           if(!periodicity[t])
-            d->epsB = (fcs_float)d->p/d->N[t];
+            d->epsB = (fcs_float)d->p/d->n[t];
         if(d->epsB > 0.125)
           d->epsB = 0.125;
       }
