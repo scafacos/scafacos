@@ -43,7 +43,7 @@
 #define FCS_P2NFFT_ENABLE_TUNING_BUG 0
 
 fcs_float inc_bessel_k(
-    fcs_int nu, fcs_float x, fcs_float y);
+    fcs_float nu, fcs_float x, fcs_float y);
 
 /* FORWARD DECLARATIONS OF STATIC FUNCTIONS */
 #if FCS_ENABLE_INFO 
@@ -184,18 +184,20 @@ FCSResult ifcs_p2nfft_tune(
   fcs_float sum_q, sum_q2, sum_q_abs, avg_dist, error=0;
   FCSResult result;
 
-  fcs_int nu = 1;
+  fcs_float nu = 1;
   fcs_float x = 0.01, y = 4;
   nu = 0; x = 0.01; y = 4;
-  fprintf(stderr, "inc_bessel_K(%d, %f, %f) = %e\n", nu, x, y, inc_bessel_k(nu, x, y));
-  nu = 1; x = 0.01; y = 4;
-  fprintf(stderr, "inc_bessel_K(%d, %f, %f) = %e\n", nu, x, y, inc_bessel_k(nu, x, y));
-  nu = 2; x = 0.01; y = 4;
-  fprintf(stderr, "inc_bessel_K(%d, %f, %f) = %e\n", nu, x, y, inc_bessel_k(nu, x, y));
+  fprintf(stderr, "inc_bessel_K(%f, %f, %f) = %.16e\n", nu, x, y, inc_bessel_k(nu, x, y));
+//   nu = 1; x = 0.01; y = 4;
+//   fprintf(stderr, "inc_bessel_K(%f, %f, %f) = %.16e\n", nu, x, y, inc_bessel_k(nu, x, y));
+//   nu = 2; x = 0.01; y = 4;
+//   fprintf(stderr, "inc_bessel_K(%f, %f, %f) = %.16e\n", nu, x, y, inc_bessel_k(nu, x, y));
   nu = 6; x = 10; y = 2;
-  fprintf(stderr, "inc_bessel_K(%d, %f, %f) = %e\n", nu, x, y, inc_bessel_k(nu, x, y));
+  fprintf(stderr, "inc_bessel_K(%f, %f, %f) = %.16e\n", nu, x, y, inc_bessel_k(nu, x, y));
+  nu = 5; x = 3.1; y = 2.6;
+  fprintf(stderr, "inc_bessel_K(%f, %f, %f) = %.16e\n", nu, x, y, inc_bessel_k(nu, x, y));
   nu = 8; x = 1; y = 1;
-  fprintf(stderr, "inc_bessel_K(%d, %f, %f) = %e\n", nu, x, y, inc_bessel_k(nu, x, y));
+  fprintf(stderr, "inc_bessel_K(%f, %f, %f) = %.16e\n", nu, x, y, inc_bessel_k(nu, x, y));
 
 
 #if FCS_P2NFFT_DEBUG_RETUNE
@@ -2252,13 +2254,10 @@ static fcs_float binom(fcs_int n, fcs_int m)
 }
 
 /* General recursion formula for coefficients of the G transform */
-static fcs_int A(
-    fcs_int nu, fcs_int i, fcs_int k
+static fcs_float A(
+    fcs_float nu, fcs_int i, fcs_int k
     )
 {
-  /* Set mu and m suitable to the Bessel-K approximation */
-  fcs_int mu = -2, m = 0, n = 0;
-
   if(k<i)
     fprintf(stderr, "Error in computation of G transform coefficients A(i,k): k < i is not valid\n");
 
@@ -2266,24 +2265,13 @@ static fcs_int A(
     return 1;
 
   if(i==0)
-    return (n - nu - (k-1)*(mu+1)) * A(nu, 0, k-1);
+    return (-nu + k-1) * A(nu, 0, k-1);
   else
-    return (n - nu + i*(m+1) - (k-1)*(mu+1)) * A(nu, i, k-1) + A(nu, i-1, k-1);
+    return (-nu + i + k-1) * A(nu, i, k-1) + A(nu, i-1, k-1);
 }
 
-static fcs_float D(
-    fcs_int k, fcs_float x, fcs_float y, fcs_int nu
-    )
-{
-  fcs_float sum = 0.0;
-
-  for(int i=0; i<=k; i++)
-    sum += A(-nu-1, i, k) * fcs_pow(x,i);
-
-  return fcs_pow(x,nu+1+k) * fcs_exp(x+y) * sum;
-}
 static fcs_float D_tilde(
-    fcs_int n, fcs_float x, fcs_float y, fcs_int nu
+    fcs_int n, fcs_float x, fcs_float y, fcs_float nu, fcs_int Npt, fcs_float *pt
     )
 {
   fcs_float sum1, sum2;
@@ -2293,14 +2281,14 @@ static fcs_float D_tilde(
     sum2 = 0.0;
     for(fcs_int i=0; i<=r; i++)
       sum2 += A(-nu-1,i,r) * fcs_pow(x,i);
+//     sum1 += pt[r + Npt*n] * fcs_pow(-y,-r) * sum2;
     sum1 += binom(n,r) * fcs_pow(-y,-r) * sum2;
   }
-
   return fcs_pow(-x*y,n) * fcs_pow(x,nu+1) * fcs_exp(x+y) * sum1;
 }
 
 static fcs_float N_tilde(
-    fcs_int n, fcs_float x, fcs_float y, fcs_int nu
+    fcs_int n, fcs_float x, fcs_float y, fcs_float nu, fcs_int Npt, fcs_float *pt
     )
 {
   fcs_float sum1, sum2, sum3;
@@ -2312,27 +2300,84 @@ static fcs_float N_tilde(
       sum3 = 0.0;
       for(fcs_int i=0; i<=s; i++)
         sum3 += A(nu-1,i,s) * fcs_pow(-x,i);
+//       sum2 += pt[s + Npt*(r-1)] * fcs_pow(y,-s) * sum3;
       sum2 += binom(r-1,s) * fcs_pow(y,-s) * sum3;
     }
-    sum1 += binom(n,r) * D(n-r,x,y,nu) * fcs_pow(x*y,r) * sum2;
+//     sum1 += pt[r+ Npt*n] * D_tilde(n-r,x,y,nu,Npt,pt) * fcs_pow(x*y,r) * sum2;
+    sum1 += binom(n,r) * D_tilde(n-r,x,y,nu,Npt,pt) * fcs_pow(x*y,r) * sum2;
   }
 
   return fcs_exp(-x-y)/(fcs_pow(x,nu)*y) * sum1;
 }
 
 static fcs_float G_tilde(
-    fcs_int n, fcs_float x, fcs_float y, fcs_int nu
+    fcs_int n, fcs_float x, fcs_float y, fcs_float nu, fcs_int Npt, fcs_float *pt
     )
 {
-  return fcs_pow(x,nu) * N_tilde(n,x,y,nu) / D_tilde(n,x,y,nu);
+//   fprintf(stderr, "N%d = %e, D%d = %e\n", n, fcs_pow(x,nu) * N_tilde(n,x,y,nu,Npt,pt), n, D_tilde(n,x,y,nu,Npt,pt));
+  return fcs_pow(x,nu) * (N_tilde(n,x,y,nu,Npt,pt) / D_tilde(n,x,y,nu,Npt,pt));
 } 
 
-fcs_float inc_bessel_k(
-    fcs_int nu, fcs_float x, fcs_float y
+static fcs_float bessel_k(
+    fcs_float nu, fcs_float z
     )
 {
-  fcs_int n = 2;
-  return G_tilde(n,x,y,nu);
+  return 0;
+}
+
+
+fcs_float inc_bessel_k(
+    fcs_float nu, fcs_float x, fcs_float y
+    )
+{
+//   fcs_int n = 10;
+//   return G_tilde(n,x,y,nu);
+
+  fcs_int n = 1, n_max = 27;
+  fcs_float err = 1.0, val_new, val_old;
+  fcs_float *pt;
+  fcs_int Npt = n_max+1;
+
+  /* init Pascal's triangle */
+  pt = malloc(sizeof(fcs_float)*Npt*Npt);
+  pt[0] = 1;
+  pt[0 + Npt] = pt[1 + Npt] = 1;
+
+
+//   return G_tilde(10,x,y,nu,Npt,pt);
+
+  if(x<y)
+    val_new = G_tilde(n,y,x,-nu,Npt,pt);
+  else
+    val_new = G_tilde(n,x,y,nu,Npt,pt);
+
+  while(err > 1e-10){
+    if(n >= n_max){
+      fprintf(stderr, "Inc_Bessel_K: Cannot reach accuracy within %d iterations.\n", n_max);
+      break;
+    }
+    n++;
+
+    /* compute next line of Pascal's triangle */
+    for(fcs_int t=1; t<n; t++)
+      pt[t + Npt*n] = pt[t-1 + Npt*(n-1)] + pt[t + Npt*(n-1)]; 
+    pt[n + Npt*n] = 1;
+
+    val_old = val_new;
+    if(x<y)
+      val_new = G_tilde(n,y,x,-nu,Npt,pt);
+    else
+      val_new = G_tilde(n,x,y,nu,Npt,pt);
+    err = fabs(val_new - val_old);
+    fprintf(stderr, "err = %e\n", err);
+  }
+
+  free(pt);
+  fprintf(stderr, "n = %d, val = %e, err %e\n", n, val_new, err);
+  if(x<y)
+    return 2 * fcs_pow(x/y, nu/2) * bessel_k(nu, 2*fcs_sqrt(x*y)) - val_new;
+  else
+    return val_new;
 }
 
 
