@@ -34,6 +34,7 @@ libfcs_p2nfft_a_SOURCES = \
 	init.c init.h \
 	tune.c tune.h \
 	run.c run.h \
+	bessel_k.c bessel_k.h \
 	parameters.c parameters.h \
 	nearfield.c nearfield.h \
 	kernels.c kernels.h \

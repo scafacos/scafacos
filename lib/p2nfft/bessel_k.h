@@ -17,16 +17,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _P2NFFT_INC_BESSEL_K_H_
-#define _P2NFFT_INC_BESSEL_K_H_
+#ifndef _P2NFFT_BESSEL_K_H_
+#define _P2NFFT_BESSEL_K_H_
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include "FCSCommon.h"
+#include "FCSDefinitions.h"
+
 fcs_float ifcs_p2nfft_bessel_k(
     fcs_float nu, fcs_float x);
-fcs_float ifcs_p2nfft_inc_bessel_k(
+fcs_float ifcs_p2nfft_inc_lower_bessel_k(
     fcs_float nu, fcs_float x, fcs_float y, fcs_float eps);
+fcs_float ifcs_p2nfft_inc_upper_bessel_k(
+    fcs_float nu, fcs_float x, fcs_float y, fcs_float eps);
+void ifcs_p2nfft_plot_slavinsky_safouhi_table(
+    void);
 
 #endif

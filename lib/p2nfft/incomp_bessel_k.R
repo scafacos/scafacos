@@ -358,21 +358,14 @@ besselK_inc_ite <- function(x, y, lambda, traceIBF = TRUE,
   return(Cnp)
   }
   DENOM <- function(n, x, y ,lambda, An, nmax, Cnp){
-    cat("x:", x, "\n")
-    cat("y:", y, "\n")
-    cat("lambda:", lambda, "\n")
     GN <- 0
       for (j in 0:n){
         terme <- 0
         for (i in 0:j){
           terme <- terme + An[j + 1, i + 1] * x^i
-#           if(j>=9) cat("sum2 for j=", j, ": ", terme, "\n")
-#           if(j>=9) cat("An for j=", j, ": ", An[j+1,i+1], "\n")
         }
-        cat("sum2 for j=", j, ": ", terme, "\n")
         GN <- GN + Cnp[n * (n + 1)/2 + j + 1] * (-1/y)^j * terme
       }
-      cat("sum1:", GN, "\n")
       GN <- GN  * (-x * y)^n * x^(lambda + 1) * exp(x + y)
       return(GN)
   }
