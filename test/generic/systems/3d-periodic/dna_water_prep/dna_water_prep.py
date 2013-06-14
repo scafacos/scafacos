@@ -18,7 +18,13 @@ xmlfilename = 'dna_water_prep.xml.gz'
 L = 54.104
 
 # prefactor for lengths in scafacos system
-length_prefactor = 1.0/(4.0*math.pi)
+q = 1.602176565e-19        # [C] = [A*s]
+eps0 = 8.85418781762e-12   # [A*s/(V*m)]
+k = 1.3806488e-23          # [J/K] = [C*V/K] = [kg*m/(s^2*K)]
+T = 300.0                  # [K]
+l = 1.0e-10                # [m]
+dt = 10.0e-15              # [s]
+length_prefactor = q**2 / ( l**2 * 4.0 * math.pi * eps0 *k*T) * dt
 
 # READ PDB FILE
 print('Reading %s...' % pdbfilename)
