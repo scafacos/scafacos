@@ -41,6 +41,7 @@ void memd_assign_charges(memd_struct* memd, fcs_int local_num_real_particles, fc
         FOR3D(k) cell_shift[k] = (int) floor(
                     (part_position[k] - memd->lparams.left_down_position[k])
                                              / memd->parameters.a );
+        printf("lparams.dim: %d %d %d\n", memd->lparams.dim[0], memd->lparams.dim[1], memd->lparams.dim[2]);
         cell_id = maggs_get_linear_index(cell_shift[0], cell_shift[1], cell_shift[2], memd->lparams.dim);
         printf("cell_id: %d\n", cell_id);
 /*
