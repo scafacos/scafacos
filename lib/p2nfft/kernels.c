@@ -28,6 +28,7 @@
 #endif
 
 #include "kernels.h"
+#include <gsl/gsl_sf_gamma.h>
 
 FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_gaussian(fcs_float x, fcs_int der, const fcs_float *param)    /* K(x)=exp(-x^2/c^2) */
 {
@@ -488,12 +489,12 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_x_times_erf(fcs_float x, fcs_int der, const f
 }
 
 
-FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_gamma_zero(fcs_float x, fcs_int der, const fcs_float *param) /* K(x) = Gamma(0,x) */
+FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_gamma_zero(fcs_float r, fcs_int der, const fcs_float *param) /* K(x) = Gamma(0,x) */
 {
   /* This code was generated with Mathematica. */
   fcs_float value=0.0;
   switch(der){
-    case 0: return gamma(0,r);
+    case 0: return gsl_sf_gamma_inc(0,r);
     case 1 : value = -fcs_exp(-r); break;
     case 2 : value = (1 + r)/fcs_exp(r); break;
     case 3 : value = (-2 + (-2 - r)*r)/fcs_exp(r); break;

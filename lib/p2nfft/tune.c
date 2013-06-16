@@ -302,6 +302,11 @@ FCSResult ifcs_p2nfft_tune(
   MPI_Allreduce(&local_needs_retune, &d->needs_retune, 1, FCS_MPI_INT, MPI_MAX, d->cart_comm_3d);
 
   if (d->needs_retune) {
+    
+    fcs_float r=1;
+    for(int t=0; t<17; t++)
+      fprintf(stderr, "D_%d Gamma(0,%f) = %e\n", t, r, ifcs_p2nfft_gamma_zero(r, t, NULL));
+
     /* check user defined epsI and epsB */
     if(d->num_nonperiodic_dims)
       if(!d->tune_epsI && !d->tune_epsB)
