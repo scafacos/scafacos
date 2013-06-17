@@ -231,7 +231,7 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_one_over_x(fcs_float x, fcs_int der, const fc
 
   (void)param;
 
-  if (fabs(x)<DBL_EPSILON) value=0.0;
+  if (fcs_fabs(x)<DBL_EPSILON) value=0.0;
   else switch (der)
   {
     case  0 : value=1.0/x; break;
@@ -243,10 +243,10 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_one_over_x(fcs_float x, fcs_int der, const fc
     case  6 : value=720.0/(x*x*x*x*x*x*x); break;
     case  7 : value=-5040.0/(x*x*x*x*x*x*x*x); break;
     case  8 : value=40320.0/(x*x*x*x*x*x*x*x*x); break;
-    case  9 : value=-362880.0/pow(x,10.0); break;
-    case 10 : value=3628800.0/pow(x,11.0); break;
-    case 11 : value=-39916800.0/pow(x,12.0); break;
-    case 12 : value=479001600.0/pow(x,13.0); break;
+    case  9 : value=-362880.0/fcs_pow(x,10.0); break;
+    case 10 : value=3628800.0/fcs_pow(x,11.0); break;
+    case 11 : value=-39916800.0/fcs_pow(x,12.0); break;
+    case 12 : value=479001600.0/fcs_pow(x,13.0); break;
     default : value=0.0;
   }
 
@@ -397,7 +397,7 @@ static fcs_float theta(
     )
 {
   fcs_float arg = FCS_PI*k*x;
-  return (arg > 18) ? 0.0 : exp(2*arg) * (1-erf(FCS_PI*k/alpha + alpha*x)); /* use erf instead of erfc to fix ICC performance problems */
+  return (arg > 18) ? 0.0 : fcs_exp(2*arg) * (1-fcs_erf(FCS_PI*k/alpha + alpha*x)); /* use erf instead of erfc to fix ICC performance problems */
 }
 
 static fcs_float theta_p(
@@ -433,7 +433,7 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_2dp_kneq0(fcs_float r, fcs_int der, con
   {
     case  0 : value = theta_p(r,k,alpha); break;
     case  1 : value = c*theta_m(r,k,alpha); break;
-    default : value = c*c * ifcs_p2nfft_ewald_2dp_kneq0(r,der-2,param) - 8*alpha*FCS_SQRTPI*k* exp(-b*b) * ifcs_p2nfft_gaussian(r,der-2,&one_over_alpha);
+    default : value = c*c * ifcs_p2nfft_ewald_2dp_kneq0(r,der-2,param) - 8*alpha*FCS_SQRTPI*k* fcs_exp(-b*b) * ifcs_p2nfft_gaussian(r,der-2,&one_over_alpha);
   }
 
   return value;
@@ -459,28 +459,28 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_x_times_erf(fcs_float x, fcs_int der, const f
   switch (der)
   {
     /* This code was generated with Maple */
-    case  0 : value = sqrt(FCS_PI) * erf(x) * x; break;
-    case  1 : value = 0.2e1 * exp(-x * x) * x + sqrt(FCS_PI) * erf(x); break;
-    case  2 : value = -0.4e1 * exp(-x * x) * (x * x - 0.1e1); break;
-    case  3 : value = 0.8e1 * exp(-x * x) * (x * x - 0.2e1) * x; break;
-    case  4 : value = -0.8e1 * exp(-x * x) * ((0.2e1 * x * x - 0.7e1) * x * x + 0.2e1); break;
-    case  5 : value = 0.16e2 * exp(-x * x) * ((0.2e1 * x * x - 0.11e2) * x * x + 0.9e1) * x; break;
-    case  6 : value = -0.16e2 * exp(-x * x) * (((0.4e1 * x * x - 0.32e2) * x * x + 0.51e2) * x * x - 0.9e1); break;
-    case  7 : value = 0.32e2 * exp(-x * x) * (((0.4e1 * x * x - 0.44e2) * x * x + 0.115e3) * x * x - 0.60e2) * x; break;
-    case  8 : value = -0.32e2 * exp(-x * x) * ((((0.8e1 * x * x - 0.116e3) * x * x + 0.450e3) * x * x - 0.465e3) * x * x + 0.60e2); break;
-    case  9 : value = 0.64e2 * exp(-x * x) * ((((0.8e1 * x * x - 0.148e3) * x * x + 0.798e3) * x * x - 0.1365e4) * x * x + 0.525e3) * x; break;
-    case 10 : value = -0.64e2 * exp(-x * x) * (((((0.16e2 * x * x - 0.368e3) * x * x + 0.2632e4) * x * x - 0.6720e4) * x * x + 0.5145e4) * x * x - 0.525e3); break;
-    case 11 : value = 0.128e3 * exp(-x * x) * (((((0.16e2 * x * x - 0.448e3) * x * x + 0.4104e4) * x * x - 0.14616e5) * x * x + 0.18585e5) * x * x - 0.5670e4) * x; break;
-    case 12 : value = -0.128e3 * exp(-x * x) * ((((((0.32e2 * x * x - 0.1072e4) * x * x + 0.12240e5) * x * x - 0.57960e5) * x * x + 0.110250e6) * x * x - 0.67095e5) * x * x + 0.5670e4); break;
-    case 13 : value = 0.256e3 * exp(-x * x) * ((((((0.32e2 * x * x - 0.1264e4) * x * x + 0.17600e5) * x * x - 0.106920e6) * x * x + 0.284130e6) * x * x - 0.287595e6) * x * x + 0.72765e5) * x; break;
-    case 14 : value = -0.256e3 * exp(-x * x) * (((((((0.64e2 * x * x - 0.2944e4) * x * x + 0.49104e5) * x * x - 0.372240e6) * x * x + 0.1316700e7) * x * x - 0.1995840e7) * x * x + 0.1008315e7) * x * x - 0.72765e5); break;
-    case 15 : value = 0.512e3 * exp(-x * x) * (((((((0.64e2 * x * x - 0.3392e4) * x * x + 0.66768e5) * x * x - 0.617760e6) * x * x + 0.2805660e7) * x * x - 0.5945940e7) * x * x + 0.4999995e7) * x * x - 0.1081080e7) * x; break;
-    case 16 : value = -0.512e3 * exp(-x * x) * ((((((((0.128e3 * x * x - 0.7744e4) * x * x + 0.177632e6) * x * x - 0.1969968e7) * x * x + 0.11171160e8) * x * x - 0.31531500e8) * x * x + 0.39729690e8) * x * x - 0.17162145e8) * x * x + 0.1081080e7); break;
-    case 17 : value = 0.1024e4 * exp(-x * x) * ((((((((0.128e3 * x * x - 0.8768e4) * x * x + 0.231840e6) * x * x - 0.3035760e7) * x * x + 0.21021000e8) * x * x - 0.76216140e8) * x * x + 0.134324190e9) * x * x - 0.96621525e8) * x * x + 0.18243225e8) * x; break;
-    case 18 : value = -0.1024e4 * exp(-x * x) * (((((((((0.256e3 * x * x - 0.19712e5) * x * x + 0.595200e6) * x * x - 0.9085440e7) * x * x + 0.75435360e8) * x * x - 0.341621280e9) * x * x + 0.802161360e9) * x * x - 0.864864000e9) * x * x + 0.326351025e9) * x * x - 0.18243225e8); break;
-    case 19 : value = 0.2048e4 * exp(-x * x) * (((((((((0.256e3 * x * x - 0.22016e5) * x * x + 0.752896e6) * x * x - 0.13251840e8) * x * x + 0.129948000e9) * x * x - 0.718798080e9) * x * x + 0.2168646480e10) * x * x - 0.3271348080e10) * x * x + 0.2056079025e10) * x * x - 0.344594250e9) * x; break;
-    case 20 : value = -0.2048e4 * exp(-x * x) * ((((((((((0.512e3 * x * x - 0.48896e5) * x * x + 0.1880064e7) * x * x - 0.37797120e8) * x * x + 0.432169920e9) * x * x - 0.2867024160e10) * x * x + 0.10806475680e11) * x * x - 0.21723221520e11) * x * x + 0.20468898450e11) * x * x - 0.6857425575e10) * x * x + 0.344594250e9); break;
-    case 21 : value = 0.4096e4 * exp(-x * x) * ((((((((((0.512e3 * x * x - 0.54016e5) * x * x + 0.2320128e7) * x * x - 0.52837632e8) * x * x + 0.696749760e9) * x * x - 0.5460043680e10) * x * x + 0.25141596480e11) * x * x - 0.64949124240e11) * x * x + 0.85638563010e11) * x * x - 0.47795222475e11) * x * x + 0.7202019825e10) * x; break;
+    case  0 : value = fcs_sqrt(FCS_PI) * fcs_erf(x) * x; break;
+    case  1 : value = 0.2e1 * fcs_exp(-x * x) * x + fcs_sqrt(FCS_PI) * fcs_erf(x); break;
+    case  2 : value = -0.4e1 * fcs_exp(-x * x) * (x * x - 0.1e1); break;
+    case  3 : value = 0.8e1 * fcs_exp(-x * x) * (x * x - 0.2e1) * x; break;
+    case  4 : value = -0.8e1 * fcs_exp(-x * x) * ((0.2e1 * x * x - 0.7e1) * x * x + 0.2e1); break;
+    case  5 : value = 0.16e2 * fcs_exp(-x * x) * ((0.2e1 * x * x - 0.11e2) * x * x + 0.9e1) * x; break;
+    case  6 : value = -0.16e2 * fcs_exp(-x * x) * (((0.4e1 * x * x - 0.32e2) * x * x + 0.51e2) * x * x - 0.9e1); break;
+    case  7 : value = 0.32e2 * fcs_exp(-x * x) * (((0.4e1 * x * x - 0.44e2) * x * x + 0.115e3) * x * x - 0.60e2) * x; break;
+    case  8 : value = -0.32e2 * fcs_exp(-x * x) * ((((0.8e1 * x * x - 0.116e3) * x * x + 0.450e3) * x * x - 0.465e3) * x * x + 0.60e2); break;
+    case  9 : value = 0.64e2 * fcs_exp(-x * x) * ((((0.8e1 * x * x - 0.148e3) * x * x + 0.798e3) * x * x - 0.1365e4) * x * x + 0.525e3) * x; break;
+    case 10 : value = -0.64e2 * fcs_exp(-x * x) * (((((0.16e2 * x * x - 0.368e3) * x * x + 0.2632e4) * x * x - 0.6720e4) * x * x + 0.5145e4) * x * x - 0.525e3); break;
+    case 11 : value = 0.128e3 * fcs_exp(-x * x) * (((((0.16e2 * x * x - 0.448e3) * x * x + 0.4104e4) * x * x - 0.14616e5) * x * x + 0.18585e5) * x * x - 0.5670e4) * x; break;
+    case 12 : value = -0.128e3 * fcs_exp(-x * x) * ((((((0.32e2 * x * x - 0.1072e4) * x * x + 0.12240e5) * x * x - 0.57960e5) * x * x + 0.110250e6) * x * x - 0.67095e5) * x * x + 0.5670e4); break;
+    case 13 : value = 0.256e3 * fcs_exp(-x * x) * ((((((0.32e2 * x * x - 0.1264e4) * x * x + 0.17600e5) * x * x - 0.106920e6) * x * x + 0.284130e6) * x * x - 0.287595e6) * x * x + 0.72765e5) * x; break;
+    case 14 : value = -0.256e3 * fcs_exp(-x * x) * (((((((0.64e2 * x * x - 0.2944e4) * x * x + 0.49104e5) * x * x - 0.372240e6) * x * x + 0.1316700e7) * x * x - 0.1995840e7) * x * x + 0.1008315e7) * x * x - 0.72765e5); break;
+    case 15 : value = 0.512e3 * fcs_exp(-x * x) * (((((((0.64e2 * x * x - 0.3392e4) * x * x + 0.66768e5) * x * x - 0.617760e6) * x * x + 0.2805660e7) * x * x - 0.5945940e7) * x * x + 0.4999995e7) * x * x - 0.1081080e7) * x; break;
+    case 16 : value = -0.512e3 * fcs_exp(-x * x) * ((((((((0.128e3 * x * x - 0.7744e4) * x * x + 0.177632e6) * x * x - 0.1969968e7) * x * x + 0.11171160e8) * x * x - 0.31531500e8) * x * x + 0.39729690e8) * x * x - 0.17162145e8) * x * x + 0.1081080e7); break;
+    case 17 : value = 0.1024e4 * fcs_exp(-x * x) * ((((((((0.128e3 * x * x - 0.8768e4) * x * x + 0.231840e6) * x * x - 0.3035760e7) * x * x + 0.21021000e8) * x * x - 0.76216140e8) * x * x + 0.134324190e9) * x * x - 0.96621525e8) * x * x + 0.18243225e8) * x; break;
+    case 18 : value = -0.1024e4 * fcs_exp(-x * x) * (((((((((0.256e3 * x * x - 0.19712e5) * x * x + 0.595200e6) * x * x - 0.9085440e7) * x * x + 0.75435360e8) * x * x - 0.341621280e9) * x * x + 0.802161360e9) * x * x - 0.864864000e9) * x * x + 0.326351025e9) * x * x - 0.18243225e8); break;
+    case 19 : value = 0.2048e4 * fcs_exp(-x * x) * (((((((((0.256e3 * x * x - 0.22016e5) * x * x + 0.752896e6) * x * x - 0.13251840e8) * x * x + 0.129948000e9) * x * x - 0.718798080e9) * x * x + 0.2168646480e10) * x * x - 0.3271348080e10) * x * x + 0.2056079025e10) * x * x - 0.344594250e9) * x; break;
+    case 20 : value = -0.2048e4 * fcs_exp(-x * x) * ((((((((((0.512e3 * x * x - 0.48896e5) * x * x + 0.1880064e7) * x * x - 0.37797120e8) * x * x + 0.432169920e9) * x * x - 0.2867024160e10) * x * x + 0.10806475680e11) * x * x - 0.21723221520e11) * x * x + 0.20468898450e11) * x * x - 0.6857425575e10) * x * x + 0.344594250e9); break;
+    case 21 : value = 0.4096e4 * fcs_exp(-x * x) * ((((((((((0.512e3 * x * x - 0.54016e5) * x * x + 0.2320128e7) * x * x - 0.52837632e8) * x * x + 0.696749760e9) * x * x - 0.5460043680e10) * x * x + 0.25141596480e11) * x * x - 0.64949124240e11) * x * x + 0.85638563010e11) * x * x - 0.47795222475e11) * x * x + 0.7202019825e10) * x; break;
     default : value = 0.0;
   }
 
@@ -488,8 +488,43 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_x_times_erf(fcs_float x, fcs_int der, const f
   return fcs_pow(alpha, der-1) * value;
 }
 
+/* Derivative of the incomplete Bessel K function K_nu(x,a*r) */
+static fcs_float K_nu(
+    fcs_float x, fcs_float a, fcs_float r, fcs_int der
+    )
+{
+  if(der==0)
+    return ifcs_p2nfft_inc_lower_bessel_k(nu, x, a*r*r);
+  else
+    return -1;
+}
 
-FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_gamma_zero(fcs_float r, fcs_int der, const fcs_float *param) /* K(x) = Gamma(0,x) */
+/* Fourier space part of 1d-periodic Ewald and k<>0 */
+FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_1dp_kneq0(fcs_float r, fcs_int der, const fcs_float *param) /* K(x) = 0.5 * alpha^2 * K_nu(pi^2*k^2/alpha^2, alpha^2*r^2) */
+{
+  fcs_float alpha = param[0]; /* Ewald splitting parameter alpha */
+  fcs_float k     = param[1]; /* norm of (k_0/B_0,k_1/B_1) */
+
+  fcs_float b = FCS_PI*k/alpha;
+
+  fcs_float value=0.0;
+
+  if(fcs_float_is_zero(k))
+    return 0.0;
+
+  return 0.5 * alpha * alpha * K_nu(b*b, alpha*alpha, r, der);
+}
+
+static fcs_float ln(fcs_float a, fcs_float x, fcs_int der) /* K(x) = ln(a*x) */
+{
+  if(der==0)
+    return fcs_ln(a*x);
+  else
+    return fcs_pow(a, der-1) * ifcs_p2nfft_one_over_x(a*x, der-1, NULL);
+}
+/* Fourier space part of 1d-periodic Ewald and k==0 */
+
+static fcs_float gamma_zero_r_sqr(fcs_float r, fcs_int der, const fcs_float *param) /* K(x) = Gamma(0,r^2) */
 {
   /* This code was generated with Mathematica. */
   fcs_float value=0.0;
@@ -519,6 +554,14 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_gamma_zero(fcs_float r, fcs_int der, const fc
     default: return 0.0;
   }
   return value/fcs_pow(r,der);
+}
+
+FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_1dp_keq0(fcs_float r, fcs_int der, const fcs_float *param) /* K(x) = gamma + Gamma(0,a^2*r^2) + ln(a^2*r^2) */
+{
+  fcs_float alpha = param[0]; /* Ewald splitting parameter alpha */
+  fcs_float gamma = (der==0) ? FCS_P2NFFT_EULER : 0.0;
+
+  return gamme + ifcs_p2nfft_gamma_zero_r_sqr(x, der, &one_over_alpha) + 2*ln(alpha, r);
 }
 
 

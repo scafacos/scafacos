@@ -85,7 +85,7 @@ static fcs_float evaluate_cos_polynomial_1d(
    fcs_float x, fcs_int N, fcs_float *coeff);
 static fcs_float evaluate_sin_polynomial_1d(
    fcs_float x, fcs_int N, fcs_float *coeff);
-static int get_dim_of_smallest_box_l(
+static int get_dim_of_smallest_periodic_box_l(
     fcs_int periodicity[3], fcs_float box_l[3]);
 
 static void init_pnfft(
@@ -325,7 +325,7 @@ FCSResult ifcs_p2nfft_tune(
       fcs_int cao = 2*d->m;
 
       /* look for a dimension with pbc for tuning alpha and rcut */
-      fcs_int dim_tune = get_dim_of_smallest_box_l(d->periodicity, d->box_l);
+      fcs_int dim_tune = get_dim_of_smallest_periodic_box_l(d->periodicity, d->box_l);
   
       if(d->tune_r_cut){
         /* set r_cut to 3 times the average distance between charges */
@@ -786,7 +786,9 @@ FCSResult ifcs_p2nfft_tune(
           d->N, d->epsB, d->box_l, d->box_scales, d->alpha, d->periodicity, d->p,
           d->cart_comm_pnfft);
     if (d->num_nonperiodic_dims == 2)
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT does not yet support 1d-periodic boundary conditions.");
+      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp(
+          d->N, d->epsB, d->box_l, d->box_scales, d->alpha, d->periodicity, d->p,
+          d->cart_comm_pnfft);
       /* malloc_and_precompute_regkern_hat_1dp */
     if (d->num_nonperiodic_dims == 3)
       d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
@@ -1404,6 +1406,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
   ptrdiff_t howmany = 1, alloc_local, m;
   ptrdiff_t local_Ni[3], local_Ni_start[3], local_No[3], local_No_start[3];
   ptrdiff_t k[3];
+  fcs_int num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
   fcs_float scale = 1.0, twiddle, twiddle_k0=1.0, twiddle_k1=1.0, twiddle_k2=1.0;
   fcs_float x[3], xh[3];
   pfft_plan pfft;
@@ -1479,11 +1482,17 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
         /* Check if all indices corresponding to periodic dims are 0.
          * Index correspoding to non-periodic dim will be 0 per default. */
         if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0)){
-          regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_keq0, xhnorm, p, param, epsB);
+          if(num_nonperiodic_dims == 1)
+            regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_keq0, xhnorm, p, param, epsB);
+          else
+            regkern_hat[m] = -1.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, xhnorm, p, param, epsB);
         }
         else{
           /* kbnorm includes 1.0/B for cubic case */ 
-          regkern_hat[m] = 0.5 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, xhnorm, p, param, epsB) / kbnorm;
+          if(num_nonperiodic_dims == 1)
+            regkern_hat[m] = 0.5 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, xhnorm, p, param, epsB) / kbnorm;
+          else
+            regkern_hat[m] = 2.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_kneq0, xhnorm, p, param, epsB) / kbnorm;
         }
 
         regkern_hat[m] *= scale * twiddle;
@@ -1664,7 +1673,7 @@ static FCSResult check_tolerance(
 
 
 /* look for the smallest box length with pbc */
-static int get_dim_of_smallest_box_l(
+static int get_dim_of_smallest_periodic_box_l(
     fcs_int periodicity[3], fcs_float box_l[3]
     )
 {

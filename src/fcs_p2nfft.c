@@ -98,16 +98,23 @@ extern FCSResult fcs_p2nfft_init(
   return NULL;
 }
 
-static int num_periodic_dims(
-    fcs_int *periodicity
+static fcs_int nonperiodic_box_lengths_are_equal(
+    fcs_float a, fcs_float b, fcs_float c, fcs_int *periodicity
     )
 {
-  int num = 0;
-  for(int t=0; t<3; t++)
-    if(periodicity[t])
-      num += 1;
+  if(!periodicity[0] && !periodicity[1])
+    if(!fcs_float_is_equal(a,b))
+      return 0;
 
-  return num;
+  if(!periodicity[0] && !periodicity[2])
+    if(!fcs_float_is_equal(a,c))
+      return 0;
+
+  if(!periodicity[1] && !periodicity[2])
+    if(!fcs_float_is_equal(b,c))
+      return 0;
+
+  return 1;
 }
 
 /* internal p2nfft-specific tuning function */
@@ -135,9 +142,9 @@ extern FCSResult fcs_p2nfft_tune(
     return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
         "The p2nfft method needs a rectangular box with box vectors parallel to the principal axes.");
 
-  if (!fcs_is_cubic(a, b, c) && (num_periodic_dims(periodicity) < 2) )
+  if(!nonperiodic_box_lengths_are_equal(a[0], b[1], c[2], periodicity))
     return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
-        "The p2nfft method currently only supports noncubic boxes with 2d-, or 3d-periodic boundary conditions.");
+        "The P2NFFT method currently does not support unequal box lengths in dimensions with non-periodic boundary conditions.");
    
   /* Get box size */ 
   box_l[0] = fcs_norm(a);
