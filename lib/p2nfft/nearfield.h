@@ -70,7 +70,7 @@ ifcs_p2nfft_compute_near_field_periodic_erfc(
   fcs_float inv_dist = 1.0/dist;
   fcs_float adist = alpha * dist;
   fcs_float erfc_part_ri = (1.0 - erf(adist)) * inv_dist; /* use erf instead of erfc to fix ICC performance problems */
-  return -(erfc_part_ri + 2.0*alpha*FCS_P2NFFT_1OVERSQRTPI*exp(-adist*adist)) * inv_dist;
+  return -(erfc_part_ri + 2.0*alpha*FCS_P2NFFT_1_SQRTPI*exp(-adist*adist)) * inv_dist;
 }
 
 
@@ -85,7 +85,7 @@ ifcs_p2nfft_compute_near_periodic_erfc(
   fcs_float adist = alpha * dist;
   fcs_float erfc_part_ri = (1.0 - erf(adist)) * inv_dist; /* use erf instead of erfc to fix ICC performance problems */
   *p = erfc_part_ri;
-  *f = -(erfc_part_ri + 2.0*alpha*FCS_P2NFFT_1OVERSQRTPI*exp(-adist*adist)) * inv_dist;
+  *f = -(erfc_part_ri + 2.0*alpha*FCS_P2NFFT_1_SQRTPI*exp(-adist*adist)) * inv_dist;
 }
 
 static inline fcs_float
@@ -124,8 +124,7 @@ ifcs_p2nfft_compute_near_field_periodic_approx_erfc(
   fcs_float inv_dist = 1.0/dist;
   fcs_float adist = alpha * dist;
   fcs_float erfc_part_ri = ifcs_p2nfft_approx_erfc(adist) *inv_dist;
-  /* 1/sqrt(PI) = 0.56418958354775627928034964498 */
-  return -(erfc_part_ri + 2.0*alpha*FCS_P2NFFT_1OVERSQRTPI*exp(-adist*adist)) * inv_dist;
+  return -(erfc_part_ri + 2.0*alpha*FCS_P2NFFT_1_SQRTPI*exp(-adist*adist)) * inv_dist;
 }
 
 static inline void
@@ -140,7 +139,7 @@ ifcs_p2nfft_compute_near_periodic_approx_erfc(
   fcs_float erfc_part_ri = ifcs_p2nfft_approx_erfc(adist) *inv_dist;
 
   *p = erfc_part_ri;
-  *f = -(erfc_part_ri + 2.0*alpha*FCS_P2NFFT_1OVERSQRTPI*exp(-adist*adist)) * inv_dist;
+  *f = -(erfc_part_ri + 2.0*alpha*FCS_P2NFFT_1_SQRTPI*exp(-adist*adist)) * inv_dist;
 }
 
 

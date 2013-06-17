@@ -954,7 +954,7 @@ static void init_near_interpolation_table_potential_3dp(
   for(fcs_int k=0; k<num_nodes+3; k++){
     r = r_cut * (fcs_float) k / num_nodes;
     if (fcs_float_is_zero(r))
-      table[k] = 2 * alpha * FCS_P2NFFT_1OVERSQRTPI;
+      table[k] = 2 * alpha * FCS_P2NFFT_1_SQRTPI;
     else
       table[k] = erf(alpha * r)/r;
   }
@@ -1012,7 +1012,7 @@ static void init_near_interpolation_table_force_3dp(
       table[k] = 0;
     else
       table[k] = (-erf(alpha * r)/r
-          + 2.0*alpha*FCS_P2NFFT_1OVERSQRTPI * fcs_exp(- alpha*alpha * r*r)
+          + 2.0*alpha*FCS_P2NFFT_1_SQRTPI * fcs_exp(- alpha*alpha * r*r)
         ) / r;
   }
 }

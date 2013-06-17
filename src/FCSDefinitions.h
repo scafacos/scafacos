@@ -59,6 +59,7 @@
  */
 #define FCS_1_SQRTPI  FCS_CONST(0.5641895835477562869480794515607726)  /* 1/sqrt(pi) */
 #define FCS_SQRTPI    FCS_CONST(1.7724538509055160272981674833411452)  /* sqrt(pi) */
+#define FCS_PISQR     FCS_CONST(9.8696044010893586188344909998761511)  /* pi^2 */
 
 /**
  * @brief definition of a boolean data type
