@@ -593,6 +593,10 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_1dp_keq0(fcs_float r, fcs_int der, cons
   fcs_float alpha = param[0]; /* Ewald splitting parameter alpha */
   fcs_float gamma = (der==0) ? FCS_EULER : 0.0;
 
+  /* limit of this fct. for r->0 is 0 */
+  if(fcs_float_is_zero(r))
+    return 0.0;
+
   return gamma + pow(alpha,der) * (gamma_zero_r_sqr(alpha*r, der) + 2*ln(alpha*r, der));
 }
 

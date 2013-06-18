@@ -28,6 +28,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <gsl/gsl_sf_bessel.h>
+#include <gsl/gsl_sf_gamma.h>
 
 #include "bessel_k.h"
 
@@ -141,6 +142,11 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   fcs_float err = 1.0, val_new, val_old;
   fcs_float *pt, *D_Aki, *N_Aki;
   fcs_int N = n_max+1;
+
+  /* for y==0 incompl. bessel_k can be compute by incompl. Gamma fct. */
+  if(fcs_float_is_zero(y))
+    return fcs_pow(x,nu) * gsl_sf_gamma_inc(-nu,x); 
+
 
   /* for x<y compute the faster convergent complement integral,
    * see formula (4) of [Slevinsky-Safouhi 2010] */
