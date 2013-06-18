@@ -302,11 +302,6 @@ FCSResult ifcs_p2nfft_tune(
   MPI_Allreduce(&local_needs_retune, &d->needs_retune, 1, FCS_MPI_INT, MPI_MAX, d->cart_comm_3d);
 
   if (d->needs_retune) {
-    
-    fcs_float r=1;
-    for(int t=0; t<17; t++)
-      fprintf(stderr, "D_%d Gamma(0,%f) = %e\n", t, r, ifcs_p2nfft_gamma_zero(r, t, NULL));
-
     /* check user defined epsI and epsB */
     if(d->num_nonperiodic_dims)
       if(!d->tune_epsI && !d->tune_epsB)
@@ -1458,15 +1453,21 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
         twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
 
         /* New regularization for mixed boundary conditions */
-        fcs_float kbnorm = 0.0, x2norm = 0.0, xhnorm = 0.0, h = 1.0;
+        fcs_float kbnorm = 0.0, x2norm = 0.0, xhnorm = 0.0, h = 1.0, B = 1.0;
 
         for(fcs_int t=0; t<3; t++){
           kbnorm += k[t] / box_l[t] * k[t] / box_l[t];
           x2norm += x[t] * x[t];
           xh[t] = (periodicity[t]) ? 0.0 : x[t] * box_scales[t];
           xhnorm += xh[t] * xh[t];
+
+          /* this works only for equal nonperiodic box lengths */
           if(!periodicity[t])
            h = box_scales[t];
+
+          /* set B for 1d-periodic bc */
+          if(periodicity[t])
+           B = box_l[t];
         }
         kbnorm = fcs_sqrt(kbnorm);
         x2norm = fcs_sqrt(x2norm);
@@ -1492,7 +1493,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
           if(num_nonperiodic_dims == 1)
             regkern_hat[m] = 0.5 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, xhnorm, p, param, epsB) / kbnorm;
           else
-            regkern_hat[m] = 2.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_kneq0, xhnorm, p, param, epsB) / kbnorm;
+            regkern_hat[m] = 2.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_kneq0, xhnorm, p, param, epsB) / B;
         }
 
         regkern_hat[m] *= scale * twiddle;

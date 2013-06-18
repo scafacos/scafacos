@@ -180,7 +180,7 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   }
 
   free(pt); free(D_Aki); free(N_Aki);
-  fprintf(stderr, "n = %d, val = %e, err %e\n", n, val_new, err);
+//   fprintf(stderr, "n = %d, val = %e, err %e\n", n, val_new, err);
   return val_new;
 }
 
