@@ -59,8 +59,14 @@ FCSResult fcs_pp3mg_init(FCS handle)
   ctx->parameters = malloc(sizeof(pp3mg_parameters));
 
   fcs_set_method_context(handle, ctx);
-
-  result = fcs_pp3mg_setup(handle, 128, 128, 128, 8, 4, 10000, 20, 1.0e-7, 1, 1);
+  
+  /* 
+   * Default parameters:
+   * pp3mg_cells_x = pp3mg_cells_y = pp3mg_cells_z = 128
+   * h = 1/128 => h^4/(12*5*6)*max(f^(4)) = h^4/360*3840
+   */
+     
+  result = fcs_pp3mg_setup(handle, 128, 128, 128, 6, 3, 10000, 50, 3.9736e-8, 1, 1);
   if (result != NULL) return result;
 
   DEBUG_MOP(printf("fcs_pp3mg_init: done\n"));
