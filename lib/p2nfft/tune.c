@@ -1488,8 +1488,8 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
           else {
             regkern_hat[m] = -1.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, xhnorm, p, param, epsB);
 //             regkern_hat[m] = -0.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, xhnorm, p, param, epsB);
-            fprintf(stderr, "h = %e, alpha = %e, kbnorm = %e, xhnorm = %e, ewald_1dp_neq0 = %e\n", h, alpha, kbnorm, xhnorm, ifcs_p2nfft_ewald_1dp_keq0(xhnorm, 0, param));
-            if(isinf(creal(regkern_hat[m]))){
+//             fprintf(stderr, "h = %e, alpha = %e, kbnorm = %e, xhnorm = %e, ewald_1dp_neq0 = %e\n", h, alpha, kbnorm, xhnorm, ifcs_p2nfft_ewald_1dp_keq0(xhnorm, 0, param));
+            if(isnan(creal(regkern_hat[m]))){
               fprintf(stderr, "keq0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, xhnorm = %e, kbnorm = %e, alpha = %e\n",
                   k[0], k[1], k[2], x[0], x[1], x[2], p, epsB, xhnorm, kbnorm, alpha);
               for(int t=0; t<9; t++)
@@ -1504,7 +1504,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
             regkern_hat[m] = 0.5 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, xhnorm, p, param, epsB) / kbnorm;
           else{
             regkern_hat[m] = 2.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_kneq0, xhnorm, p, param, epsB);
-            if(isinf(creal(regkern_hat[m]))){
+            if(isnan(creal(regkern_hat[m]))){
               fprintf(stderr, "kne0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, xhnorm = %e, kbnorm = %e, alpha = %e\n",
                   k[0], k[1], k[2], x[0], x[1], x[2], p, epsB, xhnorm, kbnorm, alpha);
               for(int t=0; t<9; t++)
