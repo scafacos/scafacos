@@ -1025,5 +1025,32 @@ r_cut=4.48139 cao=5 grid=(256, 256, 256) alpha=0.74681
     </data>
   </timings>
 
+    <timings
+        method="MEMD"
+        charges="102900"
+        tolerance="1e-4">
+        <parameters>
+            
+        </parameters>
+        <errors>
+            ABSOLUTE ERRORS (from 102900 of 102900 particles)
+            abs_rms_field_error =    3.543523e-04
+            abs_max_field_error =    9.321423e-04
+            abs_rms_potential_error =    8.735243e-05
+            abs_max_potential_error =    2.213243e-04
+            abs_energy_error =    2.546354e+00
+            
+            RELATIVE ERRORS (from 102900 of 102900 particles)
+            rel_rms_field_error =    7.092813e-05
+            rel_max_field_error =    1.609281e-04
+            rel_rms_potential_error =    9.88263e-05
+            rel_max_potential_error =    4.12534e-04
+            rel_energy_error =    0.98273e-05
+        </errors>
+        <data>
+            1	 	4.23229
+        </data>
+    </timings>
+
 
 </benchmarks>
