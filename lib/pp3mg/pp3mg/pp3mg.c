@@ -588,6 +588,21 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 /*   zoff[18] = -1; */
   
   switch (params->discretization) {
+  case order_2:
+    /* standard 2-nd order solver */
+    size = 7;
+    xoff   = (int*) malloc( size*sizeof( int ) );
+    yoff   = (int*) malloc( size*sizeof( int ) );
+    zoff   = (int*) malloc( size*sizeof( int ) );
+    values = (double*) malloc( size*sizeof( double ) );
+    xoff[ 0] =  0; yoff[ 0] =  0; zoff[ 0] =  0; values[ 0] = 2.0/(params->hx*params->hx)+2.0/(params->hy*params->hy)+2.0/(params->hz*params->hz);
+    xoff[ 1] =  1; yoff[ 1] =  0; zoff[ 1] =  0; values[ 1] = -1.0/(params->hx*params->hx);
+    xoff[ 2] = -1; yoff[ 2] =  0; zoff[ 2] =  0; values[ 2] = -1.0/(params->hx*params->hx);
+    xoff[ 3] =  0; yoff[ 3] =  1; zoff[ 3] =  0; values[ 3] = -1.0/(params->hy*params->hy);
+    xoff[ 4] =  0; yoff[ 4] = -1; zoff[ 4] =  0; values[ 4] = -1.0/(params->hy*params->hy);
+    xoff[ 5] =  0; yoff[ 5] =  0; zoff[ 5] =  1; values[ 5] = -1.0/(params->hz*params->hz);
+    xoff[ 6] =  0; yoff[ 6] =  0; zoff[ 6] = -1; values[ 6] = -1.0/(params->hz*params->hz);
+    
   case order_4_compact:
     /* 4-th order compact solver */
     size = 19;
