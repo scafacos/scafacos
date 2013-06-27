@@ -457,6 +457,7 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
         (*p)->grid[0] = d->grid[0];
         (*p)->grid[1] = d->grid[1];
         (*p)->grid[2] = d->grid[2];
+        (*p)->alpha = d->alpha;
       } else {
         // otherwise remove this parameter set
         tune_params *ptmp = *p;
