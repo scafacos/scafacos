@@ -264,9 +264,10 @@ ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d,
     if (0.5*d->box_l[2]-d->skin < (*params)->r_cut)
       (*params)->r_cut = 0.5*d->box_l[2] - d->skin;
 
-    P3M_INFO(printf( "    Tuned r_cut to %" FCS_LMOD_FLOAT "f\n", (*params)->r_cut));
+    P3M_INFO(printf( "    r_cut=%" FCS_LMOD_FLOAT "f (tuned)\n", (*params)->r_cut));
   } else {
     (*params)->r_cut = d->r_cut;
+    P3M_INFO(printf( "    r_cut=%" FCS_LMOD_FLOAT "f (fixed)\n", (*params)->r_cut));
   }
    
   return ifcs_p3m_tune_cao_grid(d, num_particles, max_num_particles, 
@@ -288,6 +289,7 @@ ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d,
   if (d->tune_cao) {
     for (tune_params *p = *params; p != NULL; p = p->next_params) {
       p->cao = P3M_MAX_CAO;
+      P3M_INFO(printf("    r_cut=%" FCS_LMOD_FLOAT "f cao={ ", p->r_cut));
       for (fcs_int cao = P3M_MAX_CAO-1; cao >= cao_min; cao--) {
         // Insert new param set
         tune_params *pnew = malloc(sizeof(tune_params));
@@ -296,12 +298,15 @@ ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d,
         pnew->next_params = p->next_params;
         p->next_params = pnew;
         p = pnew;
+        P3M_INFO(printf( "%" FCS_LMOD_INT "d ", cao));
       }
+      P3M_INFO(printf("}\n"));
     }
   } else {
     // Set cao in param set
     for (tune_params *p = *params; p != NULL; p = p->next_params)
       p->cao = d->cao;
+    P3M_INFO(printf( "    cao=%" FCS_LMOD_INT "d (fixed)\n", (*params)->cao));
   }
 
   return ifcs_p3m_tune_grid(d, num_particles, max_num_particles, 
@@ -420,7 +425,7 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
       // compare grid size to previous data set
       // if it is larger than double any previous size, remove it
       if (2*min_grid1d < grid1d) {
-        P3M_INFO(printf("      grid to large => removing data set\n"));
+        P3M_INFO(printf("      grid too large => removing data set\n"));
         tune_params *tmp = *p;
         *p = (*p)->next_params;
         free(tmp);
@@ -446,22 +451,36 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
   } else {
 
     // fixed grid
-    for (tune_params **p = params; *p != NULL; p = &((*p)->next_params)) {
+    tune_params **p = params;
+
+    while (*p != NULL) {
       // test whether accuracy can be achieved with given parameters
       // d->grid already contains the wanted grid
       d->cao = (*p)->cao;
       d->r_cut = (*p)->r_cut;
+      P3M_INFO(printf("    r_cut=%" FCS_LMOD_FLOAT "f"           \
+                      " cao=%" FCS_LMOD_INT "d"                  \
+                      " grid=(%" FCS_LMOD_INT "d"                \
+                      ", %" FCS_LMOD_INT "d"                     \
+                      ", %" FCS_LMOD_INT "d) (fixed)\n",         \
+                      d->r_cut, d->cao,                          \
+                      d->grid[0], d->grid[1], d->grid[2]));
       ifcs_p3m_compute_error_and_tune_alpha(d);
       if (d->error < d->tolerance_field) {
         // error is small enough for this parameter set, so keep it
+        P3M_INFO(printf("    error is small enough, keeping params\n"));
         (*p)->grid[0] = d->grid[0];
         (*p)->grid[1] = d->grid[1];
         (*p)->grid[2] = d->grid[2];
         (*p)->alpha = d->alpha;
+        // advance to next param set
+        p = &((*p)->next_params);
       } else {
         // otherwise remove this parameter set
+        P3M_INFO(printf("    error too large, removing params\n"));
         tune_params *ptmp = *p;
-        p = &((*p)->next_params);
+        // change pointer to next param set
+        *p = (*p)->next_params;
         free(ptmp);
       }
     }
