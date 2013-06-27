@@ -30,6 +30,7 @@ enum CHARGE_DISTRIBUTION {
 };
 
 enum DISCRETIZATION {
+  order_2,
   order_4_compact,
   order_6
 };

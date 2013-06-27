@@ -706,6 +706,20 @@ r_cut=4.481387, grid=64, cao=3, alpha=0.573076
       method="P3M" 
       charges="102900" 
       tolerance="1e-3">
+    <parameters>
+-i5 -c p3m_tolerance_field,1e-3
+    </parameters>
+    <tuned-parameters>
+r_cut=4.481387, grid=128, cao=4, alpha=0.573076
+    </tuned-parameters>
+    <errors>
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    2.038105e-04
+          rel_max_field_error =    7.520986e-04
+      rel_rms_potential_error =    2.488389e-04
+      rel_max_potential_error =    6.835380e-04
+             rel_energy_error =    2.082814e-04    
+    </errors>
     <data>
       4096	0.0452 
       2048	0.0428 
@@ -727,6 +741,20 @@ r_cut=4.481387, grid=64, cao=3, alpha=0.573076
       method="P3M" 
       charges="1012500" 
       tolerance="1e-3">
+    <parameters>
+-i5 -c p3m_tolerance_field,1e-3
+    </parameters>
+    <tuned-parameters>
+r_cut=4.481387, grid=256, cao=4, alpha=0.573076
+    </tuned-parameters>
+    <errors>
+  RELATIVE ERRORS (from 1012500 of 1012500 particles)
+          rel_rms_field_error =    2.018040e-04
+          rel_max_field_error =    7.513743e-04
+      rel_rms_potential_error =    3.555205e-04
+      rel_max_potential_error =    9.170195e-04
+             rel_energy_error =    2.065915e-04
+    </errors>
     <data>
       16384	0.138
       8192	0.122
@@ -747,6 +775,20 @@ r_cut=4.481387, grid=64, cao=3, alpha=0.573076
       method="P3M" 
       charges="8100" 
       tolerance="1e-5">
+    <parameters>
+-i5 -c tolerance_field,1e-5
+    </parameters>
+    <tuned-parameters>
+r_cut=4.481387, grid=64, cao=7, alpha=0.746810
+    </tuned-parameters>
+    <errors>
+  RELATIVE ERRORS (from 8100 of 8100 particles)
+          rel_rms_field_error =    2.254635e-06
+          rel_max_field_error =    7.842019e-06
+      rel_rms_potential_error =    3.398310e-06
+      rel_max_potential_error =    1.260359e-05
+             rel_energy_error =    6.249764e-07
+    </errors>
     <data>
 1024 0.0190
 512 0.0219
@@ -766,6 +808,20 @@ r_cut=4.481387, grid=64, cao=3, alpha=0.573076
       method="P3M" 
       charges="102900" 
       tolerance="1e-5">
+    <parameters>
+-i5 -c p3m_tolerance_field,1e-5 
+    </parameters>
+    <tuned-parameters>
+r_cut=4.481387, grid=256, cao=5, alpha=0.746810 
+    </tuned-parameters>
+    <errors>
+  RELATIVE ERRORS (from 102900 of 102900 particles)
+          rel_rms_field_error =    2.943158e-06
+          rel_max_field_error =    8.350889e-06
+      rel_rms_potential_error =    1.016038e-05
+      rel_max_potential_error =    2.344981e-05
+             rel_energy_error =    1.930652e-06
+    </errors>
     <data>
       4096	0.0803 
       2048	0.0986 
