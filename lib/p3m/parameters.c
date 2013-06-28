@@ -162,3 +162,29 @@ FCSResult ifcs_p3m_get_total_energy(void *rd, fcs_float *total_energy) {
       (FCS_LOGICAL_ERROR, fnc_name, 
        "Trying to get total energy, but computation was not requested.");
 }
+
+void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
+  ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*)rd;
+  d->require_timings = flag;
+}
+
+FCSResult 
+ifcs_p3m_get_timings(void *rd, 
+                     double *timing, 
+                     double *timing_near_field, 
+                     double *timing_far_field) {
+  const char* fnc_name = "ifcs_p3m_get_timings";
+  ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*)rd;
+
+  if (!d->require_timings)
+    return 
+      fcsResult_create
+      (FCS_LOGICAL_ERROR, fnc_name, 
+       "Trying to get timings, but timings were not requested.");
+
+  *timing = d->timings[TIMING];
+  *timing_near_field = d->timings[TIMING_NEAR];
+  *timing_far_field = d->timings[TIMING_FAR];
+
+  return NULL;
+}

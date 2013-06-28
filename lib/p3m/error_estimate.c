@@ -73,13 +73,6 @@ ifcs_p3m_real_space_error(ifcs_p3m_data_struct *d) {
     force (as described in the book of Hockney and Eastwood
     (Eqn. 8.23) (for a system of N randomly distributed particles in a
     cubic box).
-    \param N        	number of charged particles in the system
-    \param sum_q2   	sum of square of charges in the system
-    \param box_l    	system size
-    \param grid     	number of grid points in the different directions
-    \param alpha	ewald splitting parameter
-    \param cao		charge assignment order
-    \return 		reciprocal space error
 */
 void 
 ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d) {
@@ -91,7 +84,7 @@ ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d) {
 /* #endif */
 
   if (d->comm.rank == 0)
-    ifcs_p3m_tune_broadcast_command(d, COMPUTE_ERROR_ESTIMATE);
+    ifcs_p3m_tune_broadcast_command(d, CMD_COMPUTE_ERROR_ESTIMATE);
       
   fcs_float local_he_q = 0.0;
   fcs_float grid_i[3] = 

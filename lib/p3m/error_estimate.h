@@ -32,4 +32,12 @@
 */
 void
 ifcs_p3m_compute_error_and_tune_alpha(ifcs_p3m_data_struct *d);
+
+/** Calculates the reciprocal space contribution to the rms error in the
+    force (as described in the book of Hockney and Eastwood
+    (Eqn. 8.23) (for a system of N randomly distributed particles in a
+    cubic box).
+*/
+void 
+ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d);
 #endif

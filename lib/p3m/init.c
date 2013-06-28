@@ -68,6 +68,10 @@ void ifcs_p3m_init(void **rd, MPI_Comm communicator) {
   d->require_total_energy = 0;
   d->total_energy = 0.0;
 
+  d->require_timings = 0;
+  for (int i=0; i < NUM_TIMINGS; i++)
+    d->timings[i] = 0.0;
+
   /* Init the derived params */
   d->grid_off[0] = P3M_DEFAULT_GRIDOFF;
   d->grid_off[1] = P3M_DEFAULT_GRIDOFF;

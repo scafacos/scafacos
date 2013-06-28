@@ -53,4 +53,11 @@ void ifcs_p3m_get_tolerance_field(void *rd, fcs_float* tolerance_field);
 void ifcs_p3m_require_total_energy(void *rd, fcs_int flag);
 FCSResult ifcs_p3m_get_total_energy(void *rd, fcs_float *total_energy);
 
+void ifcs_p3m_require_timings(void *rd, fcs_int flag);
+FCSResult 
+ifcs_p3m_get_timings(void *rd, 
+                     double *timing, 
+                     double *timing_near_field, 
+                     double *timing_far_field);
+
 #endif

@@ -25,10 +25,10 @@
 #include "FCSResult.h"
 
 /* Events during tuning */
-#define FAILED -1
-#define FINISHED 0
-#define COMPUTE_ERROR_ESTIMATE 1
-#define TIMING 2
+#define CMD_FAILED -1
+#define CMD_FINISHED 0
+#define CMD_COMPUTE_ERROR_ESTIMATE 1
+#define CMD_TIMING 2
 
 void
 ifcs_p3m_tune_broadcast_command

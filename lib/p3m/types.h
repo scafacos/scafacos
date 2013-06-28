@@ -199,6 +199,24 @@ typedef struct {
   fcs_int require_total_energy;
   /** The total energy. */
   fcs_float total_energy;
+  /** Whether or not timings are to be taken. */
+  fcs_int require_timings;
+  /* 0: total timing, 1: near field, 2: far field */
+#define TIMING 0
+#define TIMING_NEAR 1
+#define TIMING_FAR 2
+#define TIMING_CA 3
+#define TIMING_GATHER 4
+#define TIMING_FORWARD 5
+#define TIMING_BACK 6
+#define TIMING_INFLUENCE 7
+#define TIMING_SPREAD 8
+#define TIMING_POTENTIALS 9
+#define TIMING_FIELDS 10
+#define TIMING_DECOMP 11
+#define TIMING_COMP 12
+#define NUM_TIMINGS 13
+  double timings[NUM_TIMINGS];
 
   /****************************************************
    * DERIVED PARAMETERS

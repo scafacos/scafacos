@@ -55,23 +55,11 @@
 #define P3M_INFO_LOCAL(cmd)
 #endif
 
-#if defined(P3M_TIMINGS)
-#define FCS_P3M_INIT_TIMING(comm)               			\
-  int tm_rank;                                                          \
-  MPI_Comm_rank(comm, &tm_rank);                                        \
-  double tm_timer, tm_global_timer;
-#define FCS_P3M_START_TIMING()                  \
-  tm_timer = -MPI_Wtime();
-#define FCS_P3M_FINISH_TIMING(comm, str)                                \
-  tm_timer += MPI_Wtime();                                              \
-  MPI_Reduce(&tm_timer, &tm_global_timer, 1,                            \
-             MPI_DOUBLE, MPI_MAX, 0, comm);                             \
-  if(!tm_rank) printf("P3M_TIMING: %s takes %e s\n", str, tm_global_timer);
-#else
-#define FCS_P3M_INIT_TIMING(comm)
-#define FCS_P3M_START_TIMING()
-#define FCS_P3M_FINISH_TIMING(comm, str)
-#endif
+#define FFLOAT "%" FCS_LMOD_FLOAT "f"
+#define FFLOATE "%" FCS_LMOD_FLOAT "e"
+#define F3FLOAT "(" FFLOAT ", " FFLOAT ", " FFLOAT ")"
+#define FINT "%" FCS_LMOD_INT "d"
+#define F3INT "(" FINT ", " FINT ", " FINT ")"
 
 /** maximal precision */
 #ifdef FCS_FLOAT_IS_DOUBLE

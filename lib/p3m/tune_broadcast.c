@@ -50,12 +50,12 @@ ifcs_p3m_tune_broadcast_command
 
   /* Now send the parameters, depending on the command */
   switch (command) {
-  case FINISHED:
-  case TIMING:
-  case COMPUTE_ERROR_ESTIMATE:
+  case CMD_FINISHED:
+  case CMD_TIMING:
+  case CMD_COMPUTE_ERROR_ESTIMATE:
     ifcs_p3m_tune_broadcast_params(d);
     return;
-  case FAILED: 
+  case CMD_FAILED: 
     return;
   }
 }
@@ -81,18 +81,18 @@ ifcs_p3m_tune_broadcast_slave
     P3M_DEBUG_LOCAL(printf("      %2d: Received command %d.\n", d->comm.rank, command));
 
     switch (command) {
-    case COMPUTE_ERROR_ESTIMATE:
+    case CMD_COMPUTE_ERROR_ESTIMATE:
       ifcs_p3m_tune_receive_params(d);
       ifcs_p3m_k_space_error(d);
       break;
-    case TIMING:
+    case CMD_TIMING:
       ifcs_p3m_tune_receive_params(d);
       ifcs_p3m_timing(d, num_particles, max_particles, positions, charges);
       break;
-    case FINISHED:
+    case CMD_FINISHED:
       ifcs_p3m_tune_receive_params(d);
       return NULL;
-    case FAILED: {
+    case CMD_FAILED: {
       char msg[255];
       sprintf(msg, 
               "Cannot achieve required accuracy (p3m_tolerance_field=%" 

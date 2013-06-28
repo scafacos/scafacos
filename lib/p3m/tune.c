@@ -73,7 +73,7 @@ typedef struct tune_params_t {
   /** Errors */
   fcs_float rs_error, ks_error, error;
   /** Timings */
-  fcs_float rs_timing, ks_timing, timing;
+  fcs_float timing, timing_near, timing_far;
 
   /** pointer to next param set */
   struct tune_params_t *next_params;
@@ -233,7 +233,7 @@ ifcs_p3m_tune_broadcast_master(ifcs_p3m_data_struct *d,
   d->grid[1] = params->grid[1];
   d->grid[2] = params->grid[2];
   d->cao = params->cao;
-  ifcs_p3m_tune_broadcast_command(d, FINISHED);
+  ifcs_p3m_tune_broadcast_command(d, CMD_FINISHED);
 
   /* free the final param set */
   free(params);
@@ -500,7 +500,7 @@ ifcs_p3m_time_params(ifcs_p3m_data_struct *d,
 
   /* Now time the different parameter sets */
   tune_params *best_params = NULL;
-  double best_time = 1.e100;
+  double best_timing = 1.e100;
 
 #ifdef FCS_ENABLE_INFO
   fcs_int num_params=0;
@@ -522,29 +522,30 @@ ifcs_p3m_time_params(ifcs_p3m_data_struct *d,
     d->grid[2] = current_params->grid[2];
     d->cao = current_params->cao;
     
-    fcs_float timing = 
-      ifcs_p3m_timing(d, num_particles, max_particles, positions, charges);
-    current_params->timing = timing;
-    P3M_INFO(printf( "  Timing r_cut=%" FCS_LMOD_FLOAT                  \
-                     "f, alpha=%" FCS_LMOD_FLOAT                        \
-                     "f, grid=(%" FCS_LMOD_INT                          \
-                     "d, %" FCS_LMOD_INT                                \
-                     "d, %" FCS_LMOD_INT                                \
-                     "d), cao=%" FCS_LMOD_INT                           \
-                     "d => timing=%" FCS_LMOD_FLOAT                     \
-                     "f\n",                                             \
+    ifcs_p3m_timing(d, num_particles, max_particles, positions, charges);
+    current_params->timing = d->timings[TIMING];
+    current_params->timing_near = d->timings[TIMING_NEAR];
+    current_params->timing_far = d->timings[TIMING_FAR];
+    P3M_INFO(printf( "  Timing r_cut=" FFLOAT ", "                      \
+                     "alpha=" FFLOAT ", "                               \
+                     "grid=" F3INT ", "                                 \
+                     "cao=" FINT " "                                    \
+                     "=> timing=" FFLOAT " "                            \
+                     "(" FFLOAT " near, " FFLOAT " far)\n",              \
                      d->r_cut, d->alpha,                                \
                      d->grid[0], d->grid[1], d->grid[2],                \
-                     d->cao, timing));
+                     d->cao, current_params->timing,                    \
+                     current_params->timing_near, current_params->timing_far));
 
-    if (timing < best_time) {
-      best_time = timing;
+    if (current_params->timing < best_timing) {
+      best_timing = current_params->timing;
       best_params = current_params;
     }
   }
 
   if (best_params == NULL)
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Internal error: No best timing.");
+    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, 
+                            "Internal error: No best timing.");
 
   /* Free the list, keep only the best */
   tune_params *current_params = *params;
