@@ -1,0 +1,118 @@
+%------------------------------------------------------------------------------
+\section{Introduction}
+%------------------------------------------------------------------------------
+
+\begin{compactitem}
+  \item NFFT consists of 3 steps: ...
+  \item describe the data decomposition
+  \item make clear that 3d-decomposition is possible but 2d-decomposition is more natural
+\end{compactitem}
+\begin{compactitem}
+  \item Details on the algorithms can be found in \cite{PiPo12}.
+  \item Details on the underlying parallel FFT can be found in \cite{Pi12}.
+\end{compactitem}
+
+local NFFT specific variables
+\begin{compactitem}
+  \item \verb+ptrdiff_t local_M+
+  \item \verb+ptrdiff_t local_N[3]+, \verb+ptrdiff_t local_N_start[3]+
+  \item \verb+double lower_border[3]+, \verb+double upper_border[3]+
+\end{compactitem}
+
+global NFFT specific variables
+\begin{compactitem}
+  \item \verb+ptrdiff_t N[3]+
+  \item \verb+ptrdiff_t n[3]+
+  \item \verb+int m+
+  \item \verb+double x_max[3]+
+\end{compactitem}
+
+
+
+2d data decomposition with non-transposed Fourier coefficients
+\begin{equation*}
+  \hat N_0 / P_0 \times \hat N_1 / P_1 \times \hat N_2
+  \nfftarrow
+  C_0 / P_0 \times C_1 / P_1 \times C_2
+\end{equation*}
+
+2d data decomposition with transposed Fourier coefficients
+\begin{equation*}
+  \hat N_1 / P_0 \times \hat N_2 / P_1 \times \hat N_0
+  \nfftarrow
+  C_0 / P_0 \times C_1 / P_1 \times C_2
+\end{equation*}
+
+3d data decomposition with non-transposed Fourier coefficients
+\begin{equation*}
+  \hat N_0 / P_0 \times \hat N_1 / P_1 \times \hat N_2 / P_2
+  \nfftarrow
+  C_0 / P_0 \times C_1 / P_1 \times C_2 / P_2
+\end{equation*}
+
+3d data decomposition with transposed Fourier coefficients with $P_2 = Q_0 Q_1$
+\begin{equation*}
+  \hat N_1 / (P_0 Q_0) \times \hat N_2 / (P_1 Q_1) \times \hat N_0
+  \nfftarrow
+  C_0 / P_0 \times C_1 / P_1 \times C_2 / P_2
+\end{equation*}
+
+
+\subsection{Parallel NFFT Workflow}
+
+\begin{compactitem}
+  \item create a simple test program and describe it here
+\end{compactitem}
+
+
+\begin{compactitem}
+  \item get block distribution of Fourier coefficients and nodes
+  \item call PNFFT planner
+  \item init Fourier coefficients and nodes
+  \item precomputations that depend on the nodes
+  \item execute PNFFT plan
+  \item read results
+  \item finalize PNFFT
+\end{compactitem}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Special Features}
+%------------------------------------------------------------------------------
+
+
+\subsection{Transposed Fourier coefficients}
+A parallel transpose FFT algorithm typically ends up with a transposed order of the output array.
+Start with
+
+
+Similar to PFFT, our parallel NFFT supports an optimization flag that disables the backward transpositions. Therefore, one must work on a transposed array of Fourier coefficients.
+
+
+\subsection{Truncated Torus}
+PNFFT support the special case, where the nodes $\mathbf x_j$ fulfill the restriction $\mathbf x_j \in \left[-\frac{C_0}{2},\frac{C_0}{2} \right]$
+
+Copy from PNFFT paper:\\
+In addition, we pay special attention to the case where all the nonequispaced nodes $\mathbf x_j$
+are contained in a special subset of the torus $\T^3$. For $\mathbf C=(C_0,C_1,C_2)^\top\in\R^3$ with $0<C_0,C_1,C_2\le 1$
+we define the truncated torus $\T^3_{\mathbf C} := [-\frac{C_0}{2},\frac{C_0}{2})\times [-\frac{C_1}{2},\frac{C_1}{2}) \times [-\frac{C_2}{2},\frac{C_2}{2})$.
+For the parallel NFFT we assume $\mathbf x_j\in\T^3_{\mathbf C}$ for every $j=1,\hdots,M$.
+Obviously, for $C_0=C_1=C_2=1$ this corresponds to the serial NFFT, where the nodes $\mathbf x_j$ are contained in the whole three-dimensional torus $\T^3$.
+This slight generalization is necessary in order to assure a load balanced distribution of nodes $\mathbf x_j$ whenever the nodes are
+concentrated in the center of the box.
+
+
+%------------------------------------------------------------------------------
+\section{Download and Install}
+%------------------------------------------------------------------------------
+\begin{compactitem}
+  \item download, configure, make
+  \item Advice for developers: install new version of autotools (add the script here)
+\end{compactitem}
+
+
+
+
+

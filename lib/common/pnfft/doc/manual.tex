@@ -1,0 +1,246 @@
+% \documentclass[a4paper,twoside,11pt,final,openright,headsepline,parskip]{scrreprt}
+\documentclass[a4paper,11pt,final,openright,headsepline]{scrreprt}
+% parskip: no indentation of paragraphs, german style
+%\usepackage{layout} % show layout boarders
+
+\usepackage[english]{babel} % wordbreaks
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[fixlanguage]{babelbib} % easily change bib language
+
+%% Vector fonts for PDF
+% \usepackage{ae} % deprecated package, use lmodern instead
+\usepackage{lmodern} %standard latex font
+
+%\usepackage{makeidx} % automatic index generation, required for nomencl.sty
+%\usepackage{nomencl} % important symbols in a table at the beginning of document
+
+%% AMSMath-packages
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+% \usepackage{amsrefs}
+% \usepackage{textcmds}
+\usepackage{exscale} % Correct font scaling in formulas
+
+\usepackage{subfigure}
+\usepackage{graphicx} % Graphics for figures
+\usepackage[svgnames, table, hyperref]{xcolor} % 
+\usepackage{paralist} % compact itemize, enumerate, ...
+% \usepackage{listings} % source code in LaTeX
+% \usepackage{multirow} % combine multiple rows in arrays
+
+%% improvements of LaTeX enviroments
+\usepackage{scrhack} % avoid warning of scrreprt when loading float package
+\usepackage{float}
+% \usepackage{verbatim}
+% \usepackage{array}
+
+% \usepackage{url} % provides \url command for bibtex
+\usepackage{hyperref} % provides \url command for bibtex and links to jump within documents
+\hypersetup{plainpages=false, colorlinks, linkcolor=black, citecolor=black, urlcolor=blue,
+pdftitle={PNFFT Users Manual},
+pdfauthor={Michael Pippig}, pdfstartview={FitBH}}
+
+%% adjust numbering
+\numberwithin{figure}{chapter}
+\numberwithin{table}{chapter}
+\numberwithin{equation}{chapter}
+
+%% activate for algorithms
+% \usepackage[chapter]{algorithm}
+% \usepackage{algorithmic,algorithmic-fix}
+% \floatname{algorithm}{Algorithmus} % use german title for algorithms
+% \numberwithin{algorithm}{chapter}
+
+%% activate for compact page layout
+\usepackage{geometry}
+\geometry{top=30.4mm, left=30.4mm, text={155mm,240mm}, headheight=10mm, headsep=5mm, includemp, marginparwidth=15.4mm}
+
+%% activate for headline with chapter information on every page
+\usepackage{scrpage2}
+\pagestyle{scrheadings}
+\automark[section]{chapter}
+\clearscrheadings
+\lehead{\pagemark}
+\rehead{\leftmark}
+\rohead{\pagemark}
+\lohead{\rightmark}
+\ofoot[]{}
+\cfoot[]{}
+\ifoot[]{}
+
+%% the quotchap document style redeﬁnes the \chapter and \chapter* commands to
+%% create fancy chapter head pages with huge chapter numbers (possibly greyed) and
+%% provides commands for adding quotations in the upper left corner of these pages.
+% \usepackage[grey]{quotchap}
+
+
+%% very special purpose packages
+% \usepackage{faktor} % provides a symbol for factor groups
+% \usepackage{slashbox} % diagonaly divide an array field
+
+
+%% experimental
+% \usepackage[color]{showkeys} % show all reference keys
+% \definecolor{refkey}{gray}{.75}
+% \definecolor{labelkey}{gray}{0.75}
+% \usepackage{epstopdf} % include .eps files with pdflatex
+% \usepackage{marginnote}
+%\usepackage{pgf}
+%\usepackage{jkpgf}
+%\usepackage{pstricks}
+%% make pdf-indexfile for inverse search - needs compatible pdf viewer
+% \synctex=1
+% \usepackage{pdfsync} % deprecated package, use synctex instead
+
+
+\hyphenation{equi-spaced non-equi-spaced NFFT FFTW FFT BGFFT nicht-äqui-dis-tant nicht-äqui-dis-tante}
+
+\newtheorem{Satz}{Satz}[chapter] % define Satz enviroment for german docs
+\input{shortcuts.tex} % Shortcuts for math symbols
+
+
+\pagestyle{scrheadings}
+
+\automark[section]{chapter} % auto
+\clearscrheadings
+\lehead{\pagemark}
+\rehead{\leftmark}
+\rohead{\pagemark}
+\lohead{\rightmark}
+\ofoot[]{}
+\cfoot[]{}
+\ifoot[]{}
+
+% \includeonly{intro} % work on single chapters
+
+
+
+\newcommand{\nfftarrow}{\osetarrow{\textsf{NFFT}}}
+
+
+
+\begin{document}
+  \setcounter{equation}{0}
+
+%   \thispagestyle{empty}
+  \begin{titlepage}
+    \begin{center}
+      \vspace*{3cm}
+      {\Huge {\textbf{\textsf{PNFFT Users Manual\\}}}}
+
+      \vspace*{1cm}
+      for version \pnfftversion\, \today
+
+      \vspace*{3cm}
+      Michael Pippig\\
+      Chemnitz University of Technology\\
+      Department of Mathematics\\
+      09107 Chemnitz, Germany
+
+      \vspace*{3cm}
+      Download Parallel Nonequispaced Fast Fourier Transform Software Library at \\
+      {\large \url{http://www.tu-chemnitz.de/~mpip/software}}
+    \end{center}
+    \vfill
+    michael.pippig@mathematik.tu-chemnitz.de
+  \end{titlepage}
+
+  \tableofcontents
+
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \chapter{Introduction}\label{kap:intro}
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %\input{intro} % ohne Seitenumbrueche
+  \include{intro} % mit Seitenumbruechen
+  \include{fortran}
+
+%------------------------------------------------------------------------------
+\subsubsection*{How to Deal with FFT Shifts in Parallel}
+%------------------------------------------------------------------------------
+PFFT calculates
+\begin{equation*}
+  h_l = \sum_{k=0}^{N-1} \hat h_k \eim{kl/n},
+  \quad l=0,\hdots,L
+\end{equation*}
+with $n\ge N$ and $n\ge L$.
+Step 2 of our PNFFT algorithm requires the shifted index sets
+\begin{equation*}
+  g_l = \sum_{k=-N/2}^{N/2-1} \hat g_k \eim{kl/n},
+  \quad l=-L/2,\hdots,L/2-1
+\end{equation*}
+A common technique to deal with this problem is to call FFT shift, i.e., set
+\begin{equation*}
+  \hat h_k
+  =
+  \begin{cases}
+    g_k,     & k=0,\hdots,N/2-1 \\
+    g_{k+N}, & k=N/2,\hdots,N-1
+  \end{cases}
+\end{equation*}
+\begin{equation*}
+  g_l
+  =
+  \begin{cases}
+    h_{l+N}, & l=-N/2,\hdots,-1 \\
+    h_l,     & l=0,\hdots,N/2-1
+  \end{cases}
+\end{equation*}
+However, because of the parallel data decomposition, this involves explicit data communication.
+Instead we apply the FFT shifts in frequency domain.
+Use the translation property
+\begin{equation*}
+  \hat h_k = \hat g_k \eip{kL/2/n}
+\end{equation*}
+and the modulation property
+\begin{equation*}
+  h_{l-N/2} = \eim{lN/2/n}
+\end{equation*}
+of the discrete Fourier transform.
+
+User can choose to shift the input (\verb+PNFFT_SHIFT_INPUT+) and/or to shift the output (\verb+PNFFT_SHIFT_OUTPUT+).
+
+One-dimensional example
+\begin{align*}
+  f(x)
+  &=
+    \sum_{k=-\frac{N}{2}}^{\frac{N}{2}-1} \hat f_k \eim{kx} \\
+  &\approx
+    \sum_{l=-\frac{n}{2}}^{\frac{n}{2}-1}\left( \sum_{k=-\frac{N}{2}}^{\frac{N}{2}-1} \frac{\hat f_k}{\varphi_k} \eim{k\frac{l}{n}} \right) \varphi\left(x-\frac{l}{n}\right) \\
+  &=
+    \sum_{l=-\frac{n}{2}+\frac{n_o}{2}}^{\frac{n}{2}+\frac{n_o}{2}-1} \left(
+      \sum_{k=0}^{N-1} \frac{\hat f_{(k-\frac{N}{2})}}{\varphi_{(k-\frac{N}{2})}} \eim{(k-\frac{N}{2})\frac{(l-\frac{n_o}{2})}{n}}
+    \right) \varphi\left( \left(x+\frac{n_o}{2n}\right)-\frac{l}{n}\right) \\
+  &=
+    \sum_{l=-n/2+n_o/2}^{n/2+n_o/2-1} \left[
+      \e^{+\pi\ti N\frac{l}{n}} \sum_{k=0}^{N-1} \left(
+        \frac{\hat f_{(k-\frac{N}{2})}}{\hat\varphi_{(k-\frac{N}{2})}}
+        \e^{+\pi\ti(k-\frac{N}{2})\frac{n_o}{n}}
+      \right)
+      \eim{k\frac{l}{n}}
+    \right] \varphi\left( x-\frac{l-\frac{n_o}{2}}{n} \right)
+\end{align*}
+\begin{align*}
+  \textrm{lo}
+  &=
+    \frac{\textrm{local\_no\_start} - \textrm{no/2}}{\textrm{n}} \\
+  \textrm{up}
+  &=
+    \frac{\textrm{local\_no\_start} + \textrm{local\_no} - \textrm{no/2}}{\textrm{n}}
+  =
+    \textrm{lo} + \frac{\textrm{local\_no}}{\textrm{n}}
+\end{align*}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \selectbiblanguage{english}
+\bibliographystyle{bababbrv-fl}
+% \bibliographystyle{abbrv}
+\bibliography{bibliography}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

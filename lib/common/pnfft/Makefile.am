@@ -17,6 +17,10 @@ if ENABLE_TESTS
 SUBDIRS += tests
 endif
 
+if ENABLE_DOC
+SUBDIRS += doc
+endif
+
 EXTRA_DIST = bootstrap.sh CONVENTIONS pnfft.pc.in
 
 # Libraries that are built and installed.
@@ -41,3 +45,13 @@ include $(top_srcdir)/build-aux/fortran-rules.am
 
 pnfft1@PREC_SUFFIX@.pc: pnfft.pc
 	cp -f pnfft.pc pnfft1@PREC_SUFFIX@.pc
+
+#################################################################
+# Documentation
+#################################################################
+if ENABLE_DOC
+.PHONY: FORCE doc manual
+doc manual: FORCE
+	cd doc; $(MAKE) --print-directory $@
+FORCE:
+endif
