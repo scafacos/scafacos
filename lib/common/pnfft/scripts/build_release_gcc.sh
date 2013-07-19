@@ -1,5 +1,10 @@
 #!/bin/sh -e
 
+if [ "x$BUILD_RELEASE_CALLED_FROM_MAKE_RELEASE" != "xyes" ]; then
+  echo "!!! Error: This is a helper script that should not be called individually. Use the corresponding make_release script instead! !!!"
+  exit
+fi
+
 myprefix=$HOME/local
 PNFFT_VERSION=1.0.5-alpha
 PFFT_VERSION=1.0.6-alpha
@@ -23,9 +28,7 @@ fi
 
 mkdir $TMP && cd $TMP
 cd ../.. && ./bootstrap.sh && cd -
-../../configure --prefix=$INSTDIR --with-fftw3=$FFTWDIR --with-pfft=$PFFTDIR --disable-shared FC=mpif90 CC=mpicc MPICC=mpicc MPIFC=mpif90
+../../configure --prefix=$INSTDIR --with-fftw3=$FFTWDIR --with-pfft=$PFFTDIR --disable-shared
 
-make -j 4
-make install
-# make check
-# ./configure --prefix=$INSTDIR --with-fftw3=$FFTWDIR FC="mpif90 -f90=gfortran" CC="mpicc -cc=gcc"&& make && make check && make install
+make -j 4 distcheck
+
