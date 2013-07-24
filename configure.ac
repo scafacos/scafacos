@@ -713,9 +713,7 @@ AC_CONFIG_FILES([
 
 AC_CONFIG_LINKS([test/generic/scafacos_test_all.sh:test/generic/scafacos_test_all.sh])
 AC_CONFIG_LINKS([test/generic/compute_nonperiodic_references.sh:test/generic/compute_nonperiodic_references.sh])
-AC_CONFIG_LINKS([test/generic/tune_alpha_2dp.py:test/generic/tune_alpha_2dp.py])
-AC_CONFIG_LINKS([test/generic/tune_alpha_3dp.py:test/generic/tune_alpha_3dp.py])
-AC_CONFIG_LINKS([test/generic/tune_alpha_cloud_wall_3dp.py:test/generic/tune_alpha_cloud_wall_3dp.py])
+AC_CONFIG_LINKS([test/generic/opt_alpha_cloud_wall_2dp.py:test/generic/opt_alpha_cloud_wall_2dp.py])
 AC_CONFIG_LINKS([test/generic/opt_alpha_cloud_wall_3dp.py:test/generic/opt_alpha_cloud_wall_3dp.py])
 
 # Create helper script for portable MPI job startup.

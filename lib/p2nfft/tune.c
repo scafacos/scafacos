@@ -1511,7 +1511,45 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
 
   /* take care of transposed order N1 x N2 x N0 */
   /* shift FFT input via twiddle factors on the output */
-  twiddle_k0 = twiddle_k1 = twiddle_k2 = 1.0;
+#if FCS_P2NFFT_NORMALIZED_2DP_EWALD
+  m=0;
+  if(!periodicity[1]) twiddle_k1 = (local_No_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
+  for(ptrdiff_t l1 = local_No_start[1]; l1 < local_No_start[1] + local_No[1]; l1++){
+    k[1] = (periodicity[1]) ? l1 - N[1]/2 : 0;
+    if(!periodicity[2]) twiddle_k2 = (local_No_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
+    for(ptrdiff_t l2 = local_No_start[2]; l2 < local_No_start[2] + local_No[2]; l2++){
+      k[2] = (periodicity[2]) ? l2 - N[2]/2 : 0;  
+      if(!periodicity[0]) twiddle_k0 = (local_No_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
+      for(ptrdiff_t l0 = local_No_start[0]; l0 < local_No_start[0] + local_No[0]; l0++, m++){
+        k[0] = (periodicity[0]) ? l0 - N[0]/2 : 0;  
+        twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
+
+        /* New regularization for mixed boundary conditions */
+        fcs_float kbnorm = 0.0;
+
+        for(fcs_int t=0; t<3; t++)
+          kbnorm += k[t] / box_l[t] * k[t] / box_l[t];
+        kbnorm = fcs_sqrt(kbnorm);
+
+        /* Index correspoding to non-periodic dim will be 0 per default. */
+        if ((k[0] != 0) || (k[1] != 0) || (k[2] != 0)){
+          /* kbnorm includes 1.0/B for cubic case */ 
+          regkern_hat[m] *=  erfc(FCS_PI*kbnorm/alpha);
+        }
+
+        regkern_hat[m] *= twiddle;
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+        csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+#endif
+
+        if(!periodicity[0]) twiddle_k0 *= -1.0;
+      }
+      if(!periodicity[2]) twiddle_k2 *= -1.0;
+    }
+    if(!periodicity[1]) twiddle_k1 *= -1.0;
+  }
+#else /* FCS_P2NFFT_NORMALIZED_2DP_EWALD */
   m=0;
   if(!periodicity[1]) twiddle_k1 = (local_No_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
   for(ptrdiff_t k1 = 0; k1 < local_No[1]; k1++){
@@ -1530,6 +1568,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
     }
     if(!periodicity[1]) twiddle_k1 *= -1.0;
   }
+#endif /* FCS_P2NFFT_NORMALIZED_2DP_EWALD */
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);

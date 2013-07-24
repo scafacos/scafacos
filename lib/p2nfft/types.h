@@ -31,13 +31,13 @@
 #define FCS_P2NFFT_DEBUG 0
 #define FCS_P2NFFT_DEBUG_RETUNE 0
 
+#define FCS_P2NFFT_NORMALIZED_2DP_EWALD 0
+
 #define CONCAT2(prefix, name)  prefix ## name
 #define CONCAT(prefix, name)  CONCAT2(prefix, name)
 
 // typedef CONCAT(FFTW_PREFIX, fftw_complex) C;
 // #define FFTW(name) FFTW_MANGLE_DOUBLE(name)
-
-
 
 #if defined(FCS_FLOAT_IS_DOUBLE)
 typedef pnfft_complex fcs_pnfft_complex;

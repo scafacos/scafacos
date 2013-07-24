@@ -50,6 +50,7 @@ EXTRA_DIST = \
 	tune_alpha_2dp.py \
 	tune_alpha_3dp.py \
 	tune_alpha_cloud_wall_3dp.py \
+	opt_alpha_cloud_wall_2dp.py \
 	opt_alpha_cloud_wall_3dp.py \
 	compute_nonperiodic_references.sh \
 	rapidxml/manual.html \
