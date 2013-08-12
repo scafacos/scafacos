@@ -68,9 +68,18 @@ typedef ptrdiff_t INT;
 #  define FCS_ENABLE_DEBUG 0
 #endif
 
-#define FCS_P2NFFT_REG_CG         0
-#define FCS_P2NFFT_REG_TAYLOR2P   1
-#define FCS_P2NFFT_REG_DEFAULT    FCS_P2NFFT_REG_CG 
+#define FCS_P2NFFT_REG_NEAR_CG                0
+#define FCS_P2NFFT_REG_NEAR_T2P               1
+
+#define FCS_P2NFFT_REG_FAR_RAD_CG             0
+#define FCS_P2NFFT_REG_FAR_RAD_T2P_SYM        1
+#define FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC     2
+#define FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC     3
+#define FCS_P2NFFT_REG_FAR_REC_T2P_SYM        4
+#define FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC     5
+#define FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC     6
+
+
 
 /* p2nfft_flags */
 #define FCS_P2NFFT_CHECK_TOLERANCE           (0U)
@@ -122,6 +131,7 @@ typedef struct {
   fcs_int tune_n;
   fcs_int tune_m;
   fcs_int tune_p;
+  fcs_int tune_c;
   fcs_int sum_qpart;
   fcs_float sum_q;
   fcs_float sum_q2;
@@ -144,7 +154,8 @@ typedef struct {
   fcs_int  pfft_patience;
 
   fcs_int short_range_flag;
-  fcs_int regularization;
+  fcs_int reg_near;
+  fcs_int reg_far;
 
   fcs_int periodicity[3];
 
@@ -167,12 +178,14 @@ typedef struct {
   fcs_float epsB;  /* size of regualization border scaled into unit cube */
   fcs_int log2epsB;
   fcs_int p;
+  fcs_float c;
   fcs_float *taylor2p_coeff;
   fcs_float *taylor2p_derive_coeff;
 
   /* parameters for interpolation table */
   fcs_int interpolation_order;      /* interpolation order */
-  fcs_int interpolation_num_nodes;  /* number of sampled points */
+  fcs_int near_interpolation_num_nodes;  /* number of sampled points in near field */
+  fcs_int far_interpolation_num_nodes;   /* number of sampled points in far field */
   fcs_float *near_interpolation_table_potential; /* nearfield potential values */
   fcs_float *near_interpolation_table_force;     /* nearfield force values */
   fcs_float *far_interpolation_table_potential;  /* potential values between far field border and 0.5 */
@@ -180,6 +193,7 @@ typedef struct {
   /* Cosine coefficients of CG-optimized regularization */
   fcs_int N_cg_cos;
   fcs_float *cg_cos_coeff;
+  fcs_float *cg_sin_coeff;
   
   /* Fourier coefficients of regularized kernel approximation */
   fcs_pnfft_complex *regkern_hat;

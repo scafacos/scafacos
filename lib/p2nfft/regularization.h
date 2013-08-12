@@ -28,12 +28,18 @@
 #include "FCSDefinitions.h"
 #include "kernels.h"
 
-/* this wrapper makes it easier to change the regularization */
-fcs_float ifcs_p2nfft_regkernel(
-    ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p,
-    const fcs_float *param, fcs_float epsI, fcs_float epsB);
-
-fcs_float ifcs_regkern3_2ptaylor_x_inv(fcs_float *x, fcs_int p, fcs_float a, fcs_float b, fcs_float *n);
+fcs_float ifcs_p2nfft_regkern_far_mirrored_expl_cont(
+    ifcs_p2nfft_kernel k, fcs_float xsnorm,
+    fcs_int p, const fcs_float *param,
+    fcs_float epsI, fcs_float epsB, fcs_float c);
+fcs_float ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
+    ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_float xsnorm,
+    fcs_int p, const fcs_float *param,
+    fcs_float r_cut, fcs_float eps_B, fcs_float c);
+fcs_float ifcs_p2nfft_regkern_far_mirrored_impl_cont(
+    ifcs_p2nfft_kernel k, fcs_float xsnorm,
+    fcs_int p, const fcs_float *param,
+    fcs_float epsI, fcs_float epsB);
 
 fcs_float ifcs_p2nfft_interpolation(
     fcs_float x, fcs_float one_over_epsI,
@@ -46,10 +52,10 @@ fcs_float ifcs_p2nfft_nearfield_correction_taylor2p_derive(
     fcs_float xx, fcs_int p, const fcs_float *param);
 
 fcs_int ifcs_p2nfft_load_taylor2p_coefficients(
-   fcs_float epsI, fcs_int p,
+   fcs_int p,
    fcs_float *param);
 fcs_int ifcs_p2nfft_load_taylor2p_derive_coefficients(
-   fcs_float epsI, fcs_int p,
+   fcs_int p,
    fcs_float *param);
 
 #endif

@@ -103,6 +103,7 @@ FCSResult ifcs_p2nfft_init(
   d->tune_n = 1;
   d->tune_m = 1;
   d->tune_p = 1;
+  d->tune_c = 1;
   d->flags = FCS_P2NFFT_CHECK_TOLERANCE; /* 1: continue even if accuracy estimation fails */
 
   d->pnfft_flags = PNFFT_MALLOC_F_HAT| PNFFT_PRE_PHI_HAT | PNFFT_FFT_OUT_OF_PLACE | PNFFT_TRANSPOSED_F_HAT;
@@ -119,6 +120,7 @@ FCSResult ifcs_p2nfft_init(
   d->N[0] = d->N[1] = d->N[2] = 16;
   d->m = 4;
   d->p = 8;
+  d->c = 0.0;
 
 /* DEBUG: */
 //  d->N[0] = d->N[1] = d->N[2] = 4;
@@ -144,7 +146,8 @@ FCSResult ifcs_p2nfft_init(
   comm_get_periodicity(comm, d->periodicity);
 
   d->short_range_flag = -1;
-  d->regularization = FCS_P2NFFT_REG_DEFAULT;
+  d->reg_near = FCS_P2NFFT_REG_NEAR_CG;
+  d->reg_far  = FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC;
 
   /* init local data distribution of PNFFT:
    * local_N, local_N_start, lower_border, upper_border */
@@ -181,7 +184,8 @@ static ifcs_p2nfft_data_struct* mkplan_p2nfft(
 
   /* initialize pointer to interpolation table */
   d->interpolation_order = 3;
-  d->interpolation_num_nodes = 0;
+  d->near_interpolation_num_nodes = 0;
+  d->far_interpolation_num_nodes = 0;
   d->near_interpolation_table_potential = NULL;  
   d->near_interpolation_table_force = NULL;  
   d->far_interpolation_table_potential = NULL;  
@@ -190,6 +194,7 @@ static ifcs_p2nfft_data_struct* mkplan_p2nfft(
   d->taylor2p_derive_coeff = NULL;
 
   d->cg_cos_coeff = NULL;
+  d->cg_sin_coeff = NULL;
 
   /* no virial computed on default */
   d->virial = NULL;
@@ -224,9 +229,11 @@ void ifcs_p2nfft_destroy(
   if(d->taylor2p_derive_coeff != NULL)
     free(d->taylor2p_derive_coeff);
 
-  /* free cosine coefficients of CG approximation */
+  /* free cosine and sine coefficients of CG approximation */
   if(d->cg_cos_coeff != NULL)
     free(d->cg_cos_coeff);
+  if(d->cg_sin_coeff != NULL)
+    free(d->cg_sin_coeff);
 
   /* destroy precomputed Fourier coefficients */
   if(d->regkern_hat != NULL)

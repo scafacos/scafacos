@@ -230,7 +230,7 @@ FCSResult ifcs_p2nfft_run(
     if(d->interpolation_order >= 0){
       ifcs_p2nfft_near_params near_params;
       near_params.interpolation_order = d->interpolation_order;
-      near_params.interpolation_num_nodes = d->interpolation_num_nodes;
+      near_params.interpolation_num_nodes = d->near_interpolation_num_nodes;
       near_params.near_interpolation_table_potential = d->near_interpolation_table_potential;
       near_params.near_interpolation_table_force = d->near_interpolation_table_force;
       near_params.one_over_r_cut = d->one_over_r_cut;
@@ -411,16 +411,16 @@ FCSResult ifcs_p2nfft_run(
   /* Perform NFFT */
   FCS_PNFFT(trafo)(d->pnfft);
 
-  /* Copy the results to the output vector and rescale */
+  /* Copy the results to the output vector and do not rescale */
   for (fcs_int j = 0; j < sorted_num_particles; ++j){
     if(d->use_ewald){
       sorted_potentials[j] += creal(f[j]) / (FCS_P2NFFT_PI * box_vol);
       for(fcs_int t=0; t<3; t++)
         sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (FCS_P2NFFT_PI * box_vol * d->box_l[t]);
     } else {
-      sorted_potentials[j] += creal(f[j]) / d->box_scales[0];
+      sorted_potentials[j] += creal(f[j]);
       for(fcs_int t=0; t<3; t++)
-        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (d->box_scales[0] * d->box_scales[0]);
+        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / d->box_scales[t];
     }
   }
 
@@ -456,7 +456,7 @@ FCSResult ifcs_p2nfft_run(
     if(d->use_ewald)
       far_energy += 0.5 * sorted_charges[j] * f[j] / (FCS_P2NFFT_PI * box_vol);
     else
-      far_energy += 0.5 * sorted_charges[j] * f[j] / d->box_scales[0];
+      far_energy += 0.5 * sorted_charges[j] * f[j];
 
   MPI_Reduce(&far_energy, &far_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: far field energy: %" FCS_LMOD_FLOAT "f\n", far_global);

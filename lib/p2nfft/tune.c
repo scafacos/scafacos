@@ -58,20 +58,20 @@ static void init_near_interpolation_table_force_3dp(
 
 static void init_near_interpolation_table_potential_0dp(
     fcs_int num_nodes,
-    fcs_float epsI, fcs_int p, fcs_float box_scale,
+    fcs_float r_cut, fcs_float epsI, fcs_int p,
     const fcs_float *taylor2p_coeff,
     fcs_int N_cos, fcs_float *cos_coeff,
     fcs_float *table);
 static void init_far_interpolation_table_potential_0dp(
-    fcs_int num_nodes,
-    fcs_float epsB, fcs_int p,
+    fcs_int num_nodes, fcs_int reg_far,
+    fcs_float epsB, fcs_int p, fcs_float c,
     fcs_int N_cos, fcs_float *cos_coeff,
     fcs_float *table);
 static void init_near_interpolation_table_force_0dp(
     fcs_int num_nodes,
-    fcs_float epsI, fcs_int p, fcs_float box_scale,
+    fcs_float r_cut, fcs_float epsI, fcs_int p,
     const fcs_float *taylor2p_derive_coeff,
-    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_int N_cos, fcs_float *cos_coeff, fcs_float *sin_coeff,
     fcs_float *table);
 static fcs_int max_i(fcs_int a, fcs_int b);
 static fcs_int calc_interpolation_num_nodes(
@@ -79,9 +79,9 @@ static fcs_int calc_interpolation_num_nodes(
 static fcs_int calc_interpolation_num_nodes_erf(
     fcs_int interpolation_order, fcs_float eps, fcs_float alpha, fcs_float r, unsigned *err);
 static fcs_float evaluate_cos_polynomial_1d(
-   fcs_float x, fcs_int N, fcs_float *coeff);
+   fcs_float x, fcs_int N, const fcs_float *coeff);
 static fcs_float evaluate_sin_polynomial_1d(
-   fcs_float x, fcs_int N, fcs_float *coeff);
+   fcs_float x, fcs_int N, const fcs_float *coeff);
 
 static void init_pnfft(
     FCS_PNFFT(plan) *ths, int dim, const ptrdiff_t *N, const ptrdiff_t *n,
@@ -145,15 +145,18 @@ static fcs_float compute_alias_k(
 #endif
 
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
-    const ptrdiff_t *N, fcs_float epsI, fcs_float epsB, fcs_float box_scale,
-    fcs_int interpolation_order, fcs_int interpolation_num_nodes,
-    const fcs_float *near_interpolation_table_potential,
-    const fcs_float *far_interpolation_table_potential,
-    MPI_Comm comm_cart);
+    const ptrdiff_t *N, fcs_float r_cut, fcs_float epsI, fcs_float epsB,
+    fcs_int p, fcs_float c, fcs_float *box_scales,
+    fcs_int reg_near, fcs_int reg_far,
+    const fcs_float *taylor2p_coeff, fcs_int N_cos, const fcs_float *cos_coeff,
+    fcs_int interpolation_order, fcs_int near_interpolation_num_nodes, fcs_int far_interpolation_num_nodes,
+    const fcs_float *near_interpolation_table_potential, const fcs_float *far_interpolation_table_potential,
+    MPI_Comm comm_cart, unsigned box_is_cubic);
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
     fcs_float *box_l, fcs_float alpha);
-
+static fcs_int is_cubic(
+    fcs_float *box_l);
 
 FCSResult ifcs_p2nfft_tune(
     void *rd, fcs_int *periodicity,
@@ -222,7 +225,7 @@ FCSResult ifcs_p2nfft_tune(
     local_sum_q += charges[i];
   MPI_Allreduce(&local_sum_q, &sum_q, 1, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
 //   if (!fcs_float_is_equal(sum_q, d->sum_q)) {
-  if (sum_q - d->sum_q > 1e-5) {
+  if (fcs_fabs(sum_q - d->sum_q) > 1e-5) {
 #if FCS_P2NFFT_DEBUG_RETUNE
     fprintf(stderr, "sum_q = %e, d->sum_q = %e\n", sum_q, d->sum_q);
 #endif
@@ -242,7 +245,7 @@ FCSResult ifcs_p2nfft_tune(
     local_sum_q2 += FCS_P2NFFT_SQR(charges[i] - d->bg_charge);
   MPI_Allreduce(&local_sum_q2, &sum_q2, 1, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
 //   if (!fcs_float_is_equal(sum_q2, d->sum_q2)) {
-  if (sum_q2 - d->sum_q2 > 1e-5) {
+  if (fcs_fabs(sum_q2 - d->sum_q2 > 1e-5)) {
 #if FCS_P2NFFT_DEBUG_RETUNE
     fprintf(stderr, "sum_q2 retune, sum_q2 = %e, d->sum_q2 = %e\n", sum_q2, d->sum_q2);
 #endif
@@ -286,6 +289,14 @@ FCSResult ifcs_p2nfft_tune(
   MPI_Allreduce(&local_needs_retune, &d->needs_retune, 1, FCS_MPI_INT, MPI_MAX, d->cart_comm_3d);
 
   if (d->needs_retune) {
+
+    /* determine the dimensions with minimum and maximum box length */
+    fcs_int maxdim=0, mindim=0;
+    for(fcs_int t=1; t<2; t++){
+      if(box_l[t] < box_l[mindim]) mindim = t;
+      if(box_l[t] > box_l[maxdim]) maxdim = t;
+    }
+
     if(d->use_ewald){
       fcs_float ks_error, rs_error;
       /* PNFFT calculates with real space cutoff 2*m+2
@@ -314,8 +325,8 @@ FCSResult ifcs_p2nfft_tune(
         d->box_shifts[t] = d->box_l[t] / 2.0;
       }
 
-      /* set normalized near field radius */
-      d->epsI = d->r_cut / d->box_scales[0];
+      /* set normalized near field radius, relative to minimum box length */
+      d->epsI = d->r_cut / d->box_scales[mindim];
       
       /* Tune alpha for fixed N and m. */
       if(!d->tune_N && !d->tune_m){
@@ -438,9 +449,9 @@ FCSResult ifcs_p2nfft_tune(
       /* Initialize the tables for near field interpolation */
       /*   accuracy of 1e-16 needs 14000 interpolation nodes */
       /*   accuracy of 1e-17 needs 24896 interpolation nodes */
-//       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
+//       d->near_interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
       unsigned err=0;
-      d->interpolation_num_nodes = calc_interpolation_num_nodes_erf(d->interpolation_order, 0.1*d->tolerance, d->alpha, d->r_cut, &err);
+      d->near_interpolation_num_nodes = calc_interpolation_num_nodes_erf(d->interpolation_order, 0.1*d->tolerance, d->alpha, d->r_cut, &err);
       if(err)
         return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Number of nodes needed for interpolation exeedes 1e7. Try to use a higher interpolation order or less accuracy.");
 
@@ -449,16 +460,16 @@ FCSResult ifcs_p2nfft_tune(
       if(d->near_interpolation_table_force != NULL)
         free(d->near_interpolation_table_force);
 
-      if(d->interpolation_num_nodes){
-        d->near_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
+      if(d->near_interpolation_num_nodes){
+        d->near_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->near_interpolation_num_nodes+3));
         init_near_interpolation_table_potential_3dp(
-            d->interpolation_num_nodes,
+            d->near_interpolation_num_nodes,
             d->r_cut, d->alpha, 
             d->near_interpolation_table_potential);
 
-        d->near_interpolation_table_force = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
+        d->near_interpolation_table_force = (fcs_float*) malloc(sizeof(fcs_float) * (d->near_interpolation_num_nodes+3));
         init_near_interpolation_table_force_3dp(
-            d->interpolation_num_nodes,
+            d->near_interpolation_num_nodes,
             d->r_cut, d->alpha,
             d->near_interpolation_table_force);
       }
@@ -468,9 +479,26 @@ FCSResult ifcs_p2nfft_tune(
       /* nonperiodic case */
       /********************/
 
-      fcs_int m;
+      if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
+        if(d->reg_near != FCS_P2NFFT_REG_NEAR_CG)
+          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_RAD_CG is only available in combiniation with FCS_P2NFFT_REG_NEAR_CG.");
 
-      if(d->regularization == FCS_P2NFFT_REG_TAYLOR2P){
+      if(!is_cubic(d->box_l))
+        if(d->reg_far != FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC)
+          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Noncubic boxes require far field regularization FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC.");
+
+      if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM)
+        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_RAD_T2P_SYM is not yet implemented.");
+      if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
+        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_REC_T2P_SYM is not yet implemented.");
+      if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC)
+        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC is not yet implemented.");
+      if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC)
+        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC is not yet implemented.");
+
+
+
+      if(d->reg_near == FCS_P2NFFT_REG_NEAR_T2P){
         /* TODO: implement parameter tuning for 2-point-Taylor regularization 
          * Question: Do we need it? Afaik, CG-approximation is better for all cases. */
   
@@ -479,15 +507,18 @@ FCSResult ifcs_p2nfft_tune(
         /* % eps_I = 0.062500;  N = 64;                                  */
         /* error = 2.782434e-03                                          */      
         /*****************************************************************/
-        m = 4;
   
-        if(d->tune_p)
-          d->p = 7;
+        if (d->tune_N){
+          d->N[mindim] = 64;
+          /* Set N for all dimensions - suitable for noncubic geometry */
+          for (fcs_int t = 0; t < 3; ++t)
+            d->N[t] = 2*fcs_ceil(d->N[mindim]*d->box_l[t]/(d->box_l[mindim]*2.0));
+            // This construction guarantees that N[t] is even and rounded up
+        }
+
+        if(d->tune_m) d->m = 4;
+        if(d->tune_p) d->p = 7;
   
-        if(d->tune_N)
-          for(int t=0; t<3; t++)
-            d->N[t] = 64;
- 
         if(d->tune_epsI){
           d->log2epsI = 5;  //  1.0/16 == 4.0/64
           d->epsI = fcs_pow(0.5, d->log2epsI);
@@ -497,23 +528,23 @@ FCSResult ifcs_p2nfft_tune(
         d->epsB = d->epsI;
   
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
-        for(int t=0; t<3; t++){
+        for(fcs_int t=0; t<3; t++){
           d->box_scales[t] = d->box_l[t] * sqrt(3) / (0.5 - d->epsB);
           d->box_shifts[t] = d->box_l[t] / 2.0;
         }
   
-        /* initialize coefficients of 2 point Taylor polynomials */
+        /* initialize coefficients of 2-point Taylor polynomials */
         if(d->taylor2p_coeff != NULL)
           free(d->taylor2p_coeff);
         d->taylor2p_coeff = (fcs_float*) malloc(sizeof(fcs_float)*(d->p));
-        ifcs_p2nfft_load_taylor2p_coefficients(d->epsI, d->p, d->taylor2p_coeff);
+        ifcs_p2nfft_load_taylor2p_coefficients(d->p, d->taylor2p_coeff);
   
         if(d->taylor2p_derive_coeff != NULL)
           free(d->taylor2p_derive_coeff);
         d->taylor2p_derive_coeff = (fcs_float*) malloc(sizeof(fcs_float)*(d->p-1));
-        ifcs_p2nfft_load_taylor2p_derive_coefficients(d->epsI, d->p, d->taylor2p_derive_coeff);
+        ifcs_p2nfft_load_taylor2p_derive_coefficients(d->p, d->taylor2p_derive_coeff);
 
-      } else if(d->regularization == FCS_P2NFFT_REG_CG) {
+      } else if(d->reg_near == FCS_P2NFFT_REG_NEAR_CG) {
         /*********************/
         /* CG regularization */
         /*********************/
@@ -525,13 +556,13 @@ FCSResult ifcs_p2nfft_tune(
         if(d->tune_epsI){
           if(d->tune_r_cut){
             /* set epsI to 2 times the average distance between charges */
-            d->epsI = 2.0 * avg_dist/d->box_l[0];
+            d->epsI = 2.0 * avg_dist/d->box_l[mindim];
   
             /* good choice for reqiured_accuracy == 1e3 with hammersley_ball_pos_1e4 */
-            d->epsI = 0.5 * avg_dist/d->box_l[0];
+//             d->epsI = 0.5 * avg_dist/d->box_l[mindim];
           } else { /* user defined r_cut, now scale it into unit cube */
             /* invert r_cut = box_scale * epsI, where box_scale = box_l*sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
-            d->epsI = 0.5 / (d->box_l[0] / d->r_cut * sqrt(3) + 1.0);
+            d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut * sqrt(3) + 1.0);
           }
         }
   
@@ -546,7 +577,7 @@ FCSResult ifcs_p2nfft_tune(
   
         d->epsI = fcs_pow(0.5, d->log2epsI);
   
-        /* CG-approximationt always uses epsI == epsB */
+        /* CG-approximation always uses epsI == epsB */
         d->epsB = d->epsI;
         
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
@@ -556,11 +587,11 @@ FCSResult ifcs_p2nfft_tune(
         }
 
         if(d->tune_N){
-          fcs_int N;
+          fcs_int N, m, p;
           for(N=N_min; N<=N_max; N*=2){
             d->N_cg_cos = N/2;
             error = ifcs_p2nfft_get_cg_cos_err(d->N_cg_cos, d->log2epsI,
-              &m, &d->p);
+              &m, &p);
 
 #if FCS_P2NFFT_DEBUG_TUNING
             if(!comm_rank){
@@ -585,31 +616,46 @@ FCSResult ifcs_p2nfft_tune(
             if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE)
               return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy.");
   
-          /* We found the minimal N. */
-          d->N[0] = d->N[1] = d->N[2] = N;
-  
+          /* We found the minimal N. This N corresponds to the minimal box length */
+          d->N[mindim] = N;
+
+          /* Set N for all dimensions - suitable for noncubic geometry */
+          for (fcs_int t = 0; t < 3; ++t)
+            d->N[t] = 2*fcs_ceil(d->N[mindim]*d->box_l[t]/(d->box_l[mindim]*2.0));
+            // This construction guarantees that N[t] is even and rounded up
         }
   
         /* initialize cg-regularization */
-        d->N_cg_cos = d->N[0]/2;
+        d->N_cg_cos = d->N[mindim]/2;
         if(d->cg_cos_coeff != NULL)
           free(d->cg_cos_coeff);
-        
+       
+        fcs_int m, p; 
         d->cg_cos_coeff = (fcs_float*) malloc(sizeof(fcs_float)*d->N_cg_cos);
         int missed_coeff = ifcs_p2nfft_load_cg_cos_coeff(d->N_cg_cos, d->log2epsI,
-            &m, &d->p, d->cg_cos_coeff);
+            &m, &p, d->cg_cos_coeff);
 
         if(missed_coeff)
           return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Did not find an appropriate CG approximation.");
 
+        if(d->cg_sin_coeff != NULL)
+          free(d->cg_sin_coeff);
+        d->cg_sin_coeff = (fcs_float*) malloc(sizeof(fcs_float)*d->N_cg_cos);
+        for(fcs_int k=0; k<d->N_cg_cos; k++)
+          d->cg_sin_coeff[k] = -2 * FCS_P2NFFT_PI * k * d->cg_cos_coeff[k];
+
+        if(d->tune_m) d->m = m;
+        if(d->tune_p) d->p = p;
       } else
-        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown regularization flag. Choose either FCS_P2NFFT_REG_TAYLOR2P or FCS_P2NFFT_REG_CG.");
+        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown near field regularization flag. Choose either FCS_P2NFFT_REG_NEAR_T2P or FCS_P2NFFT_REG_NEAR_CG.");
 
-      if(d->tune_m)
-        d->m = m;
+      if (d->tune_c){
+        d->c = 0.0; /* continue regularization with 0.0 */
+//         d->c = 2.0 / d->box_scales[maxdim]; /* corresponds to scaled kernel function at 0.5 */
+      }
 
-      /* set unscaled near field radius */
-      d->r_cut = d->epsI * d->box_scales[0];
+      /* set unscaled near field radius, relative to minimum box length */
+      d->r_cut = d->epsI * d->box_scales[mindim];
       d->one_over_r_cut = 1.0/d->r_cut;
 
       /* default oversampling equals 2 in nonperiodic case */
@@ -630,41 +676,43 @@ FCSResult ifcs_p2nfft_tune(
       /* Initialize the tables for near field interpolation */
       /*   accuracy of 1e-16 needs 14000 interpolation nodes */
       /*   accuracy of 1e-17 needs 24896 interpolation nodes */
-      if(d->interpolation_order < 0)
-        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "No support of direct evaluation for non-periodic approximtation. Choose non-negative interpolation order!");
-      d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
-//       d->interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
+//       d->near_interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
+      d->near_interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
 
       if(d->near_interpolation_table_potential != NULL)
         free(d->near_interpolation_table_potential);
-      if(d->far_interpolation_table_potential != NULL)
-        free(d->far_interpolation_table_potential);
       if(d->near_interpolation_table_force != NULL)
         free(d->near_interpolation_table_force);
+      if(d->far_interpolation_table_potential != NULL)
+        free(d->far_interpolation_table_potential);
 
-      if(d->interpolation_num_nodes){
-        d->near_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
+      if(d->near_interpolation_num_nodes > 0){
+        d->near_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->near_interpolation_num_nodes+3));
         init_near_interpolation_table_potential_0dp(
-            d->interpolation_num_nodes,
-            d->epsI, d->p, d->box_scales[0],
+            d->near_interpolation_num_nodes,
+            d->r_cut, d->epsI, d->p,
             d->taylor2p_coeff,
             d->N_cg_cos, d->cg_cos_coeff,
             d->near_interpolation_table_potential);
 
-        d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
+        d->near_interpolation_table_force = (fcs_float*) malloc(sizeof(fcs_float) * (d->near_interpolation_num_nodes+3));
+        init_near_interpolation_table_force_0dp(
+            d->near_interpolation_num_nodes,
+            d->r_cut, d->epsI, d->p,
+            d->taylor2p_derive_coeff,
+            d->N_cg_cos, d->cg_cos_coeff, d->cg_sin_coeff,
+            d->near_interpolation_table_force);
+      }
+
+      /* far field interpolation only works for cubic boxes */
+      d->far_interpolation_num_nodes = (is_cubic(d->box_l)) ? d->near_interpolation_num_nodes : 0;
+      if(d->far_interpolation_num_nodes > 0){
+        d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->far_interpolation_num_nodes+3));
         init_far_interpolation_table_potential_0dp(
-            d->interpolation_num_nodes,
-            d->epsB, d->p,
+            d->far_interpolation_num_nodes, d->reg_far,
+            d->epsB, d->p, d->c,
             d->N_cg_cos, d->cg_cos_coeff,
             d->far_interpolation_table_potential);
-
-        d->near_interpolation_table_force = (fcs_float*) malloc(sizeof(fcs_float) * (d->interpolation_num_nodes+3));
-        init_near_interpolation_table_force_0dp(
-            d->interpolation_num_nodes,
-            d->epsI, d->p, d->box_scales[0],
-            d->taylor2p_derive_coeff,
-            d->N_cg_cos, d->cg_cos_coeff,
-            d->near_interpolation_table_force);
       }
 
       for(int t=0; t<3; t++)
@@ -672,8 +720,8 @@ FCSResult ifcs_p2nfft_tune(
      
 #if FCS_ENABLE_INFO 
      if(!comm_rank){
-       printf("P2NFFT_INFO: Tuned parameters: N = %td, n = %td, m = %" FCS_LMOD_INT "d, p = %" FCS_LMOD_INT "d, rcut = %" FCS_LMOD_FLOAT "f, epsI = %" FCS_LMOD_FLOAT "f, interpolation nodes = %" FCS_LMOD_INT "d, cg_err_3d = %" FCS_LMOD_FLOAT "e, tolerance = %" FCS_LMOD_FLOAT "e\n",
-           d->N[0], d->n[0], d->m, d->p, d->r_cut, d->epsI, d->interpolation_num_nodes, error, d->tolerance);
+       printf("P2NFFT_INFO: Tuned parameters: N = [%td, %td, %td], n = [%td, %td, %td], m = %" FCS_LMOD_INT "d, p = %" FCS_LMOD_INT "d, rcut = %" FCS_LMOD_FLOAT "f, epsI = %" FCS_LMOD_FLOAT "f, near field interpolation nodes = %" FCS_LMOD_INT "d, far field interpolation nodes = %" FCS_LMOD_INT "d, cg_err_3d = %" FCS_LMOD_FLOAT "e, tolerance = %" FCS_LMOD_FLOAT "e\n",
+           d->N[0], d->N[1], d->N[2], d->n[0], d->n[1], d->n[2], d->m, d->p, d->r_cut, d->epsI, d->near_interpolation_num_nodes, d->far_interpolation_num_nodes, error, d->tolerance);
        printf("P2NFFT_INFO: General error bound (best for non-alternating charges): cg_err_3d * sum_q_abs = %" FCS_LMOD_FLOAT "e\n",
            error*sum_q_abs);
        printf("P2NFFT_INFO: Stochastical error bound for alternating charges: cg_err_3d * sum_q_abs / sqrt(M) = %" FCS_LMOD_FLOAT "e\n",
@@ -685,7 +733,7 @@ FCSResult ifcs_p2nfft_tune(
        printf("P2NFFT_INFO: Test of new Stochastical error bound for near plus far field error: cg_err_3d * sum_q2 * sqrt(3 / (M*V)) = %" FCS_LMOD_FLOAT "e\n",
            error * sum_q2 * sqrt(3.0 / (d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2])) );
        printf("P2NFFT_INFO: General error bound (depending on box scale=%" FCS_LMOD_FLOAT "e): cg_err_3d * sum_q_abs * sqrt(2.0/V_scale) = %" FCS_LMOD_FLOAT "e\n",
-           d->box_scales[0], error*sum_q_abs * sqrt(2.0 / (d->box_scales[0]*d->box_scales[1]*d->box_scales[2]) ));
+           d->box_scales[0], error*sum_q_abs * sqrt(2.0 / (d->box_scales[0]*d->box_scales[1]*d->box_scales[2]) )); // FIXME: noncubic box
      }
 #endif
     }
@@ -726,11 +774,11 @@ FCSResult ifcs_p2nfft_tune(
           d->local_N, d->local_N_start, d->box_l, d->alpha);
     else
       d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
-          d->N, d->epsI, d->epsB, d->box_scales[0],
-          d->interpolation_order, d->interpolation_num_nodes, 
-          d->near_interpolation_table_potential,
-          d->far_interpolation_table_potential,
-          d->cart_comm_pnfft); 
+          d->N, d->r_cut, d->epsI, d->epsB, d->p, d->c, d->box_scales, d->reg_near, d->reg_far,
+          d->taylor2p_coeff, d->N_cg_cos, d->cg_cos_coeff,
+          d->interpolation_order, d->near_interpolation_num_nodes, d->far_interpolation_num_nodes,
+          d->near_interpolation_table_potential, d->far_interpolation_table_potential,
+          d->cart_comm_pnfft, is_cubic(d->box_l)); 
   }
   /* Finish timing of parameter tuning */
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Parameter tuning");
@@ -793,7 +841,7 @@ static void print_command_line_arguments(
         case FCS_TOLERANCE_TYPE_FIELD_REL:
           printf("tolerance_field_rel,"); break;
       }
-      printf("%" FCS_LMOD_FLOAT "f,", d->tolerance);
+      printf("%e,", d->tolerance);
     }
 
     /* print P2NFFT specific parameters */
@@ -801,16 +849,35 @@ static void print_command_line_arguments(
       printf("p2nfft_r_cut,%" FCS_LMOD_FLOAT "f,", d->r_cut);
     if(verbose || !d->tune_epsI || !d->tune_r_cut)
       printf("p2nfft_epsI,%" FCS_LMOD_FLOAT "f,", d->epsI);
+    if(verbose || !d->tune_c)
+      printf("p2nfft_c,%" FCS_LMOD_FLOAT "f,", d->c);
     if(verbose || !d->tune_alpha)
       printf("p2nfft_alpha,%" FCS_LMOD_FLOAT "f,", d->alpha);
     if(verbose || d->interpolation_order != 3)
       printf("p2nfft_intpol_order,%" FCS_LMOD_INT "d,", d->interpolation_order);
-    if(verbose || (d->regularization == FCS_P2NFFT_REG_CG) ){
-      printf("p2nfft_reg_name,");
-      if(d->regularization == FCS_P2NFFT_REG_CG)
+    if(verbose || (d->reg_near != FCS_P2NFFT_REG_NEAR_CG) ){
+      printf("p2nfft_reg_near_name,");
+      if(d->reg_near == FCS_P2NFFT_REG_NEAR_CG)
         printf("cg,");
-      else if(d->regularization == FCS_P2NFFT_REG_TAYLOR2P)
-        printf("taylor2p,");
+      else if(d->reg_near == FCS_P2NFFT_REG_NEAR_T2P)
+        printf("t2p,");
+    }
+    if(verbose || (d->reg_far != FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC) ){
+      printf("p2nfft_reg_far_name,");
+      if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
+        printf("rad_cg,");
+      else if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM)
+        printf("rad_t2p_sym,");
+      else if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC)
+        printf("rad_t2p_mir_ec,");
+      else if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC)
+        printf("rad_t2p_mir_ic,");
+      else if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
+        printf("rec_t2p_sym,");
+      else if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC)
+        printf("rec_t2p_mir_ec,");
+      else if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC)
+        printf("rec_t2p_mir_ic,");
     }
     if(verbose || !d->tune_p)
       printf("p2nfft_p,%" FCS_LMOD_INT "d,", d->p);
@@ -896,7 +963,7 @@ static void init_near_interpolation_table_potential_3dp(
 
 static void init_near_interpolation_table_potential_0dp(
     fcs_int num_nodes,
-    fcs_float epsI, fcs_int p, fcs_float box_scale,
+    fcs_float r_cut, fcs_float epsI, fcs_int p,
     const fcs_float *taylor2p_coeff,
     fcs_int N_cos, fcs_float *cos_coeff,
     fcs_float *table
@@ -905,30 +972,47 @@ static void init_near_interpolation_table_potential_0dp(
   if(cos_coeff != NULL){
     for(fcs_int k=0; k<num_nodes+3; k++)
       table[k] = evaluate_cos_polynomial_1d(
-          epsI * (fcs_float) k / num_nodes, N_cos, cos_coeff) / box_scale;
+          epsI * (fcs_float) k / num_nodes, N_cos, cos_coeff) * epsI/r_cut;
   } else if(taylor2p_coeff != NULL) {
-    for(fcs_int k=0; k<num_nodes+3; k++)
+    for(fcs_int k=0; k<num_nodes+3; k++) {
       table[k] = ifcs_p2nfft_nearfield_correction_taylor2p(
-          epsI * (fcs_float) k / num_nodes, p, taylor2p_coeff) / box_scale;
+          (fcs_float) k / num_nodes, p, taylor2p_coeff) / r_cut;
+    }
   }
 }
 
+/* This function is only used for cubic boxes. */
 static void init_far_interpolation_table_potential_0dp(
-    fcs_int num_nodes,
-    fcs_float epsB, fcs_int p,
+    fcs_int num_nodes, fcs_int reg_far,
+    fcs_float epsB, fcs_int p, fcs_float c,
     fcs_int N_cos, fcs_float *cos_coeff,
-    fcs_float *table
+    fcs_float *table 
     )
 {
-  if(cos_coeff != NULL){
+  fprintf(stderr, "reg_far = %d\n", reg_far);
+  if(reg_far == FCS_P2NFFT_REG_FAR_RAD_CG){
+    /* use CG approximiation */
     for(fcs_int k=0; k<num_nodes+3; k++)
       table[k] = evaluate_cos_polynomial_1d(
           0.5 - epsB + epsB * (fcs_float) k / num_nodes, N_cos, cos_coeff);
-  } else { /* use 2pTaylor regkernel */
-    /* Since we only evaluate regkernel in [0.5-epsB, 0.5] we can savely set epsI = epsB */
-    for(fcs_int k=0; k<num_nodes+3; k++)
-      table[k] = ifcs_p2nfft_regkernel(
-          ifcs_p2nfft_one_over_modulus, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, 0, epsB, epsB);
+  } else {
+    /* use Taylor2p regkernel */
+    if(reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
+      /* TODO: implement this regularization */
+
+
+    } else if(reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC){
+      /* use basis polynomials and set constant continuation value 'c' explicitly */
+      /* Since we only evaluate regkernel in [0.5-epsB, 0.5] we can savely set epsI = epsB */
+      for(fcs_int k=0; k<num_nodes+3; k++)
+        table[k] = ifcs_p2nfft_regkern_far_mirrored_expl_cont(
+            ifcs_p2nfft_one_over_modulus, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, 0, epsB, epsB, c);
+    } else if(reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC){
+      /* use integrated basis polynomials, sets continuation value 'c' implicitily */
+      for(fcs_int k=0; k<num_nodes+3; k++)
+        table[k] = ifcs_p2nfft_regkern_far_mirrored_impl_cont(
+            ifcs_p2nfft_one_over_modulus, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, 0, epsB, epsB);
+    }
   }
 }
 
@@ -953,31 +1037,26 @@ static void init_near_interpolation_table_force_3dp(
 
 static void init_near_interpolation_table_force_0dp(
     fcs_int num_nodes,
-    fcs_float epsI, fcs_int p, fcs_float box_scale,
+    fcs_float r_cut, fcs_float epsI, fcs_int p,
     const fcs_float *taylor2p_derive_coeff,
-    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_int N_cos, fcs_float *cos_coeff, fcs_float *sin_coeff,
     fcs_float *table
     )
 {
-  fcs_float *sin_coeff;
-
   if(cos_coeff != NULL){
-    sin_coeff = (fcs_float*) malloc(sizeof(fcs_float)*N_cos);
-    for(fcs_int k=0; k<N_cos; k++)
-      sin_coeff[k] = -2 * FCS_P2NFFT_PI * k * cos_coeff[k] / (box_scale*box_scale);
+    fcs_float scale = r_cut/epsI;
     for(fcs_int k=0; k<num_nodes+3; k++)
       table[k] = evaluate_sin_polynomial_1d(
-          epsI * (fcs_float) k / num_nodes, N_cos, sin_coeff);
-    free(sin_coeff);
+          epsI * (fcs_float) k / num_nodes, N_cos, sin_coeff) / (scale*scale);
   } else if(taylor2p_derive_coeff != NULL) {
     for(fcs_int k=0; k<num_nodes+3; k++)
       table[k] = ifcs_p2nfft_nearfield_correction_taylor2p_derive(
-          epsI * (fcs_float) k / num_nodes, p, taylor2p_derive_coeff) / (box_scale*box_scale);
+          (fcs_float) k / num_nodes, p, taylor2p_derive_coeff) / (r_cut * r_cut);
   }
 }
 
 static fcs_float evaluate_cos_polynomial_1d(
-   fcs_float x, fcs_int N, fcs_float *coeff
+   fcs_float x, fcs_int N, const fcs_float *coeff
    )
 {
   fcs_float value=0;
@@ -989,7 +1068,7 @@ static fcs_float evaluate_cos_polynomial_1d(
 }
 
 static fcs_float evaluate_sin_polynomial_1d(
-   fcs_float x, fcs_int N, fcs_float *coeff
+   fcs_float x, fcs_int N, const fcs_float *coeff
    )
 {
   fcs_float value=0;
@@ -1181,16 +1260,18 @@ static void init_pnfft(
 
 /* scale epsI and epsB according to box_size == 1 */
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
-    const ptrdiff_t *N, fcs_float epsI, fcs_float epsB, fcs_float box_scale,
-    fcs_int interpolation_order, fcs_int interpolation_num_nodes,
-    const fcs_float *near_interpolation_table_potential,
-    const fcs_float *far_interpolation_table_potential,
-    MPI_Comm comm_cart
+    const ptrdiff_t *N, fcs_float r_cut, fcs_float epsI, fcs_float epsB,
+    fcs_int p, fcs_float c, fcs_float *box_scales,
+    fcs_int reg_near, fcs_int reg_far,
+    const fcs_float *taylor2p_coeff, fcs_int N_cg_cos, const fcs_float *cg_cos_coeff,
+    fcs_int interpolation_order, fcs_int near_interpolation_num_nodes, fcs_int far_interpolation_num_nodes,
+    const fcs_float *near_interpolation_table_potential, const fcs_float *far_interpolation_table_potential,
+    MPI_Comm comm_cart, unsigned box_is_cubic
     )
 {
   ptrdiff_t howmany = 1, alloc_local, m;
   ptrdiff_t local_Ni[3], local_Ni_start[3], local_No[3], local_No_start[3];
-  fcs_float x0, x1, x2, xnorm, scale = 1.0, twiddle, twiddle_k0, twiddle_k1, twiddle_k2;
+  fcs_float x0, x1, x2, x2norm, xsnorm, scale = 1.0, twiddle, twiddle_k0, twiddle_k1, twiddle_k2;
   FCS_PFFT(plan) pfft;
   fcs_pnfft_complex *regkern_hat;
 
@@ -1227,21 +1308,56 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
       twiddle_k2 = (local_Ni_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
       for(ptrdiff_t k2 = local_Ni_start[2]; k2 < local_Ni_start[2] + local_Ni[2]; k2++, twiddle_k2 *= -1.0, m++){
         x2 = (fcs_float) k2 / N[2] - 0.5;
-        xnorm = fcs_sqrt(x0*x0+x1*x1+x2*x2);
+        xsnorm = fcs_sqrt(x0*x0+x1*x1+x2*x2);
         twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
 
         /* constant continuation outside the ball with radius 0.5 */
-        xnorm = (xnorm < 0.5) ? xnorm : 0.5;
+        x2norm = sqrt(x0*x0*box_scales[0]*box_scales[0]
+            + x1*x1*box_scales[1]*box_scales[1]
+            + x2*x2*box_scales[2]*box_scales[2]);
+
+        /* constant continuation for radii > 0.5 */
+        if (xsnorm > 0.5) xsnorm = 0.5;
 
         /* calculate near and farfield regularization via interpolation */
-        if(xnorm < epsI)
-          regkern_hat[m] = box_scale * ifcs_p2nfft_interpolation(
-              xnorm, 1.0/epsI, interpolation_order, interpolation_num_nodes, near_interpolation_table_potential);
-        else if(xnorm < 0.5-epsB)
-          regkern_hat[m] = 1.0/xnorm;
-        else
-          regkern_hat[m] = ifcs_p2nfft_interpolation(
-              xnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, interpolation_num_nodes, far_interpolation_table_potential);
+        if(x2norm < r_cut){
+          if(near_interpolation_num_nodes > 0)
+            regkern_hat[m] = ifcs_p2nfft_interpolation(
+                x2norm, 1.0/r_cut, interpolation_order, near_interpolation_num_nodes, near_interpolation_table_potential);
+          else if (reg_near == FCS_P2NFFT_REG_NEAR_CG)
+            regkern_hat[m] = epsI/r_cut * evaluate_cos_polynomial_1d(x2norm * epsI/r_cut, N_cg_cos, cg_cos_coeff);
+          else if (reg_near == FCS_P2NFFT_REG_NEAR_T2P)
+            regkern_hat[m] = ifcs_p2nfft_nearfield_correction_taylor2p(x2norm/r_cut, p, taylor2p_coeff) / r_cut;
+        } else if(xsnorm < 0.5-epsB) {
+            regkern_hat[m] = 1.0/x2norm;
+        } else {
+          if(!box_is_cubic) {
+            /* Noncubic regularization works with unscaled coordinates. */
+            regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
+                ifcs_p2nfft_one_over_modulus, x2norm, xsnorm, p, NULL, r_cut, epsB, c);
+          } else {
+            /* Cubic regularization works with coordinates that are scaled into unit cube.
+             * Therefore, use xsnorm, scale the continuation value 'c', and rescale after evaluation.
+             * Note that box_scales are the same in every direction for cubic boxes. */
+            if(far_interpolation_num_nodes){
+              regkern_hat[m] = ifcs_p2nfft_interpolation(
+                  xsnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential) / box_scales[0];
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_CG){
+              regkern_hat[m] = evaluate_cos_polynomial_1d(xsnorm, N_cg_cos, cg_cos_coeff) / box_scales[0];
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC){
+              regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont(
+                  ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB, c*box_scales[0]) / box_scales[0];
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC){
+              regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_impl_cont(
+                  ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB) / box_scales[0];
+            }
+          }
+        }
+
+//         regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
+//             ifcs_p2nfft_one_over_modulus, x2norm, xsnorm, p, NULL, r_cut, epsB, c);
+//         regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont(
+//             ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB, c*box_scales[0]) / box_scales[0];
         
         regkern_hat[m] *= scale * twiddle;
 
@@ -1249,11 +1365,6 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
   csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
 #endif
       
-        /* Other nearfield correction for CG-approximation */
-//         if( (cg_cos_coeff != NULL) && (xnorm < epsI) )
-//           regkern_hat[m] = scale * evaluate_cos_polynomial_1d(xnorm, N_cos, cg_cos_coeff) * twiddle;
-//         else
-//           regkern_hat[m] = scale * ifcs_p2nfft_regkernel(ifcs_p2nfft_one_over_modulus, xnorm, p, 0, epsI, epsB) * twiddle;
       }
     }
   }
@@ -1446,6 +1557,16 @@ static FCSResult check_tolerance(
   return NULL;
 }
 
+static fcs_int is_cubic(
+    fcs_float *box_l
+    )
+{
+  if( fcs_float_is_equal(box_l[0],box_l[1])
+      && fcs_float_is_equal(box_l[0],box_l[2]))
+    return 1;
+
+  return 0;
+}
 
 
 
