@@ -357,7 +357,6 @@ void PNX(assign_f_r2r_pre_full_psi)(
     R *fv
     )
 { 
-// fprintf(stderr, "Hier bin ich, r2r\n");
   INT m1, m2, l0, l1, l2, m=0;
   R f=0;
   

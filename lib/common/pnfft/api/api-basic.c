@@ -100,6 +100,7 @@ static void grad_ik_complex_input(
   ths->timer_trafo[PNFFT_TIMER_MATRIX_F] += MPI_Wtime();
 
   ths->timer_trafo[PNFFT_TIMER_MATRIX_B] -= MPI_Wtime();
+  for(INT j=0; j<ths->local_M; j++) ths->f[j] = 0;
   PNX(trafo_B_grad_ik)(ths, ths->f, 0, 1);
   ths->timer_trafo[PNFFT_TIMER_MATRIX_B] += MPI_Wtime();
 
@@ -115,6 +116,7 @@ static void grad_ik_complex_input(
     ths->timer_trafo[PNFFT_TIMER_MATRIX_F] += MPI_Wtime();
 
     ths->timer_trafo[PNFFT_TIMER_MATRIX_B] -= MPI_Wtime();
+    for(INT j=0; j<ths->local_M; j++) ths->grad_f[3*j+dim] = 0;
     PNX(trafo_B_grad_ik)(ths, ths->grad_f, dim, 3);
     ths->timer_trafo[PNFFT_TIMER_MATRIX_B] += MPI_Wtime();
   }
