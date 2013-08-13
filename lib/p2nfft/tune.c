@@ -1403,7 +1403,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
   ptrdiff_t k[3];
   fcs_int num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
   fcs_float scale = 1.0, twiddle, twiddle_k0=1.0, twiddle_k1=1.0, twiddle_k2=1.0;
-  fcs_float x[3], xh[3];
+  fcs_float xs[3];
   pfft_plan pfft;
   fcs_pnfft_complex *regkern_hat;
 
@@ -1440,43 +1440,45 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
   m=0;
   if(!periodicity[0]) twiddle_k0 = (local_Ni_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
   for(ptrdiff_t l0 = local_Ni_start[0]; l0 < local_Ni_start[0] + local_Ni[0]; l0++){
-    x[0] = (periodicity[0]) ? 0.0 : (fcs_float) l0 / N[0] - 0.5;
+    xs[0] = (periodicity[0]) ? 0.0 : (fcs_float) l0 / N[0] - 0.5;
     k[0] = (periodicity[0]) ? l0 - N[0]/2 : 0;  
     if(!periodicity[1]) twiddle_k1 = (local_Ni_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
     for(ptrdiff_t l1 = local_Ni_start[1]; l1 < local_Ni_start[1] + local_Ni[1]; l1++){
-      x[1] = (periodicity[1]) ? 0.0 : (fcs_float) l1 / N[1] - 0.5;
+      xs[1] = (periodicity[1]) ? 0.0 : (fcs_float) l1 / N[1] - 0.5;
       k[1] = (periodicity[1]) ? l1 - N[1]/2 : 0;  
       if(!periodicity[2]) twiddle_k2 = (local_Ni_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
       for(ptrdiff_t l2 = local_Ni_start[2]; l2 < local_Ni_start[2] + local_Ni[2]; l2++, m++){
-        x[2] = (periodicity[2]) ? 0.0 : (fcs_float) l2 / N[2] - 0.5;
+        xs[2] = (periodicity[2]) ? 0.0 : (fcs_float) l2 / N[2] - 0.5;
         k[2] = (periodicity[2]) ? l2 - N[2]/2 : 0;  
         twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
 
         /* New regularization for mixed boundary conditions */
-        fcs_float kbnorm = 0.0, x2norm = 0.0, xhnorm = 0.0, h = 1.0, B = 1.0;
+        fcs_float kbnorm = 0.0, x2norm = 0.0, xsnorm = 0.0, h = 1.0, B = 1.0;
 
         for(fcs_int t=0; t<3; t++){
           kbnorm += k[t] / box_l[t] * k[t] / box_l[t];
-          x2norm += x[t] * x[t];
-          xh[t] = (periodicity[t]) ? 0.0 : x[t] * box_scales[t];
-          xhnorm += xh[t] * xh[t];
-
-          /* this works only for equal nonperiodic box lengths */
-          if(!periodicity[t])
-            h = box_scales[t];
-
-          /* set B for 1d-periodic bc */
-          if(periodicity[t])
-            B = box_l[t];
+          x2norm += xs[t] * xs[t] * box_scales[t] * box_scales[t];
+          xsnorm += xs[t] * xs[t];
         }
         kbnorm = fcs_sqrt(kbnorm);
         x2norm = fcs_sqrt(x2norm);
-        xhnorm = fcs_sqrt(xhnorm);
+        xsnorm = fcs_sqrt(xsnorm);
+
+        /* this works only for equal nonperiodic box lengths */
+        for(fcs_int t=0; t<3; t++)
+          if(!periodicity[t])
+            h = box_scales[t];
+
+        /* set B for 1d-periodic bc */
+        for(fcs_int t=0; t<3; t++)
+          if(periodicity[t])
+            B = box_l[t];
 
         fcs_float param[3];
         param[0] = alpha;
         param[1] = kbnorm;
         param[2] = h;
+//         param[3] = xsnorm;
 
         /* simplify for pure 2d geometry with periodic boundary conditions */
 
@@ -1484,16 +1486,17 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
          * Index correspoding to non-periodic dim will be 0 per default. */
         if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0)){
           if(num_nonperiodic_dims == 1)
-            regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_keq0, xhnorm, p, param, epsB);
+            regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB);
           else {
-            regkern_hat[m] = -1.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, xhnorm, p, param, epsB);
-//             regkern_hat[m] = -0.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, xhnorm, p, param, epsB);
-//             fprintf(stderr, "h = %e, alpha = %e, kbnorm = %e, xhnorm = %e, ewald_1dp_neq0 = %e\n", h, alpha, kbnorm, xhnorm, ifcs_p2nfft_ewald_1dp_keq0(xhnorm, 0, param));
+            regkern_hat[m] = -1.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, x2norm, p, param, epsB);
+//             regkern_hat[m] = -0.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, xsnorm, p, param, epsB);
+//             fprintf(stderr, "h = %e, alpha = %e, kbnorm = %e, x2norm = %e, ewald_1dp_neq0 = %e\n", h, alpha, kbnorm, xsnorm, ifcs_p2nfft_ewald_1dp_keq0(xsnorm, 0, param));
+            fprintf(stderr, "regkern[%e] = %e, x2norm = %e,xsnorm = %e, xs = [%f, %f, %f], x2 = [%f, %f, %f], local_Ni_start = [%td, %td, %td]\n",
+                x2norm, creal(regkern_hat[m]), x2norm, xsnorm, xs[0], xs[1], xs[2], xs[0]*box_scales[0], xs[1]*box_scales[1], xs[2]*box_scales[2], local_Ni_start[0], local_Ni_start[1], local_Ni_start[2]);
+            fprintf(stderr, "h = %e\n", h);
             if(isnan(creal(regkern_hat[m]))){
-              fprintf(stderr, "keq0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, xhnorm = %e, kbnorm = %e, alpha = %e\n",
-                  k[0], k[1], k[2], x[0], x[1], x[2], p, epsB, xhnorm, kbnorm, alpha);
-              for(int t=0; t<9; t++)
-                fprintf(stderr, "K_%d(0.4,0) = %e\n", t, ifcs_p2nfft_inc_upper_bessel_k(t, 0.4, 0, 1e-8));
+              fprintf(stderr, "keq0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, x2norm = %e, kbnorm = %e, alpha = %e\n",
+                  k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, x2norm, kbnorm, alpha);
               MPI_Abort(MPI_COMM_WORLD, 1);
             }
           }
@@ -1501,12 +1504,12 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
         else{
           /* kbnorm includes 1.0/B for cubic case */ 
           if(num_nonperiodic_dims == 1)
-            regkern_hat[m] = 0.5 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, xhnorm, p, param, epsB) / kbnorm;
+            regkern_hat[m] = 0.5 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / kbnorm;
           else{
-            regkern_hat[m] = 2.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_kneq0, xhnorm, p, param, epsB);
+            regkern_hat[m] = 2.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
             if(isnan(creal(regkern_hat[m]))){
-              fprintf(stderr, "kne0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, xhnorm = %e, kbnorm = %e, alpha = %e\n",
-                  k[0], k[1], k[2], x[0], x[1], x[2], p, epsB, xhnorm, kbnorm, alpha);
+              fprintf(stderr, "kne0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, xsnorm = %e, kbnorm = %e, alpha = %e\n",
+                  k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, xsnorm, kbnorm, alpha);
               for(int t=0; t<9; t++)
                 fprintf(stderr, "K_%d(0.4,0) = %e\n", t, ifcs_p2nfft_inc_upper_bessel_k(t, 0.4, 0, 1e-8));
               MPI_Abort(MPI_COMM_WORLD, 1);
