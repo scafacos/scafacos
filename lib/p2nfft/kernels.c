@@ -398,7 +398,7 @@ static fcs_float theta(
     )
 {
   fcs_float arg = FCS_PI*k*x;
-  return (arg > 18) ? 0.0 : fcs_exp(2*arg) * (1-fcs_erf(FCS_PI*k/alpha + alpha*x)); /* use erf instead of erfc to fix ICC performance problems */
+  return (arg > 18) ? 0.0 : fcs_exp(2*arg) * fcs_erfc(FCS_PI*k/alpha + alpha*x);
 }
 
 static fcs_float theta_p(
@@ -530,7 +530,7 @@ static fcs_float derivative_K0_y_sqr(
 }
 
 /* Fourier space part of 1d-periodic Ewald and k<>0 */
-FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_1dp_kneq0(fcs_float r, fcs_int der, const fcs_float *param) /* K(x) = 0.5 * alpha^2 * K_nu(pi^2*k^2/alpha^2, alpha^2*r^2) */
+FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_1dp_kneq0(fcs_float r, fcs_int der, const fcs_float *param) /* K(x) = 0.5 * K_nu(pi^2*k^2/alpha^2, alpha^2*r^2) */
 {
   fcs_float alpha = param[0]; /* Ewald splitting parameter alpha */
   fcs_float k     = param[1]; /* norm of (k_0/B_0,k_1/B_1) */
@@ -540,7 +540,7 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_1dp_kneq0(fcs_float r, fcs_int der, con
   if(fcs_float_is_zero(k))
     return 0.0;
 
-  return 0.5 * alpha * alpha * fcs_pow(alpha, der) * derivative_K0_y_sqr(b*b, alpha*r, der);
+  return 0.5 * fcs_pow(alpha, der) * derivative_K0_y_sqr(b*b, alpha*r, der);
 }
 
 static fcs_float ln(fcs_float x, fcs_int der) /* K(x) = ln(x) */

@@ -263,7 +263,7 @@ static fcs_float regkern5(ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, con
   fcs_float sum=0.0;
   fcs_float h = param[2];
 
-  x2norm = fabs(x2norm);
+  x2norm = fcs_fabs(x2norm);
 
   /* inner and outer border of regularization area */
   fcs_float xi = h * (0.5 - epsB);
@@ -282,7 +282,7 @@ static fcs_float regkern5(ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, con
   if ( xi < x2norm ) {
     for (j=0; j<=p-2; j++) {
       sum += 
-        pow(r,j+1.0) * k(xi,j+1,param)
+        fcs_pow(r,j+1.0) * k(xi,j+1,param)
         * (IntBasisPoly(p-1,j,y) - IntBasisPoly(p-1,j,-1));
     }
     return sum + k(xi,0,param);
