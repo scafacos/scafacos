@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_COMPLEX_H
@@ -256,39 +257,39 @@ fcs_float ifcs_p2nfft_regkernel(
 /** regularized kernel for even kernels without singularity, e.g. no K_I needed,
  *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)
  */
-static fcs_float regkern5(ifcs_p2nfft_kernel k, fcs_float x, fcs_int p, const fcs_float *param, fcs_float b)
+static fcs_float regkern5(ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB)
 {
   fcs_int j;
   fcs_float sum=0.0;
   fcs_float h = param[2];
 
-  x = fabs(x);
+  x2norm = fcs_fabs(x2norm);
 
   /* inner and outer border of regularization area */
-  fcs_float xi = h * (0.5 - b);
+  fcs_float xi = h * (0.5 - epsB);
   fcs_float xo = h * 0.5;
+
+  /* constant continuation for radii > xo */
+  if (x2norm > xo)
+    x2norm = xo;
 
   /* canonicalize x to y \in [-1,1] */
   fcs_float r = 0.5 * (xo - xi);
   fcs_float m = 0.5 * (xo + xi);
-  fcs_float y = (x-m)/r;
-
-  /* constant continuation for radii > xo */
-  if (x >= xo)
-    x = xo;
+  fcs_float y = (x2norm-m)/r;
 
   /* regularization at farfield border */
-  if ( xi < x ) {
+  if ( xi < x2norm ) {
     for (j=0; j<=p-2; j++) {
       sum += 
-        pow(r,j+1.0) * k(xi,j+1,param)
+        fcs_pow(r,j+1.0) * k(xi,j+1,param)
         * (IntBasisPoly(p-1,j,y) - IntBasisPoly(p-1,j,-1));
     }
     return sum + k(xi,0,param);
   }
  
   /* near- and farfield (no singularity): original kernel function */ 
-  return k(x,0,param);
+  return k(x2norm,0,param);
 } 
 
 fcs_float ifcs_p2nfft_regkernel_wo_singularity(

@@ -157,7 +157,8 @@ typedef struct {
   fcs_int use_ewald;  /* switch between fully periodic and non-periodic case */
   fcs_float r_cut;    /* near field radius (unscaled) */
   fcs_float one_over_r_cut;    /* inverse near field radius (unscaled) */
-  fcs_int num_nonperiodic_dims; /* number of dimensions with periodic boundary conditions */
+  fcs_int num_nonperiodic_dims; /* number of dimensions with nonperiodic boundary conditions */
+  fcs_int num_periodic_dims;    /* number of dimensions with periodic boundary conditions */
 
   /* parameters for periodic case */
   fcs_float alpha;  /* Ewald splitting parameter */

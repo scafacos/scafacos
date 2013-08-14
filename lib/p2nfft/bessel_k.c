@@ -28,6 +28,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <gsl/gsl_sf_bessel.h>
+#include <gsl/gsl_sf_gamma.h>
 
 #include "bessel_k.h"
 
@@ -142,6 +143,11 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   fcs_float *pt, *D_Aki, *N_Aki;
   fcs_int N = n_max+1;
 
+  /* for y==0 incompl. bessel_k can be computed using incompl. Gamma fct. */
+  if(fcs_float_is_zero(y))
+    return fcs_pow(x,nu) * gsl_sf_gamma_inc(-nu,x); 
+
+
   /* for x<y compute the faster convergent complement integral,
    * see formula (4) of [Slevinsky-Safouhi 2010] */
   if(x<y)
@@ -162,7 +168,7 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   val_new = G_tilde(n,x,y,nu,N,pt,D_Aki,N_Aki);
   while(err > eps){
     if(n >= n_max){
-      fprintf(stderr, "Inc_Bessel_K: Cannot reach accuracy within %d iterations.\n", n_max);
+      fprintf(stderr, "Inc_Bessel_K: Cannot reach accuracy within %d iterations: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n_max, val_new, val_old, err, eps, nu, x, y);
       break;
     }
     n++;
@@ -177,10 +183,15 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
     val_old = val_new;
     val_new = G_tilde(n,x,y,nu,N,pt,D_Aki,N_Aki);
     err = fabs(val_new - val_old);
+
+    if(isnan(val_new)){
+      fprintf(stderr, "Inc_Bessel_K: NAN at iteration %d: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n, val_new, val_old, err, eps, nu, x, y);
+      break;
+    }
   }
 
   free(pt); free(D_Aki); free(N_Aki);
-  fprintf(stderr, "n = %d, val = %e, err %e\n", n, val_new, err);
+//   fprintf(stderr, "n = %d, val = %e, err %e\n", n, val_new, err);
   return val_new;
 }
 
