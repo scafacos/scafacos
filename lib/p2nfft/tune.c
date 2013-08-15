@@ -37,10 +37,13 @@
 #include "cg_cos_coeff.h"
 #include "cg_cos_err.h"
 
+#include "bessel_k.h"
+
 #define FCS_P2NFFT_DEBUG_TUNING 0
 #define FCS_P2NFFT_EXIT_AFTER_TUNING 0
 #define FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE 0
 #define FCS_P2NFFT_ENABLE_TUNING_BUG 0
+
 
 /* FORWARD DECLARATIONS OF STATIC FUNCTIONS */
 #if FCS_ENABLE_INFO 
@@ -82,6 +85,8 @@ static fcs_float evaluate_cos_polynomial_1d(
    fcs_float x, fcs_int N, const fcs_float *coeff);
 static fcs_float evaluate_sin_polynomial_1d(
    fcs_float x, fcs_int N, const fcs_float *coeff);
+static int get_dim_of_smallest_periodic_box_l(
+    fcs_int periodicity[3], fcs_float box_l[3]);
 
 static void init_pnfft(
     FCS_PNFFT(plan) *ths, int dim, const ptrdiff_t *N, const ptrdiff_t *n,
@@ -103,16 +108,20 @@ static fcs_float p2nfft_real_space_error(
     fcs_int N, fcs_float sum_q2, fcs_float box_l[3],
     fcs_float r_cut, fcs_float alpha);
 static fcs_float p2nfft_tune_alpha(
-    fcs_int sum_qpart, fcs_float sum_q2, fcs_float box_l[3],
-    fcs_float r_cut, ptrdiff_t grid[3], fcs_int cao, fcs_float tolerance_field);
+    fcs_int sum_qpart, fcs_float sum_q2, fcs_int dim_tune,
+    fcs_float box_l[3], fcs_float r_cut, ptrdiff_t grid[3],
+    fcs_int cao, fcs_float tolerance_field);
 static fcs_float p2nfft_get_accuracy(
-    fcs_int sum_qpart, fcs_float sum_q2, fcs_float box_l[3],
-    fcs_float r_cut, ptrdiff_t grid[3], fcs_int cao, fcs_float tolerance_field,
+    fcs_int sum_qpart, fcs_float sum_q2, fcs_int dim_tune,
+    fcs_float box_l[3], fcs_float r_cut, ptrdiff_t grid[3],
+    fcs_int cao, fcs_float tolerance_field,
     fcs_float alpha, fcs_int interlaced,
     fcs_float *rs_err, fcs_float *ks_err);
 static fcs_float p2nfft_k_space_error(
-    fcs_int N, fcs_float sum_q2, fcs_float box_l[3], ptrdiff_t grid[3],
-    fcs_float alpha, fcs_int cao, fcs_int interlaced);
+    fcs_int N, fcs_float sum_q2, fcs_int dim_tune,
+    fcs_float box_l[3], ptrdiff_t grid[3],
+    fcs_float alpha, fcs_int cao,
+    fcs_int interlaced);
 static fcs_float p2nfft_k_space_error_sum1(
     fcs_int n, fcs_float grid_i, fcs_int cao);
 static void p2nfft_k_space_error_sum2_ad(
@@ -128,7 +137,7 @@ static void p2nfft_k_space_error_sum2_adi(
     fcs_float *alias3, fcs_float *alias4,
     fcs_float *alias5, fcs_float *alias6);
 static fcs_float p2nfft_k_space_error_approx(
-    fcs_int N, fcs_float sum_q2,
+    fcs_int N, fcs_float sum_q2, fcs_int dim_tune,
     fcs_float box_l[3], ptrdiff_t grid[3],
     fcs_float alpha, fcs_int cao);
 #if FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE
@@ -152,9 +161,15 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
     fcs_int interpolation_order, fcs_int near_interpolation_num_nodes, fcs_int far_interpolation_num_nodes,
     const fcs_float *near_interpolation_table_potential, const fcs_float *far_interpolation_table_potential,
     MPI_Comm comm_cart, unsigned box_is_cubic);
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
+    const ptrdiff_t *N, fcs_float epsB,
+    const fcs_float *box_l, const fcs_float *box_scales, fcs_float alpha,
+    const fcs_int *periodicity, fcs_int p,
+    MPI_Comm comm_cart);
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
     fcs_float *box_l, fcs_float alpha);
+
 static fcs_int is_cubic(
     fcs_float *box_l);
 
@@ -208,7 +223,9 @@ FCSResult ifcs_p2nfft_tune(
     }
     d->periodicity[t] = periodicity[t];
   }
-  d->use_ewald = periodicity[0] && periodicity[1] && periodicity[2];  
+  d->use_ewald = periodicity[0] || periodicity[1] || periodicity[2];  
+  d->num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
+  d->num_periodic_dims    = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
 
   /* Now, after the periodicity is clear, we can set the default tolerance type. */
   default_tolerance_type(d->periodicity,
@@ -277,7 +294,8 @@ FCSResult ifcs_p2nfft_tune(
   /* FIXME: number of charged particles may be less than number of all particles */
   d->sum_qpart = num_particles;
 
-  /* compute the average distance between two charges  */
+  /* compute the average distance between two charges 
+   * (needed for computation of default r_cut) */
   avg_dist = fcs_pow((d->box_l[0]*d->box_l[1]*d->box_l[2]) / d->sum_qpart, 0.33333);
 
 #if FCS_P2NFFT_DEBUG_RETUNE
@@ -297,6 +315,16 @@ FCSResult ifcs_p2nfft_tune(
       if(box_l[t] > box_l[maxdim]) maxdim = t;
     }
 
+    /* check user defined epsI and epsB */
+    if(d->num_nonperiodic_dims)
+      if(!d->tune_epsI && !d->tune_epsB)
+        if(d->epsI + d->epsB >= 0.5)
+          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Sum of epsI and epsB must be less than 0.5.");
+
+    /* At this point we hoose default value 7. */
+    if(d->tune_p)
+      d->p = 8;
+
     if(d->use_ewald){
       fcs_float ks_error, rs_error;
       /* PNFFT calculates with real space cutoff 2*m+2
@@ -304,26 +332,20 @@ FCSResult ifcs_p2nfft_tune(
 //      fcs_int cao = d->m + 1;
       fcs_int cao = 2*d->m;
 
-      /* use full torus for periodic case */
-      for(int t=0; t<3; t++)
-        d->x_max[t] = 0.5;
-     
+      /* look for a dimension with pbc for tuning alpha and rcut */
+      fcs_int dim_tune = get_dim_of_smallest_periodic_box_l(d->periodicity, d->box_l);
+  
       if(d->tune_r_cut){
-        if(d->tune_epsI){
-          /* set r_cut to 3 times the average distance between charges */
-          d->r_cut = 3.0 * avg_dist;
-          if (d->r_cut > d->box_l[0])
-            d->r_cut = d->box_l[0];
-        } else
-          d->r_cut = d->epsI * d->box_l[0];
-        d->one_over_r_cut = 1.0/d->r_cut;
-      }
+        /* set r_cut to 3 times the average distance between charges */
+        d->r_cut = 3.0 * avg_dist;
 
-      /* shift and scale box into [-0.5,0.5)^3 */
-      for(int t=0; t<3; t++){
-        d->box_scales[t] = d->box_l[t];
-        d->box_shifts[t] = d->box_l[t] / 2.0;
+        /* fulfill minimum image convention for periodic dims */
+        for(int t=0; t<3; t++)
+          if(periodicity[t])
+            if (d->r_cut > d->box_l[t])
+              d->r_cut = d->box_l[t];
       }
+      d->one_over_r_cut = 1.0/d->r_cut;
 
       /* set normalized near field radius, relative to minimum box length */
       d->epsI = d->r_cut / d->box_scales[mindim];
@@ -332,12 +354,12 @@ FCSResult ifcs_p2nfft_tune(
       if(!d->tune_N && !d->tune_m){
         if(d->tune_alpha)
           d->alpha = p2nfft_tune_alpha(
-              d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao, d->tolerance);
+              d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao, d->tolerance);
         
         /* User specified N and cao. Therefore we do not necessarily need the error calculation. */
         if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE){
           error = p2nfft_get_accuracy(
-              d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao,
+              d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao,
               d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED,
               &rs_error, &ks_error);
 
@@ -353,21 +375,22 @@ FCSResult ifcs_p2nfft_tune(
       } else {
         if(d->tune_m)
           cao = FCS_P2NFFT_MAXCAO;
-     
+    
         /* tune the grid size N */
         if(d->tune_N){
           for (i = FCS_P2NFFT_MINGRID; i <= FCS_P2NFFT_MAXGRID; i *= 2) {
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG  || FCS_P2NFFT_DEBUG_TUNING
             if(!comm_rank) printf("P2NFFT_INFO: Trying grid size %" FCS_LMOD_INT "d.\n", i);
 #endif
-            d->N[0] = i;
-            d->N[1] = 2*fcs_ceil(d->N[0]*d->box_l[1]/(d->box_l[0]*2.0));
-            d->N[2] = 2*fcs_ceil(d->N[0]*d->box_l[2]/(d->box_l[0]*2.0));
+            fcs_int t0 = dim_tune, t1 = (t0+1)%3, t2 = (t0+2)%3;
+            d->N[t0] = i;
+            d->N[t1] = 2*fcs_ceil(d->N[t0]*d->box_l[t1]/(d->box_l[t0]*2.0));
+            d->N[t2] = 2*fcs_ceil(d->N[t0]*d->box_l[t2]/(d->box_l[t0]*2.0));
             if(d->tune_alpha)
               d->alpha = p2nfft_tune_alpha(
-                  d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao, d->tolerance);
+                  d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao, d->tolerance);
             error = p2nfft_get_accuracy(
-                d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao,
+                d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao,
                 d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED,
                 &rs_error, &ks_error);
 #if FCS_P2NFFT_DEBUG_TUNING
@@ -388,9 +411,9 @@ FCSResult ifcs_p2nfft_tune(
           for (cao = 1; cao <= FCS_P2NFFT_MAXCAO; ++cao) {
             if(d->tune_alpha)
               d->alpha = p2nfft_tune_alpha(
-                  d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao, d->tolerance);
+                  d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao, d->tolerance);
             error = p2nfft_get_accuracy(
-                d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->N, cao,
+                d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao,
                 d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED,
                 &rs_error, &ks_error);
             if (error < d->tolerance) break;
@@ -425,13 +448,46 @@ FCSResult ifcs_p2nfft_tune(
 
       /* default oversampling equals 1 in 3d-periodic case */
       if(d->tune_n){
-        for(int t=0; t<3; t++)
-          d->n[t] = d->N[t];
+        for(int t=0; t<3; t++){
+          if(d->periodicity[t])
+            d->n[t] = d->N[t];
+          else
+            d->n[t] = 2.0*d->N[t];
+        }
       } else {
         /* check user defined oversampling */
         for(int t=0; t<3; t++)
           if(d->N[t] > d->n[t] )
             return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize is not allowed to be less than normal gridsize.");
+      }
+
+      if(d->tune_epsB){
+        /* only one dimension has npbc, choose this one to set epsB */
+        for(int t=0; t<3; t++)
+          if(!periodicity[t])
+            d->epsB = (fcs_float)d->p/d->n[t];
+        if(d->epsB > 0.125)
+          d->epsB = 0.125;
+      }
+
+      for(int t=0; t<3; t++){
+        /* calculate box_scales depending on boundary condition */
+        if(d->periodicity[t]){
+          /* shift and scale coordinates into [-0.5,0.5) */
+          d->box_scales[t] = d->box_l[t];
+        } else {
+          /* shift and scale coordinates into sphere with radius (0.5-epsB) */
+          d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB) * fcs_sqrt(d->num_nonperiodic_dims) ;
+        }
+
+        /* calculate box_shifts are the same for periodic and non-periodic boundary conditions */
+        d->box_shifts[t] = d->box_l[t] / 2.0;
+        
+        /* use full torus for periodic boundary conditions, otherwise use appropriate scaling */
+        if(d->periodicity[t])
+          d->x_max[t] = 0.5;
+        else
+          d->x_max[t] = 0.5 * d->box_l[t] / d->box_scales[t];
       }
       
 #if FCS_ENABLE_INFO
@@ -442,8 +498,8 @@ FCSResult ifcs_p2nfft_tune(
         printf("P2NFFT_INFO: Tuned alpha: %" FCS_LMOD_FLOAT "f, leading to an error of %" FCS_LMOD_FLOAT "e.\n",
             d->alpha, error);
       if(!comm_rank)
-        printf("P2NFFT_INFO: Tuned N: %td, n = [%td, %td, %td], tuned m: %" FCS_LMOD_INT "d, r_cut: %" FCS_LMOD_FLOAT "f, epsI: %" FCS_LMOD_FLOAT "f.\n",
-            d->N[0], d->n[0], d->n[1], d->n[2], d->m, d->r_cut, d->epsI);
+        printf("P2NFFT_INFO: Tuned N: %td, n = [%td, %td, %td], tuned m: %" FCS_LMOD_INT "d, r_cut: %" FCS_LMOD_FLOAT "f, epsI: %" FCS_LMOD_FLOAT "f, epsB: %" FCS_LMOD_FLOAT "f.\n",
+            d->N[0], d->n[0], d->n[1], d->n[2], d->m, d->r_cut, d->epsI, d->epsB);
 #endif
 
       /* Initialize the tables for near field interpolation */
@@ -507,7 +563,6 @@ FCSResult ifcs_p2nfft_tune(
         /* % eps_I = 0.062500;  N = 64;                                  */
         /* error = 2.782434e-03                                          */      
         /*****************************************************************/
-  
         if (d->tune_N){
           d->N[mindim] = 64;
           /* Set N for all dimensions - suitable for noncubic geometry */
@@ -524,12 +579,14 @@ FCSResult ifcs_p2nfft_tune(
           d->epsI = fcs_pow(0.5, d->log2epsI);
         }
   
-        d->log2epsB = d->log2epsI;
-        d->epsB = d->epsI;
-  
+        if(d->tune_epsB){
+          d->log2epsB = d->log2epsI;
+          d->epsB = d->epsI;
+        }
+
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
-        for(fcs_int t=0; t<3; t++){
-          d->box_scales[t] = d->box_l[t] * sqrt(3) / (0.5 - d->epsB);
+        for(int t=0; t<3; t++){
+          d->box_scales[t] = d->box_l[t] * fcs_sqrt(3) / (0.5 - d->epsB);
           d->box_shifts[t] = d->box_l[t] / 2.0;
         }
   
@@ -562,7 +619,7 @@ FCSResult ifcs_p2nfft_tune(
 //             d->epsI = 0.5 * avg_dist/d->box_l[mindim];
           } else { /* user defined r_cut, now scale it into unit cube */
             /* invert r_cut = box_scale * epsI, where box_scale = box_l*sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
-            d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut * sqrt(3) + 1.0);
+            d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut * fcs_sqrt(3) + 1.0);
           }
         }
   
@@ -600,15 +657,13 @@ FCSResult ifcs_p2nfft_tune(
                 printf("P2NFFT_DEBUG_TUNING: No CG approximation available.\n");
               else
                 printf("P2NFFT_DEBUG_TUNING: error = %e, sum_q_abs = %e, accuracy = %e, tolerance = %e.\n",
-                    error, sum_q_abs, error * sum_q_abs * sqrt(2.0 / (d->box_scales[0]*d->box_scales[1]*d->box_scales[2])), d->tolerance);
+                    error, sum_q_abs, error * sum_q_abs * fcs_sqrt(2.0 / (d->box_scales[0]*d->box_scales[1]*d->box_scales[2])), d->tolerance);
             }
 #endif
 
             /* TODO: find better error estimate */
             if( !(error < 0.0) )
-              if (error * sum_q_abs * sqrt(2.0 / (d->box_scales[0]*d->box_scales[1]*d->box_scales[2])) < d->tolerance) break;
-//             if( !(error < 0.0) )
-//               if (3.0*error < d->tolerance) break;
+              if (error * sum_q_abs * fcs_sqrt(2.0 / (d->box_scales[0]*d->box_scales[1]*d->box_scales[2])) < d->tolerance) break;
           }
     
           /* Return error, if accuracy tuning failed. */
@@ -724,16 +779,16 @@ FCSResult ifcs_p2nfft_tune(
            d->N[0], d->N[1], d->N[2], d->n[0], d->n[1], d->n[2], d->m, d->p, d->r_cut, d->epsI, d->near_interpolation_num_nodes, d->far_interpolation_num_nodes, error, d->tolerance);
        printf("P2NFFT_INFO: General error bound (best for non-alternating charges): cg_err_3d * sum_q_abs = %" FCS_LMOD_FLOAT "e\n",
            error*sum_q_abs);
-       printf("P2NFFT_INFO: Stochastical error bound for alternating charges: cg_err_3d * sum_q_abs / sqrt(M) = %" FCS_LMOD_FLOAT "e\n",
-           error*sum_q_abs/sqrt(d->num_nodes));
-       printf("P2NFFT_INFO: Test of new Stochastical error bound for near field error: cg_err_3d * sum_q2 / sqrt(M*V) = %" FCS_LMOD_FLOAT "e\n",
-           error * d->sum_q2/sqrt(d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2]));
-       printf("P2NFFT_INFO: Test of new Stochastical error bound for near plus far field error: cg_err_3d * sqrt( sum_q2*sum_q2 / (M*V) + 1 ) = %" FCS_LMOD_FLOAT "e\n",
-           error * sqrt(d->sum_q2*d->sum_q2/(d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2]) + 1));
-       printf("P2NFFT_INFO: Test of new Stochastical error bound for near plus far field error: cg_err_3d * sum_q2 * sqrt(3 / (M*V)) = %" FCS_LMOD_FLOAT "e\n",
-           error * sum_q2 * sqrt(3.0 / (d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2])) );
-       printf("P2NFFT_INFO: General error bound (depending on box scale=%" FCS_LMOD_FLOAT "e): cg_err_3d * sum_q_abs * sqrt(2.0/V_scale) = %" FCS_LMOD_FLOAT "e\n",
-           d->box_scales[0], error*sum_q_abs * sqrt(2.0 / (d->box_scales[0]*d->box_scales[1]*d->box_scales[2]) )); // FIXME: noncubic box
+       printf("P2NFFT_INFO: Stochastical error bound for alternating charges: cg_err_3d * sum_q_abs / fcs_sqrt(M) = %" FCS_LMOD_FLOAT "e\n",
+           error*sum_q_abs/fcs_sqrt(d->num_nodes));
+       printf("P2NFFT_INFO: Test of new Stochastical error bound for near field error: cg_err_3d * sum_q2 / fcs_sqrt(M*V) = %" FCS_LMOD_FLOAT "e\n",
+           error * d->sum_q2/fcs_sqrt(d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2]));
+       printf("P2NFFT_INFO: Test of new Stochastical error bound for near plus far field error: cg_err_3d * fcs_sqrt( sum_q2*sum_q2 / (M*V) + 1 ) = %" FCS_LMOD_FLOAT "e\n",
+           error * fcs_sqrt(d->sum_q2*d->sum_q2/(d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2]) + 1));
+       printf("P2NFFT_INFO: Test of new Stochastical error bound for near plus far field error: cg_err_3d * sum_q2 * fcs_sqrt(3 / (M*V)) = %" FCS_LMOD_FLOAT "e\n",
+           error * sum_q2 * fcs_sqrt(3.0 / (d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2])) );
+       printf("P2NFFT_INFO: General error bound (depending on box scale=%" FCS_LMOD_FLOAT "e): cg_err_3d * sum_q_abs * fcs_sqrt(2.0/V_scale) = %" FCS_LMOD_FLOAT "e\n",
+           d->box_scales[0], error*sum_q_abs * fcs_sqrt(2.0 / (d->box_scales[0]*d->box_scales[1]*d->box_scales[2]) ));
      }
 #endif
     }
@@ -769,10 +824,19 @@ FCSResult ifcs_p2nfft_tune(
     }
 
     /* precompute Fourier coefficients for convolution */
-    if(d->use_ewald)
+    if (d->num_periodic_dims == 3)
       d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
           d->local_N, d->local_N_start, d->box_l, d->alpha);
-    else
+    if (d->num_periodic_dims == 2)
+      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp(
+          d->N, d->epsB, d->box_l, d->box_scales, d->alpha, d->periodicity, d->p,
+          d->cart_comm_pnfft);
+    if (d->num_periodic_dims == 1)
+      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp(
+          d->N, d->epsB, d->box_l, d->box_scales, d->alpha, d->periodicity, d->p,
+          d->cart_comm_pnfft);
+      /* malloc_and_precompute_regkern_hat_1dp */
+    if (d->num_periodic_dims == 0)
       d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
           d->N, d->r_cut, d->epsI, d->epsB, d->p, d->c, d->box_scales, d->reg_near, d->reg_far,
           d->taylor2p_coeff, d->N_cg_cos, d->cg_cos_coeff,
@@ -849,6 +913,8 @@ static void print_command_line_arguments(
       printf("p2nfft_r_cut,%" FCS_LMOD_FLOAT "f,", d->r_cut);
     if(verbose || !d->tune_epsI || !d->tune_r_cut)
       printf("p2nfft_epsI,%" FCS_LMOD_FLOAT "f,", d->epsI);
+    if(verbose || !d->tune_epsB)
+      printf("p2nfft_epsB,%" FCS_LMOD_FLOAT "f,", d->epsB);
     if(verbose || !d->tune_c)
       printf("p2nfft_c,%" FCS_LMOD_FLOAT "f,", d->c);
     if(verbose || !d->tune_alpha)
@@ -955,7 +1021,7 @@ static void init_near_interpolation_table_potential_3dp(
   for(fcs_int k=0; k<num_nodes+3; k++){
     r = r_cut * (fcs_float) k / num_nodes;
     if (fcs_float_is_zero(r))
-      table[k] = 2 * alpha * FCS_P2NFFT_1OVERSQRTPI;
+      table[k] = 2 * alpha * FCS_P2NFFT_1_SQRTPI;
     else
       table[k] = erf(alpha * r)/r;
   }
@@ -1030,7 +1096,7 @@ static void init_near_interpolation_table_force_3dp(
       table[k] = 0;
     else
       table[k] = (-erf(alpha * r)/r
-          + 2.0*alpha*FCS_P2NFFT_1OVERSQRTPI * fcs_exp(- alpha*alpha * r*r)
+          + 2.0*alpha*FCS_P2NFFT_1_SQRTPI * fcs_exp(- alpha*alpha * r*r)
         ) / r;
   }
 }
@@ -1174,7 +1240,7 @@ static void init_pnfft(
   int myrank;
   MPI_Comm_rank(cart_comm_pnfft, &myrank);
 #endif
-
+  
   switch(pnfft_window){
     case 0: pnfft_flags |= PNFFT_WINDOW_GAUSSIAN; break;
     case 1: pnfft_flags |= PNFFT_WINDOW_BSPLINE; break;
@@ -1429,7 +1495,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
         if ((k0 == 0) && (k1 == 0) && (k2 == 0))
           regkern_hat[m] = 0;
         else
-          regkern_hat[m] = fcs_exp(-FCS_P2NFFT_PISQR * ksqnorm/(alpha*alpha))/ksqnorm;
+          regkern_hat[m] = fcs_exp(-FCS_P2NFFT_PISQR * ksqnorm/(alpha*alpha))/ksqnorm/FCS_P2NFFT_PI;
       }
     }
   }
@@ -1438,8 +1504,285 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
 }
 
 
+/* scale epsI and epsB according to box_size == 1 */
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
+    const ptrdiff_t *N, fcs_float epsB,
+    const fcs_float *box_l, const fcs_float *box_scales, fcs_float alpha,
+    const fcs_int *periodicity, fcs_int p,
+    MPI_Comm comm_cart
+    )
+{
+  ptrdiff_t howmany = 1, alloc_local, m;
+  ptrdiff_t local_Ni[3], local_Ni_start[3], local_No[3], local_No_start[3];
+  ptrdiff_t k[3];
+  fcs_int num_periodic_dims = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
+  fcs_float scale = 1.0, twiddle, twiddle_k0=1.0, twiddle_k1=1.0, twiddle_k2=1.0;
+  fcs_float xs[3];
+  pfft_plan pfft;
+  fcs_pnfft_complex *regkern_hat;
+
+  alloc_local = pfft_local_size_many_dft(3, N, N, N, howmany,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, PFFT_TRANSPOSED_OUT,
+      local_Ni, local_Ni_start, local_No, local_No_start);
+
+  regkern_hat = pfft_alloc_complex(alloc_local);
+
+  int skipped_dims[3];
+  for(int t=0; t<3; t++)
+    skipped_dims[t] = periodicity[t];
+
+  pfft = pfft_plan_many_dft_skipped(3, N, N, N, howmany,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, skipped_dims, regkern_hat, regkern_hat, comm_cart,
+      PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_ESTIMATE);
+//       PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT| PFFT_ESTIMATE);
+
+  for(int t=0; t<3; t++){
+    if(!periodicity[t])
+      scale *= 1.0 / N[t];
+  }
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  int myrank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  C csum;
+  C csum_global;
+  csum = 0.0;
+#endif
 
 
+  /* shift FFT output via twiddle factors on the input */
+  /* twiddle only the non-periodic dims, since there we need to calculate 1d-FFTs */ 
+  m=0;
+  if(!periodicity[0]) twiddle_k0 = (local_Ni_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
+  for(ptrdiff_t l0 = local_Ni_start[0]; l0 < local_Ni_start[0] + local_Ni[0]; l0++){
+    xs[0] = (periodicity[0]) ? 0.0 : (fcs_float) l0 / N[0] - 0.5;
+    k[0] = (periodicity[0]) ? l0 - N[0]/2 : 0;  
+    if(!periodicity[1]) twiddle_k1 = (local_Ni_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
+    for(ptrdiff_t l1 = local_Ni_start[1]; l1 < local_Ni_start[1] + local_Ni[1]; l1++){
+      xs[1] = (periodicity[1]) ? 0.0 : (fcs_float) l1 / N[1] - 0.5;
+      k[1] = (periodicity[1]) ? l1 - N[1]/2 : 0;  
+      if(!periodicity[2]) twiddle_k2 = (local_Ni_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
+      for(ptrdiff_t l2 = local_Ni_start[2]; l2 < local_Ni_start[2] + local_Ni[2]; l2++, m++){
+        xs[2] = (periodicity[2]) ? 0.0 : (fcs_float) l2 / N[2] - 0.5;
+        k[2] = (periodicity[2]) ? l2 - N[2]/2 : 0;  
+        twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
+
+        /* New regularization for mixed boundary conditions */
+        fcs_float kbnorm = 0.0, x2norm = 0.0, xsnorm = 0.0, h = 1.0, B = 1.0;
+
+        for(fcs_int t=0; t<3; t++){
+          kbnorm += k[t] / box_l[t] * k[t] / box_l[t];
+          x2norm += xs[t] * xs[t] * box_scales[t] * box_scales[t];
+          xsnorm += xs[t] * xs[t];
+        }
+        kbnorm = fcs_sqrt(kbnorm);
+        x2norm = fcs_sqrt(x2norm);
+        xsnorm = fcs_sqrt(xsnorm);
+
+        /* this works only for equal nonperiodic box lengths */
+        for(fcs_int t=0; t<3; t++)
+          if(!periodicity[t])
+            h = box_scales[t];
+
+        /* set B for 1d-periodic bc */
+        for(fcs_int t=0; t<3; t++)
+          if(periodicity[t])
+            B = box_l[t];
+
+        fcs_float param[3];
+        param[0] = alpha;
+        param[1] = kbnorm;
+        param[2] = h;
+//         param[3] = xsnorm;
+
+        /* simplify for pure 2d geometry with periodic boundary conditions */
+
+        /* Check if all indices corresponding to periodic dims are 0.
+         * Index correspoding to non-periodic dim will be 0 per default. */
+        if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0)){
+          if(num_periodic_dims == 2){
+            regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB);
+          } else {
+            regkern_hat[m] = -ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, x2norm, p, param, epsB);
+//             regkern_hat[m] = -0.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, xsnorm, p, param, epsB);
+//             fprintf(stderr, "h = %e, alpha = %e, kbnorm = %e, x2norm = %e, ewald_1dp_neq0 = %e\n", h, alpha, kbnorm, xsnorm, ifcs_p2nfft_ewald_1dp_keq0(xsnorm, 0, param));
+//     if(fcs_float_is_zero(xs[1]))
+//       fprintf(stderr, "regkern[%e] = %e, x2norm = %e,xsnorm = %e, xs = [%f, %f, %f], x2 = [%f, %f, %f], local_Ni_start = [%td, %td, %td]\n",
+//           x2norm, creal(regkern_hat[m]), x2norm, xsnorm, xs[0], xs[1], xs[2], xs[0]*box_scales[0], xs[1]*box_scales[1], xs[2]*box_scales[2], local_Ni_start[0], local_Ni_start[1], local_Ni_start[2]);
+            if(isnan(creal(regkern_hat[m]))){
+              fprintf(stderr, "keq0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, x2norm = %e, kbnorm = %e, alpha = %e\n",
+                  k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, x2norm, kbnorm, alpha);
+              MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+          }
+        }
+        else{
+          /* kbnorm includes 1.0/B for cubic case */ 
+          if(num_periodic_dims == 2){
+            regkern_hat[m] = 0.5 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / kbnorm;
+//             fprintf(stderr, "regkern = %e, x2norm = %e\n", creal(regkern_hat[m]), x2norm);
+//             fprintf(stderr, "kne0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, xsnorm = %e, kbnorm = %e, alpha = %e\n",
+//                 k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, xsnorm, kbnorm, alpha);
+          } else{
+            regkern_hat[m] = 2.0 * ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+//     if(k[2]==3 && fcs_float_is_zero(xs[1]))
+//     if(k[2]==3)
+//       fprintf(stderr, "regkern[%e] = %e, x2norm = %e,xsnorm = %e, xs = [%f, %f, %f], x2 = [%f, %f, %f], k = [%td, %td, %td]\n",
+//           x2norm, creal(regkern_hat[m]), x2norm, xsnorm, xs[0], xs[1], xs[2], xs[0]*box_scales[0], xs[1]*box_scales[1], xs[2]*box_scales[2], k[0], k[1], k[2]);
+            if(isnan(creal(regkern_hat[m]))){
+              fprintf(stderr, "kne0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, xsnorm = %e, kbnorm = %e, alpha = %e\n",
+                  k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, xsnorm, kbnorm, alpha);
+//               for(int t=0; t<9; t++)
+//                 fprintf(stderr, "K_%d(0.4,0) = %e\n", t, ifcs_p2nfft_inc_upper_bessel_k(t, 0.4, 0, 1e-8));
+              MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+          }
+        }
+
+        regkern_hat[m] *= scale * twiddle;
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+#endif
+        if(!periodicity[2]) twiddle_k2 *= -1.0;
+      }
+      if(!periodicity[1]) twiddle_k1 *= -1.0;
+    }
+    if(!periodicity[0]) twiddle_k0 *= -1.0;
+  }
+
+
+//   {
+//     FILE *file = fopen("reg_keq0.txt", "w");
+//     fcs_float h = box_scales[0];
+//     fcs_float k = 2.0/box_l[0];
+//     fcs_float param[3];
+//     param[0] = alpha;
+//     param[1] = k;
+//     param[2] = h;
+//     for(int t=0; t<20; t++){
+//       fcs_float x = (0.5-epsB)*t/20.0*h;
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
+//     }
+//     for(int t=0; t<=100; t++){
+//       fcs_float x = (0.5-epsB + epsB*t/100.0)*h;
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
+//     }
+//     for(int t=1; t<=5; t++){
+//       fcs_float x = (0.5 + 0.1*t/5.0)*h;
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
+//     }
+//     fclose(file);
+//   }
+//   {
+//     FILE *file = fopen("reg_kneq0.txt", "w");
+//     fcs_float h = box_scales[0];
+//     fcs_float k = 3.0/box_l[0];
+//     fcs_float param[3];
+//     param[0] = alpha;
+//     param[1] = k;
+//     param[2] = h;
+//     for(int t=0; t<20; t++){
+//       fcs_float x = (0.5-epsB)*t/20.0*h;
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
+//     }
+//     for(int t=0; t<=100; t++){
+//       fcs_float x = (0.5-epsB + epsB*t/100.0)*h;
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
+//     }
+//     for(int t=1; t<=5; t++){
+//       fcs_float x = (0.5 + 0.1*t/5.0)*h;
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_regkernel_wo_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
+//     }
+//     fclose(file);
+//   }
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+    if (myrank == 0) fprintf(stderr, "N = [%td %td %td]\n", N[0], N[1], N[2]);
+    if (myrank == 0) fprintf(stderr, "local_Ni = [%td %td %td], local_Ni_start = [%td %td %td]\n",
+        local_Ni[0], local_Ni[1], local_Ni[2], local_Ni_start[0], local_Ni_start[1], local_Ni_start[2]);
+    if (myrank == 0) fprintf(stderr, "local_No = [%td %td %td], local_No_start = [%td %td %td]\n",
+        local_No[0], local_No[1], local_No[2], local_No_start[0], local_No_start[1], local_No_start[2]);
+    MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    if (myrank == 0) fprintf(stderr, "sum of regkernel: %e + I* %e\n", creal(csum_global), cimag(csum_global));
+#endif
+    
+  pfft_execute(pfft);
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+    csum = 0.0;
+#endif
+
+  /* take care of transposed order N1 x N2 x N0 */
+  /* shift FFT input via twiddle factors on the output */
+#if FCS_P2NFFT_NORMALIZED_2DP_EWALD
+  m=0;
+  if(!periodicity[1]) twiddle_k1 = (local_No_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
+  for(ptrdiff_t l1 = local_No_start[1]; l1 < local_No_start[1] + local_No[1]; l1++){
+    k[1] = (periodicity[1]) ? l1 - N[1]/2 : 0;
+    if(!periodicity[2]) twiddle_k2 = (local_No_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
+    for(ptrdiff_t l2 = local_No_start[2]; l2 < local_No_start[2] + local_No[2]; l2++){
+      k[2] = (periodicity[2]) ? l2 - N[2]/2 : 0;  
+      if(!periodicity[0]) twiddle_k0 = (local_No_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
+      for(ptrdiff_t l0 = local_No_start[0]; l0 < local_No_start[0] + local_No[0]; l0++, m++){
+        k[0] = (periodicity[0]) ? l0 - N[0]/2 : 0;  
+        twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
+
+        /* New regularization for mixed boundary conditions */
+        fcs_float kbnorm = 0.0;
+
+        for(fcs_int t=0; t<3; t++)
+          kbnorm += k[t] / box_l[t] * k[t] / box_l[t];
+        kbnorm = fcs_sqrt(kbnorm);
+
+        /* Index correspoding to non-periodic dim will be 0 per default. */
+        if ((k[0] != 0) || (k[1] != 0) || (k[2] != 0)){
+          /* kbnorm includes 1.0/B for cubic case */ 
+          regkern_hat[m] *=  erfc(FCS_PI*kbnorm/alpha);
+        }
+
+        regkern_hat[m] *= twiddle;
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+        csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+#endif
+
+        if(!periodicity[0]) twiddle_k0 *= -1.0;
+      }
+      if(!periodicity[2]) twiddle_k2 *= -1.0;
+    }
+    if(!periodicity[1]) twiddle_k1 *= -1.0;
+  }
+#else /* FCS_P2NFFT_NORMALIZED_2DP_EWALD */
+  m=0;
+  if(!periodicity[1]) twiddle_k1 = (local_No_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
+  for(ptrdiff_t k1 = 0; k1 < local_No[1]; k1++){
+    if(!periodicity[2]) twiddle_k2 = (local_No_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
+    for(ptrdiff_t k2 = 0; k2 < local_No[2]; k2++){
+      if(!periodicity[0]) twiddle_k0 = (local_No_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
+      for(ptrdiff_t k0 = 0; k0 < local_No[0]; k0++, m++){
+        twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
+        regkern_hat[m] *= twiddle;
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+        csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+#endif
+        if(!periodicity[0]) twiddle_k0 *= -1.0;
+      }
+      if(!periodicity[2]) twiddle_k2 *= -1.0;
+    }
+    if(!periodicity[1]) twiddle_k1 *= -1.0;
+  }
+#endif /* FCS_P2NFFT_NORMALIZED_2DP_EWALD */
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  if (myrank == 0) fprintf(stderr, "sum of regkernel_hat: %e + I* %e\n", creal(csum_global), cimag(csum_global));
+#endif
+  
+  pfft_destroy_plan(pfft);
+
+  return regkern_hat;
+}
 
 static int pnfft_is_up_to_date(
     const FCS_PNFFT(plan) ths, int dim, const ptrdiff_t *N, const ptrdiff_t *n,
@@ -1518,16 +1861,16 @@ static void default_tolerance_type(
     fcs_int *tolerance_type, fcs_float *tolerance
     )
 {
-  if(periodicity[0] && periodicity[1] && periodicity[2]){
-    if(*tolerance < 0.0)
-      *tolerance = FCS_P2NFFT_DEFAULT_TOLERANCE;
-    if(*tolerance_type == FCS_TOLERANCE_TYPE_UNDEFINED)
-      *tolerance_type = FCS_TOLERANCE_TYPE_FIELD;
-  } else if(!periodicity[0] && !periodicity[1] && !periodicity[2]){
+  if(!periodicity[0] && !periodicity[1] && !periodicity[2]){
     if(*tolerance < 0.0)
       *tolerance = FCS_P2NFFT_DEFAULT_TOLERANCE;
     if(*tolerance_type == FCS_TOLERANCE_TYPE_UNDEFINED)
       *tolerance_type = FCS_TOLERANCE_TYPE_POTENTIAL;
+  } else {
+    if(*tolerance < 0.0)
+      *tolerance = FCS_P2NFFT_DEFAULT_TOLERANCE;
+    if(*tolerance_type == FCS_TOLERANCE_TYPE_UNDEFINED)
+      *tolerance_type = FCS_TOLERANCE_TYPE_FIELD;
   }
 }
 
@@ -1548,8 +1891,8 @@ static FCSResult check_tolerance(
       return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_POTENTIAL only for non-periodic boundary conditions. Use FCS_TOLERANCE_FIELD instead.");
 
   if(tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
-    if( !periodicity[0] || !periodicity[1] || !periodicity[2] )
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_FIELD only for 3d-periodic boundary conditions. Use FCS_TOLERANCE_POTENTIAL instead.");
+    if( !periodicity[0] && !periodicity[1] && !periodicity[2] )
+      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_FIELD only for 1d-, 2d- and 3d-periodic boundary conditions. Use FCS_TOLERANCE_POTENTIAL instead.");
 
   if(tolerance < 0.0)
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"Tolerance must be non-negative.");
@@ -1568,9 +1911,23 @@ static fcs_int is_cubic(
   return 0;
 }
 
+/* look for the smallest box length with pbc */
+static int get_dim_of_smallest_periodic_box_l(
+    fcs_int periodicity[3], fcs_float box_l[3]
+    )
+{
+  int tmin = -1;
+  for(int t=0; t<3; t++){
+    if(periodicity[t]){
+      if(tmin < 0)
+        tmin = t;
+      else if (box_l[t] < box_l[tmin])
+        tmin = t;
+    }
+  }
 
-
-
+  return tmin;
+}
 
 
 
@@ -1599,8 +1956,9 @@ static fcs_float p2nfft_real_space_error(
  * alpha.
  */
 static fcs_float p2nfft_tune_alpha(
-    fcs_int sum_qpart, fcs_float sum_q2, fcs_float box_l[3],
-    fcs_float r_cut, ptrdiff_t grid[3], fcs_int cao, fcs_float tolerance_field
+    fcs_int sum_qpart, fcs_float sum_q2, fcs_int dim_tune,
+    fcs_float box_l[3], fcs_float r_cut, ptrdiff_t grid[3],
+    fcs_int cao, fcs_float tolerance_field
     )
 {
   fcs_float alpha, rs_err; 
@@ -1614,15 +1972,16 @@ static fcs_float p2nfft_tune_alpha(
   } else {
     /* even alpha=0 is ok, however, we cannot choose it since it kills the k-space error formula.
      * Anyways, this is very likely NOT the optimal solution */
-    alpha = 0.1 / box_l[0];
+    alpha = 0.1 / box_l[dim_tune];
   }
 
   return alpha;
 }
 
 static fcs_float p2nfft_get_accuracy(
-    fcs_int sum_qpart, fcs_float sum_q2, fcs_float box_l[3],
-    fcs_float r_cut, ptrdiff_t grid[3], fcs_int cao, fcs_float tolerance_field,
+    fcs_int sum_qpart, fcs_float sum_q2, fcs_int dim_tune,
+    fcs_float box_l[3], fcs_float r_cut, ptrdiff_t grid[3],
+    fcs_int cao, fcs_float tolerance_field,
     fcs_float alpha, fcs_int interlaced,
     fcs_float *rs_err, fcs_float *ks_err
     )
@@ -1639,9 +1998,9 @@ static fcs_float p2nfft_get_accuracy(
 //full_estimate=0;
 
   if (full_estimate)
-    *ks_err = p2nfft_k_space_error(sum_qpart, sum_q2, box_l, grid, alpha, cao, interlaced);
+    *ks_err = p2nfft_k_space_error(sum_qpart, sum_q2, dim_tune, box_l, grid, alpha, cao, interlaced);
   else
-    *ks_err = p2nfft_k_space_error_approx(sum_qpart, sum_q2, box_l, grid, alpha, cao);
+    *ks_err = p2nfft_k_space_error_approx(sum_qpart, sum_q2, dim_tune, box_l, grid, alpha, cao);
 
   return fcs_sqrt(FCS_P2NFFT_SQR(*rs_err)+FCS_P2NFFT_SQR(*ks_err));
 }
@@ -1658,7 +2017,7 @@ static fcs_float p2nfft_get_accuracy(
  * \return reciprocal (k) space error
 */
 static fcs_float p2nfft_k_space_error(
-    fcs_int N, fcs_float sum_q2,
+    fcs_int N, fcs_float sum_q2, fcs_int dim_tune,
     fcs_float box_l[3], ptrdiff_t grid[3],
     fcs_float alpha, fcs_int cao,
     fcs_int interlaced
@@ -1667,7 +2026,7 @@ static fcs_float p2nfft_k_space_error(
   fcs_float he_q = 0.0;
   fcs_float grid_i[3] = {1.0/grid[0], 1.0/grid[1], 1.0/grid[2]};
   /* @todo Handle non-cubic case  */
-  fcs_float alpha_L_i = 1./(alpha*box_l[0]);
+  fcs_float alpha_L_i = 1./(alpha*box_l[dim_tune]);
 
 #if FCS_P2NFFT_DEBUG_TUNING
   fprintf(stderr, "P2NFFT_DEBUG_TUNING: N = %d, grid_i = [%f, %f, %f], alpha_L_i = %f\n",
@@ -1867,14 +2226,13 @@ static void p2nfft_k_space_error_sum2_adi(
 /* Calculate the analytical approximation for the k-space part of the
  * error (Eq. 38 in Deserno, Holm; JCP 109,18; 1998). */
 static fcs_float p2nfft_k_space_error_approx(
-    fcs_int N, fcs_float sum_q2,
+    fcs_int N, fcs_float sum_q2, fcs_int dim_tune,
     fcs_float box_l[3], ptrdiff_t grid[3],
     fcs_float alpha, fcs_int cao
     )
 {
   /* grid spacing */
-  /* TODO: non-cubic case*/ //noncubic hier noch was zu tun?
-  fcs_float h = box_l[0]/grid[0];
+  fcs_float h = box_l[dim_tune]/grid[dim_tune];
   fcs_float ha = h*alpha;
 
   /* compute the sum in eq. 38 */
@@ -1925,12 +2283,12 @@ static fcs_float p2nfft_k_space_error_approx(
   return 
     sum_q2 / (box_l[0]*box_l[0] + box_l[1]*box_l[1] + box_l[2]*box_l[2]) *
     fcs_pow(h*alpha, cao) * 
-    sqrt(alpha*box_l[0]/N*sqrt(2.0*FCS_P2NFFT_PI)*sum);
+    fcs_sqrt(alpha*box_l[dim_tune]/N*fcs_sqrt(2.0*FCS_P2NFFT_PI)*sum);
 #else
   return 
-    sum_q2 / (box_l[0]*box_l[0]) *
+    sum_q2 / (box_l[dim_tune]*box_l[dim_tune]) *
     fcs_pow(h*alpha, cao) * 
-    sqrt(alpha*box_l[0]/N*sqrt(2.0*FCS_P2NFFT_PI)*sum);
+    fcs_sqrt(alpha*box_l[dim_tune]/N*fcs_sqrt(2.0*FCS_P2NFFT_PI)*sum);
 #endif
 }
 
@@ -1988,10 +2346,10 @@ static fcs_float p2nfft_k_space_error_general_window(
   fprintf(stderr, "P2NFFT_DEBUG_TUNING: alias_sum = %e\n", alias_sum);
 
 #if FCS_P2NFFT_ENABLE_TUNING_BUG
-  return 2.0*sum_q2*sqrt(alias_sum/(fcs_float)num_part) / (box_l[1]*box_l[2]);
+  return 2.0*sum_q2*fcs_sqrt(alias_sum/(fcs_float)num_part) / (box_l[1]*box_l[2]);
 #else
   /* Where does the factor 2.0 come from? */
-  return 2.0*sum_q2*sqrt( alias_sum / (fcs_float)num_part / (box_l[0]*box_l[1]*box_l[2]) );
+  return 2.0*sum_q2*fcs_sqrt( alias_sum / (fcs_float)num_part / (box_l[0]*box_l[1]*box_l[2]) );
 #endif
 }
 
@@ -2117,4 +2475,5 @@ static fcs_float compute_alias_k(
   return alias_k;
 }
 #endif
+
 

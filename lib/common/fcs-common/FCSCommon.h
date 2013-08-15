@@ -52,6 +52,8 @@ extern "C" {
 #define fcs_sinh(_x_)      FCS_MATH(sinh)(_x_)
 #define fcs_cosh(_x_)      FCS_MATH(cosh)(_x_)
 #define fcs_log(_x_)       FCS_MATH(log)(_x_)
+#define fcs_erf(_x_)       FCS_MATH(erf)(_x_)
+#define fcs_erfc(_x_)      FCS_MATH(erfc)(_x_)
 #define fcs_pow(_x_, _y_)  FCS_MATH(pow)(_x_, _y_)
 
 /**

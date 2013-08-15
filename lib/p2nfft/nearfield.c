@@ -64,7 +64,7 @@ static fcs_float compute_self_potential_periodic(
         d->interpolation_order, d->near_interpolation_num_nodes,
         d->near_interpolation_table_potential);
   else
-    return 2 * d->alpha * FCS_P2NFFT_1OVERSQRTPI;
+    return 2 * d->alpha * FCS_P2NFFT_1_SQRTPI;
 }
 
 static fcs_float compute_self_potential_nonperiodic(
@@ -114,7 +114,7 @@ static fcs_float compute_near_potential_periodic(
           d->interpolation_order, d->near_interpolation_num_nodes,
           d->near_interpolation_table_potential);
   } else {
-    return (1-erf(d->alpha * dist))/dist; /* use erf instead of erfc to fix ICC performance problems */
+    return (1-fcs_erf(d->alpha * dist))/dist; /* use erf instead of erfc to fix ICC performance problems */
   }
 }
 
@@ -168,8 +168,8 @@ static fcs_float compute_near_field_periodic(
           d->interpolation_order, d->near_interpolation_num_nodes,
           d->near_interpolation_table_force);
   else
-    return -((1-erf(d->alpha * dist))/dist
-          + 2.0*d->alpha*FCS_P2NFFT_1OVERSQRTPI * exp(- d->alpha*d->alpha * dist*dist)
+    return -((1-fcs_erf(d->alpha * dist))/dist
+          + 2.0*d->alpha*FCS_P2NFFT_1_SQRTPI * exp(- d->alpha*d->alpha * dist*dist)
         ) / dist;
 }
 

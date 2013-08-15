@@ -31,13 +31,13 @@
 #define FCS_P2NFFT_DEBUG 0
 #define FCS_P2NFFT_DEBUG_RETUNE 0
 
+#define FCS_P2NFFT_NORMALIZED_2DP_EWALD 0
+
 #define CONCAT2(prefix, name)  prefix ## name
 #define CONCAT(prefix, name)  CONCAT2(prefix, name)
 
 // typedef CONCAT(FFTW_PREFIX, fftw_complex) C;
 // #define FFTW(name) FFTW_MANGLE_DOUBLE(name)
-
-
 
 #if defined(FCS_FLOAT_IS_DOUBLE)
 typedef pnfft_complex fcs_pnfft_complex;
@@ -127,6 +127,7 @@ typedef struct {
   fcs_int tune_alpha;
   fcs_int tune_r_cut;
   fcs_int tune_epsI;
+  fcs_int tune_epsB;
   fcs_int tune_N;
   fcs_int tune_n;
   fcs_int tune_m;
@@ -167,7 +168,8 @@ typedef struct {
   fcs_int use_ewald;  /* switch between fully periodic and non-periodic case */
   fcs_float r_cut;    /* near field radius (unscaled) */
   fcs_float one_over_r_cut;    /* inverse near field radius (unscaled) */
-  fcs_int num_nonperiodic_dims; /* number of dimensions with periodic boundary conditions */
+  fcs_int num_nonperiodic_dims; /* number of dimensions with nonperiodic boundary conditions */
+  fcs_int num_periodic_dims;    /* number of dimensions with periodic boundary conditions */
 
   /* parameters for periodic case */
   fcs_float alpha;  /* Ewald splitting parameter */

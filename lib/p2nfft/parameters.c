@@ -183,6 +183,9 @@ FCSResult ifcs_p2nfft_set_epsI(
   if( rd==NULL )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
+  if( epsI >= 0.5 )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Near field cutoff 'epsI' does not hold epsI < 0.5");
+
   if (!fcs_float_is_equal(epsI, d->epsI))
     d->needs_retune = 1;
   d->epsI = epsI;
@@ -215,6 +218,53 @@ FCSResult ifcs_p2nfft_get_epsI(
   *epsI = d->epsI;
   return NULL;
 }
+
+
+/* Getters and Setters for scaled far field regularization border */
+FCSResult ifcs_p2nfft_set_epsB(
+    void *rd, const char* fnc_name, fcs_float epsB
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  if( epsB >= 0.5 )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field border 'epsB' does not hold epsB < 0.5");
+
+  if (!fcs_float_is_equal(epsB, d->epsB))
+    d->needs_retune = 1;
+  d->epsB = epsB;
+  d->tune_epsB = 0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_epsB_tune(
+    void *rd, const char* fnc_name
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  d->needs_retune = 1;
+  d->tune_epsB = 1;
+  d->epsB = -1.0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_get_epsB(
+    void *rd, const char* fnc_name, fcs_float *epsB
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *epsB = d->epsB;
+  return NULL;
+}
+
 
 /* Getter and Setter for far field continuation value c used by taylor2p */
 FCSResult ifcs_p2nfft_set_c(
@@ -257,6 +307,7 @@ FCSResult ifcs_p2nfft_get_c(
   *c = d->c;
   return NULL;
 }
+
 
 /* Getters and Setters for Ewald splitting parameter */
 FCSResult ifcs_p2nfft_set_alpha(

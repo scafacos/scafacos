@@ -226,6 +226,11 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     Relative cutoff distance of the near field. P2NFFT scales the original box size into a cube of side length 1.
     For fully periodic boundary conditions this corresponds to a simple scaling by the box size. However, the scaling is more complicated if non-periodic
     boundary conditions are involved. Application of the same scaling factor on \verb!r_cut! gives \verb!epsI!.
+    Feasible values are any positive floats that fulfill $\verb!epsI! < 0.5$.
+  \item \verb!p2nfft_epsB! -
+    Regularization border for P2NFFT with non-periodic boundary conditions. This parameter corresponds to the rescaled system into a unit cube of side length 1.
+    Feasible values are any positive floats that fulfill $\verb!epsI! + \verb!epsB! < 0.5$.
+    This parameter does not have any effect for fully periodic boundary conditions. Default value is $\verb!epsB! := \verb!epsI!$.
   \item \verb!p2nfft_alpha! -
     Ewald splitting parameter. Can be automatically tuned.
     This parameter corresponds to \verb!alpha! of the P3M solver.
@@ -399,6 +404,13 @@ FCSResult fcs_p2nfft_get_epsI(FCS handle, fcs_float* eps_I);
 FCSResult fcs_p2nfft_set_epsI_tune(FCS handle);
 \end{alltt}
     Set/restore/retrieve relative near field cutoff radius.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_epsB(FCS handle, fcs_float eps_B);
+FCSResult fcs_p2nfft_get_epsB(FCS handle, fcs_float* eps_B);
+FCSResult fcs_p2nfft_set_epsB_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve relative far field regularization border.
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_alpha(FCS handle, fcs_float alpha);

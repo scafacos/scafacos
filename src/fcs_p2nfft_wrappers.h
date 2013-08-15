@@ -32,6 +32,9 @@ FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(r_cut, r_cut, fcs_float, r_cut)
 /* Getters and Setters for scaled near field cutoff radius */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(epsI, epsI, fcs_float, eps_I)
 
+/* Getters and Setters for scaled far field regularization border */
+FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(epsB, epsB, fcs_float, eps_I)
+
 /* Getter and Setter for far field continuation value c used by taylor2p */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(c, c, fcs_float, c)
 
