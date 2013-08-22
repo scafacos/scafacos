@@ -5,10 +5,13 @@ manual_FILES = \
 	intro.tex \
 	fortran.tex \
 	shortcuts.tex \
-	bibliography.bib
+	bibliography.bib \
+	latex-manual.sh
 # 	code/manual_min_c2c.c
 
 EXTRA_DIST = $(manual_FILES)
+
+if ENABLE_DOC
 if HAVE_LATEX
 EXTRA_DIST += manual.pdf
 endif
@@ -17,7 +20,7 @@ endif
 
 doc: manual
 manual: manual.pdf
-manual.pdf: $(manual_FILES) latex-manual.sh latexinc.sh
+manual.pdf: $(manual_FILES) latexinc.sh
 if HAVE_LATEX
 	sh latex-manual.sh
 else
@@ -33,3 +36,4 @@ MOSTLYCLEANFILES = \
 	manual.bbl manual.blg \
 	manual.idx manual.idx.bak manual.ilg manual.ind\
 	manual.log manual.out manual.toc manual.lof manual.lot manual.tdo
+endif

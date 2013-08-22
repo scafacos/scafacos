@@ -11,14 +11,11 @@ libtool: $(LIBTOOL_DEPS)
 ACLOCAL_AMFLAGS = -I m4
 
 # Subdirectories
-SUBDIRS = kernel util api .
+SUBDIRS = kernel util api . doc
+DIST_SUBDIRS = $(SUBDIRS) tests
 
 if ENABLE_TESTS
 SUBDIRS += tests
-endif
-
-if ENABLE_DOC
-SUBDIRS += doc
 endif
 
 EXTRA_DIST = bootstrap.sh CONVENTIONS pnfft.pc.in
