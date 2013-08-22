@@ -167,6 +167,11 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
 
   val_new = G_tilde(n,x,y,nu,N,pt,D_Aki,N_Aki);
   while(err > eps){
+
+    /* avoid overflow by division with very small numbers */
+    if(val_new < eps)
+      break;
+
     if(n >= n_max){
       fprintf(stderr, "Inc_Bessel_K: Cannot reach accuracy within %d iterations: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n_max, val_new, val_old, err, eps, nu, x, y);
       break;
