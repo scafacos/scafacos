@@ -97,6 +97,8 @@ static void init_pnfft(
 static int pnfft_is_up_to_date(
     const FCS_PNFFT(plan) ths, int dim, const ptrdiff_t *N, const ptrdiff_t *n,
     const fcs_float *x_max, int m, unsigned pnfft_flags, unsigned pfft_flags);
+static int reg_far_is_radial(
+    fcs_int reg_far);
 
 static void default_tolerance_type(
     fcs_int *periodicity,
@@ -477,7 +479,9 @@ FCSResult ifcs_p2nfft_tune(
           d->box_scales[t] = d->box_l[t];
         } else {
           /* shift and scale coordinates into sphere with radius (0.5-epsB) */
-          d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB) * fcs_sqrt(d->num_nonperiodic_dims) ;
+          d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
+          if(reg_far_is_radial(d->reg_far))
+            d->box_scales[t] *= fcs_sqrt(d->num_nonperiodic_dims) ;
         }
 
         /* calculate box_shifts are the same for periodic and non-periodic boundary conditions */
@@ -586,7 +590,9 @@ FCSResult ifcs_p2nfft_tune(
 
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
         for(int t=0; t<3; t++){
-          d->box_scales[t] = d->box_l[t] * fcs_sqrt(3) / (0.5 - d->epsB);
+          d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
+          if(reg_far_is_radial(d->reg_far))
+            d->box_scales[t] *= fcs_sqrt(3);
           d->box_shifts[t] = d->box_l[t] / 2.0;
         }
   
@@ -639,7 +645,9 @@ FCSResult ifcs_p2nfft_tune(
         
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
         for(int t=0; t<3; t++){
-          d->box_scales[t] = d->box_l[t] * fcs_sqrt(3) / (0.5 - d->epsB);
+          d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
+          if(reg_far_is_radial(d->reg_far))
+            d->box_scales[t] *= fcs_sqrt(3);
           d->box_shifts[t] = d->box_l[t] / 2.0;
         }
 
@@ -759,8 +767,12 @@ FCSResult ifcs_p2nfft_tune(
             d->near_interpolation_table_force);
       }
 
-      /* far field interpolation only works for cubic boxes */
-      d->far_interpolation_num_nodes = (is_cubic(d->box_l)) ? d->near_interpolation_num_nodes : 0;
+      /* far field interpolation only works for cubic boxes and radial far field regularization */
+      if( reg_far_is_radial(d->reg_far)  && is_cubic(d->box_l) )
+        d->far_interpolation_num_nodes = d->near_interpolation_num_nodes;
+      else
+        d->far_interpolation_num_nodes = 0;
+
       if(d->far_interpolation_num_nodes > 0){
         d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->far_interpolation_num_nodes+3));
         init_far_interpolation_table_potential_0dp(
@@ -1374,11 +1386,17 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
       twiddle_k2 = (local_Ni_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
       for(ptrdiff_t k2 = local_Ni_start[2]; k2 < local_Ni_start[2] + local_Ni[2]; k2++, twiddle_k2 *= -1.0, m++){
         x2 = (fcs_float) k2 / N[2] - 0.5;
-        xsnorm = fcs_sqrt(x0*x0+x1*x1+x2*x2);
+        if(reg_far_is_radial(reg_far)){
+          xsnorm = fcs_sqrt(x0*x0+x1*x1+x2*x2);
+        } else {
+          /* find maximum coordinate */
+          xsnorm = (x0 > x1) ? x0 : x1;
+          xsnorm = (xsnorm > x2) ? xsnorm : x2;
+        }
         twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
 
         /* constant continuation outside the ball with radius 0.5 */
-        x2norm = sqrt(x0*x0*box_scales[0]*box_scales[0]
+        x2norm = fcs_sqrt(x0*x0*box_scales[0]*box_scales[0]
             + x1*x1*box_scales[1]*box_scales[1]
             + x2*x2*box_scales[2]*box_scales[2]);
 
@@ -1397,26 +1415,31 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
         } else if(xsnorm < 0.5-epsB) {
             regkern_hat[m] = 1.0/x2norm;
         } else {
-          if(!box_is_cubic) {
-            /* Noncubic regularization works with unscaled coordinates. */
-            regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
-                ifcs_p2nfft_one_over_modulus, x2norm, xsnorm, p, NULL, r_cut, epsB, c);
-          } else {
-            /* Cubic regularization works with coordinates that are scaled into unit cube.
-             * Therefore, use xsnorm, scale the continuation value 'c', and rescale after evaluation.
-             * Note that box_scales are the same in every direction for cubic boxes. */
-            if(far_interpolation_num_nodes){
-              regkern_hat[m] = ifcs_p2nfft_interpolation(
-                  xsnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential) / box_scales[0];
-            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_CG){
-              regkern_hat[m] = evaluate_cos_polynomial_1d(xsnorm, N_cg_cos, cg_cos_coeff) / box_scales[0];
-            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC){
-              regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont(
-                  ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB, c*box_scales[0]) / box_scales[0];
-            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC){
-              regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_impl_cont(
-                  ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB) / box_scales[0];
+          if(reg_far_is_radial(reg_far)){
+            if(!box_is_cubic) {
+              /* Noncubic regularization works with unscaled coordinates. */
+              regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
+                  ifcs_p2nfft_one_over_modulus, x2norm, xsnorm, p, NULL, r_cut, epsB, c);
+            } else {
+              /* Cubic regularization works with coordinates that are scaled into unit cube.
+               * Therefore, use xsnorm, scale the continuation value 'c', and rescale after evaluation.
+               * Note that box_scales are the same in every direction for cubic boxes. */
+              if(far_interpolation_num_nodes){
+                regkern_hat[m] = ifcs_p2nfft_interpolation(
+                    xsnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential) / box_scales[0];
+              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_CG){
+                regkern_hat[m] = evaluate_cos_polynomial_1d(xsnorm, N_cg_cos, cg_cos_coeff) / box_scales[0];
+              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC){
+                regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont(
+                    ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB, c*box_scales[0]) / box_scales[0];
+              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC){
+                regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_impl_cont(
+                    ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB) / box_scales[0];
+              }
             }
+          } else {
+            regkern_hat[m] = 0;
+            //regkern_hat[m] = ifcs_p2nfft_regkern_far_rect();
           }
         }
 
@@ -1782,6 +1805,16 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
   pfft_destroy_plan(pfft);
 
   return regkern_hat;
+}
+
+static int reg_far_is_radial(
+    fcs_int reg_far
+    )
+{
+  return (reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
+    || (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM)
+    || (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC)
+    || (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC);
 }
 
 static int pnfft_is_up_to_date(

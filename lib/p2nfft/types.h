@@ -79,8 +79,6 @@ typedef ptrdiff_t INT;
 #define FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC     5
 #define FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC     6
 
-
-
 /* p2nfft_flags */
 #define FCS_P2NFFT_CHECK_TOLERANCE           (0U)
 #define FCS_P2NFFT_IGNORE_TOLERANCE          (1U << 0)
