@@ -32,16 +32,31 @@ int get_my_core()
 {
   return Kernel_PhysicalProcessorID();
 }
+
+int set_prefetching()
+{
+  return 0;
+}
+
+
 #elif defined(__TOS_BGQ__)
 // see XL C/C++ for Blue Gene/Q, V12.1 > Compiler Reference > 
 //       Compiler predefined macros > Macros related to the platform
 
 #include <spi/include/kernel/location.h>
+#include <spi/include/l1p/sprefetch.h>
 
 int get_my_core()
 {
   return Kernel_ProcessorCoreID();
 }
+
+// see http://www.fz-juelich.de/ias/jsc/EN/Expertise/Supercomputers/JUQUEEN/UserInfo/CompilingTuning.html#doc1168282bodyText6
+int set_prefetching()
+{
+  return L1P_SetStreamPolicy(L1P_stream_confirmed);
+}
+
 #else /* !defined(__TOS_BGP__) && !defined(__TOS_BGQ__) */
 int get_my_core()
 {
@@ -51,5 +66,11 @@ int get_my_core()
 
   return ++lastreq;
 }
+
+int set_prefetching()
+{
+  return 0;
+}
+
 #endif
 

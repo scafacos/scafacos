@@ -18,7 +18,6 @@
 ! along with PEPC.  If not, see <http://www.gnu.org/licenses/>.
 !
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !>
 !> All stuff concerning timing: timings are contained in a single
 !> array. certain entries therein are addressed via integer
@@ -34,7 +33,6 @@
 !>
 !> etc.
 !>
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! The following is a diagram of the hierarchy of a subset of the timers 
 ! provided by this module.
@@ -76,8 +74,9 @@
 !  |   |   +
 !  |   |   |
 !  |   |   +-> t_build_pure
-!  |   |   |
-!  |   |   +-> t_props_leafs
+!  |   |       +
+!  |   |       |
+!  |   |       +-> t_props_leaves
 !  |   |
 !  |   +-> t_branches_find
 !  |   |
@@ -148,7 +147,7 @@ module module_timings
     integer, parameter :: t_walk_grid          = 35
     integer, parameter :: t_lattice_grid       = 36
     ! tree_props
-    integer, parameter :: t_props_leafs        = 37
+    integer, parameter :: t_props_leaves       = 37
     integer, parameter :: t_unused_38          = 38
     integer, parameter :: t_unused_39          = 39
     integer, parameter :: t_unused_40          = 40
@@ -181,80 +180,64 @@ module module_timings
 
   contains
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Give me a specified timer value
     !>
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     function timer_read(id)
       implicit none
       integer, intent(in) :: id !< the affected timer address
       real*8 :: timer_read
 
       timer_read = tim(id)
-
     end function timer_read
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Resets a certain timer to zero
     !>
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timer_reset(id)
       implicit none
       integer, intent(in) :: id !< the affected timer address
 
       tim(id) = 0.
-
     end subroutine timer_reset
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Resets all timers to zero
     !>
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timer_reset_all()
       implicit none
 
       tim(1:numtimings) = 0.
-
     end subroutine timer_reset_all
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Starts a timer, i.e. sets
     !>
     !>      tim(id) = - MPI_WTIME()
     !>
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timer_start(id)
       implicit none
       include 'mpif.h'
       integer, intent(in) :: id !< the affected timer address
 
       tim(id) = - MPI_WTIME()
-
     end subroutine timer_start
 
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Stops a timer, i.e. sets
     !>
     !>      tim(id) = tim(id) + MPI_WTIME()
     !>
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timer_stop(id)
       implicit none
       include 'mpif.h'
       integer, intent(in) :: id !< the affected timer address
 
       tim(id) = tim(id) + MPI_WTIME()
-
     end subroutine timer_stop
 
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Resumes a timer, i.e. sets
     !>
@@ -275,37 +258,30 @@ module module_timings
     !>      end do
     !>      accumulated_time = timer_read(t_example)
     !>
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timer_resume(id)
       implicit none
       include 'mpif.h'
       integer, intent(in) :: id !< the affected timer address
 
       tim(id) = tim(id) - MPI_WTIME()
-
     end subroutine timer_resume
 
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Adds the given value to a timer for cumulative measurements
     !>
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timer_add(id, val)
       implicit none
       integer, intent(in) :: id !< the affected timer address
       real*8, intent(in) :: val !< value to be added
 
       tim(id) = tim(id) + val
-
     end subroutine timer_add
 
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Outputs the given timing array to a file with the given filename
     !>
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timings_ToFile(itime, iuserflag, tdata, filename, printheader)
       implicit none
       integer, intent(in) :: itime !< current timestep
@@ -329,25 +305,22 @@ module module_timings
       write(formatstring,'(a,i5,a)' ) '(x,2(1x,i20),', numtimings, '(1x,e20.5))'
       write (ifile,formatstring) itime, iuserflag, tdata
       close (ifile)
-
     end subroutine timings_ToFile
 
 
-
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Outputs all local timing data to timing_XXXX.dat
     !> if `itime <=1`, an additional header is printed
     !>
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timings_LocalOutput(itime, iuserflag)
       use module_debug
       use treevars
-
+      use module_utils, only: create_directory
       implicit none
       integer, intent(in) :: itime !< current timestep
       integer, optional, intent(in) :: iuserflag !< frontend-defined flag that is passed through and output to the second column
+
+      logical, save :: firstcall = .true.
       character(30) :: cfile
       integer :: flag
 
@@ -358,14 +331,16 @@ module module_timings
       endif
 
       if ( dbg(DBG_TIMINGFILE) ) then
+         if (firstcall) then
+           call create_directory("timing")
+           firstcall = .false.
+         end if
          write(cfile,'("timing/timing_",i6.6,".dat")') me
          call timings_ToFile(itime, flag, tim, cfile, itime<=1)
       end if
-
     end subroutine timings_LocalOutput
 
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !>
     !> Gathers global timing data and outputs to
     !> timing_avg.dat, timing_min.dat, timing_max.dat.
@@ -373,18 +348,20 @@ module module_timings
     !> descriptive column headers, otherwise, if `itime <=1`, headers
     !> are printed.
     !>
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine timings_GatherAndOutput(itime, iuserflag, printheader)
       use treevars
+      use module_utils, only: create_directory
+      use module_pepc_types
       implicit none
       include 'mpif.h'
       integer, intent(in) :: itime !< current timestep
       integer, optional, intent(in) :: iuserflag !< frontend-defined flag that is passed through and output to the second column
       logical, optional, intent(in) :: printheader
-      integer :: ierr
+      integer(kind_default) :: ierr
 
       integer :: flag
       logical :: do_printheader
+      logical, save :: firstcall = .true.
 
       real*8, dimension(1:numtimings) :: tim_max
       real*8, dimension(1:numtimings) :: tim_avg
@@ -408,19 +385,22 @@ module module_timings
       call MPI_REDUCE(tim, tim_avg, numtimings, MPI_REAL8, MPI_SUM, 0, MPI_COMM_lpepc,ierr);
 
      if (me==0) then
+        if (firstcall) then
+          call create_directory("timing")
+          firstcall = .false.
+        end if
         tim_avg = tim_avg / num_pe
         tim_dev = tim_max - tim_min
-        call timings_ToFile(itime, flag, tim_max, 'timing_max.dat', do_printheader)
-        call timings_ToFile(itime, flag, tim_avg, 'timing_avg.dat', do_printheader)
-        call timings_ToFile(itime, flag, tim_min, 'timing_min.dat', do_printheader)
-        call timings_ToFile(itime, flag, tim_dev, 'timing_dev_abs.dat', do_printheader)
+        call timings_ToFile(itime, flag, tim_max, 'timing/timing_max.dat', do_printheader)
+        call timings_ToFile(itime, flag, tim_avg, 'timing/timing_avg.dat', do_printheader)
+        call timings_ToFile(itime, flag, tim_min, 'timing/timing_min.dat', do_printheader)
+        call timings_ToFile(itime, flag, tim_dev, 'timing/timing_dev_abs.dat', do_printheader)
         tim_dev = tim_dev / tim_min
-        call timings_ToFile(itime, flag, tim_dev, 'timing_dev_rel.dat', do_printheader)
+        call timings_ToFile(itime, flag, tim_dev, 'timing/timing_dev_rel.dat', do_printheader)
 
         write(*,'(a20,f16.10," s")') "t_all = ",       tim(t_all)
         write(*,'(a20,f16.10," s")') "t_tot = ",       tim(t_tot)
      endif
-
     end subroutine timings_GatherAndOutput
 
 end module module_timings
