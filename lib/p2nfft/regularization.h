@@ -41,6 +41,10 @@ fcs_float ifcs_p2nfft_regkern_far_mirrored_impl_cont(
     fcs_int p, const fcs_float *param,
     fcs_float epsI, fcs_float epsB);
 
+fcs_float ifcs_p2nfft_regkern_rectangular_symmetric(
+    fcs_float *x, fcs_float *h,
+    fcs_int p, fcs_float epsB);
+
 fcs_float ifcs_p2nfft_regkernel_wo_singularity(
     ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p,
     const fcs_float *param, fcs_float epsB);

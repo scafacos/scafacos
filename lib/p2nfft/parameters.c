@@ -505,11 +505,11 @@ FCSResult ifcs_p2nfft_set_reg_far_by_name(
   else if (strcmp(reg_name,"rad_t2p_mir_ic") == 0)
     reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC;
   else if (strcmp(reg_name,"rec_t2p_sym") == 0)
-    reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_SYM;
+    reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_SYM;
   else if (strcmp(reg_name,"rec_t2p_mir_ec") == 0)
-    reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC;
+    reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC;
   else if (strcmp(reg_name,"rec_t2p_mir_ic") == 0)
-    reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC;
+    reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC;
   else /* unknown regularization */
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
 

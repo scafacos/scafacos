@@ -38,6 +38,7 @@
 #include "cg_cos_err.h"
 
 #include "bessel_k.h"
+#include "part_derive_one_over_norm_x.h"
 
 #define FCS_P2NFFT_DEBUG_TUNING 0
 #define FCS_P2NFFT_EXIT_AFTER_TUNING 0
@@ -228,6 +229,22 @@ FCSResult ifcs_p2nfft_tune(
   d->use_ewald = periodicity[0] || periodicity[1] || periodicity[2];  
   d->num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
   d->num_periodic_dims    = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
+
+  {
+    fcs_int i,j,k;
+    fcs_float x,y,z;
+    i=j=k=2;
+    x=y=z=0.25;
+    fprintf(stderr, "D(%d,%d,%d)(f)(%f,%f,%f) = %e\n", i,j,k, x,y,z, ifcs_p2nfft_part_derive_one_over_norm_x(i,j,k,x,y,z));
+    i=3; j=2; k=4;
+    fprintf(stderr, "D(%d,%d,%d)(f)(%f,%f,%f) = %e\n", i,j,k, x,y,z, ifcs_p2nfft_part_derive_one_over_norm_x(i,j,k,x,y,z));
+    i=j=k=8;
+    fprintf(stderr, "D(%d,%d,%d)(f)(%f,%f,%f) = %e\n", i,j,k, x,y,z, ifcs_p2nfft_part_derive_one_over_norm_x(i,j,k,x,y,z));
+    i=8; j = 13; k=16;
+    fprintf(stderr, "D(%d,%d,%d)(f)(%f,%f,%f) = %e\n", i,j,k, x,y,z, ifcs_p2nfft_part_derive_one_over_norm_x(i,j,k,x,y,z));
+    i=j=k=16;
+    fprintf(stderr, "D(%d,%d,%d)(f)(%f,%f,%f) = %e\n", i,j,k, x,y,z, ifcs_p2nfft_part_derive_one_over_norm_x(i,j,k,x,y,z));
+  }
 
   /* Now, after the periodicity is clear, we can set the default tolerance type. */
   default_tolerance_type(d->periodicity,
@@ -549,8 +566,8 @@ FCSResult ifcs_p2nfft_tune(
 
       if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM)
         return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_RAD_T2P_SYM is not yet implemented.");
-      if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
-        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_REC_T2P_SYM is not yet implemented.");
+//       if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
+//         return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_REC_T2P_SYM is not yet implemented.");
       if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC)
         return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC is not yet implemented.");
       if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC)
@@ -1386,13 +1403,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
       twiddle_k2 = (local_Ni_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
       for(ptrdiff_t k2 = local_Ni_start[2]; k2 < local_Ni_start[2] + local_Ni[2]; k2++, twiddle_k2 *= -1.0, m++){
         x2 = (fcs_float) k2 / N[2] - 0.5;
-        if(reg_far_is_radial(reg_far)){
-          xsnorm = fcs_sqrt(x0*x0+x1*x1+x2*x2);
-        } else {
-          /* find maximum coordinate */
-          xsnorm = (x0 > x1) ? x0 : x1;
-          xsnorm = (xsnorm > x2) ? xsnorm : x2;
-        }
+        xsnorm = fcs_sqrt(x0*x0+x1*x1+x2*x2);
         twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
 
         /* constant continuation outside the ball with radius 0.5 */
@@ -1412,10 +1423,10 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
             regkern_hat[m] = epsI/r_cut * evaluate_cos_polynomial_1d(x2norm * epsI/r_cut, N_cg_cos, cg_cos_coeff);
           else if (reg_near == FCS_P2NFFT_REG_NEAR_T2P)
             regkern_hat[m] = ifcs_p2nfft_nearfield_correction_taylor2p(x2norm/r_cut, p, taylor2p_coeff) / r_cut;
-        } else if(xsnorm < 0.5-epsB) {
+        } else if(reg_far_is_radial(reg_far)){
+          if(xsnorm < 0.5-epsB) {
             regkern_hat[m] = 1.0/x2norm;
-        } else {
-          if(reg_far_is_radial(reg_far)){
+          } else {
             if(!box_is_cubic) {
               /* Noncubic regularization works with unscaled coordinates. */
               regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
@@ -1437,10 +1448,18 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
                     ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB) / box_scales[0];
               }
             }
-          } else {
-            regkern_hat[m] = 0;
-            //regkern_hat[m] = ifcs_p2nfft_regkern_far_rect();
           }
+        } else {
+          fcs_float x[3] = {x0,x1,x2}, h[3];
+          for(int t=0; t<3; t++){
+            x[t] *= box_scales[t];
+            h[t] = box_scales[t]; //* (0.5-epsB); /* TODO use d->box_l ? */
+          }
+          regkern_hat[m] = ifcs_p2nfft_regkern_rectangular_symmetric(x, h, p, epsB);
+          if(isnan(creal(regkern_hat[m])))
+            fprintf(stderr, "x = [%e, %e, %e], regkern = %e, h = %e, box_scales = %e\n", x[0], x[1], x[2], creal(regkern_hat[m]), h[0], box_scales[0]);
+          if(m==0)
+            fprintf(stderr, "x = [%e, %e, %e], regkern = %e\n", x[0], x[1], x[2], creal(regkern_hat[m]));
         }
 
 //         regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
@@ -1591,7 +1610,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
         twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
 
         /* New regularization for mixed boundary conditions */
-        fcs_float kbnorm = 0.0, x2norm = 0.0, xsnorm = 0.0, h = 1.0, B = 1.0;
+        fcs_float kbnorm = 0.0, x2norm = 0.0, xsnorm = 0.0, h = 1.0;
 
         for(fcs_int t=0; t<3; t++){
           kbnorm += k[t] / box_l[t] * k[t] / box_l[t];
@@ -1607,10 +1626,12 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
           if(!periodicity[t])
             h = box_scales[t];
 
+        /* TODO Do we need B? */
         /* set B for 1d-periodic bc */
-        for(fcs_int t=0; t<3; t++)
-          if(periodicity[t])
-            B = box_l[t];
+//         fcs_float B = 1.0;
+//         for(fcs_int t=0; t<3; t++)
+//           if(periodicity[t])
+//             B = box_l[t];
 
         fcs_float param[3];
         param[0] = alpha;

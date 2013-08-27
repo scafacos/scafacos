@@ -26,6 +26,7 @@
 #endif
 
 #include "regularization.h"
+#include "part_derive_one_over_norm_x.h"
 
 static fcs_float intpol_even_const(
     const fcs_float x, const fcs_float *table,
@@ -62,10 +63,13 @@ static fcs_float BasisPoly(fcs_int m, fcs_int r, fcs_float xx)
   fcs_int k;
   fcs_float sum=0.0;
 
+  if(fcs_float_is_zero(xx+1.0))
+    return 1.0;
+
   for (k=0; k<=m-r; k++) {
-    sum+=binom(m+k,k)*pow((xx+1.0)/2.0,(fcs_float)k);
+    sum+=binom(m+k,k)*fcs_pow((xx+1.0)/2.0,(fcs_float)k);
   }
-  return sum*pow((xx+1.0),(fcs_float)r)*pow(1.0-xx,(fcs_float)(m+1))/(1<<(m+1))/fak(r); /* 1<<(m+1) = 2^(m+1) */
+  return sum*pow((xx+1.0),(fcs_float)r)*fcs_pow(1.0-xx,(fcs_float)(m+1))/(1<<(m+1))/fak(r); /* 1<<(m+1) = 2^(m+1) */
 }
 
 /** integrated basis polynomial for regularized kernel */
@@ -286,6 +290,49 @@ fcs_float ifcs_p2nfft_interpolation(
   }
 }
 
+/* Regularize the kernel function 1/norm(x) in every dimension i,
+ * where xi exceeds (0.5-epsB) * hi, based on one-dimensional symmetric two-point Taylor polynomials, i.e.
+ *   d^j/dx^j K(mi-ri) = P^(j)(mi-ri) = (-1)^j P^(j)(mi+ri)
+ * We nest these one-dimensional two-point Taylor polynomials in order to construct multi-dimensional ones.
+ * The number of variables of P is equal to the number of dimensions with xi > (0.5-epsB) * hi.
+ */
+fcs_float ifcs_p2nfft_regkern_rectangular_symmetric(
+    fcs_float *x, fcs_float *h,
+    fcs_int p, fcs_float epsB
+    )
+{
+  fcs_int reg_dims[3];
+  fcs_float tmp0, tmp1, tmp2, sum=0.0;
+  fcs_float m[3], r[3], y[3];
+
+  /* Due to symmetry we can use fabs(x) and regularize only the positive octant */
+  for(int t=0; t<3; t++){
+    reg_dims[t] = (x[t] > (0.5-epsB) * h[t]);
+    if(reg_dims[t]){
+      m[t] = (0.5 - epsB/2.0) * h[t];
+      r[t] = epsB/2.0 * h[t];
+      y[t] = (fcs_fabs(x[t])-m[t])/r[t];
+    } else {
+      y[t] = fcs_fabs(x[t]);
+    }
+  }
+
+  for (fcs_int i0=0; i0<p; i0++) {
+    tmp0 = (reg_dims[0]) ? fcs_pow(r[0],(fcs_float)i0) * (BasisPoly(p-1,i0,y[0])+BasisPoly(p-1,i0,-y[0])) : 1.0;
+    for (fcs_int i1=0; i1<p; i1++) {
+      tmp1 = tmp0 * (reg_dims[1]) ? fcs_pow(r[1],(fcs_float)i1) * (BasisPoly(p-1,i1,y[1])+BasisPoly(p-1,i1,-y[1])) : 1.0;
+      for (fcs_int i2=0; i2<p; i2++) {
+        tmp2 = tmp1 * (reg_dims[2]) ? fcs_pow(r[2],(fcs_float)i2) * (BasisPoly(p-1,i2,y[2])+BasisPoly(p-1,i2,-y[2])) : 1.0;
+        sum += tmp2 * ifcs_p2nfft_part_derive_one_over_norm_x(i0,i1,i2,y[0],y[1],y[2]);
+        if(!reg_dims[2]) break;
+      }
+      if(!reg_dims[1]) break;
+    }
+    if(!reg_dims[0]) break;
+  }
+
+  return sum;
+}
 
 
 
