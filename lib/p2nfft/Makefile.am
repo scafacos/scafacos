@@ -35,6 +35,7 @@ libfcs_p2nfft_a_SOURCES = \
 	tune.c tune.h \
 	run.c run.h \
 	bessel_k.c bessel_k.h \
+	part_derive_one_over_norm_x.c part_derive_one_over_norm_x.h \
 	parameters.c parameters.h \
 	nearfield.c nearfield.h \
 	kernels.c kernels.h \
