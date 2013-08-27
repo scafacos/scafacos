@@ -63,8 +63,8 @@ static fcs_float BasisPoly(fcs_int m, fcs_int r, fcs_float xx)
   fcs_int k;
   fcs_float sum=0.0;
 
-  if(fcs_float_is_zero(xx+1.0))
-    return 1.0;
+//   if(fcs_float_is_zero(xx+1.0))
+//     return 1.0;
 
   for (k=0; k<=m-r; k++) {
     sum+=binom(m+k,k)*fcs_pow((xx+1.0)/2.0,(fcs_float)k);
@@ -296,34 +296,35 @@ fcs_float ifcs_p2nfft_interpolation(
  * We nest these one-dimensional two-point Taylor polynomials in order to construct multi-dimensional ones.
  * The number of variables of P is equal to the number of dimensions with xi > (0.5-epsB) * hi.
  */
-fcs_float ifcs_p2nfft_regkern_rectangular_symmetric(
+fcs_float ifcs_p2nfft_regkern_rect_symmetric(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB
     )
 {
   fcs_int reg_dims[3];
   fcs_float tmp0, tmp1, tmp2, sum=0.0;
-  fcs_float m[3], r[3], y[3];
+  fcs_float m[3], r[3], y[3], z[3];
 
   /* Due to symmetry we can use fabs(x) and regularize only the positive octant */
   for(int t=0; t<3; t++){
     reg_dims[t] = (x[t] > (0.5-epsB) * h[t]);
+    /* Only needed for regularized dimensions */
     if(reg_dims[t]){
-      m[t] = (0.5 - epsB/2.0) * h[t];
-      r[t] = epsB/2.0 * h[t];
+      m[t] = 0.5 * h[t];
+      r[t] = epsB * h[t];
       y[t] = (fcs_fabs(x[t])-m[t])/r[t];
-    } else {
-      y[t] = fcs_fabs(x[t]);
     }
+    /* Evaluation point of the kernel function */
+    z[t] = reg_dims[t] ? m[t]-r[t] : fcs_fabs(x[t]);
   }
 
   for (fcs_int i0=0; i0<p; i0++) {
-    tmp0 = (reg_dims[0]) ? fcs_pow(r[0],(fcs_float)i0) * (BasisPoly(p-1,i0,y[0])+BasisPoly(p-1,i0,-y[0])) : 1.0;
+    tmp0 = reg_dims[0] ? fcs_pow(r[0],(fcs_float)i0) * (BasisPoly(p-1,i0,y[0])+BasisPoly(p-1,i0,-y[0])) : 1.0;
     for (fcs_int i1=0; i1<p; i1++) {
-      tmp1 = tmp0 * (reg_dims[1]) ? fcs_pow(r[1],(fcs_float)i1) * (BasisPoly(p-1,i1,y[1])+BasisPoly(p-1,i1,-y[1])) : 1.0;
+      tmp1 = tmp0 * (reg_dims[1] ? fcs_pow(r[1],(fcs_float)i1) * (BasisPoly(p-1,i1,y[1])+BasisPoly(p-1,i1,-y[1])) : 1.0);
       for (fcs_int i2=0; i2<p; i2++) {
-        tmp2 = tmp1 * (reg_dims[2]) ? fcs_pow(r[2],(fcs_float)i2) * (BasisPoly(p-1,i2,y[2])+BasisPoly(p-1,i2,-y[2])) : 1.0;
-        sum += tmp2 * ifcs_p2nfft_part_derive_one_over_norm_x(i0,i1,i2,y[0],y[1],y[2]);
+        tmp2 = tmp1 * (reg_dims[2] ? fcs_pow(r[2],(fcs_float)i2) * (BasisPoly(p-1,i2,y[2])+BasisPoly(p-1,i2,-y[2])) : 1.0);
+        sum += tmp2 * ifcs_p2nfft_part_derive_one_over_norm_x(i0,i1,i2,z[0],z[1],z[2]);
         if(!reg_dims[2]) break;
       }
       if(!reg_dims[1]) break;
@@ -334,7 +335,88 @@ fcs_float ifcs_p2nfft_regkern_rectangular_symmetric(
   return sum;
 }
 
+fcs_float ifcs_p2nfft_regkern_rect_mirrored_expl_cont(
+    fcs_float *x, fcs_float *h,
+    fcs_int p, fcs_float epsB, fcs_float c
+    )
+{
+  fcs_int reg_dims[3];
+  fcs_float tmp0, tmp1, tmp2, sum=0.0;
+  fcs_float m[3], r[3], y[3], z[3];
 
+  /* Due to symmetry we can use fabs(x) and regularize only the positive octant */
+  for(int t=0; t<3; t++){
+    reg_dims[t] = (x[t] > (0.5-epsB) * h[t]);
+    /* Only needed for regularized dimensions */
+    if(reg_dims[t]){
+      m[t] = (0.5 - epsB/2.0) * h[t];
+      r[t] = epsB/2.0 * h[t];
+      y[t] = (fcs_fabs(x[t])-m[t])/r[t];
+    }
+    /* Evaluation point of the kernel function */
+    z[t] = reg_dims[t] ? m[t]-r[t] : fcs_fabs(x[t]);
+  }
+
+  sum = 0;
+  for(int t=0; t<3; t++)
+    if(reg_dims[t]) sum = sum * BasisPoly(p-1,0,y[t]) + BasisPoly(p-1,0,-y[t]) * c;
+
+  for (fcs_int i0=0; i0<p; i0++) {
+    tmp0 = reg_dims[0] ? fcs_pow(r[0],(fcs_float)i0) * BasisPoly(p-1,i0,y[0]) : 1.0;
+    for (fcs_int i1=0; i1<p; i1++) {
+      tmp1 = tmp0 * (reg_dims[1] ? fcs_pow(r[1],(fcs_float)i1) * BasisPoly(p-1,i1,y[1]) : 1.0);
+      for (fcs_int i2=0; i2<p; i2++) {
+        tmp2 = tmp1 * (reg_dims[2] ? fcs_pow(r[2],(fcs_float)i2) * BasisPoly(p-1,i2,y[2]) : 1.0);
+        sum += tmp2 * ifcs_p2nfft_part_derive_one_over_norm_x(i0,i1,i2,z[0],z[1],z[2]);
+        if(!reg_dims[2]) break;
+      }
+      if(!reg_dims[1]) break;
+    }
+    if(!reg_dims[0]) break;
+  }
+
+  return sum;
+}
+
+fcs_float ifcs_p2nfft_regkern_rect_mirrored_impl_cont(
+    fcs_float *x, fcs_float *h,
+    fcs_int p, fcs_float epsB
+    )
+{
+  fcs_int reg_dims[3];
+  fcs_float tmp0, tmp1, tmp2, sum=0.0;
+  fcs_float m[3], r[3], y[3], z[3];
+
+  /* Due to symmetry we can use fabs(x) and regularize only the positive octant */
+  for(int t=0; t<3; t++){
+    reg_dims[t] = (x[t] > (0.5-epsB) * h[t]);
+    /* Only needed for regularized dimensions */
+    if(reg_dims[t]){
+      m[t] = (0.5 - epsB/2.0) * h[t];
+      r[t] = epsB/2.0 * h[t];
+      y[t] = (fcs_fabs(x[t])-m[t])/r[t];
+    }
+    /* Evaluation point of the kernel function */
+    z[t] = reg_dims[t] ? m[t]-r[t] : fcs_fabs(x[t]);
+  }
+
+  sum = ifcs_p2nfft_part_derive_one_over_norm_x(0,0,0,z[0],z[1],z[2]);
+  for (fcs_int i0=0; i0<p-1; i0++) {
+    tmp0 = reg_dims[0] ? fcs_pow(r[0],(fcs_float)i0+1) * (IntBasisPoly(p-1,i0,y[0]) - IntBasisPoly(p-1,i0,-1)) : 1.0;
+    for (fcs_int i1=0; i1<p-1; i1++) {
+      tmp1 = tmp0 * (reg_dims[1] ? fcs_pow(r[1],(fcs_float)i1+1) * (IntBasisPoly(p-1,i1,y[1]) - IntBasisPoly(p-1,i1,-1)) : 1.0);
+      for (fcs_int i2=0; i2<p-1; i2++) {
+        tmp2 = tmp1 * (reg_dims[2] ? fcs_pow(r[2],(fcs_float)i2+1) * (IntBasisPoly(p-1,i2,y[2]) - IntBasisPoly(p-1,i2,-1)) : 1.0);
+        sum += tmp2 * ifcs_p2nfft_part_derive_one_over_norm_x(i0+1,i1+1,i2+1,z[0],z[1],z[2]);
+        if(!reg_dims[2]) break;
+      }
+      if(!reg_dims[1]) break;
+    }
+    if(!reg_dims[0]) break;
+  }
+
+  return sum;
+}
 
 /** regularized kernel for even kernels with K_I even
  *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)

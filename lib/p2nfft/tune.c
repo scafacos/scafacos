@@ -566,14 +566,6 @@ FCSResult ifcs_p2nfft_tune(
 
       if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM)
         return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_RAD_T2P_SYM is not yet implemented.");
-//       if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
-//         return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_REC_T2P_SYM is not yet implemented.");
-      if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC)
-        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC is not yet implemented.");
-      if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC)
-        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC is not yet implemented.");
-
-
 
       if(d->reg_near == FCS_P2NFFT_REG_NEAR_T2P){
         /* TODO: implement parameter tuning for 2-point-Taylor regularization 
@@ -1455,11 +1447,21 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
             x[t] *= box_scales[t];
             h[t] = box_scales[t]; //* (0.5-epsB); /* TODO use d->box_l ? */
           }
-          regkern_hat[m] = ifcs_p2nfft_regkern_rectangular_symmetric(x, h, p, epsB);
-          if(isnan(creal(regkern_hat[m])))
-            fprintf(stderr, "x = [%e, %e, %e], regkern = %e, h = %e, box_scales = %e\n", x[0], x[1], x[2], creal(regkern_hat[m]), h[0], box_scales[0]);
-          if(m==0)
-            fprintf(stderr, "x = [%e, %e, %e], regkern = %e\n", x[0], x[1], x[2], creal(regkern_hat[m]));
+          if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
+            regkern_hat[m] = ifcs_p2nfft_regkern_rect_symmetric(x, h, p, epsB);
+          else if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC)
+            regkern_hat[m] = ifcs_p2nfft_regkern_rect_mirrored_expl_cont(x, h, p, epsB, c);
+          else if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC)
+            regkern_hat[m] = ifcs_p2nfft_regkern_rect_mirrored_impl_cont(x, h, p, epsB);
+//           if(m==0){
+//             for(fcs_int l=0; l<=20; l++){
+//               x[0] = 0.375 + 0.25/20 * l; x[1] = 0.4; x[2] = 0.0;
+//               for(int t=0; t<3; t++) x[t] *= box_scales[t];
+//               fprintf(stderr, "x = [%e, %e, %e], regkern = %e\n", x[0], x[1], x[2], ifcs_p2nfft_regkern_rect_mirrored_expl_cont(x,h,p,epsB,c));
+//               fprintf(stderr, "x = [%e, %e, %e], regkern = %e\n", x[0], x[1], x[2], ifcs_p2nfft_regkern_rect_mirrored_impl_cont(x,h,p,epsB));
+//             }
+//             MPI_Abort(MPI_COMM_WORLD, 1);
+//           }
         }
 
 //         regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
