@@ -88,6 +88,11 @@ static fcs_float IntBasisPoly(fcs_int p, fcs_int j, fcs_float y)
   return sum2 * fak(p)/fak(j)/(1<<p)*pow(1.0+y,(fcs_float)(j+1)); /* 1<<p = 2^p */
 }
 
+static fcs_float IntBasisPoly2(fcs_int p, fcs_int j, fcs_float y)
+{
+  return (j<0) ? 1.0 : IntBasisPoly(p-1,j,y) - IntBasisPoly(p-1,j,-1);
+}
+
 
 /** regularized kernel for even kernels with K_I even
  *  and K_B mirrored smooth to K(1/2) (used in dD, d>1)
@@ -400,13 +405,12 @@ fcs_float ifcs_p2nfft_regkern_rect_mirrored_impl_cont(
     z[t] = reg_dims[t] ? m[t]-r[t] : fcs_fabs(x[t]);
   }
 
-  sum = ifcs_p2nfft_part_derive_one_over_norm_x(0,0,0,z[0],z[1],z[2]);
-  for (fcs_int i0=0; i0<p-1; i0++) {
-    tmp0 = reg_dims[0] ? fcs_pow(r[0],(fcs_float)i0+1) * (IntBasisPoly(p-1,i0,y[0]) - IntBasisPoly(p-1,i0,-1)) : 1.0;
-    for (fcs_int i1=0; i1<p-1; i1++) {
-      tmp1 = tmp0 * (reg_dims[1] ? fcs_pow(r[1],(fcs_float)i1+1) * (IntBasisPoly(p-1,i1,y[1]) - IntBasisPoly(p-1,i1,-1)) : 1.0);
-      for (fcs_int i2=0; i2<p-1; i2++) {
-        tmp2 = tmp1 * (reg_dims[2] ? fcs_pow(r[2],(fcs_float)i2+1) * (IntBasisPoly(p-1,i2,y[2]) - IntBasisPoly(p-1,i2,-1)) : 1.0);
+  for (fcs_int i0=-1; i0<p-1; i0++) {
+    tmp0 = reg_dims[0] ? fcs_pow(r[0],(fcs_float)i0+1) * IntBasisPoly2(p,i0,y[0]) : 1.0;
+    for (fcs_int i1=-1; i1<p-1; i1++) {
+      tmp1 = tmp0 * (reg_dims[1] ? fcs_pow(r[1],(fcs_float)i1+1) * IntBasisPoly2(p,i1,y[1]) : 1.0);
+      for (fcs_int i2=-1; i2<p-1; i2++) {
+        tmp2 = tmp1 * (reg_dims[2] ? fcs_pow(r[2],(fcs_float)i2+1) * IntBasisPoly2(p,i2,y[2]) : 1.0);
         sum += tmp2 * ifcs_p2nfft_part_derive_one_over_norm_x(i0+1,i1+1,i2+1,z[0],z[1],z[2]);
         if(!reg_dims[2]) break;
       }

@@ -1458,6 +1458,13 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
 //               x[0] = 0.375 + 0.25/20 * l; x[1] = 0.4; x[2] = 0.0;
 //               for(int t=0; t<3; t++) x[t] *= box_scales[t];
 //               fprintf(stderr, "x = [%e, %e, %e], regkern = %e\n", x[0], x[1], x[2], ifcs_p2nfft_regkern_rect_mirrored_expl_cont(x,h,p,epsB,c));
+//             }
+//             MPI_Abort(MPI_COMM_WORLD, 1);
+//           }
+//           if(m==0){
+//             for(fcs_int l=0; l<=20; l++){
+//               x[0] = 0.375 + 0.125/20 * l; x[1] = 0.4; x[2] = 0.0;
+//               for(int t=0; t<3; t++) x[t] *= box_scales[t];
 //               fprintf(stderr, "x = [%e, %e, %e], regkern = %e\n", x[0], x[1], x[2], ifcs_p2nfft_regkern_rect_mirrored_impl_cont(x,h,p,epsB));
 //             }
 //             MPI_Abort(MPI_COMM_WORLD, 1);
