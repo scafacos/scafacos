@@ -210,6 +210,10 @@ extern FCSResult fcs_pepc_destroy(FCS handle)
 {
   /*	char* fnc_name = "fcs_pepc_destroy"; */
 
+  MPI_Comm comm  = fcs_get_communicator(handle);
+  MPI_Fint fcomm = MPI_Comm_c2f(comm);
+  pepc_scafacos_finalize(&fcomm);
+
   free(handle->method_context);
 
   if(NULL != ((fcs_pepc_internal_t*)fcs_get_method_context(handle))->work){
