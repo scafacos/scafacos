@@ -18,27 +18,12 @@
 ! along with PEPC.  If not, see <http://www.gnu.org/licenses/>.
 !
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !>
 !>  Encapsulates functions for periodic boundary conditions
 !>
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 module module_mirror_boxes
     implicit none
     private
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!  type declarations  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!  public variable declarations  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! lattice basis vectors
       real*8, public :: t_lattice_1(3) = [1, 0, 0] !< 1st vector of lattice basis
@@ -59,16 +44,12 @@ module module_mirror_boxes
       logical, public :: do_periodic
       ! number of boxes to include into each direction
       integer, public :: periodicity_switches(3)
+      #ifndef NO_SPATIAL_INTERACTION_CUTOFF
       !> all nodes, where any(abs(coc(1:3)-particle_position(1:3)) > spatial_interaction_cutoff(1:3) are
       !> ignored when calculating interactions (for convenient minimum image method, where only half
       !> of the mirror boxes is included)
       real*8 , public :: spatial_interaction_cutoff(3) = huge(0._8) * [1., 1., 1.]
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!  public subroutine declarations  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      #endif
 
       public calc_neighbour_boxes
       public init_movement_constraint
@@ -79,63 +60,43 @@ module module_mirror_boxes
       public system_uses_principal_axes
       public check_lattice_boundaries
 
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!  private variable declarations  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
       ! true for lattices with axes parallel to cartesian system
       logical :: simplelattice
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!  subroutine-implementation  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     contains
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !> Calculates vector with respect to lattice base vectors
         !> @param[in] ijk lattice indices
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         function lattice_vect(ijk)
           implicit none
           integer, intent(in) :: ijk(3)
           real*8 :: lattice_vect(3)
 
           lattice_vect = ijk(1)*t_lattice_1 + ijk(2)*t_lattice_2 + ijk(3)*t_lattice_3
-
         end function lattice_vect
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !> Calculates the lattice indices of the unit cell into which the
         !> argument vector points
         !> @param[in] xyz vector
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         function lattice_indices(xyz)
           implicit none
           real*8, intent(in) :: xyz(3)
           integer :: lattice_indices(3)
 
           lattice_indices = floor(matmul(xyz, LatticeInv))
-
         end function lattice_indices
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !> Prepares the list of neighbour boxes within ws
         !> stores their number in num_neighbour_boxes and their logical
         !> indices/coordinates in neighbour_boxes
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         subroutine calc_neighbour_boxes()
         use module_math_tools, only : cross_product
         implicit none
@@ -191,15 +152,12 @@ module module_mirror_boxes
           unit_box_volume = abs(dot_product(cross_product(t_lattice_1, t_lattice_2),t_lattice_3))
 
           call init_movement_constraint()
-
         end subroutine calc_neighbour_boxes
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !> Initializes transformation matrices between cartesian system and lattice basis
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         subroutine init_movement_constraint
           use module_math_tools
           implicit none
@@ -211,28 +169,26 @@ module module_mirror_boxes
 
           ! simplify the movement constraint if the lattice is really simple
           simplelattice = system_uses_principal_axes()
-
         end subroutine init_movement_constraint
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !> Shifts all particles that left the original box
         !> back into it
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        subroutine constrain_periodic(particles, np_local)
+        subroutine constrain_periodic(particles)
             use module_math_tools
             use module_pepc_types
 
             implicit none
 
             type(t_particle), intent(inout) :: particles(:)
-            integer, intent(in) :: np_local
-
-            integer :: p !< loop variable
+            
+            integer(kind_particle) :: np_local, p
             real*8 :: lattice_coord(3), real_coord(3), latticewalls(3)
 
+            np_local = size(particles, kind=kind_particle)
+            
             if (simplelattice) then
                 latticewalls(1:3) = [t_lattice_1(1), t_lattice_2(2), t_lattice_3(3)]
 
@@ -257,29 +213,23 @@ module module_mirror_boxes
                     end if
                 end do
             end if
-
         end subroutine
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !>  returns |r|^2
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         real*8 function normsq(r)
           implicit none
           real*8, intent(in) :: r(3)
 
           normsq = dot_product(r, r)
-
         end function
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !>  returns .true. if t_lattice_1,2,3 are aligned to the cartesian axes x,y,z
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         logical function system_uses_principal_axes()
           implicit none
 
@@ -295,11 +245,9 @@ module module_mirror_boxes
         end function
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !>  returns .true. if t_lattice_1,2,3 span a unit box
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         logical function system_is_unit_cube()
           implicit none
 
@@ -307,29 +255,24 @@ module module_mirror_boxes
                                 (normsq(t_lattice_1) == 1.0) .and.  &
                                 (normsq(t_lattice_2) == 1.0) .and.  &
                                 (normsq(t_lattice_3) == 1.0)
-
         end function
         
-        
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !>  Verifies, if all particles lie inside the central box,
         !>  otherweise LatticeOrigin or LatticeCenter are invalid
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        logical function check_lattice_boundaries(particles, nparticles)
+        logical function check_lattice_boundaries(particles)
           use module_pepc_types
           use module_debug
           implicit none
           type (t_particle), dimension(:), intent(in) :: particles
-          integer, intent(in) :: nparticles
-          integer :: p
+          integer(kind_particle) :: p
           real*8 :: lattice_coord(3)
           
           check_lattice_boundaries = .true.
           
-          do p = 1,nparticles
+          do p = 1,size(particles)
 
             lattice_coord = matmul(particles(p)%x-LatticeOrigin, LatticeInv)
 
@@ -338,7 +281,4 @@ module module_mirror_boxes
             end if
           end do
         end function
-
-
-
 end module module_mirror_boxes
