@@ -36,6 +36,8 @@
 #include "regularization.h"
 #include "cg_cos_coeff.h"
 #include "cg_cos_err.h"
+#include "cg_cos_coeff_sym.h"
+#include "cg_cos_err_sym.h"
 
 #include "bessel_k.h"
 #include "part_derive_one_over_norm_x.h"
@@ -634,7 +636,10 @@ FCSResult ifcs_p2nfft_tune(
 //             d->epsI = 0.5 * avg_dist/d->box_l[mindim];
           } else { /* user defined r_cut, now scale it into unit cube */
             /* invert r_cut = box_scale * epsI, where box_scale = box_l*sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
-            d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut * fcs_sqrt(3) + 1.0);
+            if(reg_far_is_radial(d->reg_far))
+              d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut * fcs_sqrt(3) + 1.0);
+            else
+              d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut + 1.0);
           }
         }
   
@@ -1455,7 +1460,15 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
             regkern_hat[m] = ifcs_p2nfft_regkern_rect_mirrored_impl_cont(x, h, p, epsB);
 //           if(m==0){
 //             for(fcs_int l=0; l<=20; l++){
-//               x[0] = 0.375 + 0.25/20 * l; x[1] = 0.4; x[2] = 0.0;
+//               x[0] = 0.375 + 0.25/20 * l; x[1] = 0.0; x[2] = -0.4;
+//               for(int t=0; t<3; t++) x[t] *= box_scales[t];
+//               fprintf(stderr, "x = [%e, %e, %e], regkern = %e\n", x[0], x[1], x[2], ifcs_p2nfft_regkern_rect_symmetric(x,h,p,epsB));
+//             }
+//             MPI_Abort(MPI_COMM_WORLD, 1);
+//           }
+//           if(m==0){
+//             for(fcs_int l=0; l<=20; l++){
+//               x[0] = 0.375 + 0.125/20 * l; x[1] = 0.4; x[2] = 0.0;
 //               for(int t=0; t<3; t++) x[t] *= box_scales[t];
 //               fprintf(stderr, "x = [%e, %e, %e], regkern = %e\n", x[0], x[1], x[2], ifcs_p2nfft_regkern_rect_mirrored_expl_cont(x,h,p,epsB,c));
 //             }
