@@ -32,7 +32,13 @@
 
 OPA_int_t* _atomic_alloc_int()
 {
-  return (OPA_int_t*)malloc(sizeof(OPA_int_t));
+  void* ret;
+  if (0 != posix_memalign(&ret, (size_t)8, sizeof(OPA_int_t)))
+  {
+    ret = NULL;
+  }
+  
+  return (OPA_int_t*)ret;
 }
 
 void _atomic_free_int(OPA_int_t* storage)
@@ -68,6 +74,11 @@ int _atomic_mod_increment_and_fetch_int(OPA_int_t* storage, int mod)
   return prev % mod + 1;
 }
 
+int _atomic_compare_and_swap_int(OPA_int_t* storage, int oldval, int newval)
+{
+  return OPA_cas_int(storage, oldval, newval);
+}
+
 void _atomic_write_barrier()
 {
   OPA_write_barrier();
@@ -81,4 +92,17 @@ void _atomic_read_barrier()
 void _atomic_read_write_barrier()
 {
   OPA_read_write_barrier();
+}
+
+void _critical_section_enter(OPA_int_t* storage)
+{
+  do {
+    /* wait until it is open and immediately block it */
+  } while(0 != OPA_cas_int(storage, 0, 1));
+}
+
+void _critical_section_leave(OPA_int_t* storage)
+{
+  /* open it again */
+  OPA_store_int(storage, 0);
 }

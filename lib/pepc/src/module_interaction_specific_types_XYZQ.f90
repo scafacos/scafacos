@@ -18,27 +18,12 @@
 ! along with PEPC.  If not, see <http://www.gnu.org/licenses/>.
 !
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !>
 !> Contains all types that are specific to a certain interaction
 !> all subroutines and types within this module are obligatory
 !>
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 module module_interaction_specific_types
       implicit none
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!  public variable declarations  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!  public type declarations  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 
       !> Data structure for storing interaction-specific particle data
       type t_particle_data
@@ -69,25 +54,45 @@ module module_interaction_specific_types
       end type t_tree_node_interaction_data
       integer, private, parameter :: nprops_tree_node_interaction_data = 9
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!  private variable declarations  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!  subroutine-implementation  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       contains
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !>
+      !> Writes particle interaction data and results to a VTK file.
+      !>
+      subroutine vtk_write_particle_data_results(d, r, vtkf)
+        use module_vtk
+        implicit none
+
+        type(t_particle_data), intent(in) :: d(:)
+        type(t_particle_results), intent(in) :: r(:)
+        type(vtkfile_unstructured_grid), intent(inout) :: vtkf
+
+        call vtkf%write_data_array("q", d(:)%q)
+
+        call vtkf%write_data_array("pot", r(:)%pot)
+        call vtkf%write_data_array("field", r(:)%e(1), r(:)%e(2), r(:)%e(3))
+      end subroutine vtk_write_particle_data_results
+
+
+      !>
+      !> Writes (a sensible subset of) tree node interaction data to a VTK file.
+      !>
+      subroutine vtk_write_node_interaction_data(d, vtkf)
+        use module_vtk
+        implicit none
+
+        type(t_tree_node_interaction_data), intent(in) :: d(:)
+        type(vtkfile_unstructured_grid), intent(inout) :: vtkf
+
+        call vtkf%write_data_array("charge", d(:)%charge)
+        call vtkf%write_data_array("abs_charge", d(:)%abs_charge)
+      end subroutine vtk_write_node_interaction_data
+
+
       !>
       !> Creates and registers interaction-specific MPI-types
       !> is automatically called from register_libpepc_mpi_types()
       !>
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine register_interaction_specific_mpi_types(mpi_type_particle_data, MPI_TYPE_tree_node_interaction_data, mpi_type_particle_results)
         implicit none
         include 'mpif.h'
@@ -139,8 +144,5 @@ module module_interaction_specific_types
         displacements(1:nprops_tree_node_interaction_data) = int(address(1:nprops_tree_node_interaction_data) - address(0))
         call MPI_TYPE_STRUCT( nprops_tree_node_interaction_data, blocklengths, displacements, types, MPI_TYPE_tree_node_interaction_data, ierr )
         call MPI_TYPE_COMMIT( MPI_TYPE_tree_node_interaction_data, ierr)
-
       end subroutine register_interaction_specific_mpi_types
-
-
 end module module_interaction_specific_types
