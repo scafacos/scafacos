@@ -785,13 +785,26 @@ static void run_integration(particles_t *parts)
 int main(int argc, char* argv[]) {
   // The testcase
   Testcase *testcase = 0;
+#if FCS_ENABLE_PEPC
+  int mpi_thread_requested = MPI_THREAD_MULTIPLE;
+  int mpi_thread_provided;
 
+  MPI_Init_thread(&argc, &argv, mpi_thread_requested, &mpi_thread_provided);
+#else
   MPI_Init(&argc, &argv);
+#endif
 
   communicator = MPI_COMM_WORLD;
 
   MPI_Comm_rank(communicator,&comm_rank);
   MPI_Comm_size(communicator,&comm_size);
+
+#if FCS_ENABLE_PEPC
+  if (mpi_thread_provided < mpi_thread_requested) {
+    MASTER(printf("Call to MPI_INIT_THREAD failed. Requested/provided level of multithreading: %d / %d. Continuing but expect program crash.\n", mpi_thread_requested, mpi_thread_provided));
+  }
+#endif
+
 
   MASTER(cout << "Running generic test with " << comm_size << " processes" << endl);
 

@@ -125,6 +125,7 @@ program test
 #if FCS_ENABLE_PEPC
     character(len=256, kind = c_char)                             ::  pepc_parameters = & 
                    "pepc_debuglevel,-1,pepc_epsilon,0.5,pepc_theta,0.5"
+    integer :: provided
 #endif
 #if FCS_ENABLE_P2NFFT
     character(len=256, kind = c_char)                             ::  p2nfft_parameters = & 
@@ -141,7 +142,11 @@ program test
     character(len=256, kind = c_char)                             ::  common_parameters = &
 "box_a,1.01,0.0,0.0,box_b,0.0,1.01,0.0,box_c,0.0,0.0,1.01,periodicity,1,1,1,offset,0.0,0.0,0.0,near_field_flag,0"
 
+#if FCS_ENABLE_PEPC
+    call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE, provided, ierr)
+#else
     call MPI_INIT(ierr)
+#endif
 
     periodicity(3) = .true.
     periodicity(2) = .true.
