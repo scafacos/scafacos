@@ -196,22 +196,24 @@ module module_tree_communicator
     include 'mpif.h'
 
     type(t_tree), intent(inout) :: t
+    
+    ! prevent multiple calls to this function
+    if (     (atomic_load_int(t%communicator%thread_status) == TREE_COMM_THREAD_STATUS_STARTED) &
+        .or. (atomic_load_int(t%communicator%thread_status) == TREE_COMM_THREAD_STATUS_STARTING) ) then
 
-    DEBUG_ASSERT(atomic_load_int(t%communicator%thread_status) == TREE_COMM_THREAD_STATUS_STARTED \
-            .or. atomic_load_int(t%communicator%thread_status) == TREE_COMM_THREAD_STATUS_STARTING)
-            
-    ! notify rank the communicator that we are finished with our walk
-    call atomic_store_int(t%communicator%thread_status, TREE_COMM_THREAD_STATUS_STOPPING)
+      ! notify rank the communicator that we are finished with our walk
+      call atomic_store_int(t%communicator%thread_status, TREE_COMM_THREAD_STATUS_STOPPING)
 
-    ERROR_ON_FAIL(pthreads_jointhread(t%communicator%comm_thread))
-    tree_comm_thread_counter = tree_comm_thread_counter - 1
+      ERROR_ON_FAIL(pthreads_jointhread(t%communicator%comm_thread))
+      tree_comm_thread_counter = tree_comm_thread_counter - 1
 
-    call timer_add(t_comm_total,    t%communicator%timings_comm(TREE_COMM_TIMING_COMMLOOP))
-    call timer_add(t_comm_recv,     t%communicator%timings_comm(TREE_COMM_TIMING_RECEIVE))
-    call timer_add(t_comm_sendreqs, t%communicator%timings_comm(TREE_COMM_TIMING_SENDREQS))
+      call timer_add(t_comm_total,    t%communicator%timings_comm(TREE_COMM_TIMING_COMMLOOP))
+      call timer_add(t_comm_recv,     t%communicator%timings_comm(TREE_COMM_TIMING_RECEIVE))
+      call timer_add(t_comm_sendreqs, t%communicator%timings_comm(TREE_COMM_TIMING_SENDREQS))
 
-    if (tree_comm_debug) then
-      DEBUG_INFO('("PE", I6, " run_communication_loop end.")', t%comm_env%rank)
+      if (tree_comm_debug) then
+        DEBUG_INFO('("PE", I6, " run_communication_loop end.")', t%comm_env%rank)
+      end if
     end if
   end subroutine tree_communicator_stop
 

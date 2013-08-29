@@ -96,6 +96,9 @@ module module_pepc
         call MPI_COMM_DUP(MPI_COMM_WORLD, MPI_COMM_lpepc, ierr)
         if (present(comm)) call MPI_COMM_DUP(MPI_COMM_lpepc, comm, ierr)
       else
+        ! check if MPI was initialized with sufficient thread support
+        call MPI_QUERY_THREAD(provided, ierr)
+      
         if (present(comm)) then
            call MPI_COMM_DUP(comm, MPI_COMM_lpepc, ierr)
         else
@@ -125,14 +128,20 @@ module module_pepc
         write(*,'(a)') "      \/_/    \/___/  \/_/    \/___/   "
         write(*,'(/"Starting PEPC, svn revision [",a,"] with frontend {", a, "} on ", I0, " MPI ranks."//)') &
                        SVNREVISION, frontendname, n_cpu
+      endif
 
-        if ((pepc_initializes_mpi) .and. (provided < MPI_THREAD_LEVEL)) then
-          !inform the user about possible issues concerning MPI thread safety
+      if (my_rank == 0 .and. provided < MPI_THREAD_LEVEL) then 
+        !inform the user about possible issues concerning MPI thread safety
+        if (pepc_initializes_mpi) then
           write(*,'("Call to MPI_INIT_THREAD failed. Requested/provided level of multithreading:", I2, "/" ,I2)') &
                          MPI_THREAD_LEVEL, provided
-          write(*,'(a/)') "Initializing with provided level of multithreading. This can lead to incorrect results or crashes."
-        end if
-      endif
+          write(*,'(a/)') 'Initialized with provided level of multithreading. This can lead to incorrect results or crashes.'
+        else
+          write(*,'("Frontend application did not call to MPI_INIT_THREAD correctly. Needed/provided level of multithreading:", I2, "/" ,I2)') &
+                         MPI_THREAD_LEVEL, provided
+          write(*,'(a/)') 'Trying to run with provided level of multithreading. This can lead to incorrect results or crashes.'
+        endif
+      end if
 
       ! copy call parameters to treevars module
       me     = my_rank
@@ -358,6 +367,7 @@ module module_pepc
     subroutine pepc_grow_and_traverse(particles, itime, no_dealloc, no_restore)
       use module_pepc_types, only: t_particle
       use module_debug
+      use module_tree_communicator, only : tree_communicator_stop
       implicit none
       type(t_particle), allocatable, intent(inout) :: particles(:) !< input particle data, initializes %x, %data, %work appropriately (and optionally set %label) before calling this function
       integer, intent(in) :: itime !> current timestep (used as filename suffix for statistics output)
@@ -376,8 +386,13 @@ module module_pepc
       call pepc_traverse_tree(particles)
 
       if (dbg(DBG_STATS)) call pepc_statistics(itime)
-      if (restore)        call pepc_restore_particles(particles)
-      if (dealloc)        call pepc_timber_tree()
+      if (restore) then
+        ! for better thread-safety we have to kill the communicator thread before trying to perform any other mpi stuff
+        call tree_communicator_stop(global_tree)
+        call pepc_restore_particles(particles)
+      endif
+      
+      if (dealloc) call pepc_timber_tree()
       
     end subroutine
 
