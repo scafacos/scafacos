@@ -312,7 +312,7 @@ fcs_float ifcs_p2nfft_regkern_rect_symmetric(
 
   /* Due to symmetry we can use fabs(x) and regularize only the positive octant */
   for(int t=0; t<3; t++){
-    reg_dims[t] = (x[t] > (0.5-epsB) * h[t]);
+    reg_dims[t] = (fcs_fabs(x[t]) > (0.5-epsB) * h[t]);
     /* Only needed for regularized dimensions */
     if(reg_dims[t]){
       m[t] = 0.5 * h[t];
@@ -340,6 +340,93 @@ fcs_float ifcs_p2nfft_regkern_rect_symmetric(
   return sum;
 }
 
+static fcs_float px(
+    fcs_float *x, fcs_float *m, fcs_float *r, fcs_int p
+    )
+{
+  fcs_float sum = 0;
+  for(fcs_int i=0; i<p; i++){
+      fcs_float bp0 = (BasisPoly(p-1,i,(x[0]-m[0])/r[0]) + BasisPoly(p-1,i,-(x[0]-m[0])/r[0])) * fcs_pow(r[0], (fcs_float)i);
+      sum += bp0 * ifcs_p2nfft_part_derive_one_over_norm_x(i,0,0,m[0]-r[0],x[1],x[2]);
+  }
+  return sum;
+}
+
+static fcs_float pxy(
+    fcs_float *x, fcs_float *m, fcs_float *r, fcs_int p
+    )
+{
+  fcs_float sum = 0;
+  for(fcs_int j=0; j<p; j++){
+    fcs_float bp1 = (BasisPoly(p-1,j,(x[1]-m[1])/r[1]) + BasisPoly(p-1,j,-(x[1]-m[1])/r[1])) * fcs_pow(r[1],(fcs_float)j);
+    for(fcs_int i=0; i<p; i++){
+      fcs_float bp0 = (BasisPoly(p-1,i,(x[0]-m[0])/r[0]) + BasisPoly(p-1,i,-(x[0]-m[0])/r[0])) * fcs_pow(r[0], (fcs_float)i);
+      sum += bp1 * bp0 * ifcs_p2nfft_part_derive_one_over_norm_x(i,j,0,m[0]-r[1],m[1]-r[1],x[2]);
+    }
+  }
+  return sum;
+}
+
+static fcs_float pxyz(
+    fcs_float *x, fcs_float *m, fcs_float *r, fcs_int p
+    )
+{
+  fcs_float sum = 0;
+  for(fcs_int k=0; k<p; k++){
+    fcs_float bp2 = (BasisPoly(p-1,k,(x[2]-m[2])/r[2]) + BasisPoly(p-1,k,-(x[2]-m[2])/r[2])) * fcs_pow(r[2],(fcs_float)k);
+    for(fcs_int j=0; j<p; j++){
+      fcs_float bp1 = (BasisPoly(p-1,j,(x[1]-m[1])/r[1]) + BasisPoly(p-1,j,-(x[1]-m[1])/r[1])) * fcs_pow(r[1],(fcs_float)j);
+      for(fcs_int i=0; i<p; i++){
+        fcs_float bp0 = (BasisPoly(p-1,i,(x[0]-m[0])/r[0]) + BasisPoly(p-1,i,-(x[0]-m[0])/r[0])) * fcs_pow(r[0], (fcs_float)i);
+        sum += bp2 * bp1 * bp0 * ifcs_p2nfft_part_derive_one_over_norm_x(i,j,k,m[0]-r[0],m[1]-r[1],m[2]-r[2]);
+      }
+    }
+  }
+  return sum;
+}
+
+static void sort(
+    fcs_float *x, fcs_float *y
+    )
+{
+  if(*x < *y){
+    fcs_float tmpx = *x; *x = *y; *y = tmpx;
+  }
+}
+
+/* alternative implementation of regkern_rect_symmetric */
+fcs_float ifcs_p2nfft_regkern_rect_symmetric_version2(
+    fcs_float *x, fcs_float *h,
+    fcs_int p, fcs_float epsB
+    )
+{
+  fcs_float y[3], m[3], r[3];
+
+  for(fcs_int t=0; t<3; t++)
+    y[t] = fcs_fabs(x[t]);
+
+  /* sort coordinates in descending order */
+  sort(&y[0], &y[1]); sort(&y[1], &y[2]); sort(&y[0], &y[1]);
+
+  for(fcs_int t=0; t<3; t++){
+    m[t] = 0.5 * h[t];
+    r[t] = epsB * h[t];
+  }
+
+  if( y[2] > m[2]-r[2] )
+    return pxyz(y, m, r, p);
+
+  if( y[1] > m[1]-r[1] )
+    return pxy(y, m, r, p);
+
+  if( y[0] > m[0]-r[0] )
+    return px(y, m, r, p);
+
+  return  ifcs_p2nfft_part_derive_one_over_norm_x(0,0,0,x[0],x[1],x[2]);
+}
+
+
+
 fcs_float ifcs_p2nfft_regkern_rect_mirrored_expl_cont(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB, fcs_float c
@@ -351,7 +438,7 @@ fcs_float ifcs_p2nfft_regkern_rect_mirrored_expl_cont(
 
   /* Due to symmetry we can use fabs(x) and regularize only the positive octant */
   for(int t=0; t<3; t++){
-    reg_dims[t] = (x[t] > (0.5-epsB) * h[t]);
+    reg_dims[t] = (fcs_fabs(x[t]) > (0.5-epsB) * h[t]);
     /* Only needed for regularized dimensions */
     if(reg_dims[t]){
       m[t] = (0.5 - epsB/2.0) * h[t];
@@ -394,7 +481,7 @@ fcs_float ifcs_p2nfft_regkern_rect_mirrored_impl_cont(
 
   /* Due to symmetry we can use fabs(x) and regularize only the positive octant */
   for(int t=0; t<3; t++){
-    reg_dims[t] = (x[t] > (0.5-epsB) * h[t]);
+    reg_dims[t] = (fcs_fabs(x[t]) > (0.5-epsB) * h[t]);
     /* Only needed for regularized dimensions */
     if(reg_dims[t]){
       m[t] = (0.5 - epsB/2.0) * h[t];

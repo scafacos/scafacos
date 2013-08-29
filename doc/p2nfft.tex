@@ -251,7 +251,7 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     and \verb!t2p! (Regularization with two-point Taylor polynomials). Default is \verb!cg!, if possible.
   \item \verb!p2nfft_reg_far! -
     Choose between the available regularization methods at the far field boundary for non-periodic boundaries.
-    Feasible values are $0$ (Fourier coefficients have been precomputed via CG iteration, only available for some sets of parameters and only available in combination with the same flag for near field regularization),
+    Feasible values are $0$ (Fourier coefficients have been precomputed via CG iteration, only available for some sets of parameters and only available in combination with the flag \verb!rad_cg! for near field regularization),
     $1$ (Regularization with two-point Taylor polynomials and explicitly chosen constant continuation value), and
     $2$ (Regularization with two-point Taylor polynomials and implicitly chosen constant continuation value). Default value is $2$.
   \item \verb!p2nfft_reg_far_name! (alternative: \verb!p2nfft_reg_far!) -

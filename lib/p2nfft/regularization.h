@@ -44,6 +44,9 @@ fcs_float ifcs_p2nfft_regkern_far_mirrored_impl_cont(
 fcs_float ifcs_p2nfft_regkern_rect_symmetric(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB);
+fcs_float ifcs_p2nfft_regkern_rect_symmetric_version2(
+    fcs_float *x, fcs_float *h,
+    fcs_int p, fcs_float epsB);
 fcs_float ifcs_p2nfft_regkern_rect_mirrored_expl_cont(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB, fcs_float c);

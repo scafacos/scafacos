@@ -722,7 +722,7 @@ FCSResult ifcs_p2nfft_set_pnfft_window(
   if( rd==NULL )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  if(window > 4)
+  if((window < 0) || (4 < window) )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown window function.");
 
   if ( window != d->pnfft_window )

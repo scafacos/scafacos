@@ -232,22 +232,6 @@ FCSResult ifcs_p2nfft_tune(
   d->num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
   d->num_periodic_dims    = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
 
-  {
-    fcs_int i,j,k;
-    fcs_float x,y,z;
-    i=j=k=2;
-    x=y=z=0.25;
-    fprintf(stderr, "D(%d,%d,%d)(f)(%f,%f,%f) = %e\n", i,j,k, x,y,z, ifcs_p2nfft_part_derive_one_over_norm_x(i,j,k,x,y,z));
-    i=3; j=2; k=4;
-    fprintf(stderr, "D(%d,%d,%d)(f)(%f,%f,%f) = %e\n", i,j,k, x,y,z, ifcs_p2nfft_part_derive_one_over_norm_x(i,j,k,x,y,z));
-    i=j=k=8;
-    fprintf(stderr, "D(%d,%d,%d)(f)(%f,%f,%f) = %e\n", i,j,k, x,y,z, ifcs_p2nfft_part_derive_one_over_norm_x(i,j,k,x,y,z));
-    i=8; j = 13; k=16;
-    fprintf(stderr, "D(%d,%d,%d)(f)(%f,%f,%f) = %e\n", i,j,k, x,y,z, ifcs_p2nfft_part_derive_one_over_norm_x(i,j,k,x,y,z));
-    i=j=k=16;
-    fprintf(stderr, "D(%d,%d,%d)(f)(%f,%f,%f) = %e\n", i,j,k, x,y,z, ifcs_p2nfft_part_derive_one_over_norm_x(i,j,k,x,y,z));
-  }
-
   /* Now, after the periodicity is clear, we can set the default tolerance type. */
   default_tolerance_type(d->periodicity,
       &d->tolerance_type, &d->tolerance);
@@ -709,7 +693,12 @@ FCSResult ifcs_p2nfft_tune(
        
         fcs_int m, p; 
         d->cg_cos_coeff = (fcs_float*) malloc(sizeof(fcs_float)*d->N_cg_cos);
-        int missed_coeff = ifcs_p2nfft_load_cg_cos_coeff(d->N_cg_cos, d->log2epsI,
+        int missed_coeff = 0;
+        if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
+          missed_coeff = ifcs_p2nfft_load_cg_cos_coeff_sym(d->N_cg_cos, d->log2epsI,
+              &m, &p, d->cg_cos_coeff);
+        else
+          missed_coeff = ifcs_p2nfft_load_cg_cos_coeff(d->N_cg_cos, d->log2epsI,
             &m, &p, d->cg_cos_coeff);
 
         if(missed_coeff)
@@ -1081,7 +1070,6 @@ static void init_far_interpolation_table_potential_0dp(
     fcs_float *table 
     )
 {
-  fprintf(stderr, "reg_far = %d\n", reg_far);
   if(reg_far == FCS_P2NFFT_REG_FAR_RAD_CG){
     /* use CG approximiation */
     for(fcs_int k=0; k<num_nodes+3; k++)
@@ -1458,30 +1446,6 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
             regkern_hat[m] = ifcs_p2nfft_regkern_rect_mirrored_expl_cont(x, h, p, epsB, c);
           else if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC)
             regkern_hat[m] = ifcs_p2nfft_regkern_rect_mirrored_impl_cont(x, h, p, epsB);
-//           if(m==0){
-//             for(fcs_int l=0; l<=20; l++){
-//               x[0] = 0.375 + 0.25/20 * l; x[1] = 0.0; x[2] = -0.4;
-//               for(int t=0; t<3; t++) x[t] *= box_scales[t];
-//               fprintf(stderr, "x = [%e, %e, %e], regkern = %e\n", x[0], x[1], x[2], ifcs_p2nfft_regkern_rect_symmetric(x,h,p,epsB));
-//             }
-//             MPI_Abort(MPI_COMM_WORLD, 1);
-//           }
-//           if(m==0){
-//             for(fcs_int l=0; l<=20; l++){
-//               x[0] = 0.375 + 0.125/20 * l; x[1] = 0.4; x[2] = 0.0;
-//               for(int t=0; t<3; t++) x[t] *= box_scales[t];
-//               fprintf(stderr, "x = [%e, %e, %e], regkern = %e\n", x[0], x[1], x[2], ifcs_p2nfft_regkern_rect_mirrored_expl_cont(x,h,p,epsB,c));
-//             }
-//             MPI_Abort(MPI_COMM_WORLD, 1);
-//           }
-//           if(m==0){
-//             for(fcs_int l=0; l<=20; l++){
-//               x[0] = 0.375 + 0.125/20 * l; x[1] = 0.4; x[2] = 0.0;
-//               for(int t=0; t<3; t++) x[t] *= box_scales[t];
-//               fprintf(stderr, "x = [%e, %e, %e], regkern = %e\n", x[0], x[1], x[2], ifcs_p2nfft_regkern_rect_mirrored_impl_cont(x,h,p,epsB));
-//             }
-//             MPI_Abort(MPI_COMM_WORLD, 1);
-//           }
         }
 
 //         regkern_hat[m] = ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
