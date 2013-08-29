@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
   MPI_Comm_rank(comm, &comm_rank);
   
   if (mpi_thread_provided < mpi_thread_requested && comm_rank == 0) {
-    printf("Call to MPI_INIT_THREAD failed. Requested/provided level of multithreading: %d / %d. Continuing but expect program crash.", mpi_thread_requested, mpi_thread_provided);
+    printf("Call to MPI_INIT_THREAD failed. Requested/provided level of multithreading: %d / %d. Continuing but expect program crash.\n", mpi_thread_requested, mpi_thread_provided);
   }
   
 
