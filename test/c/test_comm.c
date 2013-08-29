@@ -67,9 +67,14 @@ int main(int argc, char *argv[])
   MPI_Comm comm, dup_comm, sub_comm;
   int err = 0;
   double timeout = 2;
+#if FCS_ENABLE_PEPC
+  int mpi_thread_requested = MPI_THREAD_MULTIPLE;
+  int mpi_thread_provided;
 
-
+  MPI_Init_thread(&argc, &argv, mpi_thread_requested, &mpi_thread_provided);
+#else
   MPI_Init(&argc, &argv);
+#endif
 
   comm = MPI_COMM_WORLD;
 

@@ -47,6 +47,8 @@ int main(int argc, char* argv[])
   fcs_float e_local, e_total;
   fcs_float madelung_approx;
   const fcs_float madelung = 1.74756459463318219;
+  int mpi_thread_requested = MPI_THREAD_MULTIPLE;
+  int mpi_thread_provided;
 
   FCS fcs_handle;
   FCSResult fcs_result;
@@ -63,10 +65,15 @@ int main(int argc, char* argv[])
   fcs_float epsilon = 1.23e-6;
 
 
-  MPI_Init(&argc, &argv);
+  MPI_Init_thread(&argc, &argv, mpi_thread_requested, &mpi_thread_provided);
   comm = MPI_COMM_WORLD;
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
+  
+  if (mpi_thread_provided < mpi_thread_requested && comm_rank == 0) {
+    printf("Call to MPI_INIT_THREAD failed. Requested/provided level of multithreading: %d / %d. Continuing but expect program crash.\n", mpi_thread_requested, mpi_thread_provided);
+  }
+  
 
   n_axis = 16;
   n_total = n_axis * n_axis * n_axis;
