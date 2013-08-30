@@ -68,16 +68,16 @@ typedef ptrdiff_t INT;
 #  define FCS_ENABLE_DEBUG 0
 #endif
 
-#define FCS_P2NFFT_REG_NEAR_CG                0
-#define FCS_P2NFFT_REG_NEAR_T2P               1
+#define FCS_P2NFFT_REG_NEAR_CG           0
+#define FCS_P2NFFT_REG_NEAR_T2P          1
 
-#define FCS_P2NFFT_REG_FAR_RAD_CG             0
-#define FCS_P2NFFT_REG_FAR_RAD_T2P_SYM        1
-#define FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC     2
-#define FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC     3
-#define FCS_P2NFFT_REG_FAR_REC_T2P_SYM        4
-#define FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC     5
-#define FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC     6
+#define FCS_P2NFFT_REG_FAR_RAD_CG        0
+#define FCS_P2NFFT_REG_FAR_RAD_T2P_SYM   1
+#define FCS_P2NFFT_REG_FAR_RAD_T2P_EC    2
+#define FCS_P2NFFT_REG_FAR_RAD_T2P_IC    3
+#define FCS_P2NFFT_REG_FAR_REC_T2P_SYM   4
+#define FCS_P2NFFT_REG_FAR_REC_T2P_EC    5
+#define FCS_P2NFFT_REG_FAR_REC_T2P_IC    6
 
 /* p2nfft_flags */
 #define FCS_P2NFFT_CHECK_TOLERANCE           (0U)

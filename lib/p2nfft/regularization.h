@@ -28,33 +28,37 @@
 #include "FCSDefinitions.h"
 #include "kernels.h"
 
-fcs_float ifcs_p2nfft_regkern_far_mirrored_expl_cont(
+fcs_float ifcs_p2nfft_reg_far_rad_sym(
+    ifcs_p2nfft_kernel k, fcs_float xsnorm,
+    fcs_int p, const fcs_float *param,
+    fcs_float epsI, fcs_float epsB);
+fcs_float ifcs_p2nfft_reg_far_rad_expl_cont(
     ifcs_p2nfft_kernel k, fcs_float xsnorm,
     fcs_int p, const fcs_float *param,
     fcs_float epsI, fcs_float epsB, fcs_float c);
-fcs_float ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
+fcs_float ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
     ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_float xsnorm,
     fcs_int p, const fcs_float *param,
     fcs_float r_cut, fcs_float eps_B, fcs_float c);
-fcs_float ifcs_p2nfft_regkern_far_mirrored_impl_cont(
+fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
     ifcs_p2nfft_kernel k, fcs_float xsnorm,
     fcs_int p, const fcs_float *param,
     fcs_float epsI, fcs_float epsB);
 
-fcs_float ifcs_p2nfft_regkern_rect_symmetric(
+fcs_float ifcs_p2nfft_reg_far_rect_sym(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB);
-fcs_float ifcs_p2nfft_regkern_rect_symmetric_version2(
+fcs_float ifcs_p2nfft_reg_far_rect_sym_version2(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB);
-fcs_float ifcs_p2nfft_regkern_rect_mirrored_expl_cont(
+fcs_float ifcs_p2nfft_reg_far_rect_expl_cont(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB, fcs_float c);
-fcs_float ifcs_p2nfft_regkern_rect_mirrored_impl_cont(
+fcs_float ifcs_p2nfft_reg_far_rect_impl_cont(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB);
 
-fcs_float ifcs_p2nfft_regkernel_wo_singularity(
+fcs_float ifcs_p2nfft_reg_far_no_singularity(
     ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p,
     const fcs_float *param, fcs_float epsB);
 

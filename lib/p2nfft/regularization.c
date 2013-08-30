@@ -93,11 +93,50 @@ static fcs_float IntBasisPoly2(fcs_int p, fcs_int j, fcs_float y)
   return (j<0) ? 1.0 : IntBasisPoly(p-1,j,y) - IntBasisPoly(p-1,j,-1);
 }
 
+/** regularized kernel for even kernels with K_I even
+ *  and K_B symmetric to K(1/2) (used in 1D)
+ */
+fcs_float ifcs_p2nfft_reg_far_rad_sym(
+    ifcs_p2nfft_kernel k, fcs_float xsnorm,
+    fcs_int p, const fcs_float *param,
+    fcs_float epsI, fcs_float epsB
+    )
+{
+  fcs_float sum=0.0;
+
+  xsnorm = fcs_fabs(xsnorm);
+
+  /* constant continuation for radii > 0.5 */
+  if (xsnorm > 0.5)
+    xsnorm = 0.5;
+
+  /* regularization at farfield border */
+  if ( xsnorm > 0.5-epsB ) {
+    fcs_float r = epsB;
+    fcs_float m = 0.5;
+    fcs_float y = (xsnorm-m)/r;
+    for (fcs_int i=0; i<p; i++)
+      sum += (BasisPoly(p-1,i,y) + BasisPoly(p-1,i,-y)) * fcs_pow(r,(fcs_float)i) * k(m-r,i,param);
+    return sum;
+  }
+  
+  /* nearfield regularization */
+  if ( xsnorm < epsI ){
+    for (fcs_int i=0; i<p; i++)
+      sum += fcs_pow(-epsI,(fcs_float)i) * k(epsI,i,param)
+          * (BasisPoly(p-1,i,xsnorm/epsI)+BasisPoly(p-1,i,-xsnorm/epsI));
+    return sum;
+  }
+
+  /* farfield: original kernel function */ 
+  return k(xsnorm,0,param);
+}
+
 
 /** regularized kernel for even kernels with K_I even
  *  and K_B mirrored smooth to K(1/2) (used in dD, d>1)
  */
-fcs_float ifcs_p2nfft_regkern_far_mirrored_expl_cont(
+fcs_float ifcs_p2nfft_reg_far_rad_expl_cont(
     ifcs_p2nfft_kernel k, fcs_float xsnorm,
     fcs_int p, const fcs_float *param,
     fcs_float epsI, fcs_float epsB, fcs_float c
@@ -152,7 +191,7 @@ fcs_float ifcs_p2nfft_regkern_far_mirrored_expl_cont(
  * epsB: outer cutoff radius (with transformation),
  * c: constant continuation value for far field regularization,
  * */
-fcs_float ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
+fcs_float ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
     ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_float xsnorm,
     fcs_int p, const fcs_float *param,
     fcs_float r_cut, fcs_float eps_B, fcs_float c
@@ -195,7 +234,7 @@ fcs_float ifcs_p2nfft_regkern_far_mirrored_expl_cont_noncubic(
 /** regularized kernel for even kernels with K_I even
  *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)
  */
-fcs_float ifcs_p2nfft_regkern_far_mirrored_impl_cont(
+fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
     ifcs_p2nfft_kernel k, fcs_float xsnorm,
     fcs_int p, const fcs_float *param,
     fcs_float epsI, fcs_float epsB
@@ -238,7 +277,9 @@ fcs_float ifcs_p2nfft_regkern_far_mirrored_impl_cont(
 /** regularized kernel for even kernels without singularity, e.g. no K_I needed,
  *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)
  */
-static fcs_float regkern5(ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB)
+fcs_float ifcs_p2nfft_reg_far_no_singularity(
+    ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB
+    )
 {
   fcs_int j;
   fcs_float sum=0.0;
@@ -273,13 +314,6 @@ static fcs_float regkern5(ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, con
   return k(x2norm,0,param);
 } 
 
-fcs_float ifcs_p2nfft_regkernel_wo_singularity(
-    ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p, const fcs_float *param, fcs_float epsB
-    )
-{
-  return regkern5(k, xx, p, param, epsB);
-}
-
 
 fcs_float ifcs_p2nfft_interpolation(
     fcs_float x, fcs_float one_over_epsI,
@@ -301,7 +335,7 @@ fcs_float ifcs_p2nfft_interpolation(
  * We nest these one-dimensional two-point Taylor polynomials in order to construct multi-dimensional ones.
  * The number of variables of P is equal to the number of dimensions with xi > (0.5-epsB) * hi.
  */
-fcs_float ifcs_p2nfft_regkern_rect_symmetric(
+fcs_float ifcs_p2nfft_reg_far_rect_sym(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB
     )
@@ -394,8 +428,8 @@ static void sort(
   }
 }
 
-/* alternative implementation of regkern_rect_symmetric */
-fcs_float ifcs_p2nfft_regkern_rect_symmetric_version2(
+/* alternative implementation of reg_far_rect_sym */
+fcs_float ifcs_p2nfft_reg_far_rect_sym_version2(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB
     )
@@ -427,7 +461,7 @@ fcs_float ifcs_p2nfft_regkern_rect_symmetric_version2(
 
 
 
-fcs_float ifcs_p2nfft_regkern_rect_mirrored_expl_cont(
+fcs_float ifcs_p2nfft_reg_far_rect_expl_cont(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB, fcs_float c
     )
@@ -470,7 +504,7 @@ fcs_float ifcs_p2nfft_regkern_rect_mirrored_expl_cont(
   return sum;
 }
 
-fcs_float ifcs_p2nfft_regkern_rect_mirrored_impl_cont(
+fcs_float ifcs_p2nfft_reg_far_rect_impl_cont(
     fcs_float *x, fcs_float *h,
     fcs_int p, fcs_float epsB
     )

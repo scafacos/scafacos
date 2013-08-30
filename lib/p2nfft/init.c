@@ -144,7 +144,7 @@ FCSResult ifcs_p2nfft_init(
 
   d->short_range_flag = -1;
   d->reg_near = FCS_P2NFFT_REG_NEAR_CG;
-  d->reg_far  = FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC;
+  d->reg_far  = FCS_P2NFFT_REG_FAR_RAD_T2P_IC;
 
   /* init local data distribution of PNFFT:
    * local_N, local_N_start, lower_border, upper_border */

@@ -475,11 +475,11 @@ FCSResult ifcs_p2nfft_set_reg_far(
 
   if( (reg != FCS_P2NFFT_REG_FAR_RAD_CG)
       && (reg != FCS_P2NFFT_REG_FAR_RAD_T2P_SYM)
-      && (reg != FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC)
-      && (reg != FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC)
+      && (reg != FCS_P2NFFT_REG_FAR_RAD_T2P_EC)
+      && (reg != FCS_P2NFFT_REG_FAR_RAD_T2P_IC)
       && (reg != FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
-      && (reg != FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC)
-      && (reg != FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC)   
+      && (reg != FCS_P2NFFT_REG_FAR_REC_T2P_EC)
+      && (reg != FCS_P2NFFT_REG_FAR_REC_T2P_IC)   
     )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown far field regularization.");
   
@@ -500,16 +500,16 @@ FCSResult ifcs_p2nfft_set_reg_far_by_name(
     reg_flag = FCS_P2NFFT_REG_FAR_RAD_CG;
   else if (strcmp(reg_name,"rad_t2p_sym") == 0)
     reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_SYM;
-  else if (strcmp(reg_name,"rad_t2p_mir_ec") == 0)
-    reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_EC;
-  else if (strcmp(reg_name,"rad_t2p_mir_ic") == 0)
-    reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_MIR_IC;
+  else if (strcmp(reg_name,"rad_t2p_ec") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_EC;
+  else if (strcmp(reg_name,"rad_t2p_ic") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_IC;
   else if (strcmp(reg_name,"rec_t2p_sym") == 0)
     reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_SYM;
-  else if (strcmp(reg_name,"rec_t2p_mir_ec") == 0)
-    reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_MIR_EC;
-  else if (strcmp(reg_name,"rec_t2p_mir_ic") == 0)
-    reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_MIR_IC;
+  else if (strcmp(reg_name,"rec_t2p_ec") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_EC;
+  else if (strcmp(reg_name,"rec_t2p_ic") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_IC;
   else /* unknown regularization */
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
 

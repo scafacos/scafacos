@@ -256,15 +256,15 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     $2$ (Regularization with two-point Taylor polynomials and implicitly chosen constant continuation value). Default value is $2$.
   \item \verb!p2nfft_reg_far_name! (alternative: \verb!p2nfft_reg_far!) -
     Choose between the two regularization methods for non-periodic boundaries. Feasible values are \verb!rad_cg! (radial regularization based on the \verb!cg! near field regularization, only available for some sets of parameters),
-    \verb!rad_t2p_sym!    (radial regularization with symmetric two-point Taylor polynomial),
-    \verb!rad_t2p_mir_ec! (radial regularization with mirrored two-point Taylor polynomial and explicitly chosen constant continuation value),
-    \verb!rad_t2p_mir_ic! (radial regularization with mirrored two-point Taylor polynomial and implicitly chosen constant continuation value),
-    \verb!rec_t2p_sym!    (radial regularization with symmetric two-point Taylor polynomial),
-    \verb!rec_t2p_mir_ec! (radial regularization with mirrored two-point Taylor polynomial and explicitly chosen constant continuation value), and
-    \verb!rec_t2p_mir_ic! (radial regularization with mirrored two-point Taylor polynomial and implicitly chosen constant continuation value).
-    Default value is \verb!rad_t2p_mir_ic!.
+    \verb!rad_t2p_sym! (radial regularization with symmetric two-point Taylor polynomial),
+    \verb!rad_t2p_ec!  (radial regularization with two-point Taylor polynomial and explicitly chosen constant continuation value),
+    \verb!rad_t2p_ic!  (radial regularization with two-point Taylor polynomial and implicitly chosen constant continuation value),
+    \verb!rec_t2p_sym! (radial regularization with symmetric two-point Taylor polynomial),
+    \verb!rec_t2p_ec!  (radial regularization with two-point Taylor polynomial and explicitly chosen constant continuation value), and
+    \verb!rec_t2p_ic!  (radial regularization with two-point Taylor polynomial and implicitly chosen constant continuation value).
+    Default value is \verb!rad_t2p_ic!.
   \item \verb!p2nfft_c! -
-    The constant continuation value of the far field regularization. This parameter only takes affect, if far field regularization \verb!rad_t2p_mir_ec! or \verb!rec_t2p_mir_ec! is enabled.
+    The constant continuation value of the far field regularization. This parameter only takes affect, if far field regularization \verb!rad_t2p_ec! or \verb!rec_t2p_ec! is enabled.
     Feasible values are any floating point numbers. Default value is $0.0$.
   \item \verb!p2nfft_p! -
     The degree of the two-point Taylor polynomial. This parameter only takes affect, if regularization \verb!t2p! has been enabled.
