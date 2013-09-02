@@ -484,7 +484,7 @@ FCSResult ifcs_p2nfft_tune(
           /* shift and scale coordinates into sphere with radius (0.5-epsB) */
           d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
           if(reg_far_is_radial(d->reg_far))
-            d->box_scales[t] *= fcs_sqrt(d->num_nonperiodic_dims) ;
+            d->box_scales[t] *= 2.0 / fcs_sqrt(d->num_nonperiodic_dims) ;
         }
 
         /* calculate box_shifts are the same for periodic and non-periodic boundary conditions */
