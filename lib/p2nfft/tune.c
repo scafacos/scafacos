@@ -484,7 +484,7 @@ FCSResult ifcs_p2nfft_tune(
           /* shift and scale coordinates into sphere with radius (0.5-epsB) */
           d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
           if(reg_far_is_radial(d->reg_far))
-            d->box_scales[t] *= 2.0 / fcs_sqrt(d->num_nonperiodic_dims) ;
+            d->box_scales[t] *= fcs_sqrt(d->num_nonperiodic_dims) ;
         }
 
         /* calculate box_shifts are the same for periodic and non-periodic boundary conditions */
@@ -584,7 +584,7 @@ FCSResult ifcs_p2nfft_tune(
         for(int t=0; t<3; t++){
           d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
           if(reg_far_is_radial(d->reg_far))
-            d->box_scales[t] *= 2.0 / fcs_sqrt(3);
+            d->box_scales[t] *= fcs_sqrt(3);
           d->box_shifts[t] = d->box_l[t] / 2.0;
         }
   
@@ -616,9 +616,9 @@ FCSResult ifcs_p2nfft_tune(
             /* good choice for reqiured_accuracy == 1e3 with hammersley_ball_pos_1e4 */
 //             d->epsI = 0.5 * avg_dist/d->box_l[mindim];
           } else { /* user defined r_cut, now scale it into unit cube */
-            /* invert r_cut = box_scale * epsI, where box_scale = box_l*2/sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
+            /* invert r_cut = box_scale * epsI, where box_scale = box_l*sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
             if(reg_far_is_radial(d->reg_far))
-              d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut * 2.0 / fcs_sqrt(3) + 1.0);
+              d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut * fcs_sqrt(3) + 1.0);
             else
               d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut + 1.0);
           }
@@ -642,7 +642,7 @@ FCSResult ifcs_p2nfft_tune(
         for(int t=0; t<3; t++){
           d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
           if(reg_far_is_radial(d->reg_far))
-            d->box_scales[t] *= 2.0 / fcs_sqrt(3);
+            d->box_scales[t] *= fcs_sqrt(3);
           d->box_shifts[t] = d->box_l[t] / 2.0;
         }
 
