@@ -30,6 +30,7 @@
 
 #define FCS_P2NFFT_DEBUG 0
 #define FCS_P2NFFT_DEBUG_RETUNE 0
+#define FCS_P2NFFT_TIMING 0
 
 #define FCS_P2NFFT_NORMALIZED_2DP_EWALD 0
 
@@ -88,7 +89,7 @@ typedef ptrdiff_t INT;
 #define FCS_P2NFFT_DEFAULT_PNFFT_WINDOW  1 /* Bspline */
 #define FCS_P2NFFT_DEFAULT_PFFT_PATIENCE 1 /* Measure */
 
-#if FCS_ENABLE_TIMING
+#if FCS_ENABLE_TIMING || FCS_P2NFFT_TIMING
 #define FCS_P2NFFT_INIT_TIMING(comm) \
   int tm_rank; \
   MPI_Comm_rank(comm, &tm_rank); \
