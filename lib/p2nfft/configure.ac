@@ -24,6 +24,7 @@ AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 # Checks for header files.
+AC_CHECK_HEADERS([gsl/gsl_sf_bessel.h gsl/gsl_sf_gamma.h],[],[AC_MSG_ERROR([Required header files for GNU Scientific Library not found.])])
 
 # Set up FCS library arguments.
 AX_FCS_CONFIG_SOLVER_ARGS
