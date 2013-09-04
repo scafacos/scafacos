@@ -918,7 +918,11 @@ typedef front_xqsaX_sl_int_type_c front_xqsaX_spec_int_t;
 typedef int front_xqsaX_spec_proc_t;
 
 #define front_xqsaX_SPEC_LOC_NONE   -1
-#define front_xqsaX_SPEC_PROC_NONE  MPI_PROC_NULL
+#ifdef SL_USE_MPI
+# define front_xqsaX_SPEC_PROC_NONE  MPI_PROC_NULL
+#else
+# define front_xqsaX_SPEC_PROC_NONE  -1
+#endif
 
 typedef void *front_xqsaX_spec_tloc_data_t;
 typedef void *front_xqsaX_spec_tproc_data_t;

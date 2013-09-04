@@ -915,7 +915,11 @@ typedef back_qx_g_sl_int_type_c back_qx_g_spec_int_t;
 typedef int back_qx_g_spec_proc_t;
 
 #define back_qx_g_SPEC_LOC_NONE   -1
-#define back_qx_g_SPEC_PROC_NONE  MPI_PROC_NULL
+#ifdef SL_USE_MPI
+# define back_qx_g_SPEC_PROC_NONE  MPI_PROC_NULL
+#else
+# define back_qx_g_SPEC_PROC_NONE  -1
+#endif
 
 typedef void *back_qx_g_spec_tloc_data_t;
 typedef void *back_qx_g_spec_tproc_data_t;

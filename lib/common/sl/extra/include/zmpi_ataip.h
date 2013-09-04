@@ -34,14 +34,50 @@
 #endif
 
 
+#define ZMPI_ALLTOALLV_INPLACE_AUX_TYPE_STATIC  0
+#define ZMPI_ALLTOALLV_INPLACE_AUX_TYPE_HEAP    1
+
+#define ZMPI_SYM_TYPE_SKIP               -1
+#define ZMPI_SYM_TYPE_LINEAR              0
+#define ZMPI_SYM_TYPE_LINEAR_RANDOM       1
+#define ZMPI_SYM_TYPE_HIERARCHIC          2
+#define ZMPI_SYM_TYPE_HIERARCHIC_RANDOM   3
+
+#define ZMPI_ALLTOALLV_INPLACE_SYM_TYPE_DEFAULT  ZMPI_SYM_TYPE_HIERARCHIC
+
+#define ZMPI_ALLTOALL_INPLACE_SYMMETRIC_SYM_TYPE_DEFAULT  ZMPI_SYM_TYPE_HIERARCHIC
+
+#define ZMPI_ALLTOALLV_INPLACE_SYMMETRIC_SYM_TYPE_DEFAULT  ZMPI_SYM_TYPE_HIERARCHIC
+
+
+/* ZMPI_Alltoallv_inplace and ZMPI_Neighbor_alltoallv_inplace */
+extern int ZMPI_Alltoallv_inplace_sym_type;
+extern int ZMPI_Alltoallv_inplace_aux_type;
 extern void *ZMPI_Alltoallv_inplace_aux;
-extern int ZMPI_Alltoallv_inplace_aux_size, ZMPI_Alltoallv_inplace_aux_blocks;
+extern int ZMPI_Alltoallv_inplace_aux_size, ZMPI_Alltoallv_inplace_aux_static_blocks;
 extern int ZMPI_Alltoallv_inplace_sync_on_init, ZMPI_Alltoallv_inplace_sync_on_exit, ZMPI_Alltoallv_inplace_sync_run;
-extern double ZMPI_Alltoallv_inplace_times[9];
+
+extern double ZMPI_Alltoallv_inplace_times[10];
 
 int ZMPI_Alltoallv_inplace(void *sbuf, int *scounts, int *sdispls, MPI_Datatype stype, void *rbuf, int *rcounts, int *rdispls, MPI_Datatype rtype, MPI_Comm comm);
-int ZMPI_Alltoallv_inplace_static(void *sbuf, int *scounts, int *sdispls, MPI_Datatype stype, void *rbuf, int *rcounts, int *rdispls, MPI_Datatype rtype, MPI_Comm comm);
-int ZMPI_Alltoallv_inplace_heap(void *sbuf, int *scounts, int *sdispls, MPI_Datatype stype, void *rbuf, int *rcounts, int *rdispls, MPI_Datatype rtype, MPI_Comm comm);
+
+int ZMPI_Neighbor_alltoallv_inplace(void *sbuf, int *scounts, int *sdispls, MPI_Datatype stype, void *rbuf, int *rcounts, int *rdispls, MPI_Datatype rtype, MPI_Comm comm);
+
+/* ZMPI_Alltoall_inplace_symmetric and ZMPI_Neighbor_alltoall_inplace_symmetric */
+extern int ZMPI_Alltoall_inplace_symmetric_sym_type;
+
+int ZMPI_Alltoall_inplace_symmetric(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, MPI_Comm comm);
+
+int ZMPI_Neighbor_alltoall_inplace_symmetric(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, MPI_Comm comm);
+
+/* ZMPI_Alltoallv_inplace_symmetric and ZMPI_Neighbor_alltoallv_inplace_symmetric */
+extern int ZMPI_Alltoallv_inplace_symmetric_sym_type;
+extern void *ZMPI_Alltoallv_inplace_symmetric_aux;
+extern int ZMPI_Alltoallv_inplace_symmetric_aux_size;
+
+int ZMPI_Alltoallv_inplace_symmetric(void *sbuf, int *scounts, int *sdispls, MPI_Datatype stype, void *rbuf, int *rcounts, int *rdispls, MPI_Datatype rtype, MPI_Comm comm);
+
+int ZMPI_Neighbor_alltoallv_inplace_symmetric(void *sbuf, int *scounts, int *sdispls, MPI_Datatype stype, void *rbuf, int *rcounts, int *rdispls, MPI_Datatype rtype, MPI_Comm comm);
 
 
 #endif /* __ZMPI_ATAIP_H__ */

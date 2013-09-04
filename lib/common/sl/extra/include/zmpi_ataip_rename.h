@@ -48,6 +48,7 @@
 
 
 /* zmpi_ataip.c */
+#define ZMPI_Alltoallv_inplace_sym_type  ZMPI_VAR(ZMPI_Alltoallv_inplace_sym_type)
 #define ZMPI_Alltoallv_inplace_aux_type  ZMPI_VAR(ZMPI_Alltoallv_inplace_aux_type)
 #define ZMPI_Alltoallv_inplace_aux  ZMPI_VAR(ZMPI_Alltoallv_inplace_aux)
 #define ZMPI_Alltoallv_inplace_aux_size  ZMPI_VAR(ZMPI_Alltoallv_inplace_aux_size)
@@ -55,10 +56,17 @@
 #define ZMPI_Alltoallv_inplace_sync_on_init  ZMPI_VAR(ZMPI_Alltoallv_inplace_sync_on_init)
 #define ZMPI_Alltoallv_inplace_sync_on_exit  ZMPI_VAR(ZMPI_Alltoallv_inplace_sync_on_exit)
 #define ZMPI_Alltoallv_inplace_sync_run  ZMPI_VAR(ZMPI_Alltoallv_inplace_sync_run)
+#define ZMPI_Alltoall_inplace_symmetric_sym_type  ZMPI_VAR(ZMPI_Alltoall_inplace_symmetric_sym_type)
+#define ZMPI_Alltoallv_inplace_symmetric_sym_type  ZMPI_VAR(ZMPI_Alltoallv_inplace_symmetric_sym_type)
+#define ZMPI_Alltoallv_inplace_symmetric_aux  ZMPI_VAR(ZMPI_Alltoallv_inplace_symmetric_aux)
+#define ZMPI_Alltoallv_inplace_symmetric_aux_size  ZMPI_VAR(ZMPI_Alltoallv_inplace_symmetric_aux_size)
 #define ZMPI_Alltoallv_inplace_times  ZMPI_VAR(ZMPI_Alltoallv_inplace_times)
 #define ZMPI_Alltoallv_inplace  ZMPI_FUNC(ZMPI_Alltoallv_inplace)
-#define ZMPI_Alltoallv_inplace_static  ZMPI_FUNC(ZMPI_Alltoallv_inplace_static)
-#define ZMPI_Alltoallv_inplace_heap  ZMPI_FUNC(ZMPI_Alltoallv_inplace_heap)
+#define ZMPI_Neighbor_alltoallv_inplace  ZMPI_FUNC(ZMPI_Neighbor_alltoallv_inplace)
+#define ZMPI_Alltoall_inplace_symmetric  ZMPI_FUNC(ZMPI_Alltoall_inplace_symmetric)
+#define ZMPI_Neighbor_alltoall_inplace_symmetric  ZMPI_FUNC(ZMPI_Neighbor_alltoall_inplace_symmetric)
+#define ZMPI_Alltoallv_inplace_symmetric  ZMPI_FUNC(ZMPI_Alltoallv_inplace_symmetric)
+#define ZMPI_Neighbor_alltoallv_inplace_symmetric  ZMPI_FUNC(ZMPI_Neighbor_alltoallv_inplace_symmetric)
 
 
 #endif /* __ZMPI_ATAIP_RENAME_H__ */

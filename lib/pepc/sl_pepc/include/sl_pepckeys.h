@@ -919,7 +919,11 @@ typedef pepckeys_sl_int_type_c pepckeys_spec_int_t;
 typedef int pepckeys_spec_proc_t;
 
 #define pepckeys_SPEC_LOC_NONE   -1
-#define pepckeys_SPEC_PROC_NONE  MPI_PROC_NULL
+#ifdef SL_USE_MPI
+# define pepckeys_SPEC_PROC_NONE  MPI_PROC_NULL
+#else
+# define pepckeys_SPEC_PROC_NONE  -1
+#endif
 
 typedef void *pepckeys_spec_tloc_data_t;
 typedef void *pepckeys_spec_tproc_data_t;

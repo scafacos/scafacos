@@ -104,6 +104,7 @@ cfg_tuning=
 
 cfg_license_file=
 
+cfg_makefile_makefile_in=
 cfg_makefile_target=
 cfg_makefile_sl_use_mpi=
 cfg_makefile_all=libsl
@@ -203,13 +204,13 @@ print_settings()
   local prefix="$2"
 
   local list1="my_pwd cfg_config cfg_config_not"
-  local list2="cfg_di_versions cfg_makefile_sl_use_mpi cfg_local cfg_makefile cfg_autoconf cfg_automake cfg_interface cfg_source cfg_source_rename cfg_source_ref cfg_source_ref_set"
+  local list2="cfg_di_versions cfg_makefile_sl_use_mpi cfg_local cfg_makefile cfg_makefile_in cfg_autoconf cfg_automake cfg_interface cfg_source cfg_source_rename cfg_source_ref cfg_source_ref_set"
 
   local list_src="src_sl src_sl_src src_sl_src_sub src_sl_extra src_sl_extra_sub src_sl_scripts src_sl_scripts_sub src_sl_adds src_sl_adds_sub"
   local list_dst="dst_sl dst_sl_src dst_sl_src_sub dst_sl_extra dst_sl_extra_sub dst_sl_scripts dst_sl_scripts_sub dst_sl_adds dst_sl_adds_sub dst_if dst_if_sub"
   local list_dst="ref_sl ref_sl_src ref_sl_extra ref_sl_scripts ref_sl_adds"
 
-  local list_mf="cfg_makefile_target cfg_makefile_sl_use_mpi cfg_makefile_all cfg_makefile_quiet cfg_makefile_fixed cfg_makefile_bulk_ar cfg_makefile_incdir cfg_makefile_libdir"
+  local list_mf="cfg_makefile_makefile_in cfg_makefile_target cfg_makefile_sl_use_mpi cfg_makefile_all cfg_makefile_quiet cfg_makefile_fixed cfg_makefile_bulk_ar cfg_makefile_incdir cfg_makefile_libdir"
   local list_mf_wrap="cfg_makefile_wrapper_src cfg_makefile_wrapper_prefix cfg_makefile_wrapper_mpi_src cfg_makefile_wrapper_mpi_prefix"
   local list_mf_exec="cfg_makefile_exec cfg_makefile_exec_src cfg_makefile_exec_prefix cfg_makefile_exec_mpi_src cfg_makefile_exec_mpi_prefix"
 
@@ -621,6 +622,12 @@ for opt in $all ; do
     -mf-target=* | --mf-target=* | -target=* | --target=*)
       cfg_makefile_target=${optarg}
       ;;
+    -mf-makefile-in | --mf-makefile-in | -makefile-in | --makefile-in)
+      prev=cfg_makefile_makefile_in
+      ;;
+    -mf-makefile-in=* | --mf-makefile-in=* | -makefile-in=* | --makefile-in=*)
+      cfg_makefile_makefile_in=${optarg}
+      ;;
     -mf-sl-use-mpi | --mf-sl-use-mpi | -sl-use-mpi | --sl-use-mpi)
       prev=cfg_makefile_sl_use_mpi
       ;;
@@ -818,7 +825,7 @@ canonize_dir dst_sl dst_sl_src dst_sl_extra dst_sl_scripts dst_sl_adds dst_if
 # verify settings
 
 # cfg_config
-[ ! -e "${cfg_config}" ] && perror_exit "configuration directory/file '${cfg_config}' does not exist!"
+[ -n "${cfg_config}" -a ! -e "${cfg_config}" ] && perror_exit "configuration directory/file '${cfg_config}' does not exist!"
 
 # src_sl
 [ -n "${src_sl}" -a ! -d "${src_sl}" ] && perror_exit "source directory '${src_sl}' does not exist!"
@@ -978,7 +985,7 @@ if [ -n "${cfg_clean}" ] ; then
 
   pprogress ""
   pprogress -n " removing local files ..."
-  
+
   rm -rf ${dst}sl_config.h ${dst}sl_environment.h ${dst}sl_tune.h ${dst}sl_tune_auto.h ${dst}sl_extra.h
   rm -rf autom4te.cache config.log config.status configure
 
@@ -1409,12 +1416,24 @@ if [ "${cfg_source}" = "single" ] ; then
     create_file_far_sed "${src_sl}sl_tune.sh" "${current_dst}"
   fi
 
+  if [ -n "${dst_sl_extra_sub}" ] ; then
+    current_dst_sl_extra="${current_dst}${dst_sl_extra}"
+  else
+    current_dst_sl_extra="${dst_sl_extra}"
+  fi
+  
+  pdebug "current_dst_sl_extra: ${current_dst_sl_extra}"
+
   # extra
   if [ -n "${cfg_extra}" ] ; then
     pprogress ""
     pprogress "   creating extra files ..."
 
-#    create_extra "DUMMY" "${current_dst}"
+    create_sources "${src_sl_extra}" "${current_dst_sl_extra}" "" "*"
+
+    for x in ${cfg_extras} include ; do
+      create_sources "${src_sl_extra}" "${current_dst_sl_extra}" "${x}/" "*.[hc]"
+    done
   fi
 
   # scripts
@@ -1615,7 +1634,7 @@ pprogress " installing configurations in '${dst_sl}' finished!"
 
 
 # setup makefile-find-and-replace string
-makefile_makefile_in="${cfg_makefile_in}"
+makefile_makefile_in="${cfg_makefile_makefile_in}"
 
 
 # Makefile
@@ -1716,10 +1735,12 @@ fi
 
 # Makefile.in
 if [ -n "${cfg_makefile_in}" ] ; then
-  if [ -f "${cfg_makefile_in}" -a ! -f "${dst_sl}${makefile_makefile_in}" ] ; then
+  mf_in_src="${src_sl}${cfg_makefile_in}"
+  mf_in_dst="${dst_sl}${makefile_makefile_in}"
+  if [ -f "${mf_in_src}" ] ; then
     pprogress ""
-    pprogress " creating ${makefile_makefile_in} ..."
-    create_file_far_sed "${cfg_makefile_in}" "${dst_sl}${makefile_makefile_in}"
+    pprogress " creating ${mf_in_dst} ..."
+    create_file_far_sed "${mf_in_src}" "${mf_in_dst}"
   fi
 fi
 
@@ -1778,6 +1799,13 @@ if [ -n "${cfg_automake}" ] ; then
     else
       current_dst_sl_src="${dst_sl_src}"
       sub_src=
+    fi
+    if [ -n "${dst_sl_extra_sub}" ] ; then
+      current_dst_sl_extra="${dst_sl}"
+      sub_extra="${dst_sl_extra}"
+    else
+      current_dst_sl_extra="${dst_sl_extra}"
+      sub_extra=
     fi
   fi
 

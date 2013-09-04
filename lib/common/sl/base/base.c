@@ -1954,6 +1954,194 @@ slint_t elements_unpack_keys(packed_elements_t *s, slkey_t *k) /* sl_proto, sl_f
 
 
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <limits.h>
+
+#include "z_pack.h"
+#include "local_generic_heap.h"
+
+
+#define LGH_TRACE_IF  (z_mpi_rank == -1)
+
+
+void lgh_create(lgh_t *lgh, lghint_t size) /* lgh_func lgh_create */
+{
+  Z_TRACE_IF(LGH_TRACE_IF, "size: %" lghint_fmt, size);
+
+  lgh->nallocs = 0;
+
+  lgh->segments = z_alloc(1, sizeof(lgh_segment_t));
+  lgh->segments->next = NULL;
+  lgh->segments->offset = 0;
+  lgh->segments->size = size;
+}
+
+
+void lgh_destroy(lgh_t *lgh) /* lgh_func lgh_destroy */
+{
+  lgh_segment_t *seg;
+
+
+  Z_ASSERT(lgh->nallocs == 0);
+  Z_ASSERT(lgh->segments != NULL);
+  Z_ASSERT(lgh->segments != NULL && lgh->segments->next == NULL);
+
+  Z_TRACE_IF(LGH_TRACE_IF, "nallocs: %ld", lgh->nallocs);
+
+  lgh->nallocs = 0;
+  while (lgh->segments)
+  {
+    seg = lgh->segments->next;
+    z_free(lgh->segments);
+    lgh->segments = seg;
+  }
+}
+
+
+lgh_segment_t *lgh_alloc(lgh_t *lgh, lghint_t size) /* lgh_func lgh_alloc */
+{
+  return lgh_alloc_minmax(lgh, size, size);
+}
+
+
+lgh_segment_t *lgh_alloc_minmax(lgh_t *lgh, lghint_t min, lghint_t max) /* lgh_func lgh_alloc_minmax */
+{
+  lgh_segment_t *curr, *prev, *best, *best_prev, *seg;
+  lghint_t best_size;
+
+
+  if (min > max) return NULL;
+
+  Z_TRACE_IF(LGH_TRACE_IF, "searching for minmax: %" lghint_fmt "-%" lghint_fmt, min, max);
+
+  best = best_prev = NULL;
+  best_size = min - 1;
+
+  prev = NULL;
+  curr = lgh->segments;
+  while (curr != NULL && best_size != max)
+  {
+    if (best_size < max)
+    {
+      if (curr->size > best_size)
+      {
+        best = curr;
+        best_prev = prev;
+        best_size = curr->size;
+      }
+
+    } else
+    {
+      if (max <= curr->size && curr->size < best_size)
+      {
+        best = curr;
+        best_prev = prev;
+        best_size = curr->size;
+      }
+    }
+
+    prev = curr;
+    curr = curr->next;
+
+/*    if (!local_heap_alloc_search) continue;*/
+  }
+
+  max = z_min(max, best_size);
+  curr = best;
+  prev = best_prev;
+
+  if (curr == NULL) return NULL;
+
+  if (curr->size <= max)
+  {
+    seg = curr;
+
+    if (prev == NULL) lgh->segments = curr->next;
+    else prev->next = curr->next;
+
+  } else
+  {
+    seg = z_alloc(1, sizeof(lgh_segment_t));
+    seg->next = NULL;
+    seg->offset = curr->offset;
+    seg->size = max;
+
+    curr->offset += max;
+    curr->size -= max;
+  }
+
+  ++lgh->nallocs;
+
+  Z_TRACE_IF(LGH_TRACE_IF, "allocated segment %p: [%" lghint_fmt ", %" lghint_fmt "]", seg, seg->offset, seg->size);
+
+  Z_TRACE_IF(LGH_TRACE_IF, "nallocs OUT: %" lghint_fmt, lgh->nallocs);
+
+  return seg;
+}
+
+
+void lgh_free(lgh_t *lgh, lgh_segment_t *seg) /* lgh_func lgh_free */
+{
+  lgh_segment_t *prev, *curr;
+
+
+  if (seg == NULL) return;
+
+  Z_TRACE_IF(LGH_TRACE_IF, "nallocs IN: %" lghint_fmt, lgh->nallocs);
+
+  Z_TRACE_IF(LGH_TRACE_IF, "free seg: %p: [%" lghint_fmt ", %" lghint_fmt"]", seg, seg->offset, seg->size);
+
+  prev = NULL;
+  curr = lgh->segments;
+
+/*  if (local_heap_free_search)*/
+  while (curr != NULL && curr->offset < seg->offset)
+  {
+    prev = curr;
+    curr = curr->next;
+  }
+
+  if (curr != NULL && seg->offset + seg->size == curr->offset)
+  {
+    curr->offset -= seg->size;
+    curr->size += seg->size;
+
+    z_free(seg);
+
+    seg = curr;
+
+  } else seg->next = curr;
+
+  if (prev == NULL) lgh->segments = seg;
+  else
+  {
+    if (prev->offset + prev->size == seg->offset)
+    {
+      prev->size += seg->size;
+      prev->next = seg->next;
+
+      z_free(seg);
+
+    } else prev->next = seg;
+  }
+
+  --lgh->nallocs;
+
+  Z_TRACE_IF(LGH_TRACE_IF, "nallocs OUT: %" lghint_fmt, lgh->nallocs);
+}
+
+
+#undef LGH_TRACE_IF
+
+
+
 #include "sl_common.h"
 
 
@@ -4109,6 +4297,116 @@ slint_t permute_generic_ip(elements_t *s, elements_t *x, permute_generic_t *pg, 
   if (pg->type == 2) elements_free(&mod);
 
   return 0;
+}
+
+
+
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "z_pack.h"
+#include "prx.h"
+
+
+void prx_seed(prxint_t seed) /* prx_func prx_seed */
+{
+  z_srand(seed);
+}
+
+
+void prx_permutation(prxint_t *permutation, prxint_t n, prx_type_t type) /* prx_func prx_permutation */
+{
+  prxint_t i, j, t;
+
+
+  switch (type)
+  {
+    case PRX_FISHER_YATES_SHUFFLE:
+      for (i = 0; i < n; ++i) permutation[i] = i;
+      for (i = n - 1; i > 0; --i)
+      {
+        j = (prxint_t) z_rand_minmax(0, i);
+        t = permutation[i]; permutation[i] = permutation[j]; permutation[j] = t;
+      }
+      break;
+
+    default:
+      fprintf(stderr, "ERROR: unknown prx type '%d'\n", (int) type);
+  }
+}
+
+
+struct _prx_enumerate_t
+{
+  prx_type_t type;
+  prxint_t n;
+  prxint_t *permutation;
+};
+
+
+void prx_enumerate_create(prx_enumerate_t *enumerate, prxint_t n, prx_type_t type) /* prx_func prx_enumerate_create */
+{
+  *enumerate = z_alloc(1, sizeof(**enumerate));
+
+  (*enumerate)->type = type;
+  (*enumerate)->n = n;
+  (*enumerate)->permutation = NULL;
+
+  switch (type)
+  {
+    case PRX_FISHER_YATES_SHUFFLE:
+      (*enumerate)->permutation = z_alloc(n, sizeof(prxint_t));
+      prx_permutation((*enumerate)->permutation, n, type);
+      break;
+
+    default:
+      fprintf(stderr, "ERROR: unknown prx type '%d'\n", (int) type);
+      prx_enumerate_destroy(enumerate);
+      return;
+  }
+
+/*  prx_enumerate_print(*enumerate);*/
+}
+
+
+void prx_enumerate_destroy(prx_enumerate_t *enumerate) /* prx_func prx_enumerate_destroy */
+{
+  if (enumerate == PRX_ENUMERATE_NULL) return;
+
+  if ((*enumerate)->permutation) z_free((*enumerate)->permutation);
+
+  z_free(*enumerate);
+
+  *enumerate = PRX_ENUMERATE_NULL;
+}
+
+
+void prx_enumerate_print(prx_enumerate_t enumerate) /* prx_func prx_enumerate_print */
+{
+  prxint_t i;
+
+
+  printf("enumerate %p:\n", enumerate);
+  for (i = 0; i < enumerate->n; ++i) printf("  %" prxint_fmt " -> %" prxint_fmt "\n", i, prx_enumerate(enumerate, i));
+}
+
+
+prxint_t prx_enumerate(prx_enumerate_t enumerate, prxint_t i) /* prx_func prx_enumerate */
+{
+  switch (enumerate->type)
+  {
+    case PRX_FISHER_YATES_SHUFFLE:
+      return enumerate->permutation[i];
+
+    default:
+      fprintf(stderr, "ERROR: unknown prx type '%d'\n", (int) enumerate->type);
+  }
+
+  return -1;
 }
 
 

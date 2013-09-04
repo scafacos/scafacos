@@ -28,6 +28,14 @@
 
 #include "sl_common.h"
 
+#ifdef HAVE_ZMPI_ATAIP_H
+# include "zmpi_ataip.h"
+#endif
+
+#ifdef HAVE_ZMPI_TOOLS_H
+# include "zmpi_tools.h"
+#endif
+
 #include "spec_public_conf.h"
 
 

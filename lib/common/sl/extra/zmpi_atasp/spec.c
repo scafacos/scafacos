@@ -27,6 +27,10 @@
 
 #include <mpi.h>
 
+#ifdef HAVE_ZMPI_TOOLS_H
+# include "zmpi_tools.h"
+#endif
+
 #include "spec_core.h"
 
 
@@ -195,7 +199,7 @@ spint_t spec_alltoallv_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spe
 /*    printf("%d: scounts2 = ", rank);
     for (i = 0; i < size; ++i) printf("  %d (%d)", scounts2[i], scounts[i]);
     printf("\n");*/
-    
+
 #ifdef HAVE_ZMPI_ALLTOALLV_PROCLISTS
     ZMPI_Alltoallv_proclists(scounts, scounts2, sdispls, MPI_INT, tproc->nsend_procs, tproc->send_procs, rcounts, rcounts2, rdispls, MPI_INT, tproc->nrecv_procs, tproc->recv_procs, comm);
 #else
@@ -211,7 +215,7 @@ spint_t spec_alltoallv_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spe
   } else
 #endif
   {
-#ifdef HAVE_ZMPI_TOOLS_H
+#ifdef HAVE_ZMPI_ALLTOALL_2STEP
 # ifdef SPEC_MPI_ALLTOALL_2STEP_THRESHOLD
     if (size >= SPEC_MPI_ALLTOALL_2STEP_THRESHOLD)
       ZMPI_Alltoall_2step_int(scounts, 1, MPI_INT, rcounts, 1, MPI_INT, comm);
@@ -318,11 +322,15 @@ spint_t spec_alltoallv_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spe
 #ifdef SPEC_PROCLIST
 # ifdef spec_elem_alltoallv_proclists_db
   if (tproc->nsend_procs >= 0 || tproc->nrecv_procs >= 0)
+  {
     spec_elem_alltoallv_proclists_db(xb, scounts, sdispls, tproc->nsend_procs, tproc->send_procs, rb, rcounts, rdispls, tproc->nrecv_procs, tproc->recv_procs, size, rank, comm);
+  }
   else
 # endif
 #endif
+  {
     spec_elem_alltoallv_db(xb, scounts, sdispls, rb, rcounts, rdispls, size, rank, comm);
+  }
 
   Z_TIMING_SYNC(comm); Z_TIMING_STOP(t[4]);
 
@@ -490,7 +498,7 @@ spint_t spec_alltoallv_ip(spec_elem_t *b, spec_elem_t *xb, spec_tproc_t tproc, s
   } else
 #endif
   {
-#ifdef HAVE_ZMPI_TOOLS_H
+#ifdef HAVE_ZMPI_ALLTOALL_2STEP
 # ifdef SPEC_MPI_ALLTOALL_2STEP_THRESHOLD
     if (size >= SPEC_MPI_ALLTOALL_2STEP_THRESHOLD)
       ZMPI_Alltoall_2step_int(scounts, 1, MPI_INT, rcounts, 1, MPI_INT, comm);
@@ -693,6 +701,7 @@ free_and_exit:
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <mpi.h>
 
@@ -802,6 +811,16 @@ spint_t spec_tproc_destroy(spec_tproc_t *tproc) /* sp_func spec_tproc_destroy */
   z_free(*tproc);
   
   *tproc = NULL;
+
+  return SPEC_EXIT_SUCCESS;
+}
+
+
+spint_t spec_tproc_duplicate(spec_tproc_t *tproc, spec_tproc_t *newtproc) /* sp_func spec_tproc_duplicate */
+{
+  *newtproc = z_alloc(1, sizeof(struct _spec_tproc_t));
+
+  memcpy(*newtproc, *tproc, sizeof(struct _spec_tproc_t));
 
   return SPEC_EXIT_SUCCESS;
 }

@@ -1095,7 +1095,7 @@ slint_t mpi_elements_alltoall_specific(elements_t *sin, elements_t *sout, elemen
     r = spec_alltoallv_db(sin, sout, xs, tproc->spec_tproc, data, size, rank, comm);
 
   SL_DEFCON(mea.packed) = original_mea_packed;
-  
+
   return r;
 }
 

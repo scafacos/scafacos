@@ -42,6 +42,9 @@ typedef long z_int_t;
 #define Z_PACK_ALLOC
 
 
+#define Z_PACK_RANDOM
+
+
 #define Z_PACK_DEBUG_OFF
 
 

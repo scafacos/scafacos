@@ -884,7 +884,11 @@ typedef forw_sl_int_type_c forw_spec_int_t;
 typedef int forw_spec_proc_t;
 
 #define forw_SPEC_LOC_NONE   -1
-#define forw_SPEC_PROC_NONE  MPI_PROC_NULL
+#ifdef SL_USE_MPI
+# define forw_SPEC_PROC_NONE  MPI_PROC_NULL
+#else
+# define forw_SPEC_PROC_NONE  -1
+#endif
 
 typedef void *forw_spec_tloc_data_t;
 typedef void *forw_spec_tproc_data_t;

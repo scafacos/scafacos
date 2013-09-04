@@ -40,19 +40,14 @@ typedef struct _ds_exec_sl_t
 
 #define DEFINE_EXEC_SL(_s_, _v_)  ds_exec_sl_t *_v_ = (_s_)->cxt
 
-#define DS_EXEC_SL_DATA_TAG  0
+#define DS_EXEC_SL_ISENDRECV_TAG         0
+#define DS_EXEC_SL_SENDRECV_REPLACE_TAG  0
 
 
 dsint_t ds_exec_sl_create(ds_exec_t *exec);
 dsint_t ds_exec_sl_destroy(ds_exec_t *exec);
 
-dsint_t ds_exec_sl_pre_run(ds_exec_t *exec);
-dsint_t ds_exec_sl_post_run(ds_exec_t *exec);
-dsint_t ds_exec_sl_make(ds_exec_t *exec);
-
 dsint_t ds_exec_sl_add_address(ds_exec_t *exec, elements_t *s);
-
-void ds_exec_sl_move(ds_exec_t *exec, dsint_t exec_id, dsint_t src_buf_id, dsint_t src_displs, dsint_t dst_buf_id, dsint_t dst_displs, dsint_t count);
 
 
 #endif /* __DS_EXEC_SL_H__ */

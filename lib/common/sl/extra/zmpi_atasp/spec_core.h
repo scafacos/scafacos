@@ -34,10 +34,6 @@
 
 #include "spec_public.h"
 
-#ifdef HAVE_ZMPI_TOOLS_H
-# include "zmpi_tools.h"
-#endif
-
 #include "z_pack.h"
 
 
@@ -107,6 +103,7 @@ typedef struct _spec_tproc_t
 
 spint_t spec_tproc_create(spec_tproc_t *tproc, spec_tproc_f *func, spec_tproc_mod_f *func_mod, spec_tprocs_f *func_s, spec_tprocs_mod_f *func_s_mod);
 spint_t spec_tproc_destroy(spec_tproc_t *tproc);
+spint_t spec_tproc_duplicate(spec_tproc_t *tproc, spec_tproc_t *newtproc);
 
 spint_t spec_tproc_set_tproc(spec_tproc_t *tproc, spec_tproc_f *func);
 spint_t spec_tproc_set_ext_tproc(spec_tproc_t *tproc, spec_tproc_count_f *func_count_db, spec_tproc_count_f *func_count_ip, spec_tproc_rearrange_db_f *func_rearrange_db, spec_tproc_rearrange_ip_f *func_rearrange_ip);

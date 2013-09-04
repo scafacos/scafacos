@@ -300,8 +300,4 @@ mpi_xcounts2ycounts_grouped
 mpi_subxdispls2ycounts
 ds_exec_sl_create
 ds_exec_sl_destroy
-ds_exec_sl_pre_run
-ds_exec_sl_post_run
-ds_exec_sl_make
 ds_exec_sl_add_address
-ds_exec_sl_move

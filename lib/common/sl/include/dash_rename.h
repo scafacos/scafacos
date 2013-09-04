@@ -44,20 +44,13 @@
 /* dash_aux_heap.c */
 #define ds_aux_heap_create  DS_FUNC(ds_aux_heap_create)
 #define ds_aux_heap_destroy  DS_FUNC(ds_aux_heap_destroy)
-#define ds_aux_heap_acquire  DS_FUNC(ds_aux_heap_acquire)
-#define ds_aux_heap_get_count  DS_FUNC(ds_aux_heap_get_count)
-#define ds_aux_heap_get_displ  DS_FUNC(ds_aux_heap_get_displ)
-#define ds_aux_heap_vacate  DS_FUNC(ds_aux_heap_vacate)
-#define ds_aux_heap_accept_recv  DS_FUNC(ds_aux_heap_accept_recv)
 
 /* dash_aux_static.c */
 #define ds_aux_static_create  DS_FUNC(ds_aux_static_create)
 #define ds_aux_static_destroy  DS_FUNC(ds_aux_static_destroy)
-#define ds_aux_static_acquire  DS_FUNC(ds_aux_static_acquire)
-#define ds_aux_static_get_count  DS_FUNC(ds_aux_static_get_count)
-#define ds_aux_static_get_displ  DS_FUNC(ds_aux_static_get_displ)
-#define ds_aux_static_vacate  DS_FUNC(ds_aux_static_vacate)
-#define ds_aux_static_accept_recv  DS_FUNC(ds_aux_static_accept_recv)
+
+/* dash_common.c */
+#define ds_sort_dsints  DS_FUNC(ds_sort_dsints)
 
 /* dash_core.c */
 #define ds_core_run_sync  DS_VAR(ds_core_run_sync)
@@ -65,29 +58,24 @@
 #define ds_create  DS_FUNC(ds_create)
 #define ds_destroy  DS_FUNC(ds_destroy)
 #define ds_run  DS_FUNC(ds_run)
-#define ds_sched_add_buffer  DS_FUNC(ds_sched_add_buffer)
-#define ds_sched_set_send  DS_FUNC(ds_sched_set_send)
-#define ds_sched_set_recv  DS_FUNC(ds_sched_set_recv)
-#define ds_sched_set_aux  DS_FUNC(ds_sched_set_aux)
-#define ds_exec_add_address  DS_FUNC(ds_exec_add_address)
 
 /* dash_exec.c */
-#define ds_exec_make_sym  DS_FUNC(ds_exec_make_sym)
+#define ds_exec_create  DS_FUNC(ds_exec_create)
+#define ds_exec_destroy  DS_FUNC(ds_exec_destroy)
+#define ds_exec_add_address  DS_FUNC(ds_exec_add_address)
 #define ds_exec_make  DS_FUNC(ds_exec_make)
 
 /* dash_exec_mpi.c */
 #define ds_exec_mpi_create  DS_FUNC(ds_exec_mpi_create)
 #define ds_exec_mpi_destroy  DS_FUNC(ds_exec_mpi_destroy)
-#define ds_exec_mpi_pre_run  DS_FUNC(ds_exec_mpi_pre_run)
-#define ds_exec_mpi_post_run  DS_FUNC(ds_exec_mpi_post_run)
-#define ds_exec_mpi_make_isendrecv  DS_FUNC(ds_exec_mpi_make_isendrecv)
-#define ds_exec_mpi_make_alltoallw  DS_FUNC(ds_exec_mpi_make_alltoallw)
 #define ds_exec_mpi_add_address  DS_FUNC(ds_exec_mpi_add_address)
-#define ds_exec_mpi_move  DS_FUNC(ds_exec_mpi_move)
-#define ds_exec_mpi_sendrecv_replace  DS_FUNC(ds_exec_mpi_sendrecv_replace)
 #define ds_exec_mpi_add_type  DS_FUNC(ds_exec_mpi_add_type)
 #define ds_exec_mpi_sizefor  DS_FUNC(ds_exec_mpi_sizefor)
 #define ds_exec_mpi_extent  DS_FUNC(ds_exec_mpi_extent)
+
+/* dash_sched_a2a_sym.c */
+#define ds_sched_a2a_sym_create  DS_FUNC(ds_sched_a2a_sym_create)
+#define ds_sched_a2a_sym_destroy  DS_FUNC(ds_sched_a2a_sym_destroy)
 
 /* dash_sched_a2av_aux.c */
 #define ds_aux_create  DS_FUNC(ds_aux_create)
@@ -105,12 +93,19 @@
 #define ds_sched_a2av_create  DS_FUNC(ds_sched_a2av_create)
 #define ds_sched_a2av_destroy  DS_FUNC(ds_sched_a2av_destroy)
 #define ds_sched_a2av_set_aux  DS_FUNC(ds_sched_a2av_set_aux)
-#define ds_sched_a2av_max_n  DS_FUNC(ds_sched_a2av_max_n)
-#define ds_sched_a2av_pre_run  DS_FUNC(ds_sched_a2av_pre_run)
-#define ds_sched_a2av_post_run  DS_FUNC(ds_sched_a2av_post_run)
-#define ds_sched_a2av_finished  DS_FUNC(ds_sched_a2av_finished)
-#define ds_sched_a2av_pre  DS_FUNC(ds_sched_a2av_pre)
-#define ds_sched_a2av_post  DS_FUNC(ds_sched_a2av_post)
+#define ds_sched_a2av_skip_sym  DS_FUNC(ds_sched_a2av_skip_sym)
+
+/* dash_sched_a2av_sym.c */
+#define ds_sched_a2av_sym_create  DS_FUNC(ds_sched_a2av_sym_create)
+#define ds_sched_a2av_sym_destroy  DS_FUNC(ds_sched_a2av_sym_destroy)
+
+/* dash_sched.c */
+#define ds_sched_create  DS_FUNC(ds_sched_create)
+#define ds_sched_destroy  DS_FUNC(ds_sched_destroy)
+#define ds_sched_add_buffer  DS_FUNC(ds_sched_add_buffer)
+#define ds_sched_set_send  DS_FUNC(ds_sched_set_send)
+#define ds_sched_set_recv  DS_FUNC(ds_sched_set_recv)
+#define ds_sched_set_aux  DS_FUNC(ds_sched_set_aux)
 
 
 #endif /* __DASH_RENAME_H__ */
