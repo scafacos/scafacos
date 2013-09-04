@@ -4,13 +4,16 @@ noinst_LIBRARIES =
 
 noinst_LIBRARIES += libsl_fmm.a
 
-sl_sub_libs = libsl_back_q__g.a libsl_back_q__gl.a libsl_back_q_pg.a libsl_back_q_pgl.a libsl_back_qx_g.a libsl_back_qx_gl.a libsl_back_qxpg.a libsl_back_qxpgl.a libsl_front_xq_a0.a libsl_front_xq_aI.a libsl_front_xq_aIl.a libsl_front_xq_aX.a libsl_front_xqsa0.a libsl_front_xqsaI.a libsl_front_xqsaIl.a libsl_front_xqsaX.a libsl_extra.a libsl_mpiwrap.a
+sl_sub_libs = libsl_back_idx.a libsl_back_q__g.a libsl_back_q__gl.a libsl_back_q_pg.a libsl_back_q_pgl.a libsl_back_qx_g.a libsl_back_qx_gl.a libsl_back_qxpg.a libsl_back_qxpgl.a libsl_front_xq_a0.a libsl_front_xq_aI.a libsl_front_xq_aIl.a libsl_front_xq_aX.a libsl_front_xqsa0.a libsl_front_xqsaI.a libsl_front_xqsaIl.a libsl_front_xqsaX.a libsl_extra.a libsl_mpiwrap.a
 
 noinst_LIBRARIES += $(sl_sub_libs)
 
 srcdir_sl=$(srcdir)
 srcdir_sl_source=$(srcdir)/../../common/sl
 srcdir_sl_extra=$(srcdir)/../../common/sl/extra
+
+libsl_back_idx_a_CPPFLAGS = \
+  -DSL_PREFIX=back_idx_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_idx -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
 
 libsl_back_q__g_a_CPPFLAGS = \
   -DSL_PREFIX=back_q__g_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_q__g -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
@@ -141,11 +144,28 @@ sl_SOURCE = \
   $(srcdir_sl_extra)/include/zmpi_tools.h \
   $(srcdir_sl_extra)/include/zmpi_tools_rename.h
 
-libsl_back_q__g_a_SOURCES = \
+libsl_back_idx_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
+  $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/sl_back_idx/sl_config.h \
+  $(srcdir_sl)/sl_back_idx/sl_environment.h \
+  $(srcdir_sl)/sl_back_idx/sl_extra.h \
+  $(srcdir_sl)/sl_back_idx/sl_tune_auto.h \
+  $(srcdir_sl)/sl_back_idx/sl_tune.h \
+  $(sl_SOURCE)
+
+libsl_back_q__g_a_SOURCES = \
+  $(srcdir_sl)/common.h \
+  $(srcdir_sl)/config_fmm_sort.h \
+  $(srcdir_sl)/config_types.h \
+  $(srcdir_sl)/fmm_sort.h \
+  $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_back_q__g/sl_config.h \
   $(srcdir_sl)/sl_back_q__g/sl_environment.h \
@@ -155,10 +175,12 @@ libsl_back_q__g_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_back_q__gl_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_back_q__gl/sl_config.h \
   $(srcdir_sl)/sl_back_q__gl/sl_environment.h \
@@ -168,10 +190,12 @@ libsl_back_q__gl_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_back_q_pg_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_back_q_pg/sl_config.h \
   $(srcdir_sl)/sl_back_q_pg/sl_environment.h \
@@ -181,10 +205,12 @@ libsl_back_q_pg_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_back_q_pgl_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_back_q_pgl/sl_config.h \
   $(srcdir_sl)/sl_back_q_pgl/sl_environment.h \
@@ -194,10 +220,12 @@ libsl_back_q_pgl_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_back_qx_g_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_back_qx_g/sl_config.h \
   $(srcdir_sl)/sl_back_qx_g/sl_environment.h \
@@ -207,10 +235,12 @@ libsl_back_qx_g_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_back_qx_gl_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_back_qx_gl/sl_config.h \
   $(srcdir_sl)/sl_back_qx_gl/sl_environment.h \
@@ -220,10 +250,12 @@ libsl_back_qx_gl_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_back_qxpg_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_back_qxpg/sl_config.h \
   $(srcdir_sl)/sl_back_qxpg/sl_environment.h \
@@ -233,10 +265,12 @@ libsl_back_qxpg_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_back_qxpgl_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_back_qxpgl/sl_config.h \
   $(srcdir_sl)/sl_back_qxpgl/sl_environment.h \
@@ -246,10 +280,12 @@ libsl_back_qxpgl_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_front_xq_a0_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_front_xq_a0/sl_config.h \
   $(srcdir_sl)/sl_front_xq_a0/sl_environment.h \
@@ -259,10 +295,12 @@ libsl_front_xq_a0_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_front_xq_aI_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_front_xq_aI/sl_config.h \
   $(srcdir_sl)/sl_front_xq_aI/sl_environment.h \
@@ -272,10 +310,12 @@ libsl_front_xq_aI_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_front_xq_aIl_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_front_xq_aIl/sl_config.h \
   $(srcdir_sl)/sl_front_xq_aIl/sl_environment.h \
@@ -285,10 +325,12 @@ libsl_front_xq_aIl_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_front_xq_aX_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_front_xq_aX/sl_config.h \
   $(srcdir_sl)/sl_front_xq_aX/sl_environment.h \
@@ -298,10 +340,12 @@ libsl_front_xq_aX_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_front_xqsa0_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_front_xqsa0/sl_config.h \
   $(srcdir_sl)/sl_front_xqsa0/sl_environment.h \
@@ -311,10 +355,12 @@ libsl_front_xqsa0_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_front_xqsaI_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_front_xqsaI/sl_config.h \
   $(srcdir_sl)/sl_front_xqsaI/sl_environment.h \
@@ -324,10 +370,12 @@ libsl_front_xqsaI_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_front_xqsaIl_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_front_xqsaIl/sl_config.h \
   $(srcdir_sl)/sl_front_xqsaIl/sl_environment.h \
@@ -337,10 +385,12 @@ libsl_front_xqsaIl_a_SOURCES = \
   $(sl_SOURCE)
 
 libsl_front_xqsaX_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
   $(srcdir_sl)/sl_front_xqsaX/sl_config.h \
   $(srcdir_sl)/sl_front_xqsaX/sl_environment.h \
@@ -398,11 +448,13 @@ libsl_extra_a_SOURCES = \
   $(srcdir_sl_extra)/zmpi_atasp/zmpi_atasp_rename.h
 
 libsl_mpiwrap_a_SOURCES = \
+  $(srcdir_sl)/common.h \
   $(srcdir_sl)/config_fmm_sort.h \
   $(srcdir_sl)/config_types.h \
   $(srcdir_sl)/fmm_sort.c \
   $(srcdir_sl)/fmm_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/include/sl_back_idx.h \
   $(srcdir_sl)/include/sl_back_q__g.h \
   $(srcdir_sl)/include/sl_back_q__gl.h \
   $(srcdir_sl)/include/sl_back_q_pg.h \
@@ -419,5 +471,7 @@ libsl_mpiwrap_a_SOURCES = \
   $(srcdir_sl)/include/sl_front_xqsaI.h \
   $(srcdir_sl)/include/sl_front_xqsaIl.h \
   $(srcdir_sl)/include/sl_front_xqsaX.h \
+  $(srcdir_sl)/mpi_fmm_resort.c \
+  $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.c \
   $(srcdir_sl)/mpi_fmm_sort.h

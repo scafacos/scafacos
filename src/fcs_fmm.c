@@ -28,6 +28,7 @@
 #include "fcs_fmm.h"
 #include "FCSCommon.h"
 #include "../lib/fmm/src/fmm_cbindings.h"
+#include "../lib/fmm/sl_fmm/mpi_fmm_resort.h"
 
 /*
 typedef struct fmm_internal_parameters_t
@@ -281,6 +282,19 @@ FCSResult fcs_fmm_init(FCS handle)
   handle->fmm_param->wignersize = 0;
   handle->fmm_param->wignerptr = NULL;
 
+  fcs_fmm_set_max_particle_move(handle, -1);
+  fcs_fmm_set_resort(handle, 0);
+  handle->fmm_param->fmm_resort = FCS_FMM_RESORT_NULL;
+
+  handle->set_max_particle_move = fcs_fmm_set_max_particle_move;
+  handle->set_resort = fcs_fmm_set_resort;
+  handle->get_resort = fcs_fmm_get_resort;
+  handle->get_resort_availability = fcs_fmm_get_resort_availability;
+  handle->get_resort_particles = fcs_fmm_get_resort_particles;
+  handle->resort_ints = fcs_fmm_resort_ints;
+  handle->resort_floats = fcs_fmm_resort_floats;
+  handle->resort_bytes = fcs_fmm_resort_bytes;
+
   return NULL;
 }
 
@@ -381,6 +395,8 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_pa
   return NULL;
 }
 
+extern int mpi_fmm_sort_front_part, mpi_fmm_sort_back_part, mpi_fmm_sort_front_merge_presorted;
+
 /* internal fmm-specific run function */
 FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, 
                       fcs_float *positions, fcs_float *charges, 
@@ -453,8 +469,36 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_par
     fmm_csetload(params,val);
   }
 
+  int old_mpi_fmm_sort_front_part = mpi_fmm_sort_front_part;
+
+  int comm_size;
+  MPI_Comm_size(fcs_get_communicator(handle), &comm_size);
+  fcs_float max_merge_move = fcs_pow(fcs_norm(fcs_get_box_a(handle)) * fcs_norm(fcs_get_box_b(handle)) * fcs_norm(fcs_get_box_c(handle)) / comm_size, 1.0 / 3.0);
+
+  fcs_float max_particle_move;
+  MPI_Allreduce(&handle->fmm_param->max_particle_move, &max_particle_move, 1, FCS_MPI_FLOAT, MPI_MAX, fcs_get_communicator(handle));
+
+  if (max_particle_move >= 0 && max_particle_move < max_merge_move)
+  {
+/*    fmm_csetpresorted(params, 1);*/
+    mpi_fmm_sort_front_part = 0;
+    mpi_fmm_sort_front_merge_presorted = 1;
+
+  } else
+  {
+/*    fmm_csetpresorted(params, 0);*/
+    mpi_fmm_sort_front_merge_presorted = 0;
+  }
+
+  fmm_resort_destroy(&handle->fmm_param->fmm_resort);
+  if (handle->fmm_param->resort) fmm_resort_create(&handle->fmm_param->fmm_resort, local_particles, fcs_get_communicator(handle));
+  fmm_cinitresort(params, handle->fmm_param->fmm_resort);
+  fmm_csetresort(params, (long long) handle->fmm_param->resort);
+
   fmm_crun(ll_lp,positions,charges,potentials,field,handle->fmm_param->virial,ll_tp,ll_absrel,tolerance_value,
     ll_dip_corr, ll_periodicity, period_length, dotune, ll_maxdepth,ll_unroll_limit,ll_balance_load,params, &r);
+
+  mpi_fmm_sort_front_part = old_mpi_fmm_sort_front_part;
 
   free(ll_periodicity);
   if (loadptr) free(loadptr);
@@ -480,6 +524,8 @@ extern FCSResult fcs_fmm_destroy(FCS handle)
   if (handle->fmm_param->wignerptr) free(handle->fmm_param->wignerptr);
 
   free(fcs_get_method_context(handle));
+
+  fmm_resort_destroy(&handle->fmm_param->fmm_resort);
 
   return NULL;
 }
@@ -809,5 +855,70 @@ FCSResult fcs_fmm_get_virial(FCS handle, fcs_float *virial) {
   fcs_int i;
   for (i=0; i < 9; i++)
     virial[i] = handle->fmm_param->virial[i];
+  return NULL;
+}
+
+
+FCSResult fcs_fmm_set_max_particle_move(FCS handle, fcs_float max_particle_move)
+{
+  handle->fmm_param->max_particle_move = max_particle_move;
+
+  return NULL;
+}
+
+
+FCSResult fcs_fmm_set_resort(FCS handle, fcs_int resort)
+{
+  handle->fmm_param->resort = resort;
+
+  return NULL;
+}
+
+
+FCSResult fcs_fmm_get_resort(FCS handle, fcs_int *resort)
+{
+  *resort = handle->fmm_param->resort;
+
+  return NULL;
+}
+
+
+FCSResult fcs_fmm_get_resort_availability(FCS handle, fcs_int *availability)
+{
+  if (handle->fmm_param->fmm_resort != FCS_FMM_RESORT_NULL) *availability = fcs_resort_is_available(handle->fmm_param->fmm_resort->resort);
+  else *availability = 0;
+
+  return NULL;
+}
+
+
+FCSResult fcs_fmm_get_resort_particles(FCS handle, fcs_int *resort_particles)
+{
+  *resort_particles = fcs_resort_get_original_particles(handle->fmm_param->fmm_resort->resort);
+
+  return NULL;
+}
+
+
+FCSResult fcs_fmm_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
+{
+  fcs_resort_resort_ints(handle->fmm_param->fmm_resort->resort, src, dst, n, comm);
+  
+  return NULL;
+}
+
+
+FCSResult fcs_fmm_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
+{
+  fcs_resort_resort_floats(handle->fmm_param->fmm_resort->resort, src, dst, n, comm);
+
+  return NULL;
+}
+
+
+FCSResult fcs_fmm_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm)
+{
+  fcs_resort_resort_bytes(handle->fmm_param->fmm_resort->resort, src, dst, n, comm);
+  
   return NULL;
 }
