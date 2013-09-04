@@ -887,6 +887,7 @@ slint_t elements_alloc_from_blocks(elements_t *s, slint_t nblocks, void **blocks
   {
     cbytes[i] = 0;
     _blocks[i] = blocks[i];
+    nelements[i] = -1;
 
     Z_TRACE_IF(E_TRACE_IF, "block %" slint_fmt ": %" slint_fmt " @ %p", i, blocksizes[i], _blocks[i]);
   }
