@@ -38,4 +38,13 @@ FCSResult ifcs_p2nfft_run(
     fcs_float *positions, fcs_float *charges,
     fcs_float *potentials, fcs_float *field);
 
+void ifcs_p2nfft_set_max_particle_move(void *rd, fcs_float max_particle_move);
+void ifcs_p2nfft_set_resort(void *rd, fcs_int resort);
+void ifcs_p2nfft_get_resort(void *rd, fcs_int *resort);
+void ifcs_p2nfft_get_resort_availability(void *rd, fcs_int *availability);
+void ifcs_p2nfft_get_resort_particles(void *rd, fcs_int *resort_particles);
+void ifcs_p2nfft_resort_ints(void *rd, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
+void ifcs_p2nfft_resort_floats(void *rd, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
+void ifcs_p2nfft_resort_bytes(void *rd, void *src, void *dst, fcs_int n, MPI_Comm comm);
+
 #endif

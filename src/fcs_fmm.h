@@ -30,6 +30,7 @@
 #include "fcs_fmm_p.h"
 #include "FCSResult.h"
 #include "FCSInterface.h"
+#include "fmm/sl_fmm/mpi_fmm_resort.h"
 
 
 /**
@@ -69,8 +70,14 @@ typedef struct fcs_fmm_parameters_t
   /* storage space for the virial */
   fcs_float virial[9];
 
+  /* size and memory pointer for wigner */
   long long wignersize;
   void *wignerptr;
+  
+  /* resort parameters */
+  fcs_float max_particle_move;
+  fcs_int resort;
+  fcs_fmm_resort_t fmm_resort;
 
 } fcs_fmm_parameters_t;
 
@@ -155,6 +162,16 @@ extern FCSResult fcs_fmm_require_virial(FCS handle, fcs_int flag);
  * @return FCSResult-object containing the return state
  */
 extern FCSResult fcs_fmm_get_virial(FCS handle, fcs_float *virial);
+
+
+FCSResult fcs_fmm_set_max_particle_move(FCS handle, fcs_float max_particle_move);
+FCSResult fcs_fmm_set_resort(FCS handle, fcs_int resort);
+FCSResult fcs_fmm_get_resort(FCS handle, fcs_int *resort);
+FCSResult fcs_fmm_get_resort_availability(FCS handle, fcs_int *availability);
+FCSResult fcs_fmm_get_resort_particles(FCS handle, fcs_int *resort_particles);
+FCSResult fcs_fmm_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
+FCSResult fcs_fmm_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
+FCSResult fcs_fmm_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm);
 
 
 #endif

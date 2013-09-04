@@ -35,7 +35,7 @@
 #define FMM_CORRECTION_OF_FORCES
 
 ! Restore input coordinates after FMM run
-#undef FMM_RESTORE_COORDINATES
+#define FMM_RESTORE_COORDINATES
 
 ! allow allocation of additional tree management buffer
 #define FMM_IBOXSCR
