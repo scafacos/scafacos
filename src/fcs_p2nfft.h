@@ -140,4 +140,14 @@ extern FCSResult fcs_p2nfft_require_virial(FCS handle, fcs_int flag);
 extern FCSResult fcs_p2nfft_get_virial(FCS handle, fcs_float *virial);
 
 
+FCSResult fcs_p2nfft_set_max_particle_move(FCS handle, fcs_float max_particle_move);
+FCSResult fcs_p2nfft_set_resort(FCS handle, fcs_int resort);
+FCSResult fcs_p2nfft_get_resort(FCS handle, fcs_int *resort);
+FCSResult fcs_p2nfft_get_resort_availability(FCS handle, fcs_int *availability);
+FCSResult fcs_p2nfft_get_resort_particles(FCS handle, fcs_int *resort_particles);
+FCSResult fcs_p2nfft_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
+FCSResult fcs_p2nfft_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
+FCSResult fcs_p2nfft_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm);
+
+
 #endif

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS/FMM.
  *  
@@ -198,14 +198,6 @@ typedef back_(slint_t) back_slint_t;
 
 #define WITH_SORT_FRONT_LOAD
 #define WITH_FCOMM
-
-typedef SL_INTEGER_C slint_t;
-#define slint_fmt  SL_INTEGER_FMT
-
-#ifndef PINT_T
-# define PINT_T
-typedef PARAM_INTEGER_C pint_t;
-#endif
 
 
 #ifndef NO_SL_FRONT

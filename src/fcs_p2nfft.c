@@ -95,6 +95,15 @@ extern FCSResult fcs_p2nfft_init(
 
   ifcs_p2nfft_init(&(handle->method_context), handle->communicator);
 
+  handle->set_max_particle_move = fcs_p2nfft_set_max_particle_move;
+  handle->set_resort = fcs_p2nfft_set_resort;
+  handle->get_resort = fcs_p2nfft_get_resort;
+  handle->get_resort_availability = fcs_p2nfft_get_resort_availability;
+  handle->get_resort_particles = fcs_p2nfft_get_resort_particles;
+  handle->resort_ints = fcs_p2nfft_resort_ints;
+  handle->resort_floats = fcs_p2nfft_resort_floats;
+  handle->resort_bytes = fcs_p2nfft_resort_bytes;
+
   return NULL;
 }
 
@@ -266,3 +275,69 @@ void fcs_p2nfft_compute_near(
   ifcs_p2nfft_compute_near(handle->method_context, dist, field, potential);
 }
 
+/************************************************************
+ *     Resort support
+ ************************************************************/
+
+FCSResult fcs_p2nfft_set_max_particle_move(FCS handle, fcs_float max_particle_move)
+{
+  ifcs_p2nfft_set_max_particle_move(handle->method_context, max_particle_move);
+
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_set_resort(FCS handle, fcs_int resort)
+{
+  ifcs_p2nfft_set_resort(handle->method_context, resort);
+
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_get_resort(FCS handle, fcs_int *resort)
+{
+  ifcs_p2nfft_get_resort(handle->method_context, resort);
+
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_get_resort_availability(FCS handle, fcs_int *availability)
+{
+  ifcs_p2nfft_get_resort_availability(handle->method_context, availability);
+
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_get_resort_particles(FCS handle, fcs_int *resort_particles)
+{
+  ifcs_p2nfft_get_resort_particles(handle->method_context, resort_particles);
+
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_resort_ints(handle->method_context, src, dst, n, comm);
+  
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_resort_floats(handle->method_context, src, dst, n, comm);
+  
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_resort_bytes(handle->method_context, src, dst, n, comm);
+  
+  return NULL;
+}

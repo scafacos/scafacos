@@ -468,7 +468,7 @@ static void resort_ints(fcs_resort_t resort, fcs_int *src, fcs_int *dst, fcs_int
   ZMPI_Tproc_create_tproc(&tproc, resort_tproc, ZMPI_TPROC_RESET_NULL, ZMPI_TPROC_EXDEF_NULL);
 
 #ifdef RESORT_PROCLIST
-  if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(&tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
+  if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
 #endif
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
@@ -534,7 +534,7 @@ static void resort_floats(fcs_resort_t resort, fcs_float *src, fcs_float *dst, f
   ZMPI_Tproc_create_tproc(&tproc, resort_tproc, ZMPI_TPROC_RESET_NULL, ZMPI_TPROC_EXDEF_NULL);
 
 #ifdef RESORT_PROCLIST
-  if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(&tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
+  if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
 #endif
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
@@ -600,7 +600,7 @@ static void resort_bytes(fcs_resort_t resort, void *src, void *dst, fcs_int x, M
   ZMPI_Tproc_create_tproc(&tproc, resort_tproc, ZMPI_TPROC_RESET_NULL, ZMPI_TPROC_EXDEF_NULL);
 
 #ifdef RESORT_PROCLIST
-  if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(&tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
+  if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);
 #endif
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
