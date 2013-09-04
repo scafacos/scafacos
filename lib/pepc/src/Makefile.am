@@ -46,7 +46,6 @@ pepc_raw_f90_sources = module_atomic_ops.f90 \
                        module_utils.f90 \
                        module_vtk.f90 \
                        module_walk_pthreads.f90 \
-                       pepc-s.f90 \
                        pepc_scafacos.f90 \
                        pthreads_f.f90 \
                        treevars.f90
