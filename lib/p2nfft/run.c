@@ -21,6 +21,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <mpi.h>
 
 
 #include "run.h"
@@ -28,7 +30,6 @@
 #include "utils.h"
 #include "nearfield.h"
 #include <common/near/near.h>
-#include <math.h>
 #include <fcs.h>
 //#include "constants.h"
 
@@ -135,6 +136,9 @@ FCSResult ifcs_p2nfft_run(
 
   fcs_gridsort_set_particles(&gridsort, local_num_particles, max_local_num_particles, positions, charges);
 
+  fcs_gridsort_set_max_particle_move(&gridsort, d->max_particle_move);
+
+  fcs_gridsort_set_cache(&gridsort, &d->gridsort_cache);
 
 #if CREATE_GHOSTS_SEPARATE
   fcs_gridsort_sort_forward(&gridsort, 0, d->cart_comm_3d);
@@ -552,12 +556,19 @@ FCSResult ifcs_p2nfft_run(
   /* Start back sort timing */
   FCS_P2NFFT_START_TIMING();
 
-  /* Backsort data into user given ordering */
-  fcs_int set_values = 1; /* set (1) or add (0) the field and potentials */
+  fcs_int resort;
 
-  fcs_gridsort_sort_backward(&gridsort,
-      sorted_field, sorted_potentials,
-      field, potentials, set_values, d->cart_comm_3d);
+  if (d->resort) resort = fcs_gridsort_prepare_resort(&gridsort, sorted_field, sorted_potentials, field, potentials, d->cart_comm_3d);
+  else resort = 0;
+
+  /* Backsort data into user given ordering (if resort is disabled) */
+  if (!resort) fcs_gridsort_sort_backward(&gridsort, sorted_field, sorted_potentials, field, potentials, 1, d->cart_comm_3d);
+
+  fcs_gridsort_resort_destroy(&d->gridsort_resort);
+
+  if (d->resort) fcs_gridsort_resort_create(&d->gridsort_resort, &gridsort, d->cart_comm_3d);
+  
+  d->local_num_particles = local_num_particles;
 
   if (sorted_field) free(sorted_field);
   if (sorted_potentials) free(sorted_potentials);
@@ -595,5 +606,70 @@ static void convolution(
 }
 
 
+void ifcs_p2nfft_set_max_particle_move(void *rd, fcs_float max_particle_move)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
 
+  d->max_particle_move = max_particle_move;
+}
 
+void ifcs_p2nfft_set_resort(void *rd, fcs_int resort)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  d->resort = resort;
+}
+
+void ifcs_p2nfft_get_resort(void *rd, fcs_int *resort)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  *resort = d->resort;
+}
+
+void ifcs_p2nfft_get_resort_availability(void *rd, fcs_int *availability)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  *availability = fcs_gridsort_resort_is_available(d->gridsort_resort);
+}
+
+void ifcs_p2nfft_get_resort_particles(void *rd, fcs_int *resort_particles)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  if (d->gridsort_resort == FCS_GRIDSORT_RESORT_NULL)
+  {
+    *resort_particles = d->local_num_particles;
+    return;
+  }
+  
+  *resort_particles = fcs_gridsort_resort_get_sorted_particles(d->gridsort_resort);
+}
+
+void ifcs_p2nfft_resort_ints(void *rd, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  if (d->gridsort_resort == FCS_GRIDSORT_RESORT_NULL) return;
+  
+  fcs_gridsort_resort_ints(d->gridsort_resort, src, dst, n, comm);
+}
+
+void ifcs_p2nfft_resort_floats(void *rd, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  if (d->gridsort_resort == FCS_GRIDSORT_RESORT_NULL) return;
+  
+  fcs_gridsort_resort_floats(d->gridsort_resort, src, dst, n, comm);
+}
+
+void ifcs_p2nfft_resort_bytes(void *rd, void *src, void *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  if (d->gridsort_resort == FCS_GRIDSORT_RESORT_NULL) return;
+  
+  fcs_gridsort_resort_bytes(d->gridsort_resort, src, dst, n, comm);
+}

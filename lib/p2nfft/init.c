@@ -157,6 +157,11 @@ FCSResult ifcs_p2nfft_init(
 
   d->regkern_hat = NULL;  
 
+  d->max_particle_move = -1;
+  d->resort = d->local_num_particles = 0;
+  d->gridsort_resort = FCS_GRIDSORT_RESORT_NULL;
+  d->gridsort_cache = FCS_GRIDSORT_CACHE_NULL;
+
   *rd = d;
 
   return NULL;
