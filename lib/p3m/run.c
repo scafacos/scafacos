@@ -198,14 +198,14 @@ void ifcs_p3m_run(void* rd,
   
   STOPSTART(TIMING_DECOMP, TIMING_CA);
   /* charge assignment */
-  ifcs_p3m_assign_charges(d, d->rs_grid, num_real_particles, 
+  ifcs_p3m_assign_charges(d, d->fft.data_buf, num_real_particles, 
                           positions, charges, 0);
   STOPSTART(TIMING_CA, TIMING_GATHER);
 
 #ifndef P3M_INTERLACE
   
   /* gather the ca grid */
-  ifcs_p3m_gather_grid(d, d->rs_grid);
+  ifcs_p3m_gather_grid(d, d->fft.data_buf);
   /* now d->rs_grid should contain the local ca grid */
   STOP(TIMING_GATHER);
 
@@ -215,7 +215,7 @@ void ifcs_p3m_run(void* rd,
   ifcs_p3m_gather_grid(d, d->fft.data_buf);
 
   // Complexify
-  for (fcs_int i=d->local_grid.size-1; i>=0; i--)
+  for (fcs_int i = d->local_grid.size-1; i >= 0; i--)
     d->rs_grid[2*i] = d->fft.data_buf[i];
 
   STOPSTART(TIMING_GATHER, TIMING_CA);
@@ -232,7 +232,7 @@ void ifcs_p3m_run(void* rd,
   /* now d->rs_grid should contain the local ca grid */
 
   // Complexify
-  for(fcs_int i=d->local_grid.size-1; i>=0; i--)
+  for (fcs_int i = d->local_grid.size-1; i >= 0; i--)
     d->rs_grid[2*i+1] = d->fft.data_buf[i];
   STOP(TIMING_GATHER);
 
@@ -292,6 +292,7 @@ void ifcs_p3m_run(void* rd,
       for (fcs_int i=0; i<d->local_grid.size; i++) {
         d->fft.data_buf[i] = d->ks_grid[2*i+1];
       }
+      ifcs_p3m_spread_grid(d, d->fft.data_buf);
 
       STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS)
 
