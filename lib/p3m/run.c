@@ -490,7 +490,7 @@ void ifcs_p3m_run(void* rd,
     d->timings[TIMING] += d->timings[TIMING_NEAR];
     d->timings[TIMING] += d->timings[TIMING_COMP];
 
-    if (d->comm.rank == 0)
+    if (on_root())
       MPI_Reduce(MPI_IN_PLACE, d->timings,
                  NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
                  0, d->comm.mpicomm);
@@ -641,8 +641,7 @@ ifcs_get_ca_points(ifcs_p3m_data_struct *d,
 #ifdef ADDITIONAL_CHECKS
     if (real_pos[dim] < d->comm.my_left[dim] 
         || real_pos[dim] > d->comm.my_right[dim]) {
-      printf("%d: dim %d: position not in domain! (%" FCS_LMOD_FLOAT    \
-             "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f)\n", 
+      printf("%d: dim %d: position not in domain! " F3FLOAT "\n", 
              d->comm.rank, dim, real_pos[0], real_pos[1], real_pos[2]);
     }
 #endif

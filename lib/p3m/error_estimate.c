@@ -381,8 +381,8 @@ ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
 #ifdef FCS_ENABLE_DEBUG
     if (d->comm.rank == 0) {
       if (full_estimate)
-	printf( "        alpha*h[%d]=%" FCS_LMOD_FLOAT "g > %" 
-                FCS_LMOD_FLOAT "g => full estimate\n", 
+	printf( "        alpha*h[%d]=" FFLOAT " > %" 
+                FFLOAT " => full estimate\n", 
                 i, alpha_h, FULL_ESTIMATE_ALPHA_H_THRESHOLD);
     }
 #endif
@@ -390,7 +390,7 @@ ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
 #ifdef FCS_ENABLE_DEBUG
   if (d->comm.rank == 0) {
     if (!full_estimate)
-      printf( "        alpha*h < %" FCS_LMOD_FLOAT "g => approximation\n", 
+      printf( "        alpha*h < " FFLOAT " => approximation\n", 
               FULL_ESTIMATE_ALPHA_H_THRESHOLD);
   }
 #endif
@@ -404,8 +404,8 @@ ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
 
 #ifdef FCS_ENABLE_DEBUG
   if (d->comm.rank == 0)
-    printf( "        error estimate: rs_err=%" FCS_LMOD_FLOAT 
-            "e ks_err=%" FCS_LMOD_FLOAT "e err=%" FCS_LMOD_FLOAT "e\n",
+    printf( "        error estimate: rs_err=" FFLOATE ", " 
+            "ks_err=" FFLOATE ", err=" FFLOATE "\n",
 	    d->rs_error, d->ks_error, d->error);
 #endif
 }
@@ -434,7 +434,7 @@ ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d) {
   
 #ifdef FCS_ENABLE_DEBUG
   if (d->comm.rank == 0)
-    printf( "        determined alpha=%" FCS_LMOD_FLOAT "g\n", d->alpha);
+    printf( "        determined alpha=" FFLOAT "\n", d->alpha);
 #endif
 
   ifcs_p3m_compute_error_estimate(d);

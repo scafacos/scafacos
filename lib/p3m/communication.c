@@ -111,17 +111,15 @@ ifcs_p3m_comm_prepare(ifcs_p3m_comm_struct *comm, fcs_float *box_l) {
     comm->my_left[i]   = comm->node_pos[i]    *comm->local_box_l[i];
     comm->my_right[i]  = (comm->node_pos[i]+1)*comm->local_box_l[i];    
   }
-  P3M_DEBUG(printf("    local_box_l=(%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f)\n"                  \
-                   "    my_left=(%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f)\n"                      \
-                   "    my_right=(%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f)\n",                    \
+  P3M_DEBUG(printf("    local_box_l=" F3FLOAT "\n"                      \
+                   "    my_left=" F3FLOAT "\n"                          \
+                   "    my_right=" F3FLOAT "\n",                        \
                    comm->local_box_l[0],                                \
                    comm->local_box_l[1],                                \
                    comm->local_box_l[2],                                \
                    comm->my_left[0], comm->my_left[1], comm->my_left[2], \
                    comm->my_right[0], comm->my_right[1], comm->my_right[2] \
                    ));
-  
-
 
   P3M_DEBUG(printf("  ifcs_p3m_comm_prepare() finished.\n"));
 }

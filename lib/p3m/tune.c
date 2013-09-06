@@ -217,7 +217,7 @@ static FCSResult
 ifcs_p3m_tune_broadcast_master(ifcs_p3m_data_struct *d, 
                                fcs_int num_particles, fcs_int max_num_particles,
                                fcs_float *positions, fcs_float *charges) {
-  P3M_INFO(printf("  Tuning P3M to p3m_tolerance_field=%" FCS_LMOD_FLOAT "g.\n", \
+  P3M_INFO(printf("  Tuning P3M to p3m_tolerance_field=" FFLOATE "\n",  \
                   d->tolerance_field));
 
   tune_params *params = NULL;
@@ -264,10 +264,10 @@ ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d,
     if (0.5*d->box_l[2]-d->skin < (*params)->r_cut)
       (*params)->r_cut = 0.5*d->box_l[2] - d->skin;
 
-    P3M_INFO(printf( "    r_cut=%" FCS_LMOD_FLOAT "f (tuned)\n", (*params)->r_cut));
+    P3M_INFO(printf( "    r_cut=" FFLOAT " (tuned)\n", (*params)->r_cut));
   } else {
     (*params)->r_cut = d->r_cut;
-    P3M_INFO(printf( "    r_cut=%" FCS_LMOD_FLOAT "f (fixed)\n", (*params)->r_cut));
+    P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", (*params)->r_cut));
   }
    
   return ifcs_p3m_tune_cao_grid(d, num_particles, max_num_particles, 
@@ -289,7 +289,7 @@ ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d,
   if (d->tune_cao) {
     for (tune_params *p = *params; p != NULL; p = p->next_params) {
       p->cao = P3M_MAX_CAO;
-      P3M_INFO(printf("    r_cut=%" FCS_LMOD_FLOAT "f cao={ ", p->r_cut));
+      P3M_INFO(printf("    r_cut=" FFLOAT ", cao={ ", p->r_cut));
       for (fcs_int cao = P3M_MAX_CAO-1; cao >= cao_min; cao--) {
         // Insert new param set
         tune_params *pnew = malloc(sizeof(tune_params));
@@ -298,7 +298,7 @@ ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d,
         pnew->next_params = p->next_params;
         p->next_params = pnew;
         p = pnew;
-        P3M_INFO(printf( "%" FCS_LMOD_INT "d ", cao));
+        P3M_INFO(printf(FINT " ", cao));
       }
       P3M_INFO(printf("}\n"));
     }
@@ -306,7 +306,7 @@ ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d,
     // Set cao in param set
     for (tune_params *p = *params; p != NULL; p = p->next_params)
       p->cao = d->cao;
-    P3M_INFO(printf( "    cao=%" FCS_LMOD_INT "d (fixed)\n", (*params)->cao));
+    P3M_INFO(printf( "    cao=" FINT " (fixed)\n", (*params)->cao));
   }
 
   return ifcs_p3m_tune_grid(d, num_particles, max_num_particles, 
@@ -340,8 +340,8 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
       
       fcs_int upper_ix;
       // test this step
-      P3M_INFO(printf("    Trying to find grid for r_cut=%" FCS_LMOD_FLOAT \
-                      "f cao=%" FCS_LMOD_INT "d\n",                     \
+      P3M_INFO(printf("    Trying to find grid for r_cut=" FFLOAT ", "  \
+                      "cao=" FINT "\n",                                 \
                       d->r_cut, d->cao));
       do {
         step_ix++;
@@ -351,13 +351,13 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
         d->grid[0] = grid1d;
         d->grid[1] = grid1d;
         d->grid[2] = grid1d;
-        P3M_DEBUG(printf("      rough grid=%" FCS_LMOD_INT "d\n", grid1d));
+        P3M_DEBUG(printf("      rough grid=" FINT "\n", grid1d));
         ifcs_p3m_compute_error_and_tune_alpha(d);
         (*p)->error = d->error;
         (*p)->rs_error = d->rs_error;
         (*p)->ks_error = d->ks_error;
-        P3M_DEBUG(printf("        => alpha=%" FCS_LMOD_FLOAT \
-                         "f error=%" FCS_LMOD_FLOAT "e\n", d->alpha, d->error));
+        P3M_DEBUG(printf("        => alpha=" FFLOAT ", "                \
+                         "error=" FFLOATE "\n", d->alpha, d->error));
       } while (d->error > d->tolerance_field);
 
       // reached largest possible grid, remove this parameter set
@@ -384,10 +384,10 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
         d->grid[0] = grid1d;
         d->grid[1] = grid1d;
         d->grid[2] = grid1d;
-        P3M_DEBUG(printf("      fine grid=%" FCS_LMOD_INT "d\n", grid1d));
+        P3M_DEBUG(printf("      fine grid=" FINT "\n", grid1d));
         ifcs_p3m_compute_error_and_tune_alpha(d);
-        P3M_DEBUG(printf("          => alpha=%" FCS_LMOD_FLOAT          \
-                         "f error=%" FCS_LMOD_FLOAT "e\n", d->alpha, d->error));
+        P3M_DEBUG(printf("          => alpha=" FFLOAT ", "              \
+                         "error=" FFLOATE "\n", d->alpha, d->error));
         if (d->error < d->tolerance_field) {
           // parameters achieve error
           upper_ix = test_ix;
@@ -410,14 +410,12 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
       (*p)->grid[0] = grid1d;
       (*p)->grid[1] = grid1d;
       (*p)->grid[2] = grid1d;
-      P3M_INFO(printf( "      => grid=(%" FCS_LMOD_INT                    \
-                       "d, %" FCS_LMOD_INT                              \
-                       "d, %" FCS_LMOD_INT                              \
-                       "d), alpha=%" FCS_LMOD_FLOAT                     \
-                       "f error=%" FCS_LMOD_FLOAT "e\n",                \
+      P3M_INFO(printf( "      => grid=" F3INT ", "                      \
+                       "alpha=" FFLOAT ", "                             \
+                       "error=" FFLOATE "\n",                           \
                        (*p)->grid[0], (*p)->grid[1], (*p)->grid[2],     \
                        (*p)->alpha, (*p)->error));
-
+      
       // decrease step_ix so that the same step_ix is tested for the
       // next param set
       step_ix--;
@@ -458,11 +456,9 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
       // d->grid already contains the wanted grid
       d->cao = (*p)->cao;
       d->r_cut = (*p)->r_cut;
-      P3M_INFO(printf("    r_cut=%" FCS_LMOD_FLOAT "f"           \
-                      " cao=%" FCS_LMOD_INT "d"                  \
-                      " grid=(%" FCS_LMOD_INT "d"                \
-                      ", %" FCS_LMOD_INT "d"                     \
-                      ", %" FCS_LMOD_INT "d) (fixed)\n",         \
+      P3M_INFO(printf("    r_cut=" FFLOAT ", "                   \
+                      "cao=" FINT ", "                           \
+                      "grid=" F3INT " (fixed)\n",                \
                       d->r_cut, d->cao,                          \
                       d->grid[0], d->grid[1], d->grid[2]));
       ifcs_p3m_compute_error_and_tune_alpha(d);
@@ -590,7 +586,8 @@ ifcs_p3m_count_charges(ifcs_p3m_data_struct *d,
   d->square_sum_q = SQR(tot_sums[2]);
 
   P3M_DEBUG(printf("  ifcs_p3m_count_charges(): "			\
-		   "num_charged_particles=%d sum_squared_charges=%"     \
-                   FCS_LMOD_FLOAT "f sum_charges=%lf\n",                \
+		   "num_charged_particles=" FINT ", "                   \
+                   "sum_squared_charges=" FFLOAT ", "                   \
+                   "sum_charges=" FFLOAT "\n",                          \
 		   d->sum_qpart, d->sum_q2, sqrt(d->square_sum_q)));
 }

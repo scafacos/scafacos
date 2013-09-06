@@ -54,13 +54,6 @@ static void ifcs_p3m_print_send_grid(ifcs_p3m_send_grid sm);
  All parameters have to be set. */
 void ifcs_p3m_prepare(ifcs_p3m_data_struct *d, fcs_int max_charges) {
   P3M_DEBUG(printf("  ifcs_p3m_prepare() started... \n"));
-  P3M_DEBUG(printf("    system parameters: box_l=(%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f)\n", \
-		    d->box_l[0], d->box_l[1], d->box_l[2]));
-  P3M_DEBUG(printf(						\
-		    "    p3m params: r_cut=%" FCS_LMOD_FLOAT "f, grid=%d, cao=%d, alpha=%" FCS_LMOD_FLOAT "f" \
-		    ", grid_off=(%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f)\n",				\
-		    d->r_cut, d->grid[0], d->cao, d->alpha,		\
-		    d->grid_off[0], d->grid_off[1], d->grid_off[2]));
 
   /* initializes the (inverse) grid constant d->a
      (d->ai) and the cutoff for charge assignment
@@ -78,8 +71,8 @@ void ifcs_p3m_prepare(ifcs_p3m_data_struct *d, fcs_int max_charges) {
   
   /* position offset for calc. of first gridpoint */
   d->pos_shift = (fcs_float)((d->cao-1)/2) - (d->cao%2)/2.0;
-  P3M_DEBUG(printf("    pos_shift = %" FCS_LMOD_FLOAT "f\n",d->pos_shift)); 
- 
+  P3M_DEBUG(printf("    pos_shift=" FFLOAT "\n",d->pos_shift)); 
+  
   /* FFT */
   P3M_INFO(printf("    Preparing FFTs...\n"));
   ifcs_fft_prepare(&d->fft, &d->comm, 
@@ -321,19 +314,21 @@ void ifcs_p3m_calc_differential_operator(ifcs_p3m_data_struct *d) {
 /** Debug function printing p3m structures */
 static void ifcs_p3m_print_local_grid(ifcs_p3m_local_grid l) {
   printf( "    ifcs_p3m_local_grid:\n");
-  printf( "      dim=(%d,%d,%d), size=%d\n",
-	  l.dim[0],l.dim[1],l.dim[2],l.size);
-  printf("      ld_ind=(%d,%d,%d), ld_pos=(%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f)\n",
-	  l.ld_ind[0],l.ld_ind[1],l.ld_ind[2],
-	  l.ld_pos[0],l.ld_pos[1],l.ld_pos[2]);
-  printf("      inner=(%d,%d,%d) [(%d,%d,%d)-(%d,%d,%d)]\n",
-	  l.inner[0],l.inner[1],l.inner[2],
+  printf( "      dim=" F3INT ", size=" FINT "\n",
+	  l.dim[0], l.dim[1], l.dim[2], l.size);
+  printf("      ld_ind=" F3INT ", ld_pos=" F3FLOAT "\n",
+         l.ld_ind[0],l.ld_ind[1],l.ld_ind[2],
+         l.ld_pos[0],l.ld_pos[1],l.ld_pos[2]);
+  printf("      inner=" F3INT "[" F3INT "-" F3INT "]\n",
+         l.inner[0],l.inner[1],l.inner[2],
 	  l.in_ld[0],l.in_ld[1],l.in_ld[2],
 	  l.in_ur[0],l.in_ur[1],l.in_ur[2]);
-  printf("      margin = (%d,%d, %d,%d, %d,%d)\n",
-	  l.margin[0],l.margin[1],l.margin[2],l.margin[3],l.margin[4],l.margin[5]);
-  printf("      r_margin=(%d,%d, %d,%d, %d,%d)\n",
-	  l.r_margin[0],l.r_margin[1],l.r_margin[2],l.r_margin[3],l.r_margin[4],l.r_margin[5]);
+  printf("      margin=(" FINT "," FINT " ," FINT "," FINT " ," FINT "," FINT ")\n",
+         l.margin[0],l.margin[1],l.margin[2],l.margin[3],l.margin[4],l.margin[5]);
+  printf("      r_margin=(" FINT "," FINT " ," FINT "," FINT " ," FINT "," FINT ")\n",
+         l.r_margin[0],l.r_margin[1],
+         l.r_margin[2],l.r_margin[3],
+         l.r_margin[4],l.r_margin[5]);
 }
 
 /** Debug function printing p3m structures */

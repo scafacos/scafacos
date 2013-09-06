@@ -95,9 +95,8 @@ ifcs_p3m_tune_broadcast_slave
     case CMD_FAILED: {
       char msg[255];
       sprintf(msg, 
-              "Cannot achieve required accuracy (p3m_tolerance_field=%" 
-              FCS_LMOD_FLOAT 
-              "e) for given parameters.", 
+              "Cannot achieve required accuracy (p3m_tolerance_field=" FFLOATE \
+              ") for given parameters.", 
               d->tolerance_field);
       return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, msg);
     }
