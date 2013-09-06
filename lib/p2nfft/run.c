@@ -21,6 +21,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <mpi.h>
 
 
 #include "run.h"
@@ -28,7 +30,6 @@
 #include "utils.h"
 #include "nearfield.h"
 #include <common/near/near.h>
-#include <math.h>
 #include <fcs.h>
 //#include "constants.h"
 
@@ -58,7 +59,6 @@ FCSResult ifcs_p2nfft_run(
 {
   const char* fnc_name = "ifcs_p2nfft_run";
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
-  fcs_float box_vol = d->box_l[0]*d->box_l[1]*d->box_l[2];
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   C csum;
   C csum_global;
@@ -78,14 +78,12 @@ FCSResult ifcs_p2nfft_run(
 
   /* handle particles, that left the box [0,L] */
   /* for non-periodic boundary conditions: user must increase the box */
-  if(!d->use_ewald)
-    for(fcs_int j=0; j<local_num_particles; j++)
-      for(fcs_int t=0; t<3; t++)
-        if( (positions[3*j+t] < 0) || (positions[3*j+t] > d->box_l[t]) ){
-//        if( (positions[3*j+t] < 0) || fcs_float_is_zero(d->box_l[t] - positions[3*j+t])  || (positions[3*j+t] > d->box_l[t]) )
-          fprintf(stderr, "j = %d, t = %d, position = %f, box_l = %f\n", j, t, positions[3*j+t], d->box_l[t]);
+  for(fcs_int j=0; j<local_num_particles; j++)
+    for(fcs_int t=0; t<3; t++)
+      if(!d->periodicity[t]) /* for mixed periodicity: only handle the non-periodic dimensions */
+        if( (positions[3*j+t] < 0) || (positions[3*j+t] > d->box_l[t]) )
+//        if( (positions[3*j+t] < 0) || fcs_float_is_zero(d->box_[t] - positions[3*j+t])  || (positions[3*j+t] > d->box_l[t]) )
           return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box or reached the upper border.");
-        }
   /* TODO: implement additional scaling of particles to ensure x \in [0,L)
    * Idea: use allreduce to get min and max coordinates, adapt scaling of particles for every time step */
 
@@ -97,7 +95,7 @@ FCSResult ifcs_p2nfft_run(
   for(int t=0; t<3; t++){
     lo[t] = d->lower_border[t];
     up[t] = d->upper_border[t];
-    if(!d->use_ewald){
+    if(!d->periodicity[t]){ /* for mixed periodicity: only handle the non-periodic dimensions */
       if(fcs_float_is_zero(lo[t]-d->box_l[t]))
         lo[t] += 0.1;
       if(fcs_float_is_zero(up[t]-d->box_l[t]))
@@ -114,11 +112,10 @@ FCSResult ifcs_p2nfft_run(
   fcs_near_t near;
 
 #if WORKAROUND_GRIDSORT_BUG
-  if(!d->use_ewald){
-    box_a[0] += 0.1;
-    box_b[1] += 0.1;
-    box_c[2] += 0.1;
-  }
+  /* for mixed periodicity: only handle the non-periodic dimensions */
+  if(!d->periodicity[0]) box_a[0] += 0.1;
+  if(!d->periodicity[1]) box_b[1] += 0.1;
+  if(!d->periodicity[2]) box_c[2] += 0.1;
 #endif
 
   fcs_int sorted_num_particles, ghost_num_particles;
@@ -139,6 +136,9 @@ FCSResult ifcs_p2nfft_run(
 
   fcs_gridsort_set_particles(&gridsort, local_num_particles, max_local_num_particles, positions, charges);
 
+  fcs_gridsort_set_max_particle_move(&gridsort, d->max_particle_move);
+
+  fcs_gridsort_set_cache(&gridsort, &d->gridsort_cache);
 
 #if CREATE_GHOSTS_SEPARATE
   fcs_gridsort_sort_forward(&gridsort, 0, d->cart_comm_3d);
@@ -164,14 +164,17 @@ FCSResult ifcs_p2nfft_run(
 #endif
 
   /* Handle particles, that left the box [0,L] */
-  /* For periodic boundary conditions: just fold them back  */
-  if(d->use_ewald){
+  /* For periodic boundary conditions: just fold them back.
+   * We change sorted_positions (and not positions), since we are allowed to overwrite them. */
+  if(d->periodicity[0] || d->periodicity[1] || d->periodicity[2]){
     for(fcs_int j=0; j<sorted_num_particles; j++){
       for(fcs_int t=0; t<3; t++){
-        while(sorted_positions[3*j+t] < 0)
-          sorted_positions[3*j+t] += d->box_l[t];
-        while(sorted_positions[3*j+t] >= d->box_l[t])
-          sorted_positions[3*j+t] -= d->box_l[t];
+        if(d->periodicity[t]){
+          while(sorted_positions[3*j+t] < 0)
+            sorted_positions[3*j+t] += d->box_l[t];
+          while(sorted_positions[3*j+t] >= d->box_l[t])
+            sorted_positions[3*j+t] -= d->box_l[t];
+        }
       }
     }
   }
@@ -198,7 +201,7 @@ FCSResult ifcs_p2nfft_run(
 
   if(d->short_range_flag){
     fcs_near_create(&near);
- 
+  
     if(d->interpolation_order >= 0){
       switch(d->interpolation_order){
         case 0: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_const_loop); break;
@@ -230,7 +233,7 @@ FCSResult ifcs_p2nfft_run(
     if(d->interpolation_order >= 0){
       ifcs_p2nfft_near_params near_params;
       near_params.interpolation_order = d->interpolation_order;
-      near_params.interpolation_num_nodes = d->interpolation_num_nodes;
+      near_params.interpolation_num_nodes = d->near_interpolation_num_nodes;
       near_params.near_interpolation_table_potential = d->near_interpolation_table_potential;
       near_params.near_interpolation_table_force = d->near_interpolation_table_force;
       near_params.one_over_r_cut = d->one_over_r_cut;
@@ -411,16 +414,21 @@ FCSResult ifcs_p2nfft_run(
   /* Perform NFFT */
   FCS_PNFFT(trafo)(d->pnfft);
 
+  fcs_float box_surf = 1.0;
+  for(fcs_int t=0; t<3; t++)
+    if(d->periodicity[t])
+      box_surf *= d->box_scales[t];
+
   /* Copy the results to the output vector and rescale */
   for (fcs_int j = 0; j < sorted_num_particles; ++j){
     if(d->use_ewald){
-      sorted_potentials[j] += creal(f[j]) / (FCS_P2NFFT_PI * box_vol);
+      sorted_potentials[j] += creal(f[j]) / box_surf;
       for(fcs_int t=0; t<3; t++)
-        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (FCS_P2NFFT_PI * box_vol * d->box_l[t]);
+        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (box_surf * d->box_scales[t]);
     } else {
-      sorted_potentials[j] += creal(f[j]) / d->box_scales[0];
+      sorted_potentials[j] += creal(f[j]);
       for(fcs_int t=0; t<3; t++)
-        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (d->box_scales[0] * d->box_scales[0]);
+        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / d->box_scales[t];
     }
   }
 
@@ -454,9 +462,9 @@ FCSResult ifcs_p2nfft_run(
   fcs_float far_global;
   for(fcs_int j = 0; j < sorted_num_particles; ++j)
     if(d->use_ewald)
-      far_energy += 0.5 * sorted_charges[j] * f[j] / (FCS_P2NFFT_PI * box_vol);
+      far_energy += 0.5 * sorted_charges[j] * f[j] / box_surf;
     else
-      far_energy += 0.5 * sorted_charges[j] * f[j] / d->box_scales[0];
+      far_energy += 0.5 * sorted_charges[j] * f[j];
 
   MPI_Reduce(&far_energy, &far_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: far field energy: %" FCS_LMOD_FLOAT "f\n", far_global);
@@ -548,12 +556,19 @@ FCSResult ifcs_p2nfft_run(
   /* Start back sort timing */
   FCS_P2NFFT_START_TIMING();
 
-  /* Backsort data into user given ordering */
-  fcs_int set_values = 1; /* set (1) or add (0) the field and potentials */
+  fcs_int resort;
 
-  fcs_gridsort_sort_backward(&gridsort,
-      sorted_field, sorted_potentials,
-      field, potentials, set_values, d->cart_comm_3d);
+  if (d->resort) resort = fcs_gridsort_prepare_resort(&gridsort, sorted_field, sorted_potentials, field, potentials, d->cart_comm_3d);
+  else resort = 0;
+
+  /* Backsort data into user given ordering (if resort is disabled) */
+  if (!resort) fcs_gridsort_sort_backward(&gridsort, sorted_field, sorted_potentials, field, potentials, 1, d->cart_comm_3d);
+
+  fcs_gridsort_resort_destroy(&d->gridsort_resort);
+
+  if (d->resort) fcs_gridsort_resort_create(&d->gridsort_resort, &gridsort, d->cart_comm_3d);
+  
+  d->local_num_particles = local_num_particles;
 
   if (sorted_field) free(sorted_field);
   if (sorted_potentials) free(sorted_potentials);
@@ -583,10 +598,78 @@ static void convolution(
 
   for (INT k0 = 0; k0 < local_N[0]; ++k0)
     for (INT k1 = 0; k1 < local_N[1]; ++k1)
-      for (INT k2 = 0; k2 < local_N[2]; ++k2, ++m)
+      for (INT k2 = 0; k2 < local_N[2]; ++k2, ++m){
+//         fprintf(stderr, "f_hat[%td, %td, %td] = %e + I * %e, regkern_hat[%td, %td, %td] = %e I * %e\n", k0, k1, k2, creal(f_hat[m]), cimag(f_hat[m]), k0, k1, k2, creal(regkern_hat[m]), cimag(regkern_hat[m]));
+//         fprintf(stderr, "regkern_hat[%td, %td, %td] = %e I * %e\n", k0, k1, k2, creal(regkern_hat[m]), cimag(regkern_hat[m]));
         f_hat[m] *= regkern_hat[m];
+      }
 }
 
 
+void ifcs_p2nfft_set_max_particle_move(void *rd, fcs_float max_particle_move)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
 
+  d->max_particle_move = max_particle_move;
+}
 
+void ifcs_p2nfft_set_resort(void *rd, fcs_int resort)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  d->resort = resort;
+}
+
+void ifcs_p2nfft_get_resort(void *rd, fcs_int *resort)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  *resort = d->resort;
+}
+
+void ifcs_p2nfft_get_resort_availability(void *rd, fcs_int *availability)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  *availability = fcs_gridsort_resort_is_available(d->gridsort_resort);
+}
+
+void ifcs_p2nfft_get_resort_particles(void *rd, fcs_int *resort_particles)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  if (d->gridsort_resort == FCS_GRIDSORT_RESORT_NULL)
+  {
+    *resort_particles = d->local_num_particles;
+    return;
+  }
+  
+  *resort_particles = fcs_gridsort_resort_get_sorted_particles(d->gridsort_resort);
+}
+
+void ifcs_p2nfft_resort_ints(void *rd, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  if (d->gridsort_resort == FCS_GRIDSORT_RESORT_NULL) return;
+  
+  fcs_gridsort_resort_ints(d->gridsort_resort, src, dst, n, comm);
+}
+
+void ifcs_p2nfft_resort_floats(void *rd, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  if (d->gridsort_resort == FCS_GRIDSORT_RESORT_NULL) return;
+  
+  fcs_gridsort_resort_floats(d->gridsort_resort, src, dst, n, comm);
+}
+
+void ifcs_p2nfft_resort_bytes(void *rd, void *src, void *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
+
+  if (d->gridsort_resort == FCS_GRIDSORT_RESORT_NULL) return;
+  
+  fcs_gridsort_resort_bytes(d->gridsort_resort, src, dst, n, comm);
+}

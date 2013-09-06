@@ -34,12 +34,16 @@ libfcs_p2nfft_a_SOURCES = \
 	init.c init.h \
 	tune.c tune.h \
 	run.c run.h \
+	bessel_k.c bessel_k.h \
+	part_derive_one_over_norm_x.c part_derive_one_over_norm_x.h \
 	parameters.c parameters.h \
 	nearfield.c nearfield.h \
 	kernels.c kernels.h \
 	regularization.c regularization.h \
 	cg_cos_coeff.c cg_cos_coeff.h \
-	cg_cos_err.c cg_cos_err.h
+	cg_cos_err.c cg_cos_err.h \
+	cg_cos_coeff_sym.c cg_cos_coeff_sym.h \
+	cg_cos_err_sym.c cg_cos_err_sym.h
 
 #libfcs_p2nfft_a_LIBADD = $(pnfft_LIBS) $(pfft_LIBS) $(fftw3_mpi_LIBS) $(fftw3_LIBS) ../common/near/libnear.a ../direct/libdirect.a
 

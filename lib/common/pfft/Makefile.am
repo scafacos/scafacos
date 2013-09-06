@@ -10,8 +10,9 @@ libtool: $(LIBTOOL_DEPS)
 # Let aclocal find the add-on macros.
 ACLOCAL_AMFLAGS = -I m4
 
-# Subdirectories
-SUBDIRS = kernel gcell util api .
+# Traverse these subdirectories, the current one first (for config.h).
+SUBDIRS = kernel gcell util api . doc
+DIST_SUBDIRS = $(SUBDIRS) tests
 
 if ENABLE_TESTS
 SUBDIRS += tests
@@ -43,3 +44,14 @@ include $(top_srcdir)/build-aux/fortran-rules.am
 
 pfft1@PREC_SUFFIX@.pc: pfft.pc
 	cp -f pfft.pc pfft1@PREC_SUFFIX@.pc
+
+
+#################################################################
+# Documentation
+#################################################################
+if ENABLE_DOC
+.PHONY: FORCE doc manual
+doc manual: FORCE
+	cd doc; $(MAKE) --print-directory $@
+FORCE:
+endif

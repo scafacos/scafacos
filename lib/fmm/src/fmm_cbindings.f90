@@ -22,6 +22,11 @@ module fmm_cbindings
 
       FMM_internal_params%nerroranalysis = huge(1_8)
       FMM_internal_params%wignerd%wignerd => NULL()
+
+      FMM_internal_params%presorted = 0
+      FMM_internal_params%resort = 0
+      FMM_internal_params%resort_ptr = c_null_ptr
+
       call mp_init()
     end subroutine fmm_cinit
 
@@ -56,6 +61,45 @@ module fmm_cbindings
       iboxload = val
 
     end subroutine fmm_csetload
+
+    ! set presorted mode
+    subroutine fmm_csetpresorted(cptr,presorted) bind(c)
+      implicit none
+      type(c_ptr), value :: cptr
+      integer(kind=c_long_long), value :: presorted
+      type(FMM_internal_params_t), pointer :: FMM_internal_params
+
+      call c_f_pointer(cptr,FMM_internal_params)
+
+      FMM_internal_params%presorted = presorted
+
+    end subroutine fmm_csetpresorted
+
+    ! init resort support
+    subroutine fmm_cinitresort(cptr,resort_ptr) bind(c)
+      implicit none
+      type(c_ptr), value :: cptr,resort_ptr
+      type(FMM_internal_params_t), pointer :: FMM_internal_params
+
+      call c_f_pointer(cptr,FMM_internal_params)
+
+      FMM_internal_params%resort_ptr = resort_ptr
+
+    end subroutine fmm_cinitresort
+
+    ! set resort support
+    subroutine fmm_csetresort(cptr,resort) bind(c)
+      implicit none
+      type(c_ptr), value :: cptr
+      integer(kind=c_long_long), value :: resort
+      type(FMM_internal_params_t), pointer :: FMM_internal_params
+
+      call c_f_pointer(cptr,FMM_internal_params)
+
+      FMM_internal_params%resort = resort
+
+    end subroutine fmm_csetresort
+
 
     ! tune subroutine for the C interface
     subroutine fmm_ctune(local_particles,&

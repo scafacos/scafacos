@@ -162,17 +162,17 @@ FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 
   if (db_level > 3) {
     printf("*** run pepc kernel\n");
-    printf("** local particles :       %d\n", local_particles);
-    printf("** local max particles :   %d\n", local_max_particles);
-    printf("** total particles :       %d\n", nparts_tot);
+    printf("** local particles :       %" FCS_LMOD_INT "d\n", local_particles);
+    printf("** local max particles :   %" FCS_LMOD_INT "d\n", local_max_particles);
+    printf("** total particles :       %" FCS_LMOD_INT "d\n", nparts_tot);
     printf("** epsilon :               %f\n", eps);
     printf("** theta :                 %f\n", theta);
     printf("** npm :                   %f\n", npm);
-    printf("** db_level :              %d\n", db_level);
-    printf("** require virial :        %d\n", requirevirial);
-    printf("** num walk threads :      %d\n", num_walk_threads);
-    printf("** dipole correction :     %d\n", lat_corr);
-    printf("** use load balancing :    %d\n", load_balancing);
+    printf("** db_level :              %" FCS_LMOD_INT "d\n", db_level);
+    printf("** require virial :        %" FCS_LMOD_INT "d\n", requirevirial);
+    printf("** num walk threads :      %" FCS_LMOD_INT "d\n", num_walk_threads);
+    printf("** dipole correction :     %" FCS_LMOD_INT "d\n", lat_corr);
+    printf("** use load balancing :    %" FCS_LMOD_INT "d\n", load_balancing);
     printf("** size int   :            %d\n", (int)sizeof(fcs_int));
     printf("** size float :            %d\n", (int)sizeof(fcs_float));
     printf("** debug lattice pointers: %p\n", fcs_get_box_a(handle));
@@ -199,7 +199,7 @@ FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 
   if (db_level > 3)
     for(pcnt=0; pcnt<local_particles; pcnt++)
-      printf("** e-field dump, particle %3d, (ex,ey,ez): %f, %f, %f\n", 
+      printf("** e-field dump, particle %3" FCS_LMOD_INT "d, (ex,ey,ez): %f, %f, %f\n", 
 	     pcnt, field[pcnt+0], field[pcnt+1], field[pcnt+2]);
 
   return NULL;
@@ -209,6 +209,10 @@ FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 extern FCSResult fcs_pepc_destroy(FCS handle)
 {
   /*	char* fnc_name = "fcs_pepc_destroy"; */
+
+  MPI_Comm comm  = fcs_get_communicator(handle);
+  MPI_Fint fcomm = MPI_Comm_c2f(comm);
+  pepc_scafacos_finalize(&fcomm);
 
   free(handle->method_context);
 

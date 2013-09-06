@@ -1279,7 +1279,7 @@ void fcs_printHandle(FCS handle)
       fcs_mmm1d_get_far_switch_radius(handle, &radius);
       fcs_mmm1d_get_bessel_cutoff(handle, &cutoff);
       fcs_mmm1d_get_maxPWerror(handle, &PWerror);
-      printf("mmm1d bessel cutoff: %d\n", cutoff);
+      printf("mmm1d bessel cutoff: %" FCS_LMOD_INT "d\n", cutoff);
       printf("mmm1d far switch radius: %e\n", radius);
       printf("mmm1d maximum PWerror: %e\n", PWerror);
       break;
@@ -1299,7 +1299,7 @@ void fcs_printHandle(FCS handle)
       fcs_mmm2d_get_skin(handle, &skin);
       printf("mmm2d dielectric contrasts: %e %e\n", contrasts_min, contrasts_max);
       printf("mmm2d far cutoff: %e\n", cutoff);
-      printf("mmm2d layer per node: %d\n", layers);
+      printf("mmm2d layer per node: %" FCS_LMOD_INT "d\n", layers);
       printf("mmm2d maximum PWerror: %e\n", PWerror);
       printf("mmm2d skin: %e\n", skin);
       break;
@@ -1316,8 +1316,8 @@ void fcs_printHandle(FCS handle)
         if ((res = fcs_pepc_get_num_walk_threads(handle, &num_walk_threads))) fcsResult_printResult(res);
         printf("pepc theta: %e\n", theta);
         printf("pepc epsilon: %e\n", eps);
-        printf("pepc num_walk_threads: %d\n", num_walk_threads);
-        printf("pepc user requires virial: %4d\n", handle->pepc_param->requirevirial);
+        printf("pepc num_walk_threads: %" FCS_LMOD_INT "d\n", num_walk_threads);
+        printf("pepc user requires virial: %4" FCS_LMOD_INT "d\n", handle->pepc_param->requirevirial);
         break;
       }
 #endif
@@ -1367,16 +1367,16 @@ void fcs_printHandle(FCS handle)
 	fcs_pp3mg_get_distribution(handle, &distribution);
 	fcs_pp3mg_get_discretization(handle, &discretization);
  
-	printf("pp3mg cells x: %i\n",cells_x);
-	printf("pp3mg cells y: %i\n",cells_y);
-	printf("pp3mg cells z: %i\n",cells_z);
-	printf("pp3mg ghosts: %i\n",ghosts);
-	printf("pp3mg degree: %i\n",degree);
-	printf("pp3mg max_particles: %i\n",max_particles);
-	printf("pp3mg max_iterations: %i\n",max_iterations);
+	printf("pp3mg cells x: %" FCS_LMOD_INT "d\n",cells_x);
+	printf("pp3mg cells y: %" FCS_LMOD_INT "d\n",cells_y);
+	printf("pp3mg cells z: %" FCS_LMOD_INT "d\n",cells_z);
+	printf("pp3mg ghosts: %" FCS_LMOD_INT "d\n",ghosts);
+	printf("pp3mg degree: %" FCS_LMOD_INT "d\n",degree);
+	printf("pp3mg max_particles: %" FCS_LMOD_INT "d\n",max_particles);
+	printf("pp3mg max_iterations: %" FCS_LMOD_INT "d\n",max_iterations);
 	printf("pp3mg tol: %e\n",tol);
-	printf("pp3mg distribution: %d\n",distribution);
-	printf("pp3mg discretization: %d\n",discretization);
+	printf("pp3mg distribution: %" FCS_LMOD_INT "d\n",distribution);
+	printf("pp3mg discretization: %" FCS_LMOD_INT "d\n",discretization);
       }
       break;
 #endif
@@ -1401,14 +1401,14 @@ void fcs_printHandle(FCS handle)
       fcs_vmg_get_interpolation_order(handle, &interpolation_order);
       fcs_vmg_get_discretization_order(handle, &discretization_order);
 
-      printf("vmg max level:            %i\n", level);
-      printf("vmg max iterations:       %i\n", max_iter);
-      printf("vmg smoothing steps:      %i\n", smoothing_steps);
-      printf("vmg cycle_type:                %i\n", cycle_type);
+      printf("vmg max level:            %" FCS_LMOD_INT "d\n", level);
+      printf("vmg max iterations:       %" FCS_LMOD_INT "d\n", max_iter);
+      printf("vmg smoothing steps:      %" FCS_LMOD_INT "d\n", smoothing_steps);
+      printf("vmg cycle_type:           %" FCS_LMOD_INT "d\n", cycle_type);
       printf("vmg precision:            %e\n", precision);
-      printf("vmg near field cells:     %i\n", near_field_cells);
-      printf("vmg interpolation degree: %i\n", interpolation_order);
-      printf("vmg discretization order: %i\n", discretization_order);
+      printf("vmg near field cells:     %" FCS_LMOD_INT "d\n", near_field_cells);
+      printf("vmg interpolation degree: %" FCS_LMOD_INT "d\n", interpolation_order);
+      printf("vmg discretization order: %" FCS_LMOD_INT "d\n", discretization_order);
     }
       break;
 #endif
@@ -1659,10 +1659,14 @@ FCSResult fcs_parser(FCS handle, const char *parameters, fcs_bool continue_on_er
     /* P2NFFT specific parameters */
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_r_cut",                p2nfft_set_r_cut,                     PARSE_VAL(fcs_float));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsI",                 p2nfft_set_epsI,                      PARSE_VAL(fcs_float));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsB",                 p2nfft_set_epsB,                      PARSE_VAL(fcs_float));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_c",                    p2nfft_set_c,                         PARSE_VAL(fcs_float));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_alpha",                p2nfft_set_alpha,                     PARSE_VAL(fcs_float));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_intpol_order",         p2nfft_set_interpolation_order,       PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg",                  p2nfft_set_regularization,            PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_name",             p2nfft_set_regularization_by_name,    PARSE_VAL(fcs_p_char_t));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_near",             p2nfft_set_reg_near,                  PARSE_VAL(fcs_int));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_near_name",        p2nfft_set_reg_near_by_name,          PARSE_VAL(fcs_p_char_t));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_far",              p2nfft_set_reg_far,                   PARSE_VAL(fcs_int));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_far_name",         p2nfft_set_reg_far_by_name,           PARSE_VAL(fcs_p_char_t));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_p",                    p2nfft_set_p,                         PARSE_VAL(fcs_int));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_require_virial",       p2nfft_require_virial,                PARSE_VAL(fcs_int));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_ignore_tolerance",     p2nfft_set_ignore_tolerance,          PARSE_VAL(fcs_int));

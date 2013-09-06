@@ -32,6 +32,12 @@ FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(r_cut, r_cut, fcs_float, r_cut)
 /* Getters and Setters for scaled near field cutoff radius */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(epsI, epsI, fcs_float, eps_I)
 
+/* Getters and Setters for scaled far field regularization border */
+FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(epsB, epsB, fcs_float, eps_I)
+
+/* Getter and Setter for far field continuation value c used by taylor2p */
+FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(c, c, fcs_float, c)
+
 /* Getters and Setters for Ewald splitting parameter */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(alpha, alpha, fcs_float, alpha)
 
@@ -41,9 +47,13 @@ FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(cao, cao, fcs_int, cao)
 /* Getters and Setters for order of P2NFFT near and far field interpolation */
 FCS_P2NFFT_SET_GET_WRAPPER_1(interpolation_order, interpolation_order, fcs_int, intpol_order)
 
-/* Getters and Setters for P2NFFT regularization flag */
-FCS_P2NFFT_SET_GET_WRAPPER_1(regularization, regularization, fcs_int, reg)
-FCS_P2NFFT_INTERFACE_WRAPPER_1(set_regularization_by_name, set_regularization_by_name, char*, reg_name)
+/* Getters and Setters for P2NFFT near field regularization flag */
+FCS_P2NFFT_SET_GET_WRAPPER_1(reg_near, reg_near, fcs_int, reg)
+FCS_P2NFFT_INTERFACE_WRAPPER_1(set_reg_near_by_name, set_reg_near_by_name, char*, reg_name)
+
+/* Getters and Setters for P2NFFT far field regularization flag */
+FCS_P2NFFT_SET_GET_WRAPPER_1(reg_far, reg_far, fcs_int, reg)
+FCS_P2NFFT_INTERFACE_WRAPPER_1(set_reg_far_by_name, set_reg_far_by_name, char*, reg_name)
 
 /* Getters and Setters for polynomial degree of near field regularization */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(p, p, fcs_int, p)

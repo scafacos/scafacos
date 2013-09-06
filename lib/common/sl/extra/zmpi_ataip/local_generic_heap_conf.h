@@ -26,9 +26,7 @@
 #define __LOCAL_GENERIC_HEAP_CONF_H__
 
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "dash_conf.h"
 
 
 #define LGH_RENAME
@@ -40,8 +38,8 @@
 #endif
 
 
-typedef long lghint_t;
-#define lghint_fmt  "ld"
+typedef dsint_t lghint_t;
+#define lghint_fmt  dsint_fmt
 
 
 #endif /* __LOCAL_GENERIC_HEAP_CONF_H__ */

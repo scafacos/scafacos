@@ -226,6 +226,11 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     Relative cutoff distance of the near field. P2NFFT scales the original box size into a cube of side length 1.
     For fully periodic boundary conditions this corresponds to a simple scaling by the box size. However, the scaling is more complicated if non-periodic
     boundary conditions are involved. Application of the same scaling factor on \verb!r_cut! gives \verb!epsI!.
+    Feasible values are any positive floats that fulfill $\verb!epsI! < 0.5$.
+  \item \verb!p2nfft_epsB! -
+    Regularization border for P2NFFT with non-periodic boundary conditions. This parameter corresponds to the rescaled system into a unit cube of side length 1.
+    Feasible values are any positive floats that fulfill $\verb!epsI! + \verb!epsB! < 0.5$.
+    This parameter does not have any effect for fully periodic boundary conditions. Default value is $\verb!epsB! := \verb!epsI!$.
   \item \verb!p2nfft_alpha! -
     Ewald splitting parameter. Can be automatically tuned.
     This parameter corresponds to \verb!alpha! of the P3M solver.
@@ -238,14 +243,31 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     Feasible values are $-2$ (approximation of the error function according to \cite[eq.~(7.1.26)]{AbSt72}, which yields an error of $1.5\times 10^{-7}$),
     $-1$ (direct evaluation of the error function), $0$ (constant interpolation), $1$ (linear interpolation), $2$ (quadratic interpolation) and $3$ (cubic interpolation).
     Default value is $3$.
-  \item \verb!p2nfft_reg! -
-    Choose between the two regularization methods for non-periodic boundaries. Feasible values are $0$ (Fourier coefficients have been precomputed via CG iteration, only available for some sets of parameters)
-    and $1$ (Regularization with 2-point-Taylor polynomials). Default value is $0$, if possible.
-  \item \verb!p2nfft_reg_name! (alternative: \verb!p2nfft_reg!) -
+  \item \verb!p2nfft_reg_near! -
+    Choose between the two near field regularization methods for non-periodic boundaries. Feasible values are $0$ (Fourier coefficients have been precomputed via CG iteration, only available for some sets of parameters)
+    and $1$ (Regularization with two-point Taylor polynomials). Default value is $0$, if possible.
+  \item \verb!p2nfft_reg_near_name! (alternative: \verb!p2nfft_reg_near!) -
     Choose between the two regularization methods for non-periodic boundaries. Feasible values are \verb!cg! (Fourier coefficients have been precomputed via CG iteration, only available for some sets of parameters)
-    and \verb!taylor2p! (Regularization with 2-point-Taylor polynomials). Default is \verb!cg!, if possible.
+    and \verb!t2p! (Regularization with two-point Taylor polynomials). Default is \verb!cg!, if possible.
+  \item \verb!p2nfft_reg_far! -
+    Choose between the available regularization methods at the far field boundary for non-periodic boundaries.
+    Feasible values are $0$ (Fourier coefficients have been precomputed via CG iteration, only available for some sets of parameters and only available in combination with the flag \verb!rad_cg! for near field regularization),
+    $1$ (Regularization with two-point Taylor polynomials and explicitly chosen constant continuation value), and
+    $2$ (Regularization with two-point Taylor polynomials and implicitly chosen constant continuation value). Default value is $2$.
+  \item \verb!p2nfft_reg_far_name! (alternative: \verb!p2nfft_reg_far!) -
+    Choose between the two regularization methods for non-periodic boundaries. Feasible values are \verb!rad_cg! (radial regularization based on the \verb!cg! near field regularization, only available for some sets of parameters),
+    \verb!rad_t2p_sym! (radial regularization with symmetric two-point Taylor polynomial),
+    \verb!rad_t2p_ec!  (radial regularization with two-point Taylor polynomial and explicitly chosen constant continuation value),
+    \verb!rad_t2p_ic!  (radial regularization with two-point Taylor polynomial and implicitly chosen constant continuation value),
+    \verb!rec_t2p_sym! (radial regularization with symmetric two-point Taylor polynomial),
+    \verb!rec_t2p_ec!  (radial regularization with two-point Taylor polynomial and explicitly chosen constant continuation value), and
+    \verb!rec_t2p_ic!  (radial regularization with two-point Taylor polynomial and implicitly chosen constant continuation value).
+    Default value is \verb!rad_t2p_ic!.
+  \item \verb!p2nfft_c! -
+    The constant continuation value of the far field regularization. This parameter only takes affect, if far field regularization \verb!rad_t2p_ec! or \verb!rec_t2p_ec! is enabled.
+    Feasible values are any floating point numbers. Default value is $0.0$.
   \item \verb!p2nfft_p! -
-    The degree of the two-point-Taylor polynomial. This parameter only takes affect, if regularization \verb!taylor2p! has been enabled.
+    The degree of the two-point Taylor polynomial. This parameter only takes affect, if regularization \verb!t2p! has been enabled.
     Feasible values are any integers between $1$ and $16$. Default value is $7$.
   \item \verb!p2nfft_virial! -
     Decide if the computation of the virial should be included in P2NFFT.
@@ -384,6 +406,13 @@ FCSResult fcs_p2nfft_set_epsI_tune(FCS handle);
     Set/restore/retrieve relative near field cutoff radius.
   \item
 \begin{alltt}
+FCSResult fcs_p2nfft_set_epsB(FCS handle, fcs_float eps_B);
+FCSResult fcs_p2nfft_get_epsB(FCS handle, fcs_float* eps_B);
+FCSResult fcs_p2nfft_set_epsB_tune(FCS handle);
+\end{alltt}
+    Set/restore/retrieve relative far field regularization border.
+  \item
+\begin{alltt}
 FCSResult fcs_p2nfft_set_alpha(FCS handle, fcs_float alpha);
 FCSResult fcs_p2nfft_get_alpha(FCS handle, fcs_float* alpha);
 FCSResult fcs_p2nfft_set_alpha_tune(FCS handle);
@@ -405,14 +434,14 @@ FCSResult fcs_p2nfft_set_regularization_by_name(
     FCS handle, char* reg_name);
 \end{alltt}
     Set/retrieve the near field regularization by number or name (default = 0).
-    Feasible values are 0 (\verb!"cg"!) and 1 (\verb!"taylor2p"!).
+    Feasible values are 0 (\verb!"cg"!) and 1 (\verb!"t2p"!).
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_p(FCS handle, fcs_int p);
 FCSResult fcs_p2nfft_get_p(FCS handle, fcs_int* p);
 FCSResult fcs_p2nfft_set_p_tune(FCS handle);
 \end{alltt}
-    Set/restore/retrieve polynomial degree of two-point-Taylor regularization.
+    Set/restore/retrieve polynomial degree of two-point Taylor regularization.
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_require_virial(

@@ -18,30 +18,15 @@
 ! along with PEPC.  If not, see <http://www.gnu.org/licenses/>.
 !
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !>
 !> Several math tools, primarily matrix manipulations,
 !> Legendre polynomials and related stuff. Additionally
 !> functions to calculate the biggest power in given interval
 !>
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 module module_math_tools
       implicit none
       save
       private
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!  public variable declarations  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!  public subroutine declarations  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       public inverse3
       public bpi
@@ -51,43 +36,26 @@ module module_math_tools
         module procedure cross_product3
       end interface
 
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!  private variable declarations  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!  subroutine-implementation  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       contains
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !> Vector (cross) product of two 3D-vectors
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         function cross_product3(a, b)
           implicit none
           real*8, dimension(1:3) :: cross_product3
           real*8, dimension(1:3), intent(in) :: a, b
 
-          cross_product3 = [ a(2)*b(3) - a(3)*b(2), &
-                             a(3)*b(1) - a(1)*b(3), &
-                             a(1)*b(2) - a(2)*b(1)  ]
+          cross_product3(1) = a(2)*b(3) - a(3)*b(2)
+          cross_product3(2) = a(3)*b(1) - a(1)*b(3)
+          cross_product3(3) = a(1)*b(2) - a(2)*b(1)
 
         end function cross_product3
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !> Determinant of a real*8 2x2 matrix
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         real*8 function det2(mat)
           implicit none
           real*8, intent(in) :: mat(1:2,1:2)
@@ -97,11 +65,9 @@ module module_math_tools
         end function det2
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !> Determinant of a real*8 2x2 matrix that is saved as a vector (columns first)
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         real*8 function det2f(mat)
           implicit none
           real*8, intent(in) :: mat(1:4)
@@ -110,11 +76,10 @@ module module_math_tools
 
         end function det2f
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         !>
         !> Determinant of a real*8 3x3 matrix
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         real*8 function det3(mat)
           implicit none
           real*8, intent(in) :: mat(1:3,1:3)
@@ -125,11 +90,9 @@ module module_math_tools
         end function det3
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !>
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         real*8 function cofact(mat, i, j)
           implicit none
           real*8, intent(in) :: mat(1:3,1:3)
@@ -149,11 +112,9 @@ module module_math_tools
         end function cofact
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !>  Simple 3x3-matrix inversion using Cramers rule
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         function inverse3(m)
           implicit none
           real*8, intent(in) :: m(1:3,1:3)
@@ -209,30 +170,28 @@ module module_math_tools
         end function inverse3
 
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !>
         !> Calculates the biggest power to \a base in a given interval with the limits \a a and \a b. In this
-        !> routine it is done by a more direct expression. Be careful, that \f$a<b\f$ !!!
+        !> routine it is done by a more direct expression. Be careful, that \f$a<b\f$!
         !>
         !> @param[in] a First Limit of interval.
         !> @param[in] b Second Limit of interval.
         !>
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        integer*8 function bpi(a, b)
+        function bpi(a, b)
+          use module_pepc_types
           use treevars, only: idim
           use module_spacefilling
           use module_debug
           implicit none
           include 'mpif.h'
 
-          integer*8,intent(in) :: a, b
+          integer(kind_key), intent(in) :: a, b
+          integer(kind_key) :: bpi
+          
+          integer(kind_key) :: axorb, mask
+          integer(kind_level) :: bpilevel
 
-          integer*8 :: axorb, mask
-          integer :: bpilevel
-
-          if (b < a) then
-            DEBUG_ERROR('("Error: b < a in math_tools::bpi(a = ",o22,"(oct), ",i22,"(dec), b = ",o22,"(oct), ",i22,"(dec))")', a,a,b,b)
-          endif
+          DEBUG_ASSERT_MSG(a < b ,'("Error: b < a in math_tools::bpi(a = ",o22,"(oct), ",i22,"(dec), b = ",o22,"(oct), ",i22,"(dec))")', a,a,b,b)
 
           axorb             = ieor(a,b)
           bpilevel          = level_from_key(axorb)
@@ -240,10 +199,4 @@ module module_math_tools
           bpi               = iand(b,mask) ! extract highgest bits from b (which has to be the larger of both parameters)
 
         end function bpi
-
- end module module_math_tools
-      
-
-
-
-
+end module module_math_tools

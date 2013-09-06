@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS/FMM.
  *  
@@ -27,10 +27,9 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-#define Z_MOP(_mop_)  do { _mop_ } while (0)
-#define Z_NOP()       Z_MOP()
-
 #include "config_fmm_sort.h"
+
+#include "common.h"
 
 #include "mpi_fmm_sort.h"
 
@@ -48,11 +47,6 @@
 
 #define MPI_SENDRECV_REPLACE_MAX_SIZE  10000000
 
-#define DO_TIMING_SYNC
-
-#define z_max(_a_, _b_)  (((_a_)>(_b_))?(_a_):(_b_))
-#define z_min(_a_, _b_)  (((_a_)<(_b_))?(_a_):(_b_))
-
 #define ALLTOALLV_PACKED(_p_, _n_)  ((_p_) >= 1024 && (_n_) <= 200)
 
 #define MIN_AUXMEM_ALLOC  1*1024*1024
@@ -62,22 +56,6 @@
 #else
 # define ALLTOALLV_PACKED_CMD(_cmd_)  Z_NOP()
 #endif
-
-#ifdef DO_TIMING
-# define TIMING_DECL(_decl_)       _decl_
-# define TIMING_CMD(_cmd_)         Z_MOP(_cmd_)
-#else
-# define TIMING_DECL(_decl_)
-# define TIMING_CMD(_cmd_)         Z_NOP()
-#endif
-#ifdef DO_TIMING_SYNC
-# define TIMING_SYNC(_c_)          TIMING_CMD(MPI_Barrier(_c_);)
-#else
-# define TIMING_SYNC(_c_)          Z_NOP()
-#endif
-#define TIMING_START(_t_)          TIMING_CMD(((_t_) = MPI_Wtime());)
-#define TIMING_STOP(_t_)           TIMING_CMD(((_t_) = MPI_Wtime() - (_t_));)
-#define TIMING_STOP_ADD(_t_, _r_)  TIMING_CMD(((_r_) += MPI_Wtime() - (_t_));)
 
 #ifdef FMM_SORT_RADIX_1BIT
 # define fmm_sort_radix(_prefix_, _s_, _sx_, _h_, _l_, _w_)  _prefix_##sort_radix_1bit(_s_, _sx_, _h_, _l_)
@@ -94,6 +72,8 @@
 
 int mpi_fmm_sort_front_part = 0;
 int mpi_fmm_sort_back_part = 0;
+
+int mpi_fmm_sort_front_merge_presorted = 0;
 
 
 static INTEGER_C mpi_log2_floor(INTEGER_C v)
@@ -182,6 +162,7 @@ void mpi_fmm_sort_front_merge_body(
 
 #ifdef DO_TIMING
   double t[3];
+  front_slint_t presorted_merge_rounds = 0;
 #endif
 
 #ifdef VALIDATE
@@ -314,6 +295,10 @@ void mpi_fmm_sort_front_merge_body(
 
   front_aX = addr_desc[0];
 
+  INFO_CMD(
+    if (I_AM_MASTER) printf(INFO_PRINT_PREFIX "front: mem0: %p, mem1: %p, mem_sizes: %p (%" PARAM_INTEGER_FMT ", %" PARAM_INTEGER_FMT ")\n", mem0, mem1, mem_sizes, (mem_sizes?mem_sizes[0]:-1), (mem_sizes?mem_sizes[1]:-1));
+  );
+
   auxmem_init(mem0, mem1, mem_sizes, auxmem_blocks, auxmem_sizes, &auxmem_max);
 
   if (auxmem_sizes[auxmem_max] > 0)
@@ -391,7 +376,8 @@ void mpi_fmm_sort_front_merge_body(
         case 5:
           printf(INFO_PRINT_PREFIX "front: addr: %d * sizeof(front_sldata3_t) = %d * %d byte\n", (int) front_xqsaX_sl_data3_size_c, (int) front_xqsaX_sl_data3_size_c, (int) sizeof(front_xqsaX_sldata3_t));
          break;
-      }*/
+      }
+      printf(INFO_PRINT_PREFIX "front: presorted: %d\n", mpi_fmm_sort_front_merge_presorted);*/
     }
   );
 
@@ -622,7 +608,12 @@ void mpi_fmm_sort_front_merge_body(
 
         m20 = front_xqsa0_merge2_memory_adaptive;
       }
-      front_xqsa0_mpi_mergek(&s0, front_xqsa0_sn_batcher, NULL, m20, sx0, size, rank, comm);
+      if (mpi_fmm_sort_front_merge_presorted)
+      {
+        TIMING_DECL(presorted_merge_rounds =) front_xqsa0_mpi_mergek_sorted2(&s0, front_xqsa0_sn_batcher, NULL, m20, sx0, size, rank, comm);
+/*        TIMING_DECL(presorted_merge_rounds =) front_xqsa0_mpi_mergek_sorted2(&s0, front_xqsa0_sn_batcher, NULL, front_xqsa0_merge2_basic_straight_01_x, NULL, size, rank, comm);*/
+      }
+      else front_xqsa0_mpi_mergek(&s0, front_xqsa0_sn_batcher, NULL, m20, sx0, size, rank, comm);
       break;
 #endif
 #ifndef NOT_sl_front_xqsaI
@@ -634,7 +625,12 @@ void mpi_fmm_sort_front_merge_body(
 
         m21 = front_xqsaI_merge2_memory_adaptive;
       }
-      front_xqsaI_mpi_mergek(&s1, front_xqsaI_sn_batcher, NULL, m21, sx1, size, rank, comm);
+      if (mpi_fmm_sort_front_merge_presorted)
+      {
+        TIMING_DECL(presorted_merge_rounds =) front_xqsaI_mpi_mergek_sorted2(&s1, front_xqsaI_sn_batcher, NULL, m21, sx1, size, rank, comm);
+/*        TIMING_DECL(presorted_merge_rounds =) front_xqsaI_mpi_mergek_sorted2(&s1, front_xqsaI_sn_batcher, NULL, front_xqsaI_merge2_basic_straight_01_x, NULL, size, rank, comm);*/
+      }
+      else front_xqsaI_mpi_mergek(&s1, front_xqsaI_sn_batcher, NULL, m21, sx1, size, rank, comm);
       break;
 #endif
 #ifndef NOT_sl_front_xqsaX
@@ -646,7 +642,12 @@ void mpi_fmm_sort_front_merge_body(
 
         m22 = front_xqsaX_merge2_memory_adaptive;
       }
-      front_xqsaX_mpi_mergek(&s2, front_xqsaX_sn_batcher, NULL, m22, sx2, size, rank, comm);
+      if (mpi_fmm_sort_front_merge_presorted)
+      {
+        TIMING_DECL(presorted_merge_rounds =) front_xqsaX_mpi_mergek_sorted2(&s2, front_xqsaX_sn_batcher, NULL, m22, sx2, size, rank, comm);
+/*        TIMING_DECL(presorted_merge_rounds =) front_xqsaX_mpi_mergek_sorted2(&s2, front_xqsaX_sn_batcher, NULL, front_xqsaX_merge2_basic_straight_01_x, NULL, size, rank, comm);*/
+      }
+      else front_xqsaX_mpi_mergek(&s2, front_xqsaX_sn_batcher, NULL, m22, sx2, size, rank, comm);
       break;
 #endif
 #ifndef NOT_sl_front_xq_a0
@@ -658,7 +659,12 @@ void mpi_fmm_sort_front_merge_body(
 
         m23 = front_xq_a0_merge2_memory_adaptive;
       }
-      front_xq_a0_mpi_mergek(&s3, front_xq_a0_sn_batcher, NULL, m23, sx3, size, rank, comm);
+      if (mpi_fmm_sort_front_merge_presorted)
+      {
+        TIMING_DECL(presorted_merge_rounds =) front_xq_a0_mpi_mergek_sorted2(&s3, front_xq_a0_sn_batcher, NULL, m23, sx3, size, rank, comm);
+/*        TIMING_DECL(presorted_merge_rounds =) front_xq_a0_mpi_mergek_sorted2(&s3, front_xq_a0_sn_batcher, NULL, front_xq_a0_merge2_basic_straight_01_x, NULL, size, rank, comm);*/
+      }
+      else front_xq_a0_mpi_mergek(&s3, front_xq_a0_sn_batcher, NULL, m23, sx3, size, rank, comm);
       break;
 #endif
 #ifndef NOT_sl_front_xq_aI
@@ -670,7 +676,12 @@ void mpi_fmm_sort_front_merge_body(
 
         m24 = front_xq_aI_merge2_memory_adaptive;
       }
-      front_xq_aI_mpi_mergek(&s4, front_xq_aI_sn_batcher, NULL, m24, sx4, size, rank, comm);
+      if (mpi_fmm_sort_front_merge_presorted)
+      {
+        TIMING_DECL(presorted_merge_rounds =) front_xq_aI_mpi_mergek_sorted2(&s4, front_xq_aI_sn_batcher, NULL, m24, sx4, size, rank, comm);
+/*        TIMING_DECL(presorted_merge_rounds =) front_xq_aI_mpi_mergek_sorted2(&s4, front_xq_aI_sn_batcher, NULL, front_xq_aI_merge2_basic_straight_01_x, NULL, size, rank, comm);*/
+      }
+      else front_xq_aI_mpi_mergek(&s4, front_xq_aI_sn_batcher, NULL, m24, sx4, size, rank, comm);
       break;
 #endif
 #ifndef NOT_sl_front_xq_aX
@@ -682,7 +693,12 @@ void mpi_fmm_sort_front_merge_body(
 
         m25 = front_xq_aX_merge2_memory_adaptive;
       }
-      front_xq_aX_mpi_mergek(&s5, front_xq_aX_sn_batcher, NULL, m25, sx5, size, rank, comm);
+      if (mpi_fmm_sort_front_merge_presorted)
+      {
+        TIMING_DECL(presorted_merge_rounds =) front_xq_aX_mpi_mergek_sorted2(&s5, front_xq_aX_sn_batcher, NULL, m25, sx5, size, rank, comm);
+/*        TIMING_DECL(presorted_merge_rounds =) front_xq_aX_mpi_mergek_sorted2(&s5, front_xq_aX_sn_batcher, NULL, front_xq_aX_merge2_basic_straight_01_x, NULL, size, rank, comm);*/
+      }
+      else front_xq_aX_mpi_mergek(&s5, front_xq_aX_sn_batcher, NULL, m25, sx5, size, rank, comm);
       break;
 #endif
   }
@@ -787,8 +803,9 @@ void mpi_fmm_sort_front_merge_body(
   TIMING_SYNC(comm); TIMING_STOP(t[0]);
 
   TIMING_CMD(
-    if (I_AM_MASTER) printf(TIMING_PRINT_PREFIX "mpi_fmm_sort_front_merge_body: %f  %f  %f\n", t[0], t[1], t[2]);
+    if (I_AM_MASTER) printf(TIMING_PRINT_PREFIX "mpi_fmm_sort_front_merge_body: %f  %f  %f  %" front_slint_fmt "\n", t[0], t[1], t[2], presorted_merge_rounds);
   );
+#undef I_AM_MASTER
 }
 
 
@@ -1387,6 +1404,7 @@ void mpi_fmm_sort_front_part_body(
   TIMING_CMD(
     if (I_AM_MASTER) printf(TIMING_PRINT_PREFIX "mpi_fmm_sort_front_part_body: %f  %f  %f  %f  %f  %f\n", t[0], t[1], t[2], t[3], t[4], t[5]);
   );
+#undef I_AM_MASTER
 }
 
 #endif /* WITH_SORT_FRONT_LOAD */
@@ -2025,6 +2043,7 @@ void mpi_fmm_sort_back_merge_body(
   TIMING_CMD(
     if (I_AM_MASTER) printf(TIMING_PRINT_PREFIX "mpi_fmm_sort_back_merge_body: %f  %f  %f\n", t[0], t[1], t[2]);
   );
+#undef I_AM_MASTER
 }
 
 
@@ -2756,6 +2775,7 @@ void mpi_fmm_sort_back_part_body(
   TIMING_CMD(
     if (I_AM_MASTER) printf(TIMING_PRINT_PREFIX "mpi_fmm_sort_back_part_body: %f  %f  %f  %f  %f\n", t[0], t[1], mssp_b_t[0], mssp_b_t[1], mssp_b_t[2]);
   );
+#undef I_AM_MASTER
 }
 
 

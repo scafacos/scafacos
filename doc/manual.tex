@@ -150,6 +150,17 @@ open=right,                      % start a new chapter on the right page
 \newcommand{\eim}[1]{\e^{-2\pi\im #1}}
 \newcommand{\adj}{{\vdash \hspace*{-1.72mm} \dashv}}
 
+\usepackage[a4paper]{geometry}
+\usepackage{url}
+\usepackage{xargs}
+\usepackage{ifthen}
+\newcommandx{\myauthor}[4][3=\empty, 4=\empty]{%
+  #1\\%
+  {\small\emph{#2}}%
+  \ifthenelse{\equal{#3}{\empty}}{}{\\ {\small #3}}%
+  \ifthenelse{\equal{#4}{\empty}}{}{\\ {\small \url{#4}}}%
+  \\[2ex]%
+}
 
 \makeindex
 \begin{document}
@@ -163,10 +174,30 @@ open=right,                      % start a new chapter on the right page
 % }
 
 %\subject{}
-\title{\fcs Manual}
-\author{Matthias Bolten \\ Florian Fahrenberger \\ Ren{´e} Halver \\ Frederik Heber \\ Michael Hofmann \\ Ivo Kabadshow \\ Olaf Lenz \\ Michael Pippig}
-\date{\today}
-\maketitle
+% \title{\fcs Manual}
+% \author{Matthias Bolten \\ Florian Fahrenberger \\ Ren{´e} Halver \\ Frederik Heber \\ Michael Hofmann \\ Ivo Kabadshow \\ Olaf Lenz \\ Michael Pippig \\ Matthias Winkel}
+% \date{\today}
+% \maketitle
+
+\thispagestyle{empty}
+\newgeometry{left=2cm,right=2cm}
+\begin{center}
+  \textbf{\Huge \fcs Manual}\\[3em]
+  \myauthor{Matthias Bolten}{Department of Mathematics and Science, University of Wuppertal}[bolten@math.uni-wuppertal.de]
+  \myauthor{Florian Fahrenberger}{Institute for Computational Physics, University of Stuttgart}
+%   \myauthor{Franz G\"ahler}{Faculty of Mathematics, Bielefeld University}
+  \myauthor{Ren{\'e} Halver}{Institute for Advanced Simulation, J\"ulich Supercomputing Centre, Forschungszentrum J\"ulich GmbH}
+  \myauthor{Frederik Heber}{Institute for Numerical Simulation, University of Bonn}
+  \myauthor{Michael Hofmann}{Faculty of Computer Science, Technische Universit\"at Chemnitz}
+  \myauthor{Ivo Kabadshow}{Institute for Advanced Simulation, J\"ulich Supercomputing Centre, Forschungszentrum J\"ulich GmbH}
+  \myauthor{Olaf Lenz}{Institute for Computational Physics, University of Stuttgart}
+  \myauthor{Michael Pippig}{Faculty of Mathematics, Technische Universit\"at Chemnitz}[michael.pippig@mathematik.tu-chemnitz.de][http://www.tu-chemnitz.de/\textasciitilde mpip]
+%   \myauthor{Godehard Sutmann}{Institute for Advanced Simulation, J\"ulich Supercomputing Centre, Forschungszentrum J\"ulich GmbH and ICAMS, Ruhr-University Bochum}[g.sutmann@fz-juelich.de]
+  \myauthor{Mathias Winkel}{Institute for Advanced Simulation, J\"ulich Supercomputing Centre, Forschungszentrum J\"ulich GmbH}[pepc@fz-juelich.de][http://www.fz-juelich.de/ias/jsc/pepc]
+  \vfill
+  {\today}
+\end{center}
+\restoregeometry
 
 \setcounter{tocdepth}{1}
 \tableofcontents

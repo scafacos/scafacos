@@ -13,6 +13,18 @@ subroutine pepc_scafacos_initialize(communicator) bind(c)
 
 end subroutine pepc_scafacos_initialize
 
+subroutine pepc_scafacos_finalize(communicator) bind(c)
+
+  use module_pepc
+
+  implicit none
+
+  integer, intent(inout) :: communicator
+  integer :: my_rank, n_ranks
+
+  call pepc_finalize(communicator)
+
+end subroutine pepc_scafacos_finalize
 
 subroutine pepc_scafacos_run(nlocal, ntotal, positions, charges, &
   efield, potentials, work, virial, box_a, box_b, box_c, periodicity_in, &
@@ -21,11 +33,11 @@ subroutine pepc_scafacos_run(nlocal, ntotal, positions, charges, &
   use iso_c_binding
 
   use module_pepc
-  use module_walk, only : num_walk_threads, max_particles_per_thread
+  use module_walk, only : max_particles_per_thread
   use module_pepc_types
   use module_interaction_specific, only : theta2, eps2
   use module_mirror_boxes, only : t_lattice_1, t_lattice_2, t_lattice_3, periodicity
-  use module_fmm_framework, only : do_extrinsic_correction
+  use module_fmm_framework, only : fmm_extrinsic_correction
   use module_debug, only : debug_level
   use treevars, only : np_mult, num_threads
 
@@ -57,7 +69,7 @@ subroutine pepc_scafacos_run(nlocal, ntotal, positions, charges, &
      write(*,*) "inside pepc fortran: box_c", box_c
      write(*,*) "inside pepc fortran: theta", theta
      write(*,*) "inside pepc fortran: db_level", db_level
-     write(*,*) "inside pepc fortran: num_walk_threads", nwt
+     write(*,*) "inside pepc fortran: num_threads", nwt
      
      if(nlocal .ge. 3) then
         write(*,*) "inside pepc fortran: positions(4:9)", positions(4:9)
@@ -65,17 +77,16 @@ subroutine pepc_scafacos_run(nlocal, ntotal, positions, charges, &
   end if
 
   !!! set pepc interaction (Coulomb) parameter
-  theta2 = theta**2
-  eps2   = eps**2
-  num_walk_threads         = nwt
+  theta2 = theta*theta
+  eps2   = eps*eps
   num_threads              = nwt
   max_particles_per_thread = 100
   np_mult                  = npm
   if (db_level > 0) debug_level = ibset(db_level,0)
 
   !!! setup periodic domain
-  do_extrinsic_correction = lattice_corr   > 0
-  periodicity             = periodicity_in > 0
+  fmm_extrinsic_correction = lattice_corr
+  periodicity              = periodicity_in > 0
 
   !!! set scaling length -> all coordinates are in [0,1]^3
   if(any(periodicity .eqv. .true.)) then
@@ -90,7 +101,7 @@ subroutine pepc_scafacos_run(nlocal, ntotal, positions, charges, &
   t_lattice_3 = box_c / box_scale
   
   !!! process the changed parameter
-  call pepc_prepare(3)
+  call pepc_prepare(3_kind_dim)
 
   !!! copy input values (pos, q) into pepc particle structure, clear results
   allocate(particles(nlocal), stat=rc)
@@ -110,7 +121,7 @@ subroutine pepc_scafacos_run(nlocal, ntotal, positions, charges, &
   !!! call pepc routines
   pepc_nlocal = INT(nlocal, KIND(pepc_nlocal))
   pepc_ntotal = INT(ntotal, KIND(pepc_ntotal))
-  call pepc_grow_and_traverse(pepc_nlocal, pepc_ntotal, particles, itime, .false., .false.)
+  call pepc_grow_and_traverse(particles, itime, .false., .false.)
   nlocal = INT(pepc_nlocal, KIND(nlocal))
 
   !!! copy result values (efield, pot), including scaling, into scafacos buffers

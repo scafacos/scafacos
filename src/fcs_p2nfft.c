@@ -95,31 +95,49 @@ extern FCSResult fcs_p2nfft_init(
 
   ifcs_p2nfft_init(&(handle->method_context), handle->communicator);
 
+  handle->set_max_particle_move = fcs_p2nfft_set_max_particle_move;
+  handle->set_resort = fcs_p2nfft_set_resort;
+  handle->get_resort = fcs_p2nfft_get_resort;
+  handle->get_resort_availability = fcs_p2nfft_get_resort_availability;
+  handle->get_resort_particles = fcs_p2nfft_get_resort_particles;
+  handle->resort_ints = fcs_p2nfft_resort_ints;
+  handle->resort_floats = fcs_p2nfft_resort_floats;
+  handle->resort_bytes = fcs_p2nfft_resort_bytes;
+
   return NULL;
 }
 
-static int mixed_periodicity(
+static fcs_int periodic_dims(
     fcs_int *periodicity
     )
 {
-  if(periodicity[0] && periodicity[1] && periodicity[2])
-    return 0;
+  fcs_int count = 0;
+  for(fcs_int t=0; t<3; t++)
+    if(periodicity[t])
+      count++;
 
-  if(periodicity[0] == 0 && periodicity[1] == 0 && periodicity[2] == 0)
-    return 0;
+  return count;
+}
+
+static fcs_int nonperiodic_box_lengths_are_equal(
+    fcs_float a, fcs_float b, fcs_float c, fcs_int *periodicity
+    )
+{
+  if(!periodicity[0] && !periodicity[1])
+    if(!fcs_float_is_equal(a,b))
+      return 0;
+
+  if(!periodicity[0] && !periodicity[2])
+    if(!fcs_float_is_equal(a,c))
+      return 0;
+
+  if(!periodicity[1] && !periodicity[2])
+    if(!fcs_float_is_equal(b,c))
+      return 0;
 
   return 1;
 }
 
-static int periodicity_3d(
-    fcs_int *periodicity
-    )
-{
-  if(periodicity[0] && periodicity[1] && periodicity[2])
-    return 1;
-
-  return 0;
-}
 
 /* internal p2nfft-specific tuning function */
 extern FCSResult fcs_p2nfft_tune(
@@ -137,9 +155,6 @@ extern FCSResult fcs_p2nfft_tune(
 
   /* Check for periodicity */
   fcs_int *periodicity = fcs_get_periodicity(handle);
-  if( mixed_periodicity(periodicity) )
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
-        "The p2nfft method currently does not support mixed non-periodic/periodic boundary conditions.");
 
   /* Check for correct box parameters */
   fcs_float *a = fcs_get_box_a(handle);
@@ -148,10 +163,10 @@ extern FCSResult fcs_p2nfft_tune(
   if (!fcs_uses_principal_axes(a, b, c))
     return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
         "The p2nfft method needs a rectangular box with box vectors parallel to the principal axes.");
-
-  if (!fcs_is_cubic(a, b, c) && !periodicity_3d(periodicity))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
-        "The p2nfft method currently only supports noncubic boxes with fully 3d-periodic boundary conditions.");
+  if(periodic_dims(periodicity) == 1)
+    if(!nonperiodic_box_lengths_are_equal(a[0], b[1], c[2], periodicity))
+      return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+          "The p2nfft method currently depends on equal nonperiodic box lengths with 1d-periodic boundary conditions.");
    
   /* Get box size */ 
   box_l[0] = fcs_norm(a);
@@ -260,3 +275,69 @@ void fcs_p2nfft_compute_near(
   ifcs_p2nfft_compute_near(handle->method_context, dist, field, potential);
 }
 
+/************************************************************
+ *     Resort support
+ ************************************************************/
+
+FCSResult fcs_p2nfft_set_max_particle_move(FCS handle, fcs_float max_particle_move)
+{
+  ifcs_p2nfft_set_max_particle_move(handle->method_context, max_particle_move);
+
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_set_resort(FCS handle, fcs_int resort)
+{
+  ifcs_p2nfft_set_resort(handle->method_context, resort);
+
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_get_resort(FCS handle, fcs_int *resort)
+{
+  ifcs_p2nfft_get_resort(handle->method_context, resort);
+
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_get_resort_availability(FCS handle, fcs_int *availability)
+{
+  ifcs_p2nfft_get_resort_availability(handle->method_context, availability);
+
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_get_resort_particles(FCS handle, fcs_int *resort_particles)
+{
+  ifcs_p2nfft_get_resort_particles(handle->method_context, resort_particles);
+
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_resort_ints(handle->method_context, src, dst, n, comm);
+  
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_resort_floats(handle->method_context, src, dst, n, comm);
+  
+  return NULL;
+}
+
+
+FCSResult fcs_p2nfft_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm)
+{
+  ifcs_p2nfft_resort_bytes(handle->method_context, src, dst, n, comm);
+  
+  return NULL;
+}

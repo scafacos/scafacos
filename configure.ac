@@ -388,6 +388,11 @@ if test "x$use_fcs_pfft" = xyes ; then
       *--disable-header-install*) ;;
       *) ac_configure_args="$ac_configure_args --disable-header-install" ;;
     esac
+    # Disable compilation of documentation.
+    case $ac_configure_args in
+      *--disable-doc*) ;;
+      *) ac_configure_args="$ac_configure_args --disable-doc" ;;
+    esac
     # Disable tests if extended tests are not requested.
     if test "x$enable_fcs_extended_tests" != xyes ; then
       case $ac_configure_args in
@@ -479,6 +484,11 @@ if test "x$use_fcs_pnfft" = xyes ; then
     case $ac_configure_args in
       *--disable-header-install*) ;;
       *) ac_configure_args="$ac_configure_args --disable-header-install" ;;
+    esac
+    # Disable compilation of documentation.
+    case $ac_configure_args in
+      *--disable-doc*) ;;
+      *) ac_configure_args="$ac_configure_args --disable-doc" ;;
     esac
     # Disable tests if extended tests are not requested.
     if test "x$enable_fcs_extended_tests" != xyes ; then
@@ -710,9 +720,7 @@ AC_CONFIG_FILES([
 
 AC_CONFIG_LINKS([test/generic/scafacos_test_all.sh:test/generic/scafacos_test_all.sh])
 AC_CONFIG_LINKS([test/generic/compute_nonperiodic_references.sh:test/generic/compute_nonperiodic_references.sh])
-AC_CONFIG_LINKS([test/generic/tune_alpha_2dp.py:test/generic/tune_alpha_2dp.py])
-AC_CONFIG_LINKS([test/generic/tune_alpha_3dp.py:test/generic/tune_alpha_3dp.py])
-AC_CONFIG_LINKS([test/generic/tune_alpha_cloud_wall_3dp.py:test/generic/tune_alpha_cloud_wall_3dp.py])
+AC_CONFIG_LINKS([test/generic/opt_alpha_cloud_wall_2dp.py:test/generic/opt_alpha_cloud_wall_2dp.py])
 AC_CONFIG_LINKS([test/generic/opt_alpha_cloud_wall_3dp.py:test/generic/opt_alpha_cloud_wall_3dp.py])
 
 # Create helper script for portable MPI job startup.

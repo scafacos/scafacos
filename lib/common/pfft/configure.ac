@@ -390,6 +390,29 @@ DISTCHECK_CONFIGURE_FLAGS="CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\""
 
 AC_SUBST(DISTCHECK_CONFIGURE_FLAGS)
 
+
+
+################################################################################
+# DOCUMENTATION
+################################################################################
+AC_ARG_ENABLE([doc],
+ [AS_HELP_STRING([--disable-doc],[disable build of documents (PDF manual etc.)])],,
+ [enable_doc=yes])
+
+if test "x$enable_doc" != xno ; then
+  AC_PATH_PROG(PDFLATEX,pdflatex,no)
+  AC_PATH_PROG(MAKEINDEX,makeindex,no)
+  AC_PATH_PROG(BIBTEX,bibtex,no)
+else
+  AC_MSG_NOTICE([disable build of documents])
+fi
+
+AM_CONDITIONAL(ENABLE_DOC,[test "x$enable_doc" != xno])
+AM_CONDITIONAL(HAVE_LATEX,
+	[test "x$PDFLATEX" != xno && 
+	test "x$MAKEINDEX" != xno && 
+	test "x$BIBTEX" != xno])
+
 ################################################################################
 # create output files
 ################################################################################
@@ -427,7 +450,9 @@ AC_CONFIG_FILES(Makefile \
 		gcell/Makefile \
 		tests/Makefile \
 		tests/fortran/Makefile \
-		tests/f03/Makefile)
+		tests/f03/Makefile \
+                doc/Makefile \
+                doc/latexinc.sh)
 
 
 AC_OUTPUT

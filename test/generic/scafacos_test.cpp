@@ -186,6 +186,16 @@ static bool check_result(FCSResult result, bool force_abort = false) {
   return true;
 }
 
+// split basename and extension of a filename
+static void filename_split(char* dest, char* suffix, size_t n, const char* filename)  {
+    const char *s = strrchr(filename, '/');
+    if (s == NULL) s = filename;
+    s = strchr(s, '.');
+    snprintf(dest, n, "%.*s", (int) (strlen(filename) - ((s)?strlen(s):0)), filename);
+    
+    if ( NULL != suffix) snprintf(suffix, n, "%s", s+1);
+}
+
 // Command line parsing on master
 static void parse_commandline(int argc, char* argv[]) {
   int c;
@@ -279,11 +289,11 @@ static void parse_commandline(int argc, char* argv[]) {
   if (global_params.have_outfile && (global_params.have_binfile || global_params.have_portable_file))
   {
     // determine basename of output filename and append .bin suffix to create binary filename
-    char *s = strrchr(global_params.outfilename, '/');
-    if (s == NULL) s = global_params.outfilename;
-    s = strchr(s, '.');
-    snprintf(global_params.binfilename, MAX_FILENAME_LENGTH, "%.*s.bin", (int) (strlen(global_params.outfilename) - ((s)?strlen(s):0)), global_params.outfilename);
-    snprintf(global_params.portable_filename, MAX_FILENAME_LENGTH, "%.*s.dat", (int) (strlen(global_params.outfilename) - ((s)?strlen(s):0)), global_params.outfilename);
+    char filename_noext[MAX_FILENAME_LENGTH];
+    
+    filename_split(filename_noext, NULL, MAX_FILENAME_LENGTH, global_params.outfilename);
+    snprintf(global_params.binfilename, MAX_FILENAME_LENGTH, "%s.bin", filename_noext);
+    snprintf(global_params.portable_filename, MAX_FILENAME_LENGTH, "%s.dat", filename_noext);
   }
 
   if (optind >= argc-1) usage(argv, argc, '-');
@@ -585,7 +595,7 @@ static void no_method() {
   current_config->have_result_values[1] = 0;  // no field results
 }
 
-static void run_integration(particles_t *parts)
+static void run_integration(particles_t *parts, Testcase *testcase)
 {
   integration_t integ;
 
@@ -725,6 +735,38 @@ static void run_integration(particles_t *parts)
     print_particles(parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
 #endif
 
+    if (0 != integ.output_steps && global_params.have_outfile) {
+      char outfilename[MAX_FILENAME_LENGTH];
+      char binfilename[MAX_FILENAME_LENGTH];
+      char portable_filename[MAX_FILENAME_LENGTH];
+
+      char filename_noext[MAX_FILENAME_LENGTH];
+      char filename_suffix[MAX_FILENAME_LENGTH];
+
+      filename_split(filename_noext, filename_suffix, MAX_FILENAME_LENGTH, global_params.outfilename);
+      snprintf(outfilename, MAX_FILENAME_LENGTH, "%s_%08d.%s", filename_noext, r, filename_suffix);
+
+      // delete existing binary file
+      if (global_params.have_binfile) {
+        filename_split(filename_noext, filename_suffix, MAX_FILENAME_LENGTH, global_params.binfilename);
+        snprintf(binfilename, MAX_FILENAME_LENGTH, "%s_%08d.%s", filename_noext, r, filename_suffix);
+        MPI_File_delete(binfilename, MPI_INFO_NULL);
+      }
+
+      // delete existing portable file
+      if (global_params.have_portable_file) {
+        filename_split(filename_noext, filename_suffix, MAX_FILENAME_LENGTH, global_params.portable_filename);
+        snprintf(portable_filename, MAX_FILENAME_LENGTH, "%s_%08d.%s", filename_noext, r, filename_suffix);
+        MPI_File_delete(portable_filename, MPI_INFO_NULL);
+      }  
+
+      // called by all processes so that we can write out all particles of all processes
+      testcase->write_file(outfilename,
+        global_params.have_binfile?binfilename:NULL,
+        global_params.have_portable_file?portable_filename:NULL,
+        global_params.keep_dupgen);
+    }
+
     if (r > 0)
     {
       MASTER(cout << "    Update velocities..." << endl);
@@ -785,13 +827,26 @@ static void run_integration(particles_t *parts)
 int main(int argc, char* argv[]) {
   // The testcase
   Testcase *testcase = 0;
+#if FCS_ENABLE_PEPC
+  int mpi_thread_requested = MPI_THREAD_MULTIPLE;
+  int mpi_thread_provided;
 
+  MPI_Init_thread(&argc, &argv, mpi_thread_requested, &mpi_thread_provided);
+#else
   MPI_Init(&argc, &argv);
+#endif
 
   communicator = MPI_COMM_WORLD;
 
   MPI_Comm_rank(communicator,&comm_rank);
   MPI_Comm_size(communicator,&comm_size);
+
+#if FCS_ENABLE_PEPC
+  if (mpi_thread_provided < mpi_thread_requested) {
+    MASTER(printf("Call to MPI_INIT_THREAD failed. Requested/provided level of multithreading: %d / %d. Continuing but expect program crash.\n", mpi_thread_requested, mpi_thread_provided));
+  }
+#endif
+
 
   MASTER(cout << "Running generic test with " << comm_size << " processes" << endl);
 
@@ -900,7 +955,7 @@ int main(int argc, char* argv[]) {
     particles_t parts;
     prepare_particles(&parts);
 
-    if (global_params.integrate) run_integration(&parts);
+    if (global_params.integrate) run_integration(&parts, testcase);
     else
     {
       // Run method or do nothing

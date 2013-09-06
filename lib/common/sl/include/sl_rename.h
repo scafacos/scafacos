@@ -400,11 +400,7 @@
 /* src/base_mpi/dash.c */
 #define ds_exec_sl_create  SL_FUNC(ds_exec_sl_create)
 #define ds_exec_sl_destroy  SL_FUNC(ds_exec_sl_destroy)
-#define ds_exec_sl_pre_run  SL_FUNC(ds_exec_sl_pre_run)
-#define ds_exec_sl_post_run  SL_FUNC(ds_exec_sl_post_run)
-#define ds_exec_sl_make  SL_FUNC(ds_exec_sl_make)
 #define ds_exec_sl_add_address  SL_FUNC(ds_exec_sl_add_address)
-#define ds_exec_sl_move  SL_FUNC(ds_exec_sl_move)
 
 
 #endif /* __SL_RENAME_H__ */

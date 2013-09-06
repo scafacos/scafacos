@@ -81,9 +81,9 @@ FCSResult ifcs_p2nfft_get_ ## METHOD ## NAME(                                   
 
 
 
-/********************************************
- *  Setters and getter for P2NFFT parameters 
- *******************************************/
+/*********************************************
+ *  Setters and getters for P2NFFT parameters 
+ ********************************************/
 
 /* setters/getters for tolerance */
 FCSResult ifcs_p2nfft_set_tolerance(
@@ -183,6 +183,9 @@ FCSResult ifcs_p2nfft_set_epsI(
   if( rd==NULL )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
+  if( epsI >= 0.5 )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Near field cutoff 'epsI' does not hold epsI < 0.5");
+
   if (!fcs_float_is_equal(epsI, d->epsI))
     d->needs_retune = 1;
   d->epsI = epsI;
@@ -215,6 +218,96 @@ FCSResult ifcs_p2nfft_get_epsI(
   *epsI = d->epsI;
   return NULL;
 }
+
+
+/* Getters and Setters for scaled far field regularization border */
+FCSResult ifcs_p2nfft_set_epsB(
+    void *rd, const char* fnc_name, fcs_float epsB
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  if( epsB >= 0.5 )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field border 'epsB' does not hold epsB < 0.5");
+
+  if (!fcs_float_is_equal(epsB, d->epsB))
+    d->needs_retune = 1;
+  d->epsB = epsB;
+  d->tune_epsB = 0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_epsB_tune(
+    void *rd, const char* fnc_name
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  d->needs_retune = 1;
+  d->tune_epsB = 1;
+  d->epsB = -1.0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_get_epsB(
+    void *rd, const char* fnc_name, fcs_float *epsB
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *epsB = d->epsB;
+  return NULL;
+}
+
+
+/* Getter and Setter for far field continuation value c used by taylor2p */
+FCSResult ifcs_p2nfft_set_c(
+    void *rd, const char* fnc_name, fcs_float c
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  if (!fcs_float_is_equal(c, d->c))
+    d->needs_retune = 1;
+  d->c = c;
+  d->tune_c = 0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_c_tune(
+    void *rd, const char* fnc_name
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  d->needs_retune = 1;
+  d->tune_c = 1;
+  d->c = 0.0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_get_c(
+    void *rd, const char* fnc_name, fcs_float *c
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *c = d->c;
+  return NULL;
+}
+
 
 /* Getters and Setters for Ewald splitting parameter */
 FCSResult ifcs_p2nfft_set_alpha(
@@ -324,8 +417,8 @@ FCSResult ifcs_p2nfft_get_interpolation_order(
   return NULL;
 }
 
-/* Getters and Setters for P2NFFT regularization flag */
-FCSResult ifcs_p2nfft_set_regularization(
+/* Getters and Setters for P2NFFT near field regularization flag */
+FCSResult ifcs_p2nfft_set_reg_near(
     void *rd, const char* fnc_name, fcs_int reg
     )
 {
@@ -333,33 +426,33 @@ FCSResult ifcs_p2nfft_set_regularization(
   if( rd==NULL )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  if( (reg != FCS_P2NFFT_REG_CG) && (reg != FCS_P2NFFT_REG_TAYLOR2P) )
+  if( (reg != FCS_P2NFFT_REG_NEAR_CG) && (reg != FCS_P2NFFT_REG_NEAR_T2P) )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
   
-  if(reg != d->regularization)
+  if(reg != d->reg_near)
     d->needs_retune = 1;
-  d->regularization = reg;
+  d->reg_near = reg;
 
   return NULL;
 }
 
-FCSResult ifcs_p2nfft_set_regularization_by_name(
+FCSResult ifcs_p2nfft_set_reg_near_by_name(
     void *rd, const char* fnc_name, char *reg_name
     )
 {
   unsigned reg_flag;
 
   if (strcmp(reg_name,"cg") == 0)
-    reg_flag = FCS_P2NFFT_REG_CG;
-  else if (strcmp(reg_name,"taylor2p") == 0)
-    reg_flag = FCS_P2NFFT_REG_TAYLOR2P;
+    reg_flag = FCS_P2NFFT_REG_NEAR_CG;
+  else if (strcmp(reg_name,"t2p") == 0)
+    reg_flag = FCS_P2NFFT_REG_NEAR_T2P;
   else /* unknown regularization */
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
 
-  return ifcs_p2nfft_set_regularization(rd, fnc_name, reg_flag);
+  return ifcs_p2nfft_set_reg_near(rd, fnc_name, reg_flag);
 }
 
-FCSResult ifcs_p2nfft_get_regularization(
+FCSResult ifcs_p2nfft_get_reg_near(
     void *rd, const char* fnc_name, fcs_int *reg
     )
 {
@@ -367,7 +460,71 @@ FCSResult ifcs_p2nfft_get_regularization(
   if( rd==NULL )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  *reg = d->regularization;
+  *reg = d->reg_near;
+  return NULL;
+}
+
+/* Getters and Setters for P2NFFT far field regularization flag */
+FCSResult ifcs_p2nfft_set_reg_far(
+    void *rd, const char* fnc_name, fcs_int reg
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  if( (reg != FCS_P2NFFT_REG_FAR_RAD_CG)
+      && (reg != FCS_P2NFFT_REG_FAR_RAD_T2P_SYM)
+      && (reg != FCS_P2NFFT_REG_FAR_RAD_T2P_EC)
+      && (reg != FCS_P2NFFT_REG_FAR_RAD_T2P_IC)
+      && (reg != FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
+      && (reg != FCS_P2NFFT_REG_FAR_REC_T2P_EC)
+      && (reg != FCS_P2NFFT_REG_FAR_REC_T2P_IC)   
+    )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown far field regularization.");
+  
+  if(reg != d->reg_far)
+    d->needs_retune = 1;
+  d->reg_far = reg;
+
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_reg_far_by_name(
+    void *rd, const char* fnc_name, char *reg_name
+    )
+{
+  unsigned reg_flag;
+
+  if (strcmp(reg_name,"rad_cg") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_RAD_CG;
+  else if (strcmp(reg_name,"rad_t2p_sym") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_SYM;
+  else if (strcmp(reg_name,"rad_t2p_ec") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_EC;
+  else if (strcmp(reg_name,"rad_t2p_ic") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_IC;
+  else if (strcmp(reg_name,"rec_t2p_sym") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_SYM;
+  else if (strcmp(reg_name,"rec_t2p_ec") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_EC;
+  else if (strcmp(reg_name,"rec_t2p_ic") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_IC;
+  else /* unknown regularization */
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
+
+  return ifcs_p2nfft_set_reg_far(rd, fnc_name, reg_flag);
+}
+
+FCSResult ifcs_p2nfft_get_reg_far(
+    void *rd, const char* fnc_name, fcs_int *reg
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *reg = d->reg_far;
   return NULL;
 }
 
@@ -565,7 +722,7 @@ FCSResult ifcs_p2nfft_set_pnfft_window(
   if( rd==NULL )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  if(window > 4)
+  if((window < 0) || (4 < window) )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown window function.");
 
   if ( window != d->pnfft_window )

@@ -87,11 +87,13 @@ static void measure_pfft(
   timer[2] = timer[3] = 0;
   for(int t=0; t<loops; t++){
     /* execute parallel forward FFT */
+    MPI_Barrier(MPI_COMM_WORLD);
     timer[2] -= MPI_Wtime();
     pfft_execute(plan_forw);
     timer[2] += MPI_Wtime();
     
     /* execute parallel backward FFT */
+    MPI_Barrier(MPI_COMM_WORLD);
     timer[3] -= MPI_Wtime();
     pfft_execute(plan_back);
     timer[3] += MPI_Wtime();

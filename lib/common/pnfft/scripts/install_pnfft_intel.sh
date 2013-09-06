@@ -1,9 +1,9 @@
 #!/bin/sh -e
 
 myprefix=$HOME/local
-PNFFT_VERSION=1.0.3-alpha
-PFFT_VERSION=1.0.5-alpha
-FFTW_VERSION=3.3.2
+PNFFT_VERSION=1.0.5-alpha
+PFFT_VERSION=1.0.6-alpha
+FFTW_VERSION=3.3.3
 INSTDIR=$myprefix/pnfft-$PNFFT_VERSION
 PFFTDIR=$myprefix/pfft-$PFFT_VERSION
 FFTWDIR=$myprefix/fftw-$FFTW_VERSION

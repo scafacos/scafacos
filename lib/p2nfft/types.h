@@ -28,16 +28,20 @@
 #include "pnfft.h"
 #include <float.h>
 
+#include "common/gridsort/gridsort_resort.h"
+
+
 #define FCS_P2NFFT_DEBUG 0
 #define FCS_P2NFFT_DEBUG_RETUNE 0
+#define FCS_P2NFFT_TIMING 0
+
+#define FCS_P2NFFT_NORMALIZED_2DP_EWALD 0
 
 #define CONCAT2(prefix, name)  prefix ## name
 #define CONCAT(prefix, name)  CONCAT2(prefix, name)
 
 // typedef CONCAT(FFTW_PREFIX, fftw_complex) C;
 // #define FFTW(name) FFTW_MANGLE_DOUBLE(name)
-
-
 
 #if defined(FCS_FLOAT_IS_DOUBLE)
 typedef pnfft_complex fcs_pnfft_complex;
@@ -68,9 +72,16 @@ typedef ptrdiff_t INT;
 #  define FCS_ENABLE_DEBUG 0
 #endif
 
-#define FCS_P2NFFT_REG_CG         0
-#define FCS_P2NFFT_REG_TAYLOR2P   1
-#define FCS_P2NFFT_REG_DEFAULT    FCS_P2NFFT_REG_CG 
+#define FCS_P2NFFT_REG_NEAR_CG           0
+#define FCS_P2NFFT_REG_NEAR_T2P          1
+
+#define FCS_P2NFFT_REG_FAR_RAD_CG        0
+#define FCS_P2NFFT_REG_FAR_RAD_T2P_SYM   1
+#define FCS_P2NFFT_REG_FAR_RAD_T2P_EC    2
+#define FCS_P2NFFT_REG_FAR_RAD_T2P_IC    3
+#define FCS_P2NFFT_REG_FAR_REC_T2P_SYM   4
+#define FCS_P2NFFT_REG_FAR_REC_T2P_EC    5
+#define FCS_P2NFFT_REG_FAR_REC_T2P_IC    6
 
 /* p2nfft_flags */
 #define FCS_P2NFFT_CHECK_TOLERANCE           (0U)
@@ -81,7 +92,7 @@ typedef ptrdiff_t INT;
 #define FCS_P2NFFT_DEFAULT_PNFFT_WINDOW  1 /* Bspline */
 #define FCS_P2NFFT_DEFAULT_PFFT_PATIENCE 1 /* Measure */
 
-#if FCS_ENABLE_TIMING
+#if FCS_ENABLE_TIMING || FCS_P2NFFT_TIMING
 #define FCS_P2NFFT_INIT_TIMING(comm) \
   int tm_rank; \
   MPI_Comm_rank(comm, &tm_rank); \
@@ -118,10 +129,12 @@ typedef struct {
   fcs_int tune_alpha;
   fcs_int tune_r_cut;
   fcs_int tune_epsI;
+  fcs_int tune_epsB;
   fcs_int tune_N;
   fcs_int tune_n;
   fcs_int tune_m;
   fcs_int tune_p;
+  fcs_int tune_c;
   fcs_int sum_qpart;
   fcs_float sum_q;
   fcs_float sum_q2;
@@ -144,7 +157,8 @@ typedef struct {
   fcs_int  pfft_patience;
 
   fcs_int short_range_flag;
-  fcs_int regularization;
+  fcs_int reg_near;
+  fcs_int reg_far;
 
   fcs_int periodicity[3];
 
@@ -156,7 +170,8 @@ typedef struct {
   fcs_int use_ewald;  /* switch between fully periodic and non-periodic case */
   fcs_float r_cut;    /* near field radius (unscaled) */
   fcs_float one_over_r_cut;    /* inverse near field radius (unscaled) */
-  fcs_int num_nonperiodic_dims; /* number of dimensions with periodic boundary conditions */
+  fcs_int num_nonperiodic_dims; /* number of dimensions with nonperiodic boundary conditions */
+  fcs_int num_periodic_dims;    /* number of dimensions with periodic boundary conditions */
 
   /* parameters for periodic case */
   fcs_float alpha;  /* Ewald splitting parameter */
@@ -167,12 +182,14 @@ typedef struct {
   fcs_float epsB;  /* size of regualization border scaled into unit cube */
   fcs_int log2epsB;
   fcs_int p;
+  fcs_float c;
   fcs_float *taylor2p_coeff;
   fcs_float *taylor2p_derive_coeff;
 
   /* parameters for interpolation table */
   fcs_int interpolation_order;      /* interpolation order */
-  fcs_int interpolation_num_nodes;  /* number of sampled points */
+  fcs_int near_interpolation_num_nodes;  /* number of sampled points in near field */
+  fcs_int far_interpolation_num_nodes;   /* number of sampled points in far field */
   fcs_float *near_interpolation_table_potential; /* nearfield potential values */
   fcs_float *near_interpolation_table_force;     /* nearfield force values */
   fcs_float *far_interpolation_table_potential;  /* potential values between far field border and 0.5 */
@@ -180,12 +197,21 @@ typedef struct {
   /* Cosine coefficients of CG-optimized regularization */
   fcs_int N_cg_cos;
   fcs_float *cg_cos_coeff;
+  fcs_float *cg_sin_coeff;
   
   /* Fourier coefficients of regularized kernel approximation */
   fcs_pnfft_complex *regkern_hat;
 
   /* array to store the virial matrix */
   fcs_float *virial;
+
+  /* resort parameters */
+  fcs_float max_particle_move;
+  fcs_int resort, local_num_particles;
+  fcs_gridsort_resort_t gridsort_resort;
+
+  /* gridsort cache */
+  fcs_gridsort_cache_t gridsort_cache;
 
 } ifcs_p2nfft_data_struct;
 

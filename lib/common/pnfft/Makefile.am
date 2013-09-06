@@ -11,7 +11,8 @@ libtool: $(LIBTOOL_DEPS)
 ACLOCAL_AMFLAGS = -I m4
 
 # Subdirectories
-SUBDIRS = kernel util api .
+SUBDIRS = kernel util api . doc
+DIST_SUBDIRS = $(SUBDIRS) tests
 
 if ENABLE_TESTS
 SUBDIRS += tests
@@ -41,3 +42,13 @@ include $(top_srcdir)/build-aux/fortran-rules.am
 
 pnfft1@PREC_SUFFIX@.pc: pnfft.pc
 	cp -f pnfft.pc pnfft1@PREC_SUFFIX@.pc
+
+#################################################################
+# Documentation
+#################################################################
+if ENABLE_DOC
+.PHONY: FORCE doc manual
+doc manual: FORCE
+	cd doc; $(MAKE) --print-directory $@
+FORCE:
+endif

@@ -1,0 +1,42 @@
+\chapter{Fortran Interface}
+
+\begin{compactitem}
+  \item uses Fortran 2003 iso C bindings
+  \item all function names are the same as in C interface with one exception: \verb+get_n+ becomes \verb+get_nos+,
+        since Fortran is not case sensitive and we need to distinguish between \verb+get_N+ and \verb+get_n+
+  \item all C-pointer must be converted to Fortran-pointers but freed as C-pointers
+\end{compactitem}
+
+
+The order of array dimensions flip, since C uses a row-major memory layout, whereas Fortran uses column-major memory order.
+
+
+2d data decomposition with non-transposed Fourier coefficients
+\begin{equation*}
+  \hat N_2 \times \hat N_1 / P_1 \times \hat N_0 / P_0
+  \nfftarrow
+  C_2 \times C_1 / P_1 \times C_0 / P_0
+\end{equation*}
+
+2d data decomposition with transposed Fourier coefficients
+\begin{equation*}
+  \hat N_0 \times \hat N_2 / P_1 \times \hat N_1 / P_0
+  \nfftarrow
+  C_2 \times C_1 / P_1 \times C_0 / P_0
+\end{equation*}
+
+3d data decomposition with non-transposed Fourier coefficients
+\begin{equation*}
+  \hat N_2 / P_2 \times \hat N_1 / P_1 \times \hat N_0 / P_0
+  \nfftarrow
+  C_2 / P_2 \times C_1 / P_1 \times C_0 / P_0
+\end{equation*}
+
+3d data decomposition with transposed Fourier coefficients with $P_2 = Q_0 Q_1$
+\begin{equation*}
+  \hat N_0 \times \hat N_2 / (P_1 Q_1) \times \hat N_1 / (P_0 Q_0)
+  \nfftarrow
+  C_2 / P_2 \times C_1 / P_1 \times C_0 / P_0
+\end{equation*}
+
+

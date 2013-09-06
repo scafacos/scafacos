@@ -1,6 +1,6 @@
 # Initialize Autoconf.  We require version 2.59 or newer.
 AC_PREREQ([2.59])
-AC_INIT([PEPC], [rev3575], [pepc@fz-juelich.de], [pepc])
+AC_INIT([PEPC], [rev3965], [pepc@fz-juelich.de], [pepc])
 
 AC_MSG_NOTICE([****************************************************************])
 AC_MSG_NOTICE([*      Configuring solver PEPC                                 *])

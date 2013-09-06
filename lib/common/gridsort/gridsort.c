@@ -839,7 +839,56 @@ static void release_proclist(fcs_int *nprocs, int **procs)
   if (*procs) free(*procs);
   *procs = NULL;
 }
+
+
+#ifdef GRIDSORT_PROCLIST_VERIFY
+static void verify_proclist(fcs_int nprocs, int *procs, int size, int rank, MPI_Comm comm)
+{
+  fcs_int i, nrecvs, failed, global_failed;
+  int *sendtags, *recvtags;
+  
+  
+  sendtags = malloc(size * sizeof(int));
+  recvtags = malloc(size * sizeof(int));
+
+  for (i = 0; i < size; ++i) sendtags[i] = 0;
+  for (i = 0; i < nprocs; ++i) sendtags[procs[i]] = 1;
+  
+  MPI_Alltoall(sendtags, 1, MPI_INT, recvtags, 1, MPI_INT, comm);
+  
+  nrecvs = 0;
+  for (i = 0; i < size; ++i) nrecvs += recvtags[i];
+
+  failed = (nrecvs != nprocs);
+  for (i = 0; i < nprocs; ++i) failed |= (recvtags[procs[i]] == 0);
+
+  DEBUG_CMD(
+    printf(DEBUG_PRINT_PREFIX "%d: verify proclist: %s (%d vs. %d)\n", rank, (failed)?"FAILED":"OK", (int) nrecvs, (int) nprocs);
+  );
+
+  free(sendtags);
+  free(recvtags);
+
+  failed = (failed)?1:0;
+  
+  MPI_Allreduce(&failed, &global_failed, 1, FCS_MPI_INT, MPI_SUM, comm);
+
+  if (global_failed)
+  {
+    printf("%d: nprocs: %d\n", rank, (int) nprocs);
+    for (i = 0; i < nprocs; ++i)
+      printf("%d: %d: %d\n", rank, (int) i, procs[i]);
+
+    printf("%d: sendtags / recvtags\n", rank);
+    for (i = 0; i < size; ++i)
+      printf("%d: %d: %d / %d\n", rank, (int) i, sendtags[i], recvtags[i]);
+
+    MPI_Abort(MPI_COMM_WORLD, 28);
+  }
+}
 #endif
+
+#endif /* GRIDSORT_PROCLIST */
 
 
 fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI_Comm comm)
@@ -875,7 +924,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   fcs_float ghost_f[3], zslices_ghost_range, zslices_ghost_f;
 
 #if defined(GRIDSORT_FRONT_TPROC_RANK_CACHE) || defined(GRIDSORT_PROCLIST)
-  fcs_float move_f[3];
+  fcs_float max_particle_move, move_f[3];
 #endif
 
   fcs_float *min_bounds, max_bounds[3], box_size[3];
@@ -980,14 +1029,21 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   );
 
 #if defined(GRIDSORT_FRONT_TPROC_RANK_CACHE) || defined(GRIDSORT_PROCLIST)
-  move_f[0] = get_ghost_factor(gs->d.box_a, gs->d.box_b, gs->d.box_c, z_max(0, gs->max_particle_move));
-  move_f[1] = get_ghost_factor(gs->d.box_b, gs->d.box_c, gs->d.box_a, z_max(0, gs->max_particle_move));
-  move_f[2] = get_ghost_factor(gs->d.box_c, gs->d.box_a, gs->d.box_b, z_max(0, gs->max_particle_move));
+  MPI_Allreduce(&gs->max_particle_move, &max_particle_move, 1, FCS_MPI_FLOAT, MPI_MAX, comm);
+
+  INFO_CMD(
+    if (comm_rank == 0)
+      printf(INFO_PRINT_PREFIX "max_particle_move: %" FCS_LMOD_FLOAT "f\n", max_particle_move);
+  );
+
+  move_f[0] = get_ghost_factor(gs->d.box_a, gs->d.box_b, gs->d.box_c, z_max(0, max_particle_move));
+  move_f[1] = get_ghost_factor(gs->d.box_b, gs->d.box_c, gs->d.box_a, z_max(0, max_particle_move));
+  move_f[2] = get_ghost_factor(gs->d.box_c, gs->d.box_a, gs->d.box_b, z_max(0, max_particle_move));
 
   INFO_CMD(
     if (comm_rank == 0)
       printf(INFO_PRINT_PREFIX "max_particle_move: %" FCS_LMOD_FLOAT "f, move_f: %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f\n",
-        gs->max_particle_move, move_f[0], move_f[1], move_f[2]);
+        max_particle_move, move_f[0], move_f[1], move_f[2]);
   );
 #endif
 
@@ -1224,9 +1280,13 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 #ifdef GRIDSORT_PROCLIST
   release_proclist(&gs->nprocs, &gs->procs);
 
-  if (gs->max_particle_move >= 0)
+  if (max_particle_move >= 0)
   {
     gs->procs = setup_proclist(&gs->nprocs, comm_size / 2, ghost_f, zslices_ghost_f, move_f, cart_dims, cart_coords, periodicity, gs->d.bounds, box_size, comm);
+
+#ifdef GRIDSORT_PROCLIST_VERIFY
+    if (gs->procs) verify_proclist(gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+#endif
 
     DEBUG_CMD(
       printf(DEBUG_PRINT_PREFIX "%d: nprocs: %" forw_slint_fmt "\n", comm_rank, gs->nprocs);

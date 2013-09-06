@@ -24,6 +24,7 @@ AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 # Checks for header files.
+AC_CHECK_HEADERS([gsl/gsl_sf_bessel.h gsl/gsl_sf_gamma.h],[],[AC_MSG_ERROR([Required header files for GNU Scientific Library not found.])])
 
 # Set up FCS library arguments.
 AX_FCS_CONFIG_SOLVER_ARGS
@@ -37,6 +38,11 @@ AX_FCS_CONFIG_SOLVER
 AC_PROG_CC_STDC
 
 # Checks for library functions.
+p2nfft_ldadd=
+AC_SEARCH_LIBS([cos],[m],[test "${ac_cv_search_cos}" != "none required" && p2nfft_ldadd="${p2nfft_ldadd} ${ac_cv_search_cos}"],[AC_MSG_ERROR([Required library for math functions not found.])])
+AC_SEARCH_LIBS([cblas_dgemm],[gslcblas],[test "${ac_cv_search_cblas_dgemm}" != "none required" && p2nfft_ldadd="${p2nfft_ldadd} ${ac_cv_search_cblas_dgemm}"],[AC_MSG_ERROR([Required library for GNU Scientific Library not found.])])
+AC_SEARCH_LIBS([gsl_blas_dgemm],[gsl],[test "${ac_cv_search_gsl_blas_dgemm}" != "none required" && p2nfft_ldadd="${p2nfft_ldadd} ${ac_cv_search_gsl_blas_dgemm}"],[AC_MSG_ERROR([Required library for GNU Scientific Library not found.])])
+
 AX_LIB_FFTW3
 
 if test "x$ax_lib_fftw3_mpi" = "xno"; then
@@ -67,6 +73,7 @@ LDFLAGS="$LDFLAGS $fftw3_mpi_LDFLAGS $fftw3_LDFLAGS"
 AX_FCS_PACKAGE_RESET
 AX_FCS_PACKAGE_ADD([p2nfft_LIBS],[-lfcs_p2nfft])
 AX_FCS_PACKAGE_ADD([p2nfft_LIBS_A],[libfcs_p2nfft.a])
+AX_FCS_PACKAGE_ADD([p2nfft_LDADD],[${p2nfft_ldadd}])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

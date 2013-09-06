@@ -919,10 +919,13 @@ int PARMCI_WaitProc (int proc) {
   ARMCIX_WaitProc (proc);
 #else
   int i;
+  /* remove warnings (M. Hofmann) */
+  armci_ihdl_t nbh;
   if(impcount) {
     for(i=0; i<ARMCI_MAX_IMPLICIT; i++) {
+      nbh = (armci_ihdl_t) &armci_nb_handle[i];
       if(hdl_flag[i]=='1' && 
-	 ((armci_ihdl_t)&armci_nb_handle[i])->proc==proc) {
+	 nbh->proc==proc) {
         PARMCI_Wait(&armci_nb_handle[i]);
         hdl_flag[i]='0';
       }
