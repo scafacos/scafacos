@@ -160,6 +160,11 @@ extern FCSResult fcs_pepc_get_virial(FCS handle, fcs_float virial[9]);
 extern void pepc_scafacos_initialize(MPI_Fint *comm);
 
 /**
+ * @brief pepc finalize fortran routine that is wrapped by scafacos
+ */
+extern void pepc_scafacos_finalize(MPI_Fint *comm);
+
+/**
  * @brief central pepc fortran routine that is wrapped by scafacos
  */
 extern void pepc_scafacos_run(fcs_int *local_particles, fcs_int *total_particles,

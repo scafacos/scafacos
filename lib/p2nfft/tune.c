@@ -1640,7 +1640,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
 //       fprintf(stderr, "regkern[%e] = %e, x2norm = %e,xsnorm = %e, xs = [%f, %f, %f], x2 = [%f, %f, %f], local_Ni_start = [%td, %td, %td]\n",
 //           x2norm, creal(regkern_hat[m]), x2norm, xsnorm, xs[0], xs[1], xs[2], xs[0]*box_scales[0], xs[1]*box_scales[1], xs[2]*box_scales[2], local_Ni_start[0], local_Ni_start[1], local_Ni_start[2]);
             if(isnan(creal(regkern_hat[m]))){
-              fprintf(stderr, "keq0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, x2norm = %e, kbnorm = %e, alpha = %e\n",
+              fprintf(stderr, "keq0: k = [%td, %td, %td], x = [%e, %e, %e], p = %" FCS_LMOD_INT "d, epsB = %e, x2norm = %e, kbnorm = %e, alpha = %e\n",
                   k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, x2norm, kbnorm, alpha);
               MPI_Abort(MPI_COMM_WORLD, 1);
             }
@@ -1660,7 +1660,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
 //       fprintf(stderr, "regkern[%e] = %e, x2norm = %e,xsnorm = %e, xs = [%f, %f, %f], x2 = [%f, %f, %f], k = [%td, %td, %td]\n",
 //           x2norm, creal(regkern_hat[m]), x2norm, xsnorm, xs[0], xs[1], xs[2], xs[0]*box_scales[0], xs[1]*box_scales[1], xs[2]*box_scales[2], k[0], k[1], k[2]);
             if(isnan(creal(regkern_hat[m]))){
-              fprintf(stderr, "kne0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, xsnorm = %e, kbnorm = %e, alpha = %e\n",
+              fprintf(stderr, "kne0: k = [%td, %td, %td], x = [%e, %e, %e], p = %" FCS_LMOD_INT "d, epsB = %e, xsnorm = %e, kbnorm = %e, alpha = %e\n",
                   k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, xsnorm, kbnorm, alpha);
 //               for(int t=0; t<9; t++)
 //                 fprintf(stderr, "K_%d(0.4,0) = %e\n", t, ifcs_p2nfft_inc_upper_bessel_k(t, 0.4, 0, 1e-8));

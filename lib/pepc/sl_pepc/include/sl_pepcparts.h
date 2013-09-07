@@ -1004,7 +1004,11 @@ typedef pepcparts_sl_int_type_c pepcparts_spec_int_t;
 typedef int pepcparts_spec_proc_t;
 
 #define pepcparts_SPEC_LOC_NONE   -1
-#define pepcparts_SPEC_PROC_NONE  MPI_PROC_NULL
+#ifdef SL_USE_MPI
+# define pepcparts_SPEC_PROC_NONE  MPI_PROC_NULL
+#else
+# define pepcparts_SPEC_PROC_NONE  -1
+#endif
 
 typedef void *pepcparts_spec_tloc_data_t;
 typedef void *pepcparts_spec_tproc_data_t;

@@ -52,6 +52,14 @@ static void _ZMPI_Tproc_free(ZMPI_Tproc *tproc)
 }
 
 
+static void _ZMPI_Tproc_dup(ZMPI_Tproc tproc, ZMPI_Tproc *newtproc)
+{
+  _ZMPI_Tproc_create(newtproc);
+  
+  spec_tproc_duplicate(&tproc->spec_tproc, &(*newtproc)->spec_tproc);
+}
+
+
 int ZMPI_Tproc_create_tproc(ZMPI_Tproc *tproc, ZMPI_TPROC_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef) /* zmpi_func ZMPI_Tproc_create_tproc */
 {
   if (exdef != ZMPI_TPROC_EXDEF_NULL && exdef->type != 1) return 1;
@@ -128,7 +136,7 @@ int ZMPI_Tproc_free(ZMPI_Tproc *tproc) /* zmpi_func ZMPI_Tproc_free */
 }
 
 
-int ZMPI_Tproc_set_neighbors(ZMPI_Tproc *tproc, int nneighbors, int *neighbors, MPI_Comm comm) /* zmpi_func ZMPI_Tproc_set_neighbors */
+int ZMPI_Tproc_set_neighbors(ZMPI_Tproc tproc, int nneighbors, int *neighbors, MPI_Comm comm) /* zmpi_func ZMPI_Tproc_set_neighbors */
 {
   int comm_size, comm_rank;
 
@@ -136,7 +144,7 @@ int ZMPI_Tproc_set_neighbors(ZMPI_Tproc *tproc, int nneighbors, int *neighbors, 
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
 
-  spec_tproc_set_proclists(&(*tproc)->spec_tproc, nneighbors, neighbors, -1, NULL, comm_size, comm_rank, comm);
+  spec_tproc_set_proclists(&tproc->spec_tproc, nneighbors, neighbors, -1, NULL, comm_size, comm_rank, comm);
 
   return MPI_SUCCESS;
 #else
@@ -145,7 +153,7 @@ int ZMPI_Tproc_set_neighbors(ZMPI_Tproc *tproc, int nneighbors, int *neighbors, 
 }
 
 
-int ZMPI_Tproc_set_proclists(ZMPI_Tproc *tproc, int ndstprocs, int *dstprocs, int nsrcprocs, int *srcprocs, MPI_Comm comm) /* zmpi_func ZMPI_Tproc_set_proclists */
+int ZMPI_Tproc_set_proclists(ZMPI_Tproc tproc, int ndstprocs, int *dstprocs, int nsrcprocs, int *srcprocs, MPI_Comm comm) /* zmpi_func ZMPI_Tproc_set_proclists */
 {
   int comm_size, comm_rank;
 
@@ -153,7 +161,7 @@ int ZMPI_Tproc_set_proclists(ZMPI_Tproc *tproc, int ndstprocs, int *dstprocs, in
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
 
-  spec_tproc_set_proclists(&(*tproc)->spec_tproc, ndstprocs, dstprocs, nsrcprocs, srcprocs, comm_size, comm_rank, comm);
+  spec_tproc_set_proclists(&tproc->spec_tproc, ndstprocs, dstprocs, nsrcprocs, srcprocs, comm_size, comm_rank, comm);
 
   return MPI_SUCCESS;
 #else
@@ -176,7 +184,7 @@ int ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbu
   if (sbuf == MPI_IN_PLACE && rbuf == MPI_IN_PLACE)
   {
 #ifdef ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE
-    fprintf(ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE, "%d: MPI_Alltoall_specific_alltoallv_spec: error: either sbuf or rbuf can be MPI_IN_PLACE!\n", comm_rank);
+    fprintf(ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE, "%d: ZMPI_Alltoall_specific: error: either sbuf or rbuf can be MPI_IN_PLACE!\n", comm_rank);
 #endif
     exit_code = 1;
     goto exit;
@@ -221,6 +229,89 @@ int ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbu
   zmpil_destroy(&sb.zmpil_type);
 
   zmpil_destroy(&rb.zmpil_type);
+
+exit:
+
+  return exit_code;  
+}
+
+
+static int create_proclists_from_mpi_comm_topology(MPI_Comm comm, int rank, int *nsend_procs, int **send_procs, int *nrecv_procs, int **recv_procs)
+{
+  int status;
+
+  int n, i;
+
+
+  MPI_Topo_test(comm, &status);
+  
+  switch (status)
+  {
+    case MPI_CART:
+      MPI_Cartdim_get(comm, &n);
+      *nsend_procs = *nrecv_procs = 2 * n;
+      *send_procs = *recv_procs = z_alloc(2 * n, sizeof(int));
+      for (i = 0; i < n; ++i) MPI_Cart_shift(comm, i, -1, &(*send_procs)[2 * i + 1], &(*send_procs)[2 * i + 0]);
+      break;
+    case MPI_GRAPH:
+      MPI_Graph_neighbors_count(comm, rank, &n);
+      *nsend_procs = *nrecv_procs = n;
+      *send_procs = *recv_procs = z_alloc(n, sizeof(int));
+      MPI_Graph_neighbors(comm, rank, n, *send_procs);
+      break;
+#if MPI_VERSION >= 2 && MPI_SUBVERSION >= 2
+    case MPI_DIST_GRAPH:
+      MPI_Dist_graph_neighbors_count(comm, nrecv_procs, nsend_procs, &n);
+      *send_procs = z_alloc(*nsend_procs + *nrecv_procs, sizeof(int));
+      *recv_procs = *send_procs + *nsend_procs;
+      MPI_Dist_graph_neighbors(comm, *nrecv_procs, *recv_procs, MPI_UNWEIGHTED, *nsend_procs, *send_procs, MPI_UNWEIGHTED);
+      break;
+#endif
+    default:
+      return 0;
+  }
+  
+  return 1;
+}
+
+
+static void destroy_proclists(int **send_procs, int **recv_procs)
+{
+  z_free(*send_procs);
+}
+
+
+int ZMPI_Neighbor_alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, MPI_Comm comm) /* zmpi_func ZMPI_Neighbor_alltoall_specific */
+{
+  int exit_code;
+  int comm_size, comm_rank;
+
+  int nsend_procs, *send_procs, nrecv_procs, *recv_procs;
+
+  ZMPI_Tproc newtproc;
+
+
+  MPI_Comm_size(comm, &comm_size);
+  MPI_Comm_rank(comm, &comm_rank);
+  
+  if (!create_proclists_from_mpi_comm_topology(comm, comm_rank, &nsend_procs, &send_procs, &nrecv_procs, &recv_procs))
+  {
+#ifdef ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE
+    fprintf(ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE, "%d: ZMPI_Neighbor_alltoall_specific: error: communicator has no (supported) topology!\n", comm_rank);
+#endif
+    exit_code = 1;
+    goto exit;
+  }
+
+  _ZMPI_Tproc_dup(tproc, &newtproc);
+
+  ZMPI_Tproc_set_proclists(newtproc, nsend_procs, send_procs, nrecv_procs, recv_procs, comm);
+
+  exit_code = ZMPI_Alltoall_specific(sbuf, scount, stype, rbuf, rcount, rtype, newtproc, tproc_data, received, comm);
+
+  destroy_proclists(&send_procs, &recv_procs);
+
+  _ZMPI_Tproc_free(&newtproc);
 
 exit:
 

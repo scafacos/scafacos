@@ -33,7 +33,11 @@ typedef sl_int_type_c spec_int_t;
 typedef int spec_proc_t;
 
 #define SPEC_LOC_NONE   -1
-#define SPEC_PROC_NONE  MPI_PROC_NULL
+#ifdef SL_USE_MPI
+# define SPEC_PROC_NONE  MPI_PROC_NULL
+#else
+# define SPEC_PROC_NONE  -1
+#endif
 
 typedef void *spec_tloc_data_t;
 typedef void *spec_tproc_data_t;

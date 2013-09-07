@@ -32,6 +32,10 @@
 # include "zmpi_ataip.h"
 #endif
 
+#ifdef HAVE_ZMPI_TOOLS_H
+# include "zmpi_tools.h"
+#endif
+
 #include "spec_public_conf.h"
 
 
@@ -61,6 +65,11 @@
 
 #define spec_elem_alltoallv_db(_sb_, _sc_, _sd_, _rb_, _rc_, _rd_, _s_, _r_, _c_) \
   MPI_Alltoallv((_sb_)->buf, (_sc_), (_sd_), (_sb_)->mpi_type, (_rb_)->buf, (_rc_), (_rd_), (_rb_)->mpi_type, (_c_))
+
+#ifdef HAVE_ZMPI_ALLTOALLV_PROCLISTS
+#define spec_elem_alltoallv_proclists_db(_sb_, _sc_, _sd_, _nsp_, _sp_, _rb_, _rc_, _rd_, _nrp_, _rp_, _s_, _r_, _c_) \
+  ZMPI_Alltoallv_proclists((_sb_)->buf, (_sc_), (_sd_), (_sb_)->mpi_type, (_nsp_), (_sp_), (_rb_)->buf, (_rc_), (_rd_), (_rb_)->mpi_type, (_nrp_), (_rp_), (_c_))
+#endif
 
 #ifdef HAVE_ZMPI_ATAIP_H
 #define spec_elem_alltoallv_ip(_b_, _xb_, _sc_, _sd_, _rc_, _rd_, _s_, _r_, _c_) do { \

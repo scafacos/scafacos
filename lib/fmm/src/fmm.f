@@ -1900,7 +1900,11 @@ c
          mem_m2 = maxint
       endif
 c
-      copyxyz = .true.
+      if (FMM_internal_params%resort.eq.1) then
+        copyxyz = .false.
+      else
+        copyxyz = .true.
+      endif
       sh4 = .true.
       sh3 = .false.
       useqinsh = .true.
@@ -3183,7 +3187,13 @@ c
 #endif
       endif
 c
-      call sortback(ncharges,copyxyz,xyzt,piboxsrt,q,fmmgrad,pfmmpot)
+      if (FMM_internal_params%resort.eq.1) then
+c        write(*,*) 'doing resort'
+        call mpi_fmm_resort_init(FMM_internal_params%resort_ptr,ncharges,ichargesout,piboxsrt)
+      else
+c        write(*,*) 'doing sortback'
+        call sortback(ncharges,copyxyz,xyzt,piboxsrt,q,fmmgrad,pfmmpot)
+      endif
 c
 #ifdef FMM_RESTORE_COORDINATES
       if(.not.copyxyz) call restorecoordinates(periodic,periodica,nbits,

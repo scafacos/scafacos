@@ -28,8 +28,12 @@
 #include "pnfft.h"
 #include <float.h>
 
+#include "common/gridsort/gridsort_resort.h"
+
+
 #define FCS_P2NFFT_DEBUG 0
 #define FCS_P2NFFT_DEBUG_RETUNE 0
+#define FCS_P2NFFT_TIMING 0
 
 #define FCS_P2NFFT_NORMALIZED_2DP_EWALD 0
 
@@ -88,7 +92,7 @@ typedef ptrdiff_t INT;
 #define FCS_P2NFFT_DEFAULT_PNFFT_WINDOW  1 /* Bspline */
 #define FCS_P2NFFT_DEFAULT_PFFT_PATIENCE 1 /* Measure */
 
-#if FCS_ENABLE_TIMING
+#if FCS_ENABLE_TIMING || FCS_P2NFFT_TIMING
 #define FCS_P2NFFT_INIT_TIMING(comm) \
   int tm_rank; \
   MPI_Comm_rank(comm, &tm_rank); \
@@ -200,6 +204,14 @@ typedef struct {
 
   /* array to store the virial matrix */
   fcs_float *virial;
+
+  /* resort parameters */
+  fcs_float max_particle_move;
+  fcs_int resort, local_num_particles;
+  fcs_gridsort_resort_t gridsort_resort;
+
+  /* gridsort cache */
+  fcs_gridsort_cache_t gridsort_cache;
 
 } ifcs_p2nfft_data_struct;
 

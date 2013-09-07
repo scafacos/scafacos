@@ -49,6 +49,7 @@
 #define spec_timing  SP_VAR(spec_timing)
 #define spec_tproc_create  SP_FUNC(spec_tproc_create)
 #define spec_tproc_destroy  SP_FUNC(spec_tproc_destroy)
+#define spec_tproc_duplicate  SP_FUNC(spec_tproc_duplicate)
 #define spec_tproc_set_tproc  SP_FUNC(spec_tproc_set_tproc)
 #define spec_tproc_set_ext_tproc  SP_FUNC(spec_tproc_set_ext_tproc)
 #define spec_tproc_set_tproc_mod  SP_FUNC(spec_tproc_set_tproc_mod)

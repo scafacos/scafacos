@@ -900,7 +900,11 @@ typedef near____sl_int_type_c near____spec_int_t;
 typedef int near____spec_proc_t;
 
 #define near____SPEC_LOC_NONE   -1
-#define near____SPEC_PROC_NONE  MPI_PROC_NULL
+#ifdef SL_USE_MPI
+# define near____SPEC_PROC_NONE  MPI_PROC_NULL
+#else
+# define near____SPEC_PROC_NONE  -1
+#endif
 
 typedef void *near____spec_tloc_data_t;
 typedef void *near____spec_tproc_data_t;

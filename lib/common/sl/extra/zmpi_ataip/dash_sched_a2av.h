@@ -26,7 +26,7 @@
 #define __DASH_SCHED_A2AV_H__
 
 
-#include "dash_core.h"
+#include "dash_sched.h"
 #include "dash_sched_a2av_aux.h"
 
 
@@ -34,9 +34,9 @@ typedef struct _block_t
 {
   dsint_t begin, end;
 
-  dsint_t proc;
+  dsint_t proc_id;
   
-#ifdef WITH_SYMMETRIC
+#ifdef DASH_SYMMETRIC
   dsint_t moved;
   dsint_t sym_count,   /* > 0 -> number of items in active sym (sblock and rblock), < 0 -> neg. number of items in passive sym (sblock only) */
           sym_displ,   /* original (un-moved) position where the current (active or passive) sym begins */
@@ -44,13 +44,13 @@ typedef struct _block_t
 #endif
 
   struct _block_t *match, *prev, *next;
-#ifdef WITH_OVERLAP
+#ifdef DASH_SCHED_A2AV_OVERLAP
   struct _block_t *second;
 #endif
 
 } block_t, *block_p;
 
-#ifdef WITH_SYMMETRIC
+#ifdef DASH_SYMMETRIC
 # define PRINT_BLOCK_SYM_STR          ", moved: %" dsint_fmt ", sym_count: %" dsint_fmt ", sym_displ: %" dsint_fmt ", sym_offset: %" dsint_fmt
 # define PRINT_BLOCK_SYM_PARAMS(_b_)  (_b_).moved, (_b_).sym_count, (_b_).sym_displ, (_b_).sym_offset, 
 #else
@@ -59,7 +59,7 @@ typedef struct _block_t
 #endif
 
 #define PRINT_BLOCK_STR          "[%" dsint_fmt ",%" dsint_fmt "], proc: %" dsint_fmt PRINT_BLOCK_SYM_STR ", match: %p, prev: %p, next: %p"
-#define PRINT_BLOCK_PARAMS(_b_)  (_b_).begin, (_b_).end, (_b_).proc, PRINT_BLOCK_SYM_PARAMS(_b_) (_b_).match, (_b_).prev, (_b_).next
+#define PRINT_BLOCK_PARAMS(_b_)  (_b_).begin, (_b_).end, (_b_).proc_id, PRINT_BLOCK_SYM_PARAMS(_b_) (_b_).match, (_b_).prev, (_b_).next
 
 typedef struct _block_pool_t
 {
@@ -77,6 +77,8 @@ typedef struct _block_pool_t
 
 typedef struct _ds_sched_a2av_t
 {
+  dsint_t local_send_proc_id, local_recv_proc_id;
+
   block_pool_t bp;
 
   ds_sched_a2av_aux_t *aux;
@@ -87,12 +89,15 @@ typedef struct _ds_sched_a2av_t
 
     block_t *sblock_first, *rblock_first;
 
-  } bufs[DS_MAX_NBUFFERS];
+  } bufs[DASH_MAX_NBUFFERS];
 
+  dsint_t full_reqs;
   dsint_t max_nrecv_reqs, max_nsend_reqs;
   dsint_t *recv_reqs, *send_reqs;
 
   dsint_t stotal, rtotal;
+
+  dsint_t skip_sym;
 
 } ds_sched_a2av_t, *ds_sched_a2av_p;
 
@@ -105,13 +110,7 @@ dsint_t ds_sched_a2av_create(ds_sched_t *sched);
 dsint_t ds_sched_a2av_destroy(ds_sched_t *sched);
 
 void ds_sched_a2av_set_aux(ds_sched_t *sched, ds_sched_a2av_aux_t *aux);
-
-dsint_t ds_sched_a2av_max_n(ds_sched_t *sched, dsint_t *max_nsends, dsint_t *max_n, dsint_t *max_nlocals, dsint_t *max_nsyms);
-dsint_t ds_sched_a2av_pre_run(ds_sched_t *sched);
-dsint_t ds_sched_a2av_post_run(ds_sched_t *sched);
-dsint_t ds_sched_a2av_finished(ds_sched_t *sched);
-dsint_t ds_sched_a2av_pre(ds_sched_t *sched);
-dsint_t ds_sched_a2av_post(ds_sched_t *sched);
+void ds_sched_a2av_skip_sym(ds_sched_t *sched, dsint_t skip_sym);
 
 
 #endif /* __DASH_SCHED_A2AV_H__ */

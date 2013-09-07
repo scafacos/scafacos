@@ -43,11 +43,11 @@ of the tree traversal routine - the most challenging component in terms of scala
 
 \item[Box shape:] Any (triclinic) box shape is supported.
   
-\item[Tolerances:] No.
+\item[Tolerances:] Not supported.
   
-\item[Delegate near-field:] No.
+\item[Delegate near-field:] Not supported.
   
-\item[Virial:] Not implemented yet. \todo{Reimplement virial computation, see earlier version of pepc in ScaFaCoS}
+\item[Virial:] Not supported.
   
 \end{description}
 
@@ -61,9 +61,24 @@ of the tree traversal routine - the most challenging component in terms of scala
 
     The value of $\varepsilon$ can be modified by setting the method-specific parameter \texttt{pepc\_epsilon}.
 
-  \item[Load Balancing:] \todo{notes on PEPCs load balancing}
+  \item[Load Balancing:] PEPC includes a sophisticated load balancing scheme, that uses
+	the number of interactions per particle from a previous timestep to estimate and distribute the
+	expected work in the current computation. This can improve the algorithms performance by more than $10\%$.
+	\emph{Important:} for the load balancing to work correctly, it is necessary that the frontend application
+        does not reorder or redistribute the particles between different calls to \texttt{fcs\_run()}.
 
-  \item[SMT Parallelization:] \todo{notes on SMT and PEPC}
+  \item[Multithreading:] PEPC can employ multiple threads to perform calculations. This can help consolidate
+        mulitple MPI ranks into one rank running multiple threads which will decrease communication
+        volume and memory requirements. In addition to these worker threads and the controlling main thread,
+        PEPC also spawns a background thread that handles the fetching and sending of multipole moments.
+
+    On a Blue~Gene/Q, one MPI rank per node running sixty worker threads provides good results.
+    PEPC will statically place the main and communications thread on the first of the sixteen cores of the
+    processor while spreading the worker threads on the remaining cores in a round robin fashion.
+
+    On JuRoPa, two MPI ranks per node and \texttt{pepc\_num\_walk\_threads=7} are optimal.
+    Ensure that \texttt{tpt=8} is set in your jobscript on JuRoPa.
+
 \end{description}
 
 
@@ -71,15 +86,6 @@ of the tree traversal routine - the most challenging component in terms of scala
 \section*{Solver-specific parameters}
 
 \begin{description}
-  \item[\texttt{pepc\_epsilon}:] Cutoff parameter of internally used Plummer potential 
-	$\frac{1}{\sqrt{r^2+\varepsilon^2}}$, see above.
-	
-	\begin{tabular}{ll}
-	   \textit{Data type:}         & \texttt{fcs\_float} \\
-	   \textit{Default value:}     & \texttt{pepc\_epsilon = 0.0}, i.e. Coulomb interaction. \\
-	   \textit{Value range value:} & \texttt{pepc\_epsilon $\geq$ 0.0}
-	\end{tabular}
-
   \item[\texttt{pepc\_theta}:] Barnes-Hut Multipole acceptance parameter. Smaller values for 
 	\texttt{pepc\_theta} lead to higher precision but also longer runtime. A value of
 	\texttt{pepc\_theta=0.0} corresponds to the direct \algO{N^2} summation, usual values 
@@ -91,15 +97,18 @@ of the tree traversal routine - the most challenging component in terms of scala
 	   \textit{Value range value:} & \texttt{pepc\_theta $\geq$ 0.0}
 	\end{tabular}
 
+  \item[\texttt{pepc\_epsilon}:] Cutoff parameter of internally used Plummer potential 
+	$\frac{1}{\sqrt{r^2+\varepsilon^2}}$, see above.
+	
+	\begin{tabular}{ll}
+	   \textit{Data type:}         & \texttt{fcs\_float} \\
+	   \textit{Default value:}     & \texttt{pepc\_epsilon = 0.0}, i.e. Coulomb interaction. \\
+	   \textit{Value range value:} & \texttt{pepc\_epsilon $\geq$ 0.0}
+	\end{tabular}
 
   \item[\texttt{pepc\_num\_walk\_threads}:] Number of threads to use during force computation in 
-	addition to the communicator thread. This should usually correspond the the number of
-	available compute cores per compute node (i.e. per MPI rank).
-
-	When setting this value on Blue~Gene/P to 4, which is optimal, the environment variable
-	\texttt{BG\_APPTHREADDEPTH=2} has to be set to allow the communicator thread and one worker
-	thread to share one core. - Otherwise, they would block each other. Hence, run your 
-	executable using \texttt{mpirun -mode SMP -env BG\_APPTHREADDEPTH=2 -np \#nodes ./exectuable}.
+	addition to the communicator and main thread. This should usually correspond the the number of
+	available compute cores per MPI rank.
 
 	\begin{tabular}{ll}
 	   \textit{Data type:}         & \texttt{fcs\_int} \\
@@ -107,24 +116,24 @@ of the tree traversal routine - the most challenging component in terms of scala
 	   \textit{Value range value:} & \texttt{pepc\_num\_walk\_threads $\geq$ 1}
 	\end{tabular}
 
-  \item[\texttt{pepc\_dipole\_correction}:] Logical flag to enable/disable the extrinsic-to-intrinsic
-	dipole correction for periodic systems as explained in \pepccite{5}, eqns (19, 20).
-
-	If \texttt{pepc\_dipole\_correction $=$ 0}, dipole correction is disabled, otherwise it is enabled.
+  \item[\texttt{pepc\_dipole\_correction}:] Integer flag to select the extrinsic-to-intrinsic
+	dipole correction for periodic systems.
+    
+    Possible values for \texttt{pepc\_dipole\_correction}:\\
+    \begin{tabular}{cp{0.85\textwidth}}
+      0 & no extrinsic-to-intrinsic correction \\
+      1 & \emph{default value:} correction expression as given by Redlack and Grindlay (only for cubic boxes), see \pepccite{5}, eqns (19, 20) and \pepccite{6}, eq. (5) \\
+      2 & fictitious charges as given by Kudin (should work for all unit cell shapes), see \pepccite{7}, eq. (2.8) \\
+      3 & measurement of correction value as given in \pepccite{7}, eqns. (2.6, 2.7); \emph{currently not implemented}
+    \end{tabular}
 
 	\begin{tabular}{ll}
 	   \textit{Data type:}         & \texttt{fcs\_int} \\
-	   \textit{Default value:}     & \texttt{pepc\_dipole\_correction = 1}, i.e. activate dipole correction.\\
+	   \textit{Default value:}     & \texttt{pepc\_dipole\_correction = 1}\\
 	   \textit{Value range value:} & \texttt{pepc\_dipole\_correction $\geq$ 0}
 	\end{tabular}
 
-  \item[\texttt{pepc\_load\_balancing}:] PEPC includs a sophisticated load balancing scheme, that uses
-	the number of interactions per particle from a previous timestep to estimate and distribute the
-	expected work in the current computation. This can improve the algorithms performance by more than $10\%$,
-	but demands, that the frontend application does not reorder or redistribute the particles between 
-	different calls to \texttt{fcs\_run()}.
-
-	If \texttt{pepc\_load\_balancing $=$ 0}, the load balancing scheme is disabled, otherwise it is enabled.
+  \item[\texttt{pepc\_load\_balancing}:] 	If \texttt{pepc\_load\_balancing $=$ 0}, the load balancing scheme is disabled, otherwise it is enabled.
 
 	\begin{tabular}{ll}
 	   \textit{Data type:}         & \texttt{fcs\_int} \\
@@ -132,13 +141,27 @@ of the tree traversal routine - the most challenging component in terms of scala
 	   \textit{Value range value:} & \texttt{pepc\_load\_balancing $\geq$ 0}
 	\end{tabular}
 
-  \item[\texttt{pepc\_npm}:] \todo{document and explain pepc\_npm, i.e. np\_mult}
+  \item[\texttt{pepc\_debug\_level}:] Solver debug flag mask. Setting zeroth bit, i. e. an odd value activates the solver's status output. Other bits activate different debugging output. See \texttt{module\_debug.f90} for details.
+
+	\begin{tabular}{ll}
+	   \textit{Data type:}         & \texttt{fcs\_int} \\
+	   \textit{Default value:}     & \texttt{pepc\_debug\_level = 0} \\
+	   \textit{Value range value:} & \texttt{$\text{\texttt{pepc\_debug\_level}} \geq 0$}
+	\end{tabular}
+
+  \item[\texttt{pepc\_npm}:] Determines the amount of memory allocated for storing tree nodes locally.
+    Two modes can be chosen based on the sign of \texttt{pepc\_npm}:
+    \begin{itemize}
+      \item if $\mathtt{pepc\_npm} < 0$, allocate memory for $10000 \times \left| \mathtt{pepc\_npm} \right|$ tree nodes,
+      \item if $\mathtt{pepc\_npm} > 0$, guess the necessary amount $N_{\mathrm{n}}$ and allocate $\mathtt{pepc\_npm} \times N_{\mathrm{n}}$.
+    \end{itemize}
 
 	\begin{tabular}{ll}
 	   \textit{Data type:}         & \texttt{fcs\_float} \\
 	   \textit{Default value:}     & \texttt{pepc\_npm = -45} \\
 	   \textit{Value range value:} & \texttt{$-\infty < \text{\texttt{pepc\_npm}} < \infty$}
 	\end{tabular}
+
 \end{description}
 
 
@@ -200,23 +223,19 @@ of the tree traversal routine - the most challenging component in terms of scala
 \end{itemize}
 
 \section*{Known bugs or missing features}
-\todo{PEPCs known bugs and or features}
 \begin{itemize}
-  \item virial is not computed at all in pepc (functionality was lost during transition from old version to pepc-2.0 $\longrightarrow$ should be copied from old code)
+  \item virial is not computed at all in PEPC (functionality was lost during transition from old version to pepc-2.0)
   \item 1D-, 2D-periodicity still needs to be tested.
   \item Warns that non-cubic systems are experimental.\\
       The following requirements must be satisfied in any case:
       \begin{itemize}
         \item box must be approximately rectangular
-        \item box edges in periodic directions must not be significantly shorter than the longest edge
-        \item \todo{quantify these requirements}
-        \item \todo{warn only once on one process, if box is non-cubic}
+        \item box edges in periodic directions must not be significantly shorter than the longest edge\todo{quantify these requirements}\todo{warn only once on one process, if box is non-cubic}
       \end{itemize}
   \item How to compute the virial for periodic boundaries?
 \end{itemize}
 
 \paragraph{References}
-\todo[inline]{move PEPC citations to bibliography}
 \begin{footnotesize}
 \begin{itemize}
   \item[PEPC-1] Nature \textbf{324}, 446 (1986), \url{http://dx.doi.org/10.1038/324446a0}
@@ -224,9 +243,11 @@ of the tree traversal routine - the most challenging component in terms of scala
   \item[PEPC-3] PEPC web page, \url{http://www.fz-juelich.de/ias/jsc/pepc}
   \item[PEPC-4] J. Chem. Phys. \textbf{121}, 2886 (2004), \url{http://link.aip.org/link/doi/10.1063/1.1771634}
   \item[PEPC-5] J. Chem. Phys. \textbf{107}, 10131 (1997), \url{http://link.aip.org/link/doi/10.1063/1.474150}
+  \item[PEPC-6] J. Chem. Phys. \textbf{101}, 5024 (1994), \url{http://link.aip.org/link/doi/10.1063/1.467425}
+  \item[PEPC-7] Chem. Phys. Lett. \textbf{283}, 61 (1998), \url{http://dx.doi.org/10.1016/S0009-2614(98)00468-0}
 \end{itemize}
 \end{footnotesize}
-
+\todo[inline]{move PEPC citations to bibliography}
 
 %%% Local Variables: 
 %%% mode: latex

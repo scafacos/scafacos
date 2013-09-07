@@ -884,7 +884,11 @@ typedef back__p_sl_int_type_c back__p_spec_int_t;
 typedef int back__p_spec_proc_t;
 
 #define back__p_SPEC_LOC_NONE   -1
-#define back__p_SPEC_PROC_NONE  MPI_PROC_NULL
+#ifdef SL_USE_MPI
+# define back__p_SPEC_PROC_NONE  MPI_PROC_NULL
+#else
+# define back__p_SPEC_PROC_NONE  -1
+#endif
 
 typedef void *back__p_spec_tloc_data_t;
 typedef void *back__p_spec_tproc_data_t;

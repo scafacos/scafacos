@@ -173,7 +173,7 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
       break;
 
     if(n >= n_max){
-      fprintf(stderr, "Inc_Bessel_K: Cannot reach accuracy within %d iterations: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n_max, val_new, val_old, err, eps, nu, x, y);
+      fprintf(stderr, "Inc_Bessel_K: Cannot reach accuracy within %" FCS_LMOD_INT "d iterations: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n_max, val_new, val_old, err, eps, nu, x, y);
       break;
     }
     n++;
@@ -190,7 +190,7 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
     err = fabs(val_new - val_old);
 
     if(isnan(val_new)){
-      fprintf(stderr, "Inc_Bessel_K: NAN at iteration %d: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n, val_new, val_old, err, eps, nu, x, y);
+      fprintf(stderr, "Inc_Bessel_K: NAN at iteration %" FCS_LMOD_INT "d: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n, val_new, val_old, err, eps, nu, x, y);
       break;
     }
   }

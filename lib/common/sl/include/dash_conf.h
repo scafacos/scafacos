@@ -73,11 +73,15 @@ typedef int dspint_t;
 #define dspint_fmt  "d"
 #define MPI_DSPINT  MPI_INT
 
-/*#define DS_SPARSE*/
 
-#define DS_MAX_NBUFFERS  2
+#define DASH_MAX_NBUFFERS  2
 
-#define USE_DASH_AUX_STATIC
+#define DASH_SYMMETRIC
+
+#define DASH_SCHED_A2AV_AUX_STATIC
+#define DASH_SCHED_A2AV_AUX_HEAP
+
+#define DASH_SCHED_A2AV_OVERLAP
 
 
 #endif /* __DASH_CONF_H__ */
