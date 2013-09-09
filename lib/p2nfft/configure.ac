@@ -40,8 +40,8 @@ AC_PROG_CC_STDC
 # Checks for library functions.
 p2nfft_ldadd=
 AC_SEARCH_LIBS([cos],[m],[test "${ac_cv_search_cos}" != "none required" && p2nfft_ldadd="${p2nfft_ldadd} ${ac_cv_search_cos}"],[AC_MSG_ERROR([Required library for math functions not found.])])
-AC_SEARCH_LIBS([cblas_dgemm],[gslcblas],[test "${ac_cv_search_cblas_dgemm}" != "none required" && p2nfft_ldadd="${p2nfft_ldadd} ${ac_cv_search_cblas_dgemm}"],[AC_MSG_ERROR([Required library for GNU Scientific Library not found.])])
 AC_SEARCH_LIBS([gsl_blas_dgemm],[gsl],[test "${ac_cv_search_gsl_blas_dgemm}" != "none required" && p2nfft_ldadd="${p2nfft_ldadd} ${ac_cv_search_gsl_blas_dgemm}"],[AC_MSG_ERROR([Required library for GNU Scientific Library not found.])])
+AC_SEARCH_LIBS([cblas_dgemm],[gslcblas],[test "${ac_cv_search_cblas_dgemm}" != "none required" && p2nfft_ldadd="${p2nfft_ldadd} ${ac_cv_search_cblas_dgemm}"],[AC_MSG_ERROR([Required library for GNU Scientific Library not found.])])
 
 AX_LIB_FFTW3
 
