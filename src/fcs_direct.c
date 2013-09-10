@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011-2012 Michael Hofmann, Rene Halver
+  Copyright (C) 2011, 2012, 2013 Michael Hofmann, Rene Halver
 
   This file is part of ScaFaCoS.
 
@@ -91,7 +91,7 @@ FCSResult fcs_direct_init(FCS handle)
 
   DEBUG_MOP(printf("fcs_direct_init: done\n"));
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -116,7 +116,7 @@ FCSResult fcs_direct_destroy(FCS handle)
 
   DEBUG_MOP(printf("fcs_direct_destroy: done\n"));
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -130,7 +130,7 @@ FCSResult fcs_direct_check(FCS handle)
 
   DEBUG_MOP(printf("fcs_direct_check: done\n"));
 
-	return NULL;
+	return FCS_RESULT_SUCCESS;
 }
 
 
@@ -144,7 +144,7 @@ FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_int local_max
 
   DEBUG_MOP(printf("fcs_direct_tune: done\n"));
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -194,7 +194,7 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
 
   DEBUG_MOP(printf("fcs_direct_run: done\n"));
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -204,7 +204,7 @@ FCSResult fcs_direct_require_virial(FCS handle, fcs_int compute_virial)
 
   DIRECT_HANDLE_CHECK(handle, func_name);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -218,11 +218,10 @@ FCSResult fcs_direct_get_virial(FCS handle, fcs_float *virial)
 
   for (i = 0; i < 9; ++i) virial[i] = handle->direct_param->directc.virial[i];
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
-/* setter for parameter cutoff */
 FCSResult fcs_direct_set_cutoff(FCS handle, fcs_float cutoff)
 {
   static const char func_name[] = "fcs_direct_set_cutoff";
@@ -231,20 +230,19 @@ FCSResult fcs_direct_set_cutoff(FCS handle, fcs_float cutoff)
 
   fcs_directc_set_cutoff(&handle->direct_param->directc, cutoff);
   
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
-/* getter for parameter cutoff */
 FCSResult fcs_direct_get_cutoff(FCS handle, fcs_float *cutoff)
 {
   static const char func_name[] = "fcs_direct_get_cutoff";
 
   DIRECT_HANDLE_CHECK(handle, func_name);
 
-  *cutoff = handle->direct_param->directc.cutoff;
+  fcs_directc_get_cutoff(&handle->direct_param->directc, cutoff);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -256,7 +254,7 @@ FCSResult fcs_direct_set_cutoff_with_near(FCS handle, fcs_bool cutoff_with_near)
 
   fcs_directc_set_cutoff_with_near(&handle->direct_param->directc, FCS_IS_TRUE(cutoff_with_near));
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -268,7 +266,7 @@ FCSResult fcs_direct_get_cutoff_with_near(FCS handle, fcs_bool *cutoff_with_near
 
   *cutoff_with_near = handle->direct_param->directc.cutoff_with_near;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -280,7 +278,7 @@ FCSResult fcs_direct_set_periodic_images(FCS handle, fcs_int *periodic_images)
 
   fcs_directc_set_periodic_images(&handle->direct_param->directc, periodic_images);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -294,7 +292,7 @@ FCSResult fcs_direct_get_periodic_images(FCS handle, fcs_int *periodic_images)
   periodic_images[1] = handle->direct_param->directc.periodic_images[1];
   periodic_images[2] = handle->direct_param->directc.periodic_images[2];
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -306,7 +304,7 @@ FCSResult fcs_direct_set_in_particles(FCS handle, fcs_int nin_particles, fcs_flo
 
   fcs_directc_set_in_particles(&handle->direct_param->directc, nin_particles, in_positions, in_charges);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -314,7 +312,7 @@ FCSResult fcs_direct_set_max_particle_move(FCS handle, fcs_float max_particle_mo
 {
   fcs_directc_set_max_particle_move(&handle->direct_param->directc, max_particle_move);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -322,7 +320,7 @@ FCSResult fcs_direct_set_resort(FCS handle, fcs_int resort)
 {
   fcs_directc_set_resort(&handle->direct_param->directc, resort);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -330,7 +328,7 @@ FCSResult fcs_direct_get_resort(FCS handle, fcs_int *resort)
 {
   fcs_directc_get_resort(&handle->direct_param->directc, resort);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -338,7 +336,7 @@ FCSResult fcs_direct_get_resort_availability(FCS handle, fcs_int *availability)
 {
   fcs_directc_get_resort_availability(&handle->direct_param->directc, availability);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -346,7 +344,7 @@ FCSResult fcs_direct_get_resort_particles(FCS handle, fcs_int *resort_particles)
 {
   fcs_directc_get_resort_particles(&handle->direct_param->directc, resort_particles);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -354,7 +352,7 @@ FCSResult fcs_direct_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int
 {
   fcs_directc_resort_ints(&handle->direct_param->directc, src, dst, n, comm);
   
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -362,7 +360,7 @@ FCSResult fcs_direct_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, f
 {
   fcs_directc_resort_floats(&handle->direct_param->directc, src, dst, n, comm);
   
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -370,11 +368,10 @@ FCSResult fcs_direct_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, M
 {
   fcs_directc_resort_bytes(&handle->direct_param->directc, src, dst, n, comm);
   
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
-/* combined setter function for all direct parameters */
 FCSResult fcs_direct_setup(FCS handle, fcs_float cutoff)
 {
   static const char func_name[] = "fcs_direct_setup";
@@ -384,20 +381,19 @@ FCSResult fcs_direct_setup(FCS handle, fcs_float cutoff)
   DIRECT_HANDLE_CHECK(handle, func_name);
 
   result = fcs_direct_set_cutoff(handle, cutoff);
-  if (result != NULL) return result;
+  if (result != FCS_RESULT_SUCCESS) return result;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
-/* combined setter function (FORTRAN WRAPPER) */
 void fcs_direct_setup_f(void *handle, fcs_float cutoff, fcs_int *return_value)
 {
   FCSResult result;
 
   result = fcs_direct_setup((FCS)handle, cutoff);
 
-  if (result == NULL)
+  if (result == FCS_RESULT_SUCCESS)
     *return_value = 0;
   else
     *return_value = fcsResult_getReturnCode(result);
