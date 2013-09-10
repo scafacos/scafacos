@@ -178,6 +178,9 @@ FCSResult fcs_init ( FCS *handle, const char* method, MPI_Comm communicator )
 #ifdef FCS_ENABLE_VMG
   (*handle)->vmg_param = NULL;
 #endif
+#ifdef FCS_ENABLE_WOLF
+  (*handle)->wolf_param = NULL;
+#endif
 
   (*handle)->set_max_particle_move = NULL;
   (*handle)->set_resort = NULL;
@@ -298,6 +301,14 @@ FCSResult fcs_init ( FCS *handle, const char* method, MPI_Comm communicator )
   }
 #endif
 
+#ifdef FCS_ENABLE_WOLF
+  if (strcmp(method, "wolf") == 0) {
+    (*handle)->method = FCS_WOLF;
+    (*handle)->wolf_param = (fcs_wolf_parameters) malloc(sizeof(fcs_wolf_parameters_t));
+    return fcs_wolf_init(*handle);
+  }
+#endif
+
   /* if we got here, method was chosen wrongly */
   return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "unknown method chosen");
 }
@@ -395,6 +406,13 @@ FCSResult fcs_destroy(FCS handle) {
     return result;
       break;
 #endif
+#ifdef FCS_ENABLE_WOLF
+    case FCS_WOLF:
+      result = fcs_wolf_destroy(handle);
+      free(handle->wolf_param);
+      if (result != NULL) return result;
+      break;
+#endif
     default:
       return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "unknown method chosen");
     }
@@ -482,6 +500,11 @@ FCSResult fcs_tune(FCS handle, fcs_int local_particles, fcs_int local_max_partic
 #ifdef FCS_ENABLE_VMG
             case FCS_VMG:
                 result = fcs_vmg_tune(handle, local_particles, local_max_particles, positions, charges);
+                return result;
+#endif
+#ifdef FCS_ENABLE_WOLF
+            case FCS_WOLF:
+                result = fcs_wolf_tune(handle, local_particles, local_max_particles, positions, charges);
                 return result;
 #endif
             default:
@@ -574,6 +597,11 @@ FCSResult fcs_run(FCS handle, fcs_int local_particles, fcs_int local_max_particl
 #ifdef FCS_ENABLE_VMG
             case FCS_VMG:
                 result = fcs_vmg_run(handle, local_particles, local_max_particles, positions, charges, field, potentials);
+                return result;
+#endif
+#ifdef FCS_ENABLE_WOLF
+            case FCS_WOLF:
+                result = fcs_wolf_run(handle, local_particles, local_max_particles, positions, charges, field, potentials);
                 return result;
 #endif
             default:
@@ -1200,11 +1228,16 @@ void fcs_printHandle(FCS handle)
       printf("chosen method: vmg\n");
       break;
 #endif
+#ifdef FCS_ENABLE_WOLF
+    case FCS_WOLF:
+      printf("chosen method: wolf solver\n");
+      break;
+#endif
     default:
       printf("chosen method: UNKNOWN\n");
       break;
     }
-      printf("neaer field computations done by solver: %c\n", 
+      printf("near field computations done by solver: %c\n", 
          (fcs_get_near_field_flag(handle)?'T':'F'));
 
       printf("box vectors: [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f], [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f], [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f]\n",
@@ -1410,6 +1443,10 @@ void fcs_printHandle(FCS handle)
       printf("vmg interpolation degree: %" FCS_LMOD_INT "d\n", interpolation_order);
       printf("vmg discretization order: %" FCS_LMOD_INT "d\n", discretization_order);
     }
+      break;
+#endif
+#ifdef FCS_ENABLE_WOLF
+    case FCS_WOLF:
       break;
 #endif
     default:
@@ -1738,6 +1775,10 @@ FCSResult fcs_parser(FCS handle, const char *parameters, fcs_bool continue_on_er
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("vmg_interpolation_order", vmg_set_interpolation_order, PARSE_VAL(fcs_int));
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("vmg_discretization_order", vmg_set_discretization_order, PARSE_VAL(fcs_int));
 #endif
+#ifdef FCS_ENABLE_WOLF
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("wolf_cutoff", wolf_set_cutoff, PARSE_VAL(fcs_float));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("wolf_alpha", wolf_set_alpha, PARSE_VAL(fcs_float));
+#endif
 
     DUMMY_REFERENCE_TO_STATIC_FUNCTIONS(param);
 
@@ -1767,6 +1808,10 @@ FCSResult fcs_require_virial(FCS handle, fcs_int flag)
 
     switch(fcs_get_method(handle))
     {
+#ifdef FCS_ENABLE_DIRECT
+        case FCS_DIRECT:
+            return fcs_direct_require_virial(handle, flag);
+#endif
 #ifdef FCS_ENABLE_PEPC
         case FCS_PEPC:
             return fcs_pepc_require_virial(handle, flag);
@@ -1803,9 +1848,9 @@ FCSResult fcs_require_virial(FCS handle, fcs_int flag)
         case FCS_VMG:
             return fcs_vmg_require_virial(handle, flag);
 #endif
-#ifdef FCS_ENABLE_DIRECT
-        case FCS_DIRECT:
-            return fcs_direct_require_virial(handle, flag);
+#ifdef FCS_ENABLE_WOLF
+        case FCS_WOLF:
+            return fcs_wolf_require_virial(handle, flag);
 #endif
         default:
             return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "unknown method chosen");
@@ -1824,6 +1869,10 @@ FCSResult fcs_get_virial(FCS handle, fcs_float *virial)
 
     switch(fcs_get_method(handle))
     {
+#ifdef FCS_ENABLE_DIRECT
+        case FCS_DIRECT:
+            return fcs_direct_get_virial(handle, virial);
+#endif
 #ifdef FCS_ENABLE_PEPC
         case FCS_PEPC:
             return fcs_pepc_get_virial(handle, virial);
@@ -1860,9 +1909,9 @@ FCSResult fcs_get_virial(FCS handle, fcs_float *virial)
         case FCS_VMG:
             return fcs_vmg_get_virial(handle, virial);
 #endif
-#ifdef FCS_ENABLE_DIRECT
-        case FCS_DIRECT:
-            return fcs_direct_get_virial(handle, virial);
+#ifdef FCS_ENABLE_WOLF
+        case FCS_WOLF:
+            return fcs_wolf_get_virial(handle, virial);
 #endif
         default:
             return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "unknown method chosen");
