@@ -27,17 +27,17 @@
 #include "FCSInterface_p.h"
 #include "FCSResult.h"
 
-#ifdef FCS_ENABLE_PEPC
-#include "fcs_pepc.h"
+#ifdef FCS_ENABLE_DIRECT
+#include "fcs_direct.h"
+#endif
+#ifdef FCS_ENABLE_EWALD
+#include "fcs_ewald.h"
 #endif
 #ifdef FCS_ENABLE_FMM
 #include "fcs_fmm.h"
 #endif
-#ifdef FCS_ENABLE_P3M
-#include "fcs_p3m.h"
-#endif
-#ifdef FCS_ENABLE_EWALD
-#include "fcs_ewald.h"
+#ifdef FCS_ENABLE_MEMD
+#include "fcs_memd.h"
 #endif
 #ifdef FCS_ENABLE_MMM1D
 #include "fcs_mmm1d.h"
@@ -45,20 +45,23 @@
 #ifdef FCS_ENABLE_MMM2D
 #include "fcs_mmm2d.h"
 #endif
+#ifdef FCS_ENABLE_P2NFFT
+#include "fcs_p2nfft.h"
+#endif
+#ifdef FCS_ENABLE_P3M
+#include "fcs_p3m.h"
+#endif
+#ifdef FCS_ENABLE_PEPC
+#include "fcs_pepc.h"
+#endif
 #ifdef FCS_ENABLE_PP3MG
 #include "fcs_pp3mg.h"
 #endif
 #ifdef FCS_ENABLE_VMG
 #include "fcs_vmg.h"
 #endif
-#ifdef FCS_ENABLE_MEMD
-#include "fcs_memd.h"
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-#include "fcs_p2nfft.h"
-#endif
-#ifdef FCS_ENABLE_DIRECT
-#include "fcs_direct.h"
+#ifdef FCS_ENABLE_WOLF
+#include "fcs_wolf.h"
 #endif
 
 
@@ -122,6 +125,9 @@ typedef struct FCS_t
 #endif
 #ifdef FCS_ENABLE_VMG
   fcs_vmg_parameters vmg_param;
+#endif
+#ifdef FCS_ENABLE_WOLF
+  fcs_wolf_parameters wolf_param;
 #endif
 
   /* current instance of the method */

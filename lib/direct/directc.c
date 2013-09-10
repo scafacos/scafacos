@@ -184,6 +184,12 @@ void fcs_directc_set_cutoff(fcs_directc_t *directc, fcs_float cutoff)
 }
 
 
+void fcs_directc_get_cutoff(fcs_directc_t *directc, fcs_float *cutoff)
+{
+  *cutoff = directc->cutoff;
+}
+
+
 void fcs_directc_set_cutoff_with_near(fcs_directc_t *directc, fcs_int cutoff_with_near)
 {
   directc->cutoff_with_near = cutoff_with_near;

@@ -42,9 +42,6 @@
 
 #include "mpi_fmm_resort.h"
 
-typedef back_idx_slint_t back_idx_slint_t;
-#define back_slint_fmt   back_idx_slint_fmt
-
 
 void fmm_resort_create(fcs_fmm_resort_t *fmm_resort, fcs_int nparticles, MPI_Comm comm)
 {

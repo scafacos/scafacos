@@ -1,104 +1,166 @@
-\chapter{Compling and installing \fcs}
+\chapter{Compiling and installing \fcs}
 \label{cha:compiling}
 
 \index{Compilation}
 \index{Installation}
-\index{SVN}
+\index{Configure}
 
-\todo[inline]{\LaTeX this code}
-\begin{verbatim}
-0) If you are building the code from the SVN tree, read README-SVN first.
-
-1) Compile:
-   a) Run './configure' with suitable options.  See below for common setups.
-      You can pass '--enable-fcs-solvers=...' to enable all or only some solvers.
-      You can pass '--disable-fcs-SOLVER' to disable a particular solver, e.g.,
-      '--disable-fcs-vmg'.
-      You can have build trees separate from the source tree, e.g.:
-        mkdir ../build-debug
-        cd ../build-debug
-        ../scafacos_fcs/configure -C CFLAGS=-g FCFLAGS=-g [...]
-      See './configure --help' and './configure --help=recursive' for all
-      supported options.
-      The -C aka. --config-cache option greatly speeds up configuring all the
-      subdirectories.
-   b) Run 'make'.  Parallel make should work.
-
-2) run test-programs:
-   a) Run 'make check'.  This tries to be smart about finding out how to
-      start MPI jobs on your system.  If the chosen method is wrong, you
-      might have to edit test/defs.in and/or rerun configure with an argument
-      of MPIEXEC=... set to the MPI invocation program on your system.
-
-If that doesn't work, then you can alternatively do the following:
-
-   b_1) cd test/c (if you are a c-programmer) or
-   b_2) cd test/fortran (if you intend to use fortran)
-   c) choose a method you want to run
-   d) $mpi_call_on_my_machine ./test_$method ../inp_data/$method/$method_conf.in
-
-3) Sources of the fcs-interface are located in $INSTALL_DIR/src
-
-4) Sources of the ScaFaCos methods can be found in INSTALL_DIR/lib
-
-5) Optionally run 'make install' to install the library and header files.
-
-6) To find out compiler and linker flags to use in packages linking against FCS,
-   you can use
-      pkg-config --cflags scafacos-fcs
-      pkg-config --libs scafacos-fcs
-
-   if you have the pkg-config package installed.
-
-Configure setups for common systems
-===================================
-
-Generally, if you set both MPICC and CC, or MPICXX and CXX, or MPIFC and FC,
-you may need to ensure that compatible compiler drivers are used.
-
-You may want to add -C to cache configure test results; this speeds up the
-recursive configure scripts.
-
-GNU/Linux
----------
-It should work to use one of
-
-  ./configure
-  ./configure FCFLAGS=-fno-underscoring
-
-depending on which ABI you need to maintain with respect to other Fortran code.
-If you are using gfortran, you need version 4.3 or newer for Fortran 2003 support.
+The \fcs library uses the GNU build system and thus compiling and installing consists of the common steps \texttt{configure} and \texttt{make}.
+In the following, the steps for building the library from source are explained in more details.
 
 
-BlueGene
---------
-The following alternative configurations should work (the --build and --host
-arguments ensure configure enables cross-compilation mode):
+\begin{enumerate}
 
-  ./configure --build=powerpc64-bgp-linux-gnu --host=powerpc-ibm-linux \
-     MPICC=mpixlc_r MPIFC=mpixlf2003_r MPICXX=mpixlcxx_r CFLAGS='-qfullpath -O2' \
-     FCFLAGS='-qfullpath -qarch=450 -qtune=450 -qxlf2003=nostopexcept -O3 -qipa -qipa=inline=key2addr'
+  \item[1)]
+Obtain a copy of the \fcs library sources.
+Single releases of the library sources can be downloaded from the official web site (\url{http://www.scafacos.de}).
+Furthermore, the sources of the library are hosted on GitHub where the lasted version is publicly available (see \url{http://github.com/scafacos}).
+A local copy of the library repository can be obtain with the following command:
+\begin{alltt}
+  git clone git@github.com:scafacos/scafacos.git
+\end{alltt}
 
-  ./configure --build=powerpc64-bgp-linux-gnu --host=powerpc-ibm-linux \
-     MPICC=mpixlc_r MPIFC=mpixlf2003_r MPICXX=mpixlcxx_r \
-     CFLAGS='-g -qfullpath -qdbxextra -qcheck' FCFLAGS='-g -qfullpath'
+Building the library from the git repository requires recent versions of the GNU Autotools, \ie m4, Autoconf, Automake, Libtool.
+Details about the specific versions required can be found in Sect.~\ref{cha:buildsystem}.
+Executing Autotools has to be performed with the \texttt{bootstrap} script:
+\begin{alltt}
+  ./bootstrap
+\end{alltt}
+After executing this script, the source directory should contain a newly generated \texttt{configure} script.
 
-  ./configure --build=powerpc64-bgp-linux-gnu --host=powerpc-ibm-linux \
-     MPICC=mpixlc_r MPICXX=mpixlcxx_r MPIFC=mpixlf2003_r \
-     CPPFLAGS='-I/bgsys/drivers/ppcfloor/comm/include -I/bgsys/drivers/ppcfloor/arch/include' \
-     CFLAGS='-O3 -g -qmaxmem=-1 -qarch=450 -qtune=450' \
-     FCFLAGS='-O3 -g -qmaxmem=-1 -I/bgsys/drivers/ppcfloor/include -qarch=450 -qtune=450' \
-     LDFLAGS='-L/bgsys/drivers/ppcfloor/lib -L/bgsys/local/lapack/lib -L/bgsys/local/lib' \
-     BLAS_LIBS='-lesslbg -lxlf90_r'
+  \item[2)]
+Compiling the library consists of the two steps \texttt{configure} and \texttt{make}.
+For the following description it is assumed that the library sources are stored in directory \texttt{scafacos/}.
 
-Juropa
-------
+  \begin{enumerate}
+  \item[a)]
+The library can be build either inside or outside the source tree.
+To build the library outside the source tree, change the working directory to the desired build directory:
+\begin{alltt}
+  mkdir ../build_fcs
+  cd ../build_fcs
+\end{alltt}
 
-Building with the Intel compiler suite should work:
+Execute the \texttt{configure} script as follows:
+\begin{alltt}
+  ../scafacos/configure <options>
+\end{alltt}
 
-  ./configure MPICC=mpicc MPICXX=mpicxx MPIFC=mpif90
-\end{verbatim}
-%%% Local Variables: 
-%%% mode: latex
-%%% TeX-master: ug.tex
-%%% End: 
+See \texttt{'./configure --help'} (or \texttt{'./configure --help=recursive'}) to display all supported options.
+The main options of the library are listed in Table~\ref{tbl:fcs_options}.
+
+  \item[b)]
+Run \texttt{make} to build the library.
+Use option \texttt{-j <N>} to execute (at most) \texttt{N} build jobs in parallel.
+  \end{enumerate}
+
+  \item[3)] Run test programs:
+  \begin{enumerate}
+    \item[a)]
+Run \texttt{make check} to execute all test programs of the library.
+The build system tries to finding out how MPI jobs can be started.
+Edit file \texttt{test/defs.in} to modify the method that was automatically determined.
+Alternatively, \texttt{configure} option \texttt{MPIEXEC=...} can be used to define the command for executing MPI programs.
+
+    \item[b)]
+The test programs are located in \texttt{test/c} and \texttt{test/fortran}.
+See scripts \texttt{start\_....sh} to execute single test programs.
+
+    \item[c)]
+If the execution of MPI programs with the previous methods fails, then it is also possible to start the test programs manually.
+Use scripts \texttt{start\_....sh} (in \texttt{test/c/} or \texttt{test/fortran/}) and replace command \texttt{start\_mpi\_job} with an appropriate command for executing MPI programs.
+  \end{enumerate}
+
+  \item[4)]
+Run \texttt{make install} to install the header and library files (\ie, to \texttt{/usr/local/} if not specified otherwise with \texttt{--prefix=...} during \texttt{configure}).
+Alternatively, the header and library files can be found in \texttt{src/} and \texttt{lib/}, respectively.
+
+  \item[5)]
+A configuration file \texttt{scafacos-fcs.pc} for \texttt{pkg-config} is created in \texttt{packages/} and installed with \texttt{make install}.
+Use the following commands to determine the compiler and linker flags required to integrate the library into an application program:
+\begin{alltt}
+  pkg-config --cflags scafacos-fcs
+  pkg-config --libs scafacos-fcs
+\end{alltt}
+
+\end{enumerate}
+
+\begin{table}
+\begin{tabular}{|p{0.4\textwidth}|p{0.6\textwidth}|}
+\hline
+\texttt{-C} & Enable caching to speed up \texttt{configure}. \\
+\hline
+\texttt{--prefix=PREFIX} & Install library files to directory \texttt{PREFIX}. \\
+\hline
+\texttt{--enable-fcs-solvers=...} & Enable only the specified list of solvers. \\
+\texttt{--disable-fcs-SOLVER} & Disable the specified solver \texttt{SOLVER}. \\
+\hline
+\texttt{--enable-fcs-int=...} & Set \fcs integer type to the given C type. \\
+\texttt{--enable-fcs-float=...} & Set \fcs float type to the given C type. \\
+\texttt{--enable-fcs-integer=...} & Set \fcs integer type to the given Fortran type. \\
+\texttt{--enable-fcs-real=...} & Set \fcs float type to the given Fortran type. \\
+\hline
+\texttt{--enable-fcs-info} & Enable info output. \\
+\texttt{--enable-fcs-debug} & Enable debug output. \\
+\texttt{--enable-fcs-timing} & Enable timing output. \\
+\hline
+\texttt{--enable-single-lib} & Build and install only a single file \texttt{libfcs.a}. \\
+\hline
+\texttt{MPICC=...  CFLAGS=...} & Set (MPI) C compiler and flags. \\
+\texttt{MPICXX=... CXXFLAGS=...} & Set (MPI) C++ compiler. \\
+\texttt{MPIFC=...  FCFLAGS=...} & Set (MPI) Fortran compiler. \\
+\hline
+\end{tabular}
+\caption{List of common \texttt{configure} options of the \fcs library.}
+\label{tbl:fcs_options}
+\end{table}
+
+
+%\section*{Additional information for selected platforms}
+%
+%Configure setups for common systems
+%===================================
+%
+%Generally, if you set both MPICC and CC, or MPICXX and CXX, or MPIFC and FC,
+%you may need to ensure that compatible compiler drivers are used.
+%
+%You may want to add -C to cache configure test results; this speeds up the
+%recursive configure scripts.
+%
+%GNU/Linux
+%---------
+%It should work to use one of
+%
+%  ./configure
+%  ./configure FCFLAGS=-fno-underscoring
+%
+%depending on which ABI you need to maintain with respect to other Fortran code.
+%If you are using gfortran, you need version 4.3 or newer for Fortran 2003 support.
+%
+%BlueGene
+%--------
+%The following alternative configurations should work (the --build and --host
+%arguments ensure configure enables cross-compilation mode):
+%
+%  ./configure --build=powerpc64-bgp-linux-gnu --host=powerpc-ibm-linux \
+%     MPICC=mpixlc_r MPIFC=mpixlf2003_r MPICXX=mpixlcxx_r CFLAGS='-qfullpath -O2' \
+%     FCFLAGS='-qfullpath -qarch=450 -qtune=450 -qxlf2003=nostopexcept -O3 -qipa -qipa=inline=key2addr'
+%
+%  ./configure --build=powerpc64-bgp-linux-gnu --host=powerpc-ibm-linux \
+%     MPICC=mpixlc_r MPIFC=mpixlf2003_r MPICXX=mpixlcxx_r \
+%     CFLAGS='-g -qfullpath -qdbxextra -qcheck' FCFLAGS='-g -qfullpath'
+%
+%  ./configure --build=powerpc64-bgp-linux-gnu --host=powerpc-ibm-linux \
+%     MPICC=mpixlc_r MPICXX=mpixlcxx_r MPIFC=mpixlf2003_r \
+%     CPPFLAGS='-I/bgsys/drivers/ppcfloor/comm/include -I/bgsys/drivers/ppcfloor/arch/include' \
+%     CFLAGS='-O3 -g -qmaxmem=-1 -qarch=450 -qtune=450' \
+%     FCFLAGS='-O3 -g -qmaxmem=-1 -I/bgsys/drivers/ppcfloor/include -qarch=450 -qtune=450' \
+%     LDFLAGS='-L/bgsys/drivers/ppcfloor/lib -L/bgsys/local/lapack/lib -L/bgsys/local/lib' \
+%     BLAS_LIBS='-lesslbg -lxlf90_r'
+%
+%Juropa
+%------
+%
+%Building with the Intel compiler suite should work:
+%
+%  ./configure MPICC=mpicc MPICXX=mpicxx MPIFC=mpif90

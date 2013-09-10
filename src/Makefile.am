@@ -112,4 +112,10 @@ include_HEADERS += \
   fcs_vmg_p.h
 endif
 
-
+if ENABLE_WOLF
+libfcs_a_SOURCES += \
+  fcs_wolf.h \
+  fcs_wolf.c
+include_HEADERS += \
+  fcs_wolf_p.h
+endif

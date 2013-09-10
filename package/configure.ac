@@ -30,7 +30,7 @@ AX_FCS_ENABLE_SINGLE_LIB_ARG
 AX_FCS_ENABLE_SINGLE_LIB
 
 # List of all solvers.
-m4_define([all_solver_methods], [direct ewald fmm memd mmm1d mmm2d p2nfft p3m pepc pp3mg vmg])
+m4_define([all_solver_methods], [direct ewald fmm memd mmm1d mmm2d p2nfft p3m pepc pp3mg vmg wolf])
 
 m4_define([all_common_methods], [near gridsort resort fcs_common pnfft pfft fftw3_mpi_common fftw3_common fftw3_mpi fftw3])
 

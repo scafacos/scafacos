@@ -99,6 +99,7 @@ typedef fcs_int fcs_bool;
 #define FCS_MMM1D 41
 #define FCS_EWALD 42
 #define FCS_MMM2D 43
+#define FCS_WOLF 44
 
 /**
  * @brief definitions of tolerance types

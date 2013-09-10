@@ -71,6 +71,9 @@ extern "C" {
 #ifdef FCS_ENABLE_VMG
 #include "fcs_vmg_p.h"
 #endif
+#ifdef FCS_ENABLE_WOLF
+#include "fcs_wolf_p.h"
+#endif
 
 #ifdef __cplusplus
 }
