@@ -742,6 +742,10 @@ if test "x$enable_doc" != xno ; then
   AC_PATH_PROG(PDFLATEX,pdflatex,no)
   AC_PATH_PROG(MAKEINDEX,makeindex,no)
   AC_PATH_PROG(BIBTEX,bibtex,no)
+  AC_CHECK_PROGS([DOXYGEN], [doxygen])
+    if test -z "$DOXYGEN";
+       then AC_MSG_WARN([Doxygen not found - continuing without Doxygen support])
+    fi
 else
   AC_MSG_NOTICE([disable build of documents])
 fi
@@ -756,6 +760,9 @@ if test "x$enable_doc" != xno ; then
   AC_CONFIG_FILES([doc/Makefile doc/latexinc.sh])
   AC_CONFIG_LINKS([doc/latex-manual.sh:doc/latex-manual.sh])
 fi
+
+AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
+AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([doc/Doxyfile])])
 
 # Create config headers: config.h comes from autoheader-generated config.h.in,
 # fcs_config.h.in is written manually and contains the public parts of config.h,

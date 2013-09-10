@@ -17,7 +17,13 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 
-
+/*! \mainpage ScaFaCoS - Scalable Fast Coulomb Solvers
+ *
+ * \section Interface documentation
+ *
+ * Documentation on the frontend interfaces is found in [FCSInterface_p.h].
+ *
+ */
 
 #ifndef FCS_INCLUDED
 #define FCS_INCLUDED
