@@ -8,7 +8,8 @@ program main
   include "pfft.f03"
   include "pnfft.f03"
 
-  integer np(3), ierror, l1, l2, l3
+  integer np(3), ierror
+  integer(C_INTPTR_T) l1, l2, l3
   integer(C_INTPTR_T) :: N(3), local_N(3), local_N_start(3)
   integer(C_INTPTR_T) :: local_M, d=3
   real(C_DOUBLE) :: lower_border(3), upper_border(3)
