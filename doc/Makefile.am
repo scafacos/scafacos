@@ -75,8 +75,12 @@ $(mandir)/man_page_2.3: doxyfile.stamp
 doxyfile.stamp:
    $(DOXYGEN) Doxyfile
    echo Timestamp > doxyfile.stamp
+endif
 
-CLEANFILES = manual.pdf html $(top_srcdir)/doc/man doxyfile.stamp
+CLEANFILES = manual.pdf html $(top_srcdir)/doc/man
+if HAVE_DOXYGEN
+CLEANFILES += doxyfile.stamp
+endif
 
 MOSTLYCLEANFILES = \
 	*.aux *.aux.bak\
