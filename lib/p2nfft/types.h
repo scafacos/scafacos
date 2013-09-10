@@ -72,9 +72,11 @@ typedef ptrdiff_t INT;
 #  define FCS_ENABLE_DEBUG 0
 #endif
 
+#define FCS_P2NFFT_REG_NEAR_DEFAULT     (-1)
 #define FCS_P2NFFT_REG_NEAR_CG           0
 #define FCS_P2NFFT_REG_NEAR_T2P          1
 
+#define FCS_P2NFFT_REG_FAR_DEFAULT      (-1)
 #define FCS_P2NFFT_REG_FAR_RAD_CG        0
 #define FCS_P2NFFT_REG_FAR_RAD_T2P_SYM   1
 #define FCS_P2NFFT_REG_FAR_RAD_T2P_EC    2
