@@ -19,7 +19,7 @@
 
 /*! \mainpage ScaFaCoS - Scalable Fast Coulomb Solvers
  *
- * \section Interface documentation
+ * \section interface_doc Interface documentation
  *
  * Documentation on the frontend interfaces is found in [FCSInterface_p.h].
  *
