@@ -43,27 +43,40 @@ manual_FILES = \
 	figures/hball_500.pdf \
 	figures/hballneg_500.pdf \
 	figures/p2nfft_ewald_split.pdf \
-	figures/vmg_short-long-splitting.tex figures/vmg_short-long-splitting.pdf
+	figures/vmg_short-long-splitting.tex figures/vmg_short-long-splitting.pdf \
+    figures/logo.png \
+    Doxyfile
 
 EXTRA_DIST = $(manual_FILES)
 if HAVE_LATEX
 EXTRA_DIST += manual.pdf
 endif
 
-.PHONY: doc manual
+.PHONY: doc manual html
 
-doc: manual
+doc: manual doxyfile.stamp
 manual: manual.pdf
 manual.pdf: $(manual_FILES) latex-manual.sh latexinc.sh
 if HAVE_LATEX
 	sh latex-manual.sh
 else
-	@echo "No complete LaTeX-installation was not found in your PATH."
+	@echo "No complete LaTeX-installation was found in your PATH."
 	@echo "Can't build the User's Guide without pdflatex, makeindex and bibtex."
 	@echo "Install these and rerun configure."
 endif
+    
+if HAVE_DOXYGEN
+mandir = $(top_srcdir)/doc/man/man3/
 
-CLEANFILES = manual.pdf
+dist_man_MANS = $(mandir)/man_page_1.3 $(mandir)/man_page_2.3
+$(mandir)/man_page_1.3: doxyfile.stamp
+$(mandir)/man_page_2.3: doxyfile.stamp
+
+doxyfile.stamp:
+   $(DOXYGEN) Doxyfile
+   echo Timestamp > doxyfile.stamp
+
+CLEANFILES = manual.pdf html $(top_srcdir)/doc/man doxyfile.stamp
 
 MOSTLYCLEANFILES = \
 	*.aux *.aux.bak\
