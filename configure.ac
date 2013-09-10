@@ -39,7 +39,7 @@ AM_INIT_AUTOMAKE([1.9.6 -Wall -Wno-override foreign])
 m4_pattern_forbid([^A[C]?X_])
 
 # List of all solvers.
-m4_define([all_solver_methods], [direct ewald fmm memd mmm1d mmm2d p2nfft p3m pepc pp3mg vmg])
+m4_define([all_solver_methods], [direct ewald fmm memd mmm1d mmm2d p2nfft p3m pepc pp3mg vmg wolf])
 
 # List of solvers that have their own configure
 m4_define([subconfigure_solver_methods], [fmm p2nfft pepc pp3mg vmg])
@@ -239,7 +239,7 @@ requires_fftw3="p2nfft p3m"
 requires_fftw3_mpi="p2nfft"
 requires_pfft="p2nfft"
 requires_pnfft="p2nfft"
-requires_near="direct ewald p2nfft p3m"
+requires_near="direct ewald p2nfft p3m wolf"
 requires_gridsort="ewald memd mmm1d mmm2d p2nfft p3m near"
 requires_resort="gridsort"
 
@@ -588,6 +588,8 @@ AX_FCS_FMM_TOP([test "x$use_fcs_fmm" = xyes])
 
 # vmg prerequisites
 
+# wolf prerequisites
+
 enabled_solvers=
 
 # add Automake conditional ENABLE_<SOLVER> for each SOLVER
@@ -692,6 +694,11 @@ if test "x$use_fcs_ewald" = xyes ; then
   AC_CONFIG_FILES([lib/ewald/Makefile])
   AX_FCS_PACKAGE_ADD([ewald_LIBS],[-lfcs_ewald])
   AX_FCS_PACKAGE_ADD([ewald_LIBS_A],[lib/ewald/libfcs_ewald.a])
+fi
+if test "x$use_fcs_wolf" = xyes ; then
+  AC_CONFIG_FILES([lib/wolf/Makefile])
+  AX_FCS_PACKAGE_ADD([wolf_LIBS],[-lfcs_wolf])
+  AX_FCS_PACKAGE_ADD([wolf_LIBS_A],[lib/wolf/libfcs_wolf.a])
 fi
 
 # Create FCS library files.

@@ -65,6 +65,7 @@ void fcs_directc_set_in_particles(fcs_directc_t *directc, fcs_int in_nparticles,
 void fcs_directc_set_out_particles(fcs_directc_t *directc, fcs_int out_nparticles, fcs_float *out_positions, fcs_float *out_field, fcs_float *out_potentials);
 void fcs_directc_set_periodic_images(fcs_directc_t *directc, fcs_int *periodic_images);
 void fcs_directc_set_cutoff(fcs_directc_t *directc, fcs_float cutoff);
+void fcs_directc_get_cutoff(fcs_directc_t *directc, fcs_float *cutoff);
 void fcs_directc_set_cutoff_with_near(fcs_directc_t *directc, fcs_int cutoff_with_near);
 void fcs_directc_set_max_particle_move(fcs_directc_t *directc, fcs_float max_particle_move);
 void fcs_directc_set_resort(fcs_directc_t *directc, fcs_int resort);
