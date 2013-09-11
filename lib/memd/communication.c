@@ -30,7 +30,7 @@
 #include "communication.h"
 #include "helper_functions.h"
 
-void maggs_setup_communicator(memd_struct* memd, MPI_Comm communicator)
+void fcs_memd_setup_communicator(memd_struct* memd, MPI_Comm communicator)
 {
     /* store given communicator */
     memd->mpiparams.original_comm = communicator;
@@ -147,13 +147,13 @@ void maggs_setup_neighbors(memd_struct* memd)
                 izplus  = iz + 1;
                 izminus = iz - 1;
 				
-                kount         = maggs_get_linear_index(ix,      iy,      iz,      memd->lparams.dim);
-                kountzplus    = maggs_get_linear_index(ix,      iy,      izplus,  memd->lparams.dim);
-                kountzminus   = maggs_get_linear_index(ix,      iy,      izminus, memd->lparams.dim);
-                kountyplus    = maggs_get_linear_index(ix,      iyplus,  iz,      memd->lparams.dim);
-                kountyminus   = maggs_get_linear_index(ix,      iyminus, iz,      memd->lparams.dim);
-                kountxplus    = maggs_get_linear_index(ixplus,  iy,      iz,      memd->lparams.dim);
-                kountxminus   = maggs_get_linear_index(ixminus, iy,      iz,      memd->lparams.dim);
+                kount         = ifcs_memd_get_linear_index(ix,      iy,      iz,      memd->lparams.dim);
+                kountzplus    = ifcs_memd_get_linear_index(ix,      iy,      izplus,  memd->lparams.dim);
+                kountzminus   = ifcs_memd_get_linear_index(ix,      iy,      izminus, memd->lparams.dim);
+                kountyplus    = ifcs_memd_get_linear_index(ix,      iyplus,  iz,      memd->lparams.dim);
+                kountyminus   = ifcs_memd_get_linear_index(ix,      iyminus, iz,      memd->lparams.dim);
+                kountxplus    = ifcs_memd_get_linear_index(ixplus,  iy,      iz,      memd->lparams.dim);
+                kountxminus   = ifcs_memd_get_linear_index(ixminus, iy,      iz,      memd->lparams.dim);
 				
                 if(ixminus < 0)     memd->neighbor[kount][XMINUS] = -1;
                 else                memd->neighbor[kount][XMINUS] = kountxminus;
@@ -178,7 +178,7 @@ void maggs_setup_neighbors(memd_struct* memd)
 
 /** Set up lattice, calculate dimensions and lattice parameters
  Allocate memory for lattice sites and fields */
-void maggs_setup_local_lattice(memd_struct* memd)
+void fcs_memd_setup_local_lattice(memd_struct* memd)
 {
     fcs_int i;
     fcs_int ix = 0;
@@ -253,7 +253,7 @@ void maggs_setup_local_lattice(memd_struct* memd)
 
     /** set up lattice sites */
     FORALL_SITES(ix, iy, iz) {
-        linearindex = maggs_get_linear_index(ix, iy, iz, memd->lparams.dim);
+        linearindex = ifcs_memd_get_linear_index(ix, iy, iz, memd->lparams.dim);
 		
         memd->lattice[linearindex].r[0] = ix;
         memd->lattice[linearindex].r[1] = iy;
@@ -371,7 +371,7 @@ void maggs_prepare_surface_planes(fcs_int dim, MPI_Datatype *xy, MPI_Datatype *x
  @param dim     Dimension in which to communicate
  @param e_equil Flag if field is already equilibated
  */
-void maggs_exchange_surface_patch(memd_struct* memd, fcs_float *field, fcs_int dim, fcs_int e_equil)
+void fcs_memd_exchange_surface_patch(memd_struct* memd, fcs_float *field, fcs_int dim, fcs_int e_equil)
 {
     static fcs_int init = 1;
     static MPI_Datatype xyPlane,xzPlane,yzPlane; 

@@ -28,14 +28,14 @@
  public function!
  @return returns electric energy
  */
-fcs_float maggs_electric_energy(void* rawdata);
+fcs_float fcs_memd_electric_energy(void* rawdata);
 
 /** Public funxtion.
  Integrates the B-field over the whole system to get the
  energy of the magnetic field.
  @return returns magnetic energy
  */
-fcs_float maggs_magnetic_energy(void* rawdata);
+fcs_float fcs_memd_magnetic_energy(void* rawdata);
 
 /** print out current setup of maggs method
  @return 0 if successful
