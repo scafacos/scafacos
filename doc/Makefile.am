@@ -67,19 +67,19 @@ endif
 
 if HAVE_DOXYGEN
 #mandir = $(top_srcdir)/doc/man/man3/
-
-dist_man_MANS = $(mandir)/man_page_1.3 $(mandir)/man_page_2.3
-$(mandir)/man_page_1.3: doxyfile.stamp
-$(mandir)/man_page_2.3: doxyfile.stamp
+#dist_man_MANS = $(mandir)/man_page_1.3 $(mandir)/man_page_2.3
+#$(mandir)/man_page_1.3: doxyfile.stamp
+#$(mandir)/man_page_2.3: doxyfile.stamp
 
 doxyfile.stamp:
-   $(DOXYGEN) Doxyfile
-   echo Timestamp > doxyfile.stamp
+	$(DOXYGEN) Doxyfile
+	echo Timestamp > doxyfile.stamp
 endif
 
-CLEANFILES = manual.pdf html $(top_srcdir)/doc/man
+CLEANFILES = manual.pdf html 
+
 if HAVE_DOXYGEN
-CLEANFILES += doxyfile.stamp
+CLEANFILES += doxyfile.stamp $(top_srcdir)/doc/man
 endif
 
 MOSTLYCLEANFILES = \
