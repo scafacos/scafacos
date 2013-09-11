@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2010/2011/2012 Florian Fahrenberger
+ Copyright (C) 2010,2011,2012,2013 Florian Fahrenberger
  
  This file is part of ScaFaCoS.
  
@@ -108,7 +108,7 @@ void fcs_memd_setup_communicator(memd_struct* memd, MPI_Comm communicator)
 
 
 /** sets up nearest neighbors for each site in linear index */
-void maggs_setup_neighbors(memd_struct* memd)
+void ifcs_memd__setup_neighbors(memd_struct* memd)
 {
     fcs_int ix = 0;
     fcs_int iy = 0;
@@ -270,14 +270,14 @@ void fcs_memd_setup_local_lattice(memd_struct* memd)
         FOR3D(i) memd->lattice[linearindex].permittivity[i] = 1.;
     }
 	
-    maggs_setup_neighbors(memd);
+    ifcs_memd__setup_neighbors(memd);
 }
 
 
 /** sets up surface patches for all domains.
  @param surface_patch the local surface patch
  */
-void maggs_calc_surface_patches(memd_struct* memd, t_surf_patch* surface_patch)
+void ifcs_memd__calc_surface_patches(memd_struct* memd, t_surf_patch* surface_patch)
 {
     /* x=memd->lparams.size[0] plane */
     surface_patch[0].offset   = memd->lparams.dim[2]*memd->lparams.dim[1]*memd->lparams.size[0];    /*(size[0],0,0) point */
@@ -342,7 +342,7 @@ void maggs_calc_surface_patches(memd_struct* memd, t_surf_patch* surface_patch)
 
 
 /** sets up MPI communications for domain surfaces */
-void maggs_prepare_surface_planes(fcs_int dim, MPI_Datatype *xy, MPI_Datatype *xz, MPI_Datatype *yz, 
+void ifcs_memd__prepare_surface_planes(fcs_int dim, MPI_Datatype *xy, MPI_Datatype *xz, MPI_Datatype *yz, 
                                   t_surf_patch *surface_patch)
 {
     MPI_Type_contiguous(dim*surface_patch[0].stride*sizeof(fcs_float),MPI_BYTE,yz);  
@@ -388,8 +388,8 @@ void fcs_memd_exchange_surface_patch(memd_struct* memd, fcs_float *field, fcs_in
     if(init) {
         MPI_Datatype xz_plaq, oneslice;
 		
-        maggs_calc_surface_patches(memd, surface_patch);
-        maggs_prepare_surface_planes(dim, &xyPlane, &xzPlane, &yzPlane, surface_patch);
+        ifcs_memd__calc_surface_patches(memd, surface_patch);
+        ifcs_memd__prepare_surface_planes(dim, &xyPlane, &xzPlane, &yzPlane, surface_patch);
 		
         MPI_Type_vector(surface_patch[0].stride, 2, 3, FCS_MPI_FLOAT,&yzPlane2D);    
         MPI_Type_commit(&yzPlane2D);
