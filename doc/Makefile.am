@@ -1,4 +1,4 @@
-# Copyright (C) 2011 The ScaFaCoS project
+# Copyright (C) 2011,2012,2013 The ScaFaCoS project
 #  
 # This file is part of ScaFaCoS.
 #  
@@ -44,8 +44,8 @@ manual_FILES = \
 	figures/hballneg_500.pdf \
 	figures/p2nfft_ewald_split.pdf \
 	figures/vmg_short-long-splitting.tex figures/vmg_short-long-splitting.pdf \
-    figures/logo.png \
-    Doxyfile
+	figures/logo.png \
+	Doxyfile	
 
 EXTRA_DIST = $(manual_FILES)
 if HAVE_LATEX
@@ -64,9 +64,9 @@ else
 	@echo "Can't build the User's Guide without pdflatex, makeindex and bibtex."
 	@echo "Install these and rerun configure."
 endif
-    
+
 if HAVE_DOXYGEN
-mandir = $(top_srcdir)/doc/man/man3/
+#mandir = $(top_srcdir)/doc/man/man3/
 
 dist_man_MANS = $(mandir)/man_page_1.3 $(mandir)/man_page_2.3
 $(mandir)/man_page_1.3: doxyfile.stamp
