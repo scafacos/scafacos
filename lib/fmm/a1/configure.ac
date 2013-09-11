@@ -15,7 +15,7 @@ AC_MSG_NOTICE([****************************************************************]
 
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR(m4)
-AM_INIT_AUTOMAKE([-Wall -Werror foreign 1.11 silent-rules])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign 1.11 silent-rules subdir-objects])
 
 LT_PREREQ([2.2.6])
 

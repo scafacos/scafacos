@@ -41,7 +41,7 @@
  @param flux  flux variable to write into
  @param dir   direction in which to calculate the flux
  */
-void maggs_calc_charge_fluxes_1D(memd_struct* memd, fcs_float q, fcs_float *help, fcs_float *flux, fcs_int dir)
+void ifcs_memd_calc_charge_fluxes_1D(memd_struct* memd, fcs_float q, fcs_float *help, fcs_float *flux, fcs_int dir)
 {
     /* at the moment works only for linear interpolation */
     fcs_int index, dir1, dir2;
@@ -51,7 +51,7 @@ void maggs_calc_charge_fluxes_1D(memd_struct* memd, fcs_float q, fcs_float *help
     q_scaled = q * memd->parameters.prefactor*memd->parameters.inva;
     index = 0;
 	
-    maggs_calc_directions(dir, &dir1, &dir2);   
+    ifcs_memd_calc_directions(dir, &dir1, &dir2);   
 	
     for(l=0;l<2;l++){  /* jumps from dir2- to dir2+ */
         for(m=0;m<2;m++){ /* jumps from dir1- to dir1+ */   
@@ -75,7 +75,7 @@ void maggs_calc_charge_fluxes_1D(memd_struct* memd, fcs_float q, fcs_float *help
  @param t_step   time step
  @param identity particle ID
  */
-fcs_int maggs_check_intersect_1D(fcs_float delta, fcs_float r_new, fcs_int dir, fcs_int first, fcs_float *t_step, fcs_int identity)
+fcs_int ifcs_memd_check_intersect_1D(fcs_float delta, fcs_float r_new, fcs_int dir, fcs_int first, fcs_float *t_step, fcs_int identity)
 {	
     fcs_int candidateplane = -1; /* force alloc error */
     fcs_int f_crossing; 
@@ -109,7 +109,7 @@ fcs_int maggs_check_intersect_1D(fcs_float delta, fcs_float r_new, fcs_int dir, 
  @param v       speed of particle
  @param dir     first direction of flux calculation
  */
-void maggs_calc_e_field_on_link_1D(memd_struct* memd, fcs_int index, fcs_float *flux, fcs_float v, fcs_int dir)
+void ifcs_memd_calc_e_field_on_link_1D(memd_struct* memd, fcs_int index, fcs_float *flux, fcs_float v, fcs_int dir)
 {  
     fcs_int l, m, ind_flux, dir1, dir2;
     fcs_int temp_ind;
@@ -117,7 +117,7 @@ void maggs_calc_e_field_on_link_1D(memd_struct* memd, fcs_int index, fcs_float *
     fcs_int* anchor_neighb;
     t_site* anchor_site;
 	
-    maggs_calc_directions(dir, &dir1, &dir2);
+    ifcs_memd_calc_directions(dir, &dir1, &dir2);
 	
     anchor_neighb = &memd->neighbor[index][0]; 
     anchor_site = &memd->lattice[index];
@@ -125,11 +125,11 @@ void maggs_calc_e_field_on_link_1D(memd_struct* memd, fcs_int index, fcs_float *
     temp_ind = anchor_neighb[dir1];
     if(temp_ind == NOWHERE) help_index[0] = memd->lparams.volume;
     else
-        help_index[0] = maggs_get_offset(memd->lattice[temp_ind].r[dir1], anchor_site->r[dir1], dir1, memd->lparams.dim);
+        help_index[0] = ifcs_memd_get_offset(memd->lattice[temp_ind].r[dir1], anchor_site->r[dir1], dir1, memd->lparams.dim);
     temp_ind = anchor_neighb[dir2];
     if(temp_ind == NOWHERE) help_index[1] = memd->lparams.volume;
     else
-        help_index[1] = maggs_get_offset(memd->lattice[temp_ind].r[dir2], anchor_site->r[dir2], dir2, memd->lparams.dim);
+        help_index[1] = ifcs_memd_get_offset(memd->lattice[temp_ind].r[dir2], anchor_site->r[dir2], dir2, memd->lparams.dim);
 	
 	
     ind_flux = 0;
@@ -155,7 +155,7 @@ void maggs_calc_e_field_on_link_1D(memd_struct* memd, fcs_int index, fcs_float *
  @param p           Particle pointer
  @param ghost_cell  flag if cell is ghost cell
  */
-void maggs_add_current_on_segment(memd_struct* memd, memd_particle *p, fcs_int ghost_cell)
+void ifcs_memd_add_current_on_segment(memd_struct* memd, memd_particle *p, fcs_int ghost_cell)
 {
     fcs_int d;
     fcs_int icoord, dir;
@@ -188,7 +188,7 @@ void maggs_add_current_on_segment(memd_struct* memd, memd_particle *p, fcs_int g
     }
 	
     if(flag_update_flux) {
-        lat_index = maggs_get_linear_index(first[0], first[1], first[2], memd->lparams.dim);
+        lat_index = ifcs_memd_get_linear_index(first[0], first[1], first[2], memd->lparams.dim);
     }
 	
     /* loop coordinates in order x->y->z->y->x */
@@ -198,14 +198,14 @@ void maggs_add_current_on_segment(memd_struct* memd, memd_particle *p, fcs_int g
         if(icoord == 2) delta = v_inva[icoord];
         else            delta = 0.5 * v_inva[icoord];
 		
-        f_crossing = maggs_check_intersect_1D(delta, r_temp[icoord], icoord, first[icoord], &t_step, *p->identity);
+        f_crossing = ifcs_memd_check_intersect_1D(delta, r_temp[icoord], icoord, first[icoord], &t_step, *p->identity);
 		
         /* calculate flux */
         if(flag_update_flux) {
-            maggs_calc_charge_fluxes_1D(memd, p->q, help, flux, icoord);
+            ifcs_memd_calc_charge_fluxes_1D(memd, p->q, help, flux, icoord);
 			
             v = t_step * v_invasq[icoord];
-            maggs_calc_e_field_on_link_1D(memd, lat_index, flux, v, icoord);
+            ifcs_memd_calc_e_field_on_link_1D(memd, lat_index, flux, v, icoord);
         }
 		
         if(f_crossing) {
@@ -229,14 +229,14 @@ void maggs_add_current_on_segment(memd_struct* memd, memd_particle *p, fcs_int g
                     flag_update_flux = 1;
                     FOR3D(d) if(first[d]<memd->lparams.halo_left_down[d] || first[d]>= memd->lparams.halo_upper_right[d])
                     {flag_update_flux = 0;break;}
-                    if(flag_update_flux) maggs_calc_charge_fluxes_1D(memd, p->q, help, flux, icoord); 
+                    if(flag_update_flux) ifcs_memd_calc_charge_fluxes_1D(memd, p->q, help, flux, icoord); 
                 }
             }
 			
             if(flag_update_flux) {
                 v = t_step * v_invasq[icoord];
-                lat_index = maggs_get_linear_index(first[0], first[1], first[2], memd->lparams.dim);
-                maggs_calc_e_field_on_link_1D(memd, lat_index, flux, v, icoord);
+                lat_index = ifcs_memd_get_linear_index(first[0], first[1], first[2], memd->lparams.dim);
+                ifcs_memd_calc_e_field_on_link_1D(memd, lat_index, flux, v, icoord);
             }
         }
         r_temp[icoord] -= delta;
@@ -248,7 +248,7 @@ void maggs_add_current_on_segment(memd_struct* memd, memd_particle *p, fcs_int g
 /** Calculate fluxes and couple them with fields symplectically.  It
  is assumed that the particle can not cross more than one cell
  boundary per direction */
-void maggs_couple_current_to_Dfield(memd_struct* memd)
+void ifcs_memd_couple_current_to_Dfield(memd_struct* memd)
 {
     memd_cell *cell;
     memd_particle* p;
@@ -266,7 +266,7 @@ void maggs_couple_current_to_Dfield(memd_struct* memd)
             if((q=p[i].q) != 0.) {
                 /*	if(sim_time>49.08&&p[i].identity==231) */
                 /*	  fprintf(stderr,"time=%f, v=(%f,%f,%f)\n",sim_time, p[i].v[0], p[i].v[1],p[i].v[2]); */
-                maggs_add_current_on_segment(memd, &p[i], 0);
+                ifcs_memd_add_current_on_segment(memd, &p[i], 0);
             }/* if particle.q != ZERO */
         }
     }
@@ -287,7 +287,7 @@ void maggs_couple_current_to_Dfield(memd_struct* memd)
                     {flag_inner = 0; break;}
                 }
                 if(flag_inner) {
-                    maggs_add_current_on_segment(memd, &p[i], 1);
+                    ifcs_memd_add_current_on_segment(memd, &p[i], 1);
                 }
             }/* if particle.q != ZERO */
         }
@@ -311,14 +311,14 @@ void maggs_couple_current_to_Dfield(memd_struct* memd)
  to ensure a time reversible integration scheme!
  @param dt time step for update. Should be half the MD time step
  */
-void maggs_propagate_B_field(memd_struct* memd, fcs_float dt)
+void fcs_memd_propagate_B_field(memd_struct* memd, fcs_float dt)
 {
     fcs_int x, y, z, i, offset, index;
     fcs_int xoffset, yoffset;
     fcs_float help = dt*memd->parameters.invsqrt_f_mass;
     /* B(t+h/2) = B(t-h/2) + h*curlE(t) */ 
 	
-    offset = maggs_get_linear_index(1,1,1, memd->lparams.dim);
+    offset = ifcs_memd_get_linear_index(1,1,1, memd->lparams.dim);
     yoffset = memd->lparams.dim[2];
     xoffset = 2*memd->lparams.dim[2];
 	
@@ -328,23 +328,23 @@ void maggs_propagate_B_field(memd_struct* memd, fcs_float dt)
 				
                 i = offset+z;
                 index = 3*i;
-                memd->Bfield[index+0] += - help*maggs_calc_dual_curl(1,2, memd->Dfield, memd->neighbor[i], index); 
-                memd->Bfield[index+1] += - help*maggs_calc_dual_curl(2,0, memd->Dfield, memd->neighbor[i], index); 
-                memd->Bfield[index+2] += - help*maggs_calc_dual_curl(0,1, memd->Dfield, memd->neighbor[i], index);  
+                memd->Bfield[index+0] += - help*ifcs_memd_calc_dual_curl(1,2, memd->Dfield, memd->neighbor[i], index); 
+                memd->Bfield[index+1] += - help*ifcs_memd_calc_dual_curl(2,0, memd->Dfield, memd->neighbor[i], index); 
+                memd->Bfield[index+2] += - help*ifcs_memd_calc_dual_curl(0,1, memd->Dfield, memd->neighbor[i], index);  
             }
             offset += yoffset;
         }
         offset += xoffset;
     }
 	
-    maggs_exchange_surface_patch(memd, memd->Bfield, 3, 0);
+    fcs_memd_exchange_surface_patch(memd, memd->Bfield, 3, 0);
 }
 
 /** calculate D-field from B-field according to
  \f$\frac{\partial}{\partial t}{D} = \nabla\times B\f$ (and prefactors)
  @param dt MD time step
  */
-void maggs_add_transverse_field(memd_struct* memd, fcs_float dt)
+void ifcs_memd_add_transverse_field(memd_struct* memd, fcs_float dt)
 {
     fcs_int i, index;
     fcs_float invasq; 
@@ -356,31 +356,31 @@ void maggs_add_transverse_field(memd_struct* memd, fcs_float dt)
     help = dt * invasq * memd->parameters.invsqrt_f_mass;
 	
     /***calculate e-field***/ 
-    offset = maggs_get_linear_index(1,1,1, memd->lparams.dim);
+    offset = ifcs_memd_get_linear_index(1,1,1, memd->lparams.dim);
     yoffset = memd->lparams.dim[2];
     xoffset = 2*memd->lparams.dim[2];
     for(x=0;x<memd->lparams.size[0];x++) {
         for(y=0;y<memd->lparams.size[1];y++) {
             for(z=0;z<memd->lparams.size[2];z++) {
                 /*  FORALL_INNER_SITES(x, y, z) { */
-                /*    i = maggs_get_linear_index(x, y, z, memd->lparams.dim); */
+                /*    i = ifcs_memd_get_linear_index(x, y, z, memd->lparams.dim); */
                 i = offset+z;
                 index = 3*i;
-                memd->Dfield[index  ] += help * maggs_calc_curl(2, 1, memd->Bfield, memd->neighbor[i], index);
-                memd->Dfield[index+1] += help * maggs_calc_curl(0, 2, memd->Bfield, memd->neighbor[i], index);
-                memd->Dfield[index+2] += help * maggs_calc_curl(1, 0, memd->Bfield, memd->neighbor[i], index);
+                memd->Dfield[index  ] += help * ifcs_memd_calc_curl(2, 1, memd->Bfield, memd->neighbor[i], index);
+                memd->Dfield[index+1] += help * ifcs_memd_calc_curl(0, 2, memd->Bfield, memd->neighbor[i], index);
+                memd->Dfield[index+2] += help * ifcs_memd_calc_curl(1, 0, memd->Bfield, memd->neighbor[i], index);
             }
             offset += yoffset;
         }
         offset += xoffset;
     } 
 	
-    maggs_exchange_surface_patch(memd, memd->Dfield, 3, 0);
+    fcs_memd_exchange_surface_patch(memd, memd->Dfield, 3, 0);
 }
 
 
 /** interpolation function, solely for new self force correction. */
-void interpolate_part_charge_from_grad(fcs_float rel_x, fcs_float *grad, fcs_float *rho)
+void ifcs_memd_interpolate_part_charge_from_grad(fcs_float rel_x, fcs_float *grad, fcs_float *rho)
 {
     fcs_int i, k, l, m, index;
     fcs_int grad_ind;
@@ -422,7 +422,7 @@ void interpolate_part_charge_from_grad(fcs_float rel_x, fcs_float *grad, fcs_flo
 /** new self force correction with lattice Green's function.
  @param p Particle pointer
  */
-void calc_part_self_force(memd_struct* memd, memd_particle *p)
+void ifcs_memd_calc_part_self_force(memd_struct* memd, memd_particle *p)
 {
     fcs_int i, j, k, ip=0;
     fcs_float self, temp;
@@ -440,12 +440,12 @@ void calc_part_self_force(memd_struct* memd, memd_particle *p)
     help_index[1] = 6;
     help_index[2] = 3; 
     
-    maggs_calc_charge_gradients(&rel, p->q, &grad[ip]);
-    interpolate_part_charge_from_grad(rel, grad, rho);
+    ifcs_memd_calc_charge_gradients(&rel, p->q, &grad[ip]);
+    ifcs_memd_interpolate_part_charge_from_grad(rel, grad, rho);
     index = 0;
     grad_ind = 0;
     FOR3D(d) {
-        maggs_calc_directions(d, &dir1, &dir2);
+        ifcs_memd_calc_directions(d, &dir1, &dir2);
         for(l=0;l<2;l++){  /* jumps from dir2- to dir2+ */
             for(m=0;m<2;m++){ /* jumps from dir1- to dir1+ */          
                 
@@ -485,7 +485,7 @@ void calc_part_self_force(memd_struct* memd, memd_particle *p)
  on each lattice site.
  @param P Particle pointer
  */
-void maggs_calc_self_influence(memd_struct* memd, memd_particle* P)
+void ifcs_memd_calc_self_influence(memd_struct* memd, memd_particle* P)
 {
     fcs_int k;
     //	fcs_int ix, iy, iz;
@@ -511,7 +511,7 @@ void maggs_calc_self_influence(memd_struct* memd, memd_particle* P)
      for (iy=0;iy<ymax;iy++) {
      for (ix=0;ix<xmax;ix++) {
      index = (iz + zmax*(iy + ymax*ix));
-     globalindex = maggs_get_linear_index((left_down_position[0]+ix),
+     globalindex = ifcs_memd_get_linear_index((left_down_position[0]+ix),
      (left_down_position[1]+iy),
      (left_down_position[2]+iz), memd->lparams.dim);
      self_influence_correction[index].permittivity = lattice[globalindex].permittivity;
@@ -549,7 +549,7 @@ void maggs_calc_self_influence(memd_struct* memd, memd_particle* P)
  @param index  index of the lattice site
  @param grad   charge gradient
  */
-void maggs_calc_part_link_forces(memd_struct* memd, memd_particle *p, fcs_int index, fcs_float *grad)
+void ifcs_memd_calc_part_link_forces(memd_struct* memd, memd_particle *p, fcs_int index, fcs_float *grad)
 {
     static fcs_int init = 1;
     static fcs_int help_index[SPACE_DIM];
@@ -563,7 +563,7 @@ void maggs_calc_part_link_forces(memd_struct* memd, memd_particle *p, fcs_int in
         t_site* anchor_site;
         anchor_site = &memd->lattice[index];
         FOR3D(j) {
-            help_index[j] = maggs_get_offset(memd->lattice[memd->neighbor[index][j]].r[j], anchor_site->r[j], j, memd->lparams.dim);
+            help_index[j] = ifcs_memd_get_offset(memd->lattice[memd->neighbor[index][j]].r[j], anchor_site->r[j], j, memd->lparams.dim);
         }
         init = 0;
     }
@@ -575,7 +575,7 @@ void maggs_calc_part_link_forces(memd_struct* memd, memd_particle *p, fcs_int in
     ind_grad = 0; 
 	
     FOR3D(j) {
-        maggs_calc_directions(j, &dir1, &dir2);
+        ifcs_memd_calc_directions(j, &dir1, &dir2);
 		
         for(l=0;l<2;l++){  /* jumps from dir2- to dir2+ */
             for(m=0;m<2;m++){ /* jumps from dir1- to dir1+ */   
@@ -599,8 +599,8 @@ void maggs_calc_part_link_forces(memd_struct* memd, memd_particle *p, fcs_int in
 /** Public function.
  Calculates the actual force on each particle
  by calling all other needed functions (except
- for maggs_propagate_B_field) */
-void maggs_calc_forces(memd_struct* memd)
+ for fcs_memd_propagate_B_field) */
+void fcs_memd_calc_forces(memd_struct* memd)
 { 
     memd_cell *cell;
     static fcs_int init = 1;
@@ -617,11 +617,11 @@ void maggs_calc_forces(memd_struct* memd)
     if(init) grad = (fcs_float *) realloc(grad, 12*memd->parameters.n_part*sizeof(fcs_float));
 	
     /* Hopefully only needed for Yukawa: */
-    maggs_update_charge_gradients(memd, grad);
+    ifcs_memd_update_charge_gradients(memd, grad);
 	
     if(!init) {
-        maggs_couple_current_to_Dfield(memd);
-        maggs_add_transverse_field(memd, memd->parameters.time_step);  
+        ifcs_memd_couple_current_to_Dfield(memd);
+        ifcs_memd_add_transverse_field(memd, memd->parameters.time_step);  
     }
     else init = 0;
 	
@@ -638,9 +638,9 @@ void maggs_calc_forces(memd_struct* memd)
                     first[d] = (fcs_int) pos[d];
                 }
 				
-                index = maggs_get_linear_index(first[0],first[1],first[2],memd->lparams.dim);
-                maggs_calc_part_link_forces(memd, &p[i], index, &grad[ip]);
-                maggs_calc_self_influence(memd, &p[i]);
+                index = ifcs_memd_get_linear_index(first[0],first[1],first[2],memd->lparams.dim);
+                ifcs_memd_calc_part_link_forces(memd, &p[i], index, &grad[ip]);
+                ifcs_memd_calc_self_influence(memd, &p[i]);
                 
                 ip+=12;
             }

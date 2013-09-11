@@ -39,7 +39,7 @@
 /** Initialization function.
  Sets maggs structure variables.
  Calls calculation of initial D-field. */
-FCSResult maggs_init(void** rawdata, MPI_Comm communicator)
+FCSResult ifcs_memd_init(void** rawdata, MPI_Comm communicator)
 {
     memd_struct* memd;
     if (*rawdata == NULL) {
@@ -52,15 +52,15 @@ FCSResult maggs_init(void** rawdata, MPI_Comm communicator)
     }
 
 
-    maggs_setup_communicator(memd, communicator);
+    fcs_memd_setup_communicator(memd, communicator);
     
     //if(!this_node) fprintf(stderr, "%d: Electric field is initialized\n", this_node);
-    return maggs_sanity_checks(memd);
+    return ifcs_memd_sanity_checks(memd);
 }
 
 /** Frees the dynamically allocated memory
  Currently not called from anywhere. */
-FCSResult maggs_exit(void* rawdata)
+FCSResult fcs_memd_exit(void* rawdata)
 {
     memd_struct* memd = (memd_struct*) rawdata;
     free(memd->lattice);
