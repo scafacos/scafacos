@@ -3,4 +3,4 @@
 #     See COPYRIGHT in top-level directory.
 #
 
-liba1_la_SOURCES += $(top_srcdir)/src/adl/interfaces/armci/armci_a1.c
+liba1_la_SOURCES += src/adl/interfaces/armci/armci_a1.c

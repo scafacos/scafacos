@@ -214,7 +214,7 @@ fi
 AC_PATH_PROG([DOXYGEN],[doxygen],,$PATH)
 AC_SUBST(DOXYGEN)
 
-AC_SUBST(top_srcdir)
+#AC_SUBST(top_srcdir)
 
 m4_ifdef([AX_FCS_PACKAGE_RESET],[
 AX_FCS_PACKAGE_RESET

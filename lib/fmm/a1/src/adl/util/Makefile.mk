@@ -3,8 +3,8 @@
 #     See COPYRIGHT in top-level directory.
 #
 
-liba1_la_SOURCES += $(top_srcdir)/src/adl/util/a1u_put.c \
-                    $(top_srcdir)/src/adl/util/a1u_get.c \
-                    $(top_srcdir)/src/adl/util/a1u_acc.c \
-                    $(top_srcdir)/src/adl/util/a1u_mod.c \
-                    $(top_srcdir)/src/adl/util/a1u_param.c 
+liba1_la_SOURCES += src/adl/util/a1u_put.c \
+	src/adl/util/a1u_get.c \
+	src/adl/util/a1u_acc.c \
+	src/adl/util/a1u_mod.c \
+	src/adl/util/a1u_param.c
