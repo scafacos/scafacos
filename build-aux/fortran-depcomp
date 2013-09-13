@@ -9,6 +9,9 @@ UNIQSTR="QWERTZ"
 SEDTMP="qwertz_sed_tmp"
 FOREIGN=
 
+SED="sed"
+GREP="grep"
+
 for x in ${IGNORE} ; do
   echo "s! ${x}\.${MODEXT}!!g"
 done > "${SEDTMP}"
@@ -48,11 +51,12 @@ for f in ${FILES} ${UNIQSTR} ; do
 #    echo "#l: ${l}"
     cat ${PRE_INCLUDE} ${f} ${POST_INCLUDE} | \
     ${CPP} 2>&1 | \
-    sed -e "s/\!.*$//" | \
-    grep -e "use" -e "module" | \
-    sed -n -e "s/^.*use[ \t][ \t]*\([a-zA-Z][a-zA-Z0-9_]*\).*$/${UNIQSTR}use \1/p" \
+    ${SED} -e "s/\!.*$//" | \
+    ${GREP} -e "use" -e "module" | \
+    ${SED} -n -e "s/^.*use[ \t][ \t]*\([a-zA-Z][a-zA-Z0-9_]*\).*$/${UNIQSTR}use \1/p" \
            -e "s/^.*module[ \t][ \t]*\([a-zA-Z][a-zA-Z0-9_]*\)$/${UNIQSTR}mod \1/p" \
-           -e "\$i${UNIQSTR} ${UNIQSTR}" | \
+           -e "\$i\\
+${UNIQSTR} ${UNIQSTR}" | \
     while read w n ; do
       if test "${w}" = "${UNIQSTR}use" ; then
         eval "useswo=\${uses##* ${n} *}"
@@ -99,7 +103,7 @@ for f in ${FILES} ${UNIQSTR} ; do
       fi
     done
   fi
-done | sed -f "${SEDTMP}"
+done | ${SED} -f "${SEDTMP}"
 
 echo "# THIS IS THE END"
 
