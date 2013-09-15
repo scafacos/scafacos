@@ -242,21 +242,26 @@ static void wolf_print_particles(fcs_int n, fcs_float *xyz, fcs_float *q, fcs_fl
 
 
 typedef struct {
-  fcs_float cutoff, alpha;
+  fcs_float alpha, p_shift, f_shift;
+
 } wolf_coulomb_field_potential_t;
 
 
 static void wolf_coulomb_field_potential(const void *param, fcs_float dist, fcs_float *f, fcs_float *p)
 {
-#if 0
   wolf_coulomb_field_potential_t *wcfp = (wolf_coulomb_field_potential_t *) param;
 
-  printf("cutoff = %" FCS_LMOD_FLOAT "f\n", wcfp->cutoff);
-  printf("alpha = %" FCS_LMOD_FLOAT "f\n", wcfp->alpha);
-#endif
+/*#if 1
+  printf("alpha = %" FCS_LMOD_FLOAT "e\n", wcfp->alpha);
+  printf("p_shift = %" FCS_LMOD_FLOAT "e\n", wcfp->p_shift);
+  printf("f_shift = %" FCS_LMOD_FLOAT "e\n", wcfp->f_shift);
+#endif*/
 
-  *p = 1.0 / dist;
-  *f = -(*p) * (*p);
+  fcs_float adist = wcfp->alpha * dist;
+  fcs_float erfc_part_ri = erfc(adist) / dist;
+
+  *p = erfc_part_ri - wcfp->p_shift;
+  *f = -(erfc_part_ri + 2.0 * wcfp->alpha * 0.56418958354775627928034964498 * exp(-adist * adist)) / dist - wcfp->f_shift; /* FIXME: use fcs-type constant for 1/sqrt(pi) */
 }
 
 static FCS_NEAR_LOOP_FP(wolf_coulomb_loop_fp, wolf_coulomb_field_potential)
@@ -314,8 +319,12 @@ void ifcs_wolf_run(ifcs_wolf_t *wolf, MPI_Comm comm)
   fcs_near_set_max_particle_move(&near, wolf->max_particle_move);
   fcs_near_set_resort(&near, wolf->resort);
 
-  wcfp.cutoff = wolf->cutoff;
+  fcs_float acutoff = wolf->alpha * wolf->cutoff;
+  fcs_float erfc_part_ri = erfc(acutoff) / wolf->cutoff;
+
   wcfp.alpha = wolf->alpha;
+  wcfp.p_shift = erfc_part_ri;
+  wcfp.f_shift = -(erfc_part_ri + 2.0 * wolf->alpha * 0.56418958354775627928034964498 * exp(-acutoff * acutoff)) / wolf->cutoff;
 
   fcs_near_field_solver(&near, wolf->cutoff, &wcfp, comm);
 
