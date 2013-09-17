@@ -25,6 +25,6 @@
 /** calculates initial electric field configuration.
  currently uses simple and slow method of plaquettes and links.
  energy minimization takes up lots of time. */
-void maggs_calc_init_e_field(memd_struct* memd);
+void ifcs_memd_calc_init_e_field(memd_struct* memd);
 
 #endif

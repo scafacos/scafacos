@@ -23,7 +23,7 @@
 #include "FCSResult.h"
 #include <mpi.h>
 
-FCSResult maggs_init(void** rawdata, MPI_Comm communicator);
-FCSResult maggs_exit(void* rawdata);
+FCSResult ifcs_memd_init(void** rawdata, MPI_Comm communicator);
+FCSResult fcs_memd_exit(void* rawdata);
 
 #endif

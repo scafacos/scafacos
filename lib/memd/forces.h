@@ -31,12 +31,12 @@
  to ensure a time reversible integration scheme!
  @param dt time step for update. Should be half the MD time step
  */
-void maggs_propagate_B_field(memd_struct* memd, fcs_float dt);
+void fcs_memd_propagate_B_field(memd_struct* memd, fcs_float dt);
 
 /** Public function.
  Calculates the actual force on each particle
  by calling all other needed functions (except
- for maggs_propagate_B_field) */
-void maggs_calc_forces(memd_struct* memd);
+ for fcs_memd_propagate_B_field) */
+void fcs_memd_calc_forces(memd_struct* memd);
 
 #endif

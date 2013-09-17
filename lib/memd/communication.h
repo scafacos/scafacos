@@ -28,10 +28,10 @@
 #include "data_types.h"
 
 /** check and set up communicator */
-void maggs_setup_communicator(memd_struct* memd, MPI_Comm communicator);
+void fcs_memd_setup_communicator(memd_struct* memd, MPI_Comm communicator);
 /** set up lattice structure and all parameters */
-void maggs_setup_local_lattice(memd_struct* memd);
+void fcs_memd_setup_local_lattice(memd_struct* memd);
 /** communicate surface patches */
-void maggs_exchange_surface_patch(memd_struct* memd, fcs_float *field, fcs_int dim, fcs_int e_equil);
+void fcs_memd_exchange_surface_patch(memd_struct* memd, fcs_float *field, fcs_int dim, fcs_int e_equil);
 
 #endif

@@ -272,7 +272,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
 
   pepckeys_mpi_partition_exact_radix(&s0, &pc, PART_RHIGH, PART_RLOW, PART_RWIDTH, SL_SORTED_IN, scounts, NULL, size, rank, comm);
 
-  DEBUG_CMD(printf(DEBUG_PRINT_PREFIX "%d: average finish round: %f\n", rank, pepckeys_mseg_info_finish_rounds_avg););
+  DEBUG_CMD(printf(DEBUG_PRINT_PREFIX "%d: average finish round: %f\n", rank, pepckeys_SL_DEFCON(mseg.info_finish_rounds_avg)););
 
 #endif
 

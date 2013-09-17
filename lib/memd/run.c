@@ -32,7 +32,7 @@
 #include "init.h"
 
 
-void memd_assign_charges(memd_struct* memd, fcs_int local_num_real_particles, fcs_float* local_positions, fcs_float* local_charges, fcs_float* local_fields){
+void ifcs_memd_assign_charges(memd_struct* memd, fcs_int local_num_real_particles, fcs_float* local_positions, fcs_float* local_charges, fcs_float* local_fields){
     int k, cell_shift[3], cell_id, part_id, cell_part_id;
     
     for (part_id=0; part_id<local_num_real_particles; part_id++) {
@@ -42,7 +42,7 @@ void memd_assign_charges(memd_struct* memd, fcs_int local_num_real_particles, fc
                     (part_position[k] - memd->lparams.left_down_position[k])
                                              / memd->parameters.a );
         printf("lparams.dim: %d %d %d\n", memd->lparams.dim[0], memd->lparams.dim[1], memd->lparams.dim[2]);
-        cell_id = maggs_get_linear_index(cell_shift[0], cell_shift[1], cell_shift[2], memd->lparams.dim);
+        cell_id = ifcs_memd_get_linear_index(cell_shift[0], cell_shift[1], cell_shift[2], memd->lparams.dim);
         printf("cell_id: %d\n", cell_id);
 /*
         fprintf(stdout, "cell_shift: %d %d %d\n", cell_shift[0], cell_shift[1], cell_shift[2]); fflush(stdout);
@@ -61,7 +61,7 @@ void memd_assign_charges(memd_struct* memd, fcs_int local_num_real_particles, fc
     
 }
 
-void memd_run(void* rawdata, fcs_int num_particles, fcs_int max_num_particles, fcs_float *positions, fcs_float *charges, fcs_float *fields, fcs_float *potentials){
+void ifcs_memd_run(void* rawdata, fcs_int num_particles, fcs_int max_num_particles, fcs_float *positions, fcs_float *charges, fcs_float *fields, fcs_float *potentials){
 
     memd_struct* memd = (memd_struct*) rawdata;;
     /*
@@ -71,7 +71,7 @@ void memd_run(void* rawdata, fcs_int num_particles, fcs_int max_num_particles, f
         printf("New handle created!\n"); fflush(stdout);
     } else {
         memd = (memd_struct*) rawdata;
-        //maggs_setup_communicator(memd, memd->mpiparams.communicator);
+        //fcs_memd_setup_communicator(memd, memd->mpiparams.communicator);
     }
      */
 
@@ -107,23 +107,23 @@ void memd_run(void* rawdata, fcs_int num_particles, fcs_int max_num_particles, f
         local_potentials = malloc(sizeof(fcs_float)*local_num_real_particles);
 
     if (memd->init_flag) {
-        maggs_init(rawdata, memd->mpiparams.communicator);
-        maggs_setup_local_lattice(memd);
+        ifcs_memd_init(rawdata, memd->mpiparams.communicator);
+        fcs_memd_setup_local_lattice(memd);
         /* charge assignment */
-        memd_assign_charges(memd, local_num_real_particles, local_positions, local_charges, local_fields);
+        ifcs_memd_assign_charges(memd, local_num_real_particles, local_positions, local_charges, local_fields);
         /* enforce electric field onto the Born-Oppenheimer surface */
-        maggs_calc_init_e_field(memd);
+        ifcs_memd_calc_init_e_field(memd);
     } else {
-        maggs_setup_local_lattice(memd);
-        memd_assign_charges(memd, local_num_real_particles, local_positions, local_charges, local_fields);
+        fcs_memd_setup_local_lattice(memd);
+        ifcs_memd_assign_charges(memd, local_num_real_particles, local_positions, local_charges, local_fields);
         printf("charges assigned.\n");
     }
     
     printf("Charge transfer done\n"); fflush(stdout);
 
-    fcs_float timestep = memd_get_time_step(rawdata);
+    fcs_float timestep = fcs_memd_get_time_step(rawdata);
     printf("Timestep: %f\n", timestep); fflush(stdout);
-    maggs_propagate_B_field(memd, (timestep/2.0) );
-    maggs_calc_forces(memd);
-    maggs_propagate_B_field(memd, (timestep/2.0) );
+    fcs_memd_propagate_B_field(memd, (timestep/2.0) );
+    fcs_memd_calc_forces(memd);
+    fcs_memd_propagate_B_field(memd, (timestep/2.0) );
 }

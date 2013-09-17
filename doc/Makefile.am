@@ -1,4 +1,4 @@
-# Copyright (C) 2011 The ScaFaCoS project
+# Copyright (C) 2011,2012,2013 The ScaFaCoS project
 #  
 # This file is part of ScaFaCoS.
 #  
@@ -44,42 +44,54 @@ manual_FILES = \
 	figures/hballneg_500.pdf \
 	figures/p2nfft_ewald_split.pdf \
 	figures/vmg_short-long-splitting.tex figures/vmg_short-long-splitting.pdf \
-    figures/logo.png \
-    Doxyfile
+	figures/logo.png
 
 EXTRA_DIST = $(manual_FILES)
-if HAVE_LATEX
-EXTRA_DIST += manual.pdf
-endif
+CLEANFILES =
+MOSTLYCLEANFILES =
+CLEAN_LOCAL =
 
-.PHONY: doc manual html
-
-doc: manual doxyfile.stamp
 manual: manual.pdf
-manual.pdf: $(manual_FILES) latex-manual.sh latexinc.sh
+
 if HAVE_LATEX
+manual.pdf: $(manual_FILES) latex-manual.sh latexinc.sh
 	sh latex-manual.sh
+
+EXTRA_DIST += manual.pdf
+CLEANFILES += manual.pdf
+MOSTLYCLEANFILES += \
+	*.aux *.aux.bak \
+	manual.bbl manual.blg \
+	manual.idx manual.idx.bak manual.ilg manual.ind \
+	manual.log manual.out manual.toc manual.lof manual.lot manual.tdo
 else
+manual.pdf: 
 	@echo "No complete LaTeX-installation was found in your PATH."
 	@echo "Can't build the User's Guide without pdflatex, makeindex and bibtex."
-	@echo "Install these and rerun configure."
+	@echo "Install these programs and rerun configure."
 endif
-    
+
+html: doxyfile.stamp
+manpage: doxyfile.stamp
+
 if HAVE_DOXYGEN
-mandir = $(top_srcdir)/doc/man/man3/
+doxyfile.stamp: Doxyfile
+	$(DOXYGEN) Doxyfile
+	echo Timestamp > doxyfile.stamp
 
-dist_man_MANS = $(mandir)/man_page_1.3 $(mandir)/man_page_2.3
-$(mandir)/man_page_1.3: doxyfile.stamp
-$(mandir)/man_page_2.3: doxyfile.stamp
+EXTRA_DIST += html man
+CLEANFILES += doxyfile.stamp
+CLEAN_LOCAL += html man
+else
+doxyfile.stamp: 
+	@echo "No Doxygen was found in your PATH."
+	@echo "Can't build the HTML and manpage documentation without Doxygen."
+	@echo "Install this program and rerun configure."
+endif
 
-doxyfile.stamp:
-   $(DOXYGEN) Doxyfile
-   echo Timestamp > doxyfile.stamp
+doc: manual html manpage
 
-CLEANFILES = manual.pdf html $(top_srcdir)/doc/man doxyfile.stamp
+.PHONY: doc manual html manpage
 
-MOSTLYCLEANFILES = \
-	*.aux *.aux.bak\
-	manual.bbl manual.blg \
-	manual.idx manual.idx.bak manual.ilg manual.ind\
-	manual.log manual.out manual.toc manual.lof manual.lot manual.tdo
+clean-local:
+	-rm -rf $(CLEAN_LOCAL)

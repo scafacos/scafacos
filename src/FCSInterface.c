@@ -1668,16 +1668,16 @@ FCSResult fcs_parser(FCS handle, const char *parameters, fcs_bool continue_on_er
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_balanceload",       fmm_set_balanceload,       PARSE_VAL(fcs_long_long_t));
 #endif
 #ifdef FCS_ENABLE_MEMD
-/*    IF_PARAM_THEN_FUNC3_GOTO_NEXT("", memd_set_box_size,                  PARSE_VAL(fcs_float), PARSE_VAL(fcs_float), PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", memd_set_time_step,                 PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", memd_set_total_number_of_particles, PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", memd_set_local_number_of_particles, PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", memd_set_init_flag,                 PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", memd_set_mesh_size_1D,              PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", memd_set_speed_of_light,            PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", memd_set_permittivity,              PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", memd_set_temperature,               PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", memd_set_bjerrum_length,            PARSE_VAL(fcs_float));*/
+/*    IF_PARAM_THEN_FUNC3_GOTO_NEXT("", fcs_memd_set_box_size,                  PARSE_VAL(fcs_float), PARSE_VAL(fcs_float), PARSE_VAL(fcs_float));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_time_step,                 PARSE_VAL(fcs_float));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_total_number_of_particles, PARSE_VAL(fcs_int));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_local_number_of_particles, PARSE_VAL(fcs_int));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_init_flag,                 PARSE_VAL(fcs_int));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_mesh_size_1D,              PARSE_VAL(fcs_int));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_speed_of_light,            PARSE_VAL(fcs_float));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_permittivity,              PARSE_VAL(fcs_float));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_temperature,               PARSE_VAL(fcs_float));
+    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_bjerrum_length,            PARSE_VAL(fcs_float));*/
 #endif
 #ifdef FCS_ENABLE_MMM1D
     IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm1d_far_switch_radius", mmm1d_set_far_switch_radius, PARSE_VAL(fcs_float));

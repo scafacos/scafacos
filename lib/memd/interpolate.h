@@ -27,19 +27,19 @@
 
 /** finds current lattice site of each particle.
  calculates charge interpolation on cube. */
-void maggs_distribute_particle_charges(memd_struct* memd);
+void ifcs_memd_distribute_particle_charges(memd_struct* memd);
 
 /** Does the actual calculation of the gradient. Parameters:
  @param rel  3dim-array of relative position in cube,
  @param q    charge,
  @param grad huge gradient array to write into
  */
-void maggs_calc_charge_gradients(fcs_float *rel, fcs_float q, fcs_float *grad);
+void ifcs_memd_calc_charge_gradients(fcs_float *rel, fcs_float q, fcs_float *grad);
 
 /** finds correct lattice cube for particles.
  calculates charge gradients on this cube.
  @param grad gradient array to write into
  */
-void maggs_update_charge_gradients(memd_struct* memd, fcs_float *grad);
+void ifcs_memd_update_charge_gradients(memd_struct* memd, fcs_float *grad);
 
 #endif

@@ -426,7 +426,7 @@ FCSResult ifcs_p2nfft_set_reg_near(
   if( rd==NULL )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  if( (reg != FCS_P2NFFT_REG_NEAR_CG) && (reg != FCS_P2NFFT_REG_NEAR_T2P) )
+  if( (reg != FCS_P2NFFT_REG_NEAR_DEFAULT) && (reg != FCS_P2NFFT_REG_NEAR_CG) && (reg != FCS_P2NFFT_REG_NEAR_T2P) )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
   
   if(reg != d->reg_near)
@@ -442,7 +442,9 @@ FCSResult ifcs_p2nfft_set_reg_near_by_name(
 {
   unsigned reg_flag;
 
-  if (strcmp(reg_name,"cg") == 0)
+  if (strcmp(reg_name,"default") == 0)
+    reg_flag = FCS_P2NFFT_REG_NEAR_DEFAULT;
+  else if (strcmp(reg_name,"cg") == 0)
     reg_flag = FCS_P2NFFT_REG_NEAR_CG;
   else if (strcmp(reg_name,"t2p") == 0)
     reg_flag = FCS_P2NFFT_REG_NEAR_T2P;
@@ -473,7 +475,8 @@ FCSResult ifcs_p2nfft_set_reg_far(
   if( rd==NULL )
     return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  if( (reg != FCS_P2NFFT_REG_FAR_RAD_CG)
+  if( (reg != FCS_P2NFFT_REG_FAR_DEFAULT)
+      && (reg != FCS_P2NFFT_REG_FAR_RAD_CG)
       && (reg != FCS_P2NFFT_REG_FAR_RAD_T2P_SYM)
       && (reg != FCS_P2NFFT_REG_FAR_RAD_T2P_EC)
       && (reg != FCS_P2NFFT_REG_FAR_RAD_T2P_IC)
@@ -496,7 +499,9 @@ FCSResult ifcs_p2nfft_set_reg_far_by_name(
 {
   unsigned reg_flag;
 
-  if (strcmp(reg_name,"rad_cg") == 0)
+  if (strcmp(reg_name,"default") == 0)
+    reg_flag = FCS_P2NFFT_REG_FAR_DEFAULT;
+  else if (strcmp(reg_name,"rad_cg") == 0)
     reg_flag = FCS_P2NFFT_REG_FAR_RAD_CG;
   else if (strcmp(reg_name,"rad_t2p_sym") == 0)
     reg_flag = FCS_P2NFFT_REG_FAR_RAD_T2P_SYM;
