@@ -200,8 +200,6 @@ static int _ZMPI_Alltoallv_inplace(void *sbuf, int *scounts, int *sdispls, MPI_D
   aux_buf_id = ds_sched_add_buffer(&sched, aux_addr_id);
   ds_sched_set_aux(&sched, aux_buf_id, aux_buf_size);
 
-  Z_TRACE_IF(AD_TRACE_IF, "aux type = %d", ZMPI_Alltoallv_inplace_aux_type);
-
   switch (ZMPI_Alltoallv_inplace_aux_type)
   {
     case ZMPI_ALLTOALLV_INPLACE_AUX_TYPE_STATIC:

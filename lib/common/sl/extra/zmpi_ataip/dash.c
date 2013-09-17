@@ -5054,7 +5054,7 @@ void lgh_destroy(lgh_t *lgh) /* lgh_func lgh_destroy */
   Z_ASSERT(lgh->segments != NULL);
   Z_ASSERT(lgh->segments != NULL && lgh->segments->next == NULL);
 
-  Z_TRACE_IF(LGH_TRACE_IF, "nallocs: %ld", lgh->nallocs);
+  Z_TRACE_IF(LGH_TRACE_IF, "nallocs: %" lghint_fmt, lgh->nallocs);
 
   lgh->nallocs = 0;
   while (lgh->segments)
