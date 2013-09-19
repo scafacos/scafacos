@@ -111,7 +111,15 @@ endif
 
 doc: manual html manpage
 
-.PHONY: doc manual html manpage
+UPLOADTMP=$(builddir)/upload.tmp
+doc-upload: manual html
+	git clone https://github.com/scafacos/scafacos.github.io $(UPLOADTMP)
+	cd $(UPLOADTMP); cp ../manual.pdf ./files/pub/libfcs_manual.pdf; git add ./files/pub/libfcs_manual.pdf
+	cd $(UPLOADTMP); git rm -r ./doxygen/*; cp -r ../html ./doxygen; git add ./doxygen/*
+	-cd $(UPLOADTMP); git commit; git push origin master
+	-rm -rf $(UPLOADTMP)
+
+.PHONY: doc manual html manpage doc-upload
 
 clean-local:
 	-rm -rf $(CLEAN_LOCAL)
