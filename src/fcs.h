@@ -19,9 +19,17 @@
 
 /*! \mainpage ScaFaCoS - Scalable Fast Coulomb Solvers
  *
+ *  The project's main web page is located at [www.scafacos.de](http://www.scafacos.de).
+ *
+ *
  * \section interface_doc Interface documentation
  *
- * Documentation on the frontend interfaces is found in [FCSInterface_p.h].
+ * Documentation on the frontend interfaces is found in the following files:
+ *
+ *   Language      | File
+ *   ------------- | -------------
+ *   C             | FCSInterface_p.h
+ *   Fortran       | fcs4fortran.f90 
  *
  */
 

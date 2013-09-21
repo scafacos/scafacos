@@ -50,6 +50,7 @@ EXTRA_DIST = $(manual_FILES)
 CLEANFILES =
 MOSTLYCLEANFILES =
 CLEAN_LOCAL =
+doc_DATA =
 
 manual: manual.pdf
 
@@ -57,6 +58,7 @@ if HAVE_LATEX
 manual.pdf: $(manual_FILES) latex-manual.sh latexinc.sh
 	sh latex-manual.sh
 
+doc_DATA   += manual.pdf
 EXTRA_DIST += manual.pdf
 CLEANFILES += manual.pdf
 MOSTLYCLEANFILES += \
@@ -82,6 +84,24 @@ doxyfile.stamp: Doxyfile
 EXTRA_DIST += html man
 CLEANFILES += doxyfile.stamp
 CLEAN_LOCAL += html man
+    
+# I assume, that those should work but dont - that is why we add the two rules below
+#html_DATA = html
+#man_MANS  = man/man3/*
+
+install-data-local:	html
+	@$(NORMAL_INSTALL)
+	$(MKDIR_P) $(htmldir)/html
+	$(INSTALL_DATA) $(builddir)/html/* $(htmldir)/html/
+	$(MKDIR_P) $(mandir)/man3
+	$(INSTALL_DATA) $(builddir)/man/man3/* $(mandir)/man3/
+
+## Warning: the following rule assumes that this package is the
+## sole owner of files below $(htmldir)/html!
+uninstall-local:
+	rm $(htmldir)/html/*
+	-rmdir $(htmldir)/html
+
 else
 doxyfile.stamp: 
 	@echo "No Doxygen was found in your PATH."
@@ -91,7 +111,15 @@ endif
 
 doc: manual html manpage
 
-.PHONY: doc manual html manpage
+UPLOADTMP=$(builddir)/upload.tmp
+doc-upload: manual html
+	git clone https://github.com/scafacos/scafacos.github.io $(UPLOADTMP)
+	cd $(UPLOADTMP); cp ../manual.pdf ./files/pub/libfcs_manual.pdf; git add ./files/pub/libfcs_manual.pdf
+	cd $(UPLOADTMP); git rm -r ./doxygen/*; cp -r ../html ./doxygen; git add ./doxygen/*
+	-cd $(UPLOADTMP); git commit; git push origin master
+	-rm -rf $(UPLOADTMP)
+
+.PHONY: doc manual html manpage doc-upload
 
 clean-local:
 	-rm -rf $(CLEAN_LOCAL)
