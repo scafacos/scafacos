@@ -13,13 +13,13 @@ srcdir_sl_source=$(srcdir)/../../common/sl
 srcdir_sl_extra=$(srcdir)/../../common/sl/extra
 
 libsl_pepckeys_a_CPPFLAGS = \
-  -DSL_PREFIX=pepckeys_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_pepckeys -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_pepckeys_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_pepckeys -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_pepc_ -I$(srcdir_sl_extra)/include
 
 libsl_extra_a_CPPFLAGS = \
-  -DSL_EXTRA_PREFIX= -DZMPI_PREFIX= -DHAVE_Z_PACK_H -I$(srcdir_sl_extra)/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir_sl_extra)/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir_sl_extra)/zmpi_tools
+  -DZ_PREFIX=fcs_pepc_ -DZMPI_PREFIX=fcs_pepc_ -DHAVE_Z_PACK_H -I$(srcdir_sl_extra)/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir_sl_extra)/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir_sl_extra)/zmpi_tools
 
 libsl_mpiwrap_a_CPPFLAGS = \
-  -DSL_USE_MPI -I$(srcdir_sl)/include -DNOT_sl_pepcparts -DZMPI_PREFIX= -DHAVE_ZMPI_LOCAL_H -DHAVE_ZMPI_TOOLS_H -DHAVE_ZMPI_ATAIP_H -DHAVE_ZMPI_ATASP_H -I$(srcdir_sl_extra)/include
+  -DSL_USE_MPI -I$(srcdir_sl)/include -DNOT_sl_pepcparts -DZMPI_PREFIX=fcs_pepc_ -DHAVE_ZMPI_LOCAL_H -DHAVE_ZMPI_TOOLS_H -DHAVE_ZMPI_ATAIP_H -DHAVE_ZMPI_ATASP_H -I$(srcdir_sl_extra)/include
 
 libsl_pepc_a_SOURCES =
 
@@ -99,6 +99,8 @@ sl_SOURCE = \
 libsl_pepckeys_a_SOURCES = \
   $(srcdir_sl)/config_pepc_sort.h \
   $(srcdir_sl)/fortran2c_types.h \
+  $(srcdir_sl)/mpi_common.h \
+  $(srcdir_sl)/rename_pepc_sort.h \
   $(srcdir_sl)/sl_pepckeys/sl_config.h \
   $(srcdir_sl)/sl_pepckeys/sl_environment.h \
   $(srcdir_sl)/sl_pepckeys/sl_extra.h \
@@ -160,5 +162,7 @@ libsl_mpiwrap_a_SOURCES = \
   $(srcdir_sl)/include/sl_pepckeys.h \
   $(srcdir_sl)/include/sl_pepcparts.h \
   $(srcdir_sl)/mpi_common.c \
+  $(srcdir_sl)/mpi_common.h \
   $(srcdir_sl)/mpi_pepckeys.c \
-  $(srcdir_sl)/mpi_pepcparts.c
+  $(srcdir_sl)/mpi_pepcparts.c \
+  $(srcdir_sl)/rename_pepc_sort.h

@@ -899,7 +899,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 
   fcs_int i;
 
-  forw_elements_t sin0, sout0;
+  fcs_forw_elements_t sin0, sout0;
 
   fcs_int periodicity[3];
   int cart_dims[3], cart_periods[3], cart_coords[3], topo_status;
@@ -916,9 +916,9 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 
   void *grid_tproc_data[] = { &comm, grid_data, cart_dims, cart_coords, periodicity, NULL, NULL, &max_nparts[3], NULL, NULL };
 
-  forw_tproc_t tproc;
-  forw_tproc_f *tproc_func = NULL;
-  forw_tprocs_mod_f *tprocs_mod_func = NULL;
+  fcs_forw_tproc_t tproc;
+  fcs_forw_tproc_f *tproc_func = NULL;
+  fcs_forw_tprocs_mod_f *tprocs_mod_func = NULL;
 
   fcs_int with_ghost, with_periodic, with_triclinic, with_bounds, with_zslices;
   fcs_float ghost_f[3], zslices_ghost_range, zslices_ghost_f;
@@ -933,7 +933,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   fcs_int local_packed, global_packed, original_packed;
 #endif
 
-  forw_slint_t old_minalloc;
+  fcs_forw_slint_t old_minalloc;
   double old_overalloc;
   
 #ifdef DO_TIMING
@@ -1172,23 +1172,23 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 
   index_rank = GRIDSORT_INDEX_VAL_PROC(comm_rank);
 
-  forw_SL_DEFCON(mpi.rank) = comm_rank;
+  fcs_forw_SL_DEFCON(mpi.rank) = comm_rank;
 
-  forw_mpi_datatypes_init();
+  fcs_forw_mpi_datatypes_init();
 
   original_indices = malloc(gs->noriginal_particles * sizeof(fcs_gridsort_index_t));
 
   for (i = 0; i < gs->noriginal_particles; ++i) original_indices[i] = index_rank + i;
 
-  forw_elem_set_size(&sin0, gs->noriginal_particles);
-  forw_elem_set_max_size(&sin0, gs->noriginal_particles);
-  forw_elem_set_keys(&sin0, original_indices);
-  forw_elem_set_data(&sin0, gs->original_positions, gs->original_charges);
+  fcs_forw_elem_set_size(&sin0, gs->noriginal_particles);
+  fcs_forw_elem_set_max_size(&sin0, gs->noriginal_particles);
+  fcs_forw_elem_set_keys(&sin0, original_indices);
+  fcs_forw_elem_set_data(&sin0, gs->original_positions, gs->original_charges);
 
-  forw_elem_set_size(&sout0, 0);
-  forw_elem_set_max_size(&sout0, 0);
-  forw_elem_set_keys(&sout0, NULL);
-  forw_elem_set_data(&sout0, NULL, NULL);
+  fcs_forw_elem_set_size(&sout0, 0);
+  fcs_forw_elem_set_max_size(&sout0, 0);
+  fcs_forw_elem_set_keys(&sout0, NULL);
+  fcs_forw_elem_set_data(&sout0, NULL, NULL);
 
   setup_max_nparts(max_nparts, ghost_f, zslices_ghost_f, cart_dims, cart_coords, periodicity, gs->d.bounds, box_size, comm);
 
@@ -1269,8 +1269,8 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
     }
   }
 
-  if (tproc_func) forw_tproc_create_tproc(&tproc, tproc_func, forw_TPROC_RESET_NULL, forw_TPROC_EXDEF_NULL);
-  else if (tprocs_mod_func) forw_tproc_create_tprocs_mod(&tproc, tprocs_mod_func, forw_TPROC_RESET_NULL, forw_TPROC_EXDEF_NULL);
+  if (tproc_func) fcs_forw_tproc_create_tproc(&tproc, tproc_func, fcs_forw_TPROC_RESET_NULL, fcs_forw_TPROC_EXDEF_NULL);
+  else if (tprocs_mod_func) fcs_forw_tproc_create_tprocs_mod(&tproc, tprocs_mod_func, fcs_forw_TPROC_RESET_NULL, fcs_forw_TPROC_EXDEF_NULL);
   else
   {
     fprintf(stderr, "ERROR: no tproc function selected in gridsort, something went seriously wrong!\n");
@@ -1289,7 +1289,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 #endif
 
     DEBUG_CMD(
-      printf(DEBUG_PRINT_PREFIX "%d: nprocs: %" forw_slint_fmt "\n", comm_rank, gs->nprocs);
+      printf(DEBUG_PRINT_PREFIX "%d: nprocs: %" fcs_forw_slint_fmt "\n", comm_rank, gs->nprocs);
     );
 
     INFO_CMD(
@@ -1298,13 +1298,13 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
     );
 
 # ifdef GRIDSORT_FRONT_PROCLIST
-    if (gs->procs) forw_tproc_set_proclists(&tproc, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+    if (gs->procs) fcs_forw_tproc_set_proclists(&tproc, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
 # endif
   }
 #endif
 
   DEBUG_CMD(
-    printf(DEBUG_PRINT_PREFIX "%d: keys in: %" forw_slint_fmt "\n", comm_rank, sin0.size);
+    printf(DEBUG_PRINT_PREFIX "%d: keys in: %" fcs_forw_slint_fmt "\n", comm_rank, sin0.size);
   );
 
 #if 0
@@ -1317,36 +1317,36 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 #ifdef ALLTOALLV_PACKED
   local_packed = ALLTOALLV_PACKED(comm_size, sin0.size);
   MPI_Allreduce(&local_packed, &global_packed, 1, FCS_MPI_INT, MPI_SUM, comm);
-  original_packed = forw_SL_DEFCON(meas.packed); forw_SL_DEFCON(meas.packed) = (global_packed > 0);
+  original_packed = fcs_forw_SL_DEFCON(meas.packed); fcs_forw_SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
-  old_minalloc = forw_SL_DEFCON(meas.minalloc);
-  forw_SL_DEFCON(meas.minalloc) = gs->minalloc;
-  old_overalloc = forw_SL_DEFCON(meas.overalloc);
-  forw_SL_DEFCON(meas.overalloc) = gs->overalloc;
+  old_minalloc = fcs_forw_SL_DEFCON(meas.minalloc);
+  fcs_forw_SL_DEFCON(meas.minalloc) = gs->minalloc;
+  old_overalloc = fcs_forw_SL_DEFCON(meas.overalloc);
+  fcs_forw_SL_DEFCON(meas.overalloc) = gs->overalloc;
 
 #ifndef ALLTOALL_SPECIFIC_IN_PLACE
   TIMING_SYNC(comm); TIMING_START(t[1]);
-  forw_mpi_elements_alltoall_specific(&sin0, &sout0, NULL, tproc, grid_tproc_data, comm_size, comm_rank, comm);
+  fcs_forw_mpi_elements_alltoall_specific(&sin0, &sout0, NULL, tproc, grid_tproc_data, comm_size, comm_rank, comm);
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 #else
-  forw_elements_alloc(&sout0, 10 * sin0.max_size, SLCM_ALL);
-  forw_elements_ncopy(&sin0, &sout0, sin0.size);
+  fcs_forw_elements_alloc(&sout0, 10 * sin0.max_size, SLCM_ALL);
+  fcs_forw_elements_ncopy(&sin0, &sout0, sin0.size);
   sout0.size = sin0.size;
   TIMING_SYNC(comm); TIMING_START(t[1]);
-  forw_mpi_elements_alltoall_specific(&sout0, NULL, NULL, tproc, grid_tproc_data, comm_size, comm_rank, comm);
+  fcs_forw_mpi_elements_alltoall_specific(&sout0, NULL, NULL, tproc, grid_tproc_data, comm_size, comm_rank, comm);
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 #endif
 
 #ifdef ALLTOALLV_PACKED
-  forw_SL_DEFCON(meas.packed) = original_packed;
+  fcs_forw_SL_DEFCON(meas.packed) = original_packed;
 #endif
 
-  forw_SL_DEFCON(meas.minalloc) = old_minalloc;
-  forw_SL_DEFCON(meas.overalloc) = old_overalloc;
+  fcs_forw_SL_DEFCON(meas.minalloc) = old_minalloc;
+  fcs_forw_SL_DEFCON(meas.overalloc) = old_overalloc;
 
   DEBUG_CMD(
-    printf(DEBUG_PRINT_PREFIX "%d: keys out: %" forw_slint_fmt "\n", comm_rank, sout0.size);
+    printf(DEBUG_PRINT_PREFIX "%d: keys out: %" fcs_forw_slint_fmt "\n", comm_rank, sout0.size);
   );
 
 #if 0
@@ -1361,7 +1361,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   }
 #endif
 
-  forw_tproc_free(&tproc);
+  fcs_forw_tproc_free(&tproc);
 
   free(original_indices);
 
@@ -1385,7 +1385,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
   print_particles(gs->nsorted_particles, gs->sorted_positions, comm_size, comm_rank, comm);
 #endif
 
-  forw_mpi_datatypes_release();
+  fcs_forw_mpi_datatypes_release();
   
   TIMING_SYNC(comm); TIMING_STOP(t[0]);
 
@@ -1405,16 +1405,16 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 #undef BOUNDS_XYZ2COORDS
 
 
-static void forw_sendrecv(forw_elements_t *sb, int scount, int sdispl, int dst, forw_elements_t *rb, int rcount, int rdispl, int src, MPI_Comm comm, int *received)
+static void fcs_forw_sendrecv(fcs_forw_elements_t *sb, int scount, int sdispl, int dst, fcs_forw_elements_t *rb, int rcount, int rdispl, int src, MPI_Comm comm, int *received)
 {
   MPI_Status status;
 
-  MPI_Sendrecv(&sb->keys[sdispl], scount, forw_sl_key_type_mpi, dst, 0, &rb->keys[rdispl], rcount, forw_sl_key_type_mpi, src, 0, comm, &status);
+  MPI_Sendrecv(&sb->keys[sdispl], scount, fcs_forw_sl_key_type_mpi, dst, 0, &rb->keys[rdispl], rcount, fcs_forw_sl_key_type_mpi, src, 0, comm, &status);
 
-  MPI_Get_count(&status, forw_sl_key_type_mpi, received);
+  MPI_Get_count(&status, fcs_forw_sl_key_type_mpi, received);
 
-  MPI_Sendrecv(&sb->data0[3 * sdispl], 3 * scount, forw_sl_data0_type_mpi, dst, 0, &rb->data0[3 * rdispl], 3 * rcount, forw_sl_data0_type_mpi, src, 0, comm, &status);
-  MPI_Sendrecv(&sb->data1[sdispl], scount, forw_sl_data1_type_mpi, dst, 0, &rb->data1[rdispl], rcount, forw_sl_data1_type_mpi, src, 0, comm, &status);
+  MPI_Sendrecv(&sb->data0[3 * sdispl], 3 * scount, fcs_forw_sl_data0_type_mpi, dst, 0, &rb->data0[3 * rdispl], 3 * rcount, fcs_forw_sl_data0_type_mpi, src, 0, comm, &status);
+  MPI_Sendrecv(&sb->data1[sdispl], scount, fcs_forw_sl_data1_type_mpi, dst, 0, &rb->data1[rdispl], rcount, fcs_forw_sl_data1_type_mpi, src, 0, comm, &status);
 
 }
 
@@ -1442,7 +1442,7 @@ static void get_neighbors(int *neighbors, int *periodic, int size, int rank, MPI
 }
 
 
-static void set_ghosts(forw_elements_t *s, int count, int displ)
+static void set_ghosts(fcs_forw_elements_t *s, int count, int displ)
 {
   fcs_int i;
 
@@ -1453,7 +1453,7 @@ static void set_ghosts(forw_elements_t *s, int count, int displ)
 }
 
 
-static void set_periodics(forw_elements_t *s, int count, int displ, int d)
+static void set_periodics(fcs_forw_elements_t *s, int count, int displ, int d)
 {
   fcs_int i;
 
@@ -1465,7 +1465,7 @@ static void set_periodics(forw_elements_t *s, int count, int displ, int d)
 }
 
 
-static int gridsort_split_0b(forw_elements_t *s, forw_slint_t x, void *data)
+static int gridsort_split_0b(fcs_forw_elements_t *s, fcs_forw_slint_t x, void *data)
 {
   double *bounds = data;
   if (s->data0[3 * x + 0] <= bounds[0])
@@ -1477,7 +1477,7 @@ static int gridsort_split_0b(forw_elements_t *s, forw_slint_t x, void *data)
   return 0;
 }
 
-static int gridsort_split_1b(forw_elements_t *s, forw_slint_t x, void *data)
+static int gridsort_split_1b(fcs_forw_elements_t *s, fcs_forw_slint_t x, void *data)
 {
   double *bounds = data;
   if (s->data0[3 * x + 1] <= bounds[2])
@@ -1489,7 +1489,7 @@ static int gridsort_split_1b(forw_elements_t *s, forw_slint_t x, void *data)
   return 0;
 }
 
-static int gridsort_split_2b(forw_elements_t *s, forw_slint_t x, void *data)
+static int gridsort_split_2b(fcs_forw_elements_t *s, fcs_forw_slint_t x, void *data)
 {
   double *bounds = data;
   if (s->data0[3 * x + 2] <= bounds[4])
@@ -1515,9 +1515,9 @@ fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MP
   
   fcs_float bounds[6];
 
-  forw_split_generic_t sg_gridsort_split[] = { forw_SPLIT_GENERIC_INIT_TPROC(gridsort_split_0b), forw_SPLIT_GENERIC_INIT_TPROC(gridsort_split_1b), forw_SPLIT_GENERIC_INIT_TPROC(gridsort_split_2b) };
+  fcs_forw_split_generic_t sg_gridsort_split[] = { fcs_forw_SPLIT_GENERIC_INIT_TPROC(gridsort_split_0b), fcs_forw_SPLIT_GENERIC_INIT_TPROC(gridsort_split_1b), fcs_forw_SPLIT_GENERIC_INIT_TPROC(gridsort_split_2b) };
   
-  forw_elements_t s, sx;
+  fcs_forw_elements_t s, sx;
 
   MPI_Status status;
 
@@ -1564,12 +1564,12 @@ fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MP
 
   get_neighbors(neighbors, periodic, comm_size, comm_rank, comm);
 
-  forw_elem_set_size(&s, gs->nsorted_particles);
-  forw_elem_set_max_size(&s, gs->max_nsorted_particles);
-  forw_elem_set_keys(&s, gs->sorted_indices);
-  forw_elem_set_data(&s, gs->sorted_positions, gs->sorted_charges);
+  fcs_forw_elem_set_size(&s, gs->nsorted_particles);
+  fcs_forw_elem_set_max_size(&s, gs->max_nsorted_particles);
+  fcs_forw_elem_set_keys(&s, gs->sorted_indices);
+  fcs_forw_elem_set_data(&s, gs->sorted_positions, gs->sorted_charges);
 
-  forw_elements_alloc(&sx, 1, SLCM_ALL);
+  fcs_forw_elements_alloc(&sx, 1, SLCM_ALL);
 
   if (with_bounds)
   {
@@ -1592,12 +1592,12 @@ fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MP
 
   for (d = 0; d < 3; ++d)
   {
-    forw_split_generic_count_ip(&s, &sg_gridsort_split[d], bounds, counts, 4);
+    fcs_forw_split_generic_count_ip(&s, &sg_gridsort_split[d], bounds, counts, 4);
 
-    forw_counts2displs(4, counts, displs);
-    forw_split_generic_rearrange_ip(&s, &sx, &sg_gridsort_split[d], bounds, counts, displs, 4);
+    fcs_forw_counts2displs(4, counts, displs);
+    fcs_forw_split_generic_rearrange_ip(&s, &sx, &sg_gridsort_split[d], bounds, counts, displs, 4);
 
-    forw_counts2displs(4, counts, displs);
+    fcs_forw_counts2displs(4, counts, displs);
 
 /*    printf("%d: counts: %d  %d  %d  %d\n", comm_rank, counts[0], counts[1], counts[2], counts[3]);
     printf("%d: displs: %d  %d  %d  %d\n", comm_rank, displs[0], displs[1], displs[2], displs[3]);*/
@@ -1612,18 +1612,18 @@ fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MP
 /*    printf("%d: scounts: %d  %d\n", comm_rank, scounts[0], scounts[1]);
     printf("%d: rcounts: %d  %d\n", comm_rank, rcounts[0], rcounts[1]);*/
 
-    forw_elements_realloc(&s, forw_elem_get_size(&s) + rcounts[0] + rcounts[1], SLCM_ALL);
+    fcs_forw_elements_realloc(&s, fcs_forw_elem_get_size(&s) + rcounts[0] + rcounts[1], SLCM_ALL);
 
-    forw_sendrecv(&s, scounts[0], displs[1], neighbors[2 * d + 0], &s, rcounts[0], s.size, neighbors[2 * d + 1], comm, &received);
+    fcs_forw_sendrecv(&s, scounts[0], displs[1], neighbors[2 * d + 0], &s, rcounts[0], s.size, neighbors[2 * d + 1], comm, &received);
     if (periodic[2 * d + 1]) set_periodics(&s, rcounts[0], s.size, 2 * d + 0); else set_ghosts(&s, rcounts[0], s.size);
     s.size += rcounts[0];
 
-    forw_sendrecv(&s, scounts[1], displs[2], neighbors[2 * d + 1], &s, rcounts[1], s.size, neighbors[2 * d + 0], comm, &received);
+    fcs_forw_sendrecv(&s, scounts[1], displs[2], neighbors[2 * d + 1], &s, rcounts[1], s.size, neighbors[2 * d + 0], comm, &received);
     if (periodic[2 * d + 0]) set_periodics(&s, rcounts[1], s.size, 2 * d + 1); else set_ghosts(&s, rcounts[1], s.size);
     s.size += rcounts[1];
   }
 
-  forw_elements_free(&sx);
+  fcs_forw_elements_free(&sx);
 
   gs->nsorted_particles = s.size;
   gs->max_nsorted_particles = s.max_size;
@@ -1818,7 +1818,7 @@ void fcs_gridsort_separate_zslices(fcs_gridsort_t *gs, fcs_int *zslices_low_ghos
 }
 
 
-static int gridsort_random_tproc(forw_elements_t *s, forw_slint_t x, void *data)
+static int gridsort_random_tproc(fcs_forw_elements_t *s, fcs_forw_slint_t x, void *data)
 {
   int comm_size = ((int *) data)[0];
 
@@ -1842,13 +1842,13 @@ fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm)
 
   fcs_int i;
 
-  forw_elements_t sin0, sout0;
+  fcs_forw_elements_t sin0, sout0;
 
-  forw_tproc_t tproc;
+  fcs_forw_tproc_t tproc;
   
   int random_data[2];
 
-  forw_slint_t old_minalloc;
+  fcs_forw_slint_t old_minalloc;
   double old_overalloc;
   
 #ifdef DO_TIMING
@@ -1868,42 +1868,42 @@ fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm)
 
   index_rank = GRIDSORT_INDEX_VAL_PROC(comm_rank);
 
-  forw_SL_DEFCON(mpi.rank) = comm_rank;
+  fcs_forw_SL_DEFCON(mpi.rank) = comm_rank;
 
-  forw_mpi_datatypes_init();
+  fcs_forw_mpi_datatypes_init();
 
   original_indices = malloc(gs->noriginal_particles * sizeof(fcs_gridsort_index_t));
 
   for (i = 0; i < gs->noriginal_particles; ++i) original_indices[i] = index_rank + i;
 
-  forw_elem_set_size(&sin0, gs->noriginal_particles);
-  forw_elem_set_max_size(&sin0, gs->noriginal_particles);
-  forw_elem_set_keys(&sin0, original_indices);
-  forw_elem_set_data(&sin0, gs->original_positions, gs->original_charges);
+  fcs_forw_elem_set_size(&sin0, gs->noriginal_particles);
+  fcs_forw_elem_set_max_size(&sin0, gs->noriginal_particles);
+  fcs_forw_elem_set_keys(&sin0, original_indices);
+  fcs_forw_elem_set_data(&sin0, gs->original_positions, gs->original_charges);
 
-  forw_elem_set_size(&sout0, 0);
-  forw_elem_set_max_size(&sout0, 0);
-  forw_elem_set_keys(&sout0, NULL);
-  forw_elem_set_data(&sout0, NULL, NULL);
+  fcs_forw_elem_set_size(&sout0, 0);
+  fcs_forw_elem_set_max_size(&sout0, 0);
+  fcs_forw_elem_set_keys(&sout0, NULL);
+  fcs_forw_elem_set_data(&sout0, NULL, NULL);
 
   random_data[0] = comm_size;
   random_data[1] = (comm_rank + 1) * 2501;
 
-  forw_tproc_create_tproc(&tproc, gridsort_random_tproc, gridsort_random_reset, forw_TPROC_EXDEF_NULL);
+  fcs_forw_tproc_create_tproc(&tproc, gridsort_random_tproc, gridsort_random_reset, fcs_forw_TPROC_EXDEF_NULL);
 
-  old_minalloc = forw_SL_DEFCON(meas.minalloc);
-  forw_SL_DEFCON(meas.minalloc) = gs->minalloc;
-  old_overalloc = forw_SL_DEFCON(meas.overalloc);
-  forw_SL_DEFCON(meas.overalloc) = gs->overalloc;
+  old_minalloc = fcs_forw_SL_DEFCON(meas.minalloc);
+  fcs_forw_SL_DEFCON(meas.minalloc) = gs->minalloc;
+  old_overalloc = fcs_forw_SL_DEFCON(meas.overalloc);
+  fcs_forw_SL_DEFCON(meas.overalloc) = gs->overalloc;
 
   TIMING_SYNC(comm); TIMING_START(t[1]);
-  forw_mpi_elements_alltoall_specific(&sin0, &sout0, NULL, tproc, random_data, comm_size, comm_rank, comm);
+  fcs_forw_mpi_elements_alltoall_specific(&sin0, &sout0, NULL, tproc, random_data, comm_size, comm_rank, comm);
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
-  forw_SL_DEFCON(meas.minalloc) = old_minalloc;
-  forw_SL_DEFCON(meas.overalloc) = old_overalloc;
+  fcs_forw_SL_DEFCON(meas.minalloc) = old_minalloc;
+  fcs_forw_SL_DEFCON(meas.overalloc) = old_overalloc;
 
-  forw_tproc_free(&tproc);
+  fcs_forw_tproc_free(&tproc);
 
   free(original_indices);
 
@@ -1915,7 +1915,7 @@ fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm)
 
   gs->nsorted_real_particles = sout0.size;
 
-  forw_mpi_datatypes_release();
+  fcs_forw_mpi_datatypes_release();
 
   TIMING_SYNC(comm); TIMING_STOP(t[0]);
 
@@ -1971,7 +1971,7 @@ void fcs_gridsort_unfold_periodic_particles(fcs_int nparticles, fcs_gridsort_ind
 }
 
 
-static int gridsort_back_fp_tproc(back_fp_elements_t *s, back_fp_slint_t x, void *data)
+static int gridsort_fcs_back_fp_tproc(fcs_back_fp_elements_t *s, fcs_back_fp_slint_t x, void *data)
 {
   if (!GRIDSORT_INDEX_IS_VALID(s->keys[x])) return MPI_PROC_NULL;
 
@@ -1979,7 +1979,7 @@ static int gridsort_back_fp_tproc(back_fp_elements_t *s, back_fp_slint_t x, void
 }
 
 
-static int gridsort_back_f__tproc(back_f__elements_t *s, back_f__slint_t x, void *data)
+static int gridsort_fcs_back_f__tproc(fcs_back_f__elements_t *s, fcs_back_f__slint_t x, void *data)
 {
   if (!GRIDSORT_INDEX_IS_VALID(s->keys[x])) return MPI_PROC_NULL;
 
@@ -1987,7 +1987,7 @@ static int gridsort_back_f__tproc(back_f__elements_t *s, back_f__slint_t x, void
 }
 
 
-static int gridsort_back__p_tproc(back__p_elements_t *s, back__p_slint_t x, void *data)
+static int gridsort_fcs_back__p_tproc(fcs_back__p_elements_t *s, fcs_back__p_slint_t x, void *data)
 {
   if (!GRIDSORT_INDEX_IS_VALID(s->keys[x])) return MPI_PROC_NULL;
 
@@ -2005,13 +2005,13 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
 
   fcs_int i, j, type;
 
-  back_fp_elements_t sin0, sout0;
-  back_f__elements_t sin1, sout1;
-  back__p_elements_t sin2, sout2;
+  fcs_back_fp_elements_t sin0, sout0;
+  fcs_back_f__elements_t sin1, sout1;
+  fcs_back__p_elements_t sin2, sout2;
   
-  back_fp_tproc_t tproc0;
-  back_f__tproc_t tproc1;
-  back__p_tproc_t tproc2;
+  fcs_back_fp_tproc_t tproc0;
+  fcs_back_f__tproc_t tproc1;
+  fcs_back__p_tproc_t tproc2;
 
   const fcs_gridsort_index_t index_mask = 0x00000000FFFFFFFFLL;
 
@@ -2036,44 +2036,44 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
   switch (type)
   {
     case 0:
-      back_fp_SL_DEFCON(mpi.rank) = comm_rank;
+      fcs_back_fp_SL_DEFCON(mpi.rank) = comm_rank;
 
-      back_fp_mpi_datatypes_init();
+      fcs_back_fp_mpi_datatypes_init();
 
-      back_fp_elem_set_size(&sin0, gs->nsorted_real_particles);
-      back_fp_elem_set_max_size(&sin0, gs->nsorted_real_particles);
-      back_fp_elem_set_keys(&sin0, gs->sorted_indices);
-      back_fp_elem_set_data(&sin0, sorted_field, sorted_potentials);
+      fcs_back_fp_elem_set_size(&sin0, gs->nsorted_real_particles);
+      fcs_back_fp_elem_set_max_size(&sin0, gs->nsorted_real_particles);
+      fcs_back_fp_elem_set_keys(&sin0, gs->sorted_indices);
+      fcs_back_fp_elem_set_data(&sin0, sorted_field, sorted_potentials);
 
-      back_fp_elem_set_size(&sout0, 0);
-      back_fp_elem_set_max_size(&sout0, 0);
-      back_fp_elem_set_keys(&sout0, NULL);
-      back_fp_elem_set_data(&sout0, NULL, NULL);
+      fcs_back_fp_elem_set_size(&sout0, 0);
+      fcs_back_fp_elem_set_max_size(&sout0, 0);
+      fcs_back_fp_elem_set_keys(&sout0, NULL);
+      fcs_back_fp_elem_set_data(&sout0, NULL, NULL);
 
-      back_fp_tproc_create_tproc(&tproc0, gridsort_back_fp_tproc, back_fp_TPROC_RESET_NULL, back_fp_TPROC_EXDEF_NULL);
+      fcs_back_fp_tproc_create_tproc(&tproc0, gridsort_fcs_back_fp_tproc, fcs_back_fp_TPROC_RESET_NULL, fcs_back_fp_TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_BACK_PROCLIST
-      if (gs->procs) back_fp_tproc_set_proclists(&tproc0, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+      if (gs->procs) fcs_back_fp_tproc_set_proclists(&tproc0, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
       local_packed = ALLTOALLV_PACKED(comm_size, sin0.size);
       MPI_Allreduce(&local_packed, &global_packed, 1, FCS_MPI_INT, MPI_SUM, comm);
-      original_packed = back_fp_SL_DEFCON(meas.packed); back_fp_SL_DEFCON(meas.packed) = (global_packed > 0);
+      original_packed = fcs_back_fp_SL_DEFCON(meas.packed); fcs_back_fp_SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
       TIMING_SYNC(comm); TIMING_START(t[1]);
-      back_fp_mpi_elements_alltoall_specific(&sin0, &sout0, NULL, tproc0, NULL, comm_size, comm_rank, comm);
+      fcs_back_fp_mpi_elements_alltoall_specific(&sin0, &sout0, NULL, tproc0, NULL, comm_size, comm_rank, comm);
       TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 #ifdef ALLTOALLV_PACKED
-      back_fp_SL_DEFCON(meas.packed) = original_packed;
+      fcs_back_fp_SL_DEFCON(meas.packed) = original_packed;
 #endif
 
-      back_fp_tproc_free(&tproc0);
+      fcs_back_fp_tproc_free(&tproc0);
 
       if (gs->noriginal_particles != sout0.size)
-        fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" back_fp_slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout0.size);
+        fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" fcs_back_fp_slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout0.size);
 
       if (set_values)
       {
@@ -2101,51 +2101,51 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
         }
       }
 
-      back_fp_elements_free(&sout0);
+      fcs_back_fp_elements_free(&sout0);
 
-      back_fp_mpi_datatypes_release();
+      fcs_back_fp_mpi_datatypes_release();
 
       break;
 
     case 1:
-      back_f__SL_DEFCON(mpi.rank) = comm_rank;
+      fcs_back_f__SL_DEFCON(mpi.rank) = comm_rank;
 
-      back_f__mpi_datatypes_init();
+      fcs_back_f__mpi_datatypes_init();
 
-      back_f__elem_set_size(&sin1, gs->nsorted_real_particles);
-      back_f__elem_set_max_size(&sin1, gs->nsorted_real_particles);
-      back_f__elem_set_keys(&sin1, gs->sorted_indices);
-      back_f__elem_set_data(&sin1, sorted_field);
+      fcs_back_f__elem_set_size(&sin1, gs->nsorted_real_particles);
+      fcs_back_f__elem_set_max_size(&sin1, gs->nsorted_real_particles);
+      fcs_back_f__elem_set_keys(&sin1, gs->sorted_indices);
+      fcs_back_f__elem_set_data(&sin1, sorted_field);
 
-      back_f__elem_set_size(&sout1, 0);
-      back_f__elem_set_max_size(&sout1, 0);
-      back_f__elem_set_keys(&sout1, NULL);
-      back_f__elem_set_data(&sout1, NULL);
+      fcs_back_f__elem_set_size(&sout1, 0);
+      fcs_back_f__elem_set_max_size(&sout1, 0);
+      fcs_back_f__elem_set_keys(&sout1, NULL);
+      fcs_back_f__elem_set_data(&sout1, NULL);
 
-      back_f__tproc_create_tproc(&tproc1, gridsort_back_f__tproc, back_f__TPROC_RESET_NULL, back_f__TPROC_EXDEF_NULL);
+      fcs_back_f__tproc_create_tproc(&tproc1, gridsort_fcs_back_f__tproc, fcs_back_f__TPROC_RESET_NULL, fcs_back_f__TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_BACK_PROCLIST
-      if (gs->procs) back_f__tproc_set_proclists(&tproc1, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+      if (gs->procs) fcs_back_f__tproc_set_proclists(&tproc1, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
       local_packed = ALLTOALLV_PACKED(comm_size, sin1.size);
       MPI_Allreduce(&local_packed, &global_packed, 1, FCS_MPI_INT, MPI_SUM, comm);
-      original_packed = back_f__SL_DEFCON(meas.packed); back_f__SL_DEFCON(meas.packed) = (global_packed > 0);
+      original_packed = fcs_back_f__SL_DEFCON(meas.packed); fcs_back_f__SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
       TIMING_SYNC(comm); TIMING_START(t[1]);
-      back_f__mpi_elements_alltoall_specific(&sin1, &sout1, NULL, tproc1, NULL, comm_size, comm_rank, comm);
+      fcs_back_f__mpi_elements_alltoall_specific(&sin1, &sout1, NULL, tproc1, NULL, comm_size, comm_rank, comm);
       TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 #ifdef ALLTOALLV_PACKED
-      back_f__SL_DEFCON(meas.packed) = original_packed;
+      fcs_back_f__SL_DEFCON(meas.packed) = original_packed;
 #endif
 
-      back_f__tproc_free(&tproc1);
+      fcs_back_f__tproc_free(&tproc1);
 
       if (gs->noriginal_particles != sout1.size)
-        fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" back_f__slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout1.size);
+        fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" fcs_back_f__slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout1.size);
 
       if (set_values)
       {
@@ -2170,51 +2170,51 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
         }
       }
 
-      back_f__elements_free(&sout1);
+      fcs_back_f__elements_free(&sout1);
 
-      back_f__mpi_datatypes_release();
+      fcs_back_f__mpi_datatypes_release();
 
       break;
 
     case 2:
-      back__p_SL_DEFCON(mpi.rank) = comm_rank;
+      fcs_back__p_SL_DEFCON(mpi.rank) = comm_rank;
 
-      back__p_mpi_datatypes_init();
+      fcs_back__p_mpi_datatypes_init();
 
-      back__p_elem_set_size(&sin2, gs->nsorted_real_particles);
-      back__p_elem_set_max_size(&sin2, gs->nsorted_real_particles);
-      back__p_elem_set_keys(&sin2, gs->sorted_indices);
-      back__p_elem_set_data(&sin2, sorted_potentials);
+      fcs_back__p_elem_set_size(&sin2, gs->nsorted_real_particles);
+      fcs_back__p_elem_set_max_size(&sin2, gs->nsorted_real_particles);
+      fcs_back__p_elem_set_keys(&sin2, gs->sorted_indices);
+      fcs_back__p_elem_set_data(&sin2, sorted_potentials);
 
-      back__p_elem_set_size(&sout2, 0);
-      back__p_elem_set_max_size(&sout2, 0);
-      back__p_elem_set_keys(&sout2, NULL);
-      back__p_elem_set_data(&sout2, NULL);
+      fcs_back__p_elem_set_size(&sout2, 0);
+      fcs_back__p_elem_set_max_size(&sout2, 0);
+      fcs_back__p_elem_set_keys(&sout2, NULL);
+      fcs_back__p_elem_set_data(&sout2, NULL);
 
-      back__p_tproc_create_tproc(&tproc2, gridsort_back__p_tproc, back__p_TPROC_RESET_NULL, back__p_TPROC_EXDEF_NULL);
+      fcs_back__p_tproc_create_tproc(&tproc2, gridsort_fcs_back__p_tproc, fcs_back__p_TPROC_RESET_NULL, fcs_back__p_TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_BACK_PROCLIST
-      if (gs->procs) back__p_tproc_set_proclists(&tproc2, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+      if (gs->procs) fcs_back__p_tproc_set_proclists(&tproc2, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
       local_packed = ALLTOALLV_PACKED(comm_size, sin2.size);
       MPI_Allreduce(&local_packed, &global_packed, 1, FCS_MPI_INT, MPI_SUM, comm);
-      original_packed = back__p_SL_DEFCON(meas.packed); back__p_SL_DEFCON(meas.packed) = (global_packed > 0);
+      original_packed = fcs_back__p_SL_DEFCON(meas.packed); fcs_back__p_SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
       TIMING_SYNC(comm); TIMING_START(t[1]);
-      back__p_mpi_elements_alltoall_specific(&sin2, &sout2, NULL, tproc2, NULL, comm_size, comm_rank, comm);
+      fcs_back__p_mpi_elements_alltoall_specific(&sin2, &sout2, NULL, tproc2, NULL, comm_size, comm_rank, comm);
       TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 #ifdef ALLTOALLV_PACKED
-      back__p_SL_DEFCON(meas.packed) = original_packed;
+      fcs_back__p_SL_DEFCON(meas.packed) = original_packed;
 #endif
 
-      back__p_tproc_free(&tproc2);
+      fcs_back__p_tproc_free(&tproc2);
 
       if (gs->noriginal_particles != sout2.size)
-        fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" back__p_slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout2.size);
+        fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" fcs_back__p_slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout2.size);
 
       if (set_values)
       {
@@ -2234,7 +2234,7 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
         }
       }
 
-      back__p_mpi_datatypes_release();
+      fcs_back__p_mpi_datatypes_release();
 
       break;
   }
@@ -2320,13 +2320,13 @@ fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs,
 
 void fcs_gridsort_free(fcs_gridsort_t *gs)
 {
-  forw_elements_t s0;
+  fcs_forw_elements_t s0;
 
 
-  forw_elem_set_keys(&s0, gs->sorted_indices);
-  forw_elem_set_data(&s0, gs->sorted_positions, gs->sorted_charges);
+  fcs_forw_elem_set_keys(&s0, gs->sorted_indices);
+  fcs_forw_elem_set_data(&s0, gs->sorted_positions, gs->sorted_charges);
 
-  forw_elements_free(&s0);
+  fcs_forw_elements_free(&s0);
 
   gs->nsorted_particles = gs->max_nsorted_particles = 0;
   gs->sorted_indices = NULL;

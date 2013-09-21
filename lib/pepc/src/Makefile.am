@@ -6,6 +6,7 @@
 include $(top_srcdir)/build-aux/fortran-rules.am
 
 AM_FCFLAGS = $(FC_MODINC)../../..
+AM_CPPFLAGS = -DSVNREVISION="\"$(SVNREVISION)\"" -DSL_PEPC_PREFIX=fcs_
 
 # -------------------------------------------------------------------------------------------
 
@@ -65,7 +66,7 @@ PP_FILES_PP.o = $(addsuffix .$(PP_SUFFIX).o,$(basename $(PP_FILES)))
 %.$(PP_SUFFIX).f90: %.f90 $(ALL_INCLUDE_HEADER) 
 	@echo "Building file '$@'" 
 	cat $(ALL_INCLUDE_HEADER) $< | \
-	cpp -P -C -DSVNREVISION="\"$(SVNREVISION)\"" $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES) | \
+	cpp -P -C $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES) | \
 	sed '/\/\*\(.*\)\*\//{s,,!\1,p;d;};/\/\*/,/\*\//{s,/\*,,; s,\*/,,; s,^,!,p; d;}' > $@
 
 %.o: %.f90

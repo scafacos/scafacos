@@ -80,6 +80,7 @@
 #define TIMING_STOP_ADD(_t_, _r_)  TIMING_CMD(((_r_) += MPI_Wtime() - (_t_));)
 
 #define RESORT_PROCLIST
+/*#define RESORT_TPROC_EXDEF*/
 
 
 fcs_resort_index_t *fcs_resort_indices_alloc(fcs_int nindices)
@@ -430,8 +431,9 @@ static int resort_tproc(void *b, ZMPI_Count x, void *tproc_data)
   return FCS_RESORT_INDEX_GET_PROC(idx);
 }
 
-ZMPI_TPROC_EXDEF_DEFINE_TPROC(resort_tproc_exdef, resort_tproc)
-
+#ifdef RESORT_TPROC_EXDEF
+ZMPI_TPROC_EXDEF_DEFINE_TPROC(resort_tproc_exdef, resort_tproc, static)
+#endif
 
 static void resort_ints(fcs_resort_t resort, fcs_int *src, fcs_int *dst, fcs_int x, MPI_Comm comm)
 {
@@ -465,7 +467,13 @@ static void resort_ints(fcs_resort_t resort, fcs_int *src, fcs_int *dst, fcs_int
   MPI_Type_create_struct(2, lengths, displs, types, &type);
   MPI_Type_commit(&type);
 
-  ZMPI_Tproc_create_tproc(&tproc, resort_tproc, ZMPI_TPROC_RESET_NULL, ZMPI_TPROC_EXDEF_NULL);
+  ZMPI_Tproc_create_tproc(&tproc, resort_tproc, ZMPI_TPROC_RESET_NULL,
+#ifdef RESORT_TPROC_EXDEF
+  resort_tproc_exdef
+#else
+  ZMPI_TPROC_EXDEF_NULL
+#endif
+  );
 
 #ifdef RESORT_PROCLIST
   if (resort->nprocs >= 0) ZMPI_Tproc_set_proclists(tproc, resort->nprocs, resort->procs, resort->nprocs, resort->procs, comm);

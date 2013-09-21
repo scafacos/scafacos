@@ -28,14 +28,18 @@
 #include <mpi.h>
 
 #include "config_fmm_sort.h"
+#include "rename_fmm_sort.h"
+
+/*#define DO_VERBOSE
+#define DO_VALIDATE
+#define DO_CHECKSUM
+#define DO_TIMING*/
+#define DO_TIMING_SYNC
 
 #include "common.h"
 
 #include "mpi_fmm_sort.h"
 
-
-/*#define VALIDATE
-#define CHECKSUM*/
 
 /*#define FMM_SORT_RADIX_1BIT*/
 
@@ -124,7 +128,7 @@ static void auxmem_release(void **auxmem_blocks, slint_t *auxmem_sizes)
 
 #ifndef NO_SL_FRONT
 
-void mpi_fmm_sort_front_merge_body(
+static void mpi_fmm_sort_front_merge_body(
  void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *depth,
  pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type,
@@ -286,14 +290,14 @@ void mpi_fmm_sort_front_merge_body(
   front_xq_aX(front_xq_aX_sl_debug_fstream = ) sl_debug_fstream = fopen(output_file_str, "w");
 #endif
 
-  front_xqsa0(front_xqsa0_SL_DEFCON(mpi.rank) = )
-  front_xqsaI(front_xqsaI_SL_DEFCON(mpi.rank) = )
-  front_xqsaX(front_xqsaX_SL_DEFCON(mpi.rank) = )
-  front_xq_a0(front_xq_a0_SL_DEFCON(mpi.rank) = )
-  front_xq_aI(front_xq_aI_SL_DEFCON(mpi.rank) = )
-  front_xq_aX(front_xq_aX_SL_DEFCON(mpi.rank) = ) rank;
+  front_xqsa0(SL_FMM_VAR(front_xqsa0_SL_DEFCON(mpi.rank)) = )
+  front_xqsaI(SL_FMM_VAR(front_xqsaI_SL_DEFCON(mpi.rank)) = )
+  front_xqsaX(SL_FMM_VAR(front_xqsaX_SL_DEFCON(mpi.rank)) = )
+  front_xq_a0(SL_FMM_VAR(front_xq_a0_SL_DEFCON(mpi.rank)) = )
+  front_xq_aI(SL_FMM_VAR(front_xq_aI_SL_DEFCON(mpi.rank)) = )
+  front_xq_aX(SL_FMM_VAR(front_xq_aX_SL_DEFCON(mpi.rank)) = ) rank;
 
-  front_aX = addr_desc[0];
+  SL_FMM_CONFIG_VAR(fmm_front_aX) = addr_desc[0];
 
   INFO_CMD(
     if (I_AM_MASTER) printf(INFO_PRINT_PREFIX "front: mem0: %p, mem1: %p, mem_sizes: %p (%" PARAM_INTEGER_FMT ", %" PARAM_INTEGER_FMT ")\n", mem0, mem1, mem_sizes, (mem_sizes?mem_sizes[0]:-1), (mem_sizes?mem_sizes[1]:-1));
@@ -385,62 +389,50 @@ void mpi_fmm_sort_front_merge_body(
   {
 #ifndef NOT_sl_front_xqsa0
     case 0:
-      s0.size = s0.max_size = *n;
-      s0.keys = ibox;
-      s0.data0 = xyz;
-      s0.data1 = q;
-      s0.data2 = scr;
-/*      s0.data3 = addr;*/
+      front_xqsa0_elem_set_size(&s0, *n);
+      front_xqsa0_elem_set_max_size(&s0, *n);
+      front_xqsa0_elem_set_keys(&s0, ibox);
+      front_xqsa0_elem_set_data(&s0, xyz, q, scr);
       break;
 #endif
 #ifndef NOT_sl_front_xqsaI
     case 1:
-      s1.size = s1.max_size = *n;
-      s1.keys = ibox;
-      s1.data0 = xyz;
-      s1.data1 = q;
-      s1.data2 = scr;
-      s1.data3 = addr;
+      front_xqsaI_elem_set_size(&s1, *n);
+      front_xqsaI_elem_set_max_size(&s1, *n);
+      front_xqsaI_elem_set_keys(&s1, ibox);
+      front_xqsaI_elem_set_data(&s1, xyz, q, scr, addr);
       break;
 #endif
 #ifndef NOT_sl_front_xqsaX
     case 2:
-      s2.size = s2.max_size = *n;
-      s2.keys = ibox;
-      s2.data0 = xyz;
-      s2.data1 = q;
-      s2.data2 = scr;
-      s2.data3 = addr;
+      front_xqsaX_elem_set_size(&s2, *n);
+      front_xqsaX_elem_set_max_size(&s2, *n);
+      front_xqsaX_elem_set_keys(&s2, ibox);
+      front_xqsaX_elem_set_data(&s2, xyz, q, scr, addr);
       break;
 #endif
 #ifndef NOT_sl_front_xq_a0
     case 3:
-      s3.size = s3.max_size = *n;
-      s3.keys = ibox;
-      s3.data0 = xyz;
-      s3.data1 = q;
-/*      s3.data2 = scr;*/
-/*      s3.data3 = addr;*/
+      front_xq_a0_elem_set_size(&s3, *n);
+      front_xq_a0_elem_set_max_size(&s3, *n);
+      front_xq_a0_elem_set_keys(&s3, ibox);
+      front_xq_a0_elem_set_data(&s3, xyz, q);
       break;
 #endif
 #ifndef NOT_sl_front_xq_aI
     case 4:
-      s4.size = s4.max_size = *n;
-      s4.keys = ibox;
-      s4.data0 = xyz;
-      s4.data1 = q;
-/*      s4.data2 = scr;*/
-      s4.data3 = addr;
+      front_xq_aI_elem_set_size(&s4, *n);
+      front_xq_aI_elem_set_max_size(&s4, *n);
+      front_xq_aI_elem_set_keys(&s4, ibox);
+      front_xq_aI_elem_set_data(&s4, xyz, q, addr);
       break;
 #endif
 #ifndef NOT_sl_front_xq_aX
     case 5:
-      s5.size = s5.max_size = *n;
-      s5.keys = ibox;
-      s5.data0 = xyz;
-      s5.data1 = q;
-/*      s5.data2 = scr;*/
-      s5.data3 = addr;
+      front_xq_aX_elem_set_size(&s5, *n);
+      front_xq_aX_elem_set_max_size(&s5, *n);
+      front_xq_aX_elem_set_keys(&s5, ibox);
+      front_xq_aX_elem_set_data(&s5, xyz, q, addr);
       break;
 #endif
   }
@@ -476,8 +468,8 @@ void mpi_fmm_sort_front_merge_body(
     if (*depth > 0) highest = 3 * *depth - 1; else highest = -1;
   }
 
-  key_mask = ~((front_(slkey_t)) 0);
-  if (addr_desc != NULL && addr_desc[1] > 0) key_mask = ~(key_mask << (sizeof(front_(slkey_t)) * 8 - addr_desc[1]));
+  SL_FMM_CONFIG_VAR(fmm_front_key_mask) = ~((front_(slkey_t)) 0);
+  if (addr_desc != NULL && addr_desc[1] > 0) SL_FMM_CONFIG_VAR(fmm_front_key_mask) = ~(SL_FMM_CONFIG_VAR(fmm_front_key_mask) << (sizeof(front_(slkey_t)) * 8 - addr_desc[1]));
 
   INFO_CMD(
     if (I_AM_MASTER)
@@ -587,12 +579,12 @@ void mpi_fmm_sort_front_merge_body(
   );
 
 #ifdef MPI_SENDRECV_REPLACE_MAX_SIZE
-  front_xqsa0(front_xqsa0_SL_DEFCON(me.sendrecv_replace_mpi_maxsize) = )
-  front_xqsaI(front_xqsaI_SL_DEFCON(me.sendrecv_replace_mpi_maxsize) = )
-  front_xqsaX(front_xqsaX_SL_DEFCON(me.sendrecv_replace_mpi_maxsize) = )
-  front_xq_a0(front_xq_a0_SL_DEFCON(me.sendrecv_replace_mpi_maxsize) = )
-  front_xq_aI(front_xq_aI_SL_DEFCON(me.sendrecv_replace_mpi_maxsize) = )
-  front_xq_aX(front_xq_aX_SL_DEFCON(me.sendrecv_replace_mpi_maxsize) = ) MPI_SENDRECV_REPLACE_MAX_SIZE;
+  front_xqsa0(SL_FMM_VAR(front_xqsa0_SL_DEFCON(me.sendrecv_replace_mpi_maxsize)) = )
+  front_xqsaI(SL_FMM_VAR(front_xqsaI_SL_DEFCON(me.sendrecv_replace_mpi_maxsize)) = )
+  front_xqsaX(SL_FMM_VAR(front_xqsaX_SL_DEFCON(me.sendrecv_replace_mpi_maxsize)) = )
+  front_xq_a0(SL_FMM_VAR(front_xq_a0_SL_DEFCON(me.sendrecv_replace_mpi_maxsize)) = )
+  front_xq_aI(SL_FMM_VAR(front_xq_aI_SL_DEFCON(me.sendrecv_replace_mpi_maxsize)) = )
+  front_xq_aX(SL_FMM_VAR(front_xq_aX_SL_DEFCON(me.sendrecv_replace_mpi_maxsize)) = ) MPI_SENDRECV_REPLACE_MAX_SIZE;
 #endif
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
@@ -603,8 +595,8 @@ void mpi_fmm_sort_front_merge_body(
     case 0:
       if (auxmem_sizes[auxmem_max] > 0)
       {
-        front_xqsa0_SL_DEFCON(me.sendrecv_replace_mem) = auxmem_blocks[auxmem_max];
-        front_xqsa0_SL_DEFCON(me.sendrecv_replace_memsize) = auxmem_sizes[auxmem_max];
+        SL_FMM_VAR(front_xqsa0_SL_DEFCON(me.sendrecv_replace_mem)) = auxmem_blocks[auxmem_max];
+        SL_FMM_VAR(front_xqsa0_SL_DEFCON(me.sendrecv_replace_memsize)) = auxmem_sizes[auxmem_max];
 
         m20 = front_xqsa0_merge2_memory_adaptive;
       }
@@ -620,8 +612,8 @@ void mpi_fmm_sort_front_merge_body(
     case 1:
       if (auxmem_sizes[auxmem_max] > 0)
       {
-        front_xqsaI_SL_DEFCON(me.sendrecv_replace_mem) = auxmem_blocks[auxmem_max];
-        front_xqsaI_SL_DEFCON(me.sendrecv_replace_memsize) = auxmem_sizes[auxmem_max];
+        SL_FMM_VAR(front_xqsaI_SL_DEFCON(me.sendrecv_replace_mem)) = auxmem_blocks[auxmem_max];
+        SL_FMM_VAR(front_xqsaI_SL_DEFCON(me.sendrecv_replace_memsize)) = auxmem_sizes[auxmem_max];
 
         m21 = front_xqsaI_merge2_memory_adaptive;
       }
@@ -637,8 +629,8 @@ void mpi_fmm_sort_front_merge_body(
     case 2:
       if (auxmem_sizes[auxmem_max] > 0)
       {
-        front_xqsaX_SL_DEFCON(me.sendrecv_replace_mem) = auxmem_blocks[auxmem_max];
-        front_xqsaX_SL_DEFCON(me.sendrecv_replace_memsize) = auxmem_sizes[auxmem_max];
+        SL_FMM_VAR(front_xqsaX_SL_DEFCON(me.sendrecv_replace_mem)) = auxmem_blocks[auxmem_max];
+        SL_FMM_VAR(front_xqsaX_SL_DEFCON(me.sendrecv_replace_memsize)) = auxmem_sizes[auxmem_max];
 
         m22 = front_xqsaX_merge2_memory_adaptive;
       }
@@ -654,8 +646,8 @@ void mpi_fmm_sort_front_merge_body(
     case 3:
       if (auxmem_sizes[auxmem_max] > 0)
       {
-        front_xq_a0_SL_DEFCON(me.sendrecv_replace_mem) = auxmem_blocks[auxmem_max];
-        front_xq_a0_SL_DEFCON(me.sendrecv_replace_memsize) = auxmem_sizes[auxmem_max];
+        SL_FMM_VAR(front_xq_a0_SL_DEFCON(me.sendrecv_replace_mem)) = auxmem_blocks[auxmem_max];
+        SL_FMM_VAR(front_xq_a0_SL_DEFCON(me.sendrecv_replace_memsize)) = auxmem_sizes[auxmem_max];
 
         m23 = front_xq_a0_merge2_memory_adaptive;
       }
@@ -671,8 +663,8 @@ void mpi_fmm_sort_front_merge_body(
     case 4:
       if (auxmem_sizes[auxmem_max] > 0)
       {
-        front_xq_aI_SL_DEFCON(me.sendrecv_replace_mem) = auxmem_blocks[auxmem_max];
-        front_xq_aI_SL_DEFCON(me.sendrecv_replace_memsize) = auxmem_sizes[auxmem_max];
+        SL_FMM_VAR(front_xq_aI_SL_DEFCON(me.sendrecv_replace_mem)) = auxmem_blocks[auxmem_max];
+        SL_FMM_VAR(front_xq_aI_SL_DEFCON(me.sendrecv_replace_memsize)) = auxmem_sizes[auxmem_max];
 
         m24 = front_xq_aI_merge2_memory_adaptive;
       }
@@ -688,8 +680,8 @@ void mpi_fmm_sort_front_merge_body(
     case 5:
       if (auxmem_sizes[auxmem_max] > 0)
       {
-        front_xq_aX_SL_DEFCON(me.sendrecv_replace_mem) = auxmem_blocks[auxmem_max];
-        front_xq_aX_SL_DEFCON(me.sendrecv_replace_memsize) = auxmem_sizes[auxmem_max];
+        SL_FMM_VAR(front_xq_aX_SL_DEFCON(me.sendrecv_replace_mem)) = auxmem_blocks[auxmem_max];
+        SL_FMM_VAR(front_xq_aX_SL_DEFCON(me.sendrecv_replace_memsize)) = auxmem_sizes[auxmem_max];
 
         m25 = front_xq_aX_merge2_memory_adaptive;
       }
@@ -811,7 +803,7 @@ void mpi_fmm_sort_front_merge_body(
 
 #ifdef WITH_SORT_FRONT_LOAD
 
-void mpi_fmm_sort_front_part_body(
+static void mpi_fmm_sort_front_part_body(
  void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *depth,
  pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type,
@@ -930,10 +922,10 @@ void mpi_fmm_sort_front_part_body(
   if (nmin == NULL) nmin = &_nmin;
   if (nmax == NULL) nmax = &_nmax;
 
-  front_xqsaI(front_xqsaIl_SL_DEFCON(mpi.rank) = )
-  front_xq_aI(front_xq_aIl_SL_DEFCON(mpi.rank) = )
-  front_xqsaI(front_xqsaI_SL_DEFCON(mpi.rank) = )
-  front_xq_aI(front_xq_aI_SL_DEFCON(mpi.rank) = ) rank;
+  front_xqsaI(SL_FMM_VAR(front_xqsaIl_SL_DEFCON(mpi.rank)) = )
+  front_xq_aI(SL_FMM_VAR(front_xq_aIl_SL_DEFCON(mpi.rank)) = )
+  front_xqsaI(SL_FMM_VAR(front_xqsaI_SL_DEFCON(mpi.rank)) = )
+  front_xq_aI(SL_FMM_VAR(front_xq_aI_SL_DEFCON(mpi.rank)) = ) rank;
 
   auxmem_init(mem0, mem1, mem_sizes, auxmem_blocks, auxmem_sizes, &auxmem_max);
 
@@ -1009,50 +1001,34 @@ void mpi_fmm_sort_front_part_body(
   {
 #ifndef NOT_sl_front_xqsaIl
     case 0:
-      s0.size = nlocal;
-      s0.max_size = *nmax;
-      s0.keys = ibox;
-      s0.data0 = xyz;
-      s0.data1 = q;
-      s0.data2 = scr;
-      s0.data3 = addr;
-      s0.data4 = load;
+      front_xqsaIl_elem_set_size(&s0, nlocal);
+      front_xqsaIl_elem_set_max_size(&s0, *nmax);
+      front_xqsaIl_elem_set_keys(&s0, ibox);
+      front_xqsaIl_elem_set_data(&s0, xyz, q, scr, addr, load);
       break;
 #endif
 #ifndef NOT_sl_front_xq_aIl
     case 1:
-      s1.size = nlocal;
-      s1.max_size = *nmax;
-      s1.keys = ibox;
-      s1.data0 = xyz;
-      s1.data1 = q;
-/*      s1.data2 = scr;*/
-      s1.data3 = addr;
-      s1.data4 = load;
+      front_xq_aIl_elem_set_size(&s1, nlocal);
+      front_xq_aIl_elem_set_max_size(&s1, *nmax);
+      front_xq_aIl_elem_set_keys(&s1, ibox);
+      front_xq_aIl_elem_set_data(&s1, xyz, q, addr, load);
       break;
 #endif
 #ifndef NOT_sl_front_xqsaI
     case 2:
-      s2.size = nlocal;
-      s2.max_size = *nmax;
-      s2.keys = ibox;
-      s2.data0 = xyz;
-      s2.data1 = q;
-      s2.data2 = scr;
-      s2.data3 = addr;
-/*      s2.data4 = load;*/
+      front_xqsaI_elem_set_size(&s2, nlocal);
+      front_xqsaI_elem_set_max_size(&s2, *nmax);
+      front_xqsaI_elem_set_keys(&s2, ibox);
+      front_xqsaI_elem_set_data(&s2, xyz, q, scr, addr);
       break;
 #endif
 #ifndef NOT_sl_front_xq_aI
     case 3:
-      s3.size = nlocal;
-      s3.max_size = *nmax;
-      s3.keys = ibox;
-      s3.data0 = xyz;
-      s3.data1 = q;
-/*      s3.data2 = scr;*/
-      s3.data3 = addr;
-/*      s3.data4 = load;*/
+      front_xq_aI_elem_set_size(&s3, nlocal);
+      front_xq_aI_elem_set_max_size(&s3, *nmax);
+      front_xq_aI_elem_set_keys(&s3, ibox);
+      front_xq_aI_elem_set_data(&s3, xyz, q, addr);
       break;
 #endif
   }
@@ -1184,7 +1160,7 @@ void mpi_fmm_sort_front_part_body(
       pc0.count_max = *nmax;
       pc0.weight_min = -(1.0 - *imba);
       pc0.weight_max = -(1.0 + *imba);
-      front_xqsaIl_SL_DEFCON(mseg.border_update_weight_reduction) = REDUCTION;
+      SL_FMM_VAR(front_xqsaIl_SL_DEFCON(mseg.border_update_weight_reduction)) = REDUCTION;
       front_xqsaIl_mpi_partition_exact_radix(&s0, &pc0, highest, -1, 3, SL_SORTED_IN, scounts, NULL, size, rank, comm);
       break;
 #endif
@@ -1195,7 +1171,7 @@ void mpi_fmm_sort_front_part_body(
       pc1.count_max = *nmax;
       pc1.weight_min = -(1.0 - *imba);
       pc1.weight_max = -(1.0 + *imba);
-      front_xq_aIl_SL_DEFCON(mseg.border_update_weight_reduction) = REDUCTION;
+      SL_FMM_VAR(front_xq_aIl_SL_DEFCON(mseg.border_update_weight_reduction)) = REDUCTION;
       front_xq_aIl_mpi_partition_exact_radix(&s1, &pc1, highest, -1, 3, SL_SORTED_IN, scounts, NULL, size, rank, comm);
       break;
 #endif
@@ -1240,15 +1216,15 @@ void mpi_fmm_sort_front_part_body(
 #ifndef NOT_sl_front_xqsaIl
     case 0:
       ALLTOALLV_PACKED_CMD(
-        original_packed = front_xqsaIl_SL_DEFCON(mea.packed); front_xqsaIl_SL_DEFCON(mea.packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(front_xqsaIl_SL_DEFCON(mea.packed)); SL_FMM_VAR(front_xqsaIl_SL_DEFCON(mea.packed)) = (global_packed > 0);
       );
       TIMING_SYNC(comm); TIMING_START(t[4]);
       front_xqsaIl_mpi_elements_alltoallv_ip(&s0, bx0, scounts, sdispls, rcounts, rdispls, size, rank, comm);
       TIMING_SYNC(comm); TIMING_STOP(t[4]);
       ALLTOALLV_PACKED_CMD(
-        front_xqsaIl_SL_DEFCON(mea.packed) = original_packed;
+        SL_FMM_VAR(front_xqsaIl_SL_DEFCON(mea.packed)) = original_packed;
       );
-      s0.size = nlocal;
+      front_xqsaIl_elem_set_size(&s0, nlocal);
       TIMING_SYNC(comm); TIMING_START(t[5]);
       if (!rebalance_only) front_xqsaIl_mergep_2way_ip_int(&s0, sx0, size, rdispls, front_xqsaIl_merge2_memory_adaptive);
       TIMING_SYNC(comm); TIMING_STOP(t[5]);
@@ -1257,15 +1233,15 @@ void mpi_fmm_sort_front_part_body(
 #ifndef NOT_sl_front_xq_aIl
     case 1:
       ALLTOALLV_PACKED_CMD(
-        original_packed = front_xq_aIl_SL_DEFCON(mea.packed); front_xq_aIl_SL_DEFCON(mea.packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(front_xq_aIl_SL_DEFCON(mea.packed)); SL_FMM_VAR(front_xq_aIl_SL_DEFCON(mea.packed)) = (global_packed > 0);
       );
       TIMING_SYNC(comm); TIMING_START(t[4]);
       front_xq_aIl_mpi_elements_alltoallv_ip(&s1, bx1, scounts, sdispls, rcounts, rdispls, size, rank, comm);
       TIMING_SYNC(comm); TIMING_STOP(t[4]);
       ALLTOALLV_PACKED_CMD(
-        front_xq_aIl_SL_DEFCON(mea.packed) = original_packed;
+        SL_FMM_VAR(front_xq_aIl_SL_DEFCON(mea.packed)) = original_packed;
       );
-      s1.size = nlocal;
+      front_xq_aIl_elem_set_size(&s1, nlocal);
       TIMING_SYNC(comm); TIMING_START(t[5]);
       if (!rebalance_only) front_xq_aIl_mergep_2way_ip_int(&s1, sx1, size, rdispls, front_xq_aIl_merge2_memory_adaptive);
       TIMING_SYNC(comm); TIMING_STOP(t[5]);
@@ -1274,15 +1250,15 @@ void mpi_fmm_sort_front_part_body(
 #ifndef NOT_sl_front_xqsaI
     case 2:
       ALLTOALLV_PACKED_CMD(
-        original_packed = front_xqsaI_SL_DEFCON(mea.packed); front_xqsaI_SL_DEFCON(mea.packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(front_xqsaI_SL_DEFCON(mea.packed)); SL_FMM_VAR(front_xqsaI_SL_DEFCON(mea.packed)) = (global_packed > 0);
       );
       TIMING_SYNC(comm); TIMING_START(t[4]);
       front_xqsaI_mpi_elements_alltoallv_ip(&s2, bx2, scounts, sdispls, rcounts, rdispls, size, rank, comm);
       TIMING_SYNC(comm); TIMING_STOP(t[4]);
       ALLTOALLV_PACKED_CMD(
-        front_xqsaI_SL_DEFCON(mea.packed) = original_packed;
+        SL_FMM_VAR(front_xqsaI_SL_DEFCON(mea.packed)) = original_packed;
       );
-      s2.size = nlocal;
+      front_xqsaI_elem_set_size(&s2, nlocal);
       TIMING_SYNC(comm); TIMING_START(t[5]);
       if (!rebalance_only) front_xqsaI_mergep_2way_ip_int(&s2, sx2, size, rdispls, front_xqsaI_merge2_memory_adaptive);
       TIMING_SYNC(comm); TIMING_STOP(t[5]);
@@ -1291,15 +1267,15 @@ void mpi_fmm_sort_front_part_body(
 #ifndef NOT_sl_front_xq_aI
     case 3:
       ALLTOALLV_PACKED_CMD(
-        original_packed = front_xq_aI_SL_DEFCON(mea.packed); front_xq_aI_SL_DEFCON(mea.packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(front_xq_aI_SL_DEFCON(mea.packed)); SL_FMM_VAR(front_xq_aI_SL_DEFCON(mea.packed)) = (global_packed > 0);
       );
       TIMING_SYNC(comm); TIMING_START(t[4]);
       front_xq_aI_mpi_elements_alltoallv_ip(&s3, bx3, scounts, sdispls, rcounts, rdispls, size, rank, comm);
       TIMING_SYNC(comm); TIMING_STOP(t[4]);
       ALLTOALLV_PACKED_CMD(
-        front_xq_aI_SL_DEFCON(mea.packed) = original_packed;
+        SL_FMM_VAR(front_xq_aI_SL_DEFCON(mea.packed)) = original_packed;
       );
-      s3.size = nlocal;
+      front_xq_aI_elem_set_size(&s3, nlocal);
       TIMING_SYNC(comm); TIMING_START(t[5]);
       if (!rebalance_only) front_xq_aI_mergep_2way_ip_int(&s3, sx3, size, rdispls, front_xq_aI_merge2_memory_adaptive);
       TIMING_SYNC(comm); TIMING_STOP(t[5]);
@@ -1410,19 +1386,6 @@ void mpi_fmm_sort_front_part_body(
 #endif /* WITH_SORT_FRONT_LOAD */
 
 
-void mpi_fmm_sort_front_mem_(
- void *mem0, void *mem1, pint_t *mem_sizes,
- pint_t *depth,
- pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type
-#ifdef WITH_SORT_FRONT_LOAD
- , front_xqsaIl_sldata4_t *load, REAL_C *imba, pint_t *nmin, pint_t *nmax
-#endif
-#ifdef WITH_FCOMM
- , FINT8_TYPE_C *fcomm
-#endif
-);
-
-#pragma weak mpi_fmm_sort_front_mem_=mpi_fmm_sort_front_mem
 void mpi_fmm_sort_front_mem(
  void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *depth,
@@ -1445,8 +1408,8 @@ void mpi_fmm_sort_front_mem(
     mpi_fmm_sort_front_merge_body(mem0, mem1, mem_sizes, depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type, FCOMM_IFELSE(fcomm, NULL));
 }
 
-
-void mpi_fmm_sort_front_(
+void mpi_fmm_sort_front_mem_(
+ void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *depth,
  pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type
 #ifdef WITH_SORT_FRONT_LOAD
@@ -1455,9 +1418,19 @@ void mpi_fmm_sort_front_(
 #ifdef WITH_FCOMM
  , FINT8_TYPE_C *fcomm
 #endif
-);
+)
+{
+  mpi_fmm_sort_front_mem(mem0, mem1, mem_sizes, depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type
+#ifdef WITH_SORT_FRONT_LOAD
+    , load, imba, nmin, nmax
+#endif
+#ifdef WITH_FCOMM
+    , fcomm
+#endif
+  );
+}
 
-#pragma weak mpi_fmm_sort_front_=mpi_fmm_sort_front
+
 void mpi_fmm_sort_front(
  pint_t *depth,
  pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type
@@ -1479,9 +1452,8 @@ void mpi_fmm_sort_front(
     mpi_fmm_sort_front_merge_body(NULL, NULL, NULL, depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type, FCOMM_IFELSE(fcomm, NULL));
 }
 
-
-void mpi_fmm_sort_front_3bit_mem_(
- void *mem0, void *mem1, pint_t *mem_sizes,
+void mpi_fmm_sort_front_(
+ pint_t *depth,
  pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type
 #ifdef WITH_SORT_FRONT_LOAD
  , front_xqsaIl_sldata4_t *load, REAL_C *imba, pint_t *nmin, pint_t *nmax
@@ -1489,9 +1461,19 @@ void mpi_fmm_sort_front_3bit_mem_(
 #ifdef WITH_FCOMM
  , FINT8_TYPE_C *fcomm
 #endif
-);
+)
+{
+  mpi_fmm_sort_front(depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type
+#ifdef WITH_SORT_FRONT_LOAD
+    , load, imba, nmin, nmax
+#endif
+#ifdef WITH_FCOMM
+    , fcomm
+#endif
+  );
+}
 
-#pragma weak mpi_fmm_sort_front_3bit_mem_=mpi_fmm_sort_front_3bit_mem
+
 void mpi_fmm_sort_front_3bit_mem(
  void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type
@@ -1513,8 +1495,8 @@ void mpi_fmm_sort_front_3bit_mem(
     mpi_fmm_sort_front_merge_body(mem0, mem1, mem_sizes, NULL, subx, n, ibox, xyz, q, addr_desc, addr, scr, type, FCOMM_IFELSE(fcomm, NULL));
 }
 
-
-void mpi_fmm_sort_front_3bit_(
+void mpi_fmm_sort_front_3bit_mem_(
+ void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type
 #ifdef WITH_SORT_FRONT_LOAD
  , front_xqsaIl_sldata4_t *load, REAL_C *imba, pint_t *nmin, pint_t *nmax
@@ -1522,9 +1504,19 @@ void mpi_fmm_sort_front_3bit_(
 #ifdef WITH_FCOMM
  , FINT8_TYPE_C *fcomm
 #endif
-);
+)
+{
+  mpi_fmm_sort_front_3bit_mem(mem0, mem1, mem_sizes, subx, n, ibox, xyz, q, addr_desc, addr, scr, type
+#ifdef WITH_SORT_FRONT_LOAD
+    , load, imba, nmin, nmax
+#endif
+#ifdef WITH_FCOMM
+    , fcomm
+#endif
+  );
+}
 
-#pragma weak mpi_fmm_sort_front_3bit_=mpi_fmm_sort_front_3bit
+
 void mpi_fmm_sort_front_3bit(
  pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type
 #ifdef WITH_SORT_FRONT_LOAD
@@ -1545,10 +1537,7 @@ void mpi_fmm_sort_front_3bit(
     mpi_fmm_sort_front_merge_body(NULL, NULL, NULL, NULL, subx, n, ibox, xyz, q, addr_desc, addr, scr, type, FCOMM_IFELSE(fcomm, NULL));
 }
 
-
-void mpi_fmm_sort_front_rebalance_mem_(
- void *mem0, void *mem1, pint_t *mem_sizes,
- pint_t *depth,
+void mpi_fmm_sort_front_3bit_(
  pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type
 #ifdef WITH_SORT_FRONT_LOAD
  , front_xqsaIl_sldata4_t *load, REAL_C *imba, pint_t *nmin, pint_t *nmax
@@ -1556,9 +1545,19 @@ void mpi_fmm_sort_front_rebalance_mem_(
 #ifdef WITH_FCOMM
  , FINT8_TYPE_C *fcomm
 #endif
-);
+)
+{
+  mpi_fmm_sort_front_3bit(subx, n, ibox, xyz, q, addr_desc, addr, scr, type
+#ifdef WITH_SORT_FRONT_LOAD
+   , load, imba, nmin, nmax
+#endif
+#ifdef WITH_FCOMM
+   , fcomm
+#endif
+  );
+}
 
-#pragma weak mpi_fmm_sort_front_rebalance_mem_=mpi_fmm_sort_front_rebalance_mem
+
 void mpi_fmm_sort_front_rebalance_mem(
  void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *depth,
@@ -1581,8 +1580,8 @@ void mpi_fmm_sort_front_rebalance_mem(
     mpi_fmm_sort_front_merge_body(mem0, mem1, mem_sizes, depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type, FCOMM_IFELSE(fcomm, NULL));
 }
 
-
-void mpi_fmm_sort_front_rebalance_(
+void mpi_fmm_sort_front_rebalance_mem_(
+ void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *depth,
  pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type
 #ifdef WITH_SORT_FRONT_LOAD
@@ -1591,9 +1590,19 @@ void mpi_fmm_sort_front_rebalance_(
 #ifdef WITH_FCOMM
  , FINT8_TYPE_C *fcomm
 #endif
-);
+)
+{
+  mpi_fmm_sort_front_rebalance_mem(mem0, mem1, mem_sizes, depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type
+#ifdef WITH_SORT_FRONT_LOAD
+   , load, imba, nmin, nmax
+#endif
+#ifdef WITH_FCOMM
+   , fcomm
+#endif
+  );
+}
 
-#pragma weak mpi_fmm_sort_front_rebalance_=mpi_fmm_sort_front_rebalance
+
 void mpi_fmm_sort_front_rebalance(
  pint_t *depth,
  pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type
@@ -1615,12 +1624,33 @@ void mpi_fmm_sort_front_rebalance(
     mpi_fmm_sort_front_merge_body(NULL, NULL, NULL, depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type, FCOMM_IFELSE(fcomm, NULL));
 }
 
+void mpi_fmm_sort_front_rebalance_(
+ pint_t *depth,
+ pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type
+#ifdef WITH_SORT_FRONT_LOAD
+ , front_xqsaIl_sldata4_t *load, REAL_C *imba, pint_t *nmin, pint_t *nmax
+#endif
+#ifdef WITH_FCOMM
+ , FINT8_TYPE_C *fcomm
+#endif
+)
+{
+  mpi_fmm_sort_front_rebalance(depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type
+#ifdef WITH_SORT_FRONT_LOAD
+   , load, imba, nmin, nmax
+#endif
+#ifdef WITH_FCOMM
+   , fcomm
+#endif
+  );
+}
+
 #endif /* NO_SL_FRONT */
 
 
 #ifndef NO_SL_BACK
 
-void mpi_fmm_sort_back_merge_body(
+static void mpi_fmm_sort_back_merge_body(
  void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *ntotal, pint_t *n, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, pint_t *type,
  FINT8_TYPE_C *fcomm)
@@ -1710,10 +1740,10 @@ void mpi_fmm_sort_back_merge_body(
   back_q__g(back_q__g_sl_debug_fstream = ) sl_debug_fstream = fopen(output_file_str, "w");
 #endif
 
-  back_qxpg(back_qxpg_SL_DEFCON(mpi.rank) = )
-  back_qx_g(back_qx_g_SL_DEFCON(mpi.rank) = )
-  back_q_pg(back_q_pg_SL_DEFCON(mpi.rank) = )
-  back_q__g(back_q__g_SL_DEFCON(mpi.rank) = ) rank;
+  back_qxpg(SL_FMM_VAR(back_qxpg_SL_DEFCON(mpi.rank)) = )
+  back_qx_g(SL_FMM_VAR(back_qx_g_SL_DEFCON(mpi.rank)) = )
+  back_q_pg(SL_FMM_VAR(back_q_pg_SL_DEFCON(mpi.rank)) = )
+  back_q__g(SL_FMM_VAR(back_q__g_SL_DEFCON(mpi.rank)) = ) rank;
   
   auxmem_init(mem0, mem1, mem_sizes, auxmem_blocks, auxmem_sizes, &auxmem_max);
 
@@ -1771,42 +1801,34 @@ void mpi_fmm_sort_back_merge_body(
   {
 #ifndef NOT_sl_back_qxpg
     case 0:
-      s0.size = s0.max_size = *n;
-      s0.keys = addr;
-      s0.data0 = q;
-      s0.data1 = xyz;
-      s0.data2 = pot;
-      s0.data3 = grad;
+      back_qxpg_elem_set_size(&s0, *n);
+      back_qxpg_elem_set_max_size(&s0, *n);
+      back_qxpg_elem_set_keys(&s0, addr);
+      back_qxpg_elem_set_data(&s0, q, xyz, pot, grad);
       break;
 #endif
 #ifndef NOT_sl_back_qx_g
     case 1:
-      s1.size = s1.max_size = *n;
-      s1.keys = addr;
-      s1.data0 = q;
-      s1.data1 = xyz;
-/*      s1.data2 = pot;*/
-      s1.data3 = grad;
+      back_qx_g_elem_set_size(&s1, *n);
+      back_qx_g_elem_set_max_size(&s1, *n);
+      back_qx_g_elem_set_keys(&s1, addr);
+      back_qx_g_elem_set_data(&s1, q, xyz, grad);
       break;
 #endif
 #ifndef NOT_sl_back_q_pg
     case 2:
-      s2.size = s2.max_size = *n;
-      s2.keys = addr;
-      s2.data0 = q;
-/*      s2.data1 = xyz;*/
-      s2.data2 = pot;
-      s2.data3 = grad;
+      back_q_pg_elem_set_size(&s2, *n);
+      back_q_pg_elem_set_max_size(&s2, *n);
+      back_q_pg_elem_set_keys(&s2, addr);
+      back_q_pg_elem_set_data(&s2, q, pot, grad);
       break;
 #endif
 #ifndef NOT_sl_back_q__g
     case 3:
-      s3.size = s3.max_size = *n;
-      s3.keys = addr;
-      s3.data0 = q;
-/*      s3.data1 = xyz;*/
-/*      s3.data2 = pot;*/
-      s3.data3 = grad;
+      back_q__g_elem_set_size(&s3, *n);
+      back_q__g_elem_set_max_size(&s3, *n);
+      back_q__g_elem_set_keys(&s3, addr);
+      back_q__g_elem_set_data(&s3, q, grad);
       break;
 #endif
   }
@@ -1903,10 +1925,10 @@ void mpi_fmm_sort_back_merge_body(
   );
 
 #ifdef MPI_SENDRECV_REPLACE_MAX_SIZE
-  back_qxpg(back_qxpg_SL_DEFCON(me.sendrecv_replace_mpi_maxsize) = )
-  back_qx_g(back_qx_g_SL_DEFCON(me.sendrecv_replace_mpi_maxsize) = )
-  back_q_pg(back_q_pg_SL_DEFCON(me.sendrecv_replace_mpi_maxsize) = )
-  back_q__g(back_q__g_SL_DEFCON(me.sendrecv_replace_mpi_maxsize) = ) MPI_SENDRECV_REPLACE_MAX_SIZE;
+  back_qxpg(SL_FMM_VAR(back_qxpg_SL_DEFCON(me.sendrecv_replace_mpi_maxsize)) = )
+  back_qx_g(SL_FMM_VAR(back_qx_g_SL_DEFCON(me.sendrecv_replace_mpi_maxsize)) = )
+  back_q_pg(SL_FMM_VAR(back_q_pg_SL_DEFCON(me.sendrecv_replace_mpi_maxsize)) = )
+  back_q__g(SL_FMM_VAR(back_q__g_SL_DEFCON(me.sendrecv_replace_mpi_maxsize)) = ) MPI_SENDRECV_REPLACE_MAX_SIZE;
 #endif
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
@@ -1917,8 +1939,8 @@ void mpi_fmm_sort_back_merge_body(
     case 0:
       if (auxmem_sizes[auxmem_max] > 0)
       {
-        back_qxpg_SL_DEFCON(me.sendrecv_replace_mem) = auxmem_blocks[auxmem_max];
-        back_qxpg_SL_DEFCON(me.sendrecv_replace_memsize) = auxmem_sizes[auxmem_max];
+        SL_FMM_VAR(back_qxpg_SL_DEFCON(me.sendrecv_replace_mem)) = auxmem_blocks[auxmem_max];
+        SL_FMM_VAR(back_qxpg_SL_DEFCON(me.sendrecv_replace_memsize)) = auxmem_sizes[auxmem_max];
 
         m20 = back_qxpg_merge2_memory_adaptive;
       }
@@ -1929,8 +1951,8 @@ void mpi_fmm_sort_back_merge_body(
     case 1:
       if (auxmem_sizes[auxmem_max] > 0)
       {
-        back_qx_g_SL_DEFCON(me.sendrecv_replace_mem) = auxmem_blocks[auxmem_max];
-        back_qx_g_SL_DEFCON(me.sendrecv_replace_memsize) = auxmem_sizes[auxmem_max];
+        SL_FMM_VAR(back_qx_g_SL_DEFCON(me.sendrecv_replace_mem)) = auxmem_blocks[auxmem_max];
+        SL_FMM_VAR(back_qx_g_SL_DEFCON(me.sendrecv_replace_memsize)) = auxmem_sizes[auxmem_max];
 
         m21 = back_qx_g_merge2_memory_adaptive;
       }
@@ -1941,8 +1963,8 @@ void mpi_fmm_sort_back_merge_body(
     case 2:
       if (auxmem_sizes[auxmem_max] > 0)
       {
-        back_q_pg_SL_DEFCON(me.sendrecv_replace_mem) = auxmem_blocks[auxmem_max];
-        back_q_pg_SL_DEFCON(me.sendrecv_replace_memsize) = auxmem_sizes[auxmem_max];
+        SL_FMM_VAR(back_q_pg_SL_DEFCON(me.sendrecv_replace_mem)) = auxmem_blocks[auxmem_max];
+        SL_FMM_VAR(back_q_pg_SL_DEFCON(me.sendrecv_replace_memsize)) = auxmem_sizes[auxmem_max];
 
         m22 = back_q_pg_merge2_memory_adaptive;
       }
@@ -1953,8 +1975,8 @@ void mpi_fmm_sort_back_merge_body(
     case 3:
       if (auxmem_sizes[auxmem_max] > 0)
       {
-        back_q__g_SL_DEFCON(me.sendrecv_replace_mem) = auxmem_blocks[auxmem_max];
-        back_q__g_SL_DEFCON(me.sendrecv_replace_memsize) = auxmem_sizes[auxmem_max];
+        SL_FMM_VAR(back_q__g_SL_DEFCON(me.sendrecv_replace_mem)) = auxmem_blocks[auxmem_max];
+        SL_FMM_VAR(back_q__g_SL_DEFCON(me.sendrecv_replace_memsize)) = auxmem_sizes[auxmem_max];
 
         m23 = back_q__g_merge2_memory_adaptive;
       }
@@ -2047,7 +2069,7 @@ void mpi_fmm_sort_back_merge_body(
 }
 
 
-void mpi_fmm_sort_back_part_body(
+static void mpi_fmm_sort_back_part_body(
  void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *ntotal, pint_t *nin, pint_t *nout, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, back_(sldata4_t) *load, pint_t *type,
  FINT8_TYPE_C *fcomm)
@@ -2160,14 +2182,14 @@ void mpi_fmm_sort_back_part_body(
   back_q__gl(back_q__gl_sl_debug_fstream = ) sl_debug_fstream = fopen(output_file_str, "w");
 #endif
 
-  back_qxpg(back_qxpg_SL_DEFCON(mpi.rank) = )
-  back_qx_g(back_qx_g_SL_DEFCON(mpi.rank) = )
-  back_q_pg(back_q_pg_SL_DEFCON(mpi.rank) = )
-  back_q__g(back_q__g_SL_DEFCON(mpi.rank) = )
-  back_qxpgl(back_qxpgl_SL_DEFCON(mpi.rank) = )
-  back_qx_gl(back_qx_gl_SL_DEFCON(mpi.rank) = )
-  back_q_pgl(back_q_pgl_SL_DEFCON(mpi.rank) = )
-  back_q__gl(back_q__gl_SL_DEFCON(mpi.rank) = ) rank;
+  back_qxpg(SL_FMM_VAR(back_qxpg_SL_DEFCON(mpi.rank)) = )
+  back_qx_g(SL_FMM_VAR(back_qx_g_SL_DEFCON(mpi.rank)) = )
+  back_q_pg(SL_FMM_VAR(back_q_pg_SL_DEFCON(mpi.rank)) = )
+  back_q__g(SL_FMM_VAR(back_q__g_SL_DEFCON(mpi.rank)) = )
+  back_qxpgl(SL_FMM_VAR(back_qxpgl_SL_DEFCON(mpi.rank)) = )
+  back_qx_gl(SL_FMM_VAR(back_qx_gl_SL_DEFCON(mpi.rank)) = )
+  back_q_pgl(SL_FMM_VAR(back_q_pgl_SL_DEFCON(mpi.rank)) = )
+  back_q__gl(SL_FMM_VAR(back_q__gl_SL_DEFCON(mpi.rank)) = ) rank;
 
   sxalloc = 0;
   
@@ -2337,94 +2359,66 @@ void mpi_fmm_sort_back_part_body(
   {
 #ifndef NOT_sl_back_qxpg
     case 0:
-      s0.size = nlocal;
-      s0.max_size = max_nlocal;
-      s0.keys = addr;
-      s0.data0 = q;
-      s0.data1 = xyz;
-      s0.data2 = pot;
-      s0.data3 = grad;
+      back_qxpg_elem_set_size(&s0, nlocal);
+      back_qxpg_elem_set_max_size(&s0, max_nlocal);
+      back_qxpg_elem_set_keys(&s0, addr);
+      back_qxpg_elem_set_data(&s0, q, xyz, pot, grad);
       break;
 #endif
 #ifndef NOT_sl_back_qx_g
     case 1:
-      s1.size = nlocal;
-      s1.max_size = max_nlocal;
-      s1.keys = addr;
-      s1.data0 = q;
-      s1.data1 = xyz;
-/*      s1.data2 = pot;*/
-      s1.data3 = grad;
+      back_qx_g_elem_set_size(&s1, nlocal);
+      back_qx_g_elem_set_max_size(&s1, max_nlocal);
+      back_qx_g_elem_set_keys(&s1, addr);
+      back_qx_g_elem_set_data(&s1, q, xyz, grad);
       break;
 #endif
 #ifndef NOT_sl_back_q_pg
     case 2:
-      s2.size = nlocal;
-      s2.max_size = max_nlocal;
-      s2.keys = addr;
-      s2.data0 = q;
-/*      s2.data1 = xyz;*/
-      s2.data2 = pot;
-      s2.data3 = grad;
+      back_q_pg_elem_set_size(&s2, nlocal);
+      back_q_pg_elem_set_max_size(&s2, max_nlocal);
+      back_q_pg_elem_set_keys(&s2, addr);
+      back_q_pg_elem_set_data(&s2, q, pot, grad);
       break;
 #endif
 #ifndef NOT_sl_back_q__g
     case 3:
-      s3.size = nlocal;
-      s3.max_size = max_nlocal;
-      s3.keys = addr;
-      s3.data0 = q;
-/*      s3.data1 = xyz;*/
-/*      s3.data2 = pot;*/
-      s3.data3 = grad;
+      back_q__g_elem_set_size(&s3, nlocal);
+      back_q__g_elem_set_max_size(&s3, max_nlocal);
+      back_q__g_elem_set_keys(&s3, addr);
+      back_q__g_elem_set_data(&s3, q, grad);
       break;
 #endif
 #ifndef NOT_sl_back_qxpgl
     case 4:
-      s4.size = nlocal;
-      s4.max_size = max_nlocal;
-      s4.keys = addr;
-      s4.data0 = q;
-      s4.data1 = xyz;
-      s4.data2 = pot;
-      s4.data3 = grad;
-      s4.data4 = load;
+      back_qxpgl_elem_set_size(&s4, nlocal);
+      back_qxpgl_elem_set_max_size(&s4, max_nlocal);
+      back_qxpgl_elem_set_keys(&s4, addr);
+      back_qxpgl_elem_set_data(&s4, q, xyz, pot, grad, load);
       break;
 #endif
 #ifndef NOT_sl_back_qx_gl
     case 5:
-      s5.size = nlocal;
-      s5.max_size = max_nlocal;
-      s5.keys = addr;
-      s5.data0 = q;
-      s5.data1 = xyz;
-/*      s5.data2 = pot;*/
-      s5.data3 = grad;
-      s5.data4 = load;
+      back_qx_gl_elem_set_size(&s5, nlocal);
+      back_qx_gl_elem_set_max_size(&s5, max_nlocal);
+      back_qx_gl_elem_set_keys(&s5, addr);
+      back_qx_gl_elem_set_data(&s5, q, xyz, grad, load);
       break;
 #endif
 #ifndef NOT_sl_back_q_pgl
     case 6:
-      s6.size = nlocal;
-      s6.max_size = max_nlocal;
-      s6.keys = addr;
-      s6.data0 = q;
-/*      s6.data1 = xyz;*/
-      s6.data2 = pot;
-      s6.data3 = grad;
-      s6.data4 = load;
+      back_q_pgl_elem_set_size(&s6, nlocal);
+      back_q_pgl_elem_set_max_size(&s6, max_nlocal);
+      back_q_pgl_elem_set_keys(&s6, addr);
+      back_q_pgl_elem_set_data(&s6, q, pot, grad, load);
       break;
 #endif
 #ifndef NOT_sl_back_q__gl
     case 7:
-      s7.size = nlocal;
-      s7.max_size = max_nlocal;
-      s7.keys = addr;
-      s7.data0 = q;
-/*      s7.data1 = xyz;*/
-/*      s7.data2 = pot;*/
-      s7.data3 = grad;
-      s7.data4 = load;
+      back_q__gl_elem_set_size(&s7, nlocal);
+      back_q__gl_elem_set_max_size(&s7, max_nlocal);
+      back_q__gl_elem_set_keys(&s7, addr);
+      back_q__gl_elem_set_data(&s7, q, grad, load);
       break;
 #endif
   }
@@ -2509,88 +2503,88 @@ void mpi_fmm_sort_back_part_body(
 #ifndef NOT_sl_back_qxpg
     case 0:
       ALLTOALLV_PACKED_CMD(
-        original_packed = back_qxpg_SL_DEFCON(mssp.back_packed); back_qxpg_SL_DEFCON(mssp.back_packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(back_qxpg_SL_DEFCON(mssp.back_packed)); SL_FMM_VAR(back_qxpg_SL_DEFCON(mssp.back_packed)) = (global_packed > 0);
       );
       back_qxpg_mpi_sort_back(&s0, NULL, bx0, lh_addrs, -1, size, rank, comm);
       ALLTOALLV_PACKED_CMD(
-        back_qxpg_SL_DEFCON(mssp.back_packed) = original_packed;
+        SL_FMM_VAR(back_qxpg_SL_DEFCON(mssp.back_packed)) = original_packed;
       );
       break;
 #endif
 #ifndef NOT_sl_back_qx_g
     case 1:
       ALLTOALLV_PACKED_CMD(
-        original_packed = back_qx_g_SL_DEFCON(mssp.back_packed); back_qx_g_SL_DEFCON(mssp.back_packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(back_qx_g_SL_DEFCON(mssp.back_packed)); SL_FMM_VAR(back_qx_g_SL_DEFCON(mssp.back_packed)) = (global_packed > 0);
       );
       back_qx_g_mpi_sort_back(&s1, NULL, bx1, lh_addrs, -1, size, rank, comm);
       ALLTOALLV_PACKED_CMD(
-        back_qx_g_SL_DEFCON(mssp.back_packed) = original_packed;
+        SL_FMM_VAR(back_qx_g_SL_DEFCON(mssp.back_packed)) = original_packed;
       );
       break;
 #endif
 #ifndef NOT_sl_back_q_pg
     case 2:
       ALLTOALLV_PACKED_CMD(
-        original_packed = back_q_pg_SL_DEFCON(mssp.back_packed); back_q_pg_SL_DEFCON(mssp.back_packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(back_q_pg_SL_DEFCON(mssp.back_packed)); SL_FMM_VAR(back_q_pg_SL_DEFCON(mssp.back_packed)) = (global_packed > 0);
       );
       back_q_pg_mpi_sort_back(&s2, NULL, bx2, lh_addrs, -1, size, rank, comm);
       ALLTOALLV_PACKED_CMD(
-        back_q_pg_SL_DEFCON(mssp.back_packed) = original_packed;
+        SL_FMM_VAR(back_q_pg_SL_DEFCON(mssp.back_packed)) = original_packed;
       );
       break;
 #endif
 #ifndef NOT_sl_back_q__g
     case 3:
       ALLTOALLV_PACKED_CMD(
-        original_packed = back_q__g_SL_DEFCON(mssp.back_packed); back_q__g_SL_DEFCON(mssp.back_packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(back_q__g_SL_DEFCON(mssp.back_packed)); SL_FMM_VAR(back_q__g_SL_DEFCON(mssp.back_packed)) = (global_packed > 0);
       );
       back_q__g_mpi_sort_back(&s3, NULL, bx3, lh_addrs, -1, size, rank, comm);
       ALLTOALLV_PACKED_CMD(
-        back_q__g_SL_DEFCON(mssp.back_packed) = original_packed;
+        SL_FMM_VAR(back_q__g_SL_DEFCON(mssp.back_packed)) = original_packed;
       );
       break;
 #endif
 #ifndef NOT_sl_back_qxpgl
     case 4:
       ALLTOALLV_PACKED_CMD(
-        original_packed = back_qxpgl_SL_DEFCON(mssp.back_packed); back_qxpgl_SL_DEFCON(mssp.back_packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(back_qxpgl_SL_DEFCON(mssp.back_packed)); SL_FMM_VAR(back_qxpgl_SL_DEFCON(mssp.back_packed)) = (global_packed > 0);
       );
       back_qxpgl_mpi_sort_back(&s4, NULL, bx4, lh_addrs, -1, size, rank, comm);
       ALLTOALLV_PACKED_CMD(
-        back_qxpgl_SL_DEFCON(mssp.back_packed) = original_packed;
+        SL_FMM_VAR(back_qxpgl_SL_DEFCON(mssp.back_packed)) = original_packed;
       );
       break;
 #endif
 #ifndef NOT_sl_back_qx_gl
     case 5:
       ALLTOALLV_PACKED_CMD(
-        original_packed = back_qx_gl_SL_DEFCON(mssp.back_packed); back_qx_gl_SL_DEFCON(mssp.back_packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(back_qx_gl_SL_DEFCON(mssp.back_packed)); SL_FMM_VAR(back_qx_gl_SL_DEFCON(mssp.back_packed)) = (global_packed > 0);
       );
       back_qx_gl_mpi_sort_back(&s5, NULL, bx5, lh_addrs, -1, size, rank, comm);
       ALLTOALLV_PACKED_CMD(
-        back_qx_gl_SL_DEFCON(mssp.back_packed) = original_packed;
+        SL_FMM_VAR(back_qx_gl_SL_DEFCON(mssp.back_packed)) = original_packed;
       );
       break;
 #endif
 #ifndef NOT_sl_back_q_pgl
     case 6:
       ALLTOALLV_PACKED_CMD(
-        original_packed = back_q_pgl_SL_DEFCON(mssp.back_packed); back_q_pgl_SL_DEFCON(mssp.back_packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(back_q_pgl_SL_DEFCON(mssp.back_packed)); SL_FMM_VAR(back_q_pgl_SL_DEFCON(mssp.back_packed)) = (global_packed > 0);
       );
       back_q_pgl_mpi_sort_back(&s6, NULL, bx6, lh_addrs, -1, size, rank, comm);
       ALLTOALLV_PACKED_CMD(
-        back_q_pgl_SL_DEFCON(mssp.back_packed) = original_packed;
+        SL_FMM_VAR(back_q_pgl_SL_DEFCON(mssp.back_packed)) = original_packed;
       );
       break;
 #endif
 #ifndef NOT_sl_back_q__gl
     case 7:
       ALLTOALLV_PACKED_CMD(
-        original_packed = back_q__gl_SL_DEFCON(mssp.back_packed); back_q__gl_SL_DEFCON(mssp.back_packed) = (global_packed > 0);
+        original_packed = SL_FMM_VAR(back_q__gl_SL_DEFCON(mssp.back_packed)); SL_FMM_VAR(back_q__gl_SL_DEFCON(mssp.back_packed)) = (global_packed > 0);
       );
       back_q__gl_mpi_sort_back(&s7, NULL, bx7, lh_addrs, -1, size, rank, comm);
       ALLTOALLV_PACKED_CMD(
-        back_q__gl_SL_DEFCON(mssp.back_packed) = original_packed;
+        SL_FMM_VAR(back_q__gl_SL_DEFCON(mssp.back_packed)) = original_packed;
       );
       break;
 #endif
@@ -2746,28 +2740,28 @@ void mpi_fmm_sort_back_part_body(
   switch (back_type)
   {
 #ifndef NOT_sl_back_qxpg
-    case 0: mssp_b_t = back_qxpg_SL_DEFCON(mssp.b_t); break;
+    case 0: mssp_b_t = SL_FMM_VAR(back_qxpg_SL_DEFCON(mssp.b_t)); break;
 #endif
 #ifndef NOT_sl_back_qx_g
-    case 1: mssp_b_t = back_qx_g_SL_DEFCON(mssp.b_t); break;
+    case 1: mssp_b_t = SL_FMM_VAR(back_qx_g_SL_DEFCON(mssp.b_t)); break;
 #endif
 #ifndef NOT_sl_back_q_pg
-    case 2: mssp_b_t = back_q_pg_SL_DEFCON(mssp.b_t); break;;
+    case 2: mssp_b_t = SL_FMM_VAR(back_q_pg_SL_DEFCON(mssp.b_t)); break;;
 #endif
 #ifndef NOT_sl_back_q__g
-    case 3: mssp_b_t = back_q__g_SL_DEFCON(mssp.b_t); break;
+    case 3: mssp_b_t = SL_FMM_VAR(back_q__g_SL_DEFCON(mssp.b_t)); break;
 #endif
 #ifndef NOT_sl_back_qxpgl
-    case 4: mssp_b_t = back_qxpgl_SL_DEFCON(mssp.b_t); break;
+    case 4: mssp_b_t = SL_FMM_VAR(back_qxpgl_SL_DEFCON(mssp.b_t)); break;
 #endif
 #ifndef NOT_sl_back_qx_gl
-    case 5: mssp_b_t = back_qx_gl_SL_DEFCON(mssp.b_t); break;
+    case 5: mssp_b_t = SL_FMM_VAR(back_qx_gl_SL_DEFCON(mssp.b_t)); break;
 #endif
 #ifndef NOT_sl_back_q_pgl
-    case 6: mssp_b_t = back_q_pgl_SL_DEFCON(mssp.b_t); break;;
+    case 6: mssp_b_t = SL_FMM_VAR(back_q_pgl_SL_DEFCON(mssp.b_t)); break;;
 #endif
 #ifndef NOT_sl_back_q__gl
-    case 7: mssp_b_t = back_q__gl_SL_DEFCON(mssp.b_t); break;
+    case 7: mssp_b_t = SL_FMM_VAR(back_q__gl_SL_DEFCON(mssp.b_t)); break;
 #endif
   }
 #endif
@@ -2779,16 +2773,6 @@ void mpi_fmm_sort_back_part_body(
 }
 
 
-void mpi_fmm_sort_back_mem_(
- void *mem0, void *mem1, pint_t *mem_sizes,
- pint_t *ntotal, pint_t *nin, pint_t *nout, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, back_(sldata4_t) *load, pint_t *type
-#ifdef WITH_FCOMM
- , FINT8_TYPE_C *fcomm
-#endif
-);
-
-
-#pragma weak mpi_fmm_sort_back_mem_=mpi_fmm_sort_back_mem
 void mpi_fmm_sort_back_mem(
  void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *ntotal, pint_t *nin, pint_t *nout, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, back_(sldata4_t) *load, pint_t *type
@@ -2803,14 +2787,22 @@ void mpi_fmm_sort_back_mem(
     mpi_fmm_sort_back_merge_body(mem0, mem1, mem_sizes, ntotal, nin, addr, q, xyz, pot, grad, type, FCOMM_IFELSE(fcomm, NULL));
 }
 
-void mpi_fmm_sort_back_(
+void mpi_fmm_sort_back_mem_(
+ void *mem0, void *mem1, pint_t *mem_sizes,
  pint_t *ntotal, pint_t *nin, pint_t *nout, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, back_(sldata4_t) *load, pint_t *type
 #ifdef WITH_FCOMM
  , FINT8_TYPE_C *fcomm
 #endif
-);
+)
+{
+  mpi_fmm_sort_back_mem(mem0, mem1, mem_sizes, ntotal, nin, nout, addr, q, xyz, pot, grad, load, type
+#ifdef WITH_FCOMM
+   , fcomm
+#endif
+  );
+}
 
-#pragma weak mpi_fmm_sort_back_=mpi_fmm_sort_back
+
 void mpi_fmm_sort_back(
  pint_t *ntotal, pint_t *nin, pint_t *nout, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, back_(sldata4_t) *load, pint_t *type
 #ifdef WITH_FCOMM
@@ -2822,6 +2814,20 @@ void mpi_fmm_sort_back(
     mpi_fmm_sort_back_part_body(NULL, NULL, NULL, ntotal, nin, nout, addr, q, xyz, pot, grad, load, type, FCOMM_IFELSE(fcomm, NULL));
   else
     mpi_fmm_sort_back_merge_body(NULL, NULL, NULL, ntotal, nin, addr, q, xyz, pot, grad, type, FCOMM_IFELSE(fcomm, NULL));
+}
+
+void mpi_fmm_sort_back_(
+ pint_t *ntotal, pint_t *nin, pint_t *nout, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, back_(sldata4_t) *load, pint_t *type
+#ifdef WITH_FCOMM
+ , FINT8_TYPE_C *fcomm
+#endif
+)
+{
+  mpi_fmm_sort_back(ntotal, nin, nout, addr, q, xyz, pot, grad, load, type
+#ifdef WITH_FCOMM
+   , fcomm
+#endif
+  );
 }
 
 #endif /* NO_SL_BACK */

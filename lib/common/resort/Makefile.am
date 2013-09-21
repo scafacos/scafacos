@@ -17,7 +17,7 @@ srcdir_sl_source=$(srcdir)/../sl
 srcdir_sl_extra=$(srcdir)/../sl/extra
 
 libsl_extra_a_CPPFLAGS = \
-  -DSL_EXTRA_PREFIX=fcs_resort_ -DZMPI_PREFIX=fcs_resort_ -DHAVE_Z_PACK_H -I$(srcdir_sl_extra)/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir_sl_extra)/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir_sl_extra)/zmpi_tools
+  -DZ_PREFIX=fcs_resort_ -DZMPI_PREFIX=fcs_resort_ -DHAVE_Z_PACK_H -I$(srcdir_sl_extra)/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir_sl_extra)/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir_sl_extra)/zmpi_tools
 
 libsl_mpiwrap_a_CPPFLAGS = \
   -DSL_USE_MPI -I$(srcdir_sl)/include -I$(top_srcdir)/lib -DZMPI_PREFIX=fcs_resort_ -DHAVE_ZMPI_LOCAL_H -DHAVE_ZMPI_TOOLS_H -DHAVE_ZMPI_ATAIP_H -DHAVE_ZMPI_ATASP_H -I$(srcdir_sl_extra)/include

@@ -17,19 +17,19 @@ srcdir_sl_source=$(srcdir)/../sl
 srcdir_sl_extra=$(srcdir)/../sl/extra
 
 libsl_near____a_CPPFLAGS = \
-  -DSL_PREFIX=near____ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_near___ -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_near____ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_near___ -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir_sl_extra)/include
 
 libsl_near__p_a_CPPFLAGS = \
-  -DSL_PREFIX=near__p_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_near__p -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_near__p_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_near__p -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir_sl_extra)/include
 
 libsl_near_f__a_CPPFLAGS = \
-  -DSL_PREFIX=near_f__ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_near_f_ -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_near_f__ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_near_f_ -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir_sl_extra)/include
 
 libsl_near_fp_a_CPPFLAGS = \
-  -DSL_PREFIX=near_fp_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_near_fp -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_near_fp_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_near_fp -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir_sl_extra)/include
 
 libsl_extra_a_CPPFLAGS = \
-  -DSL_EXTRA_PREFIX=fcs_near_ -DZMPI_PREFIX=fcs_near_ -DHAVE_Z_PACK_H -I$(srcdir_sl_extra)/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir_sl_extra)/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir_sl_extra)/zmpi_tools
+  -DZ_PREFIX=fcs_near_ -DZMPI_PREFIX=fcs_near_ -DHAVE_Z_PACK_H -I$(srcdir_sl_extra)/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir_sl_extra)/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir_sl_extra)/zmpi_tools
 
 libsl_mpiwrap_a_CPPFLAGS = \
   -DSL_USE_MPI -I$(srcdir_sl)/include -I$(top_srcdir)/lib -DZMPI_PREFIX=fcs_near_ -DHAVE_ZMPI_LOCAL_H -DHAVE_ZMPI_TOOLS_H -DHAVE_ZMPI_ATAIP_H -DHAVE_ZMPI_ATASP_H -I$(srcdir_sl_extra)/include

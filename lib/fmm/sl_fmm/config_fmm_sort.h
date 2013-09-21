@@ -47,6 +47,8 @@
 #define REAL_MPI           FCS_MPI_FLOAT
 #define REAL_FMT           FCS_LMOD_FLOAT "f"
 
+#define SL_FMM_PREFIX  fcs_
+
 #else /* FCS mode? */
 
 # include "config_types.h"
@@ -54,29 +56,39 @@
 #endif /* FCS mode? */
 
 
+#define SL_FMM_CONFIG_CONCAT(_a_, _b_)   SL_FMM_CONFIG_CONCAT_(_a_, _b_)
+#define SL_FMM_CONFIG_CONCAT_(_a_, _b_)  _a_##_b_
+
+#ifdef SL_FMM_PREFIX
+# define SL_FMM_CONFIG_VAR(_v_)    SL_FMM_CONFIG_CONCAT(SL_FMM_PREFIX, _v_)
+#else
+# define SL_FMM_CONFIG_VAR(_v_)    _v_
+#endif
+
+
+extern INTEGER_C SL_FMM_CONFIG_VAR(fmm_front_key_mask);
+extern int SL_FMM_CONFIG_VAR(fmm_front_aX);
+
+
 #if defined(FCS_ENABLE_DEBUG_SL_FMM)
 # define DO_DEBUG
-# define DEBUG_CMD(_cmd_)  Z_MOP(_cmd_)
-#else
-# define DEBUG_CMD(_cmd_)  Z_NOP()
 #endif
 #define DEBUG_PRINT_PREFIX  "SL_FMM_DEBUG: "
 
 #if defined(FCS_ENABLE_INFO_SL_FMM)
 # define DO_INFO
-# define INFO_CMD(_cmd_)  Z_MOP(_cmd_)
-#else
-# define INFO_CMD(_cmd_)  Z_NOP()
+# error
 #endif
 #define INFO_PRINT_PREFIX  "SL_FMM_INFO: "
 
 #if defined(FCS_ENABLE_TIMING_SL_FMM)
 # define DO_TIMING
-# define TIMING_CMD(_cmd_)  Z_MOP(_cmd_)
-#else
-# define TIMING_CMD(_cmd_)  Z_NOP()
 #endif
 #define TIMING_PRINT_PREFIX  "SL_FMM_TIMING: "
+
+
+#define WITH_SORT_FRONT_LOAD
+#define WITH_FCOMM
 
 
 #endif /* __CONFIG_FMM_SORT_H__ */

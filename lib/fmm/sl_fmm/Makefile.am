@@ -13,61 +13,61 @@ srcdir_sl_source=$(srcdir)/../../common/sl
 srcdir_sl_extra=$(srcdir)/../../common/sl/extra
 
 libsl_back_idx_a_CPPFLAGS = \
-  -DSL_PREFIX=back_idx_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_idx -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_back_idx_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_idx -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_back_q__g_a_CPPFLAGS = \
-  -DSL_PREFIX=back_q__g_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_q__g -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_back_q__g_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_q__g -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_back_q__gl_a_CPPFLAGS = \
-  -DSL_PREFIX=back_q__gl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_q__gl -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_back_q__gl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_q__gl -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_back_q_pg_a_CPPFLAGS = \
-  -DSL_PREFIX=back_q_pg_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_q_pg -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_back_q_pg_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_q_pg -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_back_q_pgl_a_CPPFLAGS = \
-  -DSL_PREFIX=back_q_pgl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_q_pgl -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_back_q_pgl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_q_pgl -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_back_qx_g_a_CPPFLAGS = \
-  -DSL_PREFIX=back_qx_g_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_qx_g -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_back_qx_g_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_qx_g -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_back_qx_gl_a_CPPFLAGS = \
-  -DSL_PREFIX=back_qx_gl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_qx_gl -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_back_qx_gl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_qx_gl -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_back_qxpg_a_CPPFLAGS = \
-  -DSL_PREFIX=back_qxpg_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_qxpg -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_back_qxpg_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_qxpg -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_back_qxpgl_a_CPPFLAGS = \
-  -DSL_PREFIX=back_qxpgl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_qxpgl -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_back_qxpgl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_qxpgl -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_front_xq_a0_a_CPPFLAGS = \
-  -DSL_PREFIX=front_xq_a0_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xq_a0 -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_front_xq_a0_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xq_a0 -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_front_xq_aI_a_CPPFLAGS = \
-  -DSL_PREFIX=front_xq_aI_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xq_aI -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_front_xq_aI_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xq_aI -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_front_xq_aIl_a_CPPFLAGS = \
-  -DSL_PREFIX=front_xq_aIl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xq_aIl -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_front_xq_aIl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xq_aIl -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_front_xq_aX_a_CPPFLAGS = \
-  -DSL_PREFIX=front_xq_aX_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xq_aX -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_front_xq_aX_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xq_aX -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_front_xqsa0_a_CPPFLAGS = \
-  -DSL_PREFIX=front_xqsa0_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xqsa0 -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_front_xqsa0_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xqsa0 -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_front_xqsaI_a_CPPFLAGS = \
-  -DSL_PREFIX=front_xqsaI_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xqsaI -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_front_xqsaI_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xqsaI -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_front_xqsaIl_a_CPPFLAGS = \
-  -DSL_PREFIX=front_xqsaIl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xqsaIl -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_front_xqsaIl_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xqsaIl -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_front_xqsaX_a_CPPFLAGS = \
-  -DSL_PREFIX=front_xqsaX_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xqsaX -DSL_EXTRA -DSL_EXTRA_PREFIX= -I$(srcdir_sl_extra)/include
+  -DSL_PREFIX=fcs_front_xqsaX_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_front_xqsaX -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_fmm_ -I$(srcdir_sl_extra)/include
 
 libsl_extra_a_CPPFLAGS = \
-  -DSL_EXTRA_PREFIX= -DZMPI_PREFIX= -DHAVE_Z_PACK_H -I$(srcdir_sl_extra)/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir_sl_extra)/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir_sl_extra)/zmpi_tools
+  -DZ_PREFIX=fcs_fmm_ -DZMPI_PREFIX=fcs_fmm_ -DHAVE_Z_PACK_H -I$(srcdir_sl_extra)/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir_sl_extra)/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir_sl_extra)/zmpi_tools
 
 libsl_mpiwrap_a_CPPFLAGS = \
-  -DSL_USE_MPI -I$(srcdir_sl)/include -DZMPI_PREFIX= -DHAVE_ZMPI_LOCAL_H -DHAVE_ZMPI_TOOLS_H -DHAVE_ZMPI_ATAIP_H -DHAVE_ZMPI_ATASP_H -I$(srcdir_sl_extra)/include
+  -DSL_USE_MPI -I$(srcdir_sl)/include -DZMPI_PREFIX=fcs_fmm_ -DHAVE_ZMPI_LOCAL_H -DHAVE_ZMPI_TOOLS_H -DHAVE_ZMPI_ATAIP_H -DHAVE_ZMPI_ATASP_H -I$(srcdir_sl_extra)/include
 
 libsl_fmm_a_SOURCES =
 
@@ -152,6 +152,7 @@ libsl_back_idx_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_back_idx/sl_config.h \
   $(srcdir_sl)/sl_back_idx/sl_environment.h \
   $(srcdir_sl)/sl_back_idx/sl_extra.h \
@@ -167,6 +168,7 @@ libsl_back_q__g_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_back_q__g/sl_config.h \
   $(srcdir_sl)/sl_back_q__g/sl_environment.h \
   $(srcdir_sl)/sl_back_q__g/sl_extra.h \
@@ -182,6 +184,7 @@ libsl_back_q__gl_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_back_q__gl/sl_config.h \
   $(srcdir_sl)/sl_back_q__gl/sl_environment.h \
   $(srcdir_sl)/sl_back_q__gl/sl_extra.h \
@@ -197,6 +200,7 @@ libsl_back_q_pg_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_back_q_pg/sl_config.h \
   $(srcdir_sl)/sl_back_q_pg/sl_environment.h \
   $(srcdir_sl)/sl_back_q_pg/sl_extra.h \
@@ -212,6 +216,7 @@ libsl_back_q_pgl_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_back_q_pgl/sl_config.h \
   $(srcdir_sl)/sl_back_q_pgl/sl_environment.h \
   $(srcdir_sl)/sl_back_q_pgl/sl_extra.h \
@@ -227,6 +232,7 @@ libsl_back_qx_g_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_back_qx_g/sl_config.h \
   $(srcdir_sl)/sl_back_qx_g/sl_environment.h \
   $(srcdir_sl)/sl_back_qx_g/sl_extra.h \
@@ -242,6 +248,7 @@ libsl_back_qx_gl_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_back_qx_gl/sl_config.h \
   $(srcdir_sl)/sl_back_qx_gl/sl_environment.h \
   $(srcdir_sl)/sl_back_qx_gl/sl_extra.h \
@@ -257,6 +264,7 @@ libsl_back_qxpg_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_back_qxpg/sl_config.h \
   $(srcdir_sl)/sl_back_qxpg/sl_environment.h \
   $(srcdir_sl)/sl_back_qxpg/sl_extra.h \
@@ -272,6 +280,7 @@ libsl_back_qxpgl_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_back_qxpgl/sl_config.h \
   $(srcdir_sl)/sl_back_qxpgl/sl_environment.h \
   $(srcdir_sl)/sl_back_qxpgl/sl_extra.h \
@@ -287,6 +296,7 @@ libsl_front_xq_a0_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_front_xq_a0/sl_config.h \
   $(srcdir_sl)/sl_front_xq_a0/sl_environment.h \
   $(srcdir_sl)/sl_front_xq_a0/sl_extra.h \
@@ -302,6 +312,7 @@ libsl_front_xq_aI_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_front_xq_aI/sl_config.h \
   $(srcdir_sl)/sl_front_xq_aI/sl_environment.h \
   $(srcdir_sl)/sl_front_xq_aI/sl_extra.h \
@@ -317,6 +328,7 @@ libsl_front_xq_aIl_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_front_xq_aIl/sl_config.h \
   $(srcdir_sl)/sl_front_xq_aIl/sl_environment.h \
   $(srcdir_sl)/sl_front_xq_aIl/sl_extra.h \
@@ -332,6 +344,7 @@ libsl_front_xq_aX_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_front_xq_aX/sl_config.h \
   $(srcdir_sl)/sl_front_xq_aX/sl_environment.h \
   $(srcdir_sl)/sl_front_xq_aX/sl_extra.h \
@@ -347,6 +360,7 @@ libsl_front_xqsa0_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_front_xqsa0/sl_config.h \
   $(srcdir_sl)/sl_front_xqsa0/sl_environment.h \
   $(srcdir_sl)/sl_front_xqsa0/sl_extra.h \
@@ -362,6 +376,7 @@ libsl_front_xqsaI_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_front_xqsaI/sl_config.h \
   $(srcdir_sl)/sl_front_xqsaI/sl_environment.h \
   $(srcdir_sl)/sl_front_xqsaI/sl_extra.h \
@@ -377,6 +392,7 @@ libsl_front_xqsaIl_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_front_xqsaIl/sl_config.h \
   $(srcdir_sl)/sl_front_xqsaIl/sl_environment.h \
   $(srcdir_sl)/sl_front_xqsaIl/sl_extra.h \
@@ -392,6 +408,7 @@ libsl_front_xqsaX_a_SOURCES = \
   $(srcdir_sl)/fortran2c_types.h \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h \
   $(srcdir_sl)/sl_front_xqsaX/sl_config.h \
   $(srcdir_sl)/sl_front_xqsaX/sl_environment.h \
   $(srcdir_sl)/sl_front_xqsaX/sl_extra.h \
@@ -474,4 +491,5 @@ libsl_mpiwrap_a_SOURCES = \
   $(srcdir_sl)/mpi_fmm_resort.c \
   $(srcdir_sl)/mpi_fmm_resort.h \
   $(srcdir_sl)/mpi_fmm_sort.c \
-  $(srcdir_sl)/mpi_fmm_sort.h
+  $(srcdir_sl)/mpi_fmm_sort.h \
+  $(srcdir_sl)/rename_fmm_sort.h

@@ -17,9 +17,7 @@
 #define sl_key_integer
 #define sl_key_type_fmt           INTEGER_FMT
 
-extern INTEGER_C key_mask;
-
-#define sl_key_purify(_k_)        (_k_ & key_mask)
+#define sl_key_purify(_k_)        (_k_ & SL_FMM_CONFIG_VAR(fmm_front_key_mask))
 
 
 /* data section */

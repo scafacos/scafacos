@@ -71,21 +71,21 @@ typedef struct _ZMPI_Tproc_exdef {
 
 #define ZMPI_TPROC_EXDEF_NULL  NULL
 
-#define ZMPI_TPROC_EXDEF_DEFINE_TPROC(_name_, _tp_) \
-  SPEC_DEFINE_TPROC(_name_, _tp_) \
-  const struct _ZMPI_Tproc_exdef _##_name_ = { 1, SPEC_EXT_PARAM_TPROC(_name_), SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+#define ZMPI_TPROC_EXDEF_DEFINE_TPROC(_name_, _tp_, _s_...) \
+  SPEC_DEFINE_TPROC(_name_, _tp_, _s_) \
+  _s_ const struct _ZMPI_Tproc_exdef _##_name_ = { 1, SPEC_EXT_PARAM_TPROC(_name_), SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
-#define ZMPI_TPROC_EXDEF_DEFINE_TPROC_MOD(_name_, _tp_) \
-  SPEC_DEFINE_TPROC_MOD(_name_, _tp_) \
-  const struct _ZMPI_Tproc_exdef _##_name_ = { 2, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD(_name_), SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+#define ZMPI_TPROC_EXDEF_DEFINE_TPROC_MOD(_name_, _tp_, _s_...) \
+  SPEC_DEFINE_TPROC_MOD(_name_, _tp_, _s_) \
+  _s_ const struct _ZMPI_Tproc_exdef _##_name_ = { 2, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD(_name_), SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
-#define ZMPI_TPROC_EXDEF_DEFINE_TPROCS(_name_, _tp_) \
-  SPEC_DEFINE_TPROCS(_name_, _tp_) \
-  const struct _ZMPI_Tproc_exdef _##_name_ = { 3, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS(_name_), SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+#define ZMPI_TPROC_EXDEF_DEFINE_TPROCS(_name_, _tp_, _s_...) \
+  SPEC_DEFINE_TPROCS(_name_, _tp_, _s_) \
+  _s_ const struct _ZMPI_Tproc_exdef _##_name_ = { 3, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS(_name_), SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
 
-#define ZMPI_TPROC_EXDEF_DEFINE_TPROCS_MOD(_name_, _tp_) \
-  SPEC_DEFINE_TPROCS_MOD(_name_, _tp_) \
-  const struct _ZMPI_Tproc_exdef _##_name_ = { 4, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
+#define ZMPI_TPROC_EXDEF_DEFINE_TPROCS_MOD(_name_, _tp_, _s_...) \
+  SPEC_DEFINE_TPROCS_MOD(_name_, _tp_, _s_) \
+  _s_ const struct _ZMPI_Tproc_exdef _##_name_ = { 4, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
 
 int ZMPI_Tproc_create_tproc(ZMPI_Tproc *tproc, ZMPI_TPROC_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef);
 int ZMPI_Tproc_create_tproc_mod(ZMPI_Tproc *tproc, ZMPI_TPROC_MOD_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef);

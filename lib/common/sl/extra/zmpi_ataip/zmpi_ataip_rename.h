@@ -52,7 +52,7 @@
 #define ZMPI_Alltoallv_inplace_aux_type  ZMPI_VAR(ZMPI_Alltoallv_inplace_aux_type)
 #define ZMPI_Alltoallv_inplace_aux  ZMPI_VAR(ZMPI_Alltoallv_inplace_aux)
 #define ZMPI_Alltoallv_inplace_aux_size  ZMPI_VAR(ZMPI_Alltoallv_inplace_aux_size)
-#define ZMPI_Alltoallv_inplace_aux_blocks  ZMPI_VAR(ZMPI_Alltoallv_inplace_aux_blocks)
+#define ZMPI_Alltoallv_inplace_aux_static_blocks  ZMPI_VAR(ZMPI_Alltoallv_inplace_aux_static_blocks)
 #define ZMPI_Alltoallv_inplace_sync_on_init  ZMPI_VAR(ZMPI_Alltoallv_inplace_sync_on_init)
 #define ZMPI_Alltoallv_inplace_sync_on_exit  ZMPI_VAR(ZMPI_Alltoallv_inplace_sync_on_exit)
 #define ZMPI_Alltoallv_inplace_sync_run  ZMPI_VAR(ZMPI_Alltoallv_inplace_sync_run)

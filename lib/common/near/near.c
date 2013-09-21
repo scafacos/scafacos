@@ -451,66 +451,66 @@ static void create_boxes(fcs_int nlocal, box_t *boxes, fcs_float *positions, fcs
 
 static void sort_into_boxes(fcs_int nlocal, box_t *boxes, fcs_float *positions, fcs_float *charges, fcs_gridsort_index_t *indices, fcs_float *field, fcs_float *potentials)
 {
-  near_fp_elements_t s0, sx0;
-  near_f__elements_t s1, sx1;
-  near__p_elements_t s2, sx2;
-  near____elements_t s3, sx3;
+  fcs_near_fp_elements_t s0, sx0;
+  fcs_near_f__elements_t s1, sx1;
+  fcs_near__p_elements_t s2, sx2;
+  fcs_near____elements_t s3, sx3;
 
 
   if (field && potentials)
   {
-    near_fp_elem_set_size(&s0, nlocal);
-    near_fp_elem_set_max_size(&s0, nlocal);
-    near_fp_elem_set_keys(&s0, boxes);
-    near_fp_elem_set_data(&s0, positions, charges, indices, field, potentials);
+    fcs_near_fp_elem_set_size(&s0, nlocal);
+    fcs_near_fp_elem_set_max_size(&s0, nlocal);
+    fcs_near_fp_elem_set_keys(&s0, boxes);
+    fcs_near_fp_elem_set_data(&s0, positions, charges, indices, field, potentials);
 
-    near_fp_elements_alloc(&sx0, s0.size, SLCM_ALL);
+    fcs_near_fp_elements_alloc(&sx0, s0.size, SLCM_ALL);
 
-    near_fp_sort_radix(&s0, &sx0, -1, -1, -1);
+    fcs_near_fp_sort_radix(&s0, &sx0, -1, -1, -1);
 
-    near_fp_elements_free(&sx0);
+    fcs_near_fp_elements_free(&sx0);
   }
 
   if (field && potentials == NULL)
   {
-    near_f__elem_set_size(&s1, nlocal);
-    near_f__elem_set_max_size(&s1, nlocal);
-    near_f__elem_set_keys(&s1, boxes);
-    near_f__elem_set_data(&s1, positions, charges, indices, field);
+    fcs_near_f__elem_set_size(&s1, nlocal);
+    fcs_near_f__elem_set_max_size(&s1, nlocal);
+    fcs_near_f__elem_set_keys(&s1, boxes);
+    fcs_near_f__elem_set_data(&s1, positions, charges, indices, field);
 
-    near_f__elements_alloc(&sx1, s1.size, SLCM_ALL);
+    fcs_near_f__elements_alloc(&sx1, s1.size, SLCM_ALL);
 
-    near_f__sort_radix(&s1, &sx1, -1, -1, -1);
+    fcs_near_f__sort_radix(&s1, &sx1, -1, -1, -1);
 
-    near_f__elements_free(&sx1);
+    fcs_near_f__elements_free(&sx1);
   }
 
   if (field == NULL && potentials)
   {
-    near__p_elem_set_size(&s2, nlocal);
-    near__p_elem_set_max_size(&s2, nlocal);
-    near__p_elem_set_keys(&s2, boxes);
-    near__p_elem_set_data(&s2, positions, charges, indices, potentials);
+    fcs_near__p_elem_set_size(&s2, nlocal);
+    fcs_near__p_elem_set_max_size(&s2, nlocal);
+    fcs_near__p_elem_set_keys(&s2, boxes);
+    fcs_near__p_elem_set_data(&s2, positions, charges, indices, potentials);
 
-    near__p_elements_alloc(&sx2, s2.size, SLCM_ALL);
+    fcs_near__p_elements_alloc(&sx2, s2.size, SLCM_ALL);
 
-    near__p_sort_radix(&s2, &sx2, -1, -1, -1);
+    fcs_near__p_sort_radix(&s2, &sx2, -1, -1, -1);
 
-    near__p_elements_free(&sx2);
+    fcs_near__p_elements_free(&sx2);
   }
 
   if (field == NULL && potentials == NULL)
   {
-    near____elem_set_size(&s3, nlocal);
-    near____elem_set_max_size(&s3, nlocal);
-    near____elem_set_keys(&s3, boxes);
-    near____elem_set_data(&s3, positions, charges, indices);
+    fcs_near____elem_set_size(&s3, nlocal);
+    fcs_near____elem_set_max_size(&s3, nlocal);
+    fcs_near____elem_set_keys(&s3, boxes);
+    fcs_near____elem_set_data(&s3, positions, charges, indices);
 
-    near____elements_alloc(&sx3, s3.size, SLCM_ALL);
+    fcs_near____elements_alloc(&sx3, s3.size, SLCM_ALL);
 
-    near____sort_radix(&s3, &sx3, -1, -1, -1);
+    fcs_near____sort_radix(&s3, &sx3, -1, -1, -1);
 
-    near____elements_free(&sx3);
+    fcs_near____elements_free(&sx3);
   }
 }
 

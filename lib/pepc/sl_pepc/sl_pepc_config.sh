@@ -3,4 +3,4 @@
 
 SL_CONFIG=../../common/sl/support/sl_config.sh
 
-${SL_CONFIG} --dst-sl=. --source-ref=../../common/sl --am-libname=libsl_pepc.a --config-not=pepcparts
+${SL_CONFIG} --dst-sl=. --source-ref=../../common/sl --am-libname=libsl_pepc.a --extra-prefix=fcs_pepc_ --config-not=pepcparts
