@@ -1204,7 +1204,7 @@ void fcs_printHandle(FCS handle)
       printf("chosen method: UNKNOWN\n");
       break;
     }
-      printf("neaer field computations done by solver: %c\n", 
+      printf("near field computations done by solver: %c\n", 
          (fcs_get_near_field_flag(handle)?'T':'F'));
 
       printf("box vectors: [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f], [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f], [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f]\n",
