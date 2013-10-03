@@ -430,6 +430,7 @@ ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d) {
   } else {
     /* if the error is small enough even for alpha=0 */
     d->alpha = 0.1 * d->box_l[0];
+    //@todo why is the box length in x direction used and not another one?
   }
   
 #ifdef FCS_ENABLE_DEBUG

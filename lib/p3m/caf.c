@@ -33,6 +33,7 @@ fcs_float ifcs_p3m_caf(fcs_int i, fcs_float x, fcs_int cao_value) {
     case 1: return 0.5+x;
     default:
       printf("Tried to access charge assignment function of degree %d in scheme of order %d.\n",i,cao_value);
+      //@todo find out what order and scheme mean. --> find a call of this function
       return 0.0;
     }
   } 

@@ -37,6 +37,7 @@
 #include <sys/resource.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "triclinic.h"
 
 
 /***************************************************/
@@ -157,7 +158,28 @@ void ifcs_p3m_run(void* rd,
     for (int i = 0; i < NUM_TIMINGS; i++)
       d->timings[i] = 0.0;
   }
-
+  
+  
+  
+/*
+  float vec[3]={1,2,7};
+  
+  tricFROMcart(&vec);
+  int cnt;
+  for(cnt=0;cnt<3;cnt++)
+      printf("vec[%d]=%f\n", cnt, vec[cnt]);
+  cartFROMtric(&vec);
+  for(cnt=0;cnt<3;cnt++)
+      printf("vec[%d]=%f\n", cnt, vec[cnt]);
+  
+  return;
+*/
+  int cnt;
+  for(cnt=0;cnt<3;cnt++){
+  printf("box_vector_a[%d]=%f\n",cnt,d->box_vector_a[cnt]);
+  printf("box_vector_b[%d]=%f\n",cnt,d->box_vector_b[cnt]);
+  printf("box_vector_c[%d]=%f\n",cnt,d->box_vector_c[cnt]);
+  }
   P3M_INFO(printf("    system parameters: box_l=" F3FLOAT "\n", \
                   d->box_l[0], d->box_l[1], d->box_l[2]));
   P3M_INFO(printf(                                                      \
@@ -170,7 +192,7 @@ void ifcs_p3m_run(void* rd,
   P3M_DEBUG_LOCAL(MPI_Barrier(d->comm.mpicomm));
   P3M_DEBUG_LOCAL(printf("    %d: num_particles=%d\n",	\
 			 d->comm.rank, _num_particles));
-
+  
 
   /* decompose system */
   fcs_int num_real_particles;
@@ -423,7 +445,7 @@ void ifcs_p3m_run(void* rd,
 #endif /* P3M_IK */
   }   
 
-  if (d->near_field_flag) {
+  if (d->near_field_flag) { 
     /* start near timer */
     START(TIMING_NEAR)
 
@@ -450,9 +472,10 @@ void ifcs_p3m_run(void* rd,
                         ghost_positions, ghost_charges, ghost_indices);
 
     P3M_DEBUG(printf( "  calling fcs_near_compute()...\n"));
-    fcs_near_compute(&near, d->r_cut, &alpha, d->comm.mpicomm);
+    fcs_near_compute(&near, d->r_cut, &alpha, d->comm.mpicomm);//happens once
+   // ifcs_near_compute(&near, d->r_cut, &alpha, d->comm.mpicomm); // @todo implement own near field solver for tricl. or change the available one.
     P3M_DEBUG(printf( "  returning from fcs_near_compute().\n"));
- 
+    
     fcs_near_destroy(&near);
 
     STOP(TIMING_NEAR)
@@ -806,7 +829,7 @@ static void ifcs_p3m_ik_diff(ifcs_p3m_data_struct* d, int dim) {
     d_operator = d->d_op[RZ];
   }
     
-  /* srqt(-1)*k differentiation */
+  /* sqrt(-1)*k differentiation */
   ind=0;
   for(j[0]=0; j[0]<d->fft.plan[3].new_grid[0]; j[0]++) {
     for(j[1]=0; j[1]<d->fft.plan[3].new_grid[1]; j[1]++) {

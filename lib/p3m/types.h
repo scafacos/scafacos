@@ -160,6 +160,10 @@ typedef struct {
   fcs_float box_l[3];
   /* Skin */
   fcs_float skin;
+  /* box vectors*/
+  fcs_float box_vector_a[3]; 
+  fcs_float box_vector_b[3]; 
+  fcs_float box_vector_c[3]; 
 
   /****************************************************
    * PARAMETERS OF THE METHOD

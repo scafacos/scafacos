@@ -69,7 +69,7 @@ typedef struct tune_params_t {
   fcs_int grid[3];
   /** Ewald splitting parameter */
   fcs_float alpha;
-
+  
   /** Errors */
   fcs_float rs_error, ks_error, error;
   /** Timings */
@@ -254,7 +254,7 @@ ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d,
     /* compute the average distance between two charges  */
     fcs_float avg_dist = 
       pow((d->box_l[0]*d->box_l[1]*d->box_l[2]) 
-          / d->sum_qpart, 0.33333);
+          / d->sum_qpart, 0.33333);//n^-1/3=1/n^1/3=(V/N)^0.3333
     /* set the initial r_cut to 3 times the average distance between charges */
     (*params)->r_cut = 3.0 * avg_dist;
     
