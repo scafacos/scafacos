@@ -8,6 +8,8 @@ include $(top_srcdir)/build-aux/fortran-rules.am
 AM_FCFLAGS = $(FC_MODINC)../../..
 AM_CPPFLAGS = -DSVNREVISION="\"$(SVNREVISION)\"" -DSL_PEPC_PREFIX=fcs_
 
+LTOBJEXT = lo
+
 # -------------------------------------------------------------------------------------------
 
 # Source files
@@ -15,7 +17,7 @@ AM_CPPFLAGS = -DSVNREVISION="\"$(SVNREVISION)\"" -DSL_PEPC_PREFIX=fcs_
 #-------------------------------------------------------------------------------------------
 # Pepc library
 
-noinst_LIBRARIES = liblpepc.a
+noinst_LTLIBRARIES = liblpepc.la
 
 pepc_raw_c_sources = bgp_core.c \
                      pepc_c_utils.c \
@@ -51,9 +53,9 @@ pepc_raw_f90_sources = module_atomic_ops.f90 \
                        pthreads_f.f90 \
                        treevars.f90
 
-liblpepc_a_SOURCES = $(pepc_raw_c_sources)
+liblpepc_la_SOURCES = $(pepc_raw_c_sources)
 
-liblpepc_a_CPPFLAGS = -I$(top_srcdir)/openpa/src
+liblpepc_la_CPPFLAGS = -I$(top_srcdir)/openpa/src
 
 ALL_INCLUDE_HEADER = $(srcdir)/pepc_debug.h 
 PP_FILES = $(pepc_raw_f90_sources)
@@ -62,6 +64,7 @@ PP_SUFFIX = pp
 
 PP_FILES_PP.f90 = $(addsuffix .$(PP_SUFFIX).f90,$(basename $(PP_FILES))) 
 PP_FILES_PP.o = $(addsuffix .$(PP_SUFFIX).o,$(basename $(PP_FILES))) 
+PP_FILES_PP.lo = $(addsuffix .$(PP_SUFFIX).lo,$(basename $(PP_FILES))) 
 
 %.$(PP_SUFFIX).f90: %.f90 $(ALL_INCLUDE_HEADER) 
 	@echo "Building file '$@'" 
@@ -69,16 +72,16 @@ PP_FILES_PP.o = $(addsuffix .$(PP_SUFFIX).o,$(basename $(PP_FILES)))
 	cpp -P -C $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES) | \
 	sed '/\/\*\(.*\)\*\//{s,,!\1,p;d;};/\/\*/,/\*\//{s,/\*,,; s,\*/,,; s,^,!,p; d;}' > $@
 
-%.o: %.f90
-	@echo "target: $@, prerequisites: $^"
-	$(PPFCCOMPILE) -c -o $@ $(FCFLAGS_f90) $<
+#%.o: %.f90
+#	@echo "target: $@, prerequisites: $^"
+#	$(PPFCCOMPILE) -c -o $@ $(FCFLAGS_f90) $<
 
-liblpepc_a_LIBADD = $(PP_FILES_PP.o)
+liblpepc_la_LIBADD = $(PP_FILES_PP.lo)
 
 EXTRA_DIST = $(ALL_INCLUDE_HEADER) $(PP_FILES) 
 CLEANFILES = $(PP_FILES_PP.f90) 
 
-lpepc:  liblpepc.a
+lpepc:  liblpepc.la
 
 mods:   all
 
@@ -108,7 +111,7 @@ $(eval include $(builddir)/module.deps)
 tree_stats.pp.o: module_walk_communicator.pp.o
 
 $(builddir)/module.deps: $(pepc_raw_f90_sources) $(ALL_INCLUDE_HEADER)
-	SRCDIR="$(srcdir)" PRE_INCLUDE="$(ALL_INCLUDE_HEADER)" CPP="cpp $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES)" OBJEXT="$(PP_SUFFIX).$(OBJEXT)" MODEXT="$(FC_MODEXT)" \
+	SRCDIR="$(srcdir)" PRE_INCLUDE="$(ALL_INCLUDE_HEADER)" CPP="cpp $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES)" OBJEXT="$(PP_SUFFIX).$(LTOBJEXT)" MODEXT="$(FC_MODEXT)" \
 	$(SHELL) $(top_srcdir)/build-aux/fortran-depcomp $^ > $@
 #	@echo "uname -a: `uname -a`"
 #	$(MAKE) -v
