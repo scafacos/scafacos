@@ -15,8 +15,8 @@ libfcs_p3m_a_SOURCES = \
 	parameters.c parameters.h \
 	prepare.c prepare.h \
 	timing.c timing.h \
-	triclinic.c triclinic.h \
 	tune.c tune.h \
+	triclinic.c triclinic.h \
 	tune_broadcast.c tune_broadcast.h \
 	run.c run.h \
 	p3m.h \
