@@ -87,6 +87,8 @@ FCSResult fcs_p3m_tune(FCS handle,
   ifcs_p3m_set_box_a(handle->method_context, a[0]);
   ifcs_p3m_set_box_b(handle->method_context, b[1]);
   ifcs_p3m_set_box_c(handle->method_context, c[2]);
+  
+  ifcs_p3m_set_box_vector(handle->method_context,a,b,c);
 
   ifcs_p3m_set_near_field_flag(handle->method_context, 
 				 fcs_get_near_field_flag(handle));
