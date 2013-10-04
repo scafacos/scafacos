@@ -1,10 +1,10 @@
 if ENABLE_LIBRARY_INSTALL
-lib_LIBRARIES = libfcs_vmg.a
+lib_LTLIBRARIES = libfcs_vmg.la
 else
-noinst_LIBRARIES = libfcs_vmg.a
+noinst_LTLIBRARIES = libfcs_vmg.la
 endif
 
-libfcs_vmg_a_SOURCES =  \
+libfcs_vmg_la_SOURCES =  \
 	base/command_factory.cpp \
 	base/command_factory.hpp \
 	base/command_list.cpp \
@@ -173,4 +173,4 @@ libfcs_vmg_a_SOURCES =  \
 	mg.cpp \
 	mg.hpp
 
-libfcs_vmg_a_CPPFLAGS = $(BOOST_CPPFLAGS) $(VTK_CXXFLAGS)
+libfcs_vmg_la_CPPFLAGS = $(BOOST_CPPFLAGS) $(VTK_CXXFLAGS)

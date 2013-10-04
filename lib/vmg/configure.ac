@@ -183,6 +183,9 @@ AM_CONDITIONAL([COND_HAVE_BOOST_UNIT_TEST_LIB], [test "x$have_boost" = xyes && t
 AC_PROG_RANLIB
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
+# Init libtool
+LT_INIT([disable-shared])
+
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt])
 AX_LAPACK
@@ -213,7 +216,7 @@ m4_ifdef([AX_FCS_TYPES],
 m4_ifdef([AX_FCS_PACKAGE_RESET],[
 AX_FCS_PACKAGE_RESET
 AX_FCS_PACKAGE_ADD([vmg_LIBS],[-lfcs_vmg])
-AX_FCS_PACKAGE_ADD([vmg_LIBS_A],[src/libfcs_vmg.a])
+AX_FCS_PACKAGE_ADD([vmg_LIBS_A],[src/.libs/libfcs_vmg.a])
 AX_FCS_PACKAGE_ADD([vmg_LDADD],[$VTK_LDFLAGS $VTK_LIBS $BOOST_SYSTEM_LIB $BOOST_FILESYSTEM_LIB $LAPACK_LIBS $BLAS_LIBS])
 AX_FCS_PACKAGE_ADD([CXXLIBS_USE],[yes])
 ])
