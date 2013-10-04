@@ -11,12 +11,12 @@ AM_FCFLAGS = $(FC_MODINC)$(top_builddir)/lib/fmm/src
 nodist_include_HEADERS = fcs_module.$(FC_MODEXT)
 
 if ENABLE_SINGLE_LIB
-noinst_LIBRARIES = libfcs4fortran.a
+noinst_LTLIBRARIES = libfcs4fortran.la
 else
-lib_LIBRARIES = libfcs4fortran.a
+lib_LTLIBRARIES = libfcs4fortran.la
 endif
 
-libfcs4fortran_a_SOURCES = \
+libfcs4fortran_la_SOURCES = \
 	fcs4fortran.f90
 
-fcs_module.$(FC_MODEXT): fcs4fortran.$(OBJEXT)
+fcs_module.$(FC_MODEXT): fcs4fortran.lo

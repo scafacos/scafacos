@@ -614,10 +614,10 @@ AX_FCS_PACKAGE_RESET
 AX_FCS_PACKAGE_ADD([fcs_USE],[yes])
 if test "x$use_fcs_fortran" = xyes ; then
   AX_FCS_PACKAGE_ADD([fcs_LIBS],[-lfcs4fortran])
-  AX_FCS_PACKAGE_ADD([fcs_LIBS_A],[src/fortran/libfcs4fortran.a])
+  AX_FCS_PACKAGE_ADD([fcs_LIBS_A],[src/fortran/.libs/libfcs4fortran.a])
 fi
 AX_FCS_PACKAGE_ADD([fcs_LIBS],[-lfcs])
-AX_FCS_PACKAGE_ADD([fcs_LIBS_A],[src/libfcs.a])
+AX_FCS_PACKAGE_ADD([fcs_LIBS_A],[src/.libs/libfcs.a])
 if test "x$use_fcs_near" = xyes ; then
   AX_FCS_PACKAGE_ADD([near_USE],[yes])
   AX_FCS_PACKAGE_ADD([near_LIBS],[-lfcs_near])
