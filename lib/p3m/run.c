@@ -173,7 +173,6 @@ void ifcs_p3m_run(void* rd,
   
   return;
 */
-  int cnt =0;
   printf("box_alpha=%f\n",d->box_alpha);
   printf("box_beta=%f\n",d->box_beta);
   printf("box_gamma=%f\n",d->box_gamma);
