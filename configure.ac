@@ -621,17 +621,17 @@ AX_FCS_PACKAGE_ADD([fcs_LIBS_A],[src/libfcs.a])
 if test "x$use_fcs_near" = xyes ; then
   AX_FCS_PACKAGE_ADD([near_USE],[yes])
   AX_FCS_PACKAGE_ADD([near_LIBS],[-lfcs_near])
-  AX_FCS_PACKAGE_ADD([near_LIBS_A],[lib/common/near/libfcs_near.a])
+  AX_FCS_PACKAGE_ADD([near_LIBS_A],[lib/common/near/.libs/libfcs_near.a])
 fi
 if test "x$use_fcs_gridsort" = xyes ; then
   AX_FCS_PACKAGE_ADD([gridsort_USE],[yes])
   AX_FCS_PACKAGE_ADD([gridsort_LIBS],[-lfcs_gridsort])
-  AX_FCS_PACKAGE_ADD([gridsort_LIBS_A],[lib/common/gridsort/libfcs_gridsort.a])
+  AX_FCS_PACKAGE_ADD([gridsort_LIBS_A],[lib/common/gridsort/.libs/libfcs_gridsort.a])
 fi
 if test "x$use_fcs_resort" = xyes ; then
   AX_FCS_PACKAGE_ADD([resort_USE],[yes])
   AX_FCS_PACKAGE_ADD([resort_LIBS],[-lfcs_resort])
-  AX_FCS_PACKAGE_ADD([resort_LIBS_A],[lib/common/resort/libfcs_resort.a])
+  AX_FCS_PACKAGE_ADD([resort_LIBS_A],[lib/common/resort/.libs/libfcs_resort.a])
 fi
 AX_FCS_PACKAGE_ADD([fcs_common_USE],[yes])
 AX_FCS_PACKAGE_ADD([fcs_common_LIBS],[-lfcs_common])
