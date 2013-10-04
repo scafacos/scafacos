@@ -52,7 +52,7 @@ void ifcs_p3m_set_box_geometry(void *rd, fcs_float *a, fcs_float *b, fcs_float *
     // if (!fcs_float_is_equal(a, d->box_l[0])||!fcs_float_is_equal(a, d->box_l[0])||!fcs_float_is_equal(c, d->box_l[2])) //TODO check if d_boxlength still fits (first i need to know what the box lengths will be)
     //d->needs_retune = 1;
     int cnt;
-    for (cnt = 0; cnt < 3; cnt++) {
+  //  for (cnt = 0; cnt < 3; cnt++) {
 /*
         d->box_vector_a[cnt] = a[cnt];
         d->box_vector_b[cnt] = b[cnt];
@@ -68,7 +68,7 @@ void ifcs_p3m_set_box_geometry(void *rd, fcs_float *a, fcs_float *b, fcs_float *
         d->box_c = absVec(c);
 
 
-    }
+   // }
 }
 
 void ifcs_p3m_set_r_cut(void *rd, fcs_float r_cut) {
