@@ -28,7 +28,7 @@ fcs_float ifcs_p3m_caf(fcs_int i, fcs_float x, fcs_int cao_value) {
   switch (cao_value) {
   case 1 : return 1.0;
   case 2 : {
-    switch (i) {
+    switch (i) { //B spline of order 2 means triangle
     case 0: return 0.5-x;
     case 1: return 0.5+x;
     default:
