@@ -2,11 +2,11 @@ include $(top_srcdir)/src/common-rules.am
 include $(srcdir)/filelist.am
 
 AM_FCFLAGS += $(FC_FIXEDFORM)
-noinst_LIBRARIES = libfmmoopn.a
+noinst_LTLIBRARIES = libfmmoopn.la
 
-libfmmoopn_a_SOURCES = fmmoopnmain.f fmmoopnp00.f
+libfmmoopn_la_SOURCES = fmmoopnmain.f fmmoopnp00.f
 if ENABLE_FMM_UNROLLED
-libfmmoopn_a_SOURCES += $(filelist)
+libfmmoopn_la_SOURCES += $(filelist)
 endif
 
 # Header dependencies.
