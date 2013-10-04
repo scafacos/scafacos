@@ -37,7 +37,6 @@
 #include <sys/resource.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "triclinic.h"
 
 
 /***************************************************/
@@ -174,12 +173,14 @@ void ifcs_p3m_run(void* rd,
   
   return;
 */
-  int cnt;
-  for(cnt=0;cnt<3;cnt++){
-  printf("box_vector_a[%d]=%f\n",cnt,d->box_vector_a[cnt]);
-  printf("box_vector_b[%d]=%f\n",cnt,d->box_vector_b[cnt]);
-  printf("box_vector_c[%d]=%f\n",cnt,d->box_vector_c[cnt]);
-  }
+  int cnt =0;
+  printf("box_alpha=%f\n",d->box_alpha);
+  printf("box_beta=%f\n",d->box_beta);
+  printf("box_gamma=%f\n",d->box_gamma);
+  printf("box_a=%f\n",d->box_a);
+  printf("box_b=%f\n",d->box_b);
+  printf("box_c=%f\n",d->box_c);
+  
   P3M_INFO(printf("    system parameters: box_l=" F3FLOAT "\n", \
                   d->box_l[0], d->box_l[1], d->box_l[2]));
   P3M_INFO(printf(                                                      \
