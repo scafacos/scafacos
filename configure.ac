@@ -139,6 +139,9 @@ AC_PROG_CC_C99
 
 # Checks for library functions.
 
+# Init libtool
+LT_INIT([disable-shared])
+
 #######################################################################
 # FCS library section
 #######################################################################
