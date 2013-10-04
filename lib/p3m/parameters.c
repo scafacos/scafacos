@@ -51,21 +51,15 @@ void ifcs_p3m_set_box_geometry(void *rd, fcs_float *a, fcs_float *b, fcs_float *
     ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
     // if (!fcs_float_is_equal(a, d->box_l[0])||!fcs_float_is_equal(a, d->box_l[0])||!fcs_float_is_equal(c, d->box_l[2])) //TODO check if d_boxlength still fits (first i need to know what the box lengths will be)
     //d->needs_retune = 1;
-    int cnt;
-  //  for (cnt = 0; cnt < 3; cnt++) {
-/*
-        d->box_vector_a[cnt] = a[cnt];
-        d->box_vector_b[cnt] = b[cnt];
-        d->box_vector_c[cnt] = c[cnt];
-*/
 
+//TODO find the right place for angle between vectors and abs, cartfromtric etc functions
         //from here on: angles and lengths are set
         d->box_alpha = angle_between_vectors(b, c); //angle between box vector b and c
         d->box_beta = angle_between_vectors(a, c);
         d->box_gamma = angle_between_vectors(a, b); //angle between box vector a and b;
-        d->box_a = absVec(a);
-        d->box_b = absVec(b);
-        d->box_c = absVec(c);
+        d->box_a = sqrt(a[0]*a[0]+a[1]*a[1]+a[3]*a[3]);
+        d->box_b = sqrt(b[0]*b[0]+b[1]*b[1]+b[3]*b[3]);
+        d->box_c = sqrt(c[0]*c[0]+c[1]*c[1]+c[3]*c[3]);
 
 
    // }
