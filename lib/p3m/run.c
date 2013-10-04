@@ -173,9 +173,9 @@ void ifcs_p3m_run(void* rd,
   
   return;
 */
-  printf("box_alpha=%f\n",d->box_alpha);
-  printf("box_beta=%f\n",d->box_beta);
-  printf("box_gamma=%f\n",d->box_gamma);
+  printf("box_alpha=%f * Pi\n",d->box_alpha/M_PI);
+  printf("box_beta=%f * Pi\n",d->box_beta/M_PI);
+  printf("box_gamma=%f * Pi\n",d->box_gamma/M_PI);
   printf("box_a=%f\n",d->box_a);
   printf("box_b=%f\n",d->box_b);
   printf("box_c=%f\n",d->box_c);

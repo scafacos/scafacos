@@ -50,24 +50,24 @@ void ifcs_p3m_set_box_c(void *rd, fcs_float c) {
 
 //TODO I assume these functions should be placed somewhere else
 
-fcs_float unit_volume(fcs_float alpha, fcs_float beta, fcs_float gamma) {
-    return (fcs_float)fcs_sqrt((1 - cos(alpha) * cos(alpha) - cos(beta) * cos(beta) - cos(gamma) * cos(gamma) + 2 * cos(alpha) * cos(gamma) * cos(beta)));
+fcs_float unit_volume(fcs_float alpha, fcs_float beta, fcs_float gamma) {//TODO up to now the unit volume is only used in one function. therefore it might be written there explicitely
+    return (fcs_float)fcs_sqrt((1 - fcs_cos(alpha) * fcs_cos(alpha) - fcs_cos(beta) * fcs_cos(beta) - fcs_cos(gamma) * fcs_cos(gamma) + 2 * fcs_cos(alpha) * fcs_cos(gamma) * fcs_cos(beta)));
 }
 
 void tricFROMcart(void* rd, fcs_float *vec) {
     ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
-    vec[0] = vec[0] / d->box_a - cos(d->box_gamma) / (d->box_a * sin(d->box_gamma)) * vec[1]
-            + (cos(d->box_alpha) * cos(d->box_gamma) - cos(d->box_beta))
-            / (d->box_a * unit_volume(d->box_alpha, d->box_beta, d->box_gamma) * sin(d->box_gamma))
+    vec[0] = vec[0] / d->box_a - fcs_cos(d->box_gamma) / (d->box_a * fcs_sin(d->box_gamma)) * vec[1]
+            + (fcs_cos(d->box_alpha) * fcs_cos(d->box_gamma) - fcs_cos(d->box_beta))
+            / (d->box_a * unit_volume(d->box_alpha, d->box_beta, d->box_gamma) * fcs_sin(d->box_gamma))
             * vec[2];
-    vec[1] = 1 / (d->box_b * sin(d->box_gamma)) * vec[1]
-            + (cos(d->box_beta) * cos(d->box_gamma) - cos(d->box_alpha)) / sin(d->box_gamma) / d->box_b
+    vec[1] = 1 / (d->box_b * fcs_sin(d->box_gamma)) * vec[1]
+            + (fcs_cos(d->box_beta) * fcs_cos(d->box_gamma) - fcs_cos(d->box_alpha)) / fcs_sin(d->box_gamma) / d->box_b
             / unit_volume(d->box_alpha, d->box_beta, d->box_gamma) * vec[2];
-    vec[2] = 1 / (d->box_c * unit_volume(d->box_alpha, d->box_beta, d->box_gamma)) * sin(d->box_gamma)
+    vec[2] = 1 / (d->box_c * unit_volume(d->box_alpha, d->box_beta, d->box_gamma)) * fcs_sin(d->box_gamma)
             * vec[2];
 }
 fcs_float angle_between_vectors(fcs_float *vec_a, fcs_float *vec_b) {
-    
+    //TODO is there some fcs_acos? at least not seen in FCSCommon.h
     return acos(
             (vec_a[0] * vec_b[0] + vec_a[1] * vec_b[1] + vec_a[2] * vec_b[2])
             / (fcs_norm(vec_a) * fcs_norm(vec_b)));
@@ -76,12 +76,12 @@ fcs_float angle_between_vectors(fcs_float *vec_a, fcs_float *vec_b) {
 
 void cartFROMtric(void* rd, fcs_float *vec) {//@todo move those calculations to paramters.c to avoid errors (data struct unkown and request for member in something not a struct)
     ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
-    vec[0] = d->box_a * vec[0] + d->box_b * cos(d->box_gamma) * vec[1]
+    vec[0] = d->box_a * vec[0] + d->box_b * fcs_cos(d->box_gamma) * vec[1]
             + d->box_c * fcs_cos(d->box_beta) * vec[2]; //a*m+b*cos(gamma)*n+c*cos(beta)*l
     vec[1] = d->box_b * fcs_sin(d->box_gamma) * vec[1]
-            + d->box_c * (fcs_cos(d->box_alpha) - cos(d->box_beta) * cos(d->box_gamma)) / sin(d->box_gamma)
+            + d->box_c * (fcs_cos(d->box_alpha) - fcs_cos(d->box_beta) * fcs_cos(d->box_gamma)) / fcs_sin(d->box_gamma)
             * vec[2]; //b*sin(gamma)*n+c*(cos(alpha)-cos(beta)*cos(gamma))/(sin(gamma))*l
-    vec[2] = d->box_c * unit_volume(d->box_alpha, d->box_beta, d->box_gamma) / sin(d->box_gamma) * vec[2]; //c*v/sin(gamma)*l
+    vec[2] = d->box_c * unit_volume(d->box_alpha, d->box_beta, d->box_gamma) / fcs_sin(d->box_gamma) * vec[2]; //c*v/sin(gamma)*l
 }
 
 
@@ -95,7 +95,7 @@ void ifcs_p3m_set_box_geometry(void *rd, fcs_float *a, fcs_float *b, fcs_float *
         d->box_beta = angle_between_vectors(a, c);
         d->box_gamma = angle_between_vectors(a, b); //angle between box vector a and b;
 
-        //TODO what size should the  
+        //TODO what size should the box have afterwards? some length of a transformed box vector?
         d->box_a = fcs_norm(a);
         d->box_b = fcs_norm(b);
         d->box_c = fcs_norm(c);

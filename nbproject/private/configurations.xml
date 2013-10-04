@@ -5,6 +5,8 @@
       <df name="autom4te.cache">
       </df>
       <df name="build">
+        <df name="build-aux">
+        </df>
         <df name="doc">
         </df>
         <df name="lib">
@@ -118,6 +120,8 @@
             </df>
             <in>config.h</in>
           </df>
+        </df>
+        <df name="m4">
         </df>
         <df name="netx">
           <df name="locks">
@@ -334,6 +338,8 @@
               <in>x77.h</in>
             </df>
             <df name="autom4te.cache">
+            </df>
+            <df name="build-aux">
             </df>
             <df name="dft">
               <df name="scalar">
@@ -1225,6 +1231,8 @@
             </df>
             <df name="autom4te.cache">
             </df>
+            <df name="build-aux">
+            </df>
             <df name="doc">
               <df name="code">
                 <in>manual_min_c2c.c</in>
@@ -1250,6 +1258,8 @@
               <in>sertrafo.c</in>
               <in>timer.c</in>
               <in>transpose.c</in>
+            </df>
+            <df name="m4">
             </df>
             <df name="scripts">
             </df>
@@ -1353,6 +1363,8 @@
             </df>
             <df name="autom4te.cache">
             </df>
+            <df name="build-aux">
+            </df>
             <df name="doc">
             </df>
             <df name="kernel">
@@ -1372,6 +1384,8 @@
               <in>sinc.c</in>
               <in>sinc.h</in>
               <in>timer.c</in>
+            </df>
+            <df name="m4">
             </df>
             <df name="scripts">
             </df>
@@ -1708,6 +1722,8 @@
                 <in>ping-pong-mpi-2.c</in>
                 <in>ping-pong-mpi.c</in>
               </df>
+            </df>
+            <df name="build-aux">
             </df>
             <df name="doc">
             </df>
@@ -2210,6 +2226,8 @@
             </df>
           </df>
           <df name="autom4te.cache">
+          </df>
+          <df name="m4">
           </df>
           <df name="simple-armci">
             <df name="dcmfd">
@@ -3203,6 +3221,10 @@
         <df name="p2nfft">
           <df name="autom4te.cache">
           </df>
+          <df name="build-aux">
+          </df>
+          <df name="m4">
+          </df>
           <in>bessel_k.c</in>
           <in>bessel_k.h</in>
           <in>cg_approx_1d.c</in>
@@ -3727,19 +3749,6 @@
           <in>test_pp3mg.f90</in>
         </df>
         <df name="generic">
-          <df name="hammersley_generator">
-            <in>gendata_grid.c</in>
-            <in>gendata_grid.h</in>
-            <in>gendata_hammersley.cpp</in>
-            <in>gendata_hammersley.h</in>
-            <in>gendata_plummer.c</in>
-            <in>gendata_plummer.h</in>
-            <in>gendata_test.c</in>
-            <in>gendata_util.c</in>
-            <in>gendata_util.h</in>
-            <in>hammersley.H</in>
-            <in>hammersley.cpp</in>
-          </df>
           <df name="rapidxml">
             <in>rapidxml.hpp</in>
             <in>rapidxml_iterators.hpp</in>
@@ -3748,26 +3757,6 @@
           </df>
           <df name="results">
             <df name="old">
-            </df>
-          </df>
-          <df name="systems">
-            <df name="1d-periodic">
-            </df>
-            <df name="2d-periodic">
-              <df name="noncubic">
-              </df>
-            </df>
-            <df name="3d-periodic">
-              <df name="dna_water_prep">
-              </df>
-              <df name="noncubic">
-              </df>
-            </df>
-            <df name="generic">
-            </df>
-            <df name="nonperiodic">
-              <df name="noncubic">
-              </df>
             </df>
           </df>
           <in>Generator.cpp</in>
@@ -3780,20 +3769,6 @@
           <in>common.cpp</in>
           <in>common.hpp</in>
           <in>scafacos_test.cpp</in>
-        </df>
-        <df name="inp_data">
-          <df name="fmm">
-          </df>
-          <df name="mmm">
-          </df>
-          <df name="p2nfft">
-          </df>
-          <df name="p3m">
-          </df>
-          <df name="pepc">
-          </df>
-          <df name="pp3mg">
-          </df>
         </df>
         <df name="mwinkel_test">
           <in>scafacos_verify.c</in>

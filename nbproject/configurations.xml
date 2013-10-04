@@ -2,6 +2,19 @@
 <configurationDescriptor version="89">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df root="." name="scafacos">
+      <df name="build">
+        <df name="lib">
+          <df name="pepc">
+            <df name="openpa">
+              <df name="src">
+                <in>opa_config.h</in>
+              </df>
+            </df>
+          </df>
+        </df>
+        <in>fcs_config.h</in>
+        <in>fcs_fconfig.h</in>
+      </df>
       <df name="gabriel">
         <df name="lib">
           <df name="pepc">
@@ -306,6 +319,12 @@
         <df name="pepc">
           <df name="openpa">
             <df name="src">
+              <df name="primitives">
+                <in>opa_emulated.h</in>
+                <in>opa_gcc_intel_32_64.h</in>
+                <in>opa_gcc_intel_32_64_barrier.h</in>
+                <in>opa_gcc_intel_32_64_ops.h</in>
+              </df>
               <in>opa_primitives.c</in>
               <in>opa_primitives.h</in>
               <in>opa_queue.c</in>
@@ -398,7 +417,6 @@
             <df name="comm">
               <df name="mpi">
                 <in>datatype.cpp</in>
-                <in>datatype.hpp</in>
                 <in>settings.cpp</in>
               </df>
               <in>comm.cpp</in>
@@ -683,6 +701,15 @@
           <executablePath></executablePath>
         </makeTool>
       </makefileType>
+      <item path="build/fcs_config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="build/fcs_fconfig.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="build/lib/pepc/openpa/src/opa_config.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <folder path="scafacos/gabriel">
         <ccTool>
           <incDir>
@@ -839,8 +866,19 @@
       <folder path="scafacos/lib/p3m">
         <cTool>
           <incDir>
+            <pElem>/tmp/gabriel/lib/p3m</pElem>
             <pElem>lib/p3m</pElem>
+            <pElem>/tmp/gabriel</pElem>
+            <pElem>src</pElem>
+            <pElem>lib</pElem>
+            <pElem>lib/common/fcs-common</pElem>
+            <pElem>/usr/lib64/mpi/gcc/openmpi/include/openmpi/opal/mca/hwloc/hwloc132/hwloc/include</pElem>
+            <pElem>/usr/lib64/mpi/gcc/openmpi/include</pElem>
+            <pElem>/usr/lib64/mpi/gcc/openmpi/include/openmpi</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>HAVE_CONFIG_H</Elem>
+          </preprocessorList>
         </cTool>
       </folder>
       <folder path="scafacos/lib/pepc/openpa">
@@ -1985,54 +2023,36 @@
       </item>
       <item path="lib/p3m/caf.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/caf.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/p3m/communication.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/communication.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/p3m/error_estimate.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/error_estimate.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/p3m/fft.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/fft.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/p3m/influence_function.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/influence_function.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/p3m/init.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/init.h" ex="false" tool="3" flavor2="0">
@@ -2041,35 +2061,18 @@
       </item>
       <item path="lib/p3m/parameters.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>src</pElem>
-            <pElem>lib/common/fcs-common</pElem>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/parameters.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/p3m/prepare.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>lib/common/fcs-common</pElem>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/prepare.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/p3m/run.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>src</pElem>
-            <pElem>lib/common/gridsort</pElem>
-            <pElem>lib/common/resort</pElem>
-            <pElem>lib/common/near</pElem>
-            <pElem>lib</pElem>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/run.h" ex="false" tool="3" flavor2="0">
@@ -2082,21 +2085,12 @@
       </item>
       <item path="lib/p3m/tune.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>src</pElem>
-            <pElem>lib/common/fcs-common</pElem>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/tune.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/p3m/tune_broadcast.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>src</pElem>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/tune_broadcast.h" ex="false" tool="3" flavor2="0">
@@ -2105,9 +2099,6 @@
       </item>
       <item path="lib/p3m/utils.c" ex="false" tool="0" flavor2="2">
         <cTool>
-          <incDir>
-            <pElem>/tmp/gabriel/lib/p3m</pElem>
-          </incDir>
         </cTool>
       </item>
       <item path="lib/p3m/utils.h" ex="false" tool="3" flavor2="0">
@@ -2134,6 +2125,26 @@
       <item path="lib/pepc/openpa/src/opa_queue.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/pepc/openpa/src/opa_util.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/pepc/openpa/src/primitives/opa_emulated.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/pepc/openpa/src/primitives/opa_gcc_intel_32_64.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/pepc/openpa/src/primitives/opa_gcc_intel_32_64_barrier.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/pepc/openpa/src/primitives/opa_gcc_intel_32_64_ops.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
       </item>
       <item path="lib/pepc/sl_pepc/config_pepc_sort.h"
             ex="false"
@@ -2594,8 +2605,6 @@
             <pElem>/tmp/gabriel/lib/vmg/src</pElem>
           </incDir>
         </ccTool>
-      </item>
-      <item path="lib/vmg/src/comm/mpi/datatype.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/vmg/src/comm/mpi/settings.cpp" ex="false" tool="1" flavor2="4">
         <ccTool>
