@@ -295,7 +295,6 @@
           <in>run.h</in>
           <in>timing.c</in>
           <in>timing.h</in>
-          <in>triclinic.h</in>
           <in>tune.c</in>
           <in>tune.h</in>
           <in>tune_broadcast.c</in>
@@ -2080,8 +2079,6 @@
         </cTool>
       </item>
       <item path="lib/p3m/timing.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/p3m/triclinic.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/p3m/tune.c" ex="false" tool="0" flavor2="2">
         <cTool>

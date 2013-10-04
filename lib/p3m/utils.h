@@ -15,7 +15,7 @@
   
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
-*/
+ */
 #ifndef _P3M_UTILS_H
 #define _P3M_UTILS_H
 
@@ -104,9 +104,8 @@
  * @param c       z position 
  * @param adim    dimensions of the underlying grid  
  */
-static inline int get_linear_index(int a, int b, int c, int adim[3])
-{
-  return a + adim[0]*(b + adim[1]*c);
+static inline int get_linear_index(int a, int b, int c, int adim[3]) {
+    return a + adim[0]*(b + adim[1] * c);
 }
 
 /** get the position a[] from the linear index in a 3D grid
@@ -118,41 +117,51 @@ static inline int get_linear_index(int a, int b, int c, int adim[3])
  * @param c       z position (return value) 
  * @param adim    dimensions of the underlying grid  
  */
-static inline void get_grid_pos(int i, int *a, int *b, int *c, int adim[3])
-{
-  *a = i % adim[0];
-  i /= adim[0];
-  *b = i % adim[1];
-  i /= adim[1];
-  *c = i;
+static inline void get_grid_pos(int i, int *a, int *b, int *c, int adim[3]) {
+    *a = i % adim[0];
+    i /= adim[0];
+    *b = i % adim[1];
+    i /= adim[1];
+    *c = i;
 }
 
 /** Calculates the maximum of 'int'-typed a and b, returning 'int'. */
-static inline int imax(int a, int b) { return (a>b) ? a : b; }
+static inline int imax(int a, int b) {
+    return (a > b) ? a : b;
+}
 
 /** Calculates the minimum of 'int'-typed a and b, returning 'int'. */
-static inline int imin(int a, int b) { return (a<b) ? a : b; }
+static inline int imin(int a, int b) {
+    return (a < b) ? a : b;
+}
 
 /** permute an interger array field of size size about permute positions. */
 static inline void permute_ifield(int *field, int size, int permute) {
-  int i,tmp;
+    int i, tmp;
 
-  if(permute==0) return;
-  if(permute<0) permute = (size + permute);
-  while(permute>0) {
-    tmp=field[0];
-    for(i=1;i<size;i++) field[i-1] = field[i];
-    field[size-1]=tmp;
-    permute--;
-  }
+    if (permute == 0) return;
+    if (permute < 0) permute = (size + permute);
+    while (permute > 0) {
+        tmp = field[0];
+        for (i = 1; i < size; i++) field[i - 1] = field[i];
+        field[size - 1] = tmp;
+        permute--;
+    }
 }
 
 /** Calculates the SQuaRe of 'fcs_float' x, returning 'fcs_float'. */
-static inline fcs_float SQR(fcs_float x) { return x*x; }
+static inline fcs_float SQR(fcs_float x) {
+    return x*x;
+}
 
 /** Calculates the pow(x,3) returning 'fcs_float'. */
-static inline fcs_float pow3(fcs_float x) { return x*x*x; }
-static inline fcs_int pow3i(fcs_int x) { return x*x*x; }
+static inline fcs_float pow3(fcs_float x) {
+    return x * x*x;
+}
+
+static inline fcs_int pow3i(fcs_int x) {
+    return x * x*x;
+}
 
 /** Calculates the sinc-function as sin(PI*x)/(PI*x).
  *
@@ -165,32 +174,69 @@ static inline fcs_int pow3i(fcs_int x) { return x*x*x; }
  * PI^10/39916800 * x^10 = 0.2346...*x^12).  This expansion should
  * also save time, since it reduces the number of function calls to
  * sin().  
-*/
-static inline fcs_float sinc(fcs_float d)
-{
-  const fcs_float epsi = 0.1;
-  const fcs_float c2 = -0.1666666666667e-0;
-  const fcs_float c4 = 0.8333333333333e-2;
-  const fcs_float c6 = -0.1984126984127e-3;
-  const fcs_float c8 = 0.2755731922399e-5;
+ */
+static inline fcs_float sinc(fcs_float d) {
+    const fcs_float epsi = 0.1;
+    const fcs_float c2 = -0.1666666666667e-0;
+    const fcs_float c4 = 0.8333333333333e-2;
+    const fcs_float c6 = -0.1984126984127e-3;
+    const fcs_float c8 = 0.2755731922399e-5;
 
-  fcs_float PId = M_PI*d, PId2;
+    fcs_float PId = M_PI*d, PId2;
 
-  if (fabs(d)>epsi)
-    return sin(PId)/PId;
-  else {
-    PId2 = SQR(PId);
-    return 1.0 + PId2*(c2+PId2*(c4+PId2*(c6+PId2*c8)));
-  }
+    if (fabs(d) > epsi)
+        return sin(PId) / PId;
+    else {
+        PId2 = SQR(PId);
+        return 1.0 + PId2 * (c2 + PId2 * (c4 + PId2 * (c6 + PId2 * c8)));
+    }
 }
 
-static inline int on_root()
-{
-  static int rank = -1;
-  if (rank < 0)
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  return rank == 0;
+static inline int on_root() {
+    static int rank = -1;
+    if (rank < 0)
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    return rank == 0;
 }
+
+fcs_float absVec(fcs_float *a) { //@todo for this another method should be present, look for it.
+    return sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+}
+
+float angle_between_vectors(float *vec_a, float *vec_b) {
+    return acos(
+            (vec_a[0] * vec_b[0] + vec_a[1] * vec_b[1] + vec_a[2] + vec_b[2])
+            / (absVec(vec_a) * absVec(vec_b)));
+}
+
+fcs_float unit_volume(fcs_float alpha, fcs_float beta, fcs_float gamma) {
+    return sqrt((1 - cos(alpha) * cos(alpha) - cos(beta) * cos(beta) - cos(gamma) * cos(gamma) + 2 * cos(alpha) * cos(gamma) * cos(beta)));
+}
+
+void cartFROMtric(void* rd, fcs_float *vec) {
+    ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
+    vec[0] = d->box_a * vec[0] + d->box_b * cos(d->box_gamma) * vec[1]
+            + d->box_c * cos(d->box_beta) * vec[2]; //a*m+b*cos(gamma)*n+c*cos(beta)*l
+    vec[1] = d->box_b * sin(d->box_gamma) * vec[1]
+            + d->box_c * (cos(d->box_alpha) - cos(d->box_beta) * cos(d->box_gamma)) / sin(d->box_gamma)
+            * vec[2]; //b*sin(gamma)*n+c*(cos(alpha)-cos(beta)*cos(gamma))/(sin(gamma))*l
+    vec[2] = d->box_c * unit_volume(d->box_alpha, d->box_beta, d->box_gamma) / sin(d->box_gamma) * vec[2]; //c*v/sin(gamma)*l
+}
+
+void tricFROMcart(void* rd, fcs_float *vec) {
+    ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
+    vec[0] = vec[0] / d->box_a - cos(d->box_gamma) / (d->box_a * sin(d->box_gamma)) * vec[1]
+            + (cos(d->box_alpha) * cos(d->box_gamma) - cos(d->box_beta))
+            / (d->box_a * unit_volume(d->box_alpha, d->box_beta, d->box_gamma) * sin(d->box_gamma))
+            * vec[2];
+    vec[1] = 1 / (d->box_b * sin(d->box_gamma)) * vec[1]
+            + (cos(d->box_beta) * cos(d->box_gamma) - cos(d->box_alpha)) / sin(d->box_gamma) / d->box_b
+            / unit_volume(d->box_alpha, d->box_beta, d->box_gamma) * vec[2];
+    vec[2] = 1 / (d->box_c * unit_volume(d->box_alpha, d->box_beta, d->box_gamma)) * sin(d->box_gamma)
+            * vec[2];
+}
+
+
 
 void errexit();
 

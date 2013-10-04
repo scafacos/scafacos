@@ -3261,8 +3261,6 @@
           <in>run.h</in>
           <in>timing.c</in>
           <in>timing.h</in>
-          <in>triclinic.c</in>
-          <in>triclinic.h</in>
           <in>tune.c</in>
           <in>tune.h</in>
           <in>tune_broadcast.c</in>
