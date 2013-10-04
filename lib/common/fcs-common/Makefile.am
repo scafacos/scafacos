@@ -1,11 +1,11 @@
 
 if ENABLE_SINGLE_LIB
-noinst_LIBRARIES = libfcs_common.a
+noinst_LTLIBRARIES = libfcs_common.la
 else
-lib_LIBRARIES = libfcs_common.a
+lib_LTLIBRARIES = libfcs_common.la
 endif
 
-libfcs_common_a_CPPFLAGS = -I$(top_srcdir)/src
+libfcs_common_la_CPPFLAGS = -I$(top_srcdir)/src
 
-libfcs_common_a_SOURCES = \
+libfcs_common_la_SOURCES = \
     FCSCommon.c FCSCommon.h

@@ -1,11 +1,11 @@
 if ENABLE_SINGLE_LIB
-noinst_LIBRARIES = libfcs_memd.a
+noinst_LTLIBRARIES = libfcs_memd.la
 else
-lib_LIBRARIES = libfcs_memd.a
+lib_LTLIBRARIES = libfcs_memd.la
 endif
 
-libfcs_memd_a_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/lib -I$(top_srcdir)/lib/common/fcs-common
-libfcs_memd_a_SOURCES = \
+libfcs_memd_la_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/lib -I$(top_srcdir)/lib/common/fcs-common
+libfcs_memd_la_SOURCES = \
 	helper_functions.h helper_functions.c \
 	communication.h communication.c \
 	getter_setter.h getter_setter.c \

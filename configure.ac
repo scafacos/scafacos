@@ -635,7 +635,7 @@ if test "x$use_fcs_resort" = xyes ; then
 fi
 AX_FCS_PACKAGE_ADD([fcs_common_USE],[yes])
 AX_FCS_PACKAGE_ADD([fcs_common_LIBS],[-lfcs_common])
-AX_FCS_PACKAGE_ADD([fcs_common_LIBS_A],[lib/common/fcs-common/libfcs_common.a])
+AX_FCS_PACKAGE_ADD([fcs_common_LIBS_A],[lib/common/fcs-common/.libs/libfcs_common.a])
 if test "x$use_fcs_pfft_common" = xyes ; then
   AX_FCS_PACKAGE_ADD([pfft_USE],[yes])
   AX_FCS_PACKAGE_ADD([pfft_LIBS],[-lfcs_pfft${fft_precision}])
@@ -670,38 +670,38 @@ fi
 if test "x$use_fcs_direct" = xyes ; then
   AC_CONFIG_FILES([lib/direct/Makefile])
   AX_FCS_PACKAGE_ADD([direct_LIBS],[-lfcs_direct])
-  AX_FCS_PACKAGE_ADD([direct_LIBS_A],[lib/direct/libfcs_direct.a])
+  AX_FCS_PACKAGE_ADD([direct_LIBS_A],[lib/direct/.libs/libfcs_direct.a])
 fi
 if test "x$use_fcs_memd" = xyes ; then
   AC_CONFIG_FILES([lib/memd/Makefile])
   AX_FCS_PACKAGE_ADD([memd_LIBS],[-lfcs_memd])
-  AX_FCS_PACKAGE_ADD([memd_LIBS_A],[lib/memd/libfcs_memd.a])
+  AX_FCS_PACKAGE_ADD([memd_LIBS_A],[lib/memd/.libs/libfcs_memd.a])
 fi
 if test "x$use_fcs_mmm1d" = xyes ; then
   AC_CONFIG_FILES([lib/mmm1d/Makefile])
   AX_FCS_PACKAGE_ADD([mmm1d_LIBS],[-lfcs_mmm1d])
-  AX_FCS_PACKAGE_ADD([mmm1d_LIBS_A],[lib/mmm1d/libfcs_mmm1d.a])
+  AX_FCS_PACKAGE_ADD([mmm1d_LIBS_A],[lib/mmm1d/.libs/libfcs_mmm1d.a])
 fi
 if test "x$use_fcs_mmm2d" = xyes ; then
   AC_CONFIG_FILES([lib/mmm2d/Makefile])
   AX_FCS_PACKAGE_ADD([mmm2d_LIBS],[-lfcs_mmm2d])
-  AX_FCS_PACKAGE_ADD([mmm2d_LIBS_A],[lib/mmm2d/libfcs_mmm2d.a])
+  AX_FCS_PACKAGE_ADD([mmm2d_LIBS_A],[lib/mmm2d/.libs/libfcs_mmm2d.a])
 fi
 if test "x$use_fcs_p3m" = xyes ; then
   AC_CONFIG_FILES([lib/p3m/Makefile])
   AX_FCS_PACKAGE_ADD([p3m_LIBS],[-lfcs_p3m])
-  AX_FCS_PACKAGE_ADD([p3m_LIBS_A],[lib/p3m/libfcs_p3m.a])
+  AX_FCS_PACKAGE_ADD([p3m_LIBS_A],[lib/p3m/.libs/libfcs_p3m.a])
   AX_FCS_PACKAGE_ADD([fftw3_USE],[yes])
 fi
 if test "x$use_fcs_ewald" = xyes ; then
   AC_CONFIG_FILES([lib/ewald/Makefile])
   AX_FCS_PACKAGE_ADD([ewald_LIBS],[-lfcs_ewald])
-  AX_FCS_PACKAGE_ADD([ewald_LIBS_A],[lib/ewald/libfcs_ewald.a])
+  AX_FCS_PACKAGE_ADD([ewald_LIBS_A],[lib/ewald/.libs/libfcs_ewald.a])
 fi
 if test "x$use_fcs_wolf" = xyes ; then
   AC_CONFIG_FILES([lib/wolf/Makefile])
   AX_FCS_PACKAGE_ADD([wolf_LIBS],[-lfcs_wolf])
-  AX_FCS_PACKAGE_ADD([wolf_LIBS_A],[lib/wolf/libfcs_wolf.a])
+  AX_FCS_PACKAGE_ADD([wolf_LIBS_A],[lib/wolf/.libs/libfcs_wolf.a])
 fi
 
 # Create FCS library files.
