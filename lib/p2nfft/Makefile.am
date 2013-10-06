@@ -9,21 +9,21 @@ else
 noinst_LTLIBRARIES = libfcs_p2nfft.la
 endif
 
-# Directory of pnfft.h
-AM_CFLAGS = -I$(top_srcdir)/../../lib/common/pnfft/api
+# Directory of fftw.h
+AM_CPPFLAGS = $(fftw3_CPPFLAGS) 
 
 # Directory of pfft.h
-AM_CFLAGS += -I$(top_srcdir)/../../lib/common/pfft/api
+AM_CPPFLAGS += $(pfft_CPPFLAGS)
+
+# Directory of pnfft.h
+AM_CPPFLAGS += $(pnfft_CPPFLAGS)
 
 # Directory of fcs.h
-AM_CFLAGS += -I$(top_srcdir)/../../src
-
-# Directory of fcs_config.h
-AM_CFLAGS += -I$(top_builddir)/../..
+AM_CPPFLAGS += -I$(top_srcdir)/../../src
 
 # Libraries to add to all programs that are built.
 
-libfcs_p2nfft_la_CPPFLAGS = -I$(top_srcdir)/../../src -I$(top_srcdir)/../../lib -I$(top_srcdir)/../../lib/common/fcs-common
+libfcs_p2nfft_la_CPPFLAGS = $(fftw3_CPPFLAGS) $(pfft_CPPFLAGS) $(pnfft_CPPFLAGS) -I$(top_srcdir)/../../src -I$(top_srcdir)/../../lib -I$(top_srcdir)/../../lib/common/fcs-common
 libfcs_p2nfft_la_SOURCES = \
 	types.h \
 	utils.h \

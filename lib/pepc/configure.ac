@@ -110,7 +110,7 @@ AC_CONFIG_SUBDIRS([openpa])
 m4_ifdef([AX_FCS_PACKAGE_RESET],[
 AX_FCS_PACKAGE_RESET
 AX_FCS_PACKAGE_ADD([pepc_LIBS],[-lfcs_pepc])
-AX_FCS_PACKAGE_ADD([pepc_LIBS_A],[.libs/libfcs_pepc.a])
+AX_FCS_PACKAGE_ADD([pepc_LIBS_A],[libfcs_pepc.la])
 AX_FCS_PACKAGE_ADD([FCLIBS_USE],[yes])
 AX_FCS_PACKAGE_ADD([FCOMP_USE],[yes])
 ])

@@ -30,7 +30,6 @@
 #include "utils.h"
 #include "nearfield.h"
 #include <common/near/near.h>
-#include <fcs.h>
 //#include "constants.h"
 
 #define WORKAROUND_GRIDSORT_BUG 1

@@ -614,47 +614,47 @@ AX_FCS_PACKAGE_RESET
 AX_FCS_PACKAGE_ADD([fcs_USE],[yes])
 if test "x$use_fcs_fortran" = xyes ; then
   AX_FCS_PACKAGE_ADD([fcs_LIBS],[-lfcs4fortran])
-  AX_FCS_PACKAGE_ADD([fcs_LIBS_A],[src/fortran/.libs/libfcs4fortran.a])
+  AX_FCS_PACKAGE_ADD([fcs_LIBS_A],[src/fortran/libfcs4fortran.la])
 fi
 AX_FCS_PACKAGE_ADD([fcs_LIBS],[-lfcs])
-AX_FCS_PACKAGE_ADD([fcs_LIBS_A],[src/.libs/libfcs.a])
+AX_FCS_PACKAGE_ADD([fcs_LIBS_A],[src/libfcs.la])
 if test "x$use_fcs_near" = xyes ; then
   AX_FCS_PACKAGE_ADD([near_USE],[yes])
   AX_FCS_PACKAGE_ADD([near_LIBS],[-lfcs_near])
-  AX_FCS_PACKAGE_ADD([near_LIBS_A],[lib/common/near/.libs/libfcs_near.a])
+  AX_FCS_PACKAGE_ADD([near_LIBS_A],[lib/common/near/libfcs_near.la])
 fi
 if test "x$use_fcs_gridsort" = xyes ; then
   AX_FCS_PACKAGE_ADD([gridsort_USE],[yes])
   AX_FCS_PACKAGE_ADD([gridsort_LIBS],[-lfcs_gridsort])
-  AX_FCS_PACKAGE_ADD([gridsort_LIBS_A],[lib/common/gridsort/.libs/libfcs_gridsort.a])
+  AX_FCS_PACKAGE_ADD([gridsort_LIBS_A],[lib/common/gridsort/libfcs_gridsort.la])
 fi
 if test "x$use_fcs_resort" = xyes ; then
   AX_FCS_PACKAGE_ADD([resort_USE],[yes])
   AX_FCS_PACKAGE_ADD([resort_LIBS],[-lfcs_resort])
-  AX_FCS_PACKAGE_ADD([resort_LIBS_A],[lib/common/resort/.libs/libfcs_resort.a])
+  AX_FCS_PACKAGE_ADD([resort_LIBS_A],[lib/common/resort/libfcs_resort.la])
 fi
 AX_FCS_PACKAGE_ADD([fcs_common_USE],[yes])
 AX_FCS_PACKAGE_ADD([fcs_common_LIBS],[-lfcs_common])
-AX_FCS_PACKAGE_ADD([fcs_common_LIBS_A],[lib/common/fcs-common/.libs/libfcs_common.a])
+AX_FCS_PACKAGE_ADD([fcs_common_LIBS_A],[lib/common/fcs-common/libfcs_common.la])
 if test "x$use_fcs_pfft_common" = xyes ; then
   AX_FCS_PACKAGE_ADD([pfft_USE],[yes])
   AX_FCS_PACKAGE_ADD([pfft_LIBS],[-lfcs_pfft${fft_precision}])
-  AX_FCS_PACKAGE_ADD([pfft_LIBS_A],[lib/common/pfft/.libs/libfcs_pfft${fft_precision}.a])
+  AX_FCS_PACKAGE_ADD([pfft_LIBS_A],[lib/common/pfft/libfcs_pfft${fft_precision}.la])
 fi
 if test "x$use_fcs_pnfft_common" = xyes ; then
   AX_FCS_PACKAGE_ADD([pnfft_USE],[yes])
   AX_FCS_PACKAGE_ADD([pnfft_LIBS],[-lfcs_pnfft${fft_precision}])
-  AX_FCS_PACKAGE_ADD([pnfft_LIBS_A],[lib/common/pnfft/.libs/libfcs_pnfft${fft_precision}.a])
+  AX_FCS_PACKAGE_ADD([pnfft_LIBS_A],[lib/common/pnfft/libfcs_pnfft${fft_precision}.la])
 fi
 if test "x$use_fcs_fftw3_common" = xyes ; then
   AX_FCS_PACKAGE_ADD([fftw3_common_USE],[yes])
   AX_FCS_PACKAGE_ADD([fftw3_common_LIBS],[-lfcs_fftw3${fft_precision}])
-  AX_FCS_PACKAGE_ADD([fftw3_common_LIBS_A],[lib/common/fftw-3.3/.libs/libfcs_fftw3${fft_precision}.a])
+  AX_FCS_PACKAGE_ADD([fftw3_common_LIBS_A],[lib/common/fftw-3.3/libfcs_fftw3${fft_precision}.la])
 fi
 if test "x$use_fcs_fftw3_mpi_common" = xyes ; then
   AX_FCS_PACKAGE_ADD([fftw3_mpi_common_USE],[yes])
   AX_FCS_PACKAGE_ADD([fftw3_mpi_common_LIBS],[-lfcs_fftw3${fft_precision}_mpi])
-  AX_FCS_PACKAGE_ADD([fftw3_mpi_common_LIBS_A],[lib/common/fftw-3.3/mpi/.libs/libfcs_fftw3${fft_precision}_mpi.a])
+  AX_FCS_PACKAGE_ADD([fftw3_mpi_common_LIBS_A],[lib/common/fftw-3.3/mpi/libfcs_fftw3${fft_precision}_mpi.la])
 fi
 if test "x$use_fcs_fftw3" = xyes ; then
   AX_FCS_PACKAGE_ADD([fftw3_USE],[yes])
@@ -670,38 +670,38 @@ fi
 if test "x$use_fcs_direct" = xyes ; then
   AC_CONFIG_FILES([lib/direct/Makefile])
   AX_FCS_PACKAGE_ADD([direct_LIBS],[-lfcs_direct])
-  AX_FCS_PACKAGE_ADD([direct_LIBS_A],[lib/direct/.libs/libfcs_direct.a])
+  AX_FCS_PACKAGE_ADD([direct_LIBS_A],[lib/direct/libfcs_direct.la])
 fi
 if test "x$use_fcs_memd" = xyes ; then
   AC_CONFIG_FILES([lib/memd/Makefile])
   AX_FCS_PACKAGE_ADD([memd_LIBS],[-lfcs_memd])
-  AX_FCS_PACKAGE_ADD([memd_LIBS_A],[lib/memd/.libs/libfcs_memd.a])
+  AX_FCS_PACKAGE_ADD([memd_LIBS_A],[lib/memd/libfcs_memd.la])
 fi
 if test "x$use_fcs_mmm1d" = xyes ; then
   AC_CONFIG_FILES([lib/mmm1d/Makefile])
   AX_FCS_PACKAGE_ADD([mmm1d_LIBS],[-lfcs_mmm1d])
-  AX_FCS_PACKAGE_ADD([mmm1d_LIBS_A],[lib/mmm1d/.libs/libfcs_mmm1d.a])
+  AX_FCS_PACKAGE_ADD([mmm1d_LIBS_A],[lib/mmm1d/libfcs_mmm1d.la])
 fi
 if test "x$use_fcs_mmm2d" = xyes ; then
   AC_CONFIG_FILES([lib/mmm2d/Makefile])
   AX_FCS_PACKAGE_ADD([mmm2d_LIBS],[-lfcs_mmm2d])
-  AX_FCS_PACKAGE_ADD([mmm2d_LIBS_A],[lib/mmm2d/.libs/libfcs_mmm2d.a])
+  AX_FCS_PACKAGE_ADD([mmm2d_LIBS_A],[lib/mmm2d/libfcs_mmm2d.la])
 fi
 if test "x$use_fcs_p3m" = xyes ; then
   AC_CONFIG_FILES([lib/p3m/Makefile])
   AX_FCS_PACKAGE_ADD([p3m_LIBS],[-lfcs_p3m])
-  AX_FCS_PACKAGE_ADD([p3m_LIBS_A],[lib/p3m/.libs/libfcs_p3m.a])
+  AX_FCS_PACKAGE_ADD([p3m_LIBS_A],[lib/p3m/libfcs_p3m.la])
   AX_FCS_PACKAGE_ADD([fftw3_USE],[yes])
 fi
 if test "x$use_fcs_ewald" = xyes ; then
   AC_CONFIG_FILES([lib/ewald/Makefile])
   AX_FCS_PACKAGE_ADD([ewald_LIBS],[-lfcs_ewald])
-  AX_FCS_PACKAGE_ADD([ewald_LIBS_A],[lib/ewald/.libs/libfcs_ewald.a])
+  AX_FCS_PACKAGE_ADD([ewald_LIBS_A],[lib/ewald/libfcs_ewald.la])
 fi
 if test "x$use_fcs_wolf" = xyes ; then
   AC_CONFIG_FILES([lib/wolf/Makefile])
   AX_FCS_PACKAGE_ADD([wolf_LIBS],[-lfcs_wolf])
-  AX_FCS_PACKAGE_ADD([wolf_LIBS_A],[lib/wolf/.libs/libfcs_wolf.a])
+  AX_FCS_PACKAGE_ADD([wolf_LIBS_A],[lib/wolf/libfcs_wolf.la])
 fi
 
 # Create FCS library files.
