@@ -128,6 +128,10 @@ typedef ptrdiff_t INT;
 #  define K(x) ((R) x)
 #endif
 
+/* internal flags */
+#define PNFFTI_TRAFO_C2C            (1U<< 0)
+#define PNFFTI_TRAFO_C2R            (1U<< 1)
+
 #define A(ex) /* nothing */
 
 #define PNFFT_PRINT_TIMER_BASIC    (1U<<0)
@@ -175,6 +179,7 @@ struct PNX(plan_s){
   unsigned pnfft_flags;        /**< Flags for precomputation, (de)allocation,        
                                    and FFTW usage                                  */
   unsigned compute_flags;     /**< Flags for choice of NFFT results                */
+  unsigned trafo_flag;        /**< Flags for choice of transformation type         */
   unsigned pfft_opt_flags;    /**< Flags for PFFT optimization                     */
                                                                                      
   /* internal*/                                                                      
@@ -270,7 +275,8 @@ void PNX(rmplan)(
     PNX(plan) ths);
 INT PNX(local_size_internal)(
     const INT *N, const INT *n, const INT *no,
-    MPI_Comm comm_cart_2d, unsigned pnfft_flags,
+    MPI_Comm comm_cart_2d,
+    unsigned trafo_flag, unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,
     INT *local_no, INT *local_no_start);
 void PNX(local_block_internal)(
@@ -280,7 +286,7 @@ void PNX(local_block_internal)(
 PNX(plan) PNX(init_internal)(
     int d, const INT *N, const INT *n, const INT *no,
     INT local_M, int m,
-    unsigned pnfft_flags, unsigned pfft_opt_flags,
+    unsigned trafo_flag, unsigned pnfft_flags, unsigned pfft_opt_flags,
     MPI_Comm comm_cart_2d);
 void PNX(trafo_A)(
     PNX(plan) ths);
@@ -293,7 +299,7 @@ void PNX(adjoint_F)(
 void PNX(trafo_B_grad_ad)(
     PNX(plan) ths, int interlaced);
 void PNX(trafo_B_grad_ik)(
-    PNX(plan) ths, C *f, INT offset, INT stride);
+    PNX(plan) ths, R *f, INT offset, INT stride);
 void PNX(adjoint_B)(
     PNX(plan) ths, int interlaced);
 void PNX(malloc_x)(

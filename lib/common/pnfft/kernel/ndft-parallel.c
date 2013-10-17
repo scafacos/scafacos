@@ -544,17 +544,38 @@ static void local_size_B(
 
 INT PNX(local_size_internal)(
     const INT *N, const INT *n, const INT *no,
-    MPI_Comm comm_cart, unsigned pnfft_flags,
+    MPI_Comm comm_cart,
+    unsigned trafo_flag, unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,
     INT *local_no, INT *local_no_start
     )
 {
   INT howmany = 1;
-  unsigned pfft_flags = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
+  unsigned pfft_flags;
 
-  return PX(local_size_many_dft)(3, n, N, no, howmany,
-      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT,
-      local_N, local_N_start, local_no, local_no_start);
+  if (trafo_flag & PNFFTI_TRAFO_C2R) {
+    INT alloc_local_data_forw, alloc_local_data_back;
+    pfft_flags = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
+
+    alloc_local_data_forw = PX(local_size_many_dft_c2r)(3, n, N, no, howmany,
+        PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT,
+        local_N, local_N_start, local_no, local_no_start);
+
+    pfft_flags = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_OUT : 0;
+
+    alloc_local_data_back = PX(local_size_many_dft_r2c)(3, n, no, N, howmany,
+        PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT,
+        local_no, local_no_start, local_N, local_N_start);
+
+    return (alloc_local_data_forw > alloc_local_data_back) ?
+        alloc_local_data_forw : alloc_local_data_back;
+  } else if (trafo_flag & PNFFTI_TRAFO_C2C) {
+    pfft_flags = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
+
+    return PX(local_size_many_dft)(3, n, N, no, howmany,
+        PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT,
+        local_N, local_N_start, local_no, local_no_start);
+  }
 }
 
 void PNX(local_block_internal)(
@@ -578,7 +599,7 @@ void PNX(local_block_internal)(
 PNX(plan) PNX(init_internal)(
     int d, const INT *N, const INT *n, const INT *no,
     INT local_M, int m,
-    unsigned pnfft_flags, unsigned pfft_opt_flags,
+    unsigned trafo_flag, unsigned pnfft_flags, unsigned pfft_opt_flags,
     MPI_Comm comm_cart
     )
 {
@@ -600,7 +621,12 @@ PNX(plan) PNX(init_internal)(
     PX(printf)(comm_cart, "!!! Warning: PRE_PSI and PRE_FULL_PSI can not be used together. Using PRE_PSI for this plan !!!\n");
     pnfft_flags &= (~PNFFT_PRE_FULL_PSI); /* needed for correct pnfft_finalize */
   }
-  
+
+  if((pnfft_flags & PNFFT_TRANSPOSED_F_HAT) && (trafo_flag & PNFFTI_TRAFO_C2R)) {
+    PX(printf)(comm_cart, "!!! Error: transposed input and c2r transform not yet implemented !!!\n");
+    return NULL;
+  }
+
   ths = mkplan();
 
   ths->d = d;
@@ -623,6 +649,7 @@ PNX(plan) PNX(init_internal)(
 
   ths->pnfft_flags = pnfft_flags;
   ths->pfft_opt_flags = pfft_opt_flags;
+  ths->trafo_flag = trafo_flag;
 
   MPI_Comm_dup(comm_cart, &(ths->comm_cart));
   get_mpi_cart_dims_3d(comm_cart, &ths->rnk_pm, ths->np, ths->coords);
@@ -702,12 +729,17 @@ PNX(plan) PNX(init_internal)(
   get_size_gcells(m, ths->cutoff, pnfft_flags,
       gcells_below, gcells_above);
 
-  alloc_local_data_in = PNX(local_size_internal)(N, n, no, comm_cart, ths->pnfft_flags,
+  alloc_local_data_in = PNX(local_size_internal)(N, n, no, comm_cart, ths->trafo_flag, ths->pnfft_flags,
       ths->local_N, ths->local_N_start, ths->local_no, ths->local_no_start);
 
-  alloc_local_gc = PX(local_size_many_gc)(3, ths->local_no, ths->local_no_start,
-      alloc_local_data_in, howmany, gcells_below, gcells_above,
-      local_ngc, local_gc_start);
+  if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+    alloc_local_gc = PX(local_size_many_gc)(3, ths->local_no, ths->local_no_start,
+        2 * alloc_local_data_in, howmany, gcells_below, gcells_above,
+        local_ngc, local_gc_start);
+  else
+    alloc_local_gc = 2 * PX(local_size_many_gc)(3, ths->local_no, ths->local_no_start,
+        alloc_local_data_in, howmany, gcells_below, gcells_above,
+        local_ngc, local_gc_start);
 
   ths->local_N_total  = PNX(prod_INT)(d, ths->local_N);
   ths->local_no_total = PNX(prod_INT)(d, ths->local_no);
@@ -717,16 +749,16 @@ PNX(plan) PNX(init_internal)(
 
   /* init PFFT all the time (do not use the PNFFT_INIT_FFT flag anymore since
    * the init of parallel FFT is far too complicated for any user) */
-  ths->g2 = (alloc_local_gc) ? (C*) PNX(malloc)(sizeof(C) * (size_t) alloc_local_gc) : NULL;
+  ths->g2 = (alloc_local_gc) ? (R*) PNX(malloc)(sizeof(R) * (size_t) alloc_local_gc) : NULL;
   if(pnfft_flags & PNFFT_FFT_IN_PLACE)
     ths->g1 = ths->g2;
   else
-    ths->g1 = (alloc_local_data_in) ? (C*) PNX(malloc)(sizeof(C) * (size_t) alloc_local_data_in) : NULL;
+    ths->g1 = (alloc_local_data_in) ? (R*) PNX(malloc)(sizeof(R) * 2 * (size_t) alloc_local_data_in) : NULL;
 
   /* For derivative in Fourier space we need an extra buffer
    * (since we need to scale the output of the forward FFT with three different factors) */
   if(ths->pnfft_flags & PNFFT_GRAD_IK)
-    ths->g1_buffer = (ths->local_N_total) ? (C*) PNX(malloc)(sizeof(C) * (size_t) ths->local_N_total) : NULL;
+    ths->g1_buffer = (ths->local_N_total) ? (R*) PNX(malloc)(sizeof(R) * 2 * (size_t) ths->local_N_total) : NULL;
   else
     ths->g1_buffer = NULL;
 
@@ -734,20 +766,34 @@ PNX(plan) PNX(init_internal)(
   pfft_flags = pfft_opt_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT;
   if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT)
     pfft_flags |= PFFT_TRANSPOSED_IN;
-  ths->pfft_forw = PX(plan_many_dft)(3, n, N, no, howmany,
-      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, ths->g1, ths->g2, comm_cart,
-      PFFT_FORWARD, pfft_flags);
+  if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+    ths->pfft_forw = PX(plan_many_dft_c2r)(3, n, N, no, howmany,
+        PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, ths->g1, ths->g2, comm_cart,
+        PFFT_FORWARD, pfft_flags);
+  else
+    ths->pfft_forw = PX(plan_many_dft)(3, n, N, no, howmany,
+        PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, ths->g1, ths->g2, comm_cart,
+        PFFT_FORWARD, pfft_flags);
   
   pfft_flags = pfft_opt_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT;
   if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT) 
     pfft_flags |= PFFT_TRANSPOSED_OUT;
-  ths->pfft_back = PX(plan_many_dft)(3, n, no, N, howmany,
-      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, ths->g2, ths->g1, comm_cart,
-      PFFT_BACKWARD, pfft_flags);
+  if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+    ths->pfft_back = PX(plan_many_dft_r2c)(3, n, no, N, howmany,
+        PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, ths->g2, ths->g1, comm_cart,
+        PFFT_BACKWARD, pfft_flags);
+  else
+    ths->pfft_back = PX(plan_many_dft)(3, n, no, N, howmany,
+        PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, ths->g2, ths->g1, comm_cart,
+        PFFT_BACKWARD, pfft_flags);
 
   /* plan ghost cell send and receive */
-  ths->gcplan = PX(plan_many_cgc)(3, no, howmany, PFFT_DEFAULT_BLOCKS,
-      gcells_below, gcells_above, ths->g2, comm_cart, 0);
+  if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+    ths->gcplan = PX(plan_many_rgc)(3, no, howmany, PFFT_DEFAULT_BLOCKS,
+        gcells_below, gcells_above, ths->g2, comm_cart, 0);
+  else
+    ths->gcplan = PX(plan_many_cgc)(3, no, howmany, PFFT_DEFAULT_BLOCKS,
+        gcells_below, gcells_above, ths->g2, comm_cart, 0);
 
   /* precompute deconvultion in Fourier space */
   if(pnfft_flags & PNFFT_PRE_PHI_HAT){
@@ -1077,7 +1123,7 @@ void PNX(malloc_f)(
   if( ~pnfft_flags & PNFFT_MALLOC_F )
     return;
 
-  ths->f = (ths->local_M>0) ? (C*) PNX(malloc)(sizeof(C) * (size_t) ths->local_M) : NULL;
+  ths->f = (ths->local_M>0) ? (R*) PNX(malloc)(sizeof(R) * 2 * (size_t) ths->local_M) : NULL;
   ths->pnfft_flags |= PNFFT_COMPUTE_F;
   ths->compute_flags |= PNFFT_COMPUTE_F;
 }
@@ -1102,7 +1148,7 @@ void PNX(malloc_grad_f)(
   if( ~pnfft_flags & PNFFT_MALLOC_GRAD_F )
     return;
 
-  ths->grad_f = (ths->local_M>0) ? (C*) PNX(malloc)(sizeof(C) * (size_t) ths->d*ths->local_M) : NULL;
+  ths->grad_f = (ths->local_M>0) ? (R*) PNX(malloc)(sizeof(R) * 2 * (size_t) ths->d*ths->local_M) : NULL;
   ths->pnfft_flags |= PNFFT_MALLOC_GRAD_F;
   ths->compute_flags |= PNFFT_COMPUTE_GRAD_F;
 }
@@ -1874,7 +1920,7 @@ static int compare_INT(
 
 
 void PNX(trafo_B_grad_ik)(
-    PNX(plan) ths, C *f, INT offset, INT stride
+    PNX(plan) ths, R *f, INT offset, INT stride
     )
 {
   const int cutoff = ths->cutoff;
@@ -1938,10 +1984,14 @@ void PNX(trafo_B_grad_ik)(
       PNX(assign_f_r2r)(
           ths, p, ths->g2, pre_psi, 2*m0, local_ngc, cutoff, 2, 0,
           f + 2*ind);
+    else if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+      PNX(assign_f_r2r)(
+          ths, p, ths->g2, pre_psi, m0, local_ngc, cutoff, 1, 0,
+          f + ind);
     else
       PNX(assign_f_c2c)(
           ths, p, ths->g2, pre_psi, m0, local_ngc, cutoff, 0,
-          f + 2*ind);
+          (C*)f + ind);
   }
 
   ths->timer_trafo[PNFFT_TIMER_LOOP_B] += MPI_Wtime();
@@ -1985,7 +2035,8 @@ void PNX(trafo_B_grad_ad)(
 //  if(!myrank) fprintf(stderr, "local_no = [%td, %td, %td], local_ngc = [%td, %td, %td], local_ngc_total = %td\n",
 //      local_no[0], local_no[1], local_no[2], local_ngc[0], local_ngc[1], local_ngc[2], local_ngc_total);
       
-  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2], 1,
+  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2],
+      !(ths->trafo_flag & PNFFTI_TRAFO_C2R),
       "PNFFT: Sum of Fourier coefficients before twiddles");
 #endif
 
@@ -1999,7 +2050,8 @@ void PNX(trafo_B_grad_ad)(
       local_ngc);
 
 #if PNFFT_ENABLE_DEBUG
-  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2], 1,
+  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2],
+      !(ths->trafo_flag & PNFFTI_TRAFO_C2R),
       "PNFFT: Sum of Fourier coefficients before ghostcell send");
 #endif
 
@@ -2009,7 +2061,8 @@ void PNX(trafo_B_grad_ad)(
   ths->timer_trafo[PNFFT_TIMER_GCELLS] += MPI_Wtime();
 
 #if PNFFT_ENABLE_DEBUG
-  PNX(debug_sum_print)(ths->g2, PNX(prod_INT)(3, local_ngc), 1,
+  PNX(debug_sum_print)(ths->g2, PNX(prod_INT)(3, local_ngc),
+      !(ths->trafo_flag & PNFFTI_TRAFO_C2R),
       "PNFFT: Sum of Fourier coefficients after ghostcell send");
 #endif  
 
@@ -2052,14 +2105,18 @@ void PNX(trafo_B_grad_ad)(
         floor_nx_j, u_j);
     
     if(ths->compute_flags & PNFFT_COMPUTE_F) {
-      ths->f[j*2]   = 0;
-      ths->f[j*2+1] = 0;
+      if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+        ths->f[j] = 0;
+      else
+        ((C*)ths->f)[j] = 0;
     }
     if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F)
-      for(int t=0; t<ths->d; t++) {
-        ths->grad_f[2*(ths->d*j+t)]   = 0;
-        ths->grad_f[2*(ths->d*j+t)+1] = 0;
-      }
+      if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+        for(int t=0; t<ths->d; t++)
+          ths->grad_f[ths->d*j+t] = 0;
+      else
+        for(int t=0; t<ths->d; t++)
+          ((C*)ths->grad_f)[ths->d*j+t] = 0;
 
     /* evaluate window on axes */
     if( !(ths->pnfft_flags & (PNFFT_PRE_PSI | PNFFT_PRE_FULL_PSI)) ){
@@ -2097,20 +2154,20 @@ void PNX(trafo_B_grad_ad)(
          && ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
         /* compute f and grad_f at once */
         PNX(assign_f_and_grad_f_r2r)(
-            ths, p, ths->g2, pre_psi, pre_dpsi, 2*m0, local_ngc, cutoff, 2, 2, 0, 
-            ths->f + j*2, ths->grad_f + 3*j*2);
+            ths, p, ths->g2, pre_psi, pre_dpsi, m0, local_ngc, cutoff, 1, 1, 0,
+            ths->f + j, ths->grad_f + 3*j);
       }
       else if(ths->compute_flags & PNFFT_COMPUTE_F){
         /* compute f */
         PNX(assign_f_r2r)(
-            ths, p, ths->g2, pre_psi, 2*m0, local_ngc, cutoff, 2, 0,
-            ths->f + j*2);
+            ths, p, ths->g2, pre_psi, m0, local_ngc, cutoff, 1, 0,
+            ths->f + j);
       } 
       else if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
         /* compute grad_f */
         PNX(assign_grad_f_r2r)(
-            ths, p, ths->g2, pre_psi, pre_dpsi, 2*m0, local_ngc, cutoff, 2, 2, 0,
-            ths->grad_f + 3*j*2);
+            ths, p, ths->g2, pre_psi, pre_dpsi, m0, local_ngc, cutoff, 1, 1, 0,
+            ths->grad_f + 3*j);
       }
     } else {
       if(ths->compute_flags & PNFFT_COMPUTE_F 
@@ -2120,23 +2177,33 @@ void PNX(trafo_B_grad_ad)(
           PNX(assign_f_and_grad_f_r2r)(
               ths, p, ths->g2, pre_psi, pre_dpsi,
               2*m0, local_ngc, cutoff, 2, 2, 0,
-              ths->f + j*2, ths->grad_f + 3*j*2);
+              ths->f + 2*j, ths->grad_f + 2*3*j);
+        else if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+          PNX(assign_f_and_grad_f_r2r)(
+              ths, p, ths->g2, pre_psi, pre_dpsi,
+              m0, local_ngc, cutoff, 1, 1, 0,
+              ths->f + j, ths->grad_f + 3*j);
         else
           PNX(assign_f_and_grad_f_c2c)(
               ths, p, ths->g2, pre_psi, pre_dpsi,
               m0, local_ngc, cutoff, 0,
-              ths->f + j*2, ths->grad_f + 3*j*2);
+              (C*)ths->f + j, (C*)ths->grad_f + 3*j);
       } else if(ths->compute_flags & PNFFT_COMPUTE_F){
         /* compute f */
-        PNX(assign_f_c2c)(
-            ths, p, ths->g2, pre_psi, m0, local_ngc, cutoff, 0,
-            ths->f + j*2);
+        if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+          PNX(assign_f_r2r)(
+            ths, p, ths->g2, pre_psi, m0, local_ngc, cutoff, 1, 0,
+            ths->f + j);
+        else
+          PNX(assign_f_c2c)(
+              ths, p, ths->g2, pre_psi, m0, local_ngc, cutoff, 0,
+              (C*)ths->f + j);
       } else if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
         /* compute grad_f */
         PNX(assign_grad_f_c2c)(
             ths, p, ths->g2, ths->pre_psi + p*PNFFT_POW3(cutoff), ths->pre_dpsi + 3*p*PNFFT_POW3(cutoff),
             m0, local_ngc, cutoff, 0,
-            ths->grad_f + 3*j*2);
+            (C*)ths->grad_f + 3*j);
       }
     }
 
@@ -2199,14 +2266,19 @@ void PNX(trafo_B_grad_ad)(
       }
 
       if(ths->compute_flags & PNFFT_COMPUTE_F) {
-        ths->f[j*2]   /= 2.0;
-        ths->f[j*2+1] /= 2.0;
+        if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+          ths->f[j] /= 2.0;
+        else
+          ((C*)ths->f)[j] /= 2.0;
       }
-      if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F)
-        for(int t=0; t<ths->d; t++) {
-          ths->grad_f[2*(ths->d*j+t)]   /= 2.0;
-          ths->grad_f[2*(ths->d*j+t)+1] /= 2.0;
-        }
+      if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F) {
+        if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+          for(int t=0; t<ths->d; t++)
+            ths->grad_f[ths->d*j+t] /= 2.0;
+        else
+          for(int t=0; t<ths->d; t++)
+            ((C*)ths->grad_f)[ths->d*j+t] /= 2.0;
+      }
     }
   }
 
@@ -2223,11 +2295,13 @@ void PNX(trafo_B_grad_ad)(
 #endif
 
 #if PNFFT_ENABLE_DEBUG
-  PNX(debug_sum_print)(ths->f, ths->local_M, 1,
+  PNX(debug_sum_print)(ths->f, ths->local_M,
+      !(ths->trafo_flag & PNFFTI_TRAFO_C2R),
       "PNFFT: Sum of f");
 
   if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
-    PNX(debug_sum_print_strides)(ths->grad_f, ths->local_M, 3, 1,
+    PNX(debug_sum_print_strides)(ths->grad_f, ths->local_M, 3,
+        !(ths->trafo_flag & PNFFTI_TRAFO_C2R),
         "PNFFT: Sum of %dst component of grad_f");
   }
 #endif
@@ -2261,7 +2335,12 @@ void PNX(adjoint_B)(
       local_ngc);
 
   local_ngc_total = PNX(prod_INT)(3, local_ngc);
-  for(INT k=0; k<local_ngc_total; k++) ths->g2[k] = 0;
+  if (ths->trafo_flag & PNFFTI_TRAFO_C2R)
+    for(INT k=0; k<local_ngc_total; k++)
+      ths->g2[k] = 0;
+  else
+    for(INT k=0; k<local_ngc_total; k++)
+      ((C*)ths->g2)[k] = 0;
 
 #if PNFFT_ENABLE_DEBUG
   int myrank;
@@ -2289,7 +2368,8 @@ void PNX(adjoint_B)(
   PNX(debug_sum_print)(ths->x, 3*ths->local_M, 0,
       "PNFFT^H: Sum of x after sort");
   
-  PNX(debug_sum_print)(ths->f, ths->local_M, 1,
+  PNX(debug_sum_print)(ths->f, ths->local_M,
+      !(ths->trafo_flag & PNFFTI_TRAFO_C2R),
       "PNFFT^H: Sum of f");
 #endif
   
@@ -2306,7 +2386,8 @@ void PNX(adjoint_B)(
   ths->timer_adj[PNFFT_TIMER_LOOP_B] += MPI_Wtime();
 
 #if PNFFT_ENABLE_DEBUG
-  PNX(debug_sum_print)(ths->g2, local_ngc_total, 1,
+  PNX(debug_sum_print)(ths->g2, local_ngc_total,
+      !(ths->trafo_flag & PNFFTI_TRAFO_C2R),
       "PNFFT^H: Sum of Fourier coefficients before ghostcell reduce");
 #endif  
 
@@ -2316,7 +2397,8 @@ void PNX(adjoint_B)(
   ths->timer_adj[PNFFT_TIMER_GCELLS] += MPI_Wtime();
 
 #if PNFFT_ENABLE_DEBUG
-  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2], 1,
+  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2],
+      !(ths->trafo_flag & PNFFTI_TRAFO_C2R),
       "PNFFT^H: Sum of Fourier coefficients after ghostcell reduce");
 #endif
 
@@ -2326,7 +2408,8 @@ void PNX(adjoint_B)(
   ths->timer_adj[PNFFT_TIMER_SHIFT_INPUT] += MPI_Wtime();
 
 #if PNFFT_ENABLE_DEBUG
-  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2], 1,
+  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2],
+      !(ths->trafo_flag & PNFFTI_TRAFO_C2R),
       "PNFFT^H: Sum of Fourier coefficients after twiddles");
 #endif
   
@@ -2373,9 +2456,14 @@ static void loop_over_particles_adj(
     }
 
     m0 = PNFFT_PLAIN_INDEX_3D(u_j, local_ngc);
-    PNX(spread_f_c2c)(
-        ths, p, ((C*)ths->f)[j], pre_psi, m0, local_ngc, cutoff, 0,
-        ths->g2);
+    if (ths->trafo_flag & PNFFTI_TRAFO_C2R)
+      PNX(spread_f_r2r)(
+          ths, p, ths->f[j], pre_psi, m0, local_ngc, cutoff, 1, 0,
+          ths->g2);
+    else
+      PNX(spread_f_c2c)(
+          ths, p, ((C*)ths->f)[j], pre_psi, m0, local_ngc, cutoff, 0,
+          ths->g2);
   }
 
 #if PNFFT_ENABLE_DEBUG

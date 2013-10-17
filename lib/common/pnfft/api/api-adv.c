@@ -108,6 +108,27 @@ void PNX(local_size_adv)(
 }
 
 
+void PNX(local_size_adv_c2r)(
+    int d, const INT *N, MPI_Comm comm_cart,
+    unsigned pnfft_flags,
+    INT *local_N, INT *local_N_start,
+    R *lower_border, R *upper_border
+    )
+{
+  int m;
+  INT n[3];
+  R x_max[3];
+
+  m = default_m();
+  default_fft_size(N,
+      n, x_max);
+
+  PNX(local_size_guru_c2r)(
+      d, N, n, x_max, m, comm_cart, pnfft_flags,
+      local_N, local_N_start, lower_border, upper_border);
+}
+
+
 PNX(plan) PNX(init_adv)(
     int d, const INT *N,
     INT local_M,
@@ -124,6 +145,27 @@ PNX(plan) PNX(init_adv)(
       n, x_max);
 
   return PNX(init_guru)(
+      d, N, n, x_max, local_M, m,
+      pnfft_flags, pfft_flags, comm_cart);
+}
+
+
+PNX(plan) PNX(init_adv_c2r)(
+    int d, const INT *N,
+    INT local_M,
+    unsigned pnfft_flags, unsigned pfft_flags,
+    MPI_Comm comm_cart
+    )
+{
+  int m;
+  INT n[3];
+  R x_max[3];
+
+  m = default_m();
+  default_fft_size(N,
+      n, x_max);
+
+  return PNX(init_guru_c2r)(
       d, N, n, x_max, local_M, m,
       pnfft_flags, pfft_flags, comm_cart);
 }
