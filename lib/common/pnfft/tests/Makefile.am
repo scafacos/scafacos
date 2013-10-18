@@ -17,7 +17,8 @@ LDADD = $(top_builddir)/lib@PNFFT_PREFIX@pnfft@PREC_SUFFIX@.la $(pfft_LIBS) $(ff
 
 # These programs are built by 'make check' and may be tested afterwards.
 check_PROGRAMS = \
-	simple_test
+	simple_test \
+	simple_test_c2r
 
 #if ENABLE_COMMON_PNFFT
 # do not compile checks
