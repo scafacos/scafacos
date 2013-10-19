@@ -49,7 +49,7 @@ void PNX(init_x_3d_adv)(
         tmp = random_number_less_than_one();
         tmp = (up[t]-lo[t]) * tmp + lo[t];
       }
-      while( (-x_max[t] < tmp) || (tmp <= x_max[t]) );
+      while( (tmp < -x_max[t]) || (x_max[t] <= tmp) );
       x[3*j+t] = tmp;
     }
   }
@@ -80,7 +80,7 @@ static R random_number_less_than_one(
   do {
     itmp = rand();
     tmp = (R) itmp/RAND_MAX;
-  } while(tmp - 1.0 < PNFFT_EPSILON);
+  } while(tmp >= (R)1.0);
   
   return tmp;
 }
