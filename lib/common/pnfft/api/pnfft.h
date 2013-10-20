@@ -178,6 +178,9 @@
   PNFFT_EXTERN void PNX(apr_complex_3d)(                                                \
       C *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,                  \
       const char *name, MPI_Comm comm);                                                 \
+  PNFFT_EXTERN void PNX(apr_real_3d)(                                                   \
+      R *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,                  \
+      const char *name, MPI_Comm comm);                                                 \
                                                                                         \
   PNFFT_EXTERN double *PNX(get_timer_trafo)(                                            \
       PNX(plan) ths);                                                                   \

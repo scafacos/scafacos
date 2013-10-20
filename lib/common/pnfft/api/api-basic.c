@@ -535,9 +535,9 @@ void PNX(vpr_real)(
 }
 
 
-void PNX(apr_complex_3d)(
-     C *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,
-     const char *name, MPI_Comm comm
+static void apr_3d(
+     R *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,
+     const char *name, MPI_Comm comm, const int is_complex
      )
 {
   INT local_Nt[3], local_Nt_start[3];
@@ -548,6 +548,27 @@ void PNX(apr_complex_3d)(
     local_Nt_start[t] = local_N_start[(t + shift) % 3];
   }
 
-  PX(apr_complex_3d)(
-     data, local_Nt, local_Nt_start, name, comm);
+  if( is_complex )
+    PX(apr_complex_3d)((C*)data, local_Nt, local_Nt_start, name, comm);
+  else
+    PX(apr_real_3d)(data, local_Nt, local_Nt_start, name, comm);
 }
+
+
+void PNX(apr_complex_3d)(
+     C *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,
+     const char *name, MPI_Comm comm
+     )
+{
+  apr_3d(data, local_N, local_N_start, pnfft_flags, name, comm, 1);
+}
+
+
+void PNX(apr_real_3d)(
+     R *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,
+     const char *name, MPI_Comm comm
+     )
+{
+  apr_3d(data, local_N, local_N_start, pnfft_flags, name, comm, 0);
+}
+
