@@ -13,15 +13,9 @@ static void init_parameters(
     ptrdiff_t *N, ptrdiff_t *n, ptrdiff_t *local_M,
     int *m, int *window,
     double *x_max, int *np);
-static void init_random_x(
-    const double *lo, const double *up,
-    const double *x_max, ptrdiff_t M,
-    double *x);
 static void compare_f_hat(
     const pnfft_complex *f_hat_pnfft, const pnfft_complex *f_hat_nfft, ptrdiff_t local_N_total,
     double f_hat_sum, const char *name, MPI_Comm comm_cart_3d);
-static double random_number_less_than_one(
-    void);
 
 
 int main(int argc, char **argv){
@@ -144,8 +138,7 @@ static void perform_pnfft_adj_guru(
       f);
 
   /* initialize nonequispaced nodes */
-  srand(0);
-  init_random_x(lower_border, upper_border, x_max, local_M,
+  pnfft_init_x_3d_adv(lower_border, upper_border, x_max, local_M,
       x);
 
   /* execute parallel NFFT */
@@ -199,39 +192,5 @@ static void compare_f_hat(
   MPI_Reduce(&error, &error_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
   pfft_printf(comm, "%s absolute error = %6.2e\n", name, error_max);
   pfft_printf(comm, "%s relative error = %6.2e\n", name, error_max/f_hat_sum);
-}
-
-static void init_random_x(
-    const double *lo, const double *up,
-    const double *x_max, ptrdiff_t M,
-    double *x
-    )
-{
-  double tmp;
-  
-  for (ptrdiff_t j=0; j<M; j++){
-    for(int t=0; t<3; t++){
-      do{
-        tmp = random_number_less_than_one();
-        tmp = (up[t]-lo[t]) * tmp + lo[t];
-      }
-      while( (tmp < -x_max[t]) || (x_max[t] <= tmp) );
-      x[3*j+t] = tmp;
-    }
-  }
-}
-
-
-static double random_number_less_than_one(
-    void
-    )
-{
-  double tmp;
-  
-  do
-    tmp = ( 1.0 * rand()) / RAND_MAX;
-  while(tmp>=1.0);
-  
-  return tmp;
 }
 
