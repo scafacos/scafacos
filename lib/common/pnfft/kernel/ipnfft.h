@@ -137,8 +137,8 @@ typedef ptrdiff_t INT;
 struct PNX(plan_s){                                                                      
   INT N_total;                /**< Total number of Fourier coefficients            */
   C *f_hat;                   /**< Vector of Fourier coefficients                  */
-  C *f;                       /**< Vector of samples                               */
-  C *grad_f;                  /**< Vector of gradients                             */
+  R *f;                       /**< Vector of samples                               */
+  R *grad_f;                  /**< Vector of gradients                             */
   R *x;                       /**< Nodes in time/spatial domain                    */
                                                                                      
   int d;                      /**< Dimension, rank                                 */

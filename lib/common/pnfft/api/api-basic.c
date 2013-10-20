@@ -99,7 +99,10 @@ static void grad_ik_complex_input(
   ths->timer_trafo[PNFFT_TIMER_MATRIX_F] += MPI_Wtime();
 
   ths->timer_trafo[PNFFT_TIMER_MATRIX_B] -= MPI_Wtime();
-  for(INT j=0; j<ths->local_M; j++) ths->f[j] = 0;
+  for(INT j=0; j<ths->local_M; j++) {
+    ths->f[2*j] = 0;
+    ths->f[2*j+1] = 0;
+  }
   PNX(trafo_B_grad_ik)(ths, ths->f, 0, 1);
   ths->timer_trafo[PNFFT_TIMER_MATRIX_B] += MPI_Wtime();
 
@@ -115,7 +118,10 @@ static void grad_ik_complex_input(
     ths->timer_trafo[PNFFT_TIMER_MATRIX_F] += MPI_Wtime();
 
     ths->timer_trafo[PNFFT_TIMER_MATRIX_B] -= MPI_Wtime();
-    for(INT j=0; j<ths->local_M; j++) ths->grad_f[3*j+dim] = 0;
+    for(INT j=0; j<ths->local_M; j++) {
+      ths->grad_f[3*j*2+dim] = 0;
+      ths->grad_f[3*j*2+1+dim] = 0;
+    }
     PNX(trafo_B_grad_ik)(ths, ths->grad_f, dim, 3);
     ths->timer_trafo[PNFFT_TIMER_MATRIX_B] += MPI_Wtime();
   }
@@ -318,28 +324,28 @@ void PNX(set_f)(
     C *f, PNX(plan) ths
     )
 {
-  ths->f = f;
+  ths->f = (R*)f;
 }
 
 C* PNX(get_f)(
     const PNX(plan) ths
     )
 {
-  return ths->f;
+  return (C*)ths->f;
 }
 
 void PNX(set_grad_f)(
     C* grad_f, PNX(plan) ths
     )
 {
-  ths->grad_f = grad_f;
+  ths->grad_f = (R*)grad_f;
 }
 
 C* PNX(get_grad_f)(
     const PNX(plan) ths
     )
 {
-  return ths->grad_f;
+  return (C*)ths->grad_f;
 }
 
 void PNX(set_x)(
