@@ -209,7 +209,12 @@ typedef struct PNX(plan_s) plan_s;
 typedef struct PNX(plan_s) *PNX(plan);
 #endif /* !PNFFT_H */
 
-
+#if PNFFT_ENABLE_DEBUG
+void PNX(debug_sum_print_strides)(
+    R *data, INT max, int strides, int is_complex, const char *msg);
+void PNX(debug_sum_print)(
+    R *data, INT max, int is_complex, const char *msg);
+#endif
 
 /* util.c */
 void PNX(message)(

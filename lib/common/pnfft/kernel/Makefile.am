@@ -8,6 +8,7 @@ noinst_LTLIBRARIES = libkernel.la
 
 # Group local sources into convenience lib.
 libkernel_la_SOURCES = \
+	debug.c \
 	ndft-parallel.c \
 	assign.c \
 	matrix_D.c \

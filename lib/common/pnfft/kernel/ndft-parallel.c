@@ -1126,15 +1126,8 @@ void PNX(trafo_F)(
     )
 {
 #if PNFFT_ENABLE_DEBUG
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  C csum, gcsum;
-
-  csum = 0.0;
-  for(INT t=0; t<ths->local_N[0]*ths->local_N[1]*ths->local_N[2]; t++)
-    csum += pnfft_fabs(pnfft_creal(ths->g1[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g1[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT: Sum of Fourier coefficients before FFT: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+  PNX(debug_sum_print)(ths->g1, ths->local_N[0]*ths->local_N[1]*ths->local_N[2], 1,
+      "PNFFT: Sum of Fourier coefficients before FFT");
 #endif
 
   PX(execute)(ths->pfft_forw);
@@ -1147,15 +1140,8 @@ void PNX(adjoint_F)(
   PX(execute)(ths->pfft_back);
 
 #if PNFFT_ENABLE_DEBUG
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  C csum, gcsum;
-
-  csum = 0.0;
-  for(INT t=0; t<ths->local_N[0]*ths->local_N[1]*ths->local_N[2]; t++)
-    csum += pnfft_fabs(pnfft_creal(ths->g1[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g1[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT^H: Sum of Fourier coefficients after FFT: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+  PNX(debug_sum_print)(ths->g1, ths->local_N[0]*ths->local_N[1]*ths->local_N[2], 1,
+      "PNFFT^H: Sum of Fourier coefficients after FFT");
 #endif
 }
 
@@ -1994,19 +1980,13 @@ void PNX(trafo_B_grad_ad)(
 #if PNFFT_ENABLE_DEBUG
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  R rsum, grsum;
-  R rsum_derive, grsum_derive;
-  C csum, gcsum;
   
   if(!myrank) fprintf(stderr, "no = [%td, %td, %td]\n", ths->no[0], ths->no[1], ths->no[2]);
 //  if(!myrank) fprintf(stderr, "local_no = [%td, %td, %td], local_ngc = [%td, %td, %td], local_ngc_total = %td\n",
 //      local_no[0], local_no[1], local_no[2], local_ngc[0], local_ngc[1], local_ngc[2], local_ngc_total);
       
-  csum = 0.0;
-  for(INT t=0; t<local_no[0]*local_no[1]*local_no[2]; t++)
-    csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT: Sum of Fourier coefficients before twiddles: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2], 1,
+      "PNFFT: Sum of Fourier coefficients before twiddles");
 #endif
 
   /* perform fftshift */
@@ -2019,11 +1999,8 @@ void PNX(trafo_B_grad_ad)(
       local_ngc);
 
 #if PNFFT_ENABLE_DEBUG
-  csum = 0.0;
-  for(INT t=0; t<local_no[0]*local_no[1]*local_no[2]; t++)
-    csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT: Sum of Fourier coefficients before ghostcell send: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2], 1,
+      "PNFFT: Sum of Fourier coefficients before ghostcell send");
 #endif
 
   /* send ghost cells in ring */
@@ -2032,23 +2009,13 @@ void PNX(trafo_B_grad_ad)(
   ths->timer_trafo[PNFFT_TIMER_GCELLS] += MPI_Wtime();
 
 #if PNFFT_ENABLE_DEBUG
-  INT local_ngc_total = PNX(prod_INT)(3, local_ngc);
-#endif
-
-#if PNFFT_ENABLE_DEBUG
-  csum = 0.0;
-  for(INT t=0; t<local_ngc_total; t++)
-    csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT: Sum of Fourier coefficients after ghostcell send: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+  PNX(debug_sum_print)(ths->g2, PNX(prod_INT)(3, local_ngc), 1,
+      "PNFFT: Sum of Fourier coefficients after ghostcell send");
 #endif  
 
 #if PNFFT_ENABLE_DEBUG
-  rsum = 0.0;
-  for(j=0; j<3*ths->local_M; j++)
-    rsum += pnfft_fabs(ths->x[j]);
-  MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT: Sum of x before sort: %e\n", grsum);
+  PNX(debug_sum_print)(ths->x, 3*ths->local_M, 0,
+      "PNFFT: Sum of x before sort");
 #endif
 
   /* sort indices for better cache handling */
@@ -2062,19 +2029,13 @@ void PNX(trafo_B_grad_ad)(
   }
 
 #if PNFFT_ENABLE_DEBUG
-  rsum = 0.0;
-  for(j=0; j<3*ths->local_M; j++)
-    rsum += pnfft_fabs(ths->x[j]);
-  MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT: Sum of x after sort: %e\n", grsum);
+  PNX(debug_sum_print)(ths->x, 3*ths->local_M, 0,
+      "PNFFT: Sum of x after sort");
 #endif
 
 #if PNFFT_ENABLE_DEBUG
-  rsum = 0.0;
-#endif
-#if PNFFT_ENABLE_DEBUG
-  if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F)
-    rsum_derive = 0.0;
+  R rsum, rsum_derive, grsum, grsum_derive;
+  rsum = rsum_derive = 0.0;
 #endif
 
   ths->timer_trafo[PNFFT_TIMER_LOOP_B] -= MPI_Wtime();
@@ -2105,6 +2066,7 @@ void PNX(trafo_B_grad_ad)(
           pre_psi);
   
 #if PNFFT_ENABLE_DEBUG
+      /* Don't want to use PNX(debug_sum_print) because we are in a loop */
       for(int t=0; t<3*cutoff; t++)
         rsum += pnfft_fabs(pre_psi[t]);
 #endif
@@ -2117,6 +2079,7 @@ void PNX(trafo_B_grad_ad)(
             pre_dpsi);
 
 #if PNFFT_ENABLE_DEBUG
+        /* Don't want to use PNX(debug_sum_print) because we are in a loop */
         if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F)
           for(int t=0; t<3*cutoff; t++)
             rsum_derive += pnfft_fabs(pre_dpsi[t]);
@@ -2244,47 +2207,20 @@ void PNX(trafo_B_grad_ad)(
 #if PNFFT_ENABLE_DEBUG
   MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT: Sum of pre_psi: %e\n", grsum);
-#endif  
 
-#if PNFFT_ENABLE_DEBUG
   if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
     MPI_Reduce(&rsum_derive, &grsum_derive, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
     if(!myrank) fprintf(stderr, "PNFFT: Sum of pre_dpsi: %e\n", grsum_derive);
   }
-#endif  
+#endif
 
 #if PNFFT_ENABLE_DEBUG
-  csum = 0.0;
-  for(j=0; j<ths->local_M; j++)
-    csum += pnfft_fabs(pnfft_creal(ths->f[j])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->f[j]));
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT: Sum of f: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
-#endif
-#if PNFFT_ENABLE_DEBUG
+  PNX(debug_sum_print)(ths->f, ths->local_M, 1,
+      "PNFFT: Sum of f");
+
   if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
-    csum = 0.0;
-    for(j=0; j<ths->local_M; j++)
-      csum += pnfft_fabs(pnfft_creal(ths->grad_f[3*j+0])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->grad_f[3*j+0]));
-    MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-    if(!myrank) fprintf(stderr, "PNFFT: Sum of 1st component of grad_f: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
-  }
-#endif
-#if PNFFT_ENABLE_DEBUG
-  if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
-    csum = 0.0;
-    for(j=0; j<ths->local_M; j++)
-      csum += pnfft_fabs(pnfft_creal(ths->grad_f[3*j+1])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->grad_f[3*j+1]));
-    MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-    if(!myrank) fprintf(stderr, "PNFFT: Sum of 2nd component of grad_f: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
-  }
-#endif
-#if PNFFT_ENABLE_DEBUG
-  if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
-    csum = 0.0;
-    for(j=0; j<ths->local_M; j++)
-      csum += pnfft_fabs(pnfft_creal(ths->grad_f[3*j+2])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->grad_f[3*j+2]));
-    MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-    if(!myrank) fprintf(stderr, "PNFFT: Sum of 3rd component of grad_f: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+    PNX(debug_sum_print_strides)(ths->grad_f, ths->local_M, 3, 1,
+        "PNFFT: Sum of %dst component of grad_f");
   }
 #endif
   
@@ -2322,18 +2258,13 @@ void PNX(adjoint_B)(
 #if PNFFT_ENABLE_DEBUG
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  R rsum, grsum;
-  C csum, gcsum;
   
   if(!myrank) fprintf(stderr, "no = [%td, %td, %td]\n", ths->no[0], ths->no[1], ths->no[2]);
 //  if(!myrank) fprintf(stderr, "local_no = [%td, %td, %td], local_ngc = [%td, %td, %td], local_ngc_total = %td\n",
 //      local_no[0], local_no[1], local_no[2], local_ngc[0], local_ngc[1], local_ngc[2], local_ngc_total);
       
-  rsum = 0.0;
-  for(INT j=0; j<3*ths->local_M; j++)
-    rsum += pnfft_fabs(ths->x[j]);
-  MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT^H: Sum of x before sort: %e\n", grsum);
+  PNX(debug_sum_print)(ths->x, 3*ths->local_M, 0,
+      "PNFFT^H: Sum of x before sort");
 #endif
 
   /* sort indices for better cache handling */
@@ -2347,19 +2278,11 @@ void PNX(adjoint_B)(
   }
   
 #if PNFFT_ENABLE_DEBUG
-  rsum = 0.0;
-  for(INT j=0; j<3*ths->local_M; j++)
-    rsum += pnfft_fabs(ths->x[j]);
-  MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT^H: Sum of x after sort: %e\n", grsum);
-#endif
+  PNX(debug_sum_print)(ths->x, 3*ths->local_M, 0,
+      "PNFFT^H: Sum of x after sort");
   
-#if PNFFT_ENABLE_DEBUG
-  csum = 0.0;
-  for(INT j=0; j<ths->local_M; j++)
-    csum += pnfft_fabs(pnfft_creal(ths->f[j])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->f[j]));
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT^H: Sum of f: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+  PNX(debug_sum_print)(ths->f, ths->local_M, 1,
+      "PNFFT^H: Sum of f");
 #endif
   
   ths->timer_adj[PNFFT_TIMER_LOOP_B] -= MPI_Wtime();
@@ -2375,11 +2298,8 @@ void PNX(adjoint_B)(
   ths->timer_adj[PNFFT_TIMER_LOOP_B] += MPI_Wtime();
 
 #if PNFFT_ENABLE_DEBUG
-  csum = 0.0;
-  for(INT t=0; t<local_ngc_total; t++)
-    csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT^H: Sum of Fourier coefficients before ghostcell reduce: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+  PNX(debug_sum_print)(ths->g2, local_ngc_total, 1,
+      "PNFFT^H: Sum of Fourier coefficients before ghostcell reduce");
 #endif  
 
   /* reduce ghost cells in ring */
@@ -2388,11 +2308,8 @@ void PNX(adjoint_B)(
   ths->timer_adj[PNFFT_TIMER_GCELLS] += MPI_Wtime();
 
 #if PNFFT_ENABLE_DEBUG
-  csum = 0.0;
-  for(INT t=0; t<local_no[0]*local_no[1]*local_no[2]; t++)
-    csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT^H: Sum of Fourier coefficients after ghostcell reduce: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2], 1,
+      "PNFFT^H: Sum of Fourier coefficients after ghostcell reduce");
 #endif
 
   /* perform fftshift */
@@ -2401,11 +2318,8 @@ void PNX(adjoint_B)(
   ths->timer_adj[PNFFT_TIMER_SHIFT_INPUT] += MPI_Wtime();
 
 #if PNFFT_ENABLE_DEBUG
-  csum = 0.0;
-  for(INT t=0; t<local_no[0]*local_no[1]*local_no[2]; t++)
-    csum += pnfft_fabs(pnfft_creal(ths->g2[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->g2[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT^H: Sum of Fourier coefficients after twiddles: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+  PNX(debug_sum_print)(ths->g2, local_no[0]*local_no[1]*local_no[2], 1,
+      "PNFFT^H: Sum of Fourier coefficients after twiddles");
 #endif
   
   if(sorted_index != NULL)
@@ -2444,6 +2358,7 @@ static void loop_over_particles_adj(
           pre_psi);
 
 #if PNFFT_ENABLE_DEBUG
+      /* Don't want to use PNX(debug_sum_print) because we are in a loop */
       for(int t=0; t<3*cutoff; t++)
         rsum += pnfft_fabs(pre_psi[t]);
 #endif
@@ -2458,7 +2373,7 @@ static void loop_over_particles_adj(
 #if PNFFT_ENABLE_DEBUG
   MPI_Reduce(&rsum, &grsum, 1, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   PX(fprintf)(MPI_COMM_WORLD, stderr, "PNFFT^H: Sum of pre_psi: %e\n", grsum);
-#endif  
+#endif
 
   if(pre_psi != NULL)
     PNX(free)(pre_psi);
