@@ -89,8 +89,10 @@ static void grad_ik_complex_input(
 {
   /* duplicate g1 since we have to scale it several times for computing the gradient */
   ths->timer_trafo[PNFFT_TIMER_MATRIX_D] -= MPI_Wtime();
-  for(INT k=0; k<ths->local_N_total; k++)
-    ths->g1_buffer[k] = ths->g1[k];
+  for(INT k=0; k<ths->local_N_total; k++) {
+    ths->g1_buffer[2*k]   = ths->g1[2*k];
+    ths->g1_buffer[2*k+1] = ths->g1[2*k+1];
+  }
   ths->timer_trafo[PNFFT_TIMER_MATRIX_D] += MPI_Wtime();
 
   /* calculate potentials */

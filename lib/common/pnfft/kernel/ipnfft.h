@@ -182,9 +182,9 @@ struct PNX(plan_s){
   PX(plan)   pfft_back;       /**< Backward PFFT plan                              */
   PX(gcplan) gcplan;          /**< PFFT Ghostcell plan                             */
                                                                                      
-  C *g1;                      /**< Input of PFFT                                   */
-  C *g2;                      /**< Output of PFFT                                  */
-  C *g1_buffer;               /**< Buffer for computing Fourier-space derivatives  */
+  R *g1;                      /**< Input of PFFT                                   */
+  R *g2;                      /**< Output of PFFT                                  */
+  R *g1_buffer;               /**< Buffer for computing Fourier-space derivatives  */
                                                                                      
   int cutoff;                 /**< cutoff range                                    */
   INT local_M;                /**< Number of local nodes                           */
