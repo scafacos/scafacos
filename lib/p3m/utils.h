@@ -69,6 +69,10 @@
 #define fabs(x) fabsl(x)
 #endif
 
+#ifndef FCS_PI
+#include "FCSDefinitions.h"
+#endif
+
 /** get the linear index from the position (a,b,c) in a 3D grid
  *  of dimensions adim[]. returns linear index.
  *
