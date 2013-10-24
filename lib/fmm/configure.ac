@@ -13,7 +13,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 
 # Initialize Automake; require 1.11 or newer, do not enforce GNU rules.
 # We requires version 1.11 so subdir-objects work correctly with Fortran.
-AM_INIT_AUTOMAKE([1.11 foreign])
+AM_INIT_AUTOMAKE([1.11 foreign subdir-objects])
 
 ######################################################################
 # Checks for programs. 
