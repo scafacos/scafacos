@@ -103,9 +103,9 @@ void ifcs_p3m_calc_influence_function_ik(ifcs_p3m_data_struct *d) {
 	    SQR(d->d_op[RY][n[KY]]/d->box_l[RY]) +
 	    SQR(d->d_op[RZ][n[KZ]]/d->box_l[RZ]);
 	  fcs_float fak3 = fak1/(fak2 * SQR(denominator));
-	  d->g_force[ind] = M_2_PI*fak3;
+	  d->g_force[ind] = FCS_2_PI*fak3;
           d->g_energy[ind] = 0.5 * d->g_force[ind];
-	  /* d->g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator); */
+	  /* d->g_energy[ind] = FCS_1_PI*numerator_energy/SQR(denominator); */
           /* if (fabs(d->g_energy[ind]) > 1.e-5) */
           /*   printf("%d: %15.10e\n", ind, d->g_energy[ind]/d->g_force[ind]); */
 	}
@@ -127,7 +127,7 @@ ifcs_p3m_perform_aliasing_sums_ik(ifcs_p3m_data_struct *d, fcs_int n[3],
   for (fcs_int i = 0; i < 3; i++)
     numerator_force[i] = 0.0;
 
-  fcs_float prefactor = SQR(M_PI/d->alpha);
+  fcs_float prefactor = SQR(FCS_PI/d->alpha);
 
   for (fcs_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
     fcs_float nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
@@ -199,8 +199,8 @@ void ifcs_p3m_calc_influence_function_iki(ifcs_p3m_data_struct *d) {
 	    SQR(d->d_op[RY][n[KY]]/d->box_l[RY]) +
 	    SQR(d->d_op[RZ][n[KZ]]/d->box_l[RZ]);
 	  fcs_float fak3 = fak1/(fak2 * 0.5 * (SQR(denominator[0]) + SQR(denominator[1])) );
-	  d->g_force[ind] = M_2_PI*fak3;
-	  d->g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator[0]);
+	  d->g_force[ind] = FCS_2_PI*fak3;
+	  d->g_energy[ind] = FCS_1_PI*numerator_energy/SQR(denominator[0]);
 	}
       }
     }
@@ -220,7 +220,7 @@ ifcs_p3m_perform_aliasing_sums_iki(ifcs_p3m_data_struct *d, fcs_int n[3],
   for (fcs_int i = 0; i < 3; i++)
     numerator_force[i] = 0.0;
 
-  fcs_float prefactor = SQR(M_PI/d->alpha);
+  fcs_float prefactor = SQR(FCS_PI/d->alpha);
 
   for (fcs_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
     fcs_float nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
@@ -290,8 +290,8 @@ void ifcs_p3m_calc_influence_function_adi(ifcs_p3m_data_struct *d) {
                                              denominator);
 
 	  d->g_force[ind] = numerator_force / 
-	    (0.5 * M_PI * (denominator[0] * denominator[1] + denominator[2] * denominator[3] )) ;
-          d->g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator[0]);
+	    (0.5 * FCS_PI * (denominator[0] * denominator[1] + denominator[2] * denominator[3] )) ;
+          d->g_energy[ind] = FCS_1_PI*numerator_energy/SQR(denominator[0]);
 	  /* d->g_energy[ind] = 0.5 * d->g_force[ind]; */
 	}
       }
@@ -311,7 +311,7 @@ ifcs_p3m_perform_aliasing_sums_adi(ifcs_p3m_data_struct *d, fcs_int n[3],
   *numerator_energy = 0.0;
   *numerator_force = 0.0;
 
-  fcs_float prefactor = SQR(M_PI/d->alpha);
+  fcs_float prefactor = SQR(FCS_PI/d->alpha);
 
   for (fcs_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
     fcs_float nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
