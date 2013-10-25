@@ -232,7 +232,7 @@ FCSResult ifcs_p2nfft_tune(
   d->num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
   d->num_periodic_dims    = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
 
-  fcs_int reg_near, reg_far;
+  fcs_int reg_near=-1, reg_far=-1;
   if(d->reg_near == FCS_P2NFFT_REG_NEAR_DEFAULT)
     reg_near = FCS_P2NFFT_REG_NEAR_CG;
   else
