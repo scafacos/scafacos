@@ -253,8 +253,7 @@ fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
   if ( xsnorm > 0.5-epsB ) {
     for (j=0; j<=p-2; j++) {
       sum += fcs_pow(epsB/2.0,(fcs_float)j+1) * k(0.5-epsB,j+1,param)
-          * (IntBasisPoly(p-1,j,2.0*xsnorm/epsB-(1.0-epsB)/epsB) - IntBasisPoly(p-1,j,-1)
-       );
+          * ( IntBasisPoly(p-1,j,2.0*xsnorm/epsB-(1.0-epsB)/epsB) - IntBasisPoly(p-1,j,-1) );
     }
     return sum + k(0.5-epsB,0,param);
   }
@@ -272,12 +271,90 @@ fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
   return k(xsnorm,0,param);
 } 
 
-
-
-/** regularized kernel for even kernels without singularity, e.g. no K_I needed,
- *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)
+/** regularized kernel for even kernels without singularity, i.e. no K_I needed,
+ *  and K_B in [1/2-epsB,1/2+epsB) (used in 1D)
  */
-fcs_float ifcs_p2nfft_reg_far_no_singularity(
+fcs_float ifcs_p2nfft_reg_far_rad_sym_no_singularity(
+    ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB
+    )
+{
+  fcs_int j;
+  fcs_float sum=0.0;
+  fcs_float h = param[2];
+
+  x2norm = fcs_fabs(x2norm);
+
+  /* inner and outer border of regularization area */
+  fcs_float xi = h * (0.5 - epsB);
+  fcs_float xo = h * (0.5 + epsB);
+
+  /* constant continuation for radii > xo */
+  if (x2norm > xo)
+    x2norm = xo;
+
+  /* canonicalize x to y \in [-1,1] */
+  fcs_float r = 0.5 * (xo - xi);
+  fcs_float m = 0.5 * (xo + xi);
+  fcs_float y = (x2norm-m)/r;
+
+  /* regularization at farfield border */
+  if ( xi < x2norm ) {
+    for (j=0; j<=p-1; j++) {
+      sum += 
+        fcs_pow(r,(fcs_float)j) * k(xi,j,param)
+        * (BasisPoly(p-1,j,y) + BasisPoly(p-1,j,-y));
+    }
+    return sum;
+  }
+ 
+  /* near- and farfield (no singularity): original kernel function */ 
+  return k(x2norm,0,param);
+} 
+
+/** regularized kernel for even kernels without singularity, i.e. no K_I needed,
+ *  and K_B mirrored smooth into x=1/2 with explicit continuation value 'c' at 1/2 (used in dD, d>1)
+ */
+fcs_float ifcs_p2nfft_reg_far_rad_ec_no_singularity(
+    ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB, fcs_float c
+    )
+{
+  fcs_int j;
+  fcs_float sum=0.0;
+  fcs_float h = param[2];
+
+  x2norm = fcs_fabs(x2norm);
+
+  /* inner and outer border of regularization area */
+  fcs_float xi = h * (0.5 - epsB);
+  fcs_float xo = h * 0.5;
+
+  /* constant continuation for radii > xo */
+  if (x2norm > xo)
+    x2norm = xo;
+
+  /* canonicalize x to y \in [-1,1] */
+  fcs_float r = 0.5 * (xo - xi);
+  fcs_float m = 0.5 * (xo + xi);
+  fcs_float y = (x2norm-m)/r;
+
+  /* regularization at farfield border */
+  if ( xi < x2norm ) {
+    for (j=0; j<=p-1; j++) {
+      sum += 
+        fcs_pow(r,(fcs_float)j) * k(xi,j,param)
+        * BasisPoly(p-1,j,y);
+    }
+    return sum + c * BasisPoly(p-1,j,-y);
+  }
+ 
+  /* near- and farfield (no singularity): original kernel function */ 
+  return k(x2norm,0,param);
+} 
+
+/** regularized kernel for even kernels without singularity, i.e. no K_I needed,
+ *  and K_B mirrored smooth into x=1/2 with implicit continuation value at 1/2 (used in dD, d>1)
+ */
+fcs_float ifcs_p2nfft_reg_far_rad_ic_no_singularity(
     ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB
     )
 {
@@ -336,7 +413,7 @@ fcs_float ifcs_p2nfft_interpolation(
  * The number of variables of P is equal to the number of dimensions with xi > (0.5-epsB) * hi.
  */
 fcs_float ifcs_p2nfft_reg_far_rect_sym(
-    fcs_float *x, fcs_float *h,
+    const fcs_float *x, const fcs_float *h,
     fcs_int p, fcs_float epsB
     )
 {
@@ -430,7 +507,7 @@ static void sort(
 
 /* alternative implementation of reg_far_rect_sym */
 fcs_float ifcs_p2nfft_reg_far_rect_sym_version2(
-    fcs_float *x, fcs_float *h,
+    const fcs_float *x, const fcs_float *h,
     fcs_int p, fcs_float epsB
     )
 {
@@ -462,7 +539,7 @@ fcs_float ifcs_p2nfft_reg_far_rect_sym_version2(
 
 
 fcs_float ifcs_p2nfft_reg_far_rect_expl_cont(
-    fcs_float *x, fcs_float *h,
+    const fcs_float *x, const fcs_float *h,
     fcs_int p, fcs_float epsB, fcs_float c
     )
 {
@@ -505,7 +582,7 @@ fcs_float ifcs_p2nfft_reg_far_rect_expl_cont(
 }
 
 fcs_float ifcs_p2nfft_reg_far_rect_impl_cont(
-    fcs_float *x, fcs_float *h,
+    const fcs_float *x, const fcs_float *h,
     fcs_int p, fcs_float epsB
     )
 {
