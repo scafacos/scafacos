@@ -43,7 +43,7 @@ LIBFFTWTHREADS = $(top_builddir)/threads/libfcs_fftw3@PREC_SUFFIX@_omp.la
 endif
 endif
 
-mpi_bench_SOURCES = mpi-bench.c $(top_srcdir)/tests/fftw-bench.c $(top_srcdir)/tests/hook.c
+mpi_bench_SOURCES = mpi-bench.c ../tests/fftw-bench.c ../tests/hook.c
 mpi_bench_LDADD = libfcs_fftw3@PREC_SUFFIX@_mpi.la $(LIBFFTWTHREADS) $(top_builddir)/libfcs_fftw3@PREC_SUFFIX@.la $(top_builddir)/libbench2/libbench2.a $(MPILIBS) $(THREADLIBS)
 
 CHECK = $(top_srcdir)/tests/check.pl

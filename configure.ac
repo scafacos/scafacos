@@ -33,7 +33,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
 # Initialize Automake; require 1.9.6 or newer, do not enforce GNU rules, create pax/posix tarfiles in make dist to support longer filenames in doxgen stuff.
-AM_INIT_AUTOMAKE([1.9.6 -Wall -Wno-override foreign tar-pax])
+AM_INIT_AUTOMAKE([1.9.6 -Wall -Wno-override foreign tar-pax subdir-objects])
 
 # Print an error if a (custom) AX_ or ACX_ macro appears in the ouput
 m4_pattern_forbid([^A[C]?X_])

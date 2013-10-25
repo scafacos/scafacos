@@ -13,7 +13,7 @@ AC_CONFIG_SRCDIR([src/mg.cpp])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE([1.7 -Wall foreign])
+AM_INIT_AUTOMAKE([1.7 -Wall foreign subdir-objects])
 
 # We use mostly C++, but may need Fortran compiler infos for Lapack.
 AC_LANG([C++])
