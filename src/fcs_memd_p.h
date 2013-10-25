@@ -68,19 +68,19 @@ FCSResult fcs_memd_setup(FCS handle,
  *
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_memd_set_box_size(FCS handle, fcs_float length_x, fcs_float length_y, fcs_float length_z);
-FCSResult fcs_memd_set_time_step(FCS handle, fcs_float timestep);
-FCSResult fcs_memd_set_total_number_of_particles(FCS handle, fcs_int number_of_particles);
-FCSResult fcs_memd_set_local_number_of_particles(FCS handle, fcs_int number_of_particles);
+FCSResult fcs_fcs_memd_set_box_size(FCS handle, fcs_float length_x, fcs_float length_y, fcs_float length_z);
+FCSResult fcs_fcs_memd_set_time_step(FCS handle, fcs_float timestep);
+FCSResult fcs_fcs_memd_set_total_number_of_particles(FCS handle, fcs_int number_of_particles);
+FCSResult fcs_fcs_memd_set_local_number_of_particles(FCS handle, fcs_int number_of_particles);
 
-FCSResult fcs_memd_set_init_flag(FCS handle, fcs_int flagvalue);
+FCSResult fcs_fcs_memd_set_init_flag(FCS handle, fcs_int flagvalue);
 
-FCSResult fcs_memd_set_mesh_size_1D(FCS handle, fcs_int mesh_size);
-FCSResult fcs_memd_set_speed_of_light(FCS handle, fcs_float lightspeed);
+FCSResult fcs_fcs_memd_set_mesh_size_1D(FCS handle, fcs_int mesh_size);
+FCSResult fcs_fcs_memd_set_speed_of_light(FCS handle, fcs_float lightspeed);
 
-FCSResult fcs_memd_set_permittivity(FCS handle, fcs_float epsilon);
-FCSResult fcs_memd_set_temperature(FCS handle, fcs_float temperature);
-FCSResult fcs_memd_set_bjerrum_length(FCS handle, fcs_float bjerrum);
+FCSResult fcs_fcs_memd_set_permittivity(FCS handle, fcs_float epsilon);
+FCSResult fcs_fcs_memd_set_temperature(FCS handle, fcs_float temperature);
+FCSResult fcs_fcs_memd_set_bjerrum_length(FCS handle, fcs_float bjerrum);
 
 
 #endif

@@ -13,7 +13,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 
 # Initialize Automake; require 1.11 or newer, do not enforce GNU rules.
 # We requires version 1.11 so subdir-objects work correctly with Fortran.
-AM_INIT_AUTOMAKE([1.11 foreign])
+AM_INIT_AUTOMAKE([1.11 foreign subdir-objects])
 
 ######################################################################
 # Checks for programs. 
@@ -134,6 +134,9 @@ AC_SUBST([ARFLAGS])
 : ${RM="rm -f"}
 AC_SUBST([RM])
 
+# Init libtool
+LT_INIT([disable-shared])
+
 ######################################################################
 # Set up parameters.
 ######################################################################
@@ -188,7 +191,7 @@ AM_CONDITIONAL([ENABLE_GENERIC],[test "x${fmm_ppc450_32bit}${fmm_ppc450_64bit}${
 # Add FMM solver stuff to main FCS package.
 AX_FCS_PACKAGE_RESET
 AX_FCS_PACKAGE_ADD([fmm_LIBS],[-lfcs_fmm])
-AX_FCS_PACKAGE_ADD([fmm_LIBS_A],[libfcs_fmm.a])
+AX_FCS_PACKAGE_ADD([fmm_LIBS_A],[libfcs_fmm.la])
 if test "x${FMM_MP}" = xFMM_MP_ARMCI ; then
   AX_FCS_PACKAGE_ADD([SUB_PACKAGES],[armci])
 fi

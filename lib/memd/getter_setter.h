@@ -26,30 +26,30 @@
 
 #include "FCSResult.h"
 
-FCSResult memd_set_init_flag(void* rawdata, fcs_int flagvalue);
+FCSResult fcs_memd_set_init_flag(void* rawdata, fcs_int flagvalue);
 
-FCSResult memd_set_speed_of_light(void* rawdata, fcs_float lightspeed);
+FCSResult fcs_memd_set_speed_of_light(void* rawdata, fcs_float lightspeed);
 
-FCSResult memd_set_time_step(void* rawdata, fcs_float timestep);
+FCSResult fcs_memd_set_time_step(void* rawdata, fcs_float timestep);
 
-FCSResult memd_set_permittivity(void* rawdata, fcs_float epsilon);
+FCSResult fcs_memd_set_permittivity(void* rawdata, fcs_float epsilon);
 
-FCSResult memd_set_temperature(void* rawdata, fcs_float temperature);
+FCSResult fcs_memd_set_temperature(void* rawdata, fcs_float temperature);
 
-FCSResult memd_set_bjerrum_length(void* rawdata, fcs_float bjerrum);
+FCSResult fcs_memd_set_bjerrum_length(void* rawdata, fcs_float bjerrum);
 
-FCSResult memd_set_total_number_of_particles(void* rawdata, fcs_int number_of_particles);
+FCSResult fcs_memd_set_total_number_of_particles(void* rawdata, fcs_int number_of_particles);
 
-FCSResult memd_set_local_number_of_particles(void* rawdata, fcs_int number_of_particles);
+FCSResult fcs_memd_set_local_number_of_particles(void* rawdata, fcs_int number_of_particles);
 
-FCSResult memd_set_box_size(void* rawdata, fcs_float length_x, fcs_float length_y, fcs_float length_z);
+FCSResult fcs_memd_set_box_size(void* rawdata, fcs_float length_x, fcs_float length_y, fcs_float length_z);
 
-FCSResult memd_set_mesh_size_1D(void* rawdata, fcs_int mesh_size);
+FCSResult fcs_memd_set_mesh_size_1D(void* rawdata, fcs_int mesh_size);
 
-fcs_float memd_get_time_step(void* rawdata);
+fcs_float fcs_memd_get_time_step(void* rawdata);
 
-fcs_int memd_needs_retuning(void* rawdata, fcs_int local_particles, fcs_float* positions, fcs_float* charges);
+fcs_int fcs_memd_needs_retuning(void* rawdata, fcs_int local_particles, fcs_float* positions, fcs_float* charges);
 
-FCSResult memd_tune_method(void* rawdata, fcs_int local_particles, fcs_float* positions, fcs_float* charges);
+FCSResult fcs_memd_tune_method(void* rawdata, fcs_int local_particles, fcs_float* positions, fcs_float* charges);
 
 #endif

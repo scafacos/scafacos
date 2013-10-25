@@ -1,11 +1,11 @@
 if ENABLE_SINGLE_LIB
-noinst_LIBRARIES = libfcs_mmm1d.a
+noinst_LTLIBRARIES = libfcs_mmm1d.la
 else
-lib_LIBRARIES = libfcs_mmm1d.a
+lib_LTLIBRARIES = libfcs_mmm1d.la
 endif
 
-libfcs_mmm1d_a_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/lib -I$(top_srcdir)/lib/common/fcs-common
-libfcs_mmm1d_a_SOURCES = \
+libfcs_mmm1d_la_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/lib -I$(top_srcdir)/lib/common/fcs-common
+libfcs_mmm1d_la_SOURCES = \
 	init.c init.h \
 	parameters.c parameters.h \
 	tune.c tune.h \

@@ -37,7 +37,7 @@
  @param z           index in z direction
  @param latticedim  dimensions of the lattice
  */
-fcs_int maggs_get_linear_index(fcs_int x, fcs_int y, fcs_int z, fcs_int latticedim[SPACE_DIM])
+fcs_int ifcs_memd_get_linear_index(fcs_int x, fcs_int y, fcs_int z, fcs_int latticedim[SPACE_DIM])
 {
     return (z + latticedim[ZPLUS]*(y + latticedim[YPLUS]*x));
 }
@@ -46,7 +46,7 @@ fcs_int maggs_get_linear_index(fcs_int x, fcs_int y, fcs_int z, fcs_int latticed
  all processors.
  @return total number of charged particles in the system
  */
-fcs_int maggs_count_charged_particles(memd_struct* memd)
+fcs_int ifcs_memd_count_charged_particles(memd_struct* memd)
 {  
     memd_cell *cell;
     memd_particle *part;
@@ -78,7 +78,7 @@ fcs_int maggs_count_charged_particles(memd_struct* memd)
  @param axes            in which direction to move
  @param adim            dimensions of the local lattice
  */
-fcs_int maggs_get_offset(fcs_int index_shift, fcs_int index_base, fcs_int axes, fcs_int adim[3])
+fcs_int ifcs_memd_get_offset(fcs_int index_shift, fcs_int index_base, fcs_int axes, fcs_int adim[3])
 {
     fcs_int dif;
     dif = index_shift - index_base;
@@ -95,7 +95,7 @@ fcs_int maggs_get_offset(fcs_int index_shift, fcs_int index_base, fcs_int axes, 
  @param dir1 write second direction into
  @param dir2 write third direction into
  */
-void maggs_calc_directions(fcs_int j, fcs_int* dir1, fcs_int*dir2)
+void ifcs_memd_calc_directions(fcs_int j, fcs_int* dir1, fcs_int*dir2)
 {
     *dir1 = *dir2 = -1;
     switch(j) {
@@ -124,7 +124,7 @@ void maggs_calc_directions(fcs_int j, fcs_int* dir1, fcs_int*dir2)
  @param Neighbor  neighbor lattice site
  @param index     index of current lattice site
  */
-fcs_float maggs_calc_curl(fcs_int mue, fcs_int nue, fcs_float* field, fcs_int* Neighbor, fcs_int index)
+fcs_float ifcs_memd_calc_curl(fcs_int mue, fcs_int nue, fcs_float* field, fcs_int* Neighbor, fcs_int index)
 {
     fcs_float result;
 	
@@ -144,7 +144,7 @@ fcs_float maggs_calc_curl(fcs_int mue, fcs_int nue, fcs_float* field, fcs_int* N
  @param Neighbor  neighbor lattice site
  @param index     index of current lattice site
  */
-fcs_float maggs_calc_dual_curl(fcs_int mue, fcs_int nue, fcs_float* field, fcs_int* Neighbor, fcs_int index)
+fcs_float ifcs_memd_calc_dual_curl(fcs_int mue, fcs_int nue, fcs_float* field, fcs_int* Neighbor, fcs_int index)
 {
     fcs_float res;
 	
@@ -157,14 +157,14 @@ fcs_float maggs_calc_dual_curl(fcs_int mue, fcs_int nue, fcs_float* field, fcs_i
 
 /** updates all D-fields on links of the plaquette
  and the surroundings. delta was calculated before
- in function "maggs_perform_rot_move_inplane".
+ in function "ifcs_memd_perform_rot_move_inplane".
  @param mue        direction 1 of update
  @param nue        direction 2 of update
  @param Neighbor   neighbor lattice site
  @param index      index of current lattice site
  @param delta      by which amount to update field
  */
-void maggs_update_plaquette(fcs_int mue, fcs_int nue, fcs_int* Neighbor, fcs_int index, fcs_float delta)
+void ifcs_memd_update_plaquette(fcs_int mue, fcs_int nue, fcs_int* Neighbor, fcs_int index, fcs_float delta)
 {
     fcs_int i = 3*index;
     memd.Dfield[i+mue]             += delta;
@@ -177,10 +177,10 @@ void maggs_update_plaquette(fcs_int mue, fcs_int nue, fcs_int* Neighbor, fcs_int
 /** Basic sanity checks to see if the code will run.
  @return zero if everything is fine. -1 otherwise.
  */
-FCSResult maggs_sanity_checks(memd_struct* memd)
+FCSResult ifcs_memd_sanity_checks(memd_struct* memd)
 {
     FCSResult result = NULL;
-    const char* fnc_name = "maggs_sanity_checks";
+    const char* fnc_name = "ifcs_memd_sanity_checks";
 //    fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "You can only set 2 of the parameters bjerrum, temperature and epsilon.");
     
     /*
@@ -238,7 +238,7 @@ FCSResult maggs_sanity_checks(memd_struct* memd)
 
 /** Calculate number of charged particles, the sum of the squared
  charges and the squared sum of the charges. */
-fcs_int memd_count_total_charges(memd_struct *memd, fcs_int num_particles) {
+fcs_int ifcs_memd_count_total_charges(memd_struct *memd, fcs_int num_particles) {
     int i;
     
     fcs_int node_sum, total_sum;
@@ -252,7 +252,7 @@ fcs_int memd_count_total_charges(memd_struct *memd, fcs_int num_particles) {
 }
 
 /** Calculate closest upper number that is 2^n */
-fcs_int memd_get_next_higher_power_of_two(fcs_float number) {
+fcs_int ifcs_memd_get_next_higher_power_of_two(fcs_float number) {
     return pow(2, ceil(log(number)/log(2)));
 }
 

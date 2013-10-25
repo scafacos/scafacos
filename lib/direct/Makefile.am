@@ -1,10 +1,10 @@
 if ENABLE_SINGLE_LIB
-noinst_LIBRARIES = libfcs_direct.a
+noinst_LTLIBRARIES = libfcs_direct.la
 else
-lib_LIBRARIES = libfcs_direct.a
+lib_LTLIBRARIES = libfcs_direct.la
 endif
 
-libfcs_direct_a_CPPFLAGS = -I$(top_srcdir)/lib
-libfcs_direct_a_SOURCES = \
+libfcs_direct_la_CPPFLAGS = -I$(top_srcdir)/lib
+libfcs_direct_la_SOURCES = \
   directc.c directc.h \
   z_tools.h

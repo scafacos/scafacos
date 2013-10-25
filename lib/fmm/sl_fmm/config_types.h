@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS/FMM.
  *  

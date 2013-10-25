@@ -25,12 +25,15 @@ AX_PROG_FC_MPI(,,AC_MSG_FAILURE([ScaFaCoS requires an MPI Fortran compiler.]))
 
 AC_PROG_RANLIB
 
+# Init libtool
+LT_INIT([disable-shared])
+
 # Add single-lib feature
 AX_FCS_ENABLE_SINGLE_LIB_ARG
 AX_FCS_ENABLE_SINGLE_LIB
 
 # List of all solvers.
-m4_define([all_solver_methods], [direct ewald fmm memd mmm1d mmm2d p2nfft p3m pepc pp3mg vmg])
+m4_define([all_solver_methods], [direct ewald fmm memd mmm1d mmm2d p2nfft p3m pepc pp3mg vmg wolf])
 
 m4_define([all_common_methods], [near gridsort resort fcs_common pnfft pfft fftw3_mpi_common fftw3_common fftw3_mpi fftw3])
 
@@ -79,8 +82,8 @@ AC_FOREACH([solver], all_solver_methods,[
 
 if test "x$enable_single_lib" = xyes ; then
   SCAFACOS_PC_LIBS="${SCAFACOS_PC_LIBS} -lfcs"
-  SCAFACOS_MK_LDADD="${SCAFACOS_MK_LDADD} \$(top_builddir)/package/libfcs.a"
-  SCAFACOS_MK_DEPS="${SCAFACOS_MK_DEPS} \$(top_builddir)/package/libfcs.a"
+  SCAFACOS_MK_LDADD="${SCAFACOS_MK_LDADD} \$(top_builddir)/package/libfcs.la"
+  SCAFACOS_MK_DEPS="${SCAFACOS_MK_DEPS} \$(top_builddir)/package/libfcs.la"
 fi
 
 if test "x${ax_fcs_package_COMP_USE}" != x ; then

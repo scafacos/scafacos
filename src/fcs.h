@@ -17,7 +17,21 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 
-
+/*! \mainpage ScaFaCoS - Scalable Fast Coulomb Solvers
+ *
+ *  The project's main web page is located at [www.scafacos.de](http://www.scafacos.de).
+ *
+ *
+ * \section interface_doc Interface documentation
+ *
+ * Documentation on the frontend interfaces is found in the following files:
+ *
+ *   Language      | File
+ *   ------------- | -------------
+ *   C             | FCSInterface_p.h
+ *   Fortran       | fcs4fortran.f90 
+ *
+ */
 
 #ifndef FCS_INCLUDED
 #define FCS_INCLUDED
@@ -64,6 +78,9 @@ extern "C" {
 #endif
 #ifdef FCS_ENABLE_VMG
 #include "fcs_vmg_p.h"
+#endif
+#ifdef FCS_ENABLE_WOLF
+#include "fcs_wolf_p.h"
 #endif
 
 #ifdef __cplusplus

@@ -30,9 +30,8 @@ typedef long z_int_t;
 #define z_int_fmt  "ld"
 
 
-#ifdef SL_EXTRA_PREFIX
+#ifdef Z_PREFIX
 # define Z_PACK_RENAME
-# define Z_PREFIX  SL_EXTRA_PREFIX
 #endif
 
 

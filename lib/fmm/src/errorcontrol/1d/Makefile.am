@@ -1,7 +1,7 @@
 include $(top_srcdir)/src/common-rules.am
 include $(srcdir)/filelist.am
 
-noinst_LIBRARIES = lib1d.a
-lib1d_a_SOURCES = $(filelist)
+noinst_LTLIBRARIES = lib1d.la
+lib1d_la_SOURCES = $(filelist)
 
 FCFLAGS += -O0

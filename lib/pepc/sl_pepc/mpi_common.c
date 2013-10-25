@@ -3,24 +3,17 @@
 #include <math.h>
 #include <mpi.h>
 
+#include "config_pepc_sort.h"
+#include "rename_pepc_sort.h"
+
 #include "sl_pepckeys.h"
 #include "sl_pepcparts.h"
 
-#include "fortran2c_types.h"
+#include "mpi_common.h"
 
 
-typedef FINT_TYPE_C finteger_t;
-#define finteger_mpi  FINT_TYPE_MPI
-#define finteger_fmt  FINT_TYPE_FMT
 
-typedef pepckeys_slint_t slint_t;
-#define slint_fmt pepckeys_sl_int_type_fmt
-
-
-void slcheck_fortran2c_types_(double *);
-
-#pragma weak slcheck_fortran2c_types_ = slcheck_fortran2c_types
-void slcheck_fortran2c_types(double *f2c_sizes)
+void sl_pepc_check_fortran2c_types(double *f2c_sizes)
 {
   int error = 0;
 
@@ -31,8 +24,13 @@ void slcheck_fortran2c_types(double *f2c_sizes)
   if (error) fprintf(stderr, "WARNING: There seems to be a problem between Fortran and C data types. Please adjust file 'fortran2c_types.h'!\n");
 }
 
+void sl_pepc_check_fortran2c_types_(double *f2c_sizes)
+{
+  sl_pepc_check_fortran2c_types(f2c_sizes);
+}
 
-void receive_stats(finteger_t nmax, int *scounts, int *sdispls, int *rcounts, int *rdispls, pepckeys_sldata0_t *work, int size, int rank, MPI_Comm comm)
+
+void sl_pepc_receive_stats(finteger_t nmax, int *scounts, int *sdispls, int *rcounts, int *rdispls, pepckeys_sldata0_t *work, int size, int rank, MPI_Comm comm)
 {
   slint_t i, j;
   double w, sweights[size], rweights[size];
@@ -62,9 +60,9 @@ void receive_stats(finteger_t nmax, int *scounts, int *sdispls, int *rcounts, in
 }
 
 
-void border_stats(slint_t nkeys, pepckeys_slkey_t *keys, int size, int rank, MPI_Comm comm)
+void sl_pepc_border_stats(slint_t nkeys, pepckeys_slkey_t *keys, int size, int rank, MPI_Comm comm)
 {
-  pepcparts_sl_key_type_c lmm[2], gmm[2 * size];
+  pepckeys_slkey_t lmm[2], gmm[2 * size];
   
   slint_t nb, i;
   double b, bsum, bmin, bmax;
@@ -76,7 +74,7 @@ void border_stats(slint_t nkeys, pepckeys_slkey_t *keys, int size, int rank, MPI
 
   } else lmm[0] = lmm[1] = 0;
 
-  MPI_Gather(lmm, 2 * pepcparts_sl_key_size_mpi, pepcparts_sl_key_type_mpi, gmm, 2 * pepcparts_sl_key_size_mpi, pepcparts_sl_key_type_mpi, 0, comm);
+  MPI_Gather(lmm, 2, SL_PEPC_VAR(pepckeys_SL_DEFCON(mpi.key_datatype)), gmm, 2, SL_PEPC_VAR(pepckeys_SL_DEFCON(mpi.key_datatype)), 0, comm);
   
   if (rank == 0)
   {

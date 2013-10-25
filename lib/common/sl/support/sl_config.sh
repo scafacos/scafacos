@@ -85,10 +85,13 @@ cfg_di_versions=false  # false|config|makefile
 cfg_interface=true
 cfg_makefile=true
 cfg_makefile_in=
+cfg_prefix=
 cfg_autoconf=
 cfg_automake=
 cfg_automake_libname=libsl.a
+cfg_automake_libprefix=sl_
 cfg_automake_noinst=
+cfg_automake_libtool=
 cfg_source=
 cfg_source_rename=
 cfg_source_ref=
@@ -204,7 +207,7 @@ print_settings()
   local prefix="$2"
 
   local list1="my_pwd cfg_config cfg_config_not"
-  local list2="cfg_di_versions cfg_makefile_sl_use_mpi cfg_local cfg_makefile cfg_makefile_in cfg_autoconf cfg_automake cfg_interface cfg_source cfg_source_rename cfg_source_ref cfg_source_ref_set"
+  local list2="cfg_di_versions cfg_makefile_sl_use_mpi cfg_local cfg_makefile cfg_makefile_in cfg_prefix cfg_autoconf cfg_automake cfg_interface cfg_source cfg_source_rename cfg_source_ref cfg_source_ref_set"
 
   local list_src="src_sl src_sl_src src_sl_src_sub src_sl_extra src_sl_extra_sub src_sl_scripts src_sl_scripts_sub src_sl_adds src_sl_adds_sub"
   local list_dst="dst_sl dst_sl_src dst_sl_src_sub dst_sl_extra dst_sl_extra_sub dst_sl_scripts dst_sl_scripts_sub dst_sl_adds dst_sl_adds_sub dst_if dst_if_sub"
@@ -457,6 +460,16 @@ for opt in $all ; do
       opt=${optarg}
       opt_isset=true
       cfg_source_ref_set=true
+      ;;
+    -prefix | --prefix)
+      prev=cfg_prefix
+      append=true
+      ;;
+    -prefix=* | --prefix=*)
+      prev=cfg_prefix
+      append=true
+      opt=${optarg}
+      opt_isset=true
       ;;
     -extra | --extra)
       cfg_extra=true
@@ -740,11 +753,23 @@ for opt in $all ; do
     -am-libname | --am-libname)
       prev=cfg_automake_libname
       ;;
+    -am-libprefix=* | --am-libprefix=*)
+      cfg_automake_libprefix=${optarg}
+      ;;
+    -am-libprefix | --am-libprefix)
+      prev=cfg_automake_libprefix
+      ;;
     -am-noinst | --am-noinst)
       cfg_automake_noinst=true
       ;;
     -no-am-noinst | --no-am-noinst)
       cfg_automake_noinst=
+      ;;
+    -am-libtool | --am-libtool)
+      cfg_automake_libtool=true
+      ;;
+    -no-am-libtool | --no-am-libtool)
+      cfg_automake_libtool=
       ;;
 
     -*)
@@ -1601,18 +1626,18 @@ for current_config_file in ${all_config_files} ; do
     ${cmd_far} begin                                                                           > ${far_script_interface}
 
     # make rename-script for type to <prefix>_type
-    ${cmd_far} mod_list 1 "${src_adds}names_types" ":" "${current_config_name}_:"             >> ${far_script_interface}
-    ${cmd_far} mod_list 1 "${src_adds}spec_names_types" ":" "${current_config_name}_:"        >> ${far_script_interface}
+    ${cmd_far} mod_list 1 "${src_adds}names_types" ":" "${cfg_prefix}${current_config_name}_:"             >> ${far_script_interface}
+    ${cmd_far} mod_list 1 "${src_adds}spec_names_types" ":" "${cfg_prefix}${current_config_name}_:"        >> ${far_script_interface}
     # make rename-script for macro to <prefix>_macro
-    ${cmd_far} mod_list 1 "${src_adds}names_macros" ":" "${current_config_name}_:"            >> ${far_script_interface}
-    ${cmd_far} mod_list 1 "${src_adds}spec_names_macros" ":" "${current_config_name}_:"       >> ${far_script_interface}
+    ${cmd_far} mod_list 1 "${src_adds}names_macros" ":" "${cfg_prefix}${current_config_name}_:"            >> ${far_script_interface}
+    ${cmd_far} mod_list 1 "${src_adds}spec_names_macros" ":" "${cfg_prefix}${current_config_name}_:"       >> ${far_script_interface}
     # make rename-script for [variable|function] to <prefix>_[variable|function]
-    ${cmd_far} mod_list 1 "${src_adds}names_oxl_all_variables" ":" "${current_config_name}_:" >> ${far_script_interface}
-    ${cmd_far} mod_list 1 "${src_adds}names_oxl_all_functions" ":" "${current_config_name}_:" >> ${far_script_interface}
+    ${cmd_far} mod_list 1 "${src_adds}names_oxl_all_variables" ":" "${cfg_prefix}${current_config_name}_:" >> ${far_script_interface}
+    ${cmd_far} mod_list 1 "${src_adds}names_oxl_all_functions" ":" "${cfg_prefix}${current_config_name}_:" >> ${far_script_interface}
     # make rename-script for QWERTZ_macro to macro
-    ${cmd_far} mod_list 1 "${src_adds}names_macros" "QWERTZ_:" ":"                            >> ${far_script_interface}
+    ${cmd_far} mod_list 1 "${src_adds}names_macros" "QWERTZ_:" ":"                                         >> ${far_script_interface}
 
-    ${cmd_far} end                                                                            >> ${far_script_interface}
+    ${cmd_far} end                                                                                         >> ${far_script_interface}
 
     create_sl_interface "${dst_interface}" "${current_config_name}" "${current_config_file}" "${current_tune_file}" "${config_tune}" "${src_config_tune}" "${src_include}" "${far_script_interface}"
 
@@ -1648,6 +1673,7 @@ if [ -n "${cfg_makefile}" ] ; then
   makefile_target="${cfg_makefile_target}"
   makefile_quiet="${cfg_makefile_quiet}"
   makefile_bulk_ar="${cfg_makefile_bulk_ar}"
+  makefile_prefix="${cfg_prefix}"
   makefile_extra="${cfg_extra}"
   makefile_extra_prefix="${cfg_extra_prefix}"
   if [ "${cfg_source}" = "ref" ] ; then
@@ -1690,11 +1716,14 @@ if [ -n "${cfg_makefile}" ] ; then
   create_far_entry "FAR" "${makefile_far}" "${far_script_makefile}"
   create_far_entry "TARGET" "${makefile_target}" "${far_script_makefile}"
   create_far_entry "QUIET" "${makefile_quiet}" "${far_script_makefile}"
-  create_far_entry "EXTRA" "${makefile_extra}" "${far_script_makefile}"
-  create_far_entry "EXTRA_PREFIX" "${makefile_extra_prefix}" "${far_script_makefile}"
   create_far_entry "BULK_AR" "${makefile_bulk_ar}" "${far_script_makefile}"
   create_far_entry "SRCBASE" "${makefile_srcbase}" "${far_script_makefile}"
   create_far_entry "ALL" "${makefile_all}" "${far_script_makefile}"
+
+  create_far_entry "PREFIX" "${makefile_extra}" "${far_script_makefile}"
+
+  create_far_entry "EXTRA" "${makefile_extra}" "${far_script_makefile}"
+  create_far_entry "EXTRA_PREFIX" "${makefile_extra_prefix}" "${far_script_makefile}"
 
   create_far_entry "WRAPPER_SRC" "${makefile_wrapper_src}" "${far_script_makefile}"
   create_far_entry "WRAPPER_PREFIX" "${makefile_wrapper_prefix}" "${far_script_makefile}"
@@ -1770,16 +1799,23 @@ if [ -n "${cfg_automake}" ] ; then
 
   exec >> "${dst_sl}Makefile.am"
 
+  if [ -n "${cfg_automake_libtool}" ] ; then
+    LT="LT"
+    LT_l="l"
+  fi
+
+  libname="${cfg_automake_libname%.*}.${LT_l}a"
+
   echo ""
-  echo "lib_LIBRARIES ="
-  echo "noinst_LIBRARIES ="
+  echo "lib_${LT}LIBRARIES ="
+  echo "noinst_${LT}LIBRARIES ="
   echo ""
   if [ -n "${cfg_automake_noinst}" ] ; then
     echo -n "noinst_"
   else
     echo -n "lib_"
   fi
-  echo "LIBRARIES += ${cfg_automake_libname}"
+  echo "${LT}LIBRARIES += ${libname}"
   echo ""
 
   if [ "${cfg_source}" = "ref" ] ; then
@@ -1809,6 +1845,17 @@ if [ -n "${cfg_automake}" ] ; then
     fi
   fi
 
+  srcdir_sl=
+  if [ "${cfg_source}" = "ref" -o "${cfg_source}" = "single" ] ; then
+    if [ -n "${cfg_source_ref_set}" ] ; then
+      srcdir_sl_source="${ref_sl_src%%/}/"
+      srcdir_sl_extra="${ref_sl_extra%%/}/"
+    else
+      srcdir_sl_source="${sub_src%%/}/"
+      srcdir_sl_extra="${sub_extra%%/}/"
+    fi
+  fi
+
   pdebug "current_dst_sl_src: ${current_dst_sl_src}"
   pdebug "current_dst_sl_extra: ${current_dst_sl_extra}"
 
@@ -1820,52 +1867,41 @@ if [ -n "${cfg_automake}" ] ; then
 
   echo -n "sl_sub_libs ="
   for c in ${config_names} ; do
-    echo -n " libsl_${c}.a"
+    echo -n " lib${cfg_automake_libprefix}${c}.${LT_l}a"
   done
   if [ -n "${cfg_extra}" ] ; then
-    echo -n " libsl_extra.a"
+    echo -n " lib${cfg_automake_libprefix}extra.${LT_l}a"
   fi
   if [ -n "${have_wrapper_sources_c}" ] ; then
-    echo -n " libsl_mpiwrap.a"
+    echo -n " lib${cfg_automake_libprefix}mpiwrap.${LT_l}a"
   fi
   echo ""
   echo ""
-  echo "noinst_LIBRARIES += \$(sl_sub_libs)"
-  echo ""
-  echo "srcdir_sl=\$(srcdir)"
-  if [ "${cfg_source}" = "ref" -o "${cfg_source}" = "single" ] ; then
-    if [ -n "${cfg_source_ref_set}" ] ; then
-      echo "srcdir_sl_source=\$(srcdir)/${ref_sl_src%%/}"
-      echo "srcdir_sl_extra=\$(srcdir)/${ref_sl_extra%%/}"
-    else
-      echo "srcdir_sl_source=\$(srcdir)/${sub_src%%/}"
-      echo "srcdir_sl_extra=\$(srcdir)/${sub_extra%%/}"
-    fi
-  fi
+  echo "noinst_${LT}LIBRARIES += \$(sl_sub_libs)"
   echo ""
   for c in ${config_names} ; do
-    echo "libsl_${c}_a_CPPFLAGS = \\"
-    echo -n "  -DSL_PREFIX=${c}_ -DSL_USE_MPI"
+    echo "lib${cfg_automake_libprefix}${c}_${LT_l}a_CPPFLAGS = \\"
+    echo -n "  -DSL_PREFIX=${cfg_prefix}${c}_ -DSL_USE_MPI"
     if [ "${cfg_source}" = "ref" -o "${cfg_source}" = "single" ] ; then
-      echo -n " -I\$(srcdir_sl_source)/include -I\$(srcdir_sl)/sl_${c}"
+      echo -n " -I\$(srcdir)/${srcdir_sl_source}include -I\$(srcdir)/${srcdir_sl}sl_${c}"
     elif [ "${cfg_source}" = "separate" ] ; then
-      echo -n " -I\$(srcdir_sl)/sl_${c}/${dst_sl_src}${sub_include}"
+      echo -n " -I\$(srcdir)/${srcdir_sl}sl_${c}/${dst_sl_src}${sub_include}"
     fi
-    echo " -DSL_EXTRA -DSL_EXTRA_PREFIX=${cfg_extra_prefix} -I\$(srcdir_sl_extra)/include"
+    echo " -DSL_EXTRA -DSL_EXTRA_PREFIX=${cfg_extra_prefix} -I\$(srcdir)/${srcdir_sl_extra}include"
     echo ""
   done
   if [ -n "${cfg_extra}" ] ; then
-    echo "libsl_extra_a_CPPFLAGS = \\"
-    echo -n "  -DSL_EXTRA_PREFIX=${cfg_extra_prefix} -DZMPI_PREFIX=${cfg_extra_prefix}"
+    echo "lib${cfg_automake_libprefix}extra_${LT_l}a_CPPFLAGS = \\"
+    echo -n "  -DZ_PREFIX=${cfg_extra_prefix} -DZMPI_PREFIX=${cfg_extra_prefix}"
     for x in ${cfg_extra_include} ; do
-      echo -n " -DHAVE_`echo ${x} | tr [a-z] [A-Z]`_H -I\$(srcdir_sl_extra)/${x}"
+      echo -n " -DHAVE_`echo ${x} | tr [a-z] [A-Z]`_H -I\$(srcdir)/${srcdir_sl_extra}${x}"
     done
     echo ""
     echo ""
   fi
   if [ -n "${have_wrapper_sources_c}" ] ; then
-    echo "libsl_mpiwrap_a_CPPFLAGS = \\"
-    echo -n "  -DSL_USE_MPI -I\$(srcdir_sl)/include"
+    echo "lib${cfg_automake_libprefix}mpiwrap_${LT_l}a_CPPFLAGS = \\"
+    echo -n "  -DSL_USE_MPI -I\$(srcdir)/${srcdir_sl}include"
     for c in ${config_names_not} ; do
       echo -n " -DNOT_sl_${c}"
     done
@@ -1874,17 +1910,21 @@ if [ -n "${cfg_automake}" ] ; then
       for x in ${cfg_extra_wrap_have_h} ; do
         echo -n " -DHAVE_`echo ${x} | tr [a-z] [A-Z]`_H"
       done
-      echo -n " -I\$(srcdir_sl_extra)/include"
+      echo -n " -I\$(srcdir)/${srcdir_sl_extra}include"
     fi
     echo ""
   fi
   echo ""
-  echo `echo "${cfg_automake_libname}_SOURCES =" | tr -- -. _`
+  echo `echo "${libname}_SOURCES =" | tr -- -. _`
   echo ""
-  echo "${cfg_automake_libname}: \$(sl_sub_libs)"
-  echo "	rm -f \$@"
-  echo "	\$(AR) \$(ARFLAGS) \$@ *.o"
-  echo "	\$(RANLIB) \$@"
+  if [ -n "${cfg_automake_libtool}" ] ; then
+    echo `echo "${libname}_LIBADD =" | tr -- -. _`" \$(sl_sub_libs)"
+  else
+    echo "${libname}: \$(sl_sub_libs)"
+    echo "	rm -f \$@"
+    echo "	\$(AR) \$(ARFLAGS) \$@ *.o"
+    echo "	\$(RANLIB) \$@"
+  fi
   if [ "${cfg_source}" = "ref" -o "${cfg_source}" = "single" ] ; then
     pdebug "current_dst_sl_src: ${current_dst_sl_src}"
     pdebug "sub_src: ${sub_src}"
@@ -1893,30 +1933,30 @@ if [ -n "${cfg_automake}" ] ; then
     for f in `echo ${current_dst_sl_src}${sub_src}${sub_base}*.c ${current_dst_sl_src}${sub_src}${sub_base_mpi}*.c ${current_dst_sl_src}${sub_src}${sub_include}*.h | tr ' ' '\n' | sort` ; do
       [ ! -e "${f}" ] && continue
       echo " \\"
-      echo -n "  \$(srcdir_sl_source)/${f#${current_dst_sl_src}${sub_src}}"
+      echo -n "  ${srcdir_sl_source}${f#${current_dst_sl_src}${sub_src}}"
     done
     if [ -n "${cfg_extra}" ] ; then
       for f in `echo ${current_dst_sl_extra}${sub_extra}include/*.h | tr ' ' '\n' | sort` ; do
         pdebug "file: ${f}"
         [ ! -e "${f}" ] && continue
         echo " \\"
-        echo -n "  \$(srcdir_sl_extra)/${f#${current_dst_sl_extra}${sub_extra}}"
+        echo -n "  ${srcdir_sl_extra}${f#${current_dst_sl_extra}${sub_extra}}"
       done
     fi
     echo ""
   fi
   for c in ${config_names} ; do
     echo ""
-    echo -n "libsl_${c}_a_SOURCES ="
+    echo -n "lib${cfg_automake_libprefix}${c}_${LT_l}a_SOURCES ="
     for f in `echo ${dst_sl}*.h | tr ' ' '\n' | sort` ; do
       [ ! -e "${f}" ] && continue
       echo " \\"
-      echo -n "  \$(srcdir_sl)/${f#${dst_sl}}"
+      echo -n "  ${srcdir_sl}${f#${dst_sl}}"
     done
     for f in `echo ${dst_sl}sl_${c}/*.h | tr ' ' '\n' | sort` ; do
       [ ! -e "${f}" ] && continue
       echo " \\"
-      echo -n "  \$(srcdir_sl)/${f#${dst_sl}}"
+      echo -n "  ${srcdir_sl}${f#${dst_sl}}"
     done
     if [ "${cfg_source}" = "ref" -o "${cfg_source}" = "single" ] ; then
       echo " \\"
@@ -1925,7 +1965,7 @@ if [ -n "${cfg_automake}" ] ; then
       for f in `echo ${dst_sl}sl_${c}/${dst_sl_src}${sub_include}*.h ${dst_sl}sl_${c}/${dst_sl_src}${sub_base}*.c ${dst_sl}sl_${c}/${dst_sl_src}${sub_base_mpi}*.c | tr ' ' '\n' | sort` ; do
         [ ! -e "${f}" ] && continue
         echo " \\"
-        echo -n "  \$(srcdir_sl)/${f#${dst_sl}}"
+        echo -n "  ${srcdir_sl}${f#${dst_sl}}"
       done
     fi
   done
@@ -1933,24 +1973,24 @@ if [ -n "${cfg_automake}" ] ; then
     pdebug "current_dst_sl_extra: ${current_dst_sl_extra}"
     pdebug "sub_extra: ${sub_extra}"
     echo ""
-    echo -n "libsl_extra_a_SOURCES ="
+    echo -n "lib${cfg_automake_libprefix}extra_${LT_l}a_SOURCES ="
     for x in ${cfg_extras} ; do
       for f in `echo ${current_dst_sl_extra}${sub_extra}${x}/*.[hc] | tr ' ' '\n' | sort` ; do
         pdebug "file: ${f}"
         [ ! -e "${f}" ] && continue
         echo " \\"
-        echo -n "  \$(srcdir_sl_extra)/${f#${current_dst_sl_extra}${sub_extra}}"
+        echo -n "  ${srcdir_sl_extra}${f#${current_dst_sl_extra}${sub_extra}}"
       done
     done
     echo ""
   fi
   echo ""
   if [ -n "${have_wrapper_sources_c}" ] ; then
-    echo -n "libsl_mpiwrap_a_SOURCES ="
+    echo -n "lib${cfg_automake_libprefix}mpiwrap_${LT_l}a_SOURCES ="
     for f in `echo ${dst_sl}include/*.h ${dst_sl}*.[hc] | tr ' ' '\n' | sort`; do
       [ ! -e "${f}" ] && continue
       echo " \\"
-      echo -n "  \$(srcdir_sl)/${f#${dst_sl}}"
+      echo -n "  ${srcdir_sl}${f#${dst_sl}}"
     done
     echo ""
   else
@@ -1958,7 +1998,7 @@ if [ -n "${cfg_automake}" ] ; then
     for f in `echo ${dst_sl}include/*.h ${dst_sl}*.h | tr ' ' '\n' | sort` ; do
       [ ! -e "${f}" ] && continue
       echo " \\"
-      echo -n "  \$(srcdir_sl)/${f#${dst_sl}}"
+      echo -n "  ${srcdir_sl}${f#${dst_sl}}"
     done
     echo ""
   fi

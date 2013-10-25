@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2010/2011/2012 Florian Fahrenberger
+ Copyright (C) 2010,2011,2012,2013 Florian Fahrenberger
  
  This file is part of ScaFaCoS.
  
@@ -30,7 +30,7 @@
 #include "communication.h"
 #include "helper_functions.h"
 
-void maggs_setup_communicator(memd_struct* memd, MPI_Comm communicator)
+void fcs_memd_setup_communicator(memd_struct* memd, MPI_Comm communicator)
 {
     /* store given communicator */
     memd->mpiparams.original_comm = communicator;
@@ -108,7 +108,7 @@ void maggs_setup_communicator(memd_struct* memd, MPI_Comm communicator)
 
 
 /** sets up nearest neighbors for each site in linear index */
-void maggs_setup_neighbors(memd_struct* memd)
+void ifcs_memd__setup_neighbors(memd_struct* memd)
 {
     fcs_int ix = 0;
     fcs_int iy = 0;
@@ -147,13 +147,13 @@ void maggs_setup_neighbors(memd_struct* memd)
                 izplus  = iz + 1;
                 izminus = iz - 1;
 				
-                kount         = maggs_get_linear_index(ix,      iy,      iz,      memd->lparams.dim);
-                kountzplus    = maggs_get_linear_index(ix,      iy,      izplus,  memd->lparams.dim);
-                kountzminus   = maggs_get_linear_index(ix,      iy,      izminus, memd->lparams.dim);
-                kountyplus    = maggs_get_linear_index(ix,      iyplus,  iz,      memd->lparams.dim);
-                kountyminus   = maggs_get_linear_index(ix,      iyminus, iz,      memd->lparams.dim);
-                kountxplus    = maggs_get_linear_index(ixplus,  iy,      iz,      memd->lparams.dim);
-                kountxminus   = maggs_get_linear_index(ixminus, iy,      iz,      memd->lparams.dim);
+                kount         = ifcs_memd_get_linear_index(ix,      iy,      iz,      memd->lparams.dim);
+                kountzplus    = ifcs_memd_get_linear_index(ix,      iy,      izplus,  memd->lparams.dim);
+                kountzminus   = ifcs_memd_get_linear_index(ix,      iy,      izminus, memd->lparams.dim);
+                kountyplus    = ifcs_memd_get_linear_index(ix,      iyplus,  iz,      memd->lparams.dim);
+                kountyminus   = ifcs_memd_get_linear_index(ix,      iyminus, iz,      memd->lparams.dim);
+                kountxplus    = ifcs_memd_get_linear_index(ixplus,  iy,      iz,      memd->lparams.dim);
+                kountxminus   = ifcs_memd_get_linear_index(ixminus, iy,      iz,      memd->lparams.dim);
 				
                 if(ixminus < 0)     memd->neighbor[kount][XMINUS] = -1;
                 else                memd->neighbor[kount][XMINUS] = kountxminus;
@@ -178,7 +178,7 @@ void maggs_setup_neighbors(memd_struct* memd)
 
 /** Set up lattice, calculate dimensions and lattice parameters
  Allocate memory for lattice sites and fields */
-void maggs_setup_local_lattice(memd_struct* memd)
+void fcs_memd_setup_local_lattice(memd_struct* memd)
 {
     fcs_int i;
     fcs_int ix = 0;
@@ -253,7 +253,7 @@ void maggs_setup_local_lattice(memd_struct* memd)
 
     /** set up lattice sites */
     FORALL_SITES(ix, iy, iz) {
-        linearindex = maggs_get_linear_index(ix, iy, iz, memd->lparams.dim);
+        linearindex = ifcs_memd_get_linear_index(ix, iy, iz, memd->lparams.dim);
 		
         memd->lattice[linearindex].r[0] = ix;
         memd->lattice[linearindex].r[1] = iy;
@@ -270,14 +270,14 @@ void maggs_setup_local_lattice(memd_struct* memd)
         FOR3D(i) memd->lattice[linearindex].permittivity[i] = 1.;
     }
 	
-    maggs_setup_neighbors(memd);
+    ifcs_memd__setup_neighbors(memd);
 }
 
 
 /** sets up surface patches for all domains.
  @param surface_patch the local surface patch
  */
-void maggs_calc_surface_patches(memd_struct* memd, t_surf_patch* surface_patch)
+void ifcs_memd__calc_surface_patches(memd_struct* memd, t_surf_patch* surface_patch)
 {
     /* x=memd->lparams.size[0] plane */
     surface_patch[0].offset   = memd->lparams.dim[2]*memd->lparams.dim[1]*memd->lparams.size[0];    /*(size[0],0,0) point */
@@ -342,7 +342,7 @@ void maggs_calc_surface_patches(memd_struct* memd, t_surf_patch* surface_patch)
 
 
 /** sets up MPI communications for domain surfaces */
-void maggs_prepare_surface_planes(fcs_int dim, MPI_Datatype *xy, MPI_Datatype *xz, MPI_Datatype *yz, 
+void ifcs_memd__prepare_surface_planes(fcs_int dim, MPI_Datatype *xy, MPI_Datatype *xz, MPI_Datatype *yz, 
                                   t_surf_patch *surface_patch)
 {
     MPI_Type_contiguous(dim*surface_patch[0].stride*sizeof(fcs_float),MPI_BYTE,yz);  
@@ -371,7 +371,7 @@ void maggs_prepare_surface_planes(fcs_int dim, MPI_Datatype *xy, MPI_Datatype *x
  @param dim     Dimension in which to communicate
  @param e_equil Flag if field is already equilibated
  */
-void maggs_exchange_surface_patch(memd_struct* memd, fcs_float *field, fcs_int dim, fcs_int e_equil)
+void fcs_memd_exchange_surface_patch(memd_struct* memd, fcs_float *field, fcs_int dim, fcs_int e_equil)
 {
     static fcs_int init = 1;
     static MPI_Datatype xyPlane,xzPlane,yzPlane; 
@@ -388,8 +388,8 @@ void maggs_exchange_surface_patch(memd_struct* memd, fcs_float *field, fcs_int d
     if(init) {
         MPI_Datatype xz_plaq, oneslice;
 		
-        maggs_calc_surface_patches(memd, surface_patch);
-        maggs_prepare_surface_planes(dim, &xyPlane, &xzPlane, &yzPlane, surface_patch);
+        ifcs_memd__calc_surface_patches(memd, surface_patch);
+        ifcs_memd__prepare_surface_planes(dim, &xyPlane, &xzPlane, &yzPlane, surface_patch);
 		
         MPI_Type_vector(surface_patch[0].stride, 2, 3, FCS_MPI_FLOAT,&yzPlane2D);    
         MPI_Type_commit(&yzPlane2D);

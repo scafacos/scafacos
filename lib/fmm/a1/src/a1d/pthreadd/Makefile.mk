@@ -3,9 +3,9 @@
 #     See COPYRIGHT in top-level directory.
 #
 
-liba1_la_SOURCES += $(top_srcdir)/src/a1d/pthreadd/pthreadd_initialize.c \
-	$(top_srcdir)/src/a1d/pthreadd/pthreadd_finalize.c \
-	$(top_srcdir)/src/a1d/pthreadd/pthreadd_collectives.c \
-	$(top_srcdir)/src/a1d/pthreadd/pthreadd_misc.c 
+liba1_la_SOURCES += src/a1d/pthreadd/pthreadd_initialize.c \
+	src/a1d/pthreadd/pthreadd_finalize.c \
+	src/a1d/pthreadd/pthreadd_collectives.c \
+	src/a1d/pthreadd/pthreadd_misc.c 
 
-noinst_HEADERS += $(top_srcdir)/src/a1d/pthreadd/pthreaddimpl.h
+noinst_HEADERS += src/a1d/pthreadd/pthreaddimpl.h

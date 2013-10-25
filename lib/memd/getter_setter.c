@@ -26,18 +26,18 @@
 #include "FCSCommon.h"
 #include <math.h>
 
-FCSResult memd_set_init_flag(void* rawdata, fcs_int flagvalue)
+FCSResult fcs_memd_set_init_flag(void* rawdata, fcs_int flagvalue)
 {
-    const char* fnc_name = "memd_set_init_flag";
+    const char* fnc_name = "fcs_memd_set_init_flag";
 
     memd_struct* memd = (memd_struct*) rawdata;
     memd->init_flag = flagvalue;
     return NULL;
 }
 
-FCSResult memd_set_speed_of_light(void* rawdata, fcs_float lightspeed)
+FCSResult fcs_memd_set_speed_of_light(void* rawdata, fcs_float lightspeed)
 {
-    const char* fnc_name = "memd_set_speed_of_light";
+    const char* fnc_name = "fcs_memd_set_speed_of_light";
     memd_struct* memd = (memd_struct*) rawdata;
 
     fcs_float f_mass = 1.0/lightspeed;
@@ -49,18 +49,18 @@ FCSResult memd_set_speed_of_light(void* rawdata, fcs_float lightspeed)
     return NULL;
 }
 
-FCSResult memd_set_time_step(void* rawdata, fcs_float timestep)
+FCSResult fcs_memd_set_time_step(void* rawdata, fcs_float timestep)
 {
-    const char* fnc_name = "memd_set_time_step";
+    const char* fnc_name = "fcs_memd_set_time_step";
     memd_struct* memd = (memd_struct*) rawdata;
 
     memd->parameters.time_step = timestep;
     return NULL;
 }
 
-FCSResult memd_set_permittivity(void* rawdata, fcs_float epsilon)
+FCSResult fcs_memd_set_permittivity(void* rawdata, fcs_float epsilon)
 {
-    const char* fnc_name = "memd_set_permittivity";
+    const char* fnc_name = "fcs_memd_set_permittivity";
     memd_struct* memd = (memd_struct*) rawdata;
     
     if ( ( memd->parameters.temperature > 0.0 ) && ( memd->parameters.bjerrum > 0.0 ) ){
@@ -82,9 +82,9 @@ FCSResult memd_set_permittivity(void* rawdata, fcs_float epsilon)
     return NULL;
 }
 
-FCSResult memd_set_temperature(void* rawdata, fcs_float temperature)
+FCSResult fcs_memd_set_temperature(void* rawdata, fcs_float temperature)
 {
-    const char* fnc_name = "memd_set_temperature";
+    const char* fnc_name = "fcs_memd_set_temperature";
     memd_struct* memd = (memd_struct*) rawdata;
     
     if ( ( memd->parameters.permittivity > 0.0 ) && ( memd->parameters.bjerrum > 0.0 ) ){
@@ -106,9 +106,9 @@ FCSResult memd_set_temperature(void* rawdata, fcs_float temperature)
     return NULL;
 }
 
-FCSResult memd_set_bjerrum_length(void* rawdata, fcs_float bjerrum)
+FCSResult fcs_memd_set_bjerrum_length(void* rawdata, fcs_float bjerrum)
 {
-    const char* fnc_name = "memd_set_bjerrum_length";
+    const char* fnc_name = "fcs_memd_set_bjerrum_length";
     memd_struct* memd = (memd_struct*) rawdata;
     
     if ( ( memd->parameters.permittivity > 0.0 ) && ( memd->parameters.temperature > 0.0 ) ){
@@ -133,25 +133,25 @@ FCSResult memd_set_bjerrum_length(void* rawdata, fcs_float bjerrum)
     return NULL;
 }
 
-FCSResult memd_set_total_number_of_particles(void* rawdata, fcs_int number_of_particles)
+FCSResult fcs_memd_set_total_number_of_particles(void* rawdata, fcs_int number_of_particles)
 {
-    const char* fnc_name = "memd_set_total_number_of_particles";
+    const char* fnc_name = "fcs_memd_set_total_number_of_particles";
     memd_struct* memd = (memd_struct*) rawdata;
     memd->parameters.n_part_total = number_of_particles;
     return NULL;
 }
 
-FCSResult memd_set_local_number_of_particles(void* rawdata, fcs_int number_of_particles)
+FCSResult fcs_memd_set_local_number_of_particles(void* rawdata, fcs_int number_of_particles)
 {
-    const char* fnc_name = "memd_set_local_number_of_particles";
+    const char* fnc_name = "fcs_memd_set_local_number_of_particles";
     memd_struct* memd = (memd_struct*) rawdata;
     memd->parameters.n_part = number_of_particles; 
     return NULL;
 }
 
-FCSResult memd_set_box_size(void* rawdata, fcs_float length_x, fcs_float length_y, fcs_float length_z)
+FCSResult fcs_memd_set_box_size(void* rawdata, fcs_float length_x, fcs_float length_y, fcs_float length_z)
 {
-    const char* fnc_name = "memd_set_box_size";
+    const char* fnc_name = "fcs_memd_set_box_size";
     memd_struct* memd = (memd_struct*) rawdata;
 
     /* Set boxlength parameter in memd struct */
@@ -183,36 +183,36 @@ FCSResult memd_set_box_size(void* rawdata, fcs_float length_x, fcs_float length_
     
 }
 
-FCSResult memd_set_mesh_size_1D(void* rawdata, fcs_int mesh_size)
+FCSResult fcs_memd_set_mesh_size_1D(void* rawdata, fcs_int mesh_size)
 {
-    const char* fnc_name = "memd_set_mesh_size_1D";
+    const char* fnc_name = "fcs_memd_set_mesh_size_1D";
     memd_struct* memd = (memd_struct*) rawdata;
     memd->parameters.mesh = mesh_size;
     return NULL;
 }
 
-fcs_float memd_get_time_step(void* rawdata)
+fcs_float fcs_memd_get_time_step(void* rawdata)
 {
-    const char* fnc_name = "memd_set_time_step";
+    const char* fnc_name = "fcs_memd_set_time_step";
     memd_struct* memd = (memd_struct*) rawdata;
     return memd->parameters.time_step;
 }
 
-fcs_int memd_needs_retuning(void* rawdata, fcs_int local_particles, fcs_float* positions, fcs_float* charges)
+fcs_int fcs_memd_needs_retuning(void* rawdata, fcs_int local_particles, fcs_float* positions, fcs_float* charges)
 {
-    const char* fnc_name = "memd_needs_retuning";
+    const char* fnc_name = "fcs_memd_needs_retuning";
     memd_struct* memd = (memd_struct*) rawdata;
     return 0;
 }
 
-FCSResult memd_tune_method(void* rawdata, fcs_int local_particles, fcs_float* positions, fcs_float* charges)
+FCSResult fcs_memd_tune_method(void* rawdata, fcs_int local_particles, fcs_float* positions, fcs_float* charges)
 {
-    const char* fnc_name = "memd_tune_method";
+    const char* fnc_name = "fcs_memd_tune_method";
     memd_struct* memd = (memd_struct*) rawdata;
     fcs_int n_part_total = memd->parameters.n_part_total;
 
     if (n_part_total < 1) {
-        n_part_total = memd_count_total_charges(memd, local_particles);
+        n_part_total = ifcs_memd_count_total_charges(memd, local_particles);
         memd->parameters.n_part_total = n_part_total;
     }
     
@@ -229,20 +229,20 @@ FCSResult memd_tune_method(void* rawdata, fcs_int local_particles, fcs_float* po
     fcs_float temperature = 1.0;
     
     
-    meshsize1D = memd_get_next_higher_power_of_two(dists_per_box);
+    meshsize1D = ifcs_memd_get_next_higher_power_of_two(dists_per_box);
     
     /* The factor 0.01 is "<<" for the stability criterion */
     lightspeed = 0.01 * (boxlength/meshsize1D) / timestep;
     
-    memd_set_speed_of_light(rawdata, lightspeed);
-    memd_set_mesh_size_1D(rawdata, meshsize1D);
-    memd_set_time_step(rawdata, timestep);
+    fcs_memd_set_speed_of_light(rawdata, lightspeed);
+    fcs_memd_set_mesh_size_1D(rawdata, meshsize1D);
+    fcs_memd_set_time_step(rawdata, timestep);
 //    printf("mesh_size_1D: %d\n", meshsize1D);
     
-    memd_set_permittivity(rawdata, epsilon);
-    memd_set_temperature(rawdata, temperature);
+    fcs_memd_set_permittivity(rawdata, epsilon);
+    fcs_memd_set_temperature(rawdata, temperature);
     
-    maggs_setup_local_lattice(memd);
+    fcs_memd_setup_local_lattice(memd);
     
     return NULL;    
 }

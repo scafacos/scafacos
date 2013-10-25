@@ -232,6 +232,23 @@ FCSResult ifcs_p2nfft_tune(
   d->num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
   d->num_periodic_dims    = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
 
+  fcs_int reg_near, reg_far;
+  if(d->reg_near == FCS_P2NFFT_REG_NEAR_DEFAULT)
+    reg_near = FCS_P2NFFT_REG_NEAR_CG;
+  else
+    reg_near = d->reg_near;
+
+  if(d->reg_far == FCS_P2NFFT_REG_FAR_DEFAULT){
+    if(d->num_periodic_dims == 2)
+      reg_far = FCS_P2NFFT_REG_FAR_RAD_T2P_SYM;
+    else if(d->num_periodic_dims == 1)
+      reg_far = FCS_P2NFFT_REG_FAR_RAD_T2P_IC;
+    else if(d->num_periodic_dims == 0)
+      reg_far = FCS_P2NFFT_REG_FAR_RAD_T2P_IC;
+  } else
+    reg_far = d->reg_far;
+
+
   /* Now, after the periodicity is clear, we can set the default tolerance type. */
   default_tolerance_type(d->periodicity,
       &d->tolerance_type, &d->tolerance);
@@ -483,7 +500,7 @@ FCSResult ifcs_p2nfft_tune(
         } else {
           /* shift and scale coordinates into sphere with radius (0.5-epsB) */
           d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
-          if(reg_far_is_radial(d->reg_far))
+          if(reg_far_is_radial(reg_far))
             d->box_scales[t] *= fcs_sqrt(d->num_nonperiodic_dims) ;
         }
 
@@ -542,15 +559,15 @@ FCSResult ifcs_p2nfft_tune(
       /* nonperiodic case */
       /********************/
 
-      if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
-        if(d->reg_near != FCS_P2NFFT_REG_NEAR_CG)
+      if(reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
+        if(reg_near != FCS_P2NFFT_REG_NEAR_CG)
           return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_RAD_CG is only available in combiniation with FCS_P2NFFT_REG_NEAR_CG.");
 
       if(!is_cubic(d->box_l))
-        if(d->reg_far != FCS_P2NFFT_REG_FAR_RAD_T2P_EC)
+        if(reg_far != FCS_P2NFFT_REG_FAR_RAD_T2P_EC)
           return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Noncubic boxes require far field regularization FCS_P2NFFT_REG_FAR_RAD_T2P_EC.");
 
-      if(d->reg_near == FCS_P2NFFT_REG_NEAR_T2P){
+      if(reg_near == FCS_P2NFFT_REG_NEAR_T2P){
         /* TODO: implement parameter tuning for 2-point-Taylor regularization 
          * Question: Do we need it? Afaik, CG-approximation is better for all cases. */
   
@@ -583,7 +600,7 @@ FCSResult ifcs_p2nfft_tune(
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
         for(int t=0; t<3; t++){
           d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
-          if(reg_far_is_radial(d->reg_far))
+          if(reg_far_is_radial(reg_far))
             d->box_scales[t] *= fcs_sqrt(3);
           d->box_shifts[t] = d->box_l[t] / 2.0;
         }
@@ -599,7 +616,7 @@ FCSResult ifcs_p2nfft_tune(
         d->taylor2p_derive_coeff = (fcs_float*) malloc(sizeof(fcs_float)*(d->p-1));
         ifcs_p2nfft_load_taylor2p_derive_coefficients(d->p, d->taylor2p_derive_coeff);
 
-      } else if(d->reg_near == FCS_P2NFFT_REG_NEAR_CG) {
+      } else if(reg_near == FCS_P2NFFT_REG_NEAR_CG) {
         /*********************/
         /* CG regularization */
         /*********************/
@@ -617,7 +634,7 @@ FCSResult ifcs_p2nfft_tune(
 //             d->epsI = 0.5 * avg_dist/d->box_l[mindim];
           } else { /* user defined r_cut, now scale it into unit cube */
             /* invert r_cut = box_scale * epsI, where box_scale = box_l*sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
-            if(reg_far_is_radial(d->reg_far))
+            if(reg_far_is_radial(reg_far))
               d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut * fcs_sqrt(3) + 1.0);
             else
               d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut + 1.0);
@@ -641,7 +658,7 @@ FCSResult ifcs_p2nfft_tune(
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
         for(int t=0; t<3; t++){
           d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
-          if(reg_far_is_radial(d->reg_far))
+          if(reg_far_is_radial(reg_far))
             d->box_scales[t] *= fcs_sqrt(3);
           d->box_shifts[t] = d->box_l[t] / 2.0;
         }
@@ -691,7 +708,7 @@ FCSResult ifcs_p2nfft_tune(
         fcs_int m, p; 
         d->cg_cos_coeff = (fcs_float*) malloc(sizeof(fcs_float)*d->N_cg_cos);
         int missed_coeff = 0;
-        if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
+        if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
           missed_coeff = ifcs_p2nfft_load_cg_cos_coeff_sym(d->N_cg_cos, d->log2epsI,
               &m, &p, d->cg_cos_coeff);
         else
@@ -768,7 +785,7 @@ FCSResult ifcs_p2nfft_tune(
       }
 
       /* far field interpolation only works for cubic boxes and radial far field regularization */
-      if( reg_far_is_radial(d->reg_far)  && is_cubic(d->box_l) )
+      if( reg_far_is_radial(reg_far)  && is_cubic(d->box_l) )
         d->far_interpolation_num_nodes = d->near_interpolation_num_nodes;
       else
         d->far_interpolation_num_nodes = 0;
@@ -776,7 +793,7 @@ FCSResult ifcs_p2nfft_tune(
       if(d->far_interpolation_num_nodes > 0){
         d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->far_interpolation_num_nodes+3));
         init_far_interpolation_table_potential_0dp(
-            d->far_interpolation_num_nodes, d->reg_far,
+            d->far_interpolation_num_nodes, reg_far,
             d->epsB, d->p, d->c,
             d->N_cg_cos, d->cg_cos_coeff,
             d->far_interpolation_table_potential);
@@ -850,7 +867,7 @@ FCSResult ifcs_p2nfft_tune(
       /* malloc_and_precompute_regkern_hat_1dp */
     if (d->num_periodic_dims == 0)
       d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
-          d->N, d->r_cut, d->epsI, d->epsB, d->p, d->c, d->box_scales, d->reg_near, d->reg_far,
+          d->N, d->r_cut, d->epsI, d->epsB, d->p, d->c, d->box_scales, reg_near, reg_far,
           d->taylor2p_coeff, d->N_cg_cos, d->cg_cos_coeff,
           d->interpolation_order, d->near_interpolation_num_nodes, d->far_interpolation_num_nodes,
           d->near_interpolation_table_potential, d->far_interpolation_table_potential,
@@ -933,16 +950,20 @@ static void print_command_line_arguments(
       printf("p2nfft_alpha,%" FCS_LMOD_FLOAT "f,", d->alpha);
     if(verbose || d->interpolation_order != 3)
       printf("p2nfft_intpol_order,%" FCS_LMOD_INT "d,", d->interpolation_order);
-    if(verbose || (d->reg_near != FCS_P2NFFT_REG_NEAR_CG) ){
+    if(verbose || (d->reg_near != FCS_P2NFFT_REG_NEAR_DEFAULT) ){
       printf("p2nfft_reg_near_name,");
-      if(d->reg_near == FCS_P2NFFT_REG_NEAR_CG)
+      if(d->reg_near == FCS_P2NFFT_REG_NEAR_DEFAULT)
+        printf("default,");
+      else if(d->reg_near == FCS_P2NFFT_REG_NEAR_CG)
         printf("cg,");
       else if(d->reg_near == FCS_P2NFFT_REG_NEAR_T2P)
         printf("t2p,");
     }
-    if(verbose || (d->reg_far != FCS_P2NFFT_REG_FAR_RAD_T2P_IC) ){
+    if(verbose || (d->reg_far != FCS_P2NFFT_REG_FAR_DEFAULT) ){
       printf("p2nfft_reg_far_name,");
-      if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
+      if(d->reg_far == FCS_P2NFFT_REG_FAR_DEFAULT)
+        printf("default,");
+      else if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
         printf("rad_cg,");
       else if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM)
         printf("rad_t2p_sym,");

@@ -52,6 +52,9 @@ endif
 if ENABLE_VMG
 SUBDIRS += vmg
 endif
+if ENABLE_WOLF
+SUBDIRS += wolf
+endif
 
 # For disabled solvers, disregard the whole tree below.
 # (This means that the person creating a distribution needs

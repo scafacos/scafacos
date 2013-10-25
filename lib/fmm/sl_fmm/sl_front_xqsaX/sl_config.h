@@ -44,9 +44,7 @@
 #define sl_key_integer
 #define sl_key_type_fmt           INTEGER_FMT
 
-extern INTEGER_C key_mask;
-
-#define sl_key_purify(_k_)        (_k_ & key_mask)
+#define sl_key_purify(_k_)        (_k_ & SL_FMM_CONFIG_VAR(fmm_front_key_mask))
 
 
 /* data section */
@@ -68,13 +66,11 @@ extern INTEGER_C key_mask;
 #define sl_data2_type_mpi         INTEGER_MPI
 #define sl_data2_size_mpi         1
 
-extern int front_aX;
-
 #define SL_DATA3                  /* addr */
 #define sl_data3_type_c           char
-#define sl_data3_size_c           front_aX
+#define sl_data3_size_c           SL_FMM_CONFIG_VAR(fmm_front_aX)
 #define sl_data3_type_mpi         MPI_CHAR
-#define sl_data3_size_mpi         front_aX
+#define sl_data3_size_mpi         SL_FMM_CONFIG_VAR(fmm_front_aX)
 
 #define sl_data3_flex
 #define sl_data3_memcpy

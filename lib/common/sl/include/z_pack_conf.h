@@ -28,6 +28,8 @@
 
 #include <string.h>
 
+#include "sl_rename.h"
+
 #include "sl_config.h"
 #include "sl_config_intern.h"
 

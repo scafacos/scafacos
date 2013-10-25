@@ -15,7 +15,7 @@ AC_MSG_NOTICE([****************************************************************]
 
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR(m4)
-AM_INIT_AUTOMAKE([-Wall -Werror foreign 1.11 silent-rules])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign 1.11 silent-rules subdir-objects])
 
 LT_PREREQ([2.2.6])
 
@@ -214,7 +214,7 @@ fi
 AC_PATH_PROG([DOXYGEN],[doxygen],,$PATH)
 AC_SUBST(DOXYGEN)
 
-AC_SUBST(top_srcdir)
+#AC_SUBST(top_srcdir)
 
 m4_ifdef([AX_FCS_PACKAGE_RESET],[
 AX_FCS_PACKAGE_RESET
