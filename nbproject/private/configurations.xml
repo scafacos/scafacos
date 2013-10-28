@@ -5,8 +5,6 @@
       <df name="autom4te.cache">
       </df>
       <df name="build">
-        <df name="build-aux">
-        </df>
         <df name="doc">
         </df>
         <df name="lib">
@@ -15,20 +13,129 @@
             </df>
             <df name="gridsort">
             </df>
+            <df name="mmm-common">
+            </df>
             <df name="near">
             </df>
+            <df name="pfft">
+              <df name="api">
+                <in>pfft.f</in>
+                <in>pfft.f03</in>
+                <in>pfftl.f03</in>
+              </df>
+              <df name="doc">
+              </df>
+              <df name="gcell">
+              </df>
+              <df name="kernel">
+              </df>
+              <df name="tests">
+                <df name="f03">
+                </df>
+                <df name="fortran">
+                </df>
+              </df>
+              <df name="util">
+              </df>
+              <in>config.h</in>
+              <in>fconfig.h</in>
+            </df>
+            <df name="pnfft">
+              <df name="api">
+                <in>pnfft.f03</in>
+                <in>pnfftl.f03</in>
+              </df>
+              <df name="doc">
+              </df>
+              <df name="kernel">
+              </df>
+              <df name="tests">
+                <df name="f03">
+                </df>
+              </df>
+              <df name="util">
+              </df>
+              <in>config.h</in>
+              <in>fconfig.h</in>
+            </df>
             <df name="resort">
+            </df>
+            <df name="sl">
+              <df name="base">
+              </df>
+              <df name="base_mpi">
+              </df>
+              <df name="extra">
+                <df name="z_pack">
+                </df>
+                <df name="zmpi_ataip">
+                </df>
+                <df name="zmpi_atasp">
+                </df>
+                <df name="zmpi_local">
+                </df>
+                <df name="zmpi_tools">
+                </df>
+              </df>
             </df>
           </df>
           <df name="direct">
           </df>
           <df name="ewald">
           </df>
+          <df name="fmm">
+            <df name="armci">
+              <df name="src">
+                <df name="armcix">
+                  <df name="dcmf-0.2.0">
+                  </df>
+                  <df name="dcmf-0.3.0">
+                  </df>
+                  <df name="dcmf2">
+                  </df>
+                </df>
+              </df>
+              <df name="src-gemini">
+              </df>
+              <df name="src-portals">
+              </df>
+              <in>config.h</in>
+            </df>
+            <df name="sl_fmm">
+            </df>
+            <df name="src">
+              <df name="addrarithm">
+              </df>
+              <df name="errorcontrol">
+                <df name="0d">
+                </df>
+                <df name="1d">
+                </df>
+                <df name="2d">
+                </df>
+                <df name="3d">
+                </df>
+              </df>
+              <df name="unrolled">
+                <df name="fmmgradt">
+                </df>
+                <df name="fmmmopn">
+                </df>
+                <df name="fmmoopn">
+                </df>
+              </df>
+            </df>
+            <in>config.h</in>
+            <in>fconfig.h</in>
+          </df>
           <df name="memd">
           </df>
           <df name="mmm1d">
           </df>
           <df name="mmm2d">
+          </df>
+          <df name="p2nfft">
+            <in>config.h</in>
           </df>
           <df name="p3m">
           </df>
@@ -42,64 +149,6 @@
             <df name="sl_pepc">
             </df>
             <df name="src">
-              <in>module_atomic_ops.mod</in>
-              <in>module_atomic_ops.pp.f90</in>
-              <in>module_base64.mod</in>
-              <in>module_base64.pp.f90</in>
-              <in>module_box.mod</in>
-              <in>module_box.pp.f90</in>
-              <in>module_comm_env.mod</in>
-              <in>module_comm_env.pp.f90</in>
-              <in>module_coulomb_kernels.mod</in>
-              <in>module_coulomb_kernels.pp.f90</in>
-              <in>module_debug.mod</in>
-              <in>module_debug.pp.f90</in>
-              <in>module_domains.mod</in>
-              <in>module_domains.pp.f90</in>
-              <in>module_fmm_framework.mod</in>
-              <in>module_fmm_framework.pp.f90</in>
-              <in>module_interaction_specific.mod</in>
-              <in>module_interaction_specific.pp.f90</in>
-              <in>module_interaction_specific_types.mod</in>
-              <in>module_interaction_specific_types_XYZQ.pp.f90</in>
-              <in>module_libpepc_main.mod</in>
-              <in>module_libpepc_main.pp.f90</in>
-              <in>module_math_tools.mod</in>
-              <in>module_math_tools.pp.f90</in>
-              <in>module_mirror_boxes.mod</in>
-              <in>module_mirror_boxes.pp.f90</in>
-              <in>module_pepc.mod</in>
-              <in>module_pepc.pp.f90</in>
-              <in>module_pepc_types.mod</in>
-              <in>module_pepc_types.pp.f90</in>
-              <in>module_pepc_wrappers.mod</in>
-              <in>module_pepc_wrappers.pp.f90</in>
-              <in>module_sort.mod</in>
-              <in>module_sort.pp.f90</in>
-              <in>module_spacefilling.mod</in>
-              <in>module_spacefilling.pp.f90</in>
-              <in>module_timings.mod</in>
-              <in>module_timings.pp.f90</in>
-              <in>module_tree.mod</in>
-              <in>module_tree.pp.f90</in>
-              <in>module_tree_communicator.mod</in>
-              <in>module_tree_communicator.pp.f90</in>
-              <in>module_tree_grow.mod</in>
-              <in>module_tree_grow.pp.f90</in>
-              <in>module_tree_node.mod</in>
-              <in>module_tree_node.pp.f90</in>
-              <in>module_utils.mod</in>
-              <in>module_utils.pp.f90</in>
-              <in>module_vtk.mod</in>
-              <in>module_vtk.pp.f90</in>
-              <in>module_walk.mod</in>
-              <in>module_walk_pthreads.pp.f90</in>
-              <in>opa_config.h</in>
-              <in>pepc_scafacos.pp.f90</in>
-              <in>pthreads_f.pp.f90</in>
-              <in>pthreads_stuff.mod</in>
-              <in>treevars.mod</in>
-              <in>treevars.pp.f90</in>
             </df>
             <in>config.h</in>
             <in>fconfig.h</in>
@@ -112,19 +161,8 @@
             <in>config.h</in>
           </df>
           <df name="vmg">
-            <df name="doc">
-            </df>
-            <df name="src">
-            </df>
-            <df name="test">
-            </df>
-            <in>config.h</in>
           </df>
-        </df>
-        <df name="m4">
-        </df>
-        <df name="netx">
-          <df name="locks">
+          <df name="wolf">
           </df>
         </df>
         <df name="package">
@@ -2479,6 +2517,7 @@
             <in>mpi_fmm_resort.h</in>
             <in>mpi_fmm_sort.c</in>
             <in>mpi_fmm_sort.h</in>
+            <in>rename_fmm_sort.h</in>
           </df>
           <df name="src">
             <df name="addrarithm">
@@ -3359,8 +3398,10 @@
             <in>config_pepc_sort.h</in>
             <in>fortran2c_types.h</in>
             <in>mpi_common.c</in>
+            <in>mpi_common.h</in>
             <in>mpi_pepckeys.c</in>
             <in>mpi_pepcparts.c</in>
+            <in>rename_pepc_sort.h</in>
           </df>
           <df name="src">
             <in>atomic_ops.c</in>
@@ -3664,6 +3705,9 @@
           </df>
         </df>
         <df name="wolf">
+          <in>wolf.c</in>
+          <in>wolf.h</in>
+          <in>z_tools.h</in>
         </df>
       </df>
       <df name="m4">
@@ -3722,6 +3766,9 @@
         <in>fcs_vmg.c</in>
         <in>fcs_vmg.h</in>
         <in>fcs_vmg_p.h</in>
+        <in>fcs_wolf.c</in>
+        <in>fcs_wolf.h</in>
+        <in>fcs_wolf_p.h</in>
       </df>
       <df name="test">
         <df name="c">

@@ -15,43 +15,6 @@
         <in>fcs_config.h</in>
         <in>fcs_fconfig.h</in>
       </df>
-      <df name="gabriel">
-        <df name="lib">
-          <df name="pepc">
-            <df name="src">
-              <in>module_atomic_ops.pp.f90</in>
-              <in>module_base64.pp.f90</in>
-              <in>module_box.pp.f90</in>
-              <in>module_comm_env.pp.f90</in>
-              <in>module_coulomb_kernels.pp.f90</in>
-              <in>module_debug.pp.f90</in>
-              <in>module_domains.pp.f90</in>
-              <in>module_fmm_framework.pp.f90</in>
-              <in>module_interaction_specific.pp.f90</in>
-              <in>module_interaction_specific_types_XYZQ.pp.f90</in>
-              <in>module_libpepc_main.pp.f90</in>
-              <in>module_math_tools.pp.f90</in>
-              <in>module_mirror_boxes.pp.f90</in>
-              <in>module_pepc.pp.f90</in>
-              <in>module_pepc_types.pp.f90</in>
-              <in>module_pepc_wrappers.pp.f90</in>
-              <in>module_sort.pp.f90</in>
-              <in>module_spacefilling.pp.f90</in>
-              <in>module_timings.pp.f90</in>
-              <in>module_tree.pp.f90</in>
-              <in>module_tree_communicator.pp.f90</in>
-              <in>module_tree_grow.pp.f90</in>
-              <in>module_tree_node.pp.f90</in>
-              <in>module_utils.pp.f90</in>
-              <in>module_vtk.pp.f90</in>
-              <in>module_walk_pthreads.pp.f90</in>
-              <in>pepc_scafacos.pp.f90</in>
-              <in>pthreads_f.pp.f90</in>
-              <in>treevars.pp.f90</in>
-            </df>
-          </df>
-        </df>
-      </df>
       <df name="lib">
         <df name="common">
           <df name="fcs-common">

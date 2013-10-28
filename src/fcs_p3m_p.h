@@ -35,7 +35,7 @@ extern "C" {
  * @author Rene Halver, Olaf Lenz
  */
 
-/* TODO: test whether to use it or not */
+/* TODO: test whether to use the ERFC approximation or not */
 #define FCS_P3M_USE_ERFC_APPROXIMATION 1
   /* #define FCS_P3M_USE_ERFC_APPROXIMATION 0 */
 
