@@ -153,6 +153,10 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   if(x<y)
     return 2 * fcs_pow(x/y, nu/2) * ifcs_p2nfft_bessel_k(nu, 2*fcs_sqrt(x*y)) - ifcs_p2nfft_inc_upper_bessel_k(-nu, y, x, eps);
 
+  /* Return 0, if upper bound (computed by inc. Gamma fct.) is already very small. */
+  if(ifcs_p2nfft_inc_upper_bessel_k(nu, x, 0.0, eps) < 1e-100)
+    return 0.0;
+
   /* init recurrence coefficients  and Pascal's triangle*/
   D_Aki = malloc(sizeof(fcs_float)*(N*(N+1))/2);
   N_Aki = malloc(sizeof(fcs_float)*(N*(N+1))/2);
