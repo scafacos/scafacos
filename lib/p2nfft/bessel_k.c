@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_gamma.h>
+#include <gsl/gsl_sf_lambert.h>
 
 #include "bessel_k.h"
 
@@ -143,6 +144,16 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   fcs_float *pt, *D_Aki, *N_Aki;
   fcs_int N = n_max+1;
 
+  /* Fct. gsl_sf_gamma_inc aborts for large arguments due to underflows.
+     For nu > -1 we find the very crude upper bound
+     inc_upper_bessel(nu,x,y) < Exp[-x]/x < bound for x and solve it for x.
+     Return 0 whenever x is larger than necessary to fulfill the bound. */
+  const fcs_float bound = 1e-100;
+  if(nu > -1){
+    if( x > gsl_sf_lambert_W0(1/bound) )
+      return 0.0;
+  }
+
   /* for y==0 incompl. bessel_k can be computed using incompl. Gamma fct. */
   if(fcs_float_is_zero(y))
     return fcs_pow(x,nu) * gsl_sf_gamma_inc(-nu,x); 
@@ -152,10 +163,6 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
    * see formula (4) of [Slevinsky-Safouhi 2010] */
   if(x<y)
     return 2 * fcs_pow(x/y, nu/2) * ifcs_p2nfft_bessel_k(nu, 2*fcs_sqrt(x*y)) - ifcs_p2nfft_inc_upper_bessel_k(-nu, y, x, eps);
-
-  /* Return 0, if upper bound (computed by inc. Gamma fct.) is already very small. */
-  if(ifcs_p2nfft_inc_upper_bessel_k(nu, x, 0.0, eps) < 1e-100)
-    return 0.0;
 
   /* init recurrence coefficients  and Pascal's triangle*/
   D_Aki = malloc(sizeof(fcs_float)*(N*(N+1))/2);
