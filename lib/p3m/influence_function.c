@@ -83,16 +83,16 @@ void ifcs_p3m_calc_influence_function_ik(ifcs_p3m_data_struct *d) {
 	  ((n[1]-start[1]) + new_grid[1]*(n[0]-start[0]));
 	if ((n[KX]%(d->grid[RX]/2)==0) && 
 	    (n[KY]%(d->grid[RY]/2)==0) && 
-	    (n[KZ]%(d->grid[RZ]/2)==0) ) {
+	    (n[KZ]%(d->grid[RZ]/2)==0) ) { //singularities in G set to zero (does not affect error)
 	  d->g_force[ind] = 0.0;
 	  d->g_energy[ind] = 0.0;
 	} else {
-	  fcs_float numerator_force[3];
+	  fcs_float numerator_force[3]; // 
 	  fcs_float numerator_energy;
 	  fcs_float denominator;
 	  ifcs_p3m_perform_aliasing_sums_ik(d, n, 
                                             numerator_force, &numerator_energy, 
-                                            &denominator);
+                                            &denominator); //sums over m (nominator and denominator)
 
 	  fcs_float fak1 = 
 	    d->d_op[RX][n[KX]]*numerator_force[RX]/d->box_l[RX] + 
@@ -101,7 +101,7 @@ void ifcs_p3m_calc_influence_function_ik(ifcs_p3m_data_struct *d) {
 	  fcs_float fak2 = 
 	    SQR(d->d_op[RX][n[KX]]/d->box_l[RX]) +
 	    SQR(d->d_op[RY][n[KY]]/d->box_l[RY]) +
-	    SQR(d->d_op[RZ][n[KZ]]/d->box_l[RZ]);
+	    SQR(d->d_op[RZ][n[KZ]]/d->box_l[RZ]); //k^2 
 	  fcs_float fak3 = fak1/(fak2 * SQR(denominator));
 	  d->g_force[ind] = M_2_PI*fak3;
           d->g_energy[ind] = 0.5 * d->g_force[ind];

@@ -48,7 +48,7 @@ void ifcs_p3m_set_box_c(void *rd, fcs_float c) {
 }
 
 
-//TODO I assume these functions should be placed somewhere else
+//TODO I assume these functions should be placed somewhere else r are not needed anyways
 
 fcs_float unit_volume(fcs_float alpha, fcs_float beta, fcs_float gamma) {//TODO up to now the unit volume is only used in one function. therefore it might be written there explicitely
     return (fcs_float)fcs_sqrt((1 - fcs_cos(alpha) * fcs_cos(alpha) - fcs_cos(beta) * fcs_cos(beta) - fcs_cos(gamma) * fcs_cos(gamma) + 2 * fcs_cos(alpha) * fcs_cos(gamma) * fcs_cos(beta)));

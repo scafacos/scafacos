@@ -23,17 +23,16 @@
 #include "utils.h"
 
 /** Computes the charge assignment function of for the \a i'th degree
-    at value \a x. */
+    at value \a x. This means that i a grid point index and x is the particle distance.*/
 fcs_float ifcs_p3m_caf(fcs_int i, fcs_float x, fcs_int cao_value) {
   switch (cao_value) {
-  case 1 : return 1.0;
-  case 2 : {
-    switch (i) { //B spline of order 2 means triangle
+  case 1 : return 1.0; //step function
+  case 2 : { //triangle
+    switch (i) { 
     case 0: return 0.5-x;
     case 1: return 0.5+x;
     default:
       printf("Tried to access charge assignment function of degree %d in scheme of order %d.\n",i,cao_value);
-      //@todo find out what order and scheme mean. --> find a call of this function
       return 0.0;
     }
   } 
@@ -109,12 +108,14 @@ fcs_float ifcs_p3m_caf_d(fcs_int i, fcs_float x, fcs_int cao_value) {
   fcs_int ip = cao_value - 1;
   switch (ip) 
     {
-    case 1:
+/* this triangle case is disabled due to the missing definition of the derivative at the tip of the triangle
+    case 1: 
 	    switch(i) {
 	    case 0: return -1.0;
 	    case 1: return 1.0;
 	    }
       break;
+*/
     case 2:
 	    switch(i) {
 	    case 0: return x-0.5;
