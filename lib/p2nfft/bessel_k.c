@@ -149,9 +149,23 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
      inc_upper_bessel(nu,x,y) < Exp[-x]/x < bound for x and solve it for x.
      Return 0 whenever x is larger than necessary to fulfill the bound. */
   const fcs_float bound = 1e-100;
-  if(nu > -1){
+
+  if(nu >= -1){
     if( x > gsl_sf_lambert_W0(1/bound) )
       return 0.0;
+  } else{
+      fcs_int fak = 1;
+      for(fcs_int t=2; t<-nu+1; t++){
+        fak*=t;
+      }
+      if(x<1){
+        if( fak*fcs_exp(-x)*fcs_pow(x,nu) < bound )
+          return 0.0;
+      }
+      else{
+        if( fak*fcs_exp(-x)*fcs_pow(x,-1) < bound )
+          return 0.0;
+      }
   }
 
   /* for y==0 incompl. bessel_k can be computed using incompl. Gamma fct. */
