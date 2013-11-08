@@ -51,7 +51,7 @@ extern FCSResult fcs_memd_init(FCS handle, MPI_Comm communicator)
     result = fcs_memd_check(handle, fnc_name);
     if (result != NULL) return result;
 
-    maggs_init(&handle->method_context, communicator);
+    ifcs_memd_init(&handle->method_context, communicator);
     
     return NULL;
 }
@@ -80,20 +80,20 @@ extern FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int loca
         return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
                                 "memd requires the box vectors to be parallel to the principal axes.");
     
-    memd_set_box_size(handle->method_context, a[0], b[1], c[2]);
+    fcs_memd_set_box_size(handle->method_context, a[0], b[1], c[2]);
     
     /* tune mesh and f_mass, calculate initial fields */
-    return memd_tune_method(handle->method_context, local_particles, positions, charges);
+    return fcs_memd_tune_method(handle->method_context, local_particles, positions, charges);
 }
 
 
 extern FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges, fcs_float *fields, fcs_float *potentials)
 {
     /* retune if needed */
-/*    if (memd_needs_retuning(handle->method_context, local_particles, positions, charges))
+/*    if (fcs_memd_needs_retuning(handle->method_context, local_particles, positions, charges))
         fcs_memd_tune(handle, local_particles, local_max_particles, positions, charges);
 */
-    memd_run(handle->method_context,
+    ifcs_memd_run(handle->method_context,
             local_particles, local_max_particles, positions, charges, fields, potentials);
         
     return NULL;
@@ -102,7 +102,7 @@ extern FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_int local
 
 extern FCSResult fcs_memd_destroy(FCS handle)
 {
-    return maggs_exit(handle->method_context);
+    return fcs_memd_exit(handle->method_context);
 }
 
 FCSResult fcs_memd_require_virial(FCS handle, fcs_int flagvalue)

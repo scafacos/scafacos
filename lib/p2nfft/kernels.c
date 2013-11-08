@@ -30,6 +30,7 @@
 #include "kernels.h"
 #include "types.h"
 #include <gsl/gsl_sf_gamma.h>
+#include <gsl/gsl_sf_lambert.h>
 #include "bessel_k.h"
 
 FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_gaussian(fcs_float x, fcs_int der, const fcs_float *param)    /* K(x)=exp(-x^2/c^2) */
@@ -584,7 +585,12 @@ static fcs_float gamma_zero_r_sqr(fcs_float r, fcs_int der) /* K(x) = Gamma(0,r^
   fcs_float poly=0.0;
   fcs_float r2=r*r;
   switch(der){
-    case 0 : return gsl_sf_gamma_inc(0,r2);
+    case 0 : if( r2 > gsl_sf_lambert_W0(1e+100) ){
+               return 0.0;
+             } else {
+               return gsl_sf_gamma_inc(0,r2);
+             }
+/*    case 0 : return gsl_sf_gamma_inc(0,r2);*/
     case 1 : poly = -2; break;
     case 2 : poly = 2 + 4*r2; break;
     case 3 : poly = -4 + r2*(-4 - 8*r2); break;

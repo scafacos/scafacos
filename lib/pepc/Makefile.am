@@ -1,9 +1,6 @@
 # Let aclocal find the add-on macros.
 ACLOCAL_AMFLAGS = -I m4
 
-# Import central add_lib_objects support.
-include $(top_srcdir)/build-aux/lib_a_support.am
-
 # Distribute script for Fortran module dependency generation.
 EXTRA_DIST = build-aux/fortran-depcomp
 
@@ -13,18 +10,14 @@ DISTCLEANFILES = fcs-package.info
 # Subdirectories to descend into.
 SUBDIRS = src sl_pepc openpa
 
-sublibs = src/liblpepc.a sl_pepc/libsl_pepc.a openpa/src/.libs/libopa.a
+sublibs = src/liblpepc.la sl_pepc/libsl_pepc.la openpa/src/libopa.la
 
 if ENABLE_LIBRARY_INSTALL
-lib_LIBRARIES = libfcs_pepc.a
+lib_LTLIBRARIES = libfcs_pepc.la
 else
-noinst_LIBRARIES = libfcs_pepc.a
+noinst_LTLIBRARIES = libfcs_pepc.la
 endif
 
-libfcs_pepc_a_SOURCES =
+libfcs_pepc_la_SOURCES =
 
-libfcs_pepc.a: $(sublibs)
-	$(mkinstalldirs) .libs
-	rm -f $@
-	for l in $^ ; do l="./$${l}" lib="$${l##*/}" ; dir="$${l%$${lib}}" ; $(add_dir_lib_objects) ; done
-	$(RANLIB) $@
+libfcs_pepc_la_LIBADD = $(sublibs)

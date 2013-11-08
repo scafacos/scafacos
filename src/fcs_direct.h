@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011-2012 Michael Hofmann, Rene Halver
+  Copyright (C) 2011, 2012, 2013 Michael Hofmann, Rene Halver
 
   This file is part of ScaFaCoS.
 
@@ -101,16 +101,6 @@ FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_int local_max
  */
 FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
                          fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
-
-
-/**
- * @brief a method to calculate direct near-field potentials with the chosen method (without charges of particles)
- *        e.g.: instead of q1q2/r the function return 1/r
- * @param handle pointer to a FCS on which the FCS with the information are saved
- * @param dist fcs_float distance for which the potential
- * @return fcs_float containing the potential value for the given distance (without charges, s. above)
- */
-FCSResult fcs_direct_near_field_potential(FCS handle, fcs_float dist);
 
 
 /**

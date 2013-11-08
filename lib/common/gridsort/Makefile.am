@@ -1,246 +1,239 @@
 
-lib_LIBRARIES =
-noinst_LIBRARIES =
+lib_LTLIBRARIES =
+noinst_LTLIBRARIES =
 
 if ENABLE_SINGLE_LIB
-noinst_LIBRARIES += libfcs_gridsort.a
+noinst_LTLIBRARIES += libfcs_gridsort.la
 else
-lib_LIBRARIES += libfcs_gridsort.a
+lib_LTLIBRARIES += libfcs_gridsort.la
 endif
 
-sl_sub_libs = libsl_back__p.a libsl_back_f_.a libsl_back_fp.a libsl_back_x.a libsl_forw.a libsl_extra.a libsl_mpiwrap.a
+sl_sub_libs = libfcs_gridsort_back__p.la libfcs_gridsort_back_f_.la libfcs_gridsort_back_fp.la libfcs_gridsort_back_x.la libfcs_gridsort_forw.la libfcs_gridsort_extra.la libfcs_gridsort_mpiwrap.la
 
-noinst_LIBRARIES += $(sl_sub_libs)
+noinst_LTLIBRARIES += $(sl_sub_libs)
 
-srcdir_sl=$(srcdir)
-srcdir_sl_source=$(srcdir)/../sl
-srcdir_sl_extra=$(srcdir)/../sl/extra
+libfcs_gridsort_back__p_la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_back__p_ -DSL_USE_MPI -I$(srcdir)/../sl/include -I$(srcdir)/sl_back__p -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/../sl/extra/include
 
-libsl_back__p_a_CPPFLAGS = \
-  -DSL_PREFIX=back__p_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back__p -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir_sl_extra)/include
+libfcs_gridsort_back_f__la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_back_f__ -DSL_USE_MPI -I$(srcdir)/../sl/include -I$(srcdir)/sl_back_f_ -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/../sl/extra/include
 
-libsl_back_f__a_CPPFLAGS = \
-  -DSL_PREFIX=back_f__ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_f_ -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir_sl_extra)/include
+libfcs_gridsort_back_fp_la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_back_fp_ -DSL_USE_MPI -I$(srcdir)/../sl/include -I$(srcdir)/sl_back_fp -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/../sl/extra/include
 
-libsl_back_fp_a_CPPFLAGS = \
-  -DSL_PREFIX=back_fp_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_fp -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir_sl_extra)/include
+libfcs_gridsort_back_x_la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_back_x_ -DSL_USE_MPI -I$(srcdir)/../sl/include -I$(srcdir)/sl_back_x -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/../sl/extra/include
 
-libsl_back_x_a_CPPFLAGS = \
-  -DSL_PREFIX=back_x_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_back_x -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir_sl_extra)/include
+libfcs_gridsort_forw_la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_forw_ -DSL_USE_MPI -I$(srcdir)/../sl/include -I$(srcdir)/sl_forw -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/../sl/extra/include
 
-libsl_forw_a_CPPFLAGS = \
-  -DSL_PREFIX=forw_ -DSL_USE_MPI -I$(srcdir_sl_source)/include -I$(srcdir_sl)/sl_forw -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir_sl_extra)/include
+libfcs_gridsort_extra_la_CPPFLAGS = \
+  -DZ_PREFIX=fcs_gridsort_ -DZMPI_PREFIX=fcs_gridsort_ -DHAVE_Z_PACK_H -I$(srcdir)/../sl/extra/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir)/../sl/extra/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir)/../sl/extra/zmpi_tools
 
-libsl_extra_a_CPPFLAGS = \
-  -DSL_EXTRA_PREFIX=fcs_gridsort_ -DZMPI_PREFIX=fcs_gridsort_ -DHAVE_Z_PACK_H -I$(srcdir_sl_extra)/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir_sl_extra)/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir_sl_extra)/zmpi_tools
+libfcs_gridsort_mpiwrap_la_CPPFLAGS = \
+  -DSL_USE_MPI -I$(top_srcdir)/lib -I$(srcdir)/include -DZMPI_PREFIX=fcs_gridsort_ -DHAVE_ZMPI_LOCAL_H -DHAVE_ZMPI_TOOLS_H -DHAVE_ZMPI_ATAIP_H -DHAVE_ZMPI_ATASP_H -I$(srcdir)/../sl/extra/include
 
-libsl_mpiwrap_a_CPPFLAGS = \
-  -DSL_USE_MPI -I$(srcdir_sl)/include -I$(top_srcdir)/lib -DZMPI_PREFIX=fcs_gridsort_ -DHAVE_ZMPI_LOCAL_H -DHAVE_ZMPI_TOOLS_H -DHAVE_ZMPI_ATAIP_H -DHAVE_ZMPI_ATASP_H -I$(srcdir_sl_extra)/include
+libfcs_gridsort_la_SOURCES =
 
-libfcs_gridsort_a_SOURCES =
-
-libfcs_gridsort.a: $(sl_sub_libs)
-	rm -f $@
-	$(AR) $(ARFLAGS) $@ *.o
-	$(RANLIB) $@
+libfcs_gridsort_la_LIBADD = $(sl_sub_libs)
 
 sl_SOURCE = \
-  $(srcdir_sl_source)/base/base.c \
-  $(srcdir_sl_source)/base_mpi/base_mpi.c \
-  $(srcdir_sl_source)/base_mpi/dash.c \
-  $(srcdir_sl_source)/base_mpi/spec.c \
-  $(srcdir_sl_source)/base/z_crc32.c \
-  $(srcdir_sl_source)/base/z_pack.c \
-  $(srcdir_sl_source)/include/dash_aux_heap.h \
-  $(srcdir_sl_source)/include/dash_aux_static.h \
-  $(srcdir_sl_source)/include/dash_common.h \
-  $(srcdir_sl_source)/include/dash_conf.h \
-  $(srcdir_sl_source)/include/dash_core.h \
-  $(srcdir_sl_source)/include/dash_exec.h \
-  $(srcdir_sl_source)/include/dash_exec_sl.h \
-  $(srcdir_sl_source)/include/dash_rename.h \
-  $(srcdir_sl_source)/include/dash_sched_a2av_aux.h \
-  $(srcdir_sl_source)/include/dash_sched_a2av.h \
-  $(srcdir_sl_source)/include/dash_sched_a2av_sym.h \
-  $(srcdir_sl_source)/include/dash_sched.h \
-  $(srcdir_sl_source)/include/local_generic_heap_conf.h \
-  $(srcdir_sl_source)/include/local_generic_heap.h \
-  $(srcdir_sl_source)/include/local_generic_heap_rename.h \
-  $(srcdir_sl_source)/include/prx_conf.h \
-  $(srcdir_sl_source)/include/prx.h \
-  $(srcdir_sl_source)/include/prx_rename.h \
-  $(srcdir_sl_source)/include/sl_adds.h \
-  $(srcdir_sl_source)/include/sl_adds_intern.h \
-  $(srcdir_sl_source)/include/sl_common.h \
-  $(srcdir_sl_source)/include/sl_config_global.h \
-  $(srcdir_sl_source)/include/sl_config_intern.h \
-  $(srcdir_sl_source)/include/sl_context_init.h \
-  $(srcdir_sl_source)/include/sl_context_struct.h \
-  $(srcdir_sl_source)/include/sl_data.h \
-  $(srcdir_sl_source)/include/sl_data_singles.h \
-  $(srcdir_sl_source)/include/sl_deprecated.h \
-  $(srcdir_sl_source)/include/sl_elements.h \
-  $(srcdir_sl_source)/include/sl_environment_intern.h \
-  $(srcdir_sl_source)/include/sl_globals.h \
-  $(srcdir_sl_source)/include/sl_index.h \
-  $(srcdir_sl_source)/include/sl_key.h \
-  $(srcdir_sl_source)/include/sl_pelem.h \
-  $(srcdir_sl_source)/include/sl_protos.h \
-  $(srcdir_sl_source)/include/sl_protos_mpi.h \
-  $(srcdir_sl_source)/include/sl_rename.h \
-  $(srcdir_sl_source)/include/sl_rti_intern.h \
-  $(srcdir_sl_source)/include/sl_rti_tids.h \
-  $(srcdir_sl_source)/include/sl_tune_intern.h \
-  $(srcdir_sl_source)/include/sl_types.h \
-  $(srcdir_sl_source)/include/sl_types_intern.h \
-  $(srcdir_sl_source)/include/sl_xelem_call.h \
-  $(srcdir_sl_source)/include/spec_conf.h \
-  $(srcdir_sl_source)/include/spec_core.h \
-  $(srcdir_sl_source)/include/spec_public_conf.h \
-  $(srcdir_sl_source)/include/spec_public.h \
-  $(srcdir_sl_source)/include/spec_rename.h \
-  $(srcdir_sl_source)/include/z_config.h \
-  $(srcdir_sl_source)/include/z_pack_conf.h \
-  $(srcdir_sl_source)/include/z_pack.h \
-  $(srcdir_sl_source)/include/z_pack_rename.h \
-  $(srcdir_sl_extra)/include/zmpi_ataip.h \
-  $(srcdir_sl_extra)/include/zmpi_ataip_rename.h \
-  $(srcdir_sl_extra)/include/zmpi_atasp.h \
-  $(srcdir_sl_extra)/include/zmpi_atasp_rename.h \
-  $(srcdir_sl_extra)/include/zmpi_local.h \
-  $(srcdir_sl_extra)/include/zmpi_local_rename.h \
-  $(srcdir_sl_extra)/include/zmpi_tools.h \
-  $(srcdir_sl_extra)/include/zmpi_tools_rename.h
+  ../sl/base/base.c \
+  ../sl/base_mpi/base_mpi.c \
+  ../sl/base_mpi/dash.c \
+  ../sl/base_mpi/spec.c \
+  ../sl/base/z_crc32.c \
+  ../sl/base/z_pack.c \
+  ../sl/include/dash_aux_heap.h \
+  ../sl/include/dash_aux_static.h \
+  ../sl/include/dash_common.h \
+  ../sl/include/dash_conf.h \
+  ../sl/include/dash_core.h \
+  ../sl/include/dash_exec.h \
+  ../sl/include/dash_exec_sl.h \
+  ../sl/include/dash_rename.h \
+  ../sl/include/dash_sched_a2av_aux.h \
+  ../sl/include/dash_sched_a2av.h \
+  ../sl/include/dash_sched_a2av_sym.h \
+  ../sl/include/dash_sched.h \
+  ../sl/include/local_generic_heap_conf.h \
+  ../sl/include/local_generic_heap.h \
+  ../sl/include/local_generic_heap_rename.h \
+  ../sl/include/prx_conf.h \
+  ../sl/include/prx.h \
+  ../sl/include/prx_rename.h \
+  ../sl/include/sl_adds.h \
+  ../sl/include/sl_adds_intern.h \
+  ../sl/include/sl_common.h \
+  ../sl/include/sl_config_global.h \
+  ../sl/include/sl_config_intern.h \
+  ../sl/include/sl_context_init.h \
+  ../sl/include/sl_context_struct.h \
+  ../sl/include/sl_data.h \
+  ../sl/include/sl_data_singles.h \
+  ../sl/include/sl_deprecated.h \
+  ../sl/include/sl_elements.h \
+  ../sl/include/sl_environment_intern.h \
+  ../sl/include/sl_globals.h \
+  ../sl/include/sl_index.h \
+  ../sl/include/sl_key.h \
+  ../sl/include/sl_pelem.h \
+  ../sl/include/sl_protos.h \
+  ../sl/include/sl_protos_mpi.h \
+  ../sl/include/sl_rename.h \
+  ../sl/include/sl_rti_intern.h \
+  ../sl/include/sl_rti_tids.h \
+  ../sl/include/sl_tune_intern.h \
+  ../sl/include/sl_types.h \
+  ../sl/include/sl_types_intern.h \
+  ../sl/include/sl_xelem_call.h \
+  ../sl/include/spec_conf.h \
+  ../sl/include/spec_core.h \
+  ../sl/include/spec_public_conf.h \
+  ../sl/include/spec_public.h \
+  ../sl/include/spec_rename.h \
+  ../sl/include/z_config.h \
+  ../sl/include/z_pack_conf.h \
+  ../sl/include/z_pack.h \
+  ../sl/include/z_pack_rename.h \
+  ../sl/extra/include/zmpi_ataip.h \
+  ../sl/extra/include/zmpi_ataip_rename.h \
+  ../sl/extra/include/zmpi_atasp.h \
+  ../sl/extra/include/zmpi_atasp_rename.h \
+  ../sl/extra/include/zmpi_local.h \
+  ../sl/extra/include/zmpi_local_rename.h \
+  ../sl/extra/include/zmpi_tools.h \
+  ../sl/extra/include/zmpi_tools_rename.h
 
-libsl_back__p_a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2coords.h \
-  $(srcdir_sl)/common.h \
-  $(srcdir_sl)/gridsort_front_tproc.h \
-  $(srcdir_sl)/gridsort.h \
-  $(srcdir_sl)/gridsort_resort.h \
-  $(srcdir_sl)/z_tools.h \
-  $(srcdir_sl)/sl_back__p/sl_config.h \
-  $(srcdir_sl)/sl_back__p/sl_environment.h \
-  $(srcdir_sl)/sl_back__p/sl_extra.h \
-  $(srcdir_sl)/sl_back__p/sl_tune_auto.h \
-  $(srcdir_sl)/sl_back__p/sl_tune.h \
+libfcs_gridsort_back__p_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_front_tproc.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_back__p/sl_config.h \
+  sl_back__p/sl_environment.h \
+  sl_back__p/sl_extra.h \
+  sl_back__p/sl_tune_auto.h \
+  sl_back__p/sl_tune.h \
   $(sl_SOURCE)
 
-libsl_back_f__a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2coords.h \
-  $(srcdir_sl)/common.h \
-  $(srcdir_sl)/gridsort_front_tproc.h \
-  $(srcdir_sl)/gridsort.h \
-  $(srcdir_sl)/gridsort_resort.h \
-  $(srcdir_sl)/z_tools.h \
-  $(srcdir_sl)/sl_back_f_/sl_config.h \
-  $(srcdir_sl)/sl_back_f_/sl_environment.h \
-  $(srcdir_sl)/sl_back_f_/sl_extra.h \
-  $(srcdir_sl)/sl_back_f_/sl_tune_auto.h \
-  $(srcdir_sl)/sl_back_f_/sl_tune.h \
+libfcs_gridsort_back_f__la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_front_tproc.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_back_f_/sl_config.h \
+  sl_back_f_/sl_environment.h \
+  sl_back_f_/sl_extra.h \
+  sl_back_f_/sl_tune_auto.h \
+  sl_back_f_/sl_tune.h \
   $(sl_SOURCE)
 
-libsl_back_fp_a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2coords.h \
-  $(srcdir_sl)/common.h \
-  $(srcdir_sl)/gridsort_front_tproc.h \
-  $(srcdir_sl)/gridsort.h \
-  $(srcdir_sl)/gridsort_resort.h \
-  $(srcdir_sl)/z_tools.h \
-  $(srcdir_sl)/sl_back_fp/sl_config.h \
-  $(srcdir_sl)/sl_back_fp/sl_environment.h \
-  $(srcdir_sl)/sl_back_fp/sl_extra.h \
-  $(srcdir_sl)/sl_back_fp/sl_tune_auto.h \
-  $(srcdir_sl)/sl_back_fp/sl_tune.h \
+libfcs_gridsort_back_fp_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_front_tproc.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_back_fp/sl_config.h \
+  sl_back_fp/sl_environment.h \
+  sl_back_fp/sl_extra.h \
+  sl_back_fp/sl_tune_auto.h \
+  sl_back_fp/sl_tune.h \
   $(sl_SOURCE)
 
-libsl_back_x_a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2coords.h \
-  $(srcdir_sl)/common.h \
-  $(srcdir_sl)/gridsort_front_tproc.h \
-  $(srcdir_sl)/gridsort.h \
-  $(srcdir_sl)/gridsort_resort.h \
-  $(srcdir_sl)/z_tools.h \
-  $(srcdir_sl)/sl_back_x/sl_config.h \
-  $(srcdir_sl)/sl_back_x/sl_environment.h \
-  $(srcdir_sl)/sl_back_x/sl_extra.h \
-  $(srcdir_sl)/sl_back_x/sl_tune_auto.h \
-  $(srcdir_sl)/sl_back_x/sl_tune.h \
+libfcs_gridsort_back_x_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_front_tproc.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_back_x/sl_config.h \
+  sl_back_x/sl_environment.h \
+  sl_back_x/sl_extra.h \
+  sl_back_x/sl_tune_auto.h \
+  sl_back_x/sl_tune.h \
   $(sl_SOURCE)
 
-libsl_forw_a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2coords.h \
-  $(srcdir_sl)/common.h \
-  $(srcdir_sl)/gridsort_front_tproc.h \
-  $(srcdir_sl)/gridsort.h \
-  $(srcdir_sl)/gridsort_resort.h \
-  $(srcdir_sl)/z_tools.h \
-  $(srcdir_sl)/sl_forw/sl_config.h \
-  $(srcdir_sl)/sl_forw/sl_environment.h \
-  $(srcdir_sl)/sl_forw/sl_extra.h \
-  $(srcdir_sl)/sl_forw/sl_tune_auto.h \
-  $(srcdir_sl)/sl_forw/sl_tune.h \
+libfcs_gridsort_forw_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_front_tproc.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_forw/sl_config.h \
+  sl_forw/sl_environment.h \
+  sl_forw/sl_extra.h \
+  sl_forw/sl_tune_auto.h \
+  sl_forw/sl_tune.h \
   $(sl_SOURCE)
 
-libsl_extra_a_SOURCES = \
-  $(srcdir_sl_extra)/z_pack/z_config.h \
-  $(srcdir_sl_extra)/z_pack/z_pack.c \
-  $(srcdir_sl_extra)/z_pack/z_pack_conf.h \
-  $(srcdir_sl_extra)/z_pack/z_pack.h \
-  $(srcdir_sl_extra)/z_pack/z_pack_rename.h \
-  $(srcdir_sl_extra)/zmpi_local/zmpi_local.c \
-  $(srcdir_sl_extra)/zmpi_local/zmpi_local_conf.h \
-  $(srcdir_sl_extra)/zmpi_local/zmpi_local.h \
-  $(srcdir_sl_extra)/zmpi_local/zmpi_local_rename.h \
-  $(srcdir_sl_extra)/zmpi_local/zmpil_simple.h \
-  $(srcdir_sl_extra)/zmpi_tools/zmpi_tools.c \
-  $(srcdir_sl_extra)/zmpi_tools/zmpi_tools_conf.h \
-  $(srcdir_sl_extra)/zmpi_tools/zmpi_tools.h \
-  $(srcdir_sl_extra)/zmpi_tools/zmpi_tools_rename.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_aux_heap.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_aux_static.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash.c \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_common.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_conf.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_core.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_exec.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_exec_mpi.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_rename.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_sched_a2a_sym.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_sched_a2av_aux.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_sched_a2av.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_sched_a2av_sym.h \
-  $(srcdir_sl_extra)/zmpi_ataip/dash_sched.h \
-  $(srcdir_sl_extra)/zmpi_ataip/local_generic_heap_conf.h \
-  $(srcdir_sl_extra)/zmpi_ataip/local_generic_heap.h \
-  $(srcdir_sl_extra)/zmpi_ataip/local_generic_heap_rename.h \
-  $(srcdir_sl_extra)/zmpi_ataip/prx_conf.h \
-  $(srcdir_sl_extra)/zmpi_ataip/prx.h \
-  $(srcdir_sl_extra)/zmpi_ataip/prx_rename.h \
-  $(srcdir_sl_extra)/zmpi_ataip/zmpi_ataip.c \
-  $(srcdir_sl_extra)/zmpi_ataip/zmpi_ataip.h \
-  $(srcdir_sl_extra)/zmpi_ataip/zmpi_ataip_rename.h \
-  $(srcdir_sl_extra)/zmpi_atasp/spec.c \
-  $(srcdir_sl_extra)/zmpi_atasp/spec_conf.h \
-  $(srcdir_sl_extra)/zmpi_atasp/spec_core.h \
-  $(srcdir_sl_extra)/zmpi_atasp/spec_public_conf.h \
-  $(srcdir_sl_extra)/zmpi_atasp/spec_public.h \
-  $(srcdir_sl_extra)/zmpi_atasp/spec_rename.h \
-  $(srcdir_sl_extra)/zmpi_atasp/zmpi_atasp.c \
-  $(srcdir_sl_extra)/zmpi_atasp/zmpi_atasp.h \
-  $(srcdir_sl_extra)/zmpi_atasp/zmpi_atasp_rename.h
+libfcs_gridsort_extra_la_SOURCES = \
+  ../sl/extra/z_pack/z_config.h \
+  ../sl/extra/z_pack/z_pack.c \
+  ../sl/extra/z_pack/z_pack_conf.h \
+  ../sl/extra/z_pack/z_pack.h \
+  ../sl/extra/z_pack/z_pack_rename.h \
+  ../sl/extra/zmpi_local/zmpi_local.c \
+  ../sl/extra/zmpi_local/zmpi_local_conf.h \
+  ../sl/extra/zmpi_local/zmpi_local.h \
+  ../sl/extra/zmpi_local/zmpi_local_rename.h \
+  ../sl/extra/zmpi_local/zmpil_simple.h \
+  ../sl/extra/zmpi_tools/zmpi_tools.c \
+  ../sl/extra/zmpi_tools/zmpi_tools_conf.h \
+  ../sl/extra/zmpi_tools/zmpi_tools.h \
+  ../sl/extra/zmpi_tools/zmpi_tools_rename.h \
+  ../sl/extra/zmpi_ataip/dash_aux_heap.h \
+  ../sl/extra/zmpi_ataip/dash_aux_static.h \
+  ../sl/extra/zmpi_ataip/dash.c \
+  ../sl/extra/zmpi_ataip/dash_common.h \
+  ../sl/extra/zmpi_ataip/dash_conf.h \
+  ../sl/extra/zmpi_ataip/dash_core.h \
+  ../sl/extra/zmpi_ataip/dash_exec.h \
+  ../sl/extra/zmpi_ataip/dash_exec_mpi.h \
+  ../sl/extra/zmpi_ataip/dash_rename.h \
+  ../sl/extra/zmpi_ataip/dash_sched_a2a_sym.h \
+  ../sl/extra/zmpi_ataip/dash_sched_a2av_aux.h \
+  ../sl/extra/zmpi_ataip/dash_sched_a2av.h \
+  ../sl/extra/zmpi_ataip/dash_sched_a2av_sym.h \
+  ../sl/extra/zmpi_ataip/dash_sched.h \
+  ../sl/extra/zmpi_ataip/local_generic_heap_conf.h \
+  ../sl/extra/zmpi_ataip/local_generic_heap.h \
+  ../sl/extra/zmpi_ataip/local_generic_heap_rename.h \
+  ../sl/extra/zmpi_ataip/prx_conf.h \
+  ../sl/extra/zmpi_ataip/prx.h \
+  ../sl/extra/zmpi_ataip/prx_rename.h \
+  ../sl/extra/zmpi_ataip/zmpi_ataip.c \
+  ../sl/extra/zmpi_ataip/zmpi_ataip.h \
+  ../sl/extra/zmpi_ataip/zmpi_ataip_rename.h \
+  ../sl/extra/zmpi_atasp/spec.c \
+  ../sl/extra/zmpi_atasp/spec_conf.h \
+  ../sl/extra/zmpi_atasp/spec_core.h \
+  ../sl/extra/zmpi_atasp/spec_public_conf.h \
+  ../sl/extra/zmpi_atasp/spec_public.h \
+  ../sl/extra/zmpi_atasp/spec_rename.h \
+  ../sl/extra/zmpi_atasp/zmpi_atasp.c \
+  ../sl/extra/zmpi_atasp/zmpi_atasp.h \
+  ../sl/extra/zmpi_atasp/zmpi_atasp_rename.h
 
-libsl_mpiwrap_a_SOURCES = \
-  $(srcdir_sl)/bounds_xyz2coords.h \
-  $(srcdir_sl)/common.h \
-  $(srcdir_sl)/gridsort.c \
-  $(srcdir_sl)/gridsort_front_tproc.h \
-  $(srcdir_sl)/gridsort.h \
-  $(srcdir_sl)/gridsort_resort.c \
-  $(srcdir_sl)/gridsort_resort.h \
-  $(srcdir_sl)/include/sl_back_f_.h \
-  $(srcdir_sl)/include/sl_back_fp.h \
-  $(srcdir_sl)/include/sl_back__p.h \
-  $(srcdir_sl)/include/sl_back_x.h \
-  $(srcdir_sl)/include/sl_forw.h \
-  $(srcdir_sl)/z_tools.h
+libfcs_gridsort_mpiwrap_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort.c \
+  gridsort_front_tproc.h \
+  gridsort.h \
+  gridsort_resort.c \
+  gridsort_resort.h \
+  include/sl_back_f_.h \
+  include/sl_back_fp.h \
+  include/sl_back__p.h \
+  include/sl_back_x.h \
+  include/sl_forw.h \
+  z_tools.h

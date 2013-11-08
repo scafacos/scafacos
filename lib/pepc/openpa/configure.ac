@@ -17,7 +17,7 @@ dnl config.guess.  It also contains autoconf macro files.
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_INIT_AUTOMAKE([-Wall -Werror foreign color-tests 1.11])  # changed from 1.12.3 to 1.11
+AM_INIT_AUTOMAKE([-Wall -Werror foreign color-tests 1.11 subdir-objects])  # changed from 1.12.3 to 1.11
 
 AX_PROG_CC_MPI(,,AC_MSG_FAILURE([This version of the OpenPA library requires an MPI C compiler.]))
 #AC_PROG_CC

@@ -169,7 +169,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_l, const fcs_float *box_scales, fcs_float alpha,
-    const fcs_int *periodicity, fcs_int p,
+    const fcs_int *periodicity, fcs_int p, fcs_float c, fcs_int reg_far,
     MPI_Comm comm_cart);
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
@@ -231,6 +231,35 @@ FCSResult ifcs_p2nfft_tune(
   d->use_ewald = periodicity[0] || periodicity[1] || periodicity[2];  
   d->num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
   d->num_periodic_dims    = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
+
+  fcs_int reg_near=-1, reg_far=-1;
+  if(d->reg_near == FCS_P2NFFT_REG_NEAR_DEFAULT)
+    reg_near = FCS_P2NFFT_REG_NEAR_CG;
+  else
+    reg_near = d->reg_near;
+
+  if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
+    if(d->num_periodic_dims != 0)
+      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "FCS_P2NFFT_REG_FAR_RAD_CG is only available for 0d-periodicity.");
+
+  if( (d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
+      || (d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_EC)
+      || (d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_IC) )
+  {
+    if(d->num_periodic_dims != 0)
+      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Rectangular regularization is only available for 0d-periodicity.");
+  }
+
+  if(d->reg_far == FCS_P2NFFT_REG_FAR_DEFAULT){
+    if(d->num_periodic_dims == 2)
+      reg_far = FCS_P2NFFT_REG_FAR_RAD_T2P_SYM;
+    else if(d->num_periodic_dims == 1)
+      reg_far = FCS_P2NFFT_REG_FAR_RAD_T2P_IC;
+    else if(d->num_periodic_dims == 0)
+      reg_far = FCS_P2NFFT_REG_FAR_RAD_T2P_IC;
+  } else
+    reg_far = d->reg_far;
+
 
   /* Now, after the periodicity is clear, we can set the default tolerance type. */
   default_tolerance_type(d->periodicity,
@@ -483,7 +512,7 @@ FCSResult ifcs_p2nfft_tune(
         } else {
           /* shift and scale coordinates into sphere with radius (0.5-epsB) */
           d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
-          if(reg_far_is_radial(d->reg_far))
+          if(reg_far_is_radial(reg_far))
             d->box_scales[t] *= fcs_sqrt(d->num_nonperiodic_dims) ;
         }
 
@@ -542,15 +571,15 @@ FCSResult ifcs_p2nfft_tune(
       /* nonperiodic case */
       /********************/
 
-      if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
-        if(d->reg_near != FCS_P2NFFT_REG_NEAR_CG)
+      if(reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
+        if(reg_near != FCS_P2NFFT_REG_NEAR_CG)
           return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_RAD_CG is only available in combiniation with FCS_P2NFFT_REG_NEAR_CG.");
 
       if(!is_cubic(d->box_l))
-        if(d->reg_far != FCS_P2NFFT_REG_FAR_RAD_T2P_EC)
+        if(reg_far != FCS_P2NFFT_REG_FAR_RAD_T2P_EC)
           return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Noncubic boxes require far field regularization FCS_P2NFFT_REG_FAR_RAD_T2P_EC.");
 
-      if(d->reg_near == FCS_P2NFFT_REG_NEAR_T2P){
+      if(reg_near == FCS_P2NFFT_REG_NEAR_T2P){
         /* TODO: implement parameter tuning for 2-point-Taylor regularization 
          * Question: Do we need it? Afaik, CG-approximation is better for all cases. */
   
@@ -583,7 +612,7 @@ FCSResult ifcs_p2nfft_tune(
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
         for(int t=0; t<3; t++){
           d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
-          if(reg_far_is_radial(d->reg_far))
+          if(reg_far_is_radial(reg_far))
             d->box_scales[t] *= fcs_sqrt(3);
           d->box_shifts[t] = d->box_l[t] / 2.0;
         }
@@ -599,7 +628,7 @@ FCSResult ifcs_p2nfft_tune(
         d->taylor2p_derive_coeff = (fcs_float*) malloc(sizeof(fcs_float)*(d->p-1));
         ifcs_p2nfft_load_taylor2p_derive_coefficients(d->p, d->taylor2p_derive_coeff);
 
-      } else if(d->reg_near == FCS_P2NFFT_REG_NEAR_CG) {
+      } else if(reg_near == FCS_P2NFFT_REG_NEAR_CG) {
         /*********************/
         /* CG regularization */
         /*********************/
@@ -617,7 +646,7 @@ FCSResult ifcs_p2nfft_tune(
 //             d->epsI = 0.5 * avg_dist/d->box_l[mindim];
           } else { /* user defined r_cut, now scale it into unit cube */
             /* invert r_cut = box_scale * epsI, where box_scale = box_l*sqrt(3)/(0.5-epsB) depends on epsI (=epsB) */
-            if(reg_far_is_radial(d->reg_far))
+            if(reg_far_is_radial(reg_far))
               d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut * fcs_sqrt(3) + 1.0);
             else
               d->epsI = 0.5 / (d->box_l[mindim] / d->r_cut + 1.0);
@@ -641,7 +670,7 @@ FCSResult ifcs_p2nfft_tune(
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
         for(int t=0; t<3; t++){
           d->box_scales[t] = d->box_l[t] / (0.5 - d->epsB);
-          if(reg_far_is_radial(d->reg_far))
+          if(reg_far_is_radial(reg_far))
             d->box_scales[t] *= fcs_sqrt(3);
           d->box_shifts[t] = d->box_l[t] / 2.0;
         }
@@ -691,7 +720,7 @@ FCSResult ifcs_p2nfft_tune(
         fcs_int m, p; 
         d->cg_cos_coeff = (fcs_float*) malloc(sizeof(fcs_float)*d->N_cg_cos);
         int missed_coeff = 0;
-        if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
+        if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
           missed_coeff = ifcs_p2nfft_load_cg_cos_coeff_sym(d->N_cg_cos, d->log2epsI,
               &m, &p, d->cg_cos_coeff);
         else
@@ -768,7 +797,7 @@ FCSResult ifcs_p2nfft_tune(
       }
 
       /* far field interpolation only works for cubic boxes and radial far field regularization */
-      if( reg_far_is_radial(d->reg_far)  && is_cubic(d->box_l) )
+      if( reg_far_is_radial(reg_far)  && is_cubic(d->box_l) )
         d->far_interpolation_num_nodes = d->near_interpolation_num_nodes;
       else
         d->far_interpolation_num_nodes = 0;
@@ -776,7 +805,7 @@ FCSResult ifcs_p2nfft_tune(
       if(d->far_interpolation_num_nodes > 0){
         d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->far_interpolation_num_nodes+3));
         init_far_interpolation_table_potential_0dp(
-            d->far_interpolation_num_nodes, d->reg_far,
+            d->far_interpolation_num_nodes, reg_far,
             d->epsB, d->p, d->c,
             d->N_cg_cos, d->cg_cos_coeff,
             d->far_interpolation_table_potential);
@@ -841,16 +870,16 @@ FCSResult ifcs_p2nfft_tune(
           d->local_N, d->local_N_start, d->box_l, d->alpha);
     if (d->num_periodic_dims == 2)
       d->regkern_hat = malloc_and_precompute_regkern_hat_2dp(
-          d->N, d->epsB, d->box_l, d->box_scales, d->alpha, d->periodicity, d->p,
+          d->N, d->epsB, d->box_l, d->box_scales, d->alpha, d->periodicity, d->p, d->c, reg_far,
           d->cart_comm_pnfft);
     if (d->num_periodic_dims == 1)
       d->regkern_hat = malloc_and_precompute_regkern_hat_2dp(
-          d->N, d->epsB, d->box_l, d->box_scales, d->alpha, d->periodicity, d->p,
+          d->N, d->epsB, d->box_l, d->box_scales, d->alpha, d->periodicity, d->p, d->c, reg_far,
           d->cart_comm_pnfft);
       /* malloc_and_precompute_regkern_hat_1dp */
     if (d->num_periodic_dims == 0)
       d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
-          d->N, d->r_cut, d->epsI, d->epsB, d->p, d->c, d->box_scales, d->reg_near, d->reg_far,
+          d->N, d->r_cut, d->epsI, d->epsB, d->p, d->c, d->box_scales, reg_near, reg_far,
           d->taylor2p_coeff, d->N_cg_cos, d->cg_cos_coeff,
           d->interpolation_order, d->near_interpolation_num_nodes, d->far_interpolation_num_nodes,
           d->near_interpolation_table_potential, d->far_interpolation_table_potential,
@@ -933,16 +962,20 @@ static void print_command_line_arguments(
       printf("p2nfft_alpha,%" FCS_LMOD_FLOAT "f,", d->alpha);
     if(verbose || d->interpolation_order != 3)
       printf("p2nfft_intpol_order,%" FCS_LMOD_INT "d,", d->interpolation_order);
-    if(verbose || (d->reg_near != FCS_P2NFFT_REG_NEAR_CG) ){
+    if(verbose || (d->reg_near != FCS_P2NFFT_REG_NEAR_DEFAULT) ){
       printf("p2nfft_reg_near_name,");
-      if(d->reg_near == FCS_P2NFFT_REG_NEAR_CG)
+      if(d->reg_near == FCS_P2NFFT_REG_NEAR_DEFAULT)
+        printf("default,");
+      else if(d->reg_near == FCS_P2NFFT_REG_NEAR_CG)
         printf("cg,");
       else if(d->reg_near == FCS_P2NFFT_REG_NEAR_T2P)
         printf("t2p,");
     }
-    if(verbose || (d->reg_far != FCS_P2NFFT_REG_FAR_RAD_T2P_IC) ){
+    if(verbose || (d->reg_far != FCS_P2NFFT_REG_FAR_DEFAULT) ){
       printf("p2nfft_reg_far_name,");
-      if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
+      if(d->reg_far == FCS_P2NFFT_REG_FAR_DEFAULT)
+        printf("default,");
+      else if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
         printf("rad_cg,");
       else if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM)
         printf("rad_t2p_sym,");
@@ -1531,12 +1564,11 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
   return regkern_hat;
 }
 
-
 /* scale epsI and epsB according to box_size == 1 */
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_l, const fcs_float *box_scales, fcs_float alpha,
-    const fcs_int *periodicity, fcs_int p,
+    const fcs_int *periodicity, fcs_int p, fcs_float c, fcs_int reg_far,
     MPI_Comm comm_cart
     )
 {
@@ -1631,14 +1663,22 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
          * Index correspoding to non-periodic dim will be 0 per default. */
         if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0)){
           if(num_periodic_dims == 2){
-            regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB);
+            if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
+              regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB);
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
+              regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB, c);
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
+              regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB);
+            }
           } else {
-            regkern_hat[m] = -ifcs_p2nfft_reg_far_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x2norm, p, param, epsB);
-//             regkern_hat[m] = -0.0 * ifcs_p2nfft_reg_far_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, xsnorm, p, param, epsB);
-//             fprintf(stderr, "h = %e, alpha = %e, kbnorm = %e, x2norm = %e, ewald_1dp_neq0 = %e\n", h, alpha, kbnorm, xsnorm, ifcs_p2nfft_ewald_1dp_keq0(xsnorm, 0, param));
-//     if(fcs_float_is_zero(xs[1]))
-//       fprintf(stderr, "regkern[%e] = %e, x2norm = %e,xsnorm = %e, xs = [%f, %f, %f], x2 = [%f, %f, %f], local_Ni_start = [%td, %td, %td]\n",
-//           x2norm, creal(regkern_hat[m]), x2norm, xsnorm, xs[0], xs[1], xs[2], xs[0]*box_scales[0], xs[1]*box_scales[1], xs[2]*box_scales[2], local_Ni_start[0], local_Ni_start[1], local_Ni_start[2]);
+            if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
+              regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x2norm, p, param, epsB);
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
+              regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x2norm, p, param, epsB, c);
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
+              regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x2norm, p, param, epsB);
+            }
+
             if(isnan(creal(regkern_hat[m]))){
               fprintf(stderr, "keq0: k = [%td, %td, %td], x = [%e, %e, %e], p = %" FCS_LMOD_INT "d, epsB = %e, x2norm = %e, kbnorm = %e, alpha = %e\n",
                   k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, x2norm, kbnorm, alpha);
@@ -1649,12 +1689,28 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
         else{
           /* kbnorm includes 1.0/B for cubic case */ 
           if(num_periodic_dims == 2){
-            regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / kbnorm;
+            if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
+              regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / kbnorm;
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
+              regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB, c) / kbnorm;
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
+              regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / kbnorm;
+            }
+
+            if((k[0] == 0) && (k[1] == 1) && (k[2] == 0))
+              fprintf(stderr, "regkern = %e, x2norm = %e, h = %f\n", creal(2/box_l[1]*regkern_hat[m]), x2norm, box_scales[0]);
+
 //             fprintf(stderr, "regkern = %e, x2norm = %e\n", creal(regkern_hat[m]), x2norm);
 //             fprintf(stderr, "kne0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, xsnorm = %e, kbnorm = %e, alpha = %e\n",
 //                 k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, xsnorm, kbnorm, alpha);
           } else{
-            regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+            if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
+            regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
+            regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB, c);
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
+            regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+            }
 //     if(k[2]==3 && fcs_float_is_zero(xs[1]))
 //     if(k[2]==3)
 //       fprintf(stderr, "regkern[%e] = %e, x2norm = %e,xsnorm = %e, xs = [%f, %f, %f], x2 = [%f, %f, %f], k = [%td, %td, %td]\n",
@@ -1692,15 +1748,15 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
 //     param[2] = h;
 //     for(int t=0; t<20; t++){
 //       fcs_float x = (0.5-epsB)*t/20.0*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
 //     }
 //     for(int t=0; t<=100; t++){
 //       fcs_float x = (0.5-epsB + epsB*t/100.0)*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
 //     }
 //     for(int t=1; t<=5; t++){
 //       fcs_float x = (0.5 + 0.1*t/5.0)*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
 //     }
 //     fclose(file);
 //   }
@@ -1714,15 +1770,15 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
 //     param[2] = h;
 //     for(int t=0; t<20; t++){
 //       fcs_float x = (0.5-epsB)*t/20.0*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
 //     }
 //     for(int t=0; t<=100; t++){
 //       fcs_float x = (0.5-epsB + epsB*t/100.0)*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
 //     }
 //     for(int t=1; t<=5; t++){
 //       fcs_float x = (0.5 + 0.1*t/5.0)*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
 //     }
 //     fclose(file);
 //   }

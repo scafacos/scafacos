@@ -395,7 +395,7 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_pa
   return NULL;
 }
 
-extern int mpi_fmm_sort_front_part, mpi_fmm_sort_back_part, mpi_fmm_sort_front_merge_presorted;
+extern int fcs_mpi_fmm_sort_front_part, fcs_mpi_fmm_sort_back_part, fcs_mpi_fmm_sort_front_merge_presorted;
 
 /* internal fmm-specific run function */
 FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, 
@@ -469,7 +469,7 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_par
     fmm_csetload(params,val);
   }
 
-  int old_mpi_fmm_sort_front_part = mpi_fmm_sort_front_part;
+  int old_fcs_mpi_fmm_sort_front_part = fcs_mpi_fmm_sort_front_part;
 
   int comm_size;
   MPI_Comm_size(fcs_get_communicator(handle), &comm_size);
@@ -481,24 +481,24 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_par
   if (max_particle_move >= 0 && max_particle_move < max_merge_move)
   {
 /*    fmm_csetpresorted(params, 1);*/
-    mpi_fmm_sort_front_part = 0;
-    mpi_fmm_sort_front_merge_presorted = 1;
+    fcs_mpi_fmm_sort_front_part = 0;
+    fcs_mpi_fmm_sort_front_merge_presorted = 1;
 
   } else
   {
 /*    fmm_csetpresorted(params, 0);*/
-    mpi_fmm_sort_front_merge_presorted = 0;
+    fcs_mpi_fmm_sort_front_merge_presorted = 0;
   }
 
-  fmm_resort_destroy(&handle->fmm_param->fmm_resort);
-  if (handle->fmm_param->resort) fmm_resort_create(&handle->fmm_param->fmm_resort, local_particles, fcs_get_communicator(handle));
+  fcs_fmm_resort_destroy(&handle->fmm_param->fmm_resort);
+  if (handle->fmm_param->resort) fcs_fmm_resort_create(&handle->fmm_param->fmm_resort, local_particles, fcs_get_communicator(handle));
   fmm_cinitresort(params, handle->fmm_param->fmm_resort);
   fmm_csetresort(params, (long long) handle->fmm_param->resort);
 
   fmm_crun(ll_lp,positions,charges,potentials,field,handle->fmm_param->virial,ll_tp,ll_absrel,tolerance_value,
     ll_dip_corr, ll_periodicity, period_length, dotune, ll_maxdepth,ll_unroll_limit,ll_balance_load,params, &r);
 
-  mpi_fmm_sort_front_part = old_mpi_fmm_sort_front_part;
+  fcs_mpi_fmm_sort_front_part = old_fcs_mpi_fmm_sort_front_part;
 
   free(ll_periodicity);
   if (loadptr) free(loadptr);
@@ -525,7 +525,7 @@ extern FCSResult fcs_fmm_destroy(FCS handle)
 
   free(fcs_get_method_context(handle));
 
-  fmm_resort_destroy(&handle->fmm_param->fmm_resort);
+  fcs_fmm_resort_destroy(&handle->fmm_param->fmm_resort);
 
   return NULL;
 }

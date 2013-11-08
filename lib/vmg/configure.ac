@@ -13,7 +13,7 @@ AC_CONFIG_SRCDIR([src/mg.cpp])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE([1.7 -Wall foreign])
+AM_INIT_AUTOMAKE([1.7 -Wall foreign subdir-objects])
 
 # We use mostly C++, but may need Fortran compiler infos for Lapack.
 AC_LANG([C++])
@@ -183,6 +183,9 @@ AM_CONDITIONAL([COND_HAVE_BOOST_UNIT_TEST_LIB], [test "x$have_boost" = xyes && t
 AC_PROG_RANLIB
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
+# Init libtool
+LT_INIT([disable-shared])
+
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt])
 AX_LAPACK
@@ -213,7 +216,7 @@ m4_ifdef([AX_FCS_TYPES],
 m4_ifdef([AX_FCS_PACKAGE_RESET],[
 AX_FCS_PACKAGE_RESET
 AX_FCS_PACKAGE_ADD([vmg_LIBS],[-lfcs_vmg])
-AX_FCS_PACKAGE_ADD([vmg_LIBS_A],[src/libfcs_vmg.a])
+AX_FCS_PACKAGE_ADD([vmg_LIBS_A],[src/libfcs_vmg.la])
 AX_FCS_PACKAGE_ADD([vmg_LDADD],[$VTK_LDFLAGS $VTK_LIBS $BOOST_SYSTEM_LIB $BOOST_FILESYSTEM_LIB $LAPACK_LIBS $BLAS_LIBS])
 AX_FCS_PACKAGE_ADD([CXXLIBS_USE],[yes])
 ])

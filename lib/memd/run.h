@@ -24,7 +24,7 @@
 #include <config.h>
 #endif
 
-void memd_run(void* rawdata,
+void ifcs_memd_run(void* rawdata,
              fcs_int num_particles,
              fcs_int max_num_particles,
              fcs_float *positions, 

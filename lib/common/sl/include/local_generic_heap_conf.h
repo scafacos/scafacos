@@ -34,6 +34,8 @@
 #include "sl_common.h"
 
 
+#define z_mpi_rank  SL_PROC_RANK
+
 #define LGH_RENAME
 
 #ifdef SL_PREFIX

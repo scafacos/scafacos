@@ -1,6 +1,6 @@
-noinst_LIBRARIES = libpmg.a
+noinst_LTLIBRARIES = libpmg.la
 
-libpmg_a_SOURCES = \
+libpmg_la_SOURCES = \
 	cuboid.c \
 	cuboid.h \
 	ghosts.c \

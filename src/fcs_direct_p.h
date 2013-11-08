@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011-2012 Michael Hofmann, Rene Halver
+  Copyright (C) 2011, 2012, 2013 Michael Hofmann, Rene Halver
 
   This file is part of ScaFaCoS.
 
@@ -38,9 +38,9 @@ typedef struct fcs_direct_parameters_t *fcs_direct_parameters;
 
 
 /**
- * @brief function to set the optional direct cutoff parameter
+ * @brief function to set the optional cutoff parameter
  * @param handle FCS-object
- * @param cutoff cutoff radius to use
+ * @param cutoff cutoff radius
  *        =0 - no cutoff radius
  *        >0 - compute interactions only inside of the cutoff
  *        <0 - compute interactions only outside of the cutoff
@@ -50,10 +50,10 @@ FCSResult fcs_direct_set_cutoff(FCS handle, fcs_float cutoff);
 
 
 /**
- * @brief function to get the optional direct cutoff parameter
+ * @brief function to get the optional cutoff parameter
  * @param handle FCS-object
  * @param cutoff current cutoff radius
- * @return the parameter cutoff
+ * @return FCSResult-object containing the return state
  */
 FCSResult fcs_direct_get_cutoff(FCS handle, fcs_float *cutoff);
 
@@ -94,14 +94,22 @@ FCSResult fcs_direct_set_periodic_images(FCS handle, fcs_int *periodic_images);
 FCSResult fcs_direct_get_periodic_images(FCS handle, fcs_int *periodic_images);
 
 
+/**
+ * @brief function to set additional input particles (ie, particles for which no results are computed)
+ * @param handle FCS-object
+ * @param nin_particles number of input particles
+ * @param in_positions positions of input particles
+ * @param in_charges charges of input particles
+ * @return FCSResult-object containing the return state
+ */
 FCSResult fcs_direct_set_in_particles(FCS handle, fcs_int nin_particles, fcs_float *in_positions, fcs_float *in_charges);
 
 
 /**
  * @brief combined setter for all direct solver parameters
  * @param handle FCS-object data is stored into
- * @param cutoff fcs_float the chosen cutoff (see fcs_direct_set_cutoff)
- * @return FCSResult-object containing th return state
+ * @param cutoff the chosen cutoff (see fcs_direct_set_cutoff)
+ * @return FCSResult-object containing the return state
  **/
 FCSResult fcs_direct_setup(FCS handle, fcs_float cutoff);
 
@@ -109,8 +117,8 @@ FCSResult fcs_direct_setup(FCS handle, fcs_float cutoff);
 /**
  * @brief combined setter for all direct solver parameters (FORTRAN WRAPPER)
  * @param handle void* to be casted into FCS so that the data is stored into it
- * @param cutoff fcs_float the chosen cutoff (see fcs_direct_set_cutoff)
- * @param return_value fcs_int* return value for FORTRAN interface
+ * @param cutoff the chosen cutoff (see fcs_direct_set_cutoff)
+ * @param return_value return value for FORTRAN interface
  **/
 void fcs_direct_setup_f(void *handle, fcs_float cutoff, fcs_int *return_value);
 

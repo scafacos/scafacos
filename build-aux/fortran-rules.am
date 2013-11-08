@@ -2,15 +2,24 @@
 
 FCDEFAULT_INCLUDES = $(DEFAULT_INCLUDES)
 PPFCCOMPILE = $(FC) $(FCDEFS) $(FCDEFAULT_INCLUDES) $(FCINCLUDES) $(AM_FCCPPFLAGS) $(FCCPPFLAGS) $(AM_FCFLAGS) $(FCFLAGS)
-LTPPFCCOMPILE = $(LIBTOOL) --tag=FC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(PPFCCOMPILE)
+LTPPFCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(PPFCCOMPILE)
 
 # Treat all .f, .f90, and .F90 files as preprocessed Fortran.
 .f90.o:
-	$(PPFCCOMPILE) -c -o $@ $(FCFLAGS_f90) $<
+	$(AM_V_FC)$(PPFCCOMPILE) -c -o $@ $(FCFLAGS_f90) $<
 .f.o:
-	$(PPFCCOMPILE) -c -o $@ $(FCFLAGS_f) $<
+	$(AM_V_FC)$(PPFCCOMPILE) -c -o $@ $(FCFLAGS_f) $<
 .F90.o:
-	$(PPFCCOMPILE) -c -o $@ $(FCFLAGS_F90) $<
+	$(AM_V_FC)$(PPFCCOMPILE) -c -o $@ $(FCFLAGS_F90) $<
+
+.f90.lo:
+	$(AM_V_FC)$(LTPPFCCOMPILE) -c -o $@ $(FCFLAGS_f90) $<
+
+.f.lo:
+	$(AM_V_FC)$(LTPPFCCOMPILE) -c -o $@ $(FCFLAGS_f) $<
+
+.F90.lo:
+	$(AM_V_FC)$(LTPPFCCOMPILE) -c -o $@ $(FCFLAGS_F90) $<
 
 # Remove module files upon make clean:
 clean-local: clean-modules

@@ -7,20 +7,11 @@
 #include <string.h>
 #include <mpi.h>
 
-#define Z_MOP(_mop_)  do { _mop_ } while (0)
-#define Z_NOP()       Z_MOP()
-
 #include "config_pepc_sort.h"
+#include "rename_pepc_sort.h"
 
 #include "sl_pepckeys.h"
 
-
-typedef pepckeys_slint_t slint_t;
-#define slint_fmt pepckeys_sl_int_type_fmt
-
-typedef FINT_TYPE_C finteger_t;
-#define finteger_mpi  FINT_TYPE_MPI
-#define finteger_fmt  FINT_TYPE_FMT
 
 /*#define MAX_IMBALANCE  0.01*/
 
@@ -32,53 +23,28 @@ typedef FINT_TYPE_C finteger_t;
 
 /*#define SORT_INSTEAD_OF_MERGE*/
 
-/*#define VALIDATE*/
-
+/*#define DO_VERBOSE*/
+/*#define DO_VALIDATE*/
+/*#define DO_TIMING*/
 #define DO_TIMING_SYNC
 
-#define SORT_RHIGH   -1
-#define SORT_RLOW    -1
-#define SORT_RWIDTH  -1
 
-#define PART_RHIGH   62
-#define PART_RLOW    -1
-#define PART_RWIDTH  3
+#include "mpi_common.h"
 
 
-#ifdef DO_TIMING
-# define TIMING_DECL(_decl_)       _decl_
-# define TIMING_CMD(_cmd_)         Z_MOP(_cmd_)
-#else
-# define TIMING_DECL(_decl_)
-# define TIMING_CMD(_cmd_)         Z_NOP()
-#endif
-#ifdef DO_TIMING_SYNC
-# define TIMING_SYNC(_c_)          TIMING_CMD(MPI_Barrier(_c_);)
-#else
-# define TIMING_SYNC(_c_)          Z_NOP()
-#endif
-#define TIMING_START(_t_)          TIMING_CMD(((_t_) = MPI_Wtime());)
-#define TIMING_STOP(_t_)           TIMING_CMD(((_t_) = MPI_Wtime() - (_t_));)
-#define TIMING_STOP_ADD(_t_, _r_)  TIMING_CMD(((_r_) += MPI_Wtime() - (_t_));)
-
-
-void receive_stats(finteger_t nmax, int *scounts, int *sdispls, int *rcounts, int *rdispls, pepckeys_sldata0_t *work, int size, int rank, MPI_Comm comm);
-void border_stats(slint_t nkeys, pepckeys_slkey_t *keys, int size, int rank, MPI_Comm comm);
-
-
-void slsort_keys(finteger_t *nin,                                       /* IN */
-                 finteger_t *nmax,                                      /* IN */
-                 pepckeys_slkey_t *keys,                                /* INOUT */
-                 pepckeys_sldata0_t *work,                              /* INOUT */
-                 finteger_t *balance_weight,                            /* IN */
-                 double *max_imbalance,                                 /* IN */
-                 finteger_t *nout,                                      /* OUT */
-                 finteger_t *indxl, finteger_t *irnkl,                  /* OUT */
-                 finteger_t *fscounts, finteger_t *frcounts,            /* OUT */
-                 finteger_t *fsdispls, finteger_t *frdispls,            /* OUT */
-                 pepckeys_slkey_t *keys2,                               /* SCRATCH */
-                 finteger_t *irnkl2,                                    /* SCRATCH */
-                 finteger_t *fsize, finteger_t *frank, MPI_Fint *fcomm) /* IN */
+void sl_pepc_sort_keys(finteger_t *nin,                                       /* IN */
+                       finteger_t *nmax,                                      /* IN */
+                       pepckeys_slkey_t *keys,                                /* INOUT */
+                       pepckeys_sldata0_t *work,                              /* INOUT */
+                       finteger_t *balance_weight,                            /* IN */
+                       double *max_imbalance,                                 /* IN */
+                       finteger_t *nout,                                      /* OUT */
+                       finteger_t *indxl, finteger_t *irnkl,                  /* OUT */
+                       finteger_t *fscounts, finteger_t *frcounts,            /* OUT */
+                       finteger_t *fsdispls, finteger_t *frdispls,            /* OUT */
+                       pepckeys_slkey_t *keys2,                               /* SCRATCH */
+                       finteger_t *irnkl2,                                    /* SCRATCH */
+                       finteger_t *fsize, finteger_t *frank, MPI_Fint *fcomm) /* IN */
 {
   int size = *fsize;
   int rank = *frank;
@@ -105,7 +71,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
   int sub_sizes[max_nsubs], sub_ranks[max_nsubs];
 #endif
 
-#ifdef VALIDATE
+#ifdef DO_VALIDATE
   slint_t o, l;
 #endif
 
@@ -153,7 +119,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
     printf(DEBUG_PRINT_PREFIX "%d:  sizeof(pepckeys_index) = %d\n", rank, (int) sizeof(pepckeys_slindex_t));
   );
 
-  pepckeys_SL_DEFCON(mpi.rank) = rank;
+  SL_PEPC_VAR(pepckeys_SL_DEFCON(mpi.rank)) = rank;
 
   pepckeys_mpi_datatypes_init();
 
@@ -180,7 +146,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
   DEBUG_CMD(printf(DEBUG_PRINT_PREFIX "%d: slsort_keys: 1. sort keys done\n", rank););
 
 
-#ifdef VALIDATE
+#ifdef DO_VALIDATE
   l = pepckeys_elements_validate_order(&s0, 1);
 #endif
 
@@ -197,7 +163,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
     pc.count_min = -(1.0 - imba);
     pc.count_max = -(1.0 + imba);
 
-    pepckeys_SL_DEFCON(mseg.border_update_count_reduction) = REDUCTION;
+    SL_PEPC_VAR(pepckeys_SL_DEFCON(mseg.border_update_count_reduction)) = REDUCTION;
 
   } else
   {
@@ -207,7 +173,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
     pc.weight_min = -(1.0 - imba);
     pc.weight_max = -(1.0 + imba);
 
-    pepckeys_SL_DEFCON(mseg.border_update_weight_reduction) = REDUCTION;
+    SL_PEPC_VAR(pepckeys_SL_DEFCON(mseg.border_update_weight_reduction)) = REDUCTION;
   }
 #else
   if (*balance_weight == 0)
@@ -232,7 +198,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
   }
 #endif
 
-/*  pepckeys_mseg_finalize_mode = SL_MSEG_FM_ALLORNOTHING;*/
+/*  SL_PEPC_VAR(pepckeys_SL_DEFCON(mseg.finalize_mode)) = SL_MSEG_FM_ALLORNOTHING;*/
 
   TIMING_SYNC(comm); TIMING_START(tpartition);
 
@@ -240,7 +206,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
 
   DEBUG_CMD(printf(DEBUG_PRINT_PREFIX "%d: slsort_parts: 2. partitioning: regular sampling\n", rank););
 
-/*  pepckeys_mss_root = -1;*/
+/*  SL_PEPC_VAR(pepckeys_SL_DEFCON(mss.root)) = -1;*/
 
   pepckeys_mpi_partition_sample_regular(&s0, &pc, scounts, NULL, size, rank, comm);
 
@@ -260,7 +226,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
 
   DEBUG_CMD(printf(DEBUG_PRINT_PREFIX "%d: slsort_parts: 2. partitioning: ngroups (%" slint_fmt ")\n", rank, nsubs););
 
-  pepckeys_elem_set_indices(&k0, indxl2); /* ..._ngroups requires indices that can be modified (indxl2 is not used otherwise) */
+  pepckeys_elem_set_indices(&s0, irnkl2); /* ..._ngroups requires indices that can be modified (irnkl2 is not used otherwise) */
 
   pepckeys_mpi_subgroups_create(nsubs, sub_comms, sub_sizes, sub_ranks, size, rank, comm);
   pepckeys_mpi_partition_exact_radix_ngroups(&s0, &pc, nsubs, sub_comms, NULL, PART_RHIGH, PART_RLOW, PART_RWIDTH, scounts, NULL, size, rank, comm);
@@ -272,7 +238,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
 
   pepckeys_mpi_partition_exact_radix(&s0, &pc, PART_RHIGH, PART_RLOW, PART_RWIDTH, SL_SORTED_IN, scounts, NULL, size, rank, comm);
 
-  DEBUG_CMD(printf(DEBUG_PRINT_PREFIX "%d: average finish round: %f\n", rank, pepckeys_mseg_info_finish_rounds_avg););
+  DEBUG_CMD(printf(DEBUG_PRINT_PREFIX "%d: average finish round: %f\n", rank, SL_PEPC_VAR(pepckeys_SL_DEFCON(mseg.info_finish_rounds_avg))););
 
 #endif
 
@@ -291,7 +257,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
   TIMING_SYNC(comm); TIMING_STOP(talltoall);
   for (rdispls[0] = 0, i = 1; i < size; ++i) rdispls[i] = rdispls[i - 1] + rcounts[i - 1];
   TIMING_SYNC(comm); TIMING_START(talltoallv);
-  MPI_Alltoallv(keys, scounts, sdispls, pepckeys_sl_key_type_mpi, keys2, rcounts, rdispls, pepckeys_sl_key_type_mpi, comm);
+  MPI_Alltoallv(keys, scounts, sdispls, SL_PEPC_VAR(pepckeys_SL_DEFCON(mpi.key_datatype)), keys2, rcounts, rdispls, SL_PEPC_VAR(pepckeys_SL_DEFCON(mpi.key_datatype)), comm);
   TIMING_SYNC(comm); TIMING_STOP(talltoallv);
 
   *nout = rdispls[size - 1] + rcounts[size - 1];
@@ -369,7 +335,7 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
   DEBUG_CMD(printf(DEBUG_PRINT_PREFIX "%d: slsort_keys: 4. merge keys done\n", rank););
 
 
-#ifdef VALIDATE
+#ifdef DO_VALIDATE
   o = pepckeys_mpi_elements_validate_order(&s1, 1, size, rank, comm);
   INFO_CMD(
     if (rank == 0) printf(INFO_PRINT_PREFIX "slsort_keys: global order: %s - local order: %s\n", (!o)?"success":"FAILED", (!l)?"success":"failed");
@@ -399,19 +365,19 @@ void slsort_keys(finteger_t *nin,                                       /* IN */
 }
 
 
-void slsort_keys_(finteger_t *nin,                                       /* IN */
-                  finteger_t *nmax,                                      /* IN */
-                  pepckeys_slkey_t *keys,                                /* INOUT */
-                  pepckeys_sldata0_t *work,                              /* INOUT */
-                  finteger_t *balance_weight,                            /* IN */
-                  double *max_imbalance,                                 /* IN */
-                  finteger_t *nout,                                      /* OUT */
-                  finteger_t *indxl, finteger_t *irnkl,                  /* OUT */
-                  finteger_t *fscounts, finteger_t *frcounts,            /* OUT */
-                  finteger_t *fsdispls, finteger_t *frdispls,            /* OUT */
-                  pepckeys_slkey_t *keys2,                               /* SCRATCH */
-                  finteger_t *irnkl2,                                    /* SCRATCH */
-                  finteger_t *fsize, finteger_t *frank, MPI_Fint* fcomm) /* IN */
+void sl_pepc_sort_keys_(finteger_t *nin,                                       /* IN */
+                        finteger_t *nmax,                                      /* IN */
+                        pepckeys_slkey_t *keys,                                /* INOUT */
+                        pepckeys_sldata0_t *work,                              /* INOUT */
+                        finteger_t *balance_weight,                            /* IN */
+                        double *max_imbalance,                                 /* IN */
+                        finteger_t *nout,                                      /* OUT */
+                        finteger_t *indxl, finteger_t *irnkl,                  /* OUT */
+                        finteger_t *fscounts, finteger_t *frcounts,            /* OUT */
+                        finteger_t *fsdispls, finteger_t *frdispls,            /* OUT */
+                        pepckeys_slkey_t *keys2,                               /* SCRATCH */
+                        finteger_t *irnkl2,                                    /* SCRATCH */
+                        finteger_t *fsize, finteger_t *frank, MPI_Fint* fcomm) /* IN */
 {
-  slsort_keys(nin, nmax, keys, work, balance_weight, max_imbalance, nout, indxl, irnkl, fscounts, frcounts, fsdispls, frdispls, keys2, irnkl2, fsize, frank, fcomm);
+  sl_pepc_sort_keys(nin, nmax, keys, work, balance_weight, max_imbalance, nout, indxl, irnkl, fscounts, frcounts, fsdispls, frdispls, keys2, irnkl2, fsize, frank, fcomm);
 }

@@ -37,13 +37,11 @@
 #endif
 
 #include "config_fmm_sort.h"
+#include "rename_fmm_sort.h"
 
 #include "common.h"
 
 #include "mpi_fmm_resort.h"
-
-typedef back_idx_slint_t back_idx_slint_t;
-#define back_slint_fmt   back_idx_slint_fmt
 
 
 void fmm_resort_create(fcs_fmm_resort_t *fmm_resort, fcs_int nparticles, MPI_Comm comm)
@@ -113,8 +111,8 @@ static void mpi_fmm_sort_idx(pint_t ntotal, pint_t nin, pint_t nout, back_idx_sl
   back_idx_mpi_sort_back(&sin, &sout, NULL, lh_addrs, ntotal, size, rank, comm);
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
-  if (nout != sout.size)
-    fprintf(stderr, "%d: error: wanted %" PARAM_INTEGER_FMT " particles, but got only %" back_idx_slint_fmt "!\n", rank, nout, sout.size);
+  if (nout != back_idx_elem_get_size(&sout))
+    fprintf(stderr, "%d: error: wanted %" PARAM_INTEGER_FMT " particles, but got only %" back_idx_slint_fmt "!\n", rank, nout, back_idx_elem_get_size(&sout));
 
   back_idx_mpi_datatypes_release();
 
@@ -128,9 +126,6 @@ static void mpi_fmm_sort_idx(pint_t ntotal, pint_t nin, pint_t nout, back_idx_sl
 }
 
 
-void mpi_fmm_resort_init_(fcs_fmm_resort_t *fmm_resort, pint_t *ntotal, pint_t *nlocal, back_idx_slkey_t *addr);
-
-#pragma weak mpi_fmm_resort_init_=mpi_fmm_resort_init
 void mpi_fmm_resort_init(fcs_fmm_resort_t *fmm_resort, pint_t *ntotal, pint_t *nlocal, back_idx_slkey_t *addr)
 {
   MPI_Comm comm;
@@ -185,4 +180,9 @@ void mpi_fmm_resort_init(fcs_fmm_resort_t *fmm_resort, pint_t *ntotal, pint_t *n
     if (I_AM_MASTER) printf(TIMING_PRINT_PREFIX "mpi_fmm_resort_init: %f  %f  %f  %f\n", t[0], t[1], t[2], t[3]);
   );
 #undef I_AM_MASTER
+}
+
+void mpi_fmm_resort_init_(fcs_fmm_resort_t *fmm_resort, pint_t *ntotal, pint_t *nlocal, back_idx_slkey_t *addr)
+{
+  mpi_fmm_resort_init(fmm_resort, ntotal, nlocal, addr);
 }

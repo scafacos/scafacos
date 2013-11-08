@@ -25,7 +25,7 @@ boost_test_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/test/boost_unit_test -
 boost_test_LDADD = \
 	$(BOOST_UNIT_TEST_FRAMEWORK_LIB) \
 	$(LIBVMG) \
-	libinterfaces.a \
+	libinterfaces.la \
 	$(VTK_LDFLAGS) \
 	$(VTK_LIBS) \
 	$(BOOST_LDFLAGS)

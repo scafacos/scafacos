@@ -66,6 +66,9 @@ AC_LANG_POP([Fortran])
 
 # Checks for typedefs, structures, and compiler characteristics.
 
+# Init libtool
+LT_INIT([disable-shared])
+
 ######################################################################
 # Set up parameters.
 ######################################################################
@@ -84,7 +87,7 @@ m4_ifdef([AX_FCS_CONFIG_SOLVER],[AX_FCS_CONFIG_SOLVER])
 m4_ifdef([AX_FCS_PACKAGE_RESET],[
 AX_FCS_PACKAGE_RESET
 AX_FCS_PACKAGE_ADD([pp3mg_LIBS],[-lfcs_pp3mg])
-AX_FCS_PACKAGE_ADD([pp3mg_LIBS_A],[libfcs_pp3mg.a])
+AX_FCS_PACKAGE_ADD([pp3mg_LIBS_A],[libfcs_pp3mg.la])
 ])
 
 # ranlib is needed for creating libraries.

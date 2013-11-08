@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS/FMM.
  *  
@@ -25,17 +25,18 @@
 
 #include <stdio.h>
 
-#define Z_MOP(_mop_)  do { _mop_ } while (0)
-#define Z_NOP()       Z_MOP()
-
 #include "config_fmm_sort.h"
+#include "rename_fmm_sort.h"
+
+/*#define DO_VERBOSE
+#define DO_VALIDATE
+#define DO_CHECKSUM
+#define DO_TIMING*/
+
+#include "common.h"
 
 #include "fmm_sort.h"
 
-
-/*#define VERBOSE
-#define VALIDATE
-#define CHECKSUM*/
 
 /*#define FMM_SORT_RADIX_1BIT*/
 
@@ -43,8 +44,8 @@
 
 /*#define SL_OUTPUT_TO_FILE*/
 
-int front_aX;
-INTEGER_C key_mask;
+int SL_FMM_CONFIG_VAR(fmm_front_aX);
+INTEGER_C SL_FMM_CONFIG_VAR(fmm_front_key_mask);
 
 
 #ifdef FMM_SORT_RADIX_1BIT
@@ -54,7 +55,7 @@ INTEGER_C key_mask;
 #endif
 
 
-INTEGER_C log2_floor(INTEGER_C v)
+static INTEGER_C log2_floor(INTEGER_C v)
 {
   INTEGER_C x = 0;
 
@@ -72,7 +73,7 @@ INTEGER_C log2_floor(INTEGER_C v)
 
 #ifndef NO_SL_FRONT
 
-void fmm_sort_front_body(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *depth, pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type)
+static void fmm_sort_front_body(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *depth, pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type)
 {
   typedef front_(slint_t) front_slint_t;
 
@@ -188,7 +189,7 @@ void fmm_sort_front_body(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *dept
   front_xq_aX(front_xq_aX_sl_debug_fstream = ) sl_debug_fstream = fopen(output_file_str, "w");
 #endif
 
-  front_aX = addr_desc[0];
+  SL_FMM_CONFIG_VAR(fmm_front_aX) = addr_desc[0];
 
   if (mem_sizes && ((mems[0] && mem_sizes[0] > 0) || (mems[1] && mem_sizes[1])))
   {
@@ -272,62 +273,50 @@ void fmm_sort_front_body(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *dept
   {
 #ifndef NOT_sl_front_xqsa0
     case 0:
-      s0.size = s0.max_size = *n;
-      s0.keys = ibox;
-      s0.data0 = xyz;
-      s0.data1 = q;
-      s0.data2 = scr;
-/*      s0.data3 = addr;*/
+      front_xqsa0_elem_set_size(&s0, *n);
+      front_xqsa0_elem_set_max_size(&s0, *n);
+      front_xqsa0_elem_set_keys(&s0, ibox);
+      front_xqsa0_elem_set_data(&s0, xyz, q, scr);
       break;
 #endif
 #ifndef NOT_sl_front_xqsaI
     case 1:
-      s1.size = s1.max_size = *n;
-      s1.keys = ibox;
-      s1.data0 = xyz;
-      s1.data1 = q;
-      s1.data2 = scr;
-      s1.data3 = addr;
+      front_xqsaI_elem_set_size(&s1, *n);
+      front_xqsaI_elem_set_max_size(&s1, *n);
+      front_xqsaI_elem_set_keys(&s1, ibox);
+      front_xqsaI_elem_set_data(&s1, xyz, q, scr, addr);
       break;
 #endif
 #ifndef NOT_sl_front_xqsaX
     case 2:
-      s2.size = s2.max_size = *n;
-      s2.keys = ibox;
-      s2.data0 = xyz;
-      s2.data1 = q;
-      s2.data2 = scr;
-      s2.data3 = addr;
+      front_xqsaX_elem_set_size(&s2, *n);
+      front_xqsaX_elem_set_max_size(&s2, *n);
+      front_xqsaX_elem_set_keys(&s2, ibox);
+      front_xqsaX_elem_set_data(&s2, xyz, q, scr, addr);
       break;
 #endif
 #ifndef NOT_sl_front_xq_a0
     case 3:
-      s3.size = s3.max_size = *n;
-      s3.keys = ibox;
-      s3.data0 = xyz;
-      s3.data1 = q;
-/*      s3.data2 = scr;*/
-/*      s3.data3 = addr;*/
+      front_xq_a0_elem_set_size(&s3, *n);
+      front_xq_a0_elem_set_max_size(&s3, *n);
+      front_xq_a0_elem_set_keys(&s3, ibox);
+      front_xq_a0_elem_set_data(&s3, xyz, q);
       break;
 #endif
 #ifndef NOT_sl_front_xq_aI
     case 4:
-      s4.size = s4.max_size = *n;
-      s4.keys = ibox;
-      s4.data0 = xyz;
-      s4.data1 = q;
-/*      s4.data2 = scr;*/
-      s4.data3 = addr;
+      front_xq_aI_elem_set_size(&s4, *n);
+      front_xq_aI_elem_set_max_size(&s4, *n);
+      front_xq_aI_elem_set_keys(&s4, ibox);
+      front_xq_aI_elem_set_data(&s4, xyz, q, addr);
       break;
 #endif
 #ifndef NOT_sl_front_xq_aX
     case 5:
-      s5.size = s5.max_size = *n;
-      s5.keys = ibox;
-      s5.data0 = xyz;
-      s5.data1 = q;
-/*      s5.data2 = scr;*/
-      s5.data3 = addr;
+      front_xq_aX_elem_set_size(&s5, *n);
+      front_xq_aX_elem_set_max_size(&s5, *n);
+      front_xq_aX_elem_set_keys(&s5, ibox);
+      front_xq_aX_elem_set_data(&s5, xyz, q, addr);
       break;
 #endif
   }
@@ -363,8 +352,8 @@ void fmm_sort_front_body(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *dept
     if (*depth > 0) highest = 3 * *depth - 1; else highest = -1;
   }
 
-  key_mask = ~((front_(slkey_t)) 0);
-  if (addr_desc != NULL && addr_desc[1] > 0) key_mask = ~(key_mask << (sizeof(front_(slkey_t)) * 8 - addr_desc[1]));
+  SL_FMM_CONFIG_VAR(fmm_front_key_mask) = ~((front_(slkey_t)) 0);
+  if (addr_desc != NULL && addr_desc[1] > 0) SL_FMM_CONFIG_VAR(fmm_front_key_mask) = ~(SL_FMM_CONFIG_VAR(fmm_front_key_mask) << (sizeof(front_(slkey_t)) * 8 - addr_desc[1]));
 
   INFO_CMD(
     if (depth == NULL) printf(INFO_PRINT_PREFIX "front: starting local radix-sort (lowest 3 bit)\n");
@@ -478,39 +467,47 @@ void fmm_sort_front_body(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *dept
 }
 
 
-void fmm_sort_front_mem_(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *depth, pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type);
-
-#pragma weak fmm_sort_front_mem_=fmm_sort_front_mem
 void fmm_sort_front_mem(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *depth, pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type)
 {
   fmm_sort_front_body(mem0, mem1, mem_sizes, depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type);
 }
 
+void fmm_sort_front_mem_(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *depth, pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type)
+{
+  fmm_sort_front_mem(mem0, mem1, mem_sizes, depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type);
+}
 
-void fmm_sort_front_(pint_t *depth, pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type);
 
-#pragma weak fmm_sort_front_=fmm_sort_front
 void fmm_sort_front(pint_t *depth, pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type)
 {
   fmm_sort_front_body(NULL, NULL, NULL, depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type);
 }
 
+void fmm_sort_front_(pint_t *depth, pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type)
+{
+  fmm_sort_front(depth, subx, n, ibox, xyz, q, addr_desc, addr, scr, type);
+}
 
-void fmm_sort_front_3bit_mem_(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type);
 
-#pragma weak fmm_sort_front_3bit_mem_=fmm_sort_front_3bit_mem
 void fmm_sort_front_3bit_mem(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type)
 {
   fmm_sort_front_body(mem0, mem1, mem_sizes, NULL, subx, n, ibox, xyz, q, addr_desc, addr, scr, type);
 }
 
+void fmm_sort_front_3bit_mem_(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type)
+{
+  fmm_sort_front_3bit_mem(mem0, mem1, mem_sizes, subx, n, ibox, xyz, q, addr_desc, addr, scr, type);
+}
 
-void fmm_sort_front_3bit_(pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type);
 
-#pragma weak fmm_sort_front_3bit_=fmm_sort_front_3bit
 void fmm_sort_front_3bit(pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type)
 {
   fmm_sort_front_body(NULL, NULL, NULL, NULL, subx, n, ibox, xyz, q, addr_desc, addr, scr, type);
+}
+
+void fmm_sort_front_3bit_(pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(sldata0_t) *xyz, front_(sldata1_t) *q, pint_t *addr_desc, void *addr, front_(sldata2_t) *scr, pint_t *type)
+{
+  fmm_sort_front_3bit(subx, n, ibox, xyz, q, addr_desc, addr, scr, type);
 }
 
 #endif /* NO_SL_FRONT */
@@ -518,9 +515,6 @@ void fmm_sort_front_3bit(pint_t *subx, pint_t *n, front_(slkey_t) *ibox, front_(
 
 #ifndef NO_SL_BACK
 
-void fmm_sort_back_mem_(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *n, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, pint_t *type);
-
-#pragma weak fmm_sort_back_mem_=fmm_sort_back_mem
 void fmm_sort_back_mem(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *n, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, pint_t *type)
 {
   typedef back_(slint_t) back_slint_t;
@@ -629,42 +623,34 @@ void fmm_sort_back_mem(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *n, bac
   {
 #ifndef NOT_sl_back_qxpg
     case 0:
-      s0.size = *n;
-      s0.keys = addr;
-      s0.data0 = q;
-      s0.data1 = xyz;
-      s0.data2 = pot;
-      s0.data3 = grad;
+      back_qxpg_elem_set_size(&s0, *n);
+      back_qxpg_elem_set_max_size(&s0, *n);
+      back_qxpg_elem_set_keys(&s0, addr);
+      back_qxpg_elem_set_data(&s0, q, xyz, pot, grad);
       break;
 #endif
 #ifndef NOT_sl_back_qx_g
     case 1:
-      s1.size = *n;
-      s1.keys = addr;
-      s1.data0 = q;
-      s1.data1 = xyz;
-/*      s1.data2 = pot;*/
-      s1.data3 = grad;
+      back_qx_g_elem_set_size(&s1, *n);
+      back_qx_g_elem_set_max_size(&s1, *n);
+      back_qx_g_elem_set_keys(&s1, addr);
+      back_qx_g_elem_set_data(&s1, q, xyz, grad);
       break;
 #endif
 #ifndef NOT_sl_back_q_pg
     case 2:
-      s2.size = *n;
-      s2.keys = addr;
-      s2.data0 = q;
-/*      s2.data1 = xyz;*/
-      s2.data2 = pot;
-      s2.data3 = grad;
+      back_q_pg_elem_set_size(&s2, *n);
+      back_q_pg_elem_set_max_size(&s2, *n);
+      back_q_pg_elem_set_keys(&s2, addr);
+      back_q_pg_elem_set_data(&s2, q, pot, grad);
       break;
 #endif
 #ifndef NOT_sl_back_q__g
     case 3:
-      s3.size = *n;
-      s3.keys = addr;
-      s3.data0 = q;
-/*      s3.data1 = xyz;*/
-/*      s3.data2 = pot;*/
-      s3.data3 = grad;
+      back_q__g_elem_set_size(&s3, *n);
+      back_q__g_elem_set_max_size(&s3, *n);
+      back_q__g_elem_set_keys(&s3, addr);
+      back_q__g_elem_set_data(&s3, q, grad);
       break;
 #endif
   }
@@ -761,22 +747,27 @@ void fmm_sort_back_mem(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *n, bac
 #endif
 }
 
+void fmm_sort_back_mem_(void *mem0, void *mem1, pint_t *mem_sizes, pint_t *n, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, pint_t *type)
+{
+  fmm_sort_back_mem(mem0, mem1, mem_sizes, n, addr, q, xyz, pot, grad, type);
+}
 
-void fmm_sort_back_(pint_t *n, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, pint_t *type);
 
-#pragma weak fmm_sort_back_=fmm_sort_back
 void fmm_sort_back(pint_t *n, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, pint_t *type)
 {
   fmm_sort_back_mem(NULL, NULL, NULL, n, addr, q, xyz, pot, grad, type);
+}
+
+void fmm_sort_back_(pint_t *n, back_(slkey_t) *addr, back_(sldata0_t) *q, back_(sldata1_t) *xyz, back_(sldata2_t) *pot, back_(sldata3_t) *grad, pint_t *type)
+{
+  fmm_sort_back(n, addr, q, xyz, pot, grad, type);
 }
 
 #endif /* NO_SL_BACK */
 
 
 #if 0
-void slcheck_fortran2c_types_(double *, double *, double *);
 
-#pragma weak slcheck_fortran2c_types_ = slcheck_fortran2c_types
 void slcheck_fortran2c_types(double *f2c_fint, double *f2c_key, double *f2c_real)
 {
   int error = 0;
@@ -787,123 +778,10 @@ void slcheck_fortran2c_types(double *f2c_fint, double *f2c_key, double *f2c_real
 
   if (error) fprintf(stderr, "WARNING: There seems to be a problem between Fortran and C data types.\n");
 }
-#endif
 
-
-/* deprecated */
-#ifdef DEPRECATED
-
-void fmm_sort_blue_mem_(void *mem, pint_t *mem_size, pint_t *depth, pint_t *subx, pint_t *n, front_xq_aI_slkey_t *ibox, front_xq_aI_sldata0_t *xyz, front_xq_aX_sldata1_t *q, front_xq_aX_sldata3_t *addr);
-
-#pragma weak fmm_sort_blue_mem_=fmm_sort_blue_mem
-void fmm_sort_blue_mem(void *mem, pint_t *mem_size, pint_t *depth, pint_t *subx, pint_t *n, front_xq_aI_slkey_t *ibox, front_xq_aI_sldata0_t *xyz, front_xq_aX_sldata1_t *q, front_xq_aX_sldata3_t *addr)
+void slcheck_fortran2c_types_(double *f2c_fint, double *f2c_key, double *f2c_real)
 {
-  pint_t mem_sizes[] = { (mem_size)?*mem_size:0, 0 };
-  fmm_sort_front_body(mem, NULL, (mem_size)?mem_sizes:NULL, depth, subx, n, ibox, xyz, q, NULL, addr, NULL, NULL);
-}
-
-
-void fmm_sort_blue_(pint_t *depth, pint_t *subx, pint_t *n, front_xq_aI_slkey_t *ibox, front_xq_aI_sldata0_t *xyz, front_xq_aX_sldata1_t *q, front_xq_aX_sldata3_t *addr);
-
-#pragma weak fmm_sort_blue_=fmm_sort_blue
-void fmm_sort_blue(pint_t *depth, pint_t *subx, pint_t *n, front_xq_aI_slkey_t *ibox, front_xq_aI_sldata0_t *xyz, front_xq_aX_sldata1_t *q, front_xq_aX_sldata3_t *addr)
-{
-  fmm_sort_front_body(NULL, NULL, NULL, depth, subx, n, ibox, xyz, q, NULL, addr, NULL, NULL);
-}
-
-
-void fmm_sort_blue_3bit_mem_(void *mem, pint_t *mem_size, pint_t *subx, pint_t *n, front_xq_aI_slkey_t *ibox, front_xq_aI_sldata0_t *xyz, front_xq_aX_sldata1_t *q, front_xq_aX_sldata3_t *addr);
-
-#pragma weak fmm_sort_blue_3bit_mem_=fmm_sort_blue_3bit_mem
-void fmm_sort_blue_3bit_mem(void *mem, pint_t *mem_size, pint_t *subx, pint_t *n, front_xq_aI_slkey_t *ibox, front_xq_aI_sldata0_t *xyz, front_xq_aX_sldata1_t *q, front_xq_aX_sldata3_t *addr)
-{
-  pint_t mem_sizes[] = { (mem_size)?*mem_size:0, 0 };
-  fmm_sort_front_body(mem, NULL, (mem_size)?mem_sizes:NULL, NULL, subx, n, ibox, xyz, q, NULL, addr, NULL, NULL);
-}
-
-
-void fmm_sort_blue_3bit_(pint_t *subx, pint_t *n, front_xq_aI_slkey_t *ibox, front_xq_aI_sldata0_t *xyz, front_xq_aX_sldata1_t *q, front_xq_aX_sldata3_t *addr);
-
-#pragma weak fmm_sort_blue_3bit_=fmm_sort_blue_3bit
-void fmm_sort_blue_3bit(pint_t *subx, pint_t *n, front_xq_aI_slkey_t *ibox, front_xq_aI_sldata0_t *xyz, front_xq_aX_sldata1_t *q, front_xq_aX_sldata3_t *addr)
-{
-  fmm_sort_front_body(NULL, NULL, NULL, NULL, subx, n, ibox, xyz, q, NULL, addr, NULL, NULL);
-}
-
-
-void fmm_sort_green_mem_(void *mem, pint_t *mem_size, pint_t *depth, pint_t *subx, pint_t *n, front_xqsaX_slkey_t *ibox, front_xqsaX_sldata0_t *xyz, front_xqsaX_sldata1_t *q, front_xqsaX_sldata3_t *addr, front_xqsaX_sldata2_t *scr);
-
-#pragma weak fmm_sort_green_mem_=fmm_sort_green_mem
-void fmm_sort_green_mem(void *mem, pint_t *mem_size, pint_t *depth, pint_t *subx, pint_t *n, front_xqsaX_slkey_t *ibox, front_xqsaX_sldata0_t *xyz, front_xqsaX_sldata1_t *q, front_xqsaX_sldata3_t *addr, front_xqsaX_sldata2_t *scr)
-{
-  pint_t mem_sizes[] = { (mem_size)?*mem_size:0, 0 };
-  fmm_sort_front_body(mem, NULL, (mem_size)?mem_sizes:NULL, depth, subx, n, ibox, xyz, q, NULL, addr, scr, NULL);
-}
-
-
-void fmm_sort_green_(pint_t *depth, pint_t *subx, pint_t *n, front_xqsaX_slkey_t *ibox, front_xqsaX_sldata0_t *xyz, front_xqsaX_sldata1_t *q, front_xqsaX_sldata3_t *addr, front_xqsaX_sldata2_t *scr);
-
-#pragma weak fmm_sort_green_=fmm_sort_green
-void fmm_sort_green(pint_t *depth, pint_t *subx, pint_t *n, front_xqsaX_slkey_t *ibox, front_xqsaX_sldata0_t *xyz, front_xqsaX_sldata1_t *q, front_xqsaX_sldata3_t *addr, front_xqsaX_sldata2_t *scr)
-{
-  fmm_sort_front_body(NULL, NULL, NULL, depth, subx, n, ibox, xyz, q, NULL, addr, scr, NULL);
-}
-
-
-void fmm_sort_green_3bit_mem_(void *mem, pint_t *mem_size, pint_t *subx, pint_t *n, front_xqsaX_slkey_t *ibox, front_xqsaX_sldata0_t *xyz, front_xqsaX_sldata1_t *q, front_xqsaX_sldata3_t *addr, front_xqsaX_sldata2_t *scr);
-
-#pragma weak fmm_sort_green_3bit_mem_=fmm_sort_green_3bit_mem
-void fmm_sort_green_3bit_mem(void *mem, pint_t *mem_size, pint_t *subx, pint_t *n, front_xqsaX_slkey_t *ibox, front_xqsaX_sldata0_t *xyz, front_xqsaX_sldata1_t *q, front_xqsaX_sldata3_t *addr, front_xqsaX_sldata2_t *scr)
-{
-  pint_t mem_sizes[] = { (mem_size)?*mem_size:0, 0 };
-  fmm_sort_front_body(mem, NULL, (mem_size)?mem_sizes:NULL, NULL, subx, n, ibox, xyz, q, NULL, addr, scr, NULL);
-}
-
-
-void fmm_sort_green_3bit_(pint_t *subx, pint_t *n, front_xqsaX_slkey_t *ibox, front_xqsaX_sldata0_t *xyz, front_xqsaX_sldata1_t *q, front_xqsaX_sldata3_t *addr, front_xqsaX_sldata2_t *scr);
-
-#pragma weak fmm_sort_green_3bit_=fmm_sort_green_3bit
-void fmm_sort_green_3bit(pint_t *subx, pint_t *n, front_xqsaX_slkey_t *ibox, front_xqsaX_sldata0_t *xyz, front_xqsaX_sldata1_t *q, front_xqsaX_sldata3_t *addr, front_xqsaX_sldata2_t *scr)
-{
-  fmm_sort_front_body(NULL, NULL, NULL, NULL, subx, n, ibox, xyz, q, NULL, addr, scr, NULL);
-}
-
-
-void fmm_sort_red_mem_(void *mem, pint_t *mem_size, pint_t *n, back_qxpg_slkey_t *addr, back_qxpg_sldata3_t *grad, back_qxpg_sldata2_t *pot, back_qxpg_sldata0_t *q);
-
-#pragma weak fmm_sort_red_mem_=fmm_sort_red_mem
-void fmm_sort_red_mem(void *mem, pint_t *mem_size, pint_t *n, back_qxpg_slkey_t *addr, back_qxpg_sldata3_t *grad, back_qxpg_sldata2_t *pot, back_qxpg_sldata0_t *q)
-{
-  pint_t mem_sizes[] = { (mem_size)?*mem_size:0, 0 };
-  fmm_sort_back_mem(mem, NULL, (mem_size)?mem_sizes:NULL, n, addr, q, NULL, pot, grad, NULL);
-}
-
-
-void fmm_sort_red_(pint_t *n, back_qxpg_slkey_t *addr, back_qxpg_sldata3_t *grad, back_qxpg_sldata2_t *pot, back_qxpg_sldata0_t *q);
-
-#pragma weak fmm_sort_red_=fmm_sort_red
-void fmm_sort_red(pint_t *n, back_qxpg_slkey_t *addr, back_qxpg_sldata3_t *grad, back_qxpg_sldata2_t *pot, back_qxpg_sldata0_t *q)
-{
-  fmm_sort_back_mem(NULL, NULL, NULL, n, addr, q, NULL, pot, grad, NULL);
-}
-
-
-void fmm_sort_red_without_pot_mem_(void *mem, pint_t *mem_size, pint_t *n, back_qxpg_slkey_t *addr, back_qxpg_sldata3_t *grad, back_qxpg_sldata0_t *q);
-
-#pragma weak fmm_sort_red_without_pot_mem_=fmm_sort_red_without_pot_mem
-void fmm_sort_red_without_pot_mem(void *mem, pint_t *mem_size, pint_t *n, back_qxpg_slkey_t *addr, back_qxpg_sldata3_t *grad, back_qxpg_sldata0_t *q)
-{
-  pint_t mem_sizes[] = { (mem_size)?*mem_size:0, 0 };
-  fmm_sort_back_mem(mem, NULL, (mem_size)?mem_sizes:NULL, n, addr, q, NULL, NULL, grad, NULL);
-}
-
-
-void fmm_sort_red_without_pot_(pint_t *n, back_qxpg_slkey_t *addr, back_qxpg_sldata3_t *grad, back_qxpg_sldata0_t *q);
-
-#pragma weak fmm_sort_red_without_pot_=fmm_sort_red_without_pot
-void fmm_sort_red_without_pot(pint_t *n, back_qxpg_slkey_t *addr, back_qxpg_sldata3_t *grad, back_qxpg_sldata0_t *q)
-{
-  fmm_sort_back_mem(NULL, NULL, NULL, n, addr, q, NULL, NULL, grad, NULL);
+  slcheck_fortran2c_types(f2c_fint, f2c_key, f2c_real);
 }
 
 #endif

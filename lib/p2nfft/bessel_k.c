@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_gamma.h>
+#include <gsl/gsl_sf_lambert.h>
 
 #include "bessel_k.h"
 
@@ -143,6 +144,30 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   fcs_float *pt, *D_Aki, *N_Aki;
   fcs_int N = n_max+1;
 
+  /* Fct. gsl_sf_gamma_inc aborts for large arguments due to underflows.
+     For nu > -1 we find the very crude upper bound
+     inc_upper_bessel(nu,x,y) < Exp[-x]/x < bound for x and solve it for x.
+     Return 0 whenever x is larger than necessary to fulfill the bound. */
+  const fcs_float bound = 1e-100;
+
+  if(nu >= -1){
+    if( x > gsl_sf_lambert_W0(1/bound) )
+      return 0.0;
+  } else{
+      fcs_int fak = 1;
+      for(fcs_int t=2; t<-nu+1; t++){
+        fak*=t;
+      }
+      if(x<1){
+        if( fak*fcs_exp(-x)*fcs_pow(x,nu) < bound )
+          return 0.0;
+      }
+      else{
+        if( fak*fcs_exp(-x)*fcs_pow(x,-1) < bound )
+          return 0.0;
+      }
+  }
+
   /* for y==0 incompl. bessel_k can be computed using incompl. Gamma fct. */
   if(fcs_float_is_zero(y))
     return fcs_pow(x,nu) * gsl_sf_gamma_inc(-nu,x); 
@@ -173,7 +198,7 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
       break;
 
     if(n >= n_max){
-      fprintf(stderr, "Inc_Bessel_K: Cannot reach accuracy within %" FCS_LMOD_INT "d iterations: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n_max, val_new, val_old, err, eps, nu, x, y);
+      //fprintf(stderr, "Inc_Bessel_K: Cannot reach accuracy within %" FCS_LMOD_INT "d iterations: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n_max, val_new, val_old, err, eps, nu, x, y);
       break;
     }
     n++;
@@ -190,7 +215,20 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
     err = fabs(val_new - val_old);
 
     if(isnan(val_new)){
-      fprintf(stderr, "Inc_Bessel_K: NAN at iteration %" FCS_LMOD_INT "d: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n, val_new, val_old, err, eps, nu, x, y);
+      //fprintf(stderr, "Inc_Bessel_K: NAN at iteration %" FCS_LMOD_INT "d: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n, val_new, val_old, err, eps, nu, x, y);
+      val_new=val_old;
+      break;
+    }
+
+    if(fcs_float_is_zero(val_new)){
+      //fprintf(stderr, "Inc_Bessel_K: value 0 at iteration %" FCS_LMOD_INT "d: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n, val_new, val_old, err, eps, nu, x, y);
+      val_new=val_old;
+      break;
+    }
+
+    if(isinf(val_new)){
+      //fprintf(stderr, "Inc_Bessel_K: Inf at iteration %" FCS_LMOD_INT "d: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n, val_new, val_old, err, eps, nu, x, y);
+      val_new=val_old;
       break;
     }
   }

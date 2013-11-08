@@ -29,7 +29,7 @@
  public function!
  @return returns electric energy
  */
-fcs_float maggs_electric_energy(void* rawdata)
+fcs_float fcs_memd_electric_energy(void* rawdata)
 {
     memd_struct* memd = (memd_struct*) rawdata;
     
@@ -38,7 +38,7 @@ fcs_float maggs_electric_energy(void* rawdata)
     fcs_float globalresult = 0.;
 	
     FORALL_INNER_SITES(x, y, z) {
-        i = maggs_get_linear_index(x, y, z, memd->lparams.dim);	  
+        i = ifcs_memd_get_linear_index(x, y, z, memd->lparams.dim);	  
         FOR3D(k){
             localresult += SQR(memd->Dfield[i*3+k]) / memd->lattice[i].permittivity[k];
         }
@@ -54,7 +54,7 @@ fcs_float maggs_electric_energy(void* rawdata)
  energy of the magnetic field.
  @return returns magnetic energy
  */
-fcs_float maggs_magnetic_energy(void* rawdata)
+fcs_float fcs_memd_magnetic_energy(void* rawdata)
 {
     memd_struct* memd = (memd_struct*) rawdata;
 
@@ -63,7 +63,7 @@ fcs_float maggs_magnetic_energy(void* rawdata)
     /*  fcs_float invmass = 1./memd->parameters.f_mass; we have B^~=B*c !!!! */
 	
     FORALL_INNER_SITES(x, y, z) {
-        i = maggs_get_linear_index(x, y, z, memd->lparams.dim);	  
+        i = ifcs_memd_get_linear_index(x, y, z, memd->lparams.dim);	  
         result += SQR(memd->Bfield[i*3]) + SQR(memd->Bfield[i*3+1]) + SQR(memd->Bfield[i*3+2]);
     }
     /* B is rescaled !!! ATTENTION!!! */

@@ -37,6 +37,9 @@ AX_FCS_CONFIG_SOLVER
 # Checks for compiler characteristics.
 AC_PROG_CC_STDC
 
+# Init libtool
+LT_INIT([disable-shared])
+
 # Checks for library functions.
 p2nfft_ldadd=
 AC_SEARCH_LIBS([cos],[m],[test "${ac_cv_search_cos}" != "none required" && p2nfft_ldadd="${ac_cv_search_cos} ${p2nfft_ldadd}"],[AC_MSG_ERROR([Required library for math functions not found.])])
@@ -61,10 +64,6 @@ AX_LIB_PFFT
 
 AX_LIB_PNFFT
 
-LIBS="$LIBS $fftw3_mpi_LIBS $fftw3_LIBS"
-CPPFLAGS="$CPPFLAGS $fftw3_mpi_CPPFLAGS $fftw3_CPPFLAGS"
-LDFLAGS="$LDFLAGS $fftw3_mpi_LDFLAGS $fftw3_LDFLAGS"
-
 # Checks for system services
 
 # we save the cache here because the tests below fail more commonly
@@ -72,7 +71,7 @@ LDFLAGS="$LDFLAGS $fftw3_mpi_LDFLAGS $fftw3_LDFLAGS"
 # Add P2NFFT solver stuff to main FCS package.
 AX_FCS_PACKAGE_RESET
 AX_FCS_PACKAGE_ADD([p2nfft_LIBS],[-lfcs_p2nfft])
-AX_FCS_PACKAGE_ADD([p2nfft_LIBS_A],[libfcs_p2nfft.a])
+AX_FCS_PACKAGE_ADD([p2nfft_LIBS_A],[libfcs_p2nfft.la])
 AX_FCS_PACKAGE_ADD([p2nfft_LDADD],[${p2nfft_ldadd}])
 
 AC_CONFIG_FILES([Makefile])

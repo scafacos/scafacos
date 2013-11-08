@@ -31,8 +31,8 @@ DISTCLEANFILES = fcs-package.info
 # Documentation
 #################################################################
 if ENABLE_DOC
-.PHONY: FORCE doc manual
-doc manual: FORCE
+.PHONY: FORCE doc manual doc-upload
+doc manual doc-upload: FORCE
 	cd doc; $(MAKE) --print-directory $@
 FORCE:
 endif

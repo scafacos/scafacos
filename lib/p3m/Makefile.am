@@ -1,11 +1,11 @@
 if ENABLE_SINGLE_LIB
-noinst_LIBRARIES = libfcs_p3m.a
+noinst_LTLIBRARIES = libfcs_p3m.la
 else
-lib_LIBRARIES = libfcs_p3m.a
+lib_LTLIBRARIES = libfcs_p3m.la
 endif
 
-libfcs_p3m_a_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/lib -I$(top_srcdir)/lib/common/fcs-common @fftw3_CPPFLAGS@
-libfcs_p3m_a_SOURCES = \
+libfcs_p3m_la_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/lib -I$(top_srcdir)/lib/common/fcs-common @fftw3_CPPFLAGS@
+libfcs_p3m_la_SOURCES = \
 	utils.h utils.c \
 	communication.h communication.c \
 	caf.c caf.h \

@@ -1,8 +1,8 @@
 AM_CPPFLAGS = -I$(srcdir)/../pmg
 
-noinst_LIBRARIES = libpp3mg.a
+noinst_LTLIBRARIES = libpp3mg.la
 
-libpp3mg_a_SOURCES = \
+libpp3mg_la_SOURCES = \
 	ghosted_grid.c \
 	ghosted_grid.h \
 	interpolation.c \

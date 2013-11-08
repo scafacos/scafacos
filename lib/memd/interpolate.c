@@ -31,7 +31,7 @@
  @return interpolation value
  @param x relative position of particle
  */
-fcs_float maggs_interpol1D(fcs_float x)
+fcs_float ifcs_memd_interpol1D(fcs_float x)
 {	
     return x;
     /* Cosine interpolation would be: */
@@ -44,7 +44,7 @@ fcs_float maggs_interpol1D(fcs_float x)
  @param rel    3dim-array relative position in cube,
  @param q      charge to interpolate
  */
-void maggs_interpolate_charge(memd_struct* memd, fcs_int *first, fcs_float *rel, fcs_float q)
+void ifcs_memd_interpolate_charge(memd_struct* memd, fcs_int *first, fcs_float *rel, fcs_float q)
 {
     fcs_int i, k, l, m, index, temp_ind;
     fcs_int help_index[3];
@@ -54,13 +54,13 @@ void maggs_interpolate_charge(memd_struct* memd, fcs_int *first, fcs_float *rel,
     FOR3D(i) help[i] = 1. - rel[i];     /** relative pos. w.r.t. first */
     //  printf("first: %d %d %d\n", first[0], first[1], first[2]);
     /** calculate charges at each vertex */
-    index = maggs_get_linear_index(first[0],first[1],first[2],memd->lparams.dim);
+    index = ifcs_memd_get_linear_index(first[0],first[1],first[2],memd->lparams.dim);
 	
     FOR3D(i) {
         temp_ind = memd->neighbor[index][i];
         if(temp_ind == NOWHERE) help_index[i] = memd->lparams.volume; /* force huge index */
         else { /* incr. for x-neighbor */
-            help_index[i] = maggs_get_offset(memd->lattice[memd->neighbor[index][i]].r[i], first[i], i, memd->lparams.dim);
+            help_index[i] = ifcs_memd_get_offset(memd->lattice[memd->neighbor[index][i]].r[i], first[i], i, memd->lparams.dim);
         }
 		
     }
@@ -70,7 +70,7 @@ void maggs_interpolate_charge(memd_struct* memd, fcs_int *first, fcs_float *rel,
             for(m=0;m<2;m++){ /* jumps from z- to z+ */      
                 if(index < memd->lparams.volume) {
                     temp = q;
-                    FOR3D(i) temp *= maggs_interpol1D(help[i]);
+                    FOR3D(i) temp *= ifcs_memd_interpol1D(help[i]);
                     memd->lattice[index].charge += temp;
                 }
 				
@@ -89,7 +89,7 @@ void maggs_interpolate_charge(memd_struct* memd, fcs_int *first, fcs_float *rel,
 }
 
 /** add charges from ghost cells to lattice sites. */
-void maggs_accumulate_charge_from_ghosts(memd_struct* memd)
+void ifcs_memd_accumulate_charge_from_ghosts(memd_struct* memd)
 {
     memd_cell *cell;
     memd_particle* p;
@@ -120,7 +120,7 @@ void maggs_accumulate_charge_from_ghosts(memd_struct* memd)
                     rel[d]        = pos[d] - first[d];
                 }
                 //      	fprintf(stderr,"pos: %f %f %f\n", p[i].r[0], p[i].r[1], p[i].r[2]);
-                maggs_interpolate_charge(memd, first, rel, q);
+                ifcs_memd_interpolate_charge(memd, first, rel, q);
             }
         }      
     }  
@@ -130,7 +130,7 @@ void maggs_accumulate_charge_from_ghosts(memd_struct* memd)
 
 /** finds current lattice site of each particle.
  calculates charge interpolation on cube. */
-void maggs_distribute_particle_charges(memd_struct* memd)
+void ifcs_memd_distribute_particle_charges(memd_struct* memd)
 {	
     memd_cell *cell;
     memd_particle* p;
@@ -154,11 +154,11 @@ void maggs_distribute_particle_charges(memd_struct* memd)
                     first[d]      = (fcs_int) pos[d];
                     rel[d]        = pos[d] - first[d];
                 }
-                maggs_interpolate_charge(memd, first, rel, q);
+                ifcs_memd_interpolate_charge(memd, first, rel, q);
             }
         }      
     }
-    maggs_accumulate_charge_from_ghosts(memd);	
+    ifcs_memd_accumulate_charge_from_ghosts(memd);	
 }
 
 /** Does the actual calculation of the gradient. Parameters:
@@ -166,7 +166,7 @@ void maggs_distribute_particle_charges(memd_struct* memd)
  @param q    charge,
  @param grad huge gradient array to write into
  */
-void maggs_calc_charge_gradients(fcs_float *rel, fcs_float q, fcs_float *grad)
+void ifcs_memd_calc_charge_gradients(fcs_float *rel, fcs_float q, fcs_float *grad)
 {
     fcs_int i,l,m,index, d;
     fcs_float help[3];
@@ -177,7 +177,7 @@ void maggs_calc_charge_gradients(fcs_float *rel, fcs_float q, fcs_float *grad)
     index = 0;
 	
     FOR3D(d) {
-        maggs_calc_directions(d, &dir1, &dir2);
+        ifcs_memd_calc_directions(d, &dir1, &dir2);
         for(l=0;l<2;l++){  /* jumps from dir2- to dir2+ */
             for(m=0;m<2;m++){ /* jumps from dir1- to dir1+ */          
 				
@@ -198,7 +198,7 @@ void maggs_calc_charge_gradients(fcs_float *rel, fcs_float q, fcs_float *grad)
  calculates charge gradients on this cube.
  @param grad gradient array to write into
  */
-void maggs_update_charge_gradients(memd_struct* memd, fcs_float *grad)
+void ifcs_memd_update_charge_gradients(memd_struct* memd, fcs_float *grad)
 {
     memd_cell *cell;
     memd_particle* p;
@@ -221,7 +221,7 @@ void maggs_update_charge_gradients(memd_struct* memd, fcs_float *grad)
                     first[d]      = (fcs_int) pos[d];
                     rel[d]        = pos[d] - first[d];
                 }
-                maggs_calc_charge_gradients(rel, q, &grad[ip]);
+                ifcs_memd_calc_charge_gradients(rel, q, &grad[ip]);
                 ip += 12;
             }
         }      
