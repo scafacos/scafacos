@@ -173,12 +173,8 @@ void ifcs_p3m_run(void* rd,
   
   return;
 */
-  printf("box_alpha=%f * Pi\n",d->box_alpha/M_PI);
-  printf("box_beta=%f * Pi\n",d->box_beta/M_PI);
-  printf("box_gamma=%f * Pi\n",d->box_gamma/M_PI);
-  printf("box_a=%f\n",d->box_a);
-  printf("box_b=%f\n",d->box_b);
-  printf("box_c=%f\n",d->box_c);
+  
+  
   
   P3M_INFO(printf("    system parameters: box_l=" F3FLOAT "\n", \
                   d->box_l[0], d->box_l[1], d->box_l[2]));

@@ -311,7 +311,7 @@ ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d,
                        fcs_float *positions, fcs_float *charges,
                        tune_params **params) {
 #ifdef P3M_AD 
-  const fcs_int cao_min = 2; //TODO: find caf definition and find out if this is a caf that is differentiable (not triangle)
+  const fcs_int cao_min = 3;
 #else
   const fcs_int cao_min = 1;
 #endif

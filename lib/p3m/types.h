@@ -162,15 +162,12 @@ typedef struct {
     /* Skin */
     fcs_float skin;
     /* box vectors*/
-//    fcs_float box_vector_a[3];
-//    fcs_float box_vector_b[3];
-//    fcs_float box_vector_c[3];
+    fcs_float box_vector_a[3];
+    fcs_float box_vector_b[3];
+    fcs_float box_vector_c[3];
     fcs_float box_alpha;
     fcs_float box_beta;
     fcs_float box_gamma;
-    fcs_float box_a;
-    fcs_float box_b;
-    fcs_float box_c;
     /****************************************************
      * PARAMETERS OF THE METHOD
      ****************************************************/
