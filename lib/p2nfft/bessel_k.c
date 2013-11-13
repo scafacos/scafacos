@@ -155,15 +155,15 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
       return 0.0;
   } else{
       fcs_int fak = 1;
-      for(fcs_int t=2; t<-nu+1; t++){
+      for(fcs_int t=1; t<-nu; t++){
         fak*=t;
       }
       if(x<1){
-        if( fak*fcs_exp(-x)*fcs_pow(x,nu) < bound )
+        if( fak*fcs_exp(1-x)*fcs_pow(x,nu) < bound )
           return 0.0;
       }
       else{
-        if( fak*fcs_exp(-x)*fcs_pow(x,-1) < bound )
+        if( fak*fcs_exp(1-x)*fcs_pow(x,-1) < bound )
           return 0.0;
       }
   }
@@ -194,7 +194,7 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   while(err > eps){
 
     /* avoid overflow by division with very small numbers */
-    if(val_new < eps)
+    if(fabs(val_new) < eps)
       break;
 
     if(n >= n_max){
