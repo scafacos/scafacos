@@ -48,12 +48,13 @@ void ifcs_p3m_set_box_c(void *rd, fcs_float c) {
 }
 
 
-//TODO I assume these functions should be placed somewhere else r are not needed anyways
+//TODO I assume these functions should be placed somewhere else (utils.h?)
 
 fcs_float unit_volume(fcs_float alpha, fcs_float beta, fcs_float gamma) {//TODO up to now the unit volume is only used in one function. therefore it might be written there explicitely
     return (fcs_float)fcs_sqrt((1 - fcs_cos(alpha) * fcs_cos(alpha) - fcs_cos(beta) * fcs_cos(beta) - fcs_cos(gamma) * fcs_cos(gamma) + 2 * fcs_cos(alpha) * fcs_cos(gamma) * fcs_cos(beta)));
 }
 
+/*
 void tricFROMcart(void* rd, fcs_float *vec) {
     ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
     vec[0] = vec[0] / d->box_a - fcs_cos(d->box_gamma) / (d->box_a * fcs_sin(d->box_gamma)) * vec[1]
@@ -66,6 +67,7 @@ void tricFROMcart(void* rd, fcs_float *vec) {
     vec[2] = 1 / (d->box_c * unit_volume(d->box_alpha, d->box_beta, d->box_gamma)) * fcs_sin(d->box_gamma)
             * vec[2];
 }
+*/
 fcs_float angle_between_vectors(fcs_float *vec_a, fcs_float *vec_b) {
     //TODO is there some fcs_acos? at least not seen in FCSCommon.h
     return acos(
@@ -74,6 +76,7 @@ fcs_float angle_between_vectors(fcs_float *vec_a, fcs_float *vec_b) {
 }
 
 
+/*
 void cartFROMtric(void* rd, fcs_float *vec) {//@todo move those calculations to paramters.c to avoid errors (data struct unkown and request for member in something not a struct)
     ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
     vec[0] = d->box_a * vec[0] + d->box_b * fcs_cos(d->box_gamma) * vec[1]
@@ -83,23 +86,31 @@ void cartFROMtric(void* rd, fcs_float *vec) {//@todo move those calculations to 
             * vec[2]; //b*sin(gamma)*n+c*(cos(alpha)-cos(beta)*cos(gamma))/(sin(gamma))*l
     vec[2] = d->box_c * unit_volume(d->box_alpha, d->box_beta, d->box_gamma) / fcs_sin(d->box_gamma) * vec[2]; //c*v/sin(gamma)*l
 }
+*/
 
 
 void ifcs_p3m_set_box_geometry(void *rd, fcs_float *a, fcs_float *b, fcs_float *c) {
     ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
-    // if (!fcs_float_is_equal(a, d->box_l[0])||!fcs_float_is_equal(a, d->box_l[0])||!fcs_float_is_equal(c, d->box_l[2])) //TODO check if d_boxlength still fits (first i need to know what the box lengths will be)
-    //d->needs_retune = 1;
-
-        //from here on: angles and lengths are set
+   //todo need retune ?
+        //angles and lengths are set
         d->box_alpha = angle_between_vectors(b, c); //angle between box vector b and c
         d->box_beta = angle_between_vectors(a, c);
         d->box_gamma = angle_between_vectors(a, b); //angle between box vector a and b;
-
-        //TODO what size should the box have afterwards? some length of a transformed box vector?
+        //TODO what size should the box have afterwards? some length of a transformed box vector? are they needed for the near part? if not: transform and then set box lengths again
+/*
         d->box_a = fcs_norm(a);
         d->box_b = fcs_norm(b);
         d->box_c = fcs_norm(c);
-
+*/
+       
+        int i ;
+        for(i=0;i<3;i++){
+        d->box_vector_a[i]=a[i];
+         d->box_vector_b[i]=b[i];
+          d->box_vector_c[i]=c[i];
+          
+          
+        }
 }
 
 void ifcs_p3m_set_r_cut(void *rd, fcs_float r_cut) {
