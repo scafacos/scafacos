@@ -63,6 +63,8 @@
 /* CONSTANTS */
 /** maximal charge assignment order available */
 #define P3M_MAX_CAO 7
+/** Search horizon for maximal grid size*/
+#define P3M_MAX_GRID_DIFF 10
 /** This value for epsilon indicates metallic boundary conditions. */
 #define P3M_EPSILON_METALLIC 0.0
 /** precision limit for the r_cut zero */

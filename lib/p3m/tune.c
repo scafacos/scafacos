@@ -452,7 +452,7 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
 
       // compare grid size to previous data set
       // if it is larger than double any previous size, remove it
-      if (2*min_grid1d < grid1d) {
+      if (min_grid1d + P3M_MAX_GRID_DIFF < grid1d) {
         P3M_INFO(printf("      grid too large => removing data set\n"));
         tune_params *tmp = *p;
         *p = (*p)->next_params;
