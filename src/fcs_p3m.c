@@ -73,21 +73,29 @@ FCSResult fcs_p3m_tune(FCS handle,
     fcs_float *a = fcs_get_box_a(handle);
     fcs_float *b = fcs_get_box_b(handle);
     fcs_float *c = fcs_get_box_c(handle);
-    if (!fcs_is_orthogonal(a, b, c))
+    if (!fcs_is_orthogonal(a, b, c)){
+/*
         return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
             "p3m requires the box to be orthorhombic.");
-
+*/
+/*
+        #define P3M_TRICLINC
+*/
+        ifcs_p3m_set_triclinic_flag(handle->method_context);
+}
+/*
     if (!fcs_uses_principal_axes(a, b, c))
         return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
             "p3m requires the box vectors to be parallel to the principal axes.");
-
+*/
+  
     ifcs_p3m_set_box_a(handle->method_context, a[0]);
     ifcs_p3m_set_box_b(handle->method_context, b[1]);
     ifcs_p3m_set_box_c(handle->method_context, c[2]);
 
     ifcs_p3m_set_box_geometry(handle->method_context, a, b, c);
-
-
+    
+    
     ifcs_p3m_set_near_field_flag(handle->method_context,
             fcs_get_near_field_flag(handle));
 

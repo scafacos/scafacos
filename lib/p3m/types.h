@@ -165,9 +165,6 @@ typedef struct {
     fcs_float box_vector_a[3];
     fcs_float box_vector_b[3];
     fcs_float box_vector_c[3];
-    fcs_float box_alpha;
-    fcs_float box_beta;
-    fcs_float box_gamma;
     /****************************************************
      * PARAMETERS OF THE METHOD
      ****************************************************/
@@ -176,7 +173,9 @@ typedef struct {
     /** number of interpolation points for charge assignment function */
     fcs_int n_interpol;
     /** whether to compute the near field in the method */
-    fcs_int near_field_flag;
+    fcs_int near_field_flag;    
+    /** whether triclinic boxes are present*/
+    fcs_int triclinic_flag;
 
     /* TUNABLE PARAMETERS */
     /** cutoff radius */

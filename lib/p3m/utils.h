@@ -185,8 +185,8 @@ static inline int on_root() {
     return rank == 0;
 }
 
-
-
+    
+    
 void errexit();
 
 #endif

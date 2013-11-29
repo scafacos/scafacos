@@ -152,7 +152,6 @@ void ifcs_p3m_run(void* rd,
   P3M_INFO(printf( "ifcs_p3m_run() started...\n"));
   ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*)rd;
 
-  assert(!d->needs_retune); //very minimalistic check if all is well
   
   /* reset all timers */
   if (d->require_timings) {
@@ -425,11 +424,10 @@ void ifcs_p3m_run(void* rd,
     }
 #endif /* P3M_IK */
   }   
-
+  
   if (d->near_field_flag) { 
     /* start near timer */
     START(TIMING_NEAR)
-//TODO: make sure this one will get the triclinic system with cartesian coordinates, i.e. transform coordinates back since beforehand the Fourier part is solved in triclinic coordinates.
     /* compute near field */
     fcs_near_t near;
     fcs_float alpha = d->alpha;
@@ -437,12 +435,14 @@ void ifcs_p3m_run(void* rd,
     fcs_near_create(&near);
     /*  fcs_near_set_field_potential(&near, ifcs_p3m_compute_near);*/
     fcs_near_set_loop(&near, ifcs_p3m_compute_near_loop);
-//TODO box is non-orthogonal! change this for the next 4 lines.
     fcs_float box_base[3] = {0.0, 0.0, 0.0 };
+    
+/*
     fcs_float box_a[3] = {d->box_l[0], 0.0, 0.0 };
     fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
     fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
-    fcs_near_set_system(&near, box_base, box_a, box_b, box_c, NULL);
+*/
+    fcs_near_set_system(&near, box_base, d->box_vector_a, d->box_vector_b, d->box_vector_c, NULL);
 
     fcs_near_set_particles(&near, num_real_particles, num_real_particles,
                            positions, charges, indices,

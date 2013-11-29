@@ -80,7 +80,7 @@ void ifcs_p3m_prepare(ifcs_p3m_data_struct *d, fcs_int max_charges) {
 	      d->local_grid.dim,d->local_grid.margin,
             d->grid, d->grid_off,
             &d->ks_pnum);
-
+    P3M_INFO(printf("    Calculating differential operator...\n"));
     /* k-space part */
     ifcs_p3m_calc_differential_operator(d);
     P3M_INFO(printf("    Calculating influence function...\n"));
@@ -91,7 +91,7 @@ void ifcs_p3m_prepare(ifcs_p3m_data_struct *d, fcs_int max_charges) {
 #else
     ifcs_p3m_calc_influence_function_adi(d);
 #endif
-
+    
     P3M_DEBUG(printf("  ifcs_p3m_prepare() finished.\n"));
 }
 
