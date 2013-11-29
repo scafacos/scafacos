@@ -803,7 +803,7 @@ static void ifcs_p3m_apply_force_influence_function(ifcs_p3m_data_struct* d) {
 static void ifcs_p3m_ik_diff(ifcs_p3m_data_struct* d, int dim) {
   fcs_int ind;
   fcs_int j[3];
-  fcs_float* d_operator = NULL;
+  fcs_int* d_operator = NULL;
   /* direction in k space: */
   fcs_int dim_rs = (dim+d->ks_pnum)%3;
 
