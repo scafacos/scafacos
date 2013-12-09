@@ -306,9 +306,9 @@ static  void ifcs_p3m_calc_send_grid(ifcs_p3m_data_struct *d) {
  *           i.e. the prefactor i*2*PI/L is missing! */
 void ifcs_p3m_calc_differential_operator(ifcs_p3m_data_struct *d) {
   for (fcs_int i=0;i<3;i++) {
-    d->d_op[i] = realloc(d->d_op[i], d->grid[i]*sizeof(fcs_float));
+    d->d_op[i] = realloc(d->d_op[i], d->grid[i]*sizeof(fcs_int));
     d->d_op[i][0] = 0;
-    d->d_op[i][d->grid[i]/2] = 0.0;
+    d->d_op[i][d->grid[i]/2] = 0;
 
     for (fcs_int j = 1; j < d->grid[i]/2; j++) {
       d->d_op[i][j] = j;

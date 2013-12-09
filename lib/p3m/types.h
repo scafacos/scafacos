@@ -248,12 +248,12 @@ typedef struct {
   /** position shift for calc. of first assignment grid point. */
   fcs_float pos_shift;
   /** helper variable for calculation of aliasing sums */
-  fcs_float *meshift_x;
-  fcs_float *meshift_y;
-  fcs_float *meshift_z;
+  fcs_int *meshift_x;
+  fcs_int *meshift_y;
+  fcs_int *meshift_z;
 
   /** Spatial differential operator in k-space. We use an i*k differentiation. */
-  fcs_float *d_op[3];
+  fcs_int *d_op[3];
   /** Force optimized influence function (k-space) */
   fcs_float *g_force;
   /** Energy optimized influence function (k-space) */
