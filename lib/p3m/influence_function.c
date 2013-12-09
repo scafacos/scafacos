@@ -98,14 +98,14 @@ void ifcs_p3m_calc_influence_function_ik(ifcs_p3m_data_struct *d) {
 	    d->d_op[RX][n[KX]]*numerator_force[RX]/d->box_l[RX] + 
 	    d->d_op[RY][n[KY]]*numerator_force[RY]/d->box_l[RY] + 
 	    d->d_op[RZ][n[KZ]]*numerator_force[RZ]/d->box_l[RZ];
-	  fcs_float fak2 = 
+	  fcs_int fak2 = 
 	    SQR(d->d_op[RX][n[KX]]/d->box_l[RX]) +
 	    SQR(d->d_op[RY][n[KY]]/d->box_l[RY]) +
 	    SQR(d->d_op[RZ][n[KZ]]/d->box_l[RZ]);
 	  fcs_float fak3 = fak1/(fak2 * SQR(denominator));
-	  d->g_force[ind] = M_2_PI*fak3;
+	  d->g_force[ind] = FCS_2_PI*fak3;
           d->g_energy[ind] = 0.5 * d->g_force[ind];
-	  /* d->g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator); */
+	  /* d->g_energy[ind] = FCS_1_PI*numerator_energy/SQR(denominator); */
           /* if (fabs(d->g_energy[ind]) > 1.e-5) */
           /*   printf("%d: %15.10e\n", ind, d->g_energy[ind]/d->g_force[ind]); */
 	}
@@ -127,16 +127,16 @@ ifcs_p3m_perform_aliasing_sums_ik(ifcs_p3m_data_struct *d, fcs_int n[3],
   for (fcs_int i = 0; i < 3; i++)
     numerator_force[i] = 0.0;
 
-  fcs_float prefactor = SQR(M_PI/d->alpha);
+  fcs_float prefactor = SQR(FCS_PI/d->alpha);
 
   for (fcs_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
-    fcs_float nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
+    fcs_int nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
     fcs_float sx  = pow(sinc(nmx/(fcs_float)d->grid[RX]),2.0*d->cao);
     for (fcs_int my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
-      fcs_float nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
+      fcs_int nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
       fcs_float sy  = sx*pow(sinc(nmy/(fcs_float)d->grid[RY]),2.0*d->cao);
       for (fcs_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
-	fcs_float nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
+	fcs_int nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
 	fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
 	fcs_float nm2 = 
 	  SQR(nmx/d->box_l[RX]) + 
@@ -194,13 +194,13 @@ void ifcs_p3m_calc_influence_function_iki(ifcs_p3m_data_struct *d) {
 	    d->d_op[RX][n[KX]]*numerator_force[RX]/d->box_l[RX] + 
 	    d->d_op[RY][n[KY]]*numerator_force[RY]/d->box_l[RY] + 
 	    d->d_op[RZ][n[KZ]]*numerator_force[RZ]/d->box_l[RZ];
-	  fcs_float fak2 = 
+	  fcs_int fak2 = 
 	    SQR(d->d_op[RX][n[KX]]/d->box_l[RX]) +
 	    SQR(d->d_op[RY][n[KY]]/d->box_l[RY]) +
 	    SQR(d->d_op[RZ][n[KZ]]/d->box_l[RZ]);
 	  fcs_float fak3 = fak1/(fak2 * 0.5 * (SQR(denominator[0]) + SQR(denominator[1])) );
-	  d->g_force[ind] = M_2_PI*fak3;
-	  d->g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator[0]);
+	  d->g_force[ind] = FCS_2_PI*fak3;
+	  d->g_energy[ind] = FCS_1_PI*numerator_energy/SQR(denominator[0]);
 	}
       }
     }
@@ -220,16 +220,16 @@ ifcs_p3m_perform_aliasing_sums_iki(ifcs_p3m_data_struct *d, fcs_int n[3],
   for (fcs_int i = 0; i < 3; i++)
     numerator_force[i] = 0.0;
 
-  fcs_float prefactor = SQR(M_PI/d->alpha);
+  fcs_float prefactor = SQR(FCS_PI/d->alpha);
 
   for (fcs_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
-    fcs_float nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
+    fcs_int nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
     fcs_float sx  = pow(sinc(nmx/(fcs_float)d->grid[RX]),2.0*d->cao);
     for (fcs_int my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
-      fcs_float nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
+      fcs_int nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
       fcs_float sy  = sx*pow(sinc(nmy/(fcs_float)d->grid[RY]),2.0*d->cao);
       for (fcs_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
-	fcs_float nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
+	fcs_int nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
 	fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
 	fcs_float nm2 = 
 	  SQR(nmx/d->box_l[RX]) + 
@@ -290,8 +290,8 @@ void ifcs_p3m_calc_influence_function_adi(ifcs_p3m_data_struct *d) {
                                              denominator);
 
 	  d->g_force[ind] = numerator_force / 
-	    (0.5 * M_PI * (denominator[0] * denominator[1] + denominator[2] * denominator[3] )) ;
-          d->g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator[0]);
+	    (0.5 * FCS_PI * (denominator[0] * denominator[1] + denominator[2] * denominator[3] )) ;
+          d->g_energy[ind] = FCS_1_PI*numerator_energy/SQR(denominator[0]);
 	  /* d->g_energy[ind] = 0.5 * d->g_force[ind]; */
 	}
       }
@@ -311,16 +311,16 @@ ifcs_p3m_perform_aliasing_sums_adi(ifcs_p3m_data_struct *d, fcs_int n[3],
   *numerator_energy = 0.0;
   *numerator_force = 0.0;
 
-  fcs_float prefactor = SQR(M_PI/d->alpha);
+  fcs_float prefactor = SQR(FCS_PI/d->alpha);
 
   for (fcs_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
-    fcs_float nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
+    fcs_int nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
     fcs_float sx  = pow(sinc(nmx/(fcs_float)d->grid[RX]),2.0*d->cao);
     for (fcs_int my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
-      fcs_float nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
+      fcs_int nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
       fcs_float sy  = sx*pow(sinc(nmy/(fcs_float)d->grid[RY]),2.0*d->cao);
       for (fcs_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
-	fcs_float nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
+	fcs_int nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
 	fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
 	fcs_float nm2 = 
 	  SQR(nmx/d->box_l[RX]) + 
@@ -351,9 +351,9 @@ ifcs_p3m_perform_aliasing_sums_adi(ifcs_p3m_data_struct *d, fcs_int n[3],
 static void ifcs_p3m_calc_meshift(ifcs_p3m_data_struct *d) {
   int i;
   
-  d->meshift_x = (fcs_float *) realloc(d->meshift_x, d->grid[0]*sizeof(fcs_float));
-  d->meshift_y = (fcs_float *) realloc(d->meshift_y, d->grid[1]*sizeof(fcs_float));
-  d->meshift_z = (fcs_float *) realloc(d->meshift_z, d->grid[2]*sizeof(fcs_float));
+  d->meshift_x = (fcs_float *) realloc(d->meshift_x, d->grid[0]*sizeof(fcs_int));
+  d->meshift_y = (fcs_float *) realloc(d->meshift_y, d->grid[1]*sizeof(fcs_int));
+  d->meshift_z = (fcs_float *) realloc(d->meshift_z, d->grid[2]*sizeof(fcs_int));
   
   d->meshift_x[0] = d->meshift_y[0] = d->meshift_z[0] = 0;
   for (i = 1; i <= d->grid[RX]/2; i++) {

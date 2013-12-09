@@ -51,6 +51,10 @@ ifcs_p3m_k_space_error_sum2_adi
 #endif
 #endif
 
+#ifndef FCS_PI
+#include "FCSDefinitions.h"
+#endif
+
 static void 
 ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d);
 
@@ -190,7 +194,7 @@ ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d) {
 static fcs_float 
 ifcs_p3m_k_space_error_sum1(fcs_int n, fcs_float grid_i, fcs_int cao) {
   fcs_float c, res=0.0;
-  c = SQR(cos(M_PI*grid_i*(fcs_float)n));
+  c = SQR(cos(FCS_PI*grid_i*(fcs_float)n));
   
   switch (cao) {
   case 1 : { 
@@ -224,12 +228,15 @@ ifcs_p3m_k_space_error_sum1(fcs_int n, fcs_float grid_i, fcs_int cao) {
 }
 
 /** aliasing sum used by \ref ifcs_p3m_k_space_error. */
-static void 
-ifcs_p3m_k_space_error_sum2(fcs_int nx, fcs_int ny, fcs_int nz, 
-                            fcs_int grid[3], fcs_float grid_i[3], 
-                            fcs_int cao, fcs_float alpha_L_i, 
-                            fcs_float *alias1, fcs_float *alias2) {
-  fcs_float prefactor = SQR(M_PI*alpha_L_i);
+void 
+ifcs_p3m_k_space_error_sum2_adi(fcs_int nx, fcs_int ny, fcs_int nz, 
+                                fcs_int grid[3], fcs_float grid_i[3], 
+                                fcs_int cao, fcs_float alpha_L_i, 
+                                fcs_float *alias1, fcs_float *alias2,
+                                fcs_float *alias3, fcs_float *alias4,
+                                fcs_float *alias5, fcs_float *alias6)
+{
+  fcs_float prefactor = SQR(FCS_PI*alpha_L_i);
 
   *alias1 = *alias2 = 0.0;
   for (fcs_int mx=-P3M_BRILLOUIN; mx<=P3M_BRILLOUIN; mx++) {
@@ -266,7 +273,7 @@ ifcs_p3m_k_space_error_sum2_adi(fcs_int nx, fcs_int ny, fcs_int nz,
                                 fcs_float *alias3, fcs_float *alias4,
                                 fcs_float *alias5, fcs_float *alias6)
 {
-  fcs_float prefactor = SQR(M_PI*alpha_L_i);
+  fcs_float prefactor = SQR(FCS_PI*alpha_L_i);
 
   *alias1 = *alias2 = *alias3 = *alias4 = *alias5 = *alias6 = 0.0;
   for (fcs_int mx=-P3M_BRILLOUIN; mx<=P3M_BRILLOUIN; mx++) {
@@ -361,7 +368,7 @@ ifcs_p3m_k_space_error_approx(ifcs_p3m_data_struct *d) {
   d->ks_error =
     d->sum_q2 / (d->box_l[0]*d->box_l[0]) *
     pow(h*d->alpha, d->cao) * 
-    sqrt(d->alpha*d->box_l[0]/d->sum_qpart*sqrt(2.0*M_PI)*sum);
+    sqrt(d->alpha*d->box_l[0]/d->sum_qpart*sqrt(2.0*FCS_PI)*sum);
 }
 
 /** Calculates the rms error estimate in the force (as described in
@@ -425,8 +432,8 @@ ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d) {
   /* We know how the real space error behaves, so we can compute the
      alpha where the real space error is half of the wanted
      error. This is the alpha that we return. */
-  if(M_SQRT2*max_rs_err > d->tolerance_field) {
-    d->alpha = sqrt(log(M_SQRT2*max_rs_err/d->tolerance_field)) / d->r_cut;
+  if(FCS_SQRT2*max_rs_err > d->tolerance_field) {
+    d->alpha = sqrt(log(FCS_SQRT2*max_rs_err/d->tolerance_field)) / d->r_cut;
   } else {
     /* if the error is small enough even for alpha=0 */
     d->alpha = 0.1 * d->box_l[0];
