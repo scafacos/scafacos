@@ -279,6 +279,7 @@ ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d,
         ((*params)->timing_near + (*params)->timing_far);
       P3M_INFO(printf( "    rel_timing_diff=" FFLOAT, rel_timing_diff));
 
+      /* @Todo: Replace with constant */
       if (rel_timing_diff < 0.1) {
         P3M_INFO(printf( " => found r_cut\n"));
         return NULL;
@@ -344,7 +345,7 @@ ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d,
                             params);
 }
 
-/* params_to_try with identical r_cut should be adjacent and have decreasing cao */
+/* params with identical r_cut should be adjacent and have decreasing cao */
 static FCSResult
 ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d, 
                    fcs_int num_particles, fcs_int max_num_particles,
@@ -451,7 +452,7 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
       step_ix--;
 
       // compare grid size to previous data set
-      // if it is larger than double any previous size, remove it
+      // if it is larger than any previous size + P3M_MAX_GRID_DIFF, remove it
       if (min_grid1d + P3M_MAX_GRID_DIFF < grid1d) {
         P3M_INFO(printf("      grid too large => removing data set\n"));
         tune_params *tmp = *p;
