@@ -388,7 +388,7 @@ ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
 #ifdef FCS_ENABLE_DEBUG
     if (d->comm.rank == 0) {
       if (full_estimate)
-	printf( "        alpha*h[%d]=" FFLOAT " > %" 
+	printf( "        alpha*h[%d]=" FFLOAT " > " 
                 FFLOAT " => full estimate\n", 
                 i, alpha_h, FULL_ESTIMATE_ALPHA_H_THRESHOLD);
     }
