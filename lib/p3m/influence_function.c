@@ -98,7 +98,7 @@ void ifcs_p3m_calc_influence_function_ik(ifcs_p3m_data_struct *d) {
 	    d->d_op[RX][n[KX]]*numerator_force[RX]/d->box_l[RX] + 
 	    d->d_op[RY][n[KY]]*numerator_force[RY]/d->box_l[RY] + 
 	    d->d_op[RZ][n[KZ]]*numerator_force[RZ]/d->box_l[RZ];
-	  fcs_int fak2 = 
+	  fcs_float fak2 = 
 	    SQR(d->d_op[RX][n[KX]]/d->box_l[RX]) +
 	    SQR(d->d_op[RY][n[KY]]/d->box_l[RY]) +
 	    SQR(d->d_op[RZ][n[KZ]]/d->box_l[RZ]);
@@ -194,7 +194,7 @@ void ifcs_p3m_calc_influence_function_iki(ifcs_p3m_data_struct *d) {
 	    d->d_op[RX][n[KX]]*numerator_force[RX]/d->box_l[RX] + 
 	    d->d_op[RY][n[KY]]*numerator_force[RY]/d->box_l[RY] + 
 	    d->d_op[RZ][n[KZ]]*numerator_force[RZ]/d->box_l[RZ];
-	  fcs_int fak2 = 
+	  fcs_float fak2 = 
 	    SQR(d->d_op[RX][n[KX]]/d->box_l[RX]) +
 	    SQR(d->d_op[RY][n[KY]]/d->box_l[RY]) +
 	    SQR(d->d_op[RZ][n[KZ]]/d->box_l[RZ]);
