@@ -36,7 +36,8 @@ ifcs_p3m_k_space_error_sum1
 static void 
 ifcs_p3m_k_space_error_sum2
 (fcs_int nx, fcs_int ny, fcs_int nz, 
- fcs_int grid[3], fcs_float grid_i[3], fcs_int cao, fcs_float alpha_L_i, 
+ fcs_int grid[3], fcs_float grid_i[3], 
+ fcs_int cao, fcs_float alpha_L_i, 
  fcs_float *alias1, fcs_float *alias2);
 #endif
 
@@ -229,12 +230,10 @@ ifcs_p3m_k_space_error_sum1(fcs_int n, fcs_float grid_i, fcs_int cao) {
 
 /** aliasing sum used by \ref ifcs_p3m_k_space_error. */
 void 
-ifcs_p3m_k_space_error_sum2_adi(fcs_int nx, fcs_int ny, fcs_int nz, 
-                                fcs_int grid[3], fcs_float grid_i[3], 
-                                fcs_int cao, fcs_float alpha_L_i, 
-                                fcs_float *alias1, fcs_float *alias2,
-                                fcs_float *alias3, fcs_float *alias4,
-                                fcs_float *alias5, fcs_float *alias6)
+ifcs_p3m_k_space_error_sum2(fcs_int nx, fcs_int ny, fcs_int nz, 
+                            fcs_int grid[3], fcs_float grid_i[3], 
+                            fcs_int cao, fcs_float alpha_L_i, 
+                            fcs_float *alias1, fcs_float *alias2)
 {
   fcs_float prefactor = SQR(FCS_PI*alpha_L_i);
 

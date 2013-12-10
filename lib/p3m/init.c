@@ -123,8 +123,10 @@ void ifcs_p3m_init(void **rd, MPI_Comm communicator) {
 
 /* safe free */
 static void sfree(void* ptr) {
-  if (ptr != NULL)
+  if (ptr != NULL) {
     free(ptr);
+    ptr = NULL;
+  }
 }
 
 void ifcs_p3m_destroy(void *rd) {

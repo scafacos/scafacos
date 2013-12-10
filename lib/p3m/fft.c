@@ -145,8 +145,14 @@ void ifcs_fft_destroy(ifcs_fft_data_struct *fft, fcs_float *data, fcs_float *ks_
   sfree(fft->send_buf);
   sfree(fft->recv_buf);
   sfree(fft->data_buf);
-  if (data != NULL) fftw_free(data);
-  if (ks_data != NULL) fftw_free(ks_data);
+  if (data != NULL) { 
+    fftw_free(data);
+    data = NULL;
+  }
+  if (ks_data != NULL) {
+    fftw_free(ks_data);
+    ks_data = NULL;
+  }
 }
 
 int 
@@ -381,11 +387,20 @@ ifcs_fft_prepare(ifcs_fft_data_struct *fft, ifcs_p3m_comm_struct *comm,
   fft->send_buf = (fcs_float *)realloc(fft->send_buf, fft->max_comm_size*sizeof(fcs_float));
   fft->recv_buf = (fcs_float *)realloc(fft->recv_buf, fft->max_comm_size*sizeof(fcs_float));
 
-  if (*data != NULL) fftw_free(*data);
+  if (*data != NULL) {
+    fftw_free(*data);
+    *data = NULL;
+  }
   (*data)  = (fcs_float *)fftw_malloc(fft->max_grid_size*sizeof(fcs_float));
-  if (*ks_data != NULL) fftw_free(*ks_data);
+  if (*ks_data != NULL) {
+    fftw_free(*ks_data);
+    *ks_data = NULL;
+  }
   (*ks_data) = (fcs_float *)fftw_malloc(fft->max_grid_size*sizeof(fcs_float));
-  if (fft->data_buf != NULL) fftw_free(fft->data_buf);
+  if (fft->data_buf != NULL) {
+    fftw_free(fft->data_buf);
+    fft->data_buf = NULL;
+  }
   fft->data_buf = (fcs_float *)fftw_malloc(fft->max_grid_size*sizeof(fcs_float));
   if(!(*data) || !(*ks_data) || !fft->data_buf || !fft->recv_buf || !fft->send_buf) {
     printf("%d: Could not allocate FFT data arrays\n",comm->rank);

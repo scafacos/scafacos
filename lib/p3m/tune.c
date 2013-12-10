@@ -255,7 +255,10 @@ ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d,
     fcs_float avg_dist = 
       pow((d->box_l[0]*d->box_l[1]*d->box_l[2]) 
           / d->sum_qpart, 0.33333);
-    /* set the initial r_cut to 3 times the average distance between charges */
+
+    /* FIRST ESTIMATE */
+    /* set the initial r_cut to 3 times the average distance between
+       charges */
     (*params)->r_cut = 3.0 * avg_dist;
     
     /* tune r_cut to half the box length */
@@ -272,31 +275,41 @@ ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d,
                              positions, charges, params);
     if (result) return result;
 
-    /* check whether it converges */
-    while (1) {
-      fcs_float rel_timing_diff = 
-        fabs((*params)->timing_near - (*params)->timing_far) / 
-        ((*params)->timing_near + (*params)->timing_far);
-      P3M_INFO(printf( "    rel_timing_diff=" FFLOAT, rel_timing_diff));
+    /* SECOND ESTIMATE */
+    /* use the fact that we know that timing_near scales like r_cut**3
+       and timing_far like r_cut**(-3) to get the second estimate */
 
-      /* @Todo: Replace with constant */
-      if (rel_timing_diff < 0.1) {
-        P3M_INFO(printf( " => found r_cut\n"));
-        return NULL;
-      } else P3M_INFO(printf( " => tune r_cut\n"));
+    /* @ToDo: check whether it converges */
+    fcs_float rel_timing_diff = 
+      fabs((*params)->timing_near - (*params)->timing_far) / 
+      ((*params)->timing_near + (*params)->timing_far);
+    P3M_INFO(printf( "    rel_timing_diff=" FFLOAT, rel_timing_diff));
 
-      fcs_float rcut3 = (*params)->r_cut * (*params)->r_cut * (*params)->r_cut;
-      fcs_float c_near = (*params)->timing_near/rcut3;
-      fcs_float c_far = (*params)->timing_far*rcut3;
-      fcs_float rcut_new = pow(c_far/c_near, 1./6.);
-      
-      (*params)->r_cut = rcut_new;
-      P3M_INFO(printf( "    r_cut=" FFLOAT " (next estimate)\n", (*params)->r_cut));
-      result = 
-        ifcs_p3m_tune_cao_grid(d, num_particles, max_num_particles, 
-                               positions, charges, params);
-      if (result) return result;
-    }
+    /* /\* @ToDo: Replace with constant *\/ */
+    /* if (rel_timing_diff < 0.1) { */
+    /*   P3M_INFO(printf( " => found r_cut\n")); */
+    /*   return NULL; */
+    /* } else P3M_INFO(printf( " => tune r_cut\n")); */
+
+    fcs_float rcut3 = (*params)->r_cut * (*params)->r_cut * (*params)->r_cut;
+    fcs_float c_near = (*params)->timing_near/rcut3;
+    fcs_float c_far = (*params)->timing_far*rcut3;
+    fcs_float rcut_new = pow(c_far/c_near, 1./6.);
+    
+    (*params)->r_cut = rcut_new;
+    P3M_INFO(printf( "    r_cut=" FFLOAT " (second estimate)\n", (*params)->r_cut));
+    result = 
+      ifcs_p3m_tune_cao_grid(d, num_particles, max_num_particles, 
+                             positions, charges, params);
+    if (result) return result;
+
+    rel_timing_diff = 
+      fabs((*params)->timing_near - (*params)->timing_far) / 
+      ((*params)->timing_near + (*params)->timing_far);
+    P3M_INFO(printf("    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
+    P3M_INFO(printf("    Finished tuning.\n"));
+
+    return NULL;
   } else {
     (*params)->r_cut = d->r_cut;
     P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", (*params)->r_cut));

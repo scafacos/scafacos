@@ -612,6 +612,19 @@ ifcs_get_ca_points(ifcs_p3m_data_struct *d,
     if (shifted) pos -= 0.5;
     /* nearest grid point in the ca grid */
     fcs_int grid_ind  = (fcs_int)floor(pos);
+#ifdef ADDITIONAL_CHECKS
+    if (grid_ind < 0) {
+      printf("grid_ind[%d]=%d < 0\n", dim, grid_ind);
+      printf("pos=%lf, pos_shift=%lf, real_pos=%lf, ld_pos=%lf, ai=%lf, shifted=%d", 
+             pos, d->pos_shift, real_pos[dim], d->local_grid.ld_pos[dim],  d->ai[dim], 
+             shifted);
+    } else if (grid_ind > d->local_grid.dim[dim]) {
+      printf("grid_ind[%d]=%d > %d\n", dim, grid_ind, d->local_grid.dim[dim]);
+      printf("pos=%lf, pos_shift=%lf, real_pos=%lf, ld_pos=%lf, ai=%lf, shifted=%d", 
+             pos, d->pos_shift, real_pos[dim], d->local_grid.ld_pos[dim],  d->ai[dim], 
+             shifted);
+    }
+#endif
     /* linear index of grid point */
     linind = grid_ind + linind*d->local_grid.dim[dim];
 
@@ -647,6 +660,14 @@ ifcs_get_ca_points(ifcs_p3m_data_struct *d,
     }
 #endif
   }
+
+#ifdef ADDITIONAL_CHECKS
+  if (linind < 0) {
+    printf("ERROR: %d: linind %d < 0\n", d->comm.rank, linind);
+  } else if (linind >= d->local_grid.size) {
+    printf("ERROR: %d: linind %d > %d\n", d->comm.rank, linind, d->local_grid.size);
+  }
+#endif
 
   return linind;
 }
