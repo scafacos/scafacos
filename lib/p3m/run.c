@@ -197,20 +197,24 @@ void ifcs_p3m_run(void* rd,
     potentials = malloc(sizeof(fcs_float)*num_real_particles);
   
   STOPSTART(TIMING_DECOMP, TIMING_CA);
-  /* charge assignment */
-  ifcs_p3m_assign_charges(d, d->fft.data_buf, num_real_particles, 
-                          positions, charges, 0);
-  STOPSTART(TIMING_CA, TIMING_GATHER);
 
 #ifndef P3M_INTERLACE
   
+  /* charge assignment */
+  ifcs_p3m_assign_charges(d, d->rs_grid, num_real_particles, 
+                          positions, charges, 0);
+  STOPSTART(TIMING_CA, TIMING_GATHER);
   /* gather the ca grid */
-  ifcs_p3m_gather_grid(d, d->fft.data_buf);
+  ifcs_p3m_gather_grid(d, d->rs_grid);
   /* now d->rs_grid should contain the local ca grid */
   STOP(TIMING_GATHER);
 
 #else /* P3M_INTERLACE */
 
+  /* charge assignment */
+  ifcs_p3m_assign_charges(d, d->fft.data_buf, num_real_particles, 
+                          positions, charges, 0);
+  STOPSTART(TIMING_CA, TIMING_GATHER);
   /* gather the ca grid */
   ifcs_p3m_gather_grid(d, d->fft.data_buf);
 
