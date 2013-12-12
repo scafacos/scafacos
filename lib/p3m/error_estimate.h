@@ -27,11 +27,20 @@
 #include <mpi.h>
 #include "types.h"
 
-/** Compute the error for this combination of parameters and tune
-    alpha if required.
+/** Determines a value for alpha that achieves the wanted_error, if at
+    all possible. Also returns the achieved errors with these
+    parameters. Check whether wanted_error > achieved_error to see
+    whether the required error can actually be met.
 */
 void
-ifcs_p3m_compute_error_and_tune_alpha(ifcs_p3m_data_struct *d);
+ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d);
+
+/** Calculates the rms error estimate in the force (as described in
+    the book of Hockney and Eastwood (Eqn. 8.23) for a system of N
+    randomly distributed particles.
+*/
+void 
+ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d);
 
 /** Calculates the reciprocal space contribution to the rms error in the
     force (as described in the book of Hockney and Eastwood

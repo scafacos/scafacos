@@ -87,7 +87,12 @@ ifcs_p3m_tune_broadcast_master(ifcs_p3m_data_struct *d,
                                fcs_int num_particles, fcs_int max_num_particles,
                                fcs_float *positions, fcs_float *charges);
 static FCSResult
-ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d, 
+ifcs_p3m_tune_r_cut_alpha_cao_grid(ifcs_p3m_data_struct *d, 
+                                   fcs_int num_particles, fcs_int max_num_particles,
+                                   fcs_float *positions, fcs_float *charges,
+                                   tune_params **params);
+static FCSResult
+ifcs_p3m_tune_alpha_cao_grid(ifcs_p3m_data_struct *d, 
                              fcs_int num_particles, fcs_int max_num_particles,
                              fcs_float *positions, fcs_float *charges,
                              tune_params **params);
@@ -224,8 +229,8 @@ ifcs_p3m_tune_broadcast_master(ifcs_p3m_data_struct *d,
   tune_params *params = NULL;
   FCSResult result = NULL;
   
-  result = ifcs_p3m_tune_r_cut_cao_grid(d, num_particles, max_num_particles, 
-                                        positions, charges, &params);
+  result = ifcs_p3m_tune_r_cut_alpha_cao_grid(d, num_particles, max_num_particles, 
+                                              positions, charges, &params);
   
   /* Set and broadcast the final parameters. */
   d->r_cut = params->r_cut;
@@ -243,10 +248,10 @@ ifcs_p3m_tune_broadcast_master(ifcs_p3m_data_struct *d,
 }
 
 static FCSResult
-ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d, 
-                             fcs_int num_particles, fcs_int max_num_particles,
-                             fcs_float *positions, fcs_float *charges,
-                             tune_params **params) {
+ifcs_p3m_tune_r_cut_alpha_cao_grid(ifcs_p3m_data_struct *d, 
+                                   fcs_int num_particles, fcs_int max_num_particles,
+                                   fcs_float *positions, fcs_float *charges,
+                                   tune_params **params) {
   *params = malloc(sizeof(tune_params));
   (*params)->next_params = NULL;
   
@@ -270,9 +275,10 @@ ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d,
       (*params)->r_cut = 0.5*d->box_l[2] - d->skin;
 
     P3M_INFO(printf( "    r_cut=" FFLOAT " (first estimate)\n", (*params)->r_cut));
+
     FCSResult result = 
-      ifcs_p3m_tune_cao_grid(d, num_particles, max_num_particles, 
-                             positions, charges, params);
+      ifcs_p3m_tune_alpha_cao_grid(d, num_particles, max_num_particles, 
+                                   positions, charges, params);
     if (result) return result;
 
     /* SECOND ESTIMATE */
@@ -299,8 +305,8 @@ ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d,
     (*params)->r_cut = rcut_new;
     P3M_INFO(printf( "    r_cut=" FFLOAT " (second estimate)\n", (*params)->r_cut));
     result = 
-      ifcs_p3m_tune_cao_grid(d, num_particles, max_num_particles, 
-                             positions, charges, params);
+      ifcs_p3m_tune_alpha_cao_grid(d, num_particles, max_num_particles, 
+                                   positions, charges, params);
     if (result) return result;
 
     rel_timing_diff = 
@@ -313,12 +319,36 @@ ifcs_p3m_tune_r_cut_cao_grid(ifcs_p3m_data_struct *d,
   } else {
     (*params)->r_cut = d->r_cut;
     P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", (*params)->r_cut));
-    return ifcs_p3m_tune_cao_grid(d, num_particles, max_num_particles, 
-                                  positions, charges, params);
+    return ifcs_p3m_tune_alpha_cao_grid(d, num_particles, max_num_particles, 
+                                        positions, charges, params);
   }
    
 }
 
+/* Tune alpha */
+static FCSResult
+ifcs_p3m_tune_alpha_cao_grid(ifcs_p3m_data_struct *d, 
+                             fcs_int num_particles, fcs_int max_num_particles,
+                             fcs_float *positions, fcs_float *charges,
+                             tune_params **params) {
+  if (d->tune_alpha)
+    for (tune_params *p = *params; p != NULL; p = p->next_params) {
+      d->r_cut = p->r_cut;
+      ifcs_p3m_determine_good_alpha(d);
+      p->alpha = d->alpha;
+      P3M_INFO(printf("    alpha=" FFLOAT "\n", d->alpha));
+    }
+  else {
+    P3M_INFO(printf("    alpha=" FFLOAT " (fixed)\n", d->alpha));
+    for (tune_params *p = *params; p != NULL; p = p->next_params)
+      p->alpha = d->alpha;
+  }
+
+  return ifcs_p3m_tune_cao_grid(d, num_particles, max_num_particles, 
+                                positions, charges, params);
+}
+
+/* Tune cao */
 static FCSResult
 ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d, 
                        fcs_int num_particles, fcs_int max_num_particles,
@@ -396,12 +426,11 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
         d->grid[1] = grid1d;
         d->grid[2] = grid1d;
         P3M_DEBUG(printf("      rough grid=" FINT "\n", grid1d));
-        ifcs_p3m_compute_error_and_tune_alpha(d);
+        ifcs_p3m_compute_error_estimate(d);
         (*p)->error = d->error;
         (*p)->rs_error = d->rs_error;
         (*p)->ks_error = d->ks_error;
-        P3M_DEBUG(printf("        => alpha=" FFLOAT ", "                \
-                         "error=" FFLOATE "\n", d->alpha, d->error));
+        P3M_DEBUG(printf("        => error=" FFLOATE "\n", d->error));
       } while (d->error > d->tolerance_field);
 
       // reached largest possible grid, remove this parameter set
@@ -429,9 +458,8 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
         d->grid[1] = grid1d;
         d->grid[2] = grid1d;
         P3M_DEBUG(printf("      fine grid=" FINT "\n", grid1d));
-        ifcs_p3m_compute_error_and_tune_alpha(d);
-        P3M_DEBUG(printf("          => alpha=" FFLOAT ", "              \
-                         "error=" FFLOATE "\n", d->alpha, d->error));
+        ifcs_p3m_compute_error_estimate(d);
+        P3M_DEBUG(printf("          => error=" FFLOATE "\n", d->error));
         if (d->error < d->tolerance_field) {
           // parameters achieve error
           upper_ix = test_ix;
@@ -465,12 +493,18 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
       step_ix--;
 
       // compare grid size to previous data set
-      // if it is larger than any previous size + P3M_MAX_GRID_DIFF, remove it
+      // if it is larger than any previous size + P3M_MAX_GRID_DIFF, skip it
       if (min_grid1d + P3M_MAX_GRID_DIFF < grid1d) {
         P3M_INFO(printf("      grid too large => removing data set\n"));
         tune_params *tmp = *p;
         *p = (*p)->next_params;
         free(tmp);
+        // also remove all params with the same r_cut
+        while (*p != NULL && (*p)->r_cut == d->r_cut) {
+          tmp = *p;
+          *p = (*p)->next_params;
+          free(tmp);
+        }
         continue;
       } 
       // compare grid size and cao to previous data set
@@ -505,7 +539,7 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
                       "grid=" F3INT " (fixed)\n",                \
                       d->r_cut, d->cao,                          \
                       d->grid[0], d->grid[1], d->grid[2]));
-      ifcs_p3m_compute_error_and_tune_alpha(d);
+      ifcs_p3m_compute_error_estimate(d);
       if (d->error < d->tolerance_field) {
         // error is small enough for this parameter set, so keep it
         P3M_INFO(printf("    error is small enough, keeping params\n"));
