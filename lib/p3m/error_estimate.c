@@ -41,21 +41,16 @@ ifcs_p3m_k_space_error_sum2
  fcs_float *alias1, fcs_float *alias2);
 #endif
 
-#ifdef P3M_AD
-#ifdef P3M_INTERLACE
 static void 
 ifcs_p3m_k_space_error_sum2_adi
 (fcs_int nx, fcs_int ny, fcs_int nz, 
  fcs_int grid[3], fcs_float grid_i[3], fcs_int cao, fcs_float alpha_L_i, 
  fcs_float *alias1, fcs_float *alias2, fcs_float *alias3, 
  fcs_float *alias4, fcs_float *alias5, fcs_float *alias6);
-#endif
-#endif
 
 #ifndef FCS_PI
 #include "FCSDefinitions.h"
 #endif
-
 
 /***************************************************/
 /* IMPLEMENTATION */
@@ -256,8 +251,6 @@ ifcs_p3m_k_space_error_sum2(fcs_int nx, fcs_int ny, fcs_int nz,
 }
 #endif
 
-#ifdef P3M_AD
-#ifdef P3M_INTERLACE
 /** aliasing sum used by \ref ifcs_p3m_k_space_error. */
 static void 
 ifcs_p3m_k_space_error_sum2_adi(fcs_int nx, fcs_int ny, fcs_int nz, 
@@ -301,8 +294,6 @@ ifcs_p3m_k_space_error_sum2_adi(fcs_int nx, fcs_int ny, fcs_int nz,
     }
   }
 }
-#endif
-#endif
 
 
 /** Calculate the analytical approximation for the k-space part of the

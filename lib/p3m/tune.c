@@ -289,7 +289,7 @@ ifcs_p3m_tune_r_cut_alpha_cao_grid(ifcs_p3m_data_struct *d,
     fcs_float rel_timing_diff = 
       fabs((*params)->timing_near - (*params)->timing_far) / 
       ((*params)->timing_near + (*params)->timing_far);
-    P3M_INFO(printf( "    rel_timing_diff=" FFLOAT, rel_timing_diff));
+    P3M_INFO(printf( "    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
 
     /* /\* @ToDo: Replace with constant *\/ */
     /* if (rel_timing_diff < 0.1) { */
@@ -336,7 +336,7 @@ ifcs_p3m_tune_alpha_cao_grid(ifcs_p3m_data_struct *d,
       d->r_cut = p->r_cut;
       ifcs_p3m_determine_good_alpha(d);
       p->alpha = d->alpha;
-      P3M_INFO(printf("    alpha=" FFLOAT "\n", d->alpha));
+      P3M_INFO(printf("    => alpha=" FFLOAT "\n", d->alpha));
     }
   else {
     P3M_INFO(printf("    alpha=" FFLOAT " (fixed)\n", d->alpha));
@@ -363,7 +363,7 @@ ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d,
   if (d->tune_cao) {
     for (tune_params *p = *params; p != NULL; p = p->next_params) {
       p->cao = P3M_MAX_CAO;
-      P3M_INFO(printf("    r_cut=" FFLOAT ", cao={ ", p->r_cut));
+      P3M_INFO(printf("    Testing cao={ ", p->r_cut));
       for (fcs_int cao = P3M_MAX_CAO-1; cao >= cao_min; cao--) {
         // Insert new param set
         tune_params *pnew = malloc(sizeof(tune_params));
@@ -415,8 +415,9 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
       fcs_int upper_ix;
       // test this step
       P3M_INFO(printf("    Trying to find grid for r_cut=" FFLOAT ", "  \
+                      "alpha=" FFLOAT ", ",                             \
                       "cao=" FINT "\n",                                 \
-                      d->r_cut, d->cao));
+                      d->r_cut, d->alpha, d->cao));
       do {
         step_ix++;
         if (step_ix >= num_steps_good_gridsize) break;
@@ -483,10 +484,9 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
       (*p)->grid[1] = grid1d;
       (*p)->grid[2] = grid1d;
       P3M_INFO(printf( "      => grid=" F3INT ", "                      \
-                       "alpha=" FFLOAT ", "                             \
                        "error=" FFLOATE "\n",                           \
                        (*p)->grid[0], (*p)->grid[1], (*p)->grid[2],     \
-                       (*p)->alpha, (*p)->error));
+                       (*p)->error));
       
       // decrease step_ix so that the same step_ix is tested for the
       // next param set
