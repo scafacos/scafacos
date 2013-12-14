@@ -128,10 +128,22 @@ FCSResult ifcs_p2nfft_run(
   fcs_gridsort_set_system(&gridsort, box_base, box_a, box_b, box_c, d->periodicity);
   
 #if WORKAROUND_GRIDSORT_BUG
-  fcs_gridsort_set_bounds(&gridsort, lo, up);
+  fcs_float *lower_bounds = lo;
+  fcs_float *upper_bounds = up;
 #else
-  fcs_gridsort_set_bounds(&gridsort, d->lower_border, d->upper_border);
+  fcs_float *lower_bounds = d->lower_border;
+  fcs_float *upper_bounds = d->upper_border;
 #endif
+
+  /* change bounds from box values to [0,1)^3 */
+  lower_bounds[0] = (lower_bounds[0] - box_base[0]) / box_a[0];
+  lower_bounds[1] = (lower_bounds[1] - box_base[1]) / box_b[1];
+  lower_bounds[2] = (lower_bounds[2] - box_base[2]) / box_c[2];
+  upper_bounds[0] = (upper_bounds[0] - box_base[0]) / box_a[0];
+  upper_bounds[1] = (upper_bounds[1] - box_base[1]) / box_b[1];
+  upper_bounds[2] = (upper_bounds[2] - box_base[2]) / box_c[2];
+
+  fcs_gridsort_set_bounds(&gridsort, lower_bounds, upper_bounds);
 
   fcs_gridsort_set_particles(&gridsort, local_num_particles, max_local_num_particles, positions, charges);
 

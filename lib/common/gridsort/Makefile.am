@@ -111,7 +111,11 @@ sl_SOURCE = \
 libfcs_gridsort_back__p_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.h \
   z_tools.h \
@@ -125,7 +129,11 @@ libfcs_gridsort_back__p_la_SOURCES = \
 libfcs_gridsort_back_f__la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.h \
   z_tools.h \
@@ -139,7 +147,11 @@ libfcs_gridsort_back_f__la_SOURCES = \
 libfcs_gridsort_back_fp_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.h \
   z_tools.h \
@@ -153,7 +165,11 @@ libfcs_gridsort_back_fp_la_SOURCES = \
 libfcs_gridsort_back_x_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.h \
   z_tools.h \
@@ -167,7 +183,11 @@ libfcs_gridsort_back_x_la_SOURCES = \
 libfcs_gridsort_forw_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.h \
   z_tools.h \
@@ -230,8 +250,12 @@ libfcs_gridsort_extra_la_SOURCES = \
 libfcs_gridsort_mpiwrap_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
   gridsort.c \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.c \
   gridsort_resort.h \
