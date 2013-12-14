@@ -78,7 +78,7 @@ slint_t mpi_elements_alltoall_specific_alloc_size(slint_t n);
 
 /*#define SPEC_GLOBAL_EXIT_ON_ERROR*/
 
-#define SPEC_PROCLIST
+#define SPEC_PROCLISTS
 
 /*#define SPEC_TIMING*/
 
@@ -86,6 +86,8 @@ slint_t mpi_elements_alltoall_specific_alloc_size(slint_t n);
 
 #define SPEC_EXIT_SUCCESS  MPI_SUCCESS
 #define SPEC_EXIT_FAILED   1
+
+#define SPEC_ALLTOALLV
 
 #ifdef MC_ALLTOALL_INT_2STEP_THRESHOLD
 # define SPEC_MPI_ALLTOALL_2STEP_THRESHOLD  MC_ALLTOALL_INT_2STEP_THRESHOLD

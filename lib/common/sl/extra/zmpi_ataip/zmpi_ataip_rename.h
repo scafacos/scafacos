@@ -63,6 +63,7 @@
 #define ZMPI_Alltoallv_inplace_times  ZMPI_VAR(ZMPI_Alltoallv_inplace_times)
 #define ZMPI_Alltoallv_inplace  ZMPI_FUNC(ZMPI_Alltoallv_inplace)
 #define ZMPI_Neighbor_alltoallv_inplace  ZMPI_FUNC(ZMPI_Neighbor_alltoallv_inplace)
+#define ZMPI_Alltoallv_inplace_proclists  ZMPI_FUNC(ZMPI_Alltoallv_inplace_proclists)
 #define ZMPI_Alltoall_inplace_symmetric  ZMPI_FUNC(ZMPI_Alltoall_inplace_symmetric)
 #define ZMPI_Neighbor_alltoall_inplace_symmetric  ZMPI_FUNC(ZMPI_Neighbor_alltoall_inplace_symmetric)
 #define ZMPI_Alltoallv_inplace_symmetric  ZMPI_FUNC(ZMPI_Alltoallv_inplace_symmetric)

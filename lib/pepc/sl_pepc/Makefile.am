@@ -61,8 +61,10 @@ sl_SOURCE = \
   ../../common/sl/include/sl_globals.h \
   ../../common/sl/include/sl_index.h \
   ../../common/sl/include/sl_key.h \
+  ../../common/sl/include/sl_macros.h \
   ../../common/sl/include/sl_pelem.h \
   ../../common/sl/include/sl_protos.h \
+  ../../common/sl/include/sl_protos_intern.h \
   ../../common/sl/include/sl_protos_mpi.h \
   ../../common/sl/include/sl_rename.h \
   ../../common/sl/include/sl_rti_intern.h \
@@ -71,6 +73,7 @@ sl_SOURCE = \
   ../../common/sl/include/sl_types.h \
   ../../common/sl/include/sl_types_intern.h \
   ../../common/sl/include/sl_xelem_call.h \
+  ../../common/sl/include/spec_common.h \
   ../../common/sl/include/spec_conf.h \
   ../../common/sl/include/spec_core.h \
   ../../common/sl/include/spec_public_conf.h \
@@ -140,6 +143,7 @@ libfcs_pepc_extra_la_SOURCES = \
   ../../common/sl/extra/zmpi_ataip/zmpi_ataip.h \
   ../../common/sl/extra/zmpi_ataip/zmpi_ataip_rename.h \
   ../../common/sl/extra/zmpi_atasp/spec.c \
+  ../../common/sl/extra/zmpi_atasp/spec_common.h \
   ../../common/sl/extra/zmpi_atasp/spec_conf.h \
   ../../common/sl/extra/zmpi_atasp/spec_core.h \
   ../../common/sl/extra/zmpi_atasp/spec_public_conf.h \

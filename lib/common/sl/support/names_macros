@@ -373,6 +373,8 @@ sl_key_byte
 sl_key_copy
 sl_key_ncopy
 sl_key_nmove
+SL_KEY2CLASS_DECL_COUNT_DB
+SL_KEY2CLASS_EXEC_COUNT_DB
 SL_USE_RTI
 SL_USE_RTI_CMC
 SL_USE_RTI_TIM

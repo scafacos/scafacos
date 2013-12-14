@@ -172,6 +172,7 @@ slint_t SL_PROTO(sort_counting_get_counts)(elements_t *s, elements_t *d, slint_t
 slint_t SL_PROTO(sort_counting)(elements_t *s, elements_t *d, slint_t ncounts);
 slint SL_PROTO(sort_heap)(elements_t *s, elements_t *xs);
 slint_t SL_PROTO(sort_insert_bmask_kernel)(elements_t *s, elements_t *sx, slkey_pure_t bmask);
+slint_t SL_PROTO(sort_insert_kernel)(elements_t *s, elements_t *sx);
 slint_t SL_PROTO(sort_insert)(elements_t *s, elements_t *sx);
 slint_t SL_PROTO(sort_permute_forward)(elements_t *s, elements_t *sx, slint_t *perm, slint_t offset, slint_t mask_bit);
 slint_t SL_PROTO(sort_permute_backward)(elements_t *s, elements_t *sx, slint_t *perm, slint_t offset, slint_t mask_bit);

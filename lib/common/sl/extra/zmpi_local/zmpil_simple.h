@@ -53,6 +53,8 @@ void zmpil_simple_memmove(void *dest, const void *src, size_t n, zmpil_t *mpil);
 void zmpil_simple_memcpy_conv(void *dest, const void *src, size_t n, zmpil_t *zmpil_dest, zmpil_t *zmpil_src);
 void zmpil_simple_memmove_conv(void *dest, const void *src, size_t n, zmpil_t *zmpil_dest, zmpil_t *zmpil_src);*/
 
+/* FIXME: extent for offset and true_extent for alloc? */
+
 #define zmpil_simple_at(_buf_, _n_, _m_)        ((void *) (((char *) _buf_) + ((_n_) * (_m_)->true_extent)))
 
 #define zmpil_simple_diff(_bfrom_, _bto_, _m_)  ((int) ((((char *) _bto_) - ((char *) _bfrom_)) / (_m_)->true_extent))

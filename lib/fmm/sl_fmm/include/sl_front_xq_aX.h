@@ -1057,7 +1057,7 @@ _s_ void _name_##_tproc_mod_count_ip(fcs_front_xq_aX_spec_elem_t *s, fcs_front_x
 /* sp_macro fcs_front_xq_aX_SPEC_DO_TPROCS_COUNT_DB */
 #define fcs_front_xq_aX_SPEC_DO_TPROCS_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
   for (spec2cd.i = 0; spec2cd.i < fcs_front_xq_aX_spec_elem_get_n(_b_); ++spec2cd.i) { \
-    spec2cd.n = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec2cd.i, (_tpd_), (_ps_)); \
+    (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec2cd.i, (_tpd_), &spec2cd.n, (_ps_)); \
     for (spec2cd.j = 0; spec2cd.j < spec2cd.n; ++spec2cd.j) ++(_cs_)[(_ps_)[spec2cd.j]]; \
   } } while (0)
 
@@ -1077,7 +1077,7 @@ _s_ void _name_##_tprocs_count_db(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_a
 #define fcs_front_xq_aX_SPEC_DO_TPROCS_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
   spec2ci.t = 0; \
   for (spec2ci.i = 0; spec2ci.i < fcs_front_xq_aX_spec_elem_get_n(_b_); ++spec2ci.i) { \
-    spec2ci.n = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec2ci.i, (_tpd_), (_ps_)); \
+    (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec2ci.i, (_tpd_), &spec2ci.n, (_ps_)); \
     if (spec2ci.n <= 0) continue; \
     for (spec2ci.j = 0; spec2ci.j < spec2ci.n; ++spec2ci.j) ++(_cs_)[(_ps_)[spec2ci.j]]; \
     if (spec2ci.t < spec2ci.i) fcs_front_xq_aX_spec_elem_copy_at((_b_), spec2ci.i, (_b_), spec2ci.t); \
@@ -1103,9 +1103,8 @@ _s_ void _name_##_tprocs_count_ip(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_a
 
 /* sp_macro fcs_front_xq_aX_SPEC_DO_TPROCS_MOD_COUNT_DB */
 #define fcs_front_xq_aX_SPEC_DO_TPROCS_MOD_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
-  for (spec3cd.i = 0; spec3cd.i < fcs_front_xq_aX_spec_elem_get_n(_b_); ++spec3cd.i) \
-  { \
-    spec3cd.n = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec3cd.i, (_tpd_), (_ps_), NULL); \
+  for (spec3cd.i = 0; spec3cd.i < fcs_front_xq_aX_spec_elem_get_n(_b_); ++spec3cd.i) { \
+    (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec3cd.i, (_tpd_), &spec3cd.n, (_ps_), NULL); \
     for (spec3cd.j = 0; spec3cd.j < spec3cd.n; ++spec3cd.j) ++(_cs_)[(_ps_)[spec3cd.j]]; \
   } } while (0)
 
@@ -1125,7 +1124,7 @@ _s_ void _name_##_tprocs_mod_count_db(fcs_front_xq_aX_spec_elem_t *s, fcs_front_
 #define fcs_front_xq_aX_SPEC_DO_TPROCS_MOD_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
   spec3ci.t = 0; \
   for (spec3ci.i = 0; spec3ci.i < fcs_front_xq_aX_spec_elem_get_n(_b_); ++spec3ci.i) { \
-    spec3ci.n = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec3ci.i, (_tpd_), (_ps_), NULL); \
+    (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec3ci.i, (_tpd_), &spec3ci.n, (_ps_), NULL); \
     if (spec3ci.n <= 0) continue; \
     for (spec3ci.j = 0; spec3ci.j < spec3ci.n; ++spec3ci.j) ++(_cs_)[(_ps_)[spec3ci.j]]; \
     if (spec3ci.t < spec3ci.i) fcs_front_xq_aX_spec_elem_copy_at((_b_), spec3ci.i, (_b_), spec3ci.t); \
@@ -1204,20 +1203,11 @@ _s_ void _name_##_tproc_rearrange_ip(fcs_front_xq_aX_spec_elem_t *s, fcs_front_x
 
 /* sp_macro fcs_front_xq_aX_SPEC_DO_TPROC_MOD_REARRANGE_DB */
 #define fcs_front_xq_aX_SPEC_DO_TPROC_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ib_)  do { \
-  if (_ib_) { \
-    for (spec1d.i = 0; spec1d.i < fcs_front_xq_aX_spec_elem_get_n(_sb_); ++spec1d.i) { \
-      spec1d.p = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_sb_), spec1d.i, _tpd_, fcs_front_xq_aX_spec_elem_get_buf(_ib_)); \
-      if (spec1d.p == fcs_front_xq_aX_SPEC_PROC_NONE) continue; \
-      fcs_front_xq_aX_spec_elem_copy_at((_ib_), 0, (_db_), (_ds_)[spec1d.p]); \
-      ++(_ds_)[spec1d.p]; \
-    } \
-  } else { \
-    for (spec1d.i = 0; spec1d.i < fcs_front_xq_aX_spec_elem_get_n(_sb_); ++spec1d.i) { \
-      spec1d.p = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_sb_), spec1d.i, _tpd_, NULL); \
-      if (spec1d.p == fcs_front_xq_aX_SPEC_PROC_NONE) continue; \
-      fcs_front_xq_aX_spec_elem_copy_at((_sb_), spec1d.i, (_db_), (_ds_)[spec1d.p]); \
-      ++(_ds_)[spec1d.p]; \
-    } \
+  for (spec1d.i = 0; spec1d.i < fcs_front_xq_aX_spec_elem_get_n(_sb_); ++spec1d.i) { \
+    spec1d.p = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_sb_), spec1d.i, _tpd_, fcs_front_xq_aX_spec_elem_get_buf(_ib_)); \
+    if (spec1d.p == fcs_front_xq_aX_SPEC_PROC_NONE) continue; \
+    fcs_front_xq_aX_spec_elem_copy_at((_ib_), 0, (_db_), (_ds_)[spec1d.p]); \
+    ++(_ds_)[spec1d.p]; \
   } } while (0)
 
 /* sp_macro fcs_front_xq_aX_SPEC_FUNC_TPROC_MOD_REARRANGE_DB */
@@ -1234,39 +1224,22 @@ _s_ void _name_##_tproc_mod_rearrange_db(fcs_front_xq_aX_spec_elem_t *s, fcs_fro
 
 /* sp_macro fcs_front_xq_aX_SPEC_DO_TPROC_MOD_REARRANGE_IP */
 #define fcs_front_xq_aX_SPEC_DO_TPROC_MOD_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ib_)  do { \
-  if (_ib_) { \
-    for (spec1i.e = 0, spec1i.i = 0; spec1i.i < (_n_); ++spec1i.i) { \
-      spec1i.e += (_cs_)[spec1i.i]; \
-      spec1i.j = (_ds_)[spec1i.i]; \
-      while (spec1i.j < spec1i.e) { \
-        spec1i.p = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec1i.j, _tpd_, fcs_front_xq_aX_spec_elem_get_buf(_ib_)); \
-        fcs_front_xq_aX_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
-        while (spec1i.p != spec1i.i) { \
-          spec1i.np = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), (_ds_)[spec1i.p], _tpd_, fcs_front_xq_aX_spec_elem_get_buf(_ib_)); \
-          if (spec1i.np != spec1i.p) { \
-            fcs_front_xq_aX_spec_elem_copy_at((_b_), spec1i.j, (_b_), (_ds_)[spec1i.p]); \
-            fcs_front_xq_aX_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
-          } else fcs_front_xq_aX_spec_elem_copy_at((_ib_), 0, (_b_), (_ds_)[spec1i.p]); \
-          ++(_ds_)[spec1i.p]; \
-          spec1i.p = spec1i.np; \
-        } \
-        ++spec1i.j; \
+  for (spec1i.e = 0, spec1i.i = 0; spec1i.i < (_n_); ++spec1i.i) { \
+    spec1i.e += (_cs_)[spec1i.i]; \
+    spec1i.j = (_ds_)[spec1i.i]; \
+    while (spec1i.j < spec1i.e) { \
+      spec1i.p = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec1i.j, _tpd_, fcs_front_xq_aX_spec_elem_get_buf(_ib_)); \
+      fcs_front_xq_aX_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
+      while (spec1i.p != spec1i.i) { \
+        spec1i.np = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), (_ds_)[spec1i.p], _tpd_, fcs_front_xq_aX_spec_elem_get_buf(_ib_)); \
+        if (spec1i.np != spec1i.p) { \
+          fcs_front_xq_aX_spec_elem_copy_at((_b_), spec1i.j, (_b_), (_ds_)[spec1i.p]); \
+          fcs_front_xq_aX_spec_elem_copy_at((_ib_), 0, (_b_), spec1i.j); \
+        } else fcs_front_xq_aX_spec_elem_copy_at((_ib_), 0, (_b_), (_ds_)[spec1i.p]); \
+        ++(_ds_)[spec1i.p]; \
+        spec1i.p = spec1i.np; \
       } \
-    } \
-  } else { \
-    for (spec1i.e = 0, spec1i.i = 0; spec1i.i < (_n_); ++spec1i.i) { \
-      spec1i.e += (_cs_)[spec1i.i]; \
-      spec1i.j = (_ds_)[spec1i.i]; \
-      while (spec1i.j < spec1i.e) { \
-        spec1i.p = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec1i.j, _tpd_, NULL); \
-        while (spec1i.p != spec1i.i) { \
-          spec1i.np = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), (_ds_)[spec1i.p], _tpd_, NULL); \
-          if (spec1i.np != spec1i.p) fcs_front_xq_aX_spec_elem_exchange_at((_b_), (_ds_)[spec1i.p], (_b_), spec1i.j, (_xb_)); \
-          ++(_ds_)[spec1i.p]; \
-          spec1i.p = spec1i.np; \
-        } \
-        ++spec1i.j; \
-      } \
+      ++spec1i.j; \
     } \
   } } while (0)
 
@@ -1288,7 +1261,7 @@ _s_ void _name_##_tproc_mod_rearrange_ip(fcs_front_xq_aX_spec_elem_t *s, fcs_fro
 /* sp_macro fcs_front_xq_aX_SPEC_DO_TPROCS_REARRANGE_DB */
 #define fcs_front_xq_aX_SPEC_DO_TPROCS_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_)  do { \
   for (spec2d.i = 0; spec2d.i < fcs_front_xq_aX_spec_elem_get_n(_sb_); ++spec2d.i) { \
-    spec2d.n = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_sb_), spec2d.i, (_tpd_), (_ps_)); \
+    (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_sb_), spec2d.i, (_tpd_), &spec2d.n, (_ps_)); \
     for (spec2d.j = 0; spec2d.j < spec2d.n; ++spec2d.j) { \
       fcs_front_xq_aX_spec_elem_copy_at((_sb_), spec2d.i, (_db_), (_ds_)[(_ps_)[spec2d.j]]); \
       ++(_ds_)[(_ps_)[spec2d.j]]; \
@@ -1317,7 +1290,7 @@ _s_ void _name_##_tprocs_rearrange_db(fcs_front_xq_aX_spec_elem_t *s, fcs_front_
     spec2i.e += (_cs_)[spec2i.i]; \
     spec2i.j = (_ds_)[spec2i.i]; \
     while (spec2i.j < spec2i.e) { \
-      spec2i.n = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec2i.j, (_tpd_), (_ps_)); \
+      (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec2i.j, (_tpd_), &spec2i.n, (_ps_)); \
       spec2i.o = -1; \
       while (spec2i.n > 0) { \
         --spec2i.n; \
@@ -1362,21 +1335,11 @@ _s_ void _name_##_tprocs_rearrange_ip(fcs_front_xq_aX_spec_elem_t *s, fcs_front_
 
 /* sp_macro fcs_front_xq_aX_SPEC_DO_TPROCS_MOD_REARRANGE_DB */
 #define fcs_front_xq_aX_SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_, _ib_)  do { \
-  if (_ib_) { \
-    for (spec3d.i = 0; spec3d.i < fcs_front_xq_aX_spec_elem_get_n(_sb_); ++spec3d.i) { \
-      spec3d.n = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_sb_), spec3d.i, (_tpd_), (_ps_), fcs_front_xq_aX_spec_elem_get_buf(_ib_)); \
-      for (spec3d.j = 0; spec3d.j < spec3d.n; ++spec3d.j) { \
-        fcs_front_xq_aX_spec_elem_copy_at((_ib_), spec3d.j, (_db_), (_ds_)[(_ps_)[spec3d.j]]); \
-        ++(_ds_)[(_ps_)[spec3d.j]]; \
-      } \
-    } \
-  } else { \
-    for (spec3d.i = 0; spec3d.i < fcs_front_xq_aX_spec_elem_get_n(_sb_); ++spec3d.i) { \
-      spec3d.n = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_sb_), spec3d.i, (_tpd_), (_ps_), NULL); \
-      for (spec3d.j = 0; spec3d.j < spec3d.n; ++spec3d.j) { \
-        fcs_front_xq_aX_spec_elem_copy_at((_sb_), spec3d.i, (_db_), (_ds_)[(_ps_)[spec3d.j]]); \
-        ++(_ds_)[(_ps_)[spec3d.j]]; \
-      } \
+  for (spec3d.i = 0; spec3d.i < fcs_front_xq_aX_spec_elem_get_n(_sb_); ++spec3d.i) { \
+    (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_sb_), spec3d.i, (_tpd_), &spec3d.n, (_ps_), fcs_front_xq_aX_spec_elem_get_buf(_ib_)); \
+    for (spec3d.j = 0; spec3d.j < spec3d.n; ++spec3d.j) { \
+      fcs_front_xq_aX_spec_elem_copy_at((_ib_), spec3d.j, (_db_), (_ds_)[(_ps_)[spec3d.j]]); \
+      ++(_ds_)[(_ps_)[spec3d.j]]; \
     } \
   } } while (0)
 
@@ -1394,77 +1357,39 @@ _s_ void _name_##_tprocs_mod_rearrange_db(fcs_front_xq_aX_spec_elem_t *s, fcs_fr
 
 /* sp_macro fcs_front_xq_aX_SPEC_DO_TPROCS_MOD_REARRANGE_IP */
 #define fcs_front_xq_aX_SPEC_DO_TPROCS_MOD_REARRANGE_IP(_tp_, _tpd_, _b_, _xb_, _ds_, _cs_, _n_, _ps_, _ib_)  do { \
-  if (_ib_) { \
-    spec3i.f = 0; spec3i.fe = (_cs_)[0]; spec3i.fc = fcs_front_xq_aX_spec_elem_get_n(_b_); \
-    while (spec3i.f + 1 < (_n_) && spec3i.fc >= spec3i.fe) { ++spec3i.f; spec3i.fe += (_cs_)[spec3i.f]; } \
-    spec3i.l = 0; spec3i.le = (_cs_)[0]; spec3i.lc = fcs_front_xq_aX_spec_elem_get_n(_b_) - 1; \
-    while (spec3i.lc >= spec3i.le) { ++spec3i.l; spec3i.le += (_cs_)[spec3i.l]; } \
-    for (spec3i.e = 0, spec3i.i = 0; spec3i.i < (_n_); ++spec3i.i) { \
-      spec3i.e += (_cs_)[spec3i.i]; \
-      spec3i.j = (_ds_)[spec3i.i]; \
-      while (spec3i.j < spec3i.e) { \
-        spec3i.n = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec3i.j, (_tpd_), (_ps_), fcs_front_xq_aX_spec_elem_get_buf(_ib_)); \
-        spec3i.o = -1; \
-        while (spec3i.n > 0) { \
-          --spec3i.n; \
-          if ((_ps_)[spec3i.n] == spec3i.i && spec3i.o < 0) spec3i.o = spec3i.n; \
-          else if ((_ds_)[(_ps_)[spec3i.n]] < spec3i.fc) { \
-            spec3i.l = spec3i.f; spec3i.le = spec3i.fe; spec3i.lc = spec3i.fc; \
-            if (spec3i.fc < spec3i.fe) { \
-              fcs_front_xq_aX_spec_elem_copy_at((_b_), (_ds_)[(_ps_)[spec3i.n]], (_b_), spec3i.fc); \
-              ++spec3i.fc; \
-            } else fcs_front_xq_aX_spec_elem_copy_at((_b_), (_ds_)[(_ps_)[spec3i.n]], (_xb_), 0); \
-          } else if ((_ds_)[(_ps_)[spec3i.n]] == spec3i.fc) ++spec3i.fc; \
-          fcs_front_xq_aX_spec_elem_copy_at((_ib_), spec3i.n, (_b_), (_ds_)[(_ps_)[spec3i.n]]); \
-          ++(_ds_)[(_ps_)[spec3i.n]]; \
-          while (spec3i.f + 1 < (_n_) && spec3i.fc >= spec3i.fe) { ++spec3i.f; spec3i.fe += (_cs_)[spec3i.f]; spec3i.fc = (_ds_)[spec3i.f]; } \
-        } \
-        if (spec3i.o < 0) { \
-          if (spec3i.lc < spec3i.le) {  \
-            fcs_front_xq_aX_spec_elem_copy_at((_b_), spec3i.lc, (_b_), spec3i.j); \
-            spec3i.f = spec3i.l; spec3i.fe = spec3i.le; spec3i.fc = spec3i.lc; \
-            --spec3i.lc; \
-            while (spec3i.l > 0 && spec3i.lc < (_ds_)[spec3i.l]) { spec3i.le -= (_cs_)[spec3i.l]; spec3i.lc = spec3i.le - 1; --spec3i.l; } \
-          } else fcs_front_xq_aX_spec_elem_copy_at((_xb_), 0, (_b_), spec3i.j); \
-        } \
-        spec3i.j = (_ds_)[spec3i.i]; \
+  spec3i.f = 0; spec3i.fe = (_cs_)[0]; spec3i.fc = fcs_front_xq_aX_spec_elem_get_n(_b_); \
+  while (spec3i.f + 1 < (_n_) && spec3i.fc >= spec3i.fe) { ++spec3i.f; spec3i.fe += (_cs_)[spec3i.f]; } \
+  spec3i.l = 0; spec3i.le = (_cs_)[0]; spec3i.lc = fcs_front_xq_aX_spec_elem_get_n(_b_) - 1; \
+  while (spec3i.lc >= spec3i.le) { ++spec3i.l; spec3i.le += (_cs_)[spec3i.l]; } \
+  for (spec3i.e = 0, spec3i.i = 0; spec3i.i < (_n_); ++spec3i.i) { \
+    spec3i.e += (_cs_)[spec3i.i]; \
+    spec3i.j = (_ds_)[spec3i.i]; \
+    while (spec3i.j < spec3i.e) { \
+      (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec3i.j, (_tpd_), &spec3i.n, (_ps_), fcs_front_xq_aX_spec_elem_get_buf(_ib_)); \
+      spec3i.o = -1; \
+      while (spec3i.n > 0) { \
+        --spec3i.n; \
+        if ((_ps_)[spec3i.n] == spec3i.i && spec3i.o < 0) spec3i.o = spec3i.n; \
+        else if ((_ds_)[(_ps_)[spec3i.n]] < spec3i.fc) { \
+          spec3i.l = spec3i.f; spec3i.le = spec3i.fe; spec3i.lc = spec3i.fc; \
+          if (spec3i.fc < spec3i.fe) { \
+            fcs_front_xq_aX_spec_elem_copy_at((_b_), (_ds_)[(_ps_)[spec3i.n]], (_b_), spec3i.fc); \
+            ++spec3i.fc; \
+          } else fcs_front_xq_aX_spec_elem_copy_at((_b_), (_ds_)[(_ps_)[spec3i.n]], (_xb_), 0); \
+        } else if ((_ds_)[(_ps_)[spec3i.n]] == spec3i.fc) ++spec3i.fc; \
+        fcs_front_xq_aX_spec_elem_copy_at((_ib_), spec3i.n, (_b_), (_ds_)[(_ps_)[spec3i.n]]); \
+        ++(_ds_)[(_ps_)[spec3i.n]]; \
+        while (spec3i.f + 1 < (_n_) && spec3i.fc >= spec3i.fe) { ++spec3i.f; spec3i.fe += (_cs_)[spec3i.f]; spec3i.fc = (_ds_)[spec3i.f]; } \
       } \
-    } \
-  } else { \
-    spec3i.f = 0; spec3i.fe = (_cs_)[0]; spec3i.fc = fcs_front_xq_aX_spec_elem_get_n(_b_); \
-    while (spec3i.f + 1 < (_n_) && spec3i.fc >= spec3i.fe) { ++spec3i.f; spec3i.fe += (_cs_)[spec3i.f]; } \
-    spec3i.l = 0; spec3i.le = (_cs_)[0]; spec3i.lc = fcs_front_xq_aX_spec_elem_get_n(_b_) - 1; \
-    while (spec3i.lc >= spec3i.le) { ++spec3i.l; spec3i.le += (_cs_)[spec3i.l]; } \
-    for (spec3i.e = 0, spec3i.i = 0; spec3i.i < (_n_); ++spec3i.i) { \
-      spec3i.e += (_cs_)[spec3i.i]; \
-      spec3i.j = (_ds_)[spec3i.i]; \
-      while (spec3i.j < spec3i.e) { \
-        spec3i.n = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec3i.j, (_tpd_), (_ps_), NULL); \
-        spec3i.o = -1; \
-        while (spec3i.n > 0) { \
-          --spec3i.n; \
-          if ((_ps_)[spec3i.n] == spec3i.i && spec3i.o < 0) spec3i.o = spec3i.n; \
-          else if ((_ds_)[(_ps_)[spec3i.n]] < spec3i.fc) { \
-            spec3i.l = spec3i.f; spec3i.le = spec3i.fe; spec3i.lc = spec3i.fc; \
-            if (spec3i.fc < spec3i.fe) { \
-              fcs_front_xq_aX_spec_elem_copy_at((_b_), (_ds_)[(_ps_)[spec3i.n]], (_b_), spec3i.fc); \
-              ++spec3i.fc; \
-            } else fcs_front_xq_aX_spec_elem_copy_at((_b_), (_ds_)[(_ps_)[spec3i.n]], (_xb_), 0); \
-          } else if ((_ds_)[(_ps_)[spec3i.n]] == spec3i.fc) ++spec3i.fc; \
-          if (spec3i.j != (_ds_)[(_ps_)[spec3i.n]]) fcs_front_xq_aX_spec_elem_copy_at((_b_), spec3i.j, (_b_), (_ds_)[(_ps_)[spec3i.n]]); \
-          ++(_ds_)[(_ps_)[spec3i.n]]; \
-          while (spec3i.f + 1 < (_n_) && spec3i.fc >= spec3i.fe) { ++spec3i.f; spec3i.fe += (_cs_)[spec3i.f]; spec3i.fc = (_ds_)[spec3i.f]; } \
-        } \
-        if (spec3i.o < 0) { \
-          if (spec3i.lc < spec3i.le) {  \
-            fcs_front_xq_aX_spec_elem_copy_at((_b_), spec3i.lc, (_b_), spec3i.j); \
-            spec3i.f = spec3i.l; spec3i.fe = spec3i.le; spec3i.fc = spec3i.lc; \
-            --spec3i.lc; \
-            while (spec3i.l > 0 && spec3i.lc < (_ds_)[spec3i.l]) { spec3i.le -= (_cs_)[spec3i.l]; spec3i.lc = spec3i.le - 1; --spec3i.l; } \
-          } else fcs_front_xq_aX_spec_elem_copy_at((_xb_), 0, (_b_), spec3i.j); \
-        } \
-        spec3i.j = (_ds_)[spec3i.i]; \
+      if (spec3i.o < 0) { \
+        if (spec3i.lc < spec3i.le) {  \
+          fcs_front_xq_aX_spec_elem_copy_at((_b_), spec3i.lc, (_b_), spec3i.j); \
+          spec3i.f = spec3i.l; spec3i.fe = spec3i.le; spec3i.fc = spec3i.lc; \
+          --spec3i.lc; \
+          while (spec3i.l > 0 && spec3i.lc < (_ds_)[spec3i.l]) { spec3i.le -= (_cs_)[spec3i.l]; spec3i.lc = spec3i.le - 1; --spec3i.l; } \
+        } else fcs_front_xq_aX_spec_elem_copy_at((_xb_), 0, (_b_), spec3i.j); \
       } \
+      spec3i.j = (_ds_)[spec3i.i]; \
     } \
   } } while (0)
 
@@ -1476,12 +1401,63 @@ _s_ void _name_##_tprocs_mod_rearrange_ip(fcs_front_xq_aX_spec_elem_t *s, fcs_fr
   fcs_front_xq_aX_SPEC_DO_TPROCS_MOD_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n, procs, mod); \
 }
 
+
+/* tproc indices */
+
+/* sp_macro fcs_front_xq_aX_SPEC_DECLARE_TPROC_INDICES_DB */
+#define fcs_front_xq_aX_SPEC_DECLARE_TPROC_INDICES_DB \
+  struct { fcs_front_xq_aX_spec_elem_index_t i; fcs_front_xq_aX_spec_proc_t p; } spec0xd;
+
+/* sp_macro fcs_front_xq_aX_SPEC_DO_TPROC_INDICES_DB */
+#define fcs_front_xq_aX_SPEC_DO_TPROC_INDICES_DB(_tp_, _tpd_, _b_, _ix_, _id_)  do { \
+  for (spec0xd.i = 0; spec0xd.i < fcs_front_xq_aX_spec_elem_get_n(_b_); ++spec0xd.i) { \
+    spec0xd.p = (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec0xd.i, (_tpd_)); \
+    if (spec0xd.p == fcs_front_xq_aX_SPEC_PROC_NONE) continue; \
+    (_ix_)[(_id_)[spec0xd.p]] = spec0xd.i; \
+    ++(_id_)[spec0xd.p]; \
+  } } while (0)
+
+/* sp_macro fcs_front_xq_aX_SPEC_FUNC_TPROC_INDICES_DB */
+#define fcs_front_xq_aX_SPEC_FUNC_TPROC_INDICES_DB(_name_, _tp_, _s_...) \
+_s_ void _name_##_tproc_indices_db(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *indices, int *idispls) \
+{ \
+  fcs_front_xq_aX_SPEC_DECLARE_TPROC_INDICES_DB \
+  fcs_front_xq_aX_SPEC_DO_TPROC_INDICES_DB(_tp_, tproc_data, s, indices, idispls); \
+}
+
+
+/* tprocs indices */
+
+/* sp_macro fcs_front_xq_aX_SPEC_DECLARE_TPROCS_INDICES_DB */
+#define fcs_front_xq_aX_SPEC_DECLARE_TPROCS_INDICES_DB \
+  struct { fcs_front_xq_aX_spec_elem_index_t i; fcs_front_xq_aX_spec_int_t j, n; } spec2xd;
+
+/* sp_macro fcs_front_xq_aX_SPEC_DO_TPROCS_INDICES_DB */
+#define fcs_front_xq_aX_SPEC_DO_TPROCS_INDICES_DB(_tp_, _tpd_, _b_, _ix_, _id_, _ps_)  do { \
+  for (spec2xd.i = 0; spec2xd.i < fcs_front_xq_aX_spec_elem_get_n(_b_); ++spec2xd.i) { \
+    (_tp_)(fcs_front_xq_aX_spec_elem_get_buf(_b_), spec2xd.i, (_tpd_), &spec2xd.n, (_ps_)); \
+    for (spec2xd.j = 0; spec2xd.j < spec2xd.n; ++spec2xd.j) { \
+      (_ix_)[(_id_)[(_ps_)[spec2xd.j]]] = spec2xd.i; \
+      ++(_id_)[(_ps_)[spec2xd.j]]; \
+    } \
+  } } while (0)
+
+/* sp_macro fcs_front_xq_aX_SPEC_FUNC_TPROCS_INDICES_DB */
+#define fcs_front_xq_aX_SPEC_FUNC_TPROCS_INDICES_DB(_name_, _tp_, _s_...) \
+_s_ void _name_##_tprocs_indices_db(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *indices, int *idispls, fcs_front_xq_aX_spec_proc_t *procs) \
+{ \
+  fcs_front_xq_aX_SPEC_DECLARE_TPROCS_INDICES_DB \
+  fcs_front_xq_aX_SPEC_DO_TPROCS_INDICES_DB(_tp_, tproc_data, s, indices, idispls, procs); \
+}
+
+
 /* sp_macro fcs_front_xq_aX_SPEC_DEFINE_TPROC */
 #define fcs_front_xq_aX_SPEC_DEFINE_TPROC(_name_, _tp_, _s_...) \
   fcs_front_xq_aX_SPEC_FUNC_TPROC_COUNT_DB(_name_, _tp_, _s_) \
   fcs_front_xq_aX_SPEC_FUNC_TPROC_COUNT_IP(_name_, _tp_, _s_) \
   fcs_front_xq_aX_SPEC_FUNC_TPROC_REARRANGE_DB(_name_, _tp_, _s_) \
-  fcs_front_xq_aX_SPEC_FUNC_TPROC_REARRANGE_IP(_name_, _tp_, _s_)
+  fcs_front_xq_aX_SPEC_FUNC_TPROC_REARRANGE_IP(_name_, _tp_, _s_) \
+  fcs_front_xq_aX_SPEC_FUNC_TPROC_INDICES_DB(_name_, _tp_, _s_)
 
 /* sp_macro fcs_front_xq_aX_SPEC_DEFINE_TPROC_MOD */
 #define fcs_front_xq_aX_SPEC_DEFINE_TPROC_MOD(_name_, _tp_, _s_...) \
@@ -1495,7 +1471,8 @@ _s_ void _name_##_tprocs_mod_rearrange_ip(fcs_front_xq_aX_spec_elem_t *s, fcs_fr
   fcs_front_xq_aX_SPEC_FUNC_TPROCS_COUNT_DB(_name_, _tp_, _s_) \
   fcs_front_xq_aX_SPEC_FUNC_TPROCS_COUNT_IP(_name_, _tp_, _s_) \
   fcs_front_xq_aX_SPEC_FUNC_TPROCS_REARRANGE_DB(_name_, _tp_, _s_) \
-  fcs_front_xq_aX_SPEC_FUNC_TPROCS_REARRANGE_IP(_name_, _tp_, _s_)
+  fcs_front_xq_aX_SPEC_FUNC_TPROCS_REARRANGE_IP(_name_, _tp_, _s_) \
+  fcs_front_xq_aX_SPEC_FUNC_TPROCS_INDICES_DB(_name_, _tp_, _s_)
 
 /* sp_macro fcs_front_xq_aX_SPEC_DEFINE_TPROCS_MOD */
 #define fcs_front_xq_aX_SPEC_DEFINE_TPROCS_MOD(_name_, _tp_, _s_...) \
@@ -1505,21 +1482,22 @@ _s_ void _name_##_tprocs_mod_rearrange_ip(fcs_front_xq_aX_spec_elem_t *s, fcs_fr
   fcs_front_xq_aX_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP(_name_, _tp_, _s_)
 
 /* sp_macro fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL */
-#define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC(_name_)       _name_##_tproc_count_db, _name_##_tproc_count_ip, _name_##_tproc_rearrange_db, _name_##_tproc_rearrange_ip
-#define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL          NULL, NULL, NULL, NULL
+#define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC(_name_)       _name_##_tproc_count_db, _name_##_tproc_count_ip, _name_##_tproc_rearrange_db, _name_##_tproc_rearrange_ip, _name_##_tproc_indices_db
+#define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL          NULL, NULL, NULL, NULL, NULL
 #define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD(_name_)   _name_##_tproc_mod_count_db, _name_##_tproc_mod_count_ip, _name_##_tproc_mod_rearrange_db, _name_##_tproc_mod_rearrange_ip
 #define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL      NULL, NULL, NULL, NULL
-#define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS(_name_)      _name_##_tprocs_count_db, _name_##_tprocs_count_ip, _name_##_tprocs_rearrange_db, _name_##_tprocs_rearrange_ip
-#define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL         NULL, NULL, NULL, NULL
+#define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS(_name_)      _name_##_tprocs_count_db, _name_##_tprocs_count_ip, _name_##_tprocs_rearrange_db, _name_##_tprocs_rearrange_ip, _name_##_tprocs_indices_db
+#define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL         NULL, NULL, NULL, NULL, NULL
 #define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD(_name_)  _name_##_tprocs_mod_count_db, _name_##_tprocs_mod_count_ip, _name_##_tprocs_mod_rearrange_db, _name_##_tprocs_mod_rearrange_ip
 #define fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL     NULL, NULL, NULL, NULL
 
 
-/* sp_type fcs_front_xq_aX_spec_tproc_f fcs_front_xq_aX_spec_tproc_count_f fcs_front_xq_aX_spec_tproc_rearrange_db_f fcs_front_xq_aX_spec_tproc_rearrange_ip_f */
+/* sp_type fcs_front_xq_aX_spec_tproc_f fcs_front_xq_aX_spec_tproc_count_f fcs_front_xq_aX_spec_tproc_rearrange_db_f fcs_front_xq_aX_spec_tproc_rearrange_ip_f fcs_front_xq_aX_spec_tproc_indices_db_f */
 typedef fcs_front_xq_aX_spec_proc_t fcs_front_xq_aX_spec_tproc_f(fcs_front_xq_aX_spec_elem_buf_t b, fcs_front_xq_aX_spec_elem_index_t x, fcs_front_xq_aX_spec_tproc_data_t tproc_data);
 typedef void fcs_front_xq_aX_spec_tproc_count_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *counts);
 typedef void fcs_front_xq_aX_spec_tproc_rearrange_db_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_elem_t *d, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *displs);
 typedef void fcs_front_xq_aX_spec_tproc_rearrange_ip_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_elem_t *x, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_front_xq_aX_spec_int_t n);
+typedef void fcs_front_xq_aX_spec_tproc_indices_db_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *indices, int *idispls);
 
 /* sp_type fcs_front_xq_aX_spec_tproc_mod_f fcs_front_xq_aX_spec_tproc_mod_count_f fcs_front_xq_aX_spec_tproc_mod_rearrange_db_f fcs_front_xq_aX_spec_tproc_mod_rearrange_ip_f */
 typedef fcs_front_xq_aX_spec_proc_t fcs_front_xq_aX_spec_tproc_mod_f(fcs_front_xq_aX_spec_elem_buf_t b, fcs_front_xq_aX_spec_elem_index_t x, fcs_front_xq_aX_spec_tproc_data_t tproc_data, fcs_front_xq_aX_spec_elem_buf_t mod);
@@ -1527,14 +1505,15 @@ typedef void fcs_front_xq_aX_spec_tproc_mod_count_f(fcs_front_xq_aX_spec_elem_t 
 typedef void fcs_front_xq_aX_spec_tproc_mod_rearrange_db_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_elem_t *d, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *displs, fcs_front_xq_aX_spec_elem_t *mod);
 typedef void fcs_front_xq_aX_spec_tproc_mod_rearrange_ip_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_elem_t *x, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_front_xq_aX_spec_int_t n, fcs_front_xq_aX_spec_elem_t *mod);
 
-/* sp_type fcs_front_xq_aX_spec_tprocs_f fcs_front_xq_aX_spec_tprocs_count_f fcs_front_xq_aX_spec_tprocs_rearrange_db_f fcs_front_xq_aX_spec_tprocs_rearrange_ip_f */
-typedef fcs_front_xq_aX_spec_int_t fcs_front_xq_aX_spec_tprocs_f(fcs_front_xq_aX_spec_elem_buf_t b, fcs_front_xq_aX_spec_elem_index_t x, fcs_front_xq_aX_spec_tproc_data_t tproc_data, fcs_front_xq_aX_spec_proc_t *procs);
+/* sp_type fcs_front_xq_aX_spec_tprocs_f fcs_front_xq_aX_spec_tprocs_count_f fcs_front_xq_aX_spec_tprocs_rearrange_db_f fcs_front_xq_aX_spec_tprocs_rearrange_ip_f fcs_front_xq_aX_spec_tprocs_indices_db_f */
+typedef void fcs_front_xq_aX_spec_tprocs_f(fcs_front_xq_aX_spec_elem_buf_t b, fcs_front_xq_aX_spec_elem_index_t x, fcs_front_xq_aX_spec_tproc_data_t tproc_data, fcs_front_xq_aX_spec_int_t *nprocs, fcs_front_xq_aX_spec_proc_t *procs);
 typedef void fcs_front_xq_aX_spec_tprocs_count_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *counts, fcs_front_xq_aX_spec_proc_t *procs);
 typedef void fcs_front_xq_aX_spec_tprocs_rearrange_db_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_elem_t *d, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *displs, fcs_front_xq_aX_spec_proc_t *procs);
 typedef void fcs_front_xq_aX_spec_tprocs_rearrange_ip_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_elem_t *x, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_front_xq_aX_spec_int_t n, fcs_front_xq_aX_spec_proc_t *procs);
+typedef void fcs_front_xq_aX_spec_tprocs_indices_db_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *indices, int *idispls, fcs_front_xq_aX_spec_proc_t *procs);
 
 /* sp_type fcs_front_xq_aX_spec_tprocs_mod_f fcs_front_xq_aX_spec_tprocs_mod_count_f fcs_front_xq_aX_spec_tprocs_mod_rearrange_db_f fcs_front_xq_aX_spec_tprocs_mod_rearrange_ip_f */
-typedef fcs_front_xq_aX_spec_int_t fcs_front_xq_aX_spec_tprocs_mod_f(fcs_front_xq_aX_spec_elem_buf_t b, fcs_front_xq_aX_spec_elem_index_t x, fcs_front_xq_aX_spec_tproc_data_t tproc_data, fcs_front_xq_aX_spec_proc_t *procs, fcs_front_xq_aX_spec_elem_buf_t mod);
+typedef void fcs_front_xq_aX_spec_tprocs_mod_f(fcs_front_xq_aX_spec_elem_buf_t b, fcs_front_xq_aX_spec_elem_index_t x, fcs_front_xq_aX_spec_tproc_data_t tproc_data, fcs_front_xq_aX_spec_int_t *nprocs, fcs_front_xq_aX_spec_proc_t *procs, fcs_front_xq_aX_spec_elem_buf_t mod);
 typedef void fcs_front_xq_aX_spec_tprocs_mod_count_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *counts, fcs_front_xq_aX_spec_proc_t *procs);
 typedef void fcs_front_xq_aX_spec_tprocs_mod_rearrange_db_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_elem_t *d, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *displs, fcs_front_xq_aX_spec_proc_t *procs, fcs_front_xq_aX_spec_elem_t *mod);
 typedef void fcs_front_xq_aX_spec_tprocs_mod_rearrange_ip_f(fcs_front_xq_aX_spec_elem_t *s, fcs_front_xq_aX_spec_elem_t *x, fcs_front_xq_aX_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_front_xq_aX_spec_int_t n, fcs_front_xq_aX_spec_proc_t *procs, fcs_front_xq_aX_spec_elem_t *mod);
@@ -2214,10 +2193,13 @@ typedef struct fcs_front_xq_aX__split_generic_t
 {
   int type;
 
+  fcs_front_xq_aX_slint_t max_tprocs;
+
   fcs_front_xq_aX_spec_tproc_f *tproc;
   fcs_front_xq_aX_spec_tproc_count_f *tproc_count_db, *tproc_count_ip;
   fcs_front_xq_aX_spec_tproc_rearrange_db_f *tproc_rearrange_db;
   fcs_front_xq_aX_spec_tproc_rearrange_ip_f *tproc_rearrange_ip;
+  fcs_front_xq_aX_spec_tproc_indices_db_f *tproc_indices_db;
 
   fcs_front_xq_aX_spec_tproc_mod_f *tproc_mod;
   fcs_front_xq_aX_spec_tproc_mod_count_f *tproc_mod_count_db, *tproc_mod_count_ip;
@@ -2228,6 +2210,7 @@ typedef struct fcs_front_xq_aX__split_generic_t
   fcs_front_xq_aX_spec_tprocs_count_f *tprocs_count_db, *tprocs_count_ip;
   fcs_front_xq_aX_spec_tprocs_rearrange_db_f *tprocs_rearrange_db;
   fcs_front_xq_aX_spec_tprocs_rearrange_ip_f *tprocs_rearrange_ip;
+  fcs_front_xq_aX_spec_tprocs_indices_db_f *tprocs_indices_db;
 
   fcs_front_xq_aX_spec_tprocs_mod_f *tprocs_mod;
   fcs_front_xq_aX_spec_tprocs_mod_count_f *tprocs_mod_count_db, *tprocs_mod_count_ip;
@@ -2239,24 +2222,24 @@ typedef struct fcs_front_xq_aX__split_generic_t
 } fcs_front_xq_aX_split_generic_t;
 
 /* sl_macro fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROC fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROC fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROC */
-#define fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROC(_tp_, _s_...)         fcs_front_xq_aX_SPEC_DEFINE_TPROC(_tp_, _tp_, _s_)
-#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROC(_tp_, _r_...)           { 1, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL,  NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
-#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROC(_tp_, _r_...)       { 1, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC(_tp_), NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROC(_tp_, _s_...)                fcs_front_xq_aX_SPEC_DEFINE_TPROC(_tp_, _tp_, _s_)
+#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROC(_tp_, _r_...)                  { 1, 0, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL,  NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL, _r_ }
+#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROC(_tp_, _r_...)              { 1, 0, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC(_tp_), NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL, _r_ }
 
 /* sl_macro fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROC_MOD fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROC_MOD fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROC_MOD */
-#define fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROC_MOD(_tp_, _s_...)     fcs_front_xq_aX_SPEC_DEFINE_TPROC_MOD(_tp_, _tp_, _s_)
-#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROC_MOD(_tp_, _r_...)       { 2, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL,  NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
-#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROC_MOD(_tp_, _r_...)   { 2, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD(_tp_), NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROC_MOD(_tp_, _s_...)            fcs_front_xq_aX_SPEC_DEFINE_TPROC_MOD(_tp_, _tp_, _s_)
+#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROC_MOD(_tp_, _r_...)              { 2, 0, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL,  NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL, _r_ }
+#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROC_MOD(_tp_, _r_...)          { 2, 0, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD(_tp_), NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL, _r_ }
 
 /* sl_macro fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROCS fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROCS fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROCS */
-#define fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROCS(_tp_, _s_...)        fcs_front_xq_aX_SPEC_DEFINE_TPROCS(_tp_, _tp_, _s_)
-#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROCS(_tp_, _r_...)          { 3, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL,  NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
-#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROCS(_tp_, _r_...)      { 3, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS(_tp_), NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROCS(_tp_, _s_...)               fcs_front_xq_aX_SPEC_DEFINE_TPROCS(_tp_, _tp_, _s_)
+#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROCS(_tp_, _xtp_, _r_...)          { 3, (_xtp_), NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL,  NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL, _r_ }
+#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROCS(_tp_, _xtp_, _r_...)      { 3, (_xtp_), NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS(_tp_), NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL, _r_ }
 
 /* sl_macro fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROCS_MOD fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROCS_MOD fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROCS_MOD */
-#define fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROCS_MOD(_tp_, _s_...)    fcs_front_xq_aX_SPEC_DEFINE_TPROCS_MOD(_tp_, _tp_, _s_)
-#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROCS_MOD(_tp_, _r_...)      { 4, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL,  _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
-#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROCS_MOD(_tp_, _r_...)  { 4, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL,  _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD(_tp_), _r_ }
+#define fcs_front_xq_aX_SPLIT_GENERIC_DEFINE_TPROCS_MOD(_tp_, _s_...)           fcs_front_xq_aX_SPEC_DEFINE_TPROCS_MOD(_tp_, _tp_, _s_)
+#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_TPROCS_MOD(_tp_, _xtp_, _r_...)      { 4, (_xtp_), NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD_NULL,  _r_ }
+#define fcs_front_xq_aX_SPLIT_GENERIC_INIT_EXT_TPROCS_MOD(_tp_, _xtp_, _r_...)  { 4, (_xtp_), NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROC_MOD_NULL, NULL, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_NULL, _tp_, fcs_front_xq_aX_SPEC_EXT_PARAM_TPROCS_MOD(_tp_), _r_ }
 
 /* sl_type fcs_front_xq_aX_tloc_f fcs_front_xq_aX_tloc_mod_f */
 typedef fcs_front_xq_aX_slint_t fcs_front_xq_aX_tloc_f(fcs_front_xq_aX_elements_t *b, fcs_front_xq_aX_slint_t x, void *tloc_data);
@@ -2265,8 +2248,8 @@ typedef fcs_front_xq_aX_slint_t fcs_front_xq_aX_tloc_mod_f(fcs_front_xq_aX_eleme
 /* sl_type fcs_front_xq_aX_tproc_f fcs_front_xq_aX_tproc_mod_f fcs_front_xq_aX_tprocs_f fcs_front_xq_aX_tprocs_mod_f */
 typedef int fcs_front_xq_aX_tproc_f(fcs_front_xq_aX_elements_t *b, fcs_front_xq_aX_slint_t x, void *tproc_data);
 typedef int fcs_front_xq_aX_tproc_mod_f(fcs_front_xq_aX_elements_t *b, fcs_front_xq_aX_slint_t x, void *tproc_data, fcs_front_xq_aX_elements_t *mod);
-typedef fcs_front_xq_aX_slint_t fcs_front_xq_aX_tprocs_f(fcs_front_xq_aX_elements_t *b, fcs_front_xq_aX_slint_t x, void *tproc_data, int *procs);
-typedef fcs_front_xq_aX_slint_t fcs_front_xq_aX_tprocs_mod_f(fcs_front_xq_aX_elements_t *b, fcs_front_xq_aX_slint_t x, void *tproc_data, int *procs, fcs_front_xq_aX_elements_t *mod);
+typedef void fcs_front_xq_aX_tprocs_f(fcs_front_xq_aX_elements_t *b, fcs_front_xq_aX_slint_t x, void *tproc_data, fcs_front_xq_aX_slint_t *nprocs, int *procs);
+typedef void fcs_front_xq_aX_tprocs_mod_f(fcs_front_xq_aX_elements_t *b, fcs_front_xq_aX_slint_t x, void *tproc_data, fcs_front_xq_aX_slint_t *nprocs, int *procs, fcs_front_xq_aX_elements_t *mod);
 
 /* sl_type fcs_front_xq_aX_tproc_reset_f */
 typedef void fcs_front_xq_aX_tproc_reset_f(void *tproc_data);
@@ -2284,6 +2267,7 @@ typedef struct fcs_front_xq_aX__tproc_exdef {
   fcs_front_xq_aX_spec_tproc_count_f *tproc_count_db, *tproc_count_ip;
   fcs_front_xq_aX_spec_tproc_rearrange_db_f *tproc_rearrange_db;
   fcs_front_xq_aX_spec_tproc_rearrange_ip_f *tproc_rearrange_ip;
+  fcs_front_xq_aX_spec_tproc_indices_db_f *tproc_indices_db;
 
   fcs_front_xq_aX_spec_tproc_mod_count_f *tproc_mod_count_db, *tproc_mod_count_ip;
   fcs_front_xq_aX_spec_tproc_mod_rearrange_db_f *tproc_mod_rearrange_db;
@@ -2292,6 +2276,7 @@ typedef struct fcs_front_xq_aX__tproc_exdef {
   fcs_front_xq_aX_spec_tprocs_count_f *tprocs_count_db, *tprocs_count_ip;
   fcs_front_xq_aX_spec_tprocs_rearrange_db_f *tprocs_rearrange_db;
   fcs_front_xq_aX_spec_tprocs_rearrange_ip_f *tprocs_rearrange_ip;
+  fcs_front_xq_aX_spec_tprocs_indices_db_f *tprocs_indices_db;
 
   fcs_front_xq_aX_spec_tprocs_mod_count_f *tprocs_mod_count_db, *tprocs_mod_count_ip;
   fcs_front_xq_aX_spec_tprocs_mod_rearrange_db_f *tprocs_mod_rearrange_db;
@@ -2689,6 +2674,27 @@ typedef struct
 
 #ifndef my_rti_reset
 # define my_rti_reset(m)  memset((void *) &m, 0, sizeof(m))
+#endif
+
+
+#ifdef SL_USE_MPI
+/* sl_type fcs_front_xq_aX__sl_mpi_context_t fcs_front_xq_aX_sl_mpi_context_t */
+typedef struct fcs_front_xq_aX__sl_mpi_context_t
+{
+  int size, rank;
+  MPI_Comm comm;
+
+} fcs_front_xq_aX_sl_mpi_context_t;
+#endif
+
+
+#ifdef SL_USE_OMP
+/* sl_type fcs_front_xq_aX__sl_omp_context_t fcs_front_xq_aX_sl_omp_context_t */
+typedef struct fcs_front_xq_aX__sl_omp_context_t
+{
+  int thread_num, num_threads, *coop_thread_nums;
+
+} fcs_front_xq_aX_sl_omp_context_t;
 #endif
 
 
@@ -3107,6 +3113,7 @@ fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_sort_counting_get_counts)(fcs_f
 fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_sort_counting)(fcs_front_xq_aX_elements_t *s, fcs_front_xq_aX_elements_t *d, fcs_front_xq_aX_slint_t ncounts);
 fcs_front_xq_aX_slint SL_PROTO(fcs_front_xq_aX_sort_heap)(fcs_front_xq_aX_elements_t *s, fcs_front_xq_aX_elements_t *xs);
 fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_sort_insert_bmask_kernel)(fcs_front_xq_aX_elements_t *s, fcs_front_xq_aX_elements_t *sx, fcs_front_xq_aX_slkey_pure_t bmask);
+fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_sort_insert_kernel)(fcs_front_xq_aX_elements_t *s, fcs_front_xq_aX_elements_t *sx);
 fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_sort_insert)(fcs_front_xq_aX_elements_t *s, fcs_front_xq_aX_elements_t *sx);
 fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_sort_permute_forward)(fcs_front_xq_aX_elements_t *s, fcs_front_xq_aX_elements_t *sx, fcs_front_xq_aX_slint_t *perm, fcs_front_xq_aX_slint_t offset, fcs_front_xq_aX_slint_t mask_bit);
 fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_sort_permute_backward)(fcs_front_xq_aX_elements_t *s, fcs_front_xq_aX_elements_t *sx, fcs_front_xq_aX_slint_t *perm, fcs_front_xq_aX_slint_t offset, fcs_front_xq_aX_slint_t mask_bit);
@@ -3182,8 +3189,8 @@ fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_mpi_elements_get_counts_and_wei
 fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_mpi_elements_sendrecv_replace)(fcs_front_xq_aX_elements_t *s, int count, int dest, int sendtag, int source, int recvtag, int size, int rank, MPI_Comm comm);
 fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_tproc_create_tproc)(fcs_front_xq_aX_tproc_t *tproc, fcs_front_xq_aX_tproc_f *tfn, fcs_front_xq_aX_tproc_reset_f *rfn, fcs_front_xq_aX_tproc_exdef exdef);
 fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_tproc_create_tproc_mod)(fcs_front_xq_aX_tproc_t *tproc, fcs_front_xq_aX_tproc_mod_f *tfn, fcs_front_xq_aX_tproc_reset_f *rfn, fcs_front_xq_aX_tproc_exdef exdef);
-fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_tproc_create_tprocs)(fcs_front_xq_aX_tproc_t *tproc, fcs_front_xq_aX_tprocs_f *tfn, fcs_front_xq_aX_tproc_reset_f *rfn, fcs_front_xq_aX_tproc_exdef exdef);
-fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_tproc_create_tprocs_mod)(fcs_front_xq_aX_tproc_t *tproc, fcs_front_xq_aX_tprocs_mod_f *tfn, fcs_front_xq_aX_tproc_reset_f *rfn, fcs_front_xq_aX_tproc_exdef exdef);
+fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_tproc_create_tprocs)(fcs_front_xq_aX_tproc_t *tproc, fcs_front_xq_aX_slint_t max_tprocs, fcs_front_xq_aX_tprocs_f *tfn, fcs_front_xq_aX_tproc_reset_f *rfn, fcs_front_xq_aX_tproc_exdef exdef);
+fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_tproc_create_tprocs_mod)(fcs_front_xq_aX_tproc_t *tproc, fcs_front_xq_aX_slint_t max_tprocs, fcs_front_xq_aX_tprocs_mod_f *tfn, fcs_front_xq_aX_tproc_reset_f *rfn, fcs_front_xq_aX_tproc_exdef exdef);
 fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_tproc_free)(fcs_front_xq_aX_tproc_t *tproc);
 fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_tproc_set_proclists)(fcs_front_xq_aX_tproc_t *tproc, fcs_front_xq_aX_slint_t nsend_procs, int *send_procs, fcs_front_xq_aX_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 fcs_front_xq_aX_slint_t SL_PROTO(fcs_front_xq_aX_tproc_verify)(fcs_front_xq_aX_tproc_t tproc, void *data, fcs_front_xq_aX_elements_t *s, int proc);

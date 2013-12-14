@@ -71,10 +71,13 @@ extern double *spec_timing;
 /* sp_type _spec_tproc_t spec_tproc_t */
 typedef struct _spec_tproc_t
 {
+  spint_t max_tprocs;
+
   spec_tproc_f *tproc;
   spec_tproc_count_f *tproc_count_db, *tproc_count_ip;
   spec_tproc_rearrange_db_f *tproc_rearrange_db;
   spec_tproc_rearrange_ip_f *tproc_rearrange_ip;
+  spec_tproc_indices_db_f *tproc_indices_db;
 
   spec_tproc_mod_f *tproc_mod;
   spec_tproc_mod_count_f *tproc_mod_count_db, *tproc_mod_count_ip;
@@ -85,6 +88,7 @@ typedef struct _spec_tproc_t
   spec_tprocs_count_f *tprocs_count_db, *tprocs_count_ip;
   spec_tprocs_rearrange_db_f *tprocs_rearrange_db;
   spec_tprocs_rearrange_ip_f *tprocs_rearrange_ip;
+  spec_tprocs_indices_db_f *tprocs_indices_db;
 
   spec_tprocs_mod_f *tprocs_mod;
   spec_tprocs_mod_count_f *tprocs_mod_count_db, *tprocs_mod_count_ip;
@@ -93,38 +97,56 @@ typedef struct _spec_tproc_t
 
   spec_tproc_reset_f *reset;
 
-#ifdef SPEC_PROCLIST  
+#ifdef SPEC_PROCLISTS
   spint_t nsend_procs, nrecv_procs;
   sproc_t *send_procs, *recv_procs;
 #endif
 
 } *spec_tproc_t;
 
+/* sp_macro SPEC_TPROC_NULL */
+#define SPEC_TPROC_NULL  NULL
 
-spint_t spec_tproc_create(spec_tproc_t *tproc, spec_tproc_f *func, spec_tproc_mod_f *func_mod, spec_tprocs_f *func_s, spec_tprocs_mod_f *func_s_mod);
+
+spint_t spec_tproc_create(spec_tproc_t *tproc, spec_tproc_f *func, spec_tproc_mod_f *func_mod, spec_tprocs_f *func_s, spec_tprocs_mod_f *func_s_mod, spint_t max_tprocs);
 spint_t spec_tproc_destroy(spec_tproc_t *tproc);
 spint_t spec_tproc_duplicate(spec_tproc_t *tproc, spec_tproc_t *newtproc);
 
 spint_t spec_tproc_set_tproc(spec_tproc_t *tproc, spec_tproc_f *func);
-spint_t spec_tproc_set_ext_tproc(spec_tproc_t *tproc, spec_tproc_count_f *func_count_db, spec_tproc_count_f *func_count_ip, spec_tproc_rearrange_db_f *func_rearrange_db, spec_tproc_rearrange_ip_f *func_rearrange_ip);
+spint_t spec_tproc_set_ext_tproc(spec_tproc_t *tproc, spec_tproc_count_f *func_count_db, spec_tproc_count_f *func_count_ip, spec_tproc_rearrange_db_f *func_rearrange_db, spec_tproc_rearrange_ip_f *func_rearrange_ip, spec_tproc_indices_db_f *func_indices_db);
 spint_t spec_tproc_set_tproc_mod(spec_tproc_t *tproc, spec_tproc_mod_f *func_mod);
 spint_t spec_tproc_set_ext_tproc_mod(spec_tproc_t *tproc, spec_tproc_mod_count_f *func_count_db, spec_tproc_mod_count_f *func_count_ip, spec_tproc_mod_rearrange_db_f *func_rearrange_db, spec_tproc_mod_rearrange_ip_f *func_rearrange_ip);
-spint_t spec_tproc_set_tprocs(spec_tproc_t *tproc, spec_tprocs_f *func_s);
-spint_t spec_tproc_set_ext_tprocs(spec_tproc_t *tproc, spec_tprocs_count_f *func_count_db, spec_tprocs_count_f *func_count_ip, spec_tprocs_rearrange_db_f *func_rearrange_db, spec_tprocs_rearrange_ip_f *func_rearrange_ip);
-spint_t spec_tproc_set_tprocs_mod(spec_tproc_t *tproc, spec_tprocs_mod_f *func_s_mod);
+spint_t spec_tproc_set_tprocs(spec_tproc_t *tproc, spec_tprocs_f *func_s, spint_t max_tprocs);
+spint_t spec_tproc_set_ext_tprocs(spec_tproc_t *tproc, spec_tprocs_count_f *func_count_db, spec_tprocs_count_f *func_count_ip, spec_tprocs_rearrange_db_f *func_rearrange_db, spec_tprocs_rearrange_ip_f *func_rearrange_ip, spec_tprocs_indices_db_f *func_indices_db);
+spint_t spec_tproc_set_tprocs_mod(spec_tproc_t *tproc, spec_tprocs_mod_f *func_s_mod, spint_t max_tprocs);
 spint_t spec_tproc_set_ext_tprocs_mod(spec_tproc_t *tproc, spec_tprocs_mod_count_f *func_count_db, spec_tprocs_mod_count_f *func_count_ip, spec_tprocs_mod_rearrange_db_f *func_rearrange_db, spec_tprocs_mod_rearrange_ip_f *func_rearrange_ip);
 
 spint_t spec_tproc_set_reset(spec_tproc_t *tproc, spec_tproc_reset_f *reset);
 
-#ifdef SPEC_PROCLIST
+#ifdef SPEC_PROCLISTS
 void spec_make_recv_proclist(spint_t nsend_procs, sproc_t *send_procs, spint_t *nrecv_procs, sproc_t **recv_procs, int size, int rank, MPI_Comm comm);
 spint_t spec_tproc_set_proclists(spec_tproc_t *tproc, spint_t nsend_procs, sproc_t *send_procs, spint_t nrecv_procs, sproc_t *recv_procs, int size, int rank, MPI_Comm comm);
 #endif
 
-spint_t spec_print(spec_tproc_t *tproc, spec_tproc_data_t tproc_data, spec_elem_t *b);
+spint_t spec_print(spec_tproc_t tproc, spec_tproc_data_t tproc_data, spec_elem_t *b);
 
+#ifdef SPEC_ALLTOALLV
 spint_t spec_alltoallv_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spec_tproc_t tproc, spec_tproc_data_t tproc_data, int size, int rank, MPI_Comm comm);
 spint_t spec_alltoallv_ip(spec_elem_t *b, spec_elem_t *xb, spec_tproc_t tproc, spec_tproc_data_t tproc_data, int size, int rank, MPI_Comm comm);
+#endif
+
+#ifdef SPEC_ALLTOALLW
+spint_t spec_alltoallw_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spec_tproc_t tproc, spec_tproc_data_t tproc_data, int size, int rank, MPI_Comm comm);
+#endif
+
+#ifdef SPEC_PUT
+spint_t spec_put_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spec_tproc_t tproc, spec_tproc_data_t tproc_data, int size, int rank, MPI_Comm comm);
+#endif
+
+#ifdef SPEC_SENDRECV
+spint_t spec_sendrecv_single_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spec_tproc_t tproc, spec_tproc_data_t tproc_data, int size, int rank, MPI_Comm comm);
+spint_t spec_sendrecv_buffer_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spec_tproc_t tproc, spec_tproc_data_t tproc_data, int size, int rank, MPI_Comm comm);
+#endif
 
 
 #endif /* __SPEC_CORE_H__ */

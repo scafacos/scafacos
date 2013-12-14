@@ -22,17 +22,12 @@
  */
 
 
-#ifndef __ZMPI_TOOLS_CONF_H__
-#define __ZMPI_TOOLS_CONF_H__
+#ifndef __SL_PROTOS_INTERN_H__
+#define __SL_PROTOS_INTERN_H__
 
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+/* src/base/sort_insert.c */
+slint_t SL_PROTO(sort_insert_kernel)(elements_t *s, elements_t *sx);
 
 
-#define HAVE_ZMPI_ALLTOALL_2STEP
-#define HAVE_ZMPI_ALLTOALLX_PROCLISTS
-
-
-#endif /* __ZMPI_TOOLS_CONF_H__ */
+#endif /* __SL_PROTOS_INTERN_H__ */

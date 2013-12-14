@@ -45,6 +45,21 @@
 #define spec_alltoallv_db  SP_FUNC(spec_alltoallv_db)
 #define spec_alltoallv_ip  SP_FUNC(spec_alltoallv_ip)
 
+/* spec_alltoallw.c */
+#define spec_alltoallw_db  SP_FUNC(spec_alltoallw_db)
+
+/* spec_common.c */
+#define spec_check_tproc_support  SP_FUNC(spec_check_tproc_support)
+#define spec_check_buffer_size  SP_FUNC(spec_check_buffer_size)
+#define spec_tproc_setup  SP_FUNC(spec_tproc_setup)
+#define spec_tproc_release  SP_FUNC(spec_tproc_release)
+#define spec_make_counts  SP_FUNC(spec_make_counts)
+#define spec_redistribute_counts_type  SP_VAR(spec_redistribute_counts_type)
+#define spec_redistribute_counts_proclists_type  SP_VAR(spec_redistribute_counts_proclists_type)
+#define spec_redistribute_counts  SP_FUNC(spec_redistribute_counts)
+#define spec_redistribute_displs_type  SP_VAR(spec_redistribute_displs_type)
+#define spec_redistribute_displs  SP_FUNC(spec_redistribute_displs)
+
 /* spec_core.c */
 #define spec_timing  SP_VAR(spec_timing)
 #define spec_tproc_create  SP_FUNC(spec_tproc_create)
@@ -62,6 +77,13 @@
 #define spec_make_recv_proclist  SP_FUNC(spec_make_recv_proclist)
 #define spec_tproc_set_proclists  SP_FUNC(spec_tproc_set_proclists)
 #define spec_print  SP_FUNC(spec_print)
+
+/* spec_put.c */
+#define spec_put_db  SP_FUNC(spec_put_db)
+
+/* spec_sendrecv.c */
+#define spec_alltoallw_db  SP_FUNC(spec_alltoallw_db)
+#define spec_alltoallw_db  SP_FUNC(spec_alltoallw_db)
 
 
 #endif /* __SPEC_RENAME_H__ */

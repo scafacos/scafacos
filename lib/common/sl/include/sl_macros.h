@@ -22,17 +22,24 @@
  */
 
 
-#ifndef __ZMPI_TOOLS_CONF_H__
-#define __ZMPI_TOOLS_CONF_H__
+#ifndef __SL_MACROS_H__
+#define __SL_MACROS_H__
 
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+/* count */
+
+/* sl_macro SL_KEY2CLASS_DECL_COUNT_DB */
+#define SL_KEY2CLASS_DECL_COUNT_DB \
+  struct { slkey_t *ki, *kend; slint_t p; } k2c0cd;
+
+/* sl_macro SL_KEY2CLASS_EXEC_COUNT_DB */
+#define SL_KEY2CLASS_EXEC_COUNT_DB(_k2c_, _s_, _nc_, _cs_)  do { \
+  for (k2c0cd.p = 0; k2c0cd.p < (_nc_); k2c0cd.p++) (_cs_)[k2c0cd.p] = 0; \
+  key_assign_at((_s_)->keys, (_s_)->size, k2c0cd.kend); \
+  for (key_assign((_s_)->keys, k2c0cd.ki); k2c0cd.ki < k2c0cd.kend; key_inc(k2c0cd.ki)) { \
+    k2c0cd.p = (_k2c_)(*k2c0cd.ki); \
+    ++(_cs_)[k2c0cd.p]; \
+  } } while (0)
 
 
-#define HAVE_ZMPI_ALLTOALL_2STEP
-#define HAVE_ZMPI_ALLTOALLX_PROCLISTS
-
-
-#endif /* __ZMPI_TOOLS_CONF_H__ */
+#endif /* __SL_MACROS_H__ */
