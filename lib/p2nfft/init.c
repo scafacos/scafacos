@@ -157,6 +157,7 @@ FCSResult ifcs_p2nfft_init(
 
   d->regkern_hat = NULL;  
 
+  /* init gridsort data */
   d->max_particle_move = -1;
   d->resort = d->local_num_particles = 0;
   d->gridsort_resort = FCS_GRIDSORT_RESORT_NULL;
@@ -242,6 +243,10 @@ void ifcs_p2nfft_destroy(
   /* destroy virial */
   if(d->virial != NULL)
     free(d->virial);
+
+  /* free gridsort data */
+  fcs_gridsort_release_cache(&d->gridsort_cache);
+  fcs_gridsort_resort_destroy(&d->gridsort_resort);
 
   /* free Cartesian communicators */
   MPI_Comm_free(&d->cart_comm_pnfft);

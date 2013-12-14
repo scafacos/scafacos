@@ -28,6 +28,7 @@
 #include "pnfft.h"
 #include <float.h>
 
+#include "common/gridsort/gridsort.h"
 #include "common/gridsort/gridsort_resort.h"
 
 
