@@ -258,7 +258,57 @@ int ZMPI_Alltoall_2step_int(void *sendbuf, int sendcount, MPI_Datatype sendtype,
 #include "zmpi_tools.h"
 
 
-int ZMPI_Alltoallv_proclists(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void* recvbuf, int *recvcounts, int *rdispls, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoallv_proclists */
+int ZMPI_Alltoall_proclists_isendirecv(void *sendbuf, int sendcount, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void *recvbuf, int recvcount, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_proclists_isendirecv */
+{
+  int i, j;
+
+  const int tag = 0;
+
+  int nreqs;
+  MPI_Request *reqs;
+  MPI_Status *stats;
+
+  MPI_Aint sendtype_lb, sendtype_extent, recvtype_lb, recvtype_extent;
+
+
+  reqs = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Request));
+  stats = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Status));
+
+  MPI_Type_get_extent(sendtype, &sendtype_lb, &sendtype_extent);
+  MPI_Type_get_extent(recvtype, &recvtype_lb, &recvtype_extent);
+
+  nreqs = 0;
+
+  for (i = 0; i < nrecvprocs; ++i)
+  {
+    j = recvprocs[i];
+    MPI_Irecv(((char *) recvbuf) + (j * recvcount * recvtype_extent), recvcount, recvtype, j, tag, comm, &reqs[nreqs]);
+    ++nreqs;
+  }
+
+  for (i = 0; i < nsendprocs; ++i)
+  {
+    j = sendprocs[i];
+    MPI_Isend(((char *) sendbuf) + (j * sendcount * sendtype_extent), sendcount, sendtype, j, tag, comm, &reqs[nreqs]);
+    ++nreqs;
+  }
+
+  MPI_Waitall(nreqs, reqs, stats);
+
+  z_free(reqs);
+  z_free(stats);
+
+  return MPI_SUCCESS;
+}
+
+
+int ZMPI_Alltoall_proclists(void *sendbuf, int sendcount, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void *recvbuf, int recvcount, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_proclists */
+{
+  return ZMPI_Alltoall_proclists_isendirecv(sendbuf, sendcount, sendtype, nsendprocs, sendprocs, recvbuf, recvcount, recvtype, nrecvprocs, recvprocs, comm);
+}
+
+
+int ZMPI_Alltoallv_proclists_isendirecv(void *sendbuf, int *sendcounts, int *senddispls, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void *recvbuf, int *recvcounts, int *recvdispls, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoallv_proclists_isendirecv */
 {
   int i, j;
 
@@ -284,7 +334,7 @@ int ZMPI_Alltoallv_proclists(void* sendbuf, int *sendcounts, int *sdispls, MPI_D
     j = recvprocs[i];
     if (recvcounts[j] > 0)
     {
-      MPI_Irecv(((char *) recvbuf) + (rdispls[j] * recvtype_extent), recvcounts[j], recvtype, j, tag, comm, &reqs[nreqs]);
+      MPI_Irecv(((char *) recvbuf) + (recvdispls[j] * recvtype_extent), recvcounts[j], recvtype, j, tag, comm, &reqs[nreqs]);
       ++nreqs;
     }
   }
@@ -294,7 +344,7 @@ int ZMPI_Alltoallv_proclists(void* sendbuf, int *sendcounts, int *sdispls, MPI_D
     j = sendprocs[i];
     if (sendcounts[j] > 0)
     {
-      MPI_Isend(((char *) sendbuf) + (sdispls[j] * sendtype_extent), sendcounts[j], sendtype, j, tag, comm, &reqs[nreqs]);
+      MPI_Isend(((char *) sendbuf) + (senddispls[j] * sendtype_extent), sendcounts[j], sendtype, j, tag, comm, &reqs[nreqs]);
       ++nreqs;
     }
   }
@@ -305,4 +355,65 @@ int ZMPI_Alltoallv_proclists(void* sendbuf, int *sendcounts, int *sdispls, MPI_D
   z_free(stats);
 
   return MPI_SUCCESS;
+}
+
+
+int ZMPI_Alltoallv_proclists(void *sendbuf, int *sendcounts, int *senddispls, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void *recvbuf, int *recvcounts, int *recvdispls, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoallv_proclists */
+{
+  return ZMPI_Alltoallv_proclists_isendirecv(sendbuf, sendcounts, senddispls, sendtype, nsendprocs, sendprocs, recvbuf, recvcounts, recvdispls, recvtype, nrecvprocs, recvprocs, comm);
+}
+
+
+int ZMPI_Alltoallw_proclists_isendirecv(void *sendbuf, int *sendcounts, int *senddispls, MPI_Datatype *sendtypes, int nsendprocs, int *sendprocs, void *recvbuf, int *recvcounts, int *recvdispls, MPI_Datatype *recvtypes, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoallw_proclists_isendirecv */
+{
+  int i, j;
+
+  const int tag = 0;
+
+  int nreqs;
+  MPI_Request *reqs;
+  MPI_Status *stats;
+
+  MPI_Aint sendtype_lb, sendtype_extent, recvtype_lb, recvtype_extent;
+
+
+  reqs = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Request));
+  stats = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Status));
+
+  nreqs = 0;
+
+  for (i = 0; i < nrecvprocs; ++i)
+  {
+    j = recvprocs[i];
+    if (recvcounts[j] > 0)
+    {
+      MPI_Type_get_extent(recvtypes[j], &recvtype_lb, &recvtype_extent);
+      MPI_Irecv(((char *) recvbuf) + (recvdispls[j] * recvtype_extent), recvcounts[j], recvtypes[j], j, tag, comm, &reqs[nreqs]);
+      ++nreqs;
+    }
+  }
+
+  for (i = 0; i < nsendprocs; ++i)
+  {
+    j = sendprocs[i];
+    if (sendcounts[j] > 0)
+    {
+      MPI_Type_get_extent(sendtypes[j], &sendtype_lb, &sendtype_extent);
+      MPI_Isend(((char *) sendbuf) + (senddispls[j] * sendtype_extent), sendcounts[j], sendtypes[j], j, tag, comm, &reqs[nreqs]);
+      ++nreqs;
+    }
+  }
+
+  MPI_Waitall(nreqs, reqs, stats);
+
+  z_free(reqs);
+  z_free(stats);
+
+  return MPI_SUCCESS;
+}
+
+
+int ZMPI_Alltoallw_proclists(void *sendbuf, int *sendcounts, int *senddispls, MPI_Datatype *sendtypes, int nsendprocs, int *sendprocs, void *recvbuf, int *recvcounts, int *recvdispls, MPI_Datatype *recvtypes, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoallw_proclists */
+{
+  return ZMPI_Alltoallw_proclists_isendirecv(sendbuf, sendcounts, senddispls, sendtypes, nsendprocs, sendprocs, recvbuf, recvcounts, recvdispls, recvtypes, nrecvprocs, recvprocs, comm);
 }

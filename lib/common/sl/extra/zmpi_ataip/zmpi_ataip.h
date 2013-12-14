@@ -63,6 +63,8 @@ int ZMPI_Alltoallv_inplace(void *sbuf, int *scounts, int *sdispls, MPI_Datatype 
 
 int ZMPI_Neighbor_alltoallv_inplace(void *sbuf, int *scounts, int *sdispls, MPI_Datatype stype, void *rbuf, int *rcounts, int *rdispls, MPI_Datatype rtype, MPI_Comm comm);
 
+int ZMPI_Alltoallv_inplace_proclists(void *sbuf, int *scounts, int *sdispls, MPI_Datatype stype, int nsprocs, int *sprocs, void *rbuf, int *rcounts, int *rdispls, MPI_Datatype rtype, int nrprocs, int *rprocs, MPI_Comm comm);
+
 /* ZMPI_Alltoall_inplace_symmetric and ZMPI_Neighbor_alltoall_inplace_symmetric */
 extern int ZMPI_Alltoall_inplace_symmetric_sym_type;
 

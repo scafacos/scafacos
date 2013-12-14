@@ -35,7 +35,7 @@
 
 
 #define HAVE_ZMPI_ALLTOALL_2STEP
-#define HAVE_ZMPI_ALLTOALLV_PROCLISTS
+#define HAVE_ZMPI_ALLTOALLX_PROCLISTS
 
 
 
@@ -61,8 +61,34 @@ int ZMPI_Alltoallv_sendrecv(void* sendbuf, int *sendcounts, int *sdispls, MPI_Da
 int ZMPI_Alltoallw_sendrecv(void* sendbuf, int sendcounts[], int sdispls[], MPI_Datatype sendtypes[], void *recvbuf, int recvcounts[], int rdispls[], MPI_Datatype recvtypes[], MPI_Comm comm);
 #endif
 
-#ifdef HAVE_ZMPI_ALLTOALLV_PROCLISTS
-int ZMPI_Alltoallv_proclists(void* sendbuf, int *sendcounts, int *sdispls, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void* recvbuf, int *recvcounts, int *rdispls, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm);
+#ifdef HAVE_ZMPI_ALLTOALLX_PROCLISTS
+int ZMPI_Alltoall_proclists_isendirecv(void *sendbuf, int sendcount, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void *recvbuf, int recvcount, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm);
+int ZMPI_Alltoall_proclists(void *sendbuf, int sendcount, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void *recvbuf, int recvcount, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm);
+int ZMPI_Alltoallv_proclists_isendirecv(void *sendbuf, int *sendcounts, int *senddispls, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void *recvbuf, int *recvcounts, int *recvdispls, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm);
+int ZMPI_Alltoallv_proclists(void *sendbuf, int *sendcounts, int *senddispls, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void *recvbuf, int *recvcounts, int *recvdispls, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm);
+int ZMPI_Alltoallw_proclists_isendirecv(void *sendbuf, int *sendcounts, int *senddispls, MPI_Datatype *sendtypes, int nsendprocs, int *sendprocs, void *recvbuf, int *recvcounts, int *recvdispls, MPI_Datatype *recvtypes, int nrecvprocs, int *recvprocs, MPI_Comm comm);
+int ZMPI_Alltoallw_proclists(void *sendbuf, int *sendcounts, int *senddispls, MPI_Datatype *sendtypes, int nsendprocs, int *sendprocs, void *recvbuf, int *recvcounts, int *recvdispls, MPI_Datatype *recvtypes, int nrecvprocs, int *recvprocs, MPI_Comm comm);
+#endif
+
+#ifdef HAVE_ZMPI_ALLTOALL_INT
+int ZMPI_Alltoall_int_c2c_alltoall(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_2step(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_put(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_put_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_put_2phases(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_put_2phases_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_put_3phases(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_put_3phases_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_proclists_isendirecv(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_proclists_alltoallv(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_proclists_put(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_proclists_put_alloc(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_proclists_put_2phases(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+int ZMPI_Alltoall_int_c2c_proclists_put_2phases_alloc(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+#endif
+
+#ifdef HAVE_ZMPI_REDUCE_SCATTER_BLOCK
+int ZMPI_Reduce_scatter_block(const void *sendbuf, void *recvbuf, int recvcount, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
 #endif
 
 

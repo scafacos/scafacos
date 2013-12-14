@@ -11,6 +11,7 @@ spec_tproc_f
 spec_tproc_count_f
 spec_tproc_rearrange_db_f
 spec_tproc_rearrange_ip_f
+spec_tproc_indices_db_f
 spec_tproc_mod_f
 spec_tproc_mod_count_f
 spec_tproc_mod_rearrange_db_f
@@ -19,6 +20,7 @@ spec_tprocs_f
 spec_tprocs_count_f
 spec_tprocs_rearrange_db_f
 spec_tprocs_rearrange_ip_f
+spec_tprocs_indices_db_f
 spec_tprocs_mod_f
 spec_tprocs_mod_count_f
 spec_tprocs_mod_rearrange_db_f

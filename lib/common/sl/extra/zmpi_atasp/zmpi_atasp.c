@@ -31,6 +31,16 @@
 #include "zmpi_atasp.h"
 
 
+#define ZMPI_FAILURE  1
+
+
+/* zmpi_var ZMPI_Alltoall_specific_type */
+int ZMPI_Alltoall_specific_type = ZMPI_ALLTOALL_SPECIFIC_TYPE_DEFAULT;
+
+/* zmpi_var ZMPI_Neighbor_alltoall_specific_type */
+int ZMPI_Neighbor_alltoall_specific_type = ZMPI_NEIGHBOR_ALLTOALL_SPECIFIC_TYPE_DEFAULT;
+
+
 struct _ZMPI_Tproc
 {
   spec_tproc_t spec_tproc;
@@ -47,7 +57,7 @@ static void _ZMPI_Tproc_create(ZMPI_Tproc *tproc)
 static void _ZMPI_Tproc_free(ZMPI_Tproc *tproc)
 {
   z_free(*tproc);
-  
+
   *tproc = NULL;
 }
 
@@ -55,35 +65,35 @@ static void _ZMPI_Tproc_free(ZMPI_Tproc *tproc)
 static void _ZMPI_Tproc_dup(ZMPI_Tproc tproc, ZMPI_Tproc *newtproc)
 {
   _ZMPI_Tproc_create(newtproc);
-  
+
   spec_tproc_duplicate(&tproc->spec_tproc, &(*newtproc)->spec_tproc);
 }
 
 
 int ZMPI_Tproc_create_tproc(ZMPI_Tproc *tproc, ZMPI_TPROC_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef) /* zmpi_func ZMPI_Tproc_create_tproc */
 {
-  if (exdef != ZMPI_TPROC_EXDEF_NULL && exdef->type != 1) return 1;
+  if (exdef != ZMPI_TPROC_EXDEF_NULL && exdef->type != 1) return ZMPI_FAILURE;
 
   _ZMPI_Tproc_create(tproc);
 
-  spec_tproc_create(&(*tproc)->spec_tproc, tfn, NULL, NULL, NULL);
+  spec_tproc_create(&(*tproc)->spec_tproc, tfn, NULL, NULL, NULL, 0);
 
   spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
 
   if (exdef != ZMPI_TPROC_EXDEF_NULL)
-    spec_tproc_set_ext_tproc(&(*tproc)->spec_tproc, exdef->tproc_count_db, exdef->tproc_count_ip, exdef->tproc_rearrange_db, exdef->tproc_rearrange_ip);
-  
+    spec_tproc_set_ext_tproc(&(*tproc)->spec_tproc, exdef->tproc_count_db, exdef->tproc_count_ip, exdef->tproc_rearrange_db, exdef->tproc_rearrange_ip, exdef->tproc_indices_db);
+
   return MPI_SUCCESS;
 }
 
 
 int ZMPI_Tproc_create_tproc_mod(ZMPI_Tproc *tproc, ZMPI_TPROC_MOD_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef) /* zmpi_func ZMPI_Tproc_create_tproc_mod */
 {
-  if (exdef != ZMPI_TPROC_EXDEF_NULL && exdef->type != 2) return 1;
+  if (exdef != ZMPI_TPROC_EXDEF_NULL && exdef->type != 2) return ZMPI_FAILURE;
 
   _ZMPI_Tproc_create(tproc);
 
-  spec_tproc_create(&(*tproc)->spec_tproc, NULL, tfn, NULL, NULL);
+  spec_tproc_create(&(*tproc)->spec_tproc, NULL, tfn, NULL, NULL, 0);
 
   spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
 
@@ -94,30 +104,30 @@ int ZMPI_Tproc_create_tproc_mod(ZMPI_Tproc *tproc, ZMPI_TPROC_MOD_FN *tfn, ZMPI_
 }
 
 
-int ZMPI_Tproc_create_tprocs(ZMPI_Tproc *tproc, ZMPI_TPROCS_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef) /* zmpi_func ZMPI_Tproc_create_tprocs */
+int ZMPI_Tproc_create_tprocs(ZMPI_Tproc *tproc, int max_tprocs, ZMPI_TPROCS_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef) /* zmpi_func ZMPI_Tproc_create_tprocs */
 {
-  if (exdef != ZMPI_TPROC_EXDEF_NULL && exdef->type != 3) return 1;
+  if (exdef != ZMPI_TPROC_EXDEF_NULL && exdef->type != 3) return ZMPI_FAILURE;
 
   _ZMPI_Tproc_create(tproc);
-  
-  spec_tproc_create(&(*tproc)->spec_tproc, NULL, NULL, tfn, NULL);
+
+  spec_tproc_create(&(*tproc)->spec_tproc, NULL, NULL, tfn, NULL, max_tprocs);
 
   spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
 
   if (exdef != ZMPI_TPROC_EXDEF_NULL)
-    spec_tproc_set_ext_tprocs(&(*tproc)->spec_tproc, exdef->tprocs_count_db, exdef->tprocs_count_ip, exdef->tprocs_rearrange_db, exdef->tprocs_rearrange_ip);
-  
+    spec_tproc_set_ext_tprocs(&(*tproc)->spec_tproc, exdef->tprocs_count_db, exdef->tprocs_count_ip, exdef->tprocs_rearrange_db, exdef->tprocs_rearrange_ip, exdef->tprocs_indices_db);
+
   return MPI_SUCCESS;
 }
 
 
-int ZMPI_Tproc_create_tprocs_mod(ZMPI_Tproc *tproc, ZMPI_TPROCS_MOD_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef) /* zmpi_func ZMPI_Tproc_create_tprocs_mod */
+int ZMPI_Tproc_create_tprocs_mod(ZMPI_Tproc *tproc, int max_tprocs, ZMPI_TPROCS_MOD_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef) /* zmpi_func ZMPI_Tproc_create_tprocs_mod */
 {
-  if (exdef != ZMPI_TPROC_EXDEF_NULL && exdef->type != 4) return 1;
+  if (exdef != ZMPI_TPROC_EXDEF_NULL && exdef->type != 4) return ZMPI_FAILURE;
 
   _ZMPI_Tproc_create(tproc);
   
-  spec_tproc_create(&(*tproc)->spec_tproc, NULL, NULL, NULL, tfn);
+  spec_tproc_create(&(*tproc)->spec_tproc, NULL, NULL, NULL, tfn, max_tprocs);
 
   spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
   
@@ -130,6 +140,8 @@ int ZMPI_Tproc_create_tprocs_mod(ZMPI_Tproc *tproc, ZMPI_TPROCS_MOD_FN *tfn, ZMP
 
 int ZMPI_Tproc_free(ZMPI_Tproc *tproc) /* zmpi_func ZMPI_Tproc_free */
 {
+  spec_tproc_destroy(&(*tproc)->spec_tproc);
+
   _ZMPI_Tproc_free(tproc);
   
   return MPI_SUCCESS;
@@ -140,7 +152,7 @@ int ZMPI_Tproc_set_neighbors(ZMPI_Tproc tproc, int nneighbors, int *neighbors, M
 {
   int comm_size, comm_rank;
 
-#ifdef SPEC_PROCLIST
+#ifdef SPEC_PROCLISTS
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
 
@@ -157,7 +169,7 @@ int ZMPI_Tproc_set_proclists(ZMPI_Tproc tproc, int ndstprocs, int *dstprocs, int
 {
   int comm_size, comm_rank;
 
-#ifdef SPEC_PROCLIST
+#ifdef SPEC_PROCLISTS
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
 
@@ -170,23 +182,27 @@ int ZMPI_Tproc_set_proclists(ZMPI_Tproc tproc, int ndstprocs, int *dstprocs, int
 }
 
 
-int ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_specific */
+static int _ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, int comm_size, int comm_rank, MPI_Comm comm, int type, const char *name)
 {
   int exit_code;
-  int comm_size, comm_rank;
 
   spec_elem_t sb, rb, *b, *xb;
 
 
-  MPI_Comm_size(comm, &comm_size);
-  MPI_Comm_rank(comm, &comm_rank);
-
   if (sbuf == MPI_IN_PLACE && rbuf == MPI_IN_PLACE)
   {
 #ifdef ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE
-    fprintf(ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE, "%d: ZMPI_Alltoall_specific: error: either sbuf or rbuf can be MPI_IN_PLACE!\n", comm_rank);
+    fprintf(ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE, "%d: %s: error: either sbuf or rbuf can be MPI_IN_PLACE!\n", comm_rank, name);
 #endif
-    exit_code = 1;
+    exit_code = ZMPI_FAILURE;
+    *received = 0;
+    goto exit;
+  }
+
+  if (tproc == ZMPI_TPROC_NULL)
+  {
+    exit_code = MPI_SUCCESS;
+    *received = 0;
     goto exit;
   }
 
@@ -196,7 +212,7 @@ int ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbu
     sb.count = sb.max_count = scount;
     sb.mpi_type = stype;
     zmpil_create(&sb.zmpil_type, stype);
-    
+
     b = &sb;
   }
 
@@ -217,12 +233,56 @@ int ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbu
     b->count = scount;
     b->max_count = rcount;
 
-    exit_code = spec_alltoallv_ip(b, xb, tproc->spec_tproc, tproc_data, comm_size, comm_rank, comm);
+    switch (type)
+    {
+#ifdef SPEC_ALLTOALLV
+      case ZMPI_ALLTOALL_SPECIFIC_TYPE_ALLTOALLV:
+        exit_code = spec_alltoallv_ip(b, xb, tproc->spec_tproc, tproc_data, comm_size, comm_rank, comm);
+        break;
+#endif
+      default:
+#ifdef ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE
+        fprintf(ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE, "%d: %s: error: in-place implementation of type %d is not available!\n", comm_rank, name);
+#endif
+        exit_code = ZMPI_FAILURE;
+        break;
+    }
     *received = b->count;
 
   } else {
 
-    exit_code = spec_alltoallv_db(&sb, &rb, xb, tproc->spec_tproc, tproc_data, comm_size, comm_rank, comm);
+    switch (type)
+    {
+#ifdef SPEC_ALLTOALLV
+      case ZMPI_ALLTOALL_SPECIFIC_TYPE_ALLTOALLV:
+        exit_code = spec_alltoallv_db(&sb, &rb, xb, tproc->spec_tproc, tproc_data, comm_size, comm_rank, comm);
+        break;
+#endif
+#ifdef SPEC_ALLTOALLW
+      case ZMPI_ALLTOALL_SPECIFIC_TYPE_ALLTOALLW:
+        exit_code = spec_alltoallw_db(&sb, &rb, xb, tproc->spec_tproc, tproc_data, comm_size, comm_rank, comm);
+        break;
+#endif
+#ifdef SPEC_PUT
+      case ZMPI_ALLTOALL_SPECIFIC_TYPE_PUT:
+        exit_code = spec_put_db(&sb, &rb, xb, tproc->spec_tproc, tproc_data, comm_size, comm_rank, comm);
+        break;
+#endif
+#ifdef SPEC_SENDRECV
+/*      case ZMPI_ALLTOALL_SPECIFIC_TYPE_SENDRECV_SINGLE:
+        exit_code = spec_sendrecv_single_db(&sb, &rb, xb, tproc->spec_tproc, tproc_data, comm_size, comm_rank, comm);
+        break;*/
+      case ZMPI_ALLTOALL_SPECIFIC_TYPE_SENDRECV_BUFFER:
+        exit_code = spec_sendrecv_buffer_db(&sb, &rb, xb, tproc->spec_tproc, tproc_data, comm_size, comm_rank, comm);
+        break;
+#endif
+      default:
+#ifdef ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE
+        fprintf(ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE, "%d: %s: error: implementation of type %d is not available!\n", comm_rank, name);
+#endif
+        exit_code = ZMPI_FAILURE;
+        break;
+    }
     *received = rb.count;
   }
 
@@ -233,6 +293,17 @@ int ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbu
 exit:
 
   return exit_code;  
+}
+
+
+int ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_specific */
+{
+  int comm_size, comm_rank;
+
+  MPI_Comm_size(comm, &comm_size);
+  MPI_Comm_rank(comm, &comm_rank);
+
+  return _ZMPI_Alltoall_specific(sbuf, scount, stype, rbuf, rcount, rtype, tproc, tproc_data, received, comm_size, comm_rank, comm, ZMPI_Alltoall_specific_type, "ZMPI_Alltoall_specific");
 }
 
 
@@ -299,7 +370,7 @@ int ZMPI_Neighbor_alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, 
 #ifdef ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE
     fprintf(ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE, "%d: ZMPI_Neighbor_alltoall_specific: error: communicator has no (supported) topology!\n", comm_rank);
 #endif
-    exit_code = 1;
+    exit_code = ZMPI_FAILURE;
     goto exit;
   }
 
@@ -307,7 +378,7 @@ int ZMPI_Neighbor_alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, 
 
   ZMPI_Tproc_set_proclists(newtproc, nsend_procs, send_procs, nrecv_procs, recv_procs, comm);
 
-  exit_code = ZMPI_Alltoall_specific(sbuf, scount, stype, rbuf, rcount, rtype, newtproc, tproc_data, received, comm);
+  exit_code = _ZMPI_Alltoall_specific(sbuf, scount, stype, rbuf, rcount, rtype, newtproc, tproc_data, received, comm_size, comm_rank, comm, ZMPI_Neighbor_alltoall_specific_type, "ZMPI_Neighbor_alltoall_specific");
 
   destroy_proclists(&send_procs, &recv_procs);
 
