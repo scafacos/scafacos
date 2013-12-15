@@ -52,16 +52,16 @@ extern FCSResult fcs_pepc_setup(FCS handle, fcs_float epsilon, fcs_float theta)
 extern FCSResult fcs_pepc_check(FCS handle)
 {
   char* fnc_name = "fcs_pepc_check";
-  fcs_float *a,*b,*c;
+  const fcs_float *a,*b,*c;
   fcs_float eps, theta;
   FCSResult res;
 
   if ((res = fcs_pepc_get_epsilon(handle, &eps))) return res;
   if (eps == -1.0)
-    return fcsResult_create(FCS_MISSING_ELEMENT, fnc_name, "pepc: epsilon not set");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "pepc: epsilon not set");
   if ((res = fcs_pepc_get_theta(handle, &theta))) return res;
   if (theta == -1.0)
-    return fcsResult_create(FCS_MISSING_ELEMENT, fnc_name, "pepc: theta not set");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "pepc: theta not set");
 
   a = fcs_get_box_a(handle);
   b = fcs_get_box_b(handle);
@@ -70,7 +70,7 @@ extern FCSResult fcs_pepc_check(FCS handle)
     printf("%s\n", "WARNING: support of pepc for non-cubic simulation boxes currently is experimental.");
 
   if (!fcs_get_near_field_flag(handle))
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name, 
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, 
 			    "pepc performs near field computations by itself!");
 
   return NULL;
@@ -83,7 +83,12 @@ FCSResult fcs_pepc_init(FCS handle)
 {
   /*	char* fnc_name = "fcs_pepc_init"; */
   FCSResult result;
-  
+
+  handle->pepc_param = malloc(sizeof(*handle->pepc_param));
+  handle->pepc_param->theta = -1.0;
+  handle->pepc_param->epsilon = -1.0;
+  handle->pepc_param->num_walk_threads = 3;
+
   fcs_pepc_internal_t *pepc_internal;
   MPI_Comm comm  = fcs_get_communicator(handle);
   MPI_Fint fcomm = MPI_Comm_c2f(comm);
@@ -214,11 +219,13 @@ extern FCSResult fcs_pepc_destroy(FCS handle)
   MPI_Fint fcomm = MPI_Comm_c2f(comm);
   pepc_scafacos_finalize(&fcomm);
 
-  free(handle->method_context);
-
   if(NULL != ((fcs_pepc_internal_t*)fcs_get_method_context(handle))->work){
     free(((fcs_pepc_internal_t*)fcs_get_method_context(handle))->work);   
   }
+
+  free(handle->method_context);
+
+  free(handle->pepc_param);
 
   return NULL;
 }
@@ -236,15 +243,15 @@ extern FCSResult fcs_pepc_set_epsilon(FCS handle, fcs_float epsilon)
   char* fnc_name = "fcs_pepc_set_epsilon";
 
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name,
 			    "null pointer supplied as handle");
 
 
-  if (fcs_get_method(handle) != FCS_PEPC)
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name,
+  if (fcs_get_method(handle) != FCS_METHOD_PEPC)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name,
 			    "wrong method chosen, please choose a method (method is not \"pepc\")");
   if (epsilon < 0 )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
 			    "epsilon > 0. has been violated");
   else
     {
@@ -259,7 +266,7 @@ extern FCSResult fcs_pepc_get_epsilon(FCS handle, fcs_float* epsilon)
   char* fnc_name = "fcs_pepc_get_epsilon";
 
   if (!handle || !handle->pepc_param)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
 
   *epsilon = handle->pepc_param->epsilon;
   return NULL;
@@ -272,13 +279,13 @@ extern FCSResult fcs_pepc_set_theta(FCS handle, fcs_float theta)
   char* fnc_name = "fcs_pepc_set_theta";
 
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name,
 			    "null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_PEPC)
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name,
+  if (fcs_get_method(handle) != FCS_METHOD_PEPC)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name,
 			    "wrong method chosen, please choose a method (method is not \"pepc\")");
   if (theta < 0)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
 			    "0 <= theta has been violated");
   else
     {
@@ -293,7 +300,7 @@ extern FCSResult fcs_pepc_get_theta(FCS handle, fcs_float* theta)
   char* fnc_name = "fcs_pepc_get_theta";
 
   if (!handle || !handle->pepc_param)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
 
   *theta = handle->pepc_param->theta;
   return NULL;
@@ -305,7 +312,7 @@ extern FCSResult fcs_pepc_get_num_walk_threads(FCS handle, fcs_int *num_walk_thr
   char* fnc_name = "fcs_pepc_get_num_walk_threads";
 
   if (!handle || !handle->pepc_param)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
 
   *num_walk_threads = handle->pepc_param->num_walk_threads;
   return NULL;
@@ -317,13 +324,13 @@ extern FCSResult fcs_pepc_set_num_walk_threads(FCS handle, fcs_int num_walk_thre
   char* fnc_name = "fcs_pepc_set_num_walk_threads";
 
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name,
 			    "null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_PEPC)
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name,
+  if (fcs_get_method(handle) != FCS_METHOD_PEPC)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name,
 			    "wrong method chosen, please choose a method (method is not \"pepc\")");
   if (num_walk_threads < 1 )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
 			    "0 < num_walk_threads has been violated");
   else
     {
@@ -337,10 +344,10 @@ FCSResult fcs_pepc_set_load_balancing(FCS handle, fcs_int load_balancing)
   char* fnc_name = "fcs_pepc_set_load_balancing";
 
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name,
 			    "null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_PEPC)
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name,
+  if (fcs_get_method(handle) != FCS_METHOD_PEPC)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name,
 			    "wrong method chosen, please choose a method (method is not \"pepc\")");
 
   handle->pepc_param->load_balancing = load_balancing;
@@ -352,7 +359,7 @@ FCSResult fcs_pepc_get_load_balancing(FCS handle, fcs_int* load_balancing)
   char* fnc_name = "fcs_pepc_get_load_balancing";
 
   if (!handle || !handle->pepc_param)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
 
   *load_balancing = handle->pepc_param->load_balancing;
   return NULL;
@@ -363,10 +370,10 @@ FCSResult fcs_pepc_set_dipole_correction(FCS handle, fcs_int dipole_correction)
   char* fnc_name = "fcs_pepc_set_dipole_correction";
 
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name,
 			    "null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_PEPC)
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name,
+  if (fcs_get_method(handle) != FCS_METHOD_PEPC)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name,
 			    "wrong method chosen, please choose a method (method is not \"pepc\")");
 
   handle->pepc_param->dipole_correction = dipole_correction;
@@ -378,7 +385,7 @@ FCSResult fcs_pepc_get_dipole_correction(FCS handle, fcs_int* dipole_correction)
   char* fnc_name = "fcs_pepc_get_dipole_correction";
 
   if (!handle || !handle->pepc_param)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
 
   *dipole_correction = handle->pepc_param->dipole_correction;
   return NULL;
@@ -390,11 +397,11 @@ extern FCSResult fcs_pepc_set_npm(FCS handle, fcs_float npm)
   char* fnc_name = "fcs_pepc_set_npm";
 
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name,
 			    "null pointer supplied as handle");
 
-  if (fcs_get_method(handle) != FCS_PEPC)
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name,
+  if (fcs_get_method(handle) != FCS_METHOD_PEPC)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name,
 			    "wrong method chosen, please choose a method (method is not \"pepc\")");
 
   handle->pepc_param->npm = npm;
@@ -407,7 +414,7 @@ extern FCSResult fcs_pepc_get_npm(FCS handle, fcs_float* npm)
   char* fnc_name = "fcs_pepc_get_npm";
 
   if (!handle || !handle->pepc_param)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
 
   *npm = handle->pepc_param->npm;
   return NULL;
@@ -419,11 +426,11 @@ extern FCSResult fcs_pepc_set_debug_level(FCS handle, fcs_int level)
   char* fnc_name = "fcs_pepc_set_debuglevel";
 
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name,
 			    "null pointer supplied as handle");
 
-  if (fcs_get_method(handle) != FCS_PEPC)
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, fnc_name,
+  if (fcs_get_method(handle) != FCS_METHOD_PEPC)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name,
 			    "wrong method chosen, please choose a method (method is not \"pepc\")");
 
   handle->pepc_param->debug_level = level;
@@ -436,7 +443,7 @@ extern FCSResult fcs_pepc_get_debug_level(FCS handle, fcs_int* level)
   char* fnc_name = "FCSResultfcs_pepc_get_debuglevel";
 
   if (!handle || !handle->pepc_param)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "received NULL pointer");
 
   *level = handle->pepc_param->debug_level;
   return NULL;
@@ -454,11 +461,11 @@ extern FCSResult fcs_pepc_require_virial(FCS handle, fcs_int choice)
   char* fnc_name = "fcs_pepc_require_virial";
 
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_PEPC)
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"pepc\")");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
+  if (fcs_get_method(handle) != FCS_METHOD_PEPC)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"pepc\")");
   if ((choice < 0) || (choice > 1))
-    return fcsResult_create(FCS_WRONG_ARGUMENT,fnc_name,"require_virial must be set to 0 or 1");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,fnc_name,"require_virial must be set to 0 or 1");
   else
     {
       handle->pepc_param->requirevirial = choice;
@@ -473,11 +480,11 @@ extern FCSResult fcs_pepc_get_virial(FCS handle, fcs_float virial[9])
   int i;
 
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_PEPC)
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"pepc\")");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
+  if (fcs_get_method(handle) != FCS_METHOD_PEPC)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"pepc\")");
   if (handle->pepc_param->requirevirial != 1)
-    return fcsResult_create(FCS_LOGICAL_ERROR,fnc_name,"calculation of virial was not activated. Please call require_virial(fcs, 1) before calling run()");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,fnc_name,"calculation of virial was not activated. Please call require_virial(fcs, 1) before calling run()");
   else
     {
       for (i=0;i<9;i++)

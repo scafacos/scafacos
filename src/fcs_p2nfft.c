@@ -108,7 +108,7 @@ extern FCSResult fcs_p2nfft_init(
 }
 
 static fcs_int periodic_dims(
-    fcs_int *periodicity
+    const fcs_int *periodicity
     )
 {
   fcs_int count = 0;
@@ -120,7 +120,7 @@ static fcs_int periodic_dims(
 }
 
 static fcs_int nonperiodic_box_lengths_are_equal(
-    fcs_float a, fcs_float b, fcs_float c, fcs_int *periodicity
+    fcs_float a, fcs_float b, fcs_float c, const fcs_int *periodicity
     )
 {
   if(!periodicity[0] && !periodicity[1])
@@ -154,18 +154,18 @@ extern FCSResult fcs_p2nfft_tune(
     return result;
 
   /* Check for periodicity */
-  fcs_int *periodicity = fcs_get_periodicity(handle);
+  const fcs_int *periodicity = fcs_get_periodicity(handle);
 
   /* Check for correct box parameters */
-  fcs_float *a = fcs_get_box_a(handle);
-  fcs_float *b = fcs_get_box_b(handle);
-  fcs_float *c = fcs_get_box_c(handle);
+  const fcs_float *a = fcs_get_box_a(handle);
+  const fcs_float *b = fcs_get_box_b(handle);
+  const fcs_float *c = fcs_get_box_c(handle);
   if (!fcs_uses_principal_axes(a, b, c))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
         "The p2nfft method needs a rectangular box with box vectors parallel to the principal axes.");
   if(periodic_dims(periodicity) == 1)
     if(!nonperiodic_box_lengths_are_equal(a[0], b[1], c[2], periodicity))
-      return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
           "The p2nfft method currently depends on equal nonperiodic box lengths with 1d-periodic boundary conditions.");
    
   /* Get box size */ 
@@ -231,10 +231,10 @@ static FCSResult ifcs_p2nfft_check(
     )
 {
   if (handle == NULL) 
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "Supplied handle must not be a null pointer.");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "Supplied handle must not be a null pointer.");
 
-  if (fcs_get_method(handle) != FCS_P2NFFT)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. Please choose \"p2nfft\".");
+  if (fcs_get_method(handle) != FCS_METHOD_P2NFFT)
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. Please choose \"p2nfft\".");
 
   return NULL;
 }

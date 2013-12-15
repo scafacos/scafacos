@@ -174,6 +174,7 @@ program test
             write(*,'(a)') "(currently only with similar format as files from test_env/data are supported)"
         end if
         call MPI_FINALIZE(ierr)
+        return
     endif
 
     call GET_COMMAND_ARGUMENT(1,method)
@@ -259,121 +260,115 @@ program test
 
     if (my_rank == 0) write(*,*) "----------------------------call init---------------------------------"
     ret = fcs_init(handle, trim(adjustl(method)) // c_null_char, communicator)
-    if (my_rank == 0) write(*,*) "fcs_init returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_init returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_init returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
-    if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
-    if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
+    if (my_rank == 0) write(*,*) "fcs_init returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "fcs_init returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "fcs_init returns: ", trim(adjustl(fcs_result_get_function(ret)))
+    call fcs_result_destroy(ret)
     
     call MPI_BARRIER(communicator,ierr)
 
     if (my_rank == 0) write(*,*) "----------------------------call common setter---------------------------------"
-    ret = fcs_parser(handle, trim(adjustl(common_parameters)) // c_null_char, FCS_FALSE)
+    ret = fcs_set_parameters(handle, trim(adjustl(common_parameters)) // c_null_char, FCS_FALSE)
     !ret =  fcs_set_common(handle, short_range_flag, box_a, box_b, box_c, offset, periodicity, total_particles)
-    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
-    if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
-    if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcs_result_get_function(ret)))
+    call fcs_result_destroy(ret)
     ret = fcs_set_total_particles(handle, total_particles)
-    if (my_rank == 0) write(*,*) "fcs_set_common (total particles) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_set_common (total particles) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_set_common (total particles) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
-    if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
-    if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
-    if (fcs_get_method(handle) == FCS_MMM1D) then
+    if (my_rank == 0) write(*,*) "fcs_set_common (total particles) returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "fcs_set_common (total particles) returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "fcs_set_common (total particles) returns: ", trim(adjustl(fcs_result_get_function(ret)))
+    call fcs_result_destroy(ret)
+    if (fcs_get_method(handle) == FCS_METHOD_MMM1D) then
       periodicity_i(1) = .false.
       periodicity_i(2) = .false.
       periodicity_i(3) = .true.
       ret = fcs_set_periodicity(handle, periodicity_i)
-      if (my_rank == 0) write(*,*) "fcs_set_common (mmm1d) returns: ", fcsResult_getReturnCode(ret)
-      if (my_rank == 0) write(*,*) "fcs_set_common (mmm1d) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-      if (my_rank == 0) write(*,*) "fcs_set_common (mmm1d) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
-      if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
-    if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
-    else if (fcs_get_method(handle) == FCS_MMM2D) then
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm1d) returns: ", fcs_result_get_return_code(ret)
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm1d) returns: ", trim(adjustl(fcs_result_get_message(ret)))
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm1d) returns: ", trim(adjustl(fcs_result_get_function(ret)))
+      call fcs_result_destroy(ret)
+    else if (fcs_get_method(handle) == FCS_METHOD_MMM2D) then
       periodicity_i(1) = .true.
       periodicity_i(2) = .true.
       periodicity_i(3) = .false.
       ret = fcs_set_periodicity(handle, periodicity_i)
-      if (my_rank == 0) write(*,*) "fcs_set_common (mmm2d) returns: ", fcsResult_getReturnCode(ret)
-      if (my_rank == 0) write(*,*) "fcs_set_common (mmm2d) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-      if (my_rank == 0) write(*,*) "fcs_set_common (mmm2d) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))    
-      if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
-    if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm2d) returns: ", fcs_result_get_return_code(ret)
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm2d) returns: ", trim(adjustl(fcs_result_get_message(ret)))
+      if (my_rank == 0) write(*,*) "fcs_set_common (mmm2d) returns: ", trim(adjustl(fcs_result_get_function(ret)))    
+      call fcs_result_destroy(ret)
   end if
     
 
     call MPI_BARRIER(communicator,ierr)
 
     if (my_rank == 0) write(*,*) "-----------------------call print content (standard) ----------------------"
-    if (my_rank == 0) call fcs_printHandle(handle)
+    if (my_rank == 0) call fcs_print_parameters(handle)
     if (my_rank == 0) write(*,*) "-----------------------call method-specific setter-----------------------------"
     select case (fcs_get_method(handle))
     
 #ifdef FCS_ENABLE_DIRECT
-      case (FCS_DIRECT)
+      case (FCS_METHOD_DIRECT)
         !ret = fcs_direct_setup(handle, direct_cutoff)
-        ret = fcs_parser(handle, trim(adjustl(direct_parameters)) // c_null_char, FCS_FALSE)
+        ret = fcs_set_parameters(handle, trim(adjustl(direct_parameters)) // c_null_char, FCS_FALSE)
 #endif
 #ifdef FCS_ENABLE_EWALD
-      case (FCS_EWALD)
-        ret = fcs_parser(handle, trim(adjustl(ewald_parameters)) // c_null_char, FCS_FALSE)
+      case (FCS_METHOD_EWALD)
+        ret = fcs_set_parameters(handle, trim(adjustl(ewald_parameters)) // c_null_char, FCS_FALSE)
 #endif
 #ifdef FCS_ENABLE_FMM
-      case (FCS_FMM)
+      case (FCS_METHOD_FMM)
         !ret = fcs_fmm_setup(handle, fmm_absrel, fmm_deltaE, fmm_dipole_correction)
-        ret = fcs_parser(handle, trim(adjustl(fmm_parameters)) // c_null_char, FCS_FALSE)
+        ret = fcs_set_parameters(handle, trim(adjustl(fmm_parameters)) // c_null_char, FCS_FALSE)
         ret = fcs_fmm_set_internal_tuning(handle,fmm_internal_tuning)
 #endif
 #ifdef FCS_ENABLE_MEMD
-      case (FCS_MEMD)
+      case (FCS_METHOD_MEMD)
 #endif
 #ifdef FCS_ENABLE_MMM1D
-      case (FCS_MMM1D)
-        ret = fcs_parser(handle, trim(adjustl(mmm1d_parameters)) // c_null_char, FCS_FALSE)
+      case (FCS_METHOD_MMM1D)
+        ret = fcs_set_parameters(handle, trim(adjustl(mmm1d_parameters)) // c_null_char, FCS_FALSE)
 #endif
 #ifdef FCS_ENABLE_MMM2D
-      case (FCS_MMM2D)
+      case (FCS_METHOD_MMM2D)
         write(*,*) 'FINBLA!!'
-        ret = fcs_parser(handle, trim(adjustl(mmm2d_parameters)) // c_null_char, FCS_FALSE)
+        ret = fcs_set_parameters(handle, trim(adjustl(mmm2d_parameters)) // c_null_char, FCS_FALSE)
 #endif
 #ifdef FCS_ENABLE_PEPC
-      case (FCS_PEPC)
+      case (FCS_METHOD_PEPC)
         !ret = fcs_pepc_setup(handle, pepc_epsilon, pepc_theta, pepc_debuglevel)
-        ret = fcs_parser(handle, trim(adjustl(pepc_parameters)) // c_null_char, FCS_FALSE)
+        ret = fcs_set_parameters(handle, trim(adjustl(pepc_parameters)) // c_null_char, FCS_FALSE)
 #endif
 #ifdef FCS_ENABLE_P2NFFT
-      case (FCS_P2NFFT)
+      case (FCS_METHOD_P2NFFT)
         !ret = fcs_p2nfft_set_required_accuracy(handle, p2nfft_accuracy)
-        ret = fcs_parser(handle, trim(adjustl(p2nfft_parameters)) // c_null_char, FCS_FALSE)
+        ret = fcs_set_parameters(handle, trim(adjustl(p2nfft_parameters)) // c_null_char, FCS_FALSE)
 #endif
 #ifdef FCS_ENABLE_PP3MG
-      case (FCS_PP3MG)
+      case (FCS_METHOD_PP3MG)
 #endif
 #ifdef FCS_ENABLE_P3M
-      case (FCS_P3M)
+      case (FCS_METHOD_P3M)
         !ret = fcs_p3m_set_required_accuracy(handle, p3m_accuracy)
-        ret = fcs_parser(handle, trim(adjustl(p3m_parameters)) // c_null_char, FCS_FALSE)
+        ret = fcs_set_parameters(handle, trim(adjustl(p3m_parameters)) // c_null_char, FCS_FALSE)
 #endif
 #ifdef FCS_ENABLE_VMG
-      case (FCS_VMG)
+      case (FCS_METHOD_VMG)
         !ret = fcs_vmg_setup(handle, vmg_max_level, vmg_max_iteration, vmg_smooth_steps, vmg_cycle_type, vmg_precision, vmg_near_cells)
-        ret = fcs_parser(handle, trim(adjustl(vmg_parameters)) // c_null_char, FCS_FALSE)
+        ret = fcs_set_parameters(handle, trim(adjustl(vmg_parameters)) // c_null_char, FCS_FALSE)
 #endif
-      case (FCS_NO_METHOD_CHOSEN)
+      case (FCS_METHOD_NONE)
         if (my_rank == 0) write(*,*) "unknown / no method chosen, aborting program run ..."
         call MPI_FINALIZE(ierr)
         stop
     end select
-    if (my_rank == 0) write(*,*) "method specific setter returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "method specific setter returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "method specific setter returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
-    if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
-    if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
+    if (my_rank == 0) write(*,*) "method specific setter returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "method specific setter returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "method specific setter returns: ", trim(adjustl(fcs_result_get_function(ret)))
+    call fcs_result_destroy(ret)
 
     if (my_rank == 0) write(*,*) "----------------------------call print content---------------------------------"
-    if (my_rank == 0) call fcs_printHandle(handle)
+    if (my_rank == 0) call fcs_print_parameters(handle)
 
     call MPI_Barrier(communicator,ierr)
 
@@ -381,21 +376,19 @@ program test
 !     call fcs_tune(handle, local_particle_count, local_max_particles, local_particles, local_charges, return_value)
 !     if (my_rank == 0) write(*,*) "fcs_tune returns: ", return_value
     ret = fcs_tune(handle, local_particle_count, local_max_particles, local_particles, local_charges)
-    if (my_rank == 0) write(*,*) "fcs_tune returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_tune returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_tune returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
-    if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
-    if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
+    if (my_rank == 0) write(*,*) "fcs_tune returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "fcs_tune returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "fcs_tune returns: ", trim(adjustl(fcs_result_get_function(ret)))
+    call fcs_result_destroy(ret)
 
     call MPI_BARRIER(communicator,ierr)
 
-    if (my_rank == 0) write(*,*) "----------------------------call require virial---------------------------------"
-    ret = fcs_require_virial(handle,.true.)
-    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
-    if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
-    if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
+    if (my_rank == 0) write(*,*) "----------------------------call set compute virial---------------------------------"
+    ret = fcs_set_compute_virial(handle,.true.)
+    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", trim(adjustl(fcs_result_get_function(ret)))
+    call fcs_result_destroy(ret)
 
     !output of starting configuration
     do j = 0,comm_size-1
@@ -435,14 +428,12 @@ program test
         ret = fcs_run(handle, local_particle_count, local_max_particles, local_particles, local_charges, fields, &
                       potentials)
         if (my_rank == 0 .and. modulo(i,RUN_STEP_INTERVAL) == 0) write(*,*) "fcs_run returns: ",&
-        fcsResult_getReturnCode(ret)
+        fcs_result_get_return_code(ret)
         if (my_rank == 0 .and. modulo(i,RUN_STEP_INTERVAL) == 0) write(*,*) "fcs_run returns: ",&
-        trim(adjustl(fcsResult_getErrorMessage(ret)))
+        trim(adjustl(fcs_result_get_message(ret)))
         if (my_rank == 0 .and. modulo(i,RUN_STEP_INTERVAL) == 0) write(*,*) "fcs_run returns: ",&
-        trim(adjustl(fcsResult_getErrorSource(ret)))
-        if (my_rank == 0 .and. modulo(i,RUN_STEP_INTERVAL) == 0) result_destroy = fcsResult_destroy(ret)
-        if (my_rank == 0 .and. modulo(i,RUN_STEP_INTERVAL) == 0 .and. result_destroy == -1) &
-            write (*,*) "fcsResult_destroy failed!"
+        trim(adjustl(fcs_result_get_function(ret)))
+        call fcs_result_destroy(ret)
     
         !LEAP-FROG step
         do j = 1,local_particle_count
@@ -525,11 +516,10 @@ program test
         if (my_rank == 0 .and. modulo(i,RUN_STEP_INTERVAL) == 0) then
           write(*,*) "----------------------------call get virial---------------------------------"
           ret = fcs_get_virial(handle,virial)
-          write(*,*) "fcs_get_virial returns: ", fcsResult_getReturnCode(ret)
-          write(*,*) "fcs_get_virial returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-          write(*,*) "fcs_get_virial returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
-          result_destroy = fcsResult_destroy(ret)
-          if (result_destroy == -1) write(*,*) "fcsResult_destory failed!"
+          write(*,*) "fcs_get_virial returns: ", fcs_result_get_return_code(ret)
+          write(*,*) "fcs_get_virial returns: ", trim(adjustl(fcs_result_get_message(ret)))
+          write(*,*) "fcs_get_virial returns: ", trim(adjustl(fcs_result_get_function(ret)))
+          call fcs_result_destroy(ret)
         
           write(*,'(a,i7)') "system virial in step ", i
           do j = 0,2
@@ -548,11 +538,10 @@ program test
 
     if (my_rank == 0) write(*,*) "----------------------------call destroy---------------------------------"
     ret = fcs_destroy(handle)
-    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
-    if (my_rank == 0) result_destroy = fcsResult_destroy(ret)
-    if (my_rank == 0 .and. result_destroy == -1) write(*,*) "fcsResult_destroy failed!"
+    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", trim(adjustl(fcs_result_get_function(ret)))
+    call fcs_result_destroy(ret)
     
 
     deallocate(local_particles)

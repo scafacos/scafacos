@@ -32,115 +32,135 @@
 
 
 /*
- * creates an FCSResult object
+ * @brief data structure that is used for storing the return state of the
+ * ScaFaCoS library functions
  */
-FCSResult fcsResult_create(fcs_int code, const char *origin, const char *message, ...) {
-
-#define FCS_RESULT_MAX_MESSAGE_LENGTH  512
-  char printed_message[FCS_RESULT_MAX_MESSAGE_LENGTH];
-  va_list argp;
-  fcs_int origin_size, message_size;
-
-  va_start(argp, message);
-  vsnprintf(printed_message, FCS_RESULT_MAX_MESSAGE_LENGTH, message, argp);
-  va_end(argp);
-
-  origin_size = strlen(origin) + 1;
-  message_size = strlen(printed_message) + 1;
-
-	FCSResult err = (FCSResult) malloc(sizeof(FCSResult_t) + origin_size + message_size);
-	if(err == NULL)
-		return err;
-
-	err->code = code;
-	err->origin = ((char *) err) + sizeof(FCSResult_t);
-	err->message = err->origin + origin_size;
-
-  strcpy(err->origin, origin);
-  strcpy(err->message, printed_message);
-
-	return err;
-}
+typedef struct FCSResult_t {
+  fcs_int error_code;
+  char function[FCS_RESULT_MAX_FUNCTION_LENGTH];
+  char message[FCS_RESULT_MAX_MESSAGE_LENGTH];
+} FCSResult_t;
 
 
-/*
- * destroys an FCSResult object, should be used instead of free
+const static FCSResult_t fcs_result_create_error = { FCS_ERROR_RESULT_CREATE, "fcs_result_create", "failed to create an FCSResult object" };
+
+
+/**
+ * create an FCSResult-object for storing the return state
  */
-fcs_int fcsResult_destroy(FCSResult err) {
-
-	if(err == NULL) {
-		return 0;
-	}
-
-	free(err);
-
-	return 0;
-}
-
-
-fcs_int fcsResult_getReturnCode(FCSResult err) {
-	if (err == NULL) return -1;
-	return err->code;
-}
-
-const char *fcsResult_getErrorMessage(FCSResult err) {
-	if(err == NULL)
-		return NULL;
-	return err->message;
-}
-
-const char *fcsResult_getErrorSource(FCSResult err) {
-	if(err == NULL)
-		return NULL;
-	return err->origin;
-}
-
-void fcsResult_printResult(FCSResult err)
+FCSResult fcs_result_create(fcs_int code, const char *function, const char *message, ...)
 {
-	if(err == NULL)
-	{
-		printf("OK\n");
-		return;
-	}
+  FCSResult result;
 
-	switch (fcsResult_getReturnCode(err))
-	{
-		case FCS_SUCCESS:
-			printf("Return code: FCS_SUCCESS\n");
-			break;
-		case FCS_ALLOC_FAILED:
-			printf("Return code: FCS_ALLOC_FAILED\n");
-			break;
-		case FCS_NULL_ARGUMENT:
-			printf("Return code: FCS_NULL_ARGUMENT\n");
-			break;
-		case FCS_WRONG_ARGUMENT:
-			printf("Return code: FCS_WRONG_ARGUMENT\n");
-			break;
-		case FCS_MISSING_ELEMENT:
-			printf("Return code: FCS_MISSING_ELEMENT\n");
-			break;
-		case FCS_LOGICAL_ERROR:
-			printf("Return code: FCS_LOGICAL_ERROR\n");
-			break;
-		case FCS_INCOMPATIBLE_METHOD:
-			printf("Return code: FCS_INCOMPATIBLE_METHOD\n");
-			break;
-		case FCS_MPI_ERROR:
-			printf("Return code: FCS_MPI_ERROR\n");
-			break;
-		default:
-			printf("Return code: %" FCS_LMOD_INT "d\n", fcsResult_getReturnCode(err));
-			break;
-	}
 
-	if (fcsResult_getErrorSource(err) == NULL)
-		printf("Result message: no error source\n");
-	else
-		printf("Result source: %s\n", fcsResult_getErrorSource(err));
+  result = malloc(sizeof(FCSResult_t));
 
-	if (fcsResult_getErrorMessage(err) == NULL)
-		printf("Result message: no error message\n");
-	else
-		printf("Result message: %s\n", fcsResult_getErrorMessage(err));
+  if (result == NULL) return (FCSResult) &fcs_result_create_error;
+
+  result->error_code = code;
+
+  if (function)
+    strncpy(result->function, function, FCS_RESULT_MAX_FUNCTION_LENGTH);
+  else
+    result->function[0] = '\0';
+
+  if (message)
+  {
+    va_list argp;
+    va_start(argp, message);
+    vsnprintf(result->message, FCS_RESULT_MAX_MESSAGE_LENGTH, message, argp);
+    va_end(argp);
+
+  } else result->message[0] = '\0';
+
+  return result;
+}
+
+
+/**
+ * destroy an FCSResult-object
+ */
+void fcs_result_destroy(FCSResult result)
+{
+  if (result == NULL) return;
+
+  if (result != &fcs_result_create_error) free(result);
+}
+
+
+/**
+ * return the return code associated with an return state
+ */
+fcs_int fcs_result_get_return_code(FCSResult result)
+{
+  if (result == FCS_RESULT_SUCCESS) return FCS_SUCCESS;
+
+  return result->error_code;
+}
+
+
+/**
+ * return the function name associated with an return state
+ */
+const char *fcs_result_get_function(FCSResult result)
+{
+  if (result == FCS_RESULT_SUCCESS) return NULL;
+
+  return result->function;
+}
+
+
+/**
+ * return the description message associated with an return state
+ */
+const char *fcs_result_get_message(FCSResult result)
+{
+  if (result == FCS_RESULT_SUCCESS) return NULL;
+
+  return result->message;
+}
+
+
+/**
+ * print the return state to stdout
+ */
+void fcs_result_print_result(FCSResult result)
+{
+  switch (fcs_result_get_return_code(result))
+  {
+    case FCS_SUCCESS:
+      printf("return code: FCS_SUCCESS\n");
+      break;
+    case FCS_ERROR_ALLOC_FAILED:
+      printf("return code: FCS_ALLOC_FAILED\n");
+      break;
+    case FCS_ERROR_NULL_ARGUMENT:
+      printf("return code: FCS_ERROR_NULL_ARGUMENT\n");
+      break;
+    case FCS_ERROR_WRONG_ARGUMENT:
+      printf("return code: FCS_ERROR_WRONG_ARGUMENT\n");
+      break;
+    case FCS_ERROR_MISSING_ELEMENT:
+      printf("return code: FCS_ERROR_MISSING_ELEMENT\n");
+      break;
+    case FCS_ERROR_INCOMPATIBLE_METHOD:
+      printf("return code: FCS_ERROR_INCOMPATIBLE_METHOD\n");
+      break;
+    case FCS_ERROR_RESULT_CREATE:
+      printf("return code: FCS_ERROR_RESULT_CREATE\n");
+      break;
+    default:
+      printf("return code: %" FCS_LMOD_INT "d\n", fcs_result_get_return_code(result));
+      break;
+  }
+
+  if (result == FCS_RESULT_SUCCESS || fcs_result_get_function(result)[0] == '\0')
+    printf("function: not available\n");
+  else
+    printf("function: %s\n", fcs_result_get_function(result));
+
+  if (result == FCS_RESULT_SUCCESS || fcs_result_get_message(result)[0] == '\0')
+    printf("message: not available\n");
+  else
+    printf("message: %s\n", fcs_result_get_message(result));
 }

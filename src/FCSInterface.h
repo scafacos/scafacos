@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011-2012 Rene Halver
+  Copyright (C) 2011, 2012, 2013 Rene Halver, Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -17,6 +17,12 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 
+
+/**
+ * @file FCSInterface.h
+ * @brief supplying the C-interface routine for the ScaFaCoS library
+ * @author Rene Halver, Olaf Lenz
+ */
 
 
 #ifndef FCS_INTERFACE_INCLUDED
@@ -65,43 +71,37 @@
 #endif
 
 
-/**
- * @file FCSInterface.h
- * @brief supplying the C-interface routine for the ScaFaCoS library
- * @author Rene Halver, Olaf Lenz
- */
+#define FCS_MAX_METHOD_NAME_LENGTH  32
 
-/* definition of FCS_t structure */
-typedef struct FCS_t
+
+/*
+ * @brief data structure that is used for storing the parameters of an FCS solver
+ */
+typedef struct _FCS_t
 {
   /* list of obligatory parameters for all runs (set in fcs_init) */
 
-  /* the chosen method */
+  /* numerical identifier of the solver method */
   fcs_int method;
-  /* communicator to be used in methods */
+  /* name of the solver method */
+  char method_name[FCS_MAX_METHOD_NAME_LENGTH];
+  /* MPI communicator to be used for the parallel execution */
   MPI_Comm communicator;
-  /* dimension of the system */
-  fcs_int dimension;
-  /* flag marking near field calculation
+  /* dimensions of the system */
+  fcs_int dimensions;
+  /* whether near-field computations should be performed
      0 = done by calling routine
      1 = done by library routine*/
   fcs_int near_field_flag;
-  /* the three vectors spanning the system box */
+  /* the three base vectors of the system box */
   fcs_float box_a[3];
   fcs_float box_b[3];
   fcs_float box_c[3];
-  /* offset of each particle [for boxes from -L/2:L/2] */
-  fcs_float offset[3];
-  /* total number of particles */
+  /* origin vector of the system box */
+  fcs_float box_origin[3];
+  /* total number of particles in the system */
   fcs_int total_particles;
-  /* total number of charges */
-  fcs_int total_charges;
-  /* periodicity, fcs_int[3] to set in which direction the */
-  /* system has to be periodic, as a result the sum over   */
-  /* the array gives the dimension of periodicity */
-  /* 0 = system is not periodic in given direction */
-  /* 1 = system is periodic in given direction */
-  /* [0] -> x, [1] -> y, [2] -> z */
+  /* periodicity of the system in each dimension (value 0: open, value 1: periodic) */
   fcs_int periodicity[3];
   
   /* structures containing the method-specific parameters */
@@ -146,23 +146,45 @@ typedef struct FCS_t
 
 } FCS_t;
 
+
 /**
- * @brief getter function for values changed
- * @param handle FCS-object to be changed
- * @return fcs_int indicating if one of the parameters in
- * handle has been changed since the last call to fcs_tune
+ * @brief function to set the method context information
+ * @param handle FCS-object representing an FCS solver
+ * @param pointer to the method context informations
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_set_method_context(FCS handle, void *method_context);
+
+/**
+ * @brief function to return the method context information
+ * @param handle FCS handle representing an FCS solver object
+ * @return pointer to the method context informations
+ */
+void *fcs_get_method_context(FCS handle);
+
+/**
+ * @brief function to set whether parameter values of the FCS solver have changed
+ * @param handle FCS-object representing an FCS solver
+ * @param values_changed whether parameter values of the FCS solver have changed
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_set_values_changed(FCS handle, fcs_int values_changed);
+
+/**
+ * @brief function to return whether parameter values of the FCS solver have changed
+ * @param handle FCS-object representing an FCS solver
+ * @return whether parameter values of the FCS solver have changed
  */
 fcs_int fcs_get_values_changed(FCS handle);
 
 /**
- * @brief setter function for values changed
- * @param handle FCS-object to be changed
- * @param changed indicating if one of the parameters in 
- * handle has been changed since the last call to fcs_tune
+ * @brief Fortran wrapper function ot initialize an FCS solver method
+ * @param handle FCS-object representing an FCS solver
+ * @param method string for selecting the solver method
+ * @param communicator MPI communicator to be used for parallel execution
  * @return FCSResult-object containing the return state
- * or NULL if successful
  */
-FCSResult fcs_set_values_changed(FCS handle, fcs_int changed);
+FCSResult fcs_init_f(FCS *handle, const char *method_name, MPI_Fint communicator);
 
 
 #endif

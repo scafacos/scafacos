@@ -30,7 +30,7 @@
 /**
  * @brief initialization routine
  */
-FCSResult fcs_mmm1d_init(FCS handle, MPI_Comm communicator);
+FCSResult fcs_mmm1d_init(FCS handle);
 
 /**
  * @brief tuning method

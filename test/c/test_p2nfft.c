@@ -29,7 +29,7 @@
 static void assert_fcs(FCSResult r)
 {
   if (r) {
-    fcsResult_printResult(r);
+    fcs_result_print_result(r);
     MPI_Finalize();
     exit(-1);
   }
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
   assert_fcs(result);
 
   /* activate virial computation */
-  result = fcs_require_virial(handle, 1);
+  result = fcs_set_compute_virial(handle, 1);
   assert_fcs(result);
 
   /* Far field computation */

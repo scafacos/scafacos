@@ -31,7 +31,7 @@
 static FCSResult fcs_mmm2d_check(FCS handle, const char* fnc_name);
 
 /* initialization function for basic mmm2d parameters */
-FCSResult fcs_mmm2d_init(FCS handle, MPI_Comm communicator)
+FCSResult fcs_mmm2d_init(FCS handle)
 {
   char* fnc_name = "fcs_mmm2d_init";
   FCSResult result;
@@ -41,7 +41,7 @@ FCSResult fcs_mmm2d_init(FCS handle, MPI_Comm communicator)
   
   ///* @TODO: check here for unidimensional mpi grid (1,1,n)*/
   
-  mmm2d_init(&handle->method_context, communicator);
+  mmm2d_init(&handle->method_context, handle->communicator);
   return NULL;
 }
 
@@ -57,25 +57,25 @@ FCSResult fcs_mmm2d_tune(FCS handle,
   if (result != NULL) return result;
   
   /* Check box periodicity */
-  fcs_int *periodicity = fcs_get_periodicity(handle);
+  const fcs_int *periodicity = fcs_get_periodicity(handle);
   if (periodicity[0] != 1 ||
       periodicity[1] != 1 ||
       periodicity[2] != 0)
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "mmm2d requires x and y-axis periodic boundaries.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "mmm2d requires x and y-axis periodic boundaries.");
   
   /* Check box shape */
   ///@TODO: check for rectangular box geometry (any fcs adequate method?)
-  fcs_float *a = fcs_get_box_a(handle);
-  fcs_float *b = fcs_get_box_b(handle);
-  fcs_float *c = fcs_get_box_c(handle);
+  const fcs_float *a = fcs_get_box_a(handle);
+  const fcs_float *b = fcs_get_box_b(handle);
+  const fcs_float *c = fcs_get_box_c(handle);
   
   /*
   if (!fcs_is_orthogonal(a, b, c))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, 
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, 
           "p3m requires the box to be orthorhombic.");
 
   if (!fcs_uses_principal_axes(a, b, c))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, 
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, 
           "p3m requires the box vectors to be parallel to the principal axes.");
   */
   
@@ -117,10 +117,10 @@ FCSResult fcs_mmm2d_destroy(FCS handle)
 /* method to check if mmm2d parameters are entered into FCS */
 FCSResult fcs_mmm2d_check(FCS handle, const char* fnc_name) {
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
 
-  if (fcs_get_method(handle) != FCS_MMM2D)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"mmm2d\".");
+  if (fcs_get_method(handle) != FCS_METHOD_MMM2D)
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"mmm2d\".");
   
   return NULL;
 }
@@ -196,7 +196,7 @@ FCSResult fcs_mmm2d_set_layers_per_node(FCS handle, fcs_int n_layers) {
   MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
   if (n_layers > comm_size) {
     printf("The number of layers, %d, can not be higher than the number of available processes, %d\n", n_layers, comm_size);
-    return fcsResult_create(FCS_WRONG_ARGUMENT,fnc_name, "The number of layers can not be higher than the number of available processes");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,fnc_name, "The number of layers can not be higher than the number of available processes");
   }
   */
   mmm2d_set_layers_per_node(handle->method_context, n_layers);
@@ -252,7 +252,7 @@ FCSResult fcs_mmm2d_get_virial(FCS handle, fcs_float *virial) {
   FCSResult result = fcs_mmm2d_check(handle, fnc_name);
   if (result != NULL) return result;
   if (virial == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"null pointer supplied for virial");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for virial");
 
   fcs_int i;
   for (i=0; i < 9; i++)

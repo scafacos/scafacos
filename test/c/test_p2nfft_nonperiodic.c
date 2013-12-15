@@ -32,7 +32,7 @@
 static void assert_fcs(FCSResult r)
 {
   if (r) {
-    fcsResult_printResult(r);
+    fcs_result_print_result(r);
     MPI_Finalize();
     exit(-1);
   }
@@ -98,7 +98,7 @@ for(int t=0; t<6; t++)
   fcs_result = fcs_tune(fcs_handle, num_particles, max_num_particles, positions, charges);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_require_virial(fcs_handle, 1);
+  fcs_result = fcs_set_compute_virial(fcs_handle, 1);
   assert_fcs(fcs_result);
 
 /* Debugging */
@@ -146,7 +146,7 @@ for(int t=0; t<6; t++)
   fcs_result = fcs_tune(fcs_handle, num_particles, max_num_particles, positions, charges);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_require_virial(fcs_handle, 1);
+  fcs_result = fcs_set_compute_virial(fcs_handle, 1);
   assert_fcs(fcs_result);
 
 /* Debugging */

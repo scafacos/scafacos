@@ -36,22 +36,22 @@
 
 static FCSResult fcs_memd_check(FCS handle, const char* fnc_name) {
     if (handle == NULL)
-        return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+        return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
     
-    if (fcs_get_method(handle) != FCS_MEMD)
-        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"memd\".");
+    if (fcs_get_method(handle) != FCS_METHOD_MEMD)
+        return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"memd\".");
     
     return NULL;
 }
 
-extern FCSResult fcs_memd_init(FCS handle, MPI_Comm communicator)
+extern FCSResult fcs_memd_init(FCS handle)
 {
     char* fnc_name = "fcs_memd_init";
     FCSResult result;
     result = fcs_memd_check(handle, fnc_name);
     if (result != NULL) return result;
 
-    ifcs_memd_init(&handle->method_context, communicator);
+    ifcs_memd_init(&handle->method_context, handle->communicator);
     
     return NULL;
 }
@@ -63,21 +63,21 @@ extern FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int loca
     FCSResult result;
     
     /* Handle periodicity */
-    fcs_int *periodicity = fcs_get_periodicity(handle);
+    const fcs_int *periodicity = fcs_get_periodicity(handle);
     if (! (periodicity[0] && periodicity[1] && periodicity[2]))
-        return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+        return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
                                 "memd requires periodic boundary conditions.");
     
     /* Handle box size */
-    fcs_float *a = fcs_get_box_a(handle);
-    fcs_float *b = fcs_get_box_b(handle);
-    fcs_float *c = fcs_get_box_c(handle);
+    const fcs_float *a = fcs_get_box_a(handle);
+    const fcs_float *b = fcs_get_box_b(handle);
+    const fcs_float *c = fcs_get_box_c(handle);
     if (!fcs_is_orthogonal(a, b, c))
-        return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+        return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
                                 "memd requires the box to be orthorhombic.");
     
     if (!fcs_uses_principal_axes(a, b, c))
-        return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+        return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
                                 "memd requires the box vectors to be parallel to the principal axes.");
     
     fcs_memd_set_box_size(handle->method_context, a[0], b[1], c[2]);
@@ -102,7 +102,12 @@ extern FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_int local
 
 extern FCSResult fcs_memd_destroy(FCS handle)
 {
-    return fcs_memd_exit(handle->method_context);
+  FCSResult result = fcs_memd_exit(handle->method_context);
+
+  free(handle->memd_param);
+  handle->memd_param = NULL;
+
+  return result;
 }
 
 FCSResult fcs_memd_require_virial(FCS handle, fcs_int flagvalue)

@@ -54,6 +54,18 @@ FCSResult fcs_pp3mg_init(FCS handle)
 
   DEBUG_MOP(printf("fcs_pp3mg_init\n"));
 
+  handle->pp3mg_param = malloc(sizeof(*handle->pp3mg_param));
+  handle->pp3mg_param->m = -1;
+  handle->pp3mg_param->n = -1;
+  handle->pp3mg_param->o = -1;
+  handle->pp3mg_param->ghosts = -1;
+  handle->pp3mg_param->max_particles = -1;
+  handle->pp3mg_param->degree = -1;
+  handle->pp3mg_param->maxiter = -1;
+  handle->pp3mg_param->tol = -1.0;
+  handle->pp3mg_param->distribution = 0;
+  handle->pp3mg_param->discretization = 0;
+
   ctx = malloc(sizeof(fcs_pp3mg_context_t));
   ctx->data = malloc(sizeof(pp3mg_data));
   ctx->parameters = malloc(sizeof(pp3mg_parameters));
@@ -91,6 +103,8 @@ FCSResult fcs_pp3mg_destroy(FCS handle)
 
   fcs_set_method_context(handle, NULL);
 
+  free(handle->pp3mg_param);
+
   DEBUG_MOP(printf("fcs_pp3mg_destroy: done\n"));
 
   return NULL;
@@ -101,7 +115,7 @@ FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_
 {
   MPI_Comm comm;
   fcs_pp3mg_context_t *ctx;
-  fcs_float *box_a, *box_b, *box_c;
+  const fcs_float *box_a, *box_b, *box_c;
   fcs_float x, y, z;
   FCSResult result;
 

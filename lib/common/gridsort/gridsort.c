@@ -233,7 +233,7 @@ void fcs_gridsort_destroy(fcs_gridsort_t *gs)
 }
 
 
-void fcs_gridsort_set_system(fcs_gridsort_t *gs, fcs_float *box_base, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_int *periodicity)
+void fcs_gridsort_set_system(fcs_gridsort_t *gs, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity)
 {
   fcs_int i;
   

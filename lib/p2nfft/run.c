@@ -82,7 +82,7 @@ FCSResult ifcs_p2nfft_run(
       if(!d->periodicity[t]) /* for mixed periodicity: only handle the non-periodic dimensions */
         if( (positions[3*j+t] < 0) || (positions[3*j+t] > d->box_l[t]) )
 //        if( (positions[3*j+t] < 0) || fcs_float_is_zero(d->box_[t] - positions[3*j+t])  || (positions[3*j+t] > d->box_l[t]) )
-          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box or reached the upper border.");
+          return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box or reached the upper border.");
   /* TODO: implement additional scaling of particles to ensure x \in [0,L)
    * Idea: use allreduce to get min and max coordinates, adapt scaling of particles for every time step */
 
@@ -219,7 +219,7 @@ FCSResult ifcs_p2nfft_run(
         case 1: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_lin_loop); break;
         case 2: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_quad_loop); break;
         case 3: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_cub_loop); break;
-        default: return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
+        default: return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
       } 
     } else if(d->use_ewald){
       if(d->interpolation_order == -1)

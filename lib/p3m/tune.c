@@ -134,18 +134,18 @@ ifcs_p3m_tune(void* rd,
   /* check whether the input parameters are sane */
   if (!d->tune_r_cut) {
     if (d->r_cut < 0.0) {
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "r_cut is negative!");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "r_cut is negative!");
     }
     
     if (fcs_float_is_zero(d->r_cut)) {
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "r_cut is too small!");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "r_cut is too small!");
     }
     
     /* * check whether cutoff is larger than half a box length */
     if ((d->r_cut > 0.5*d->box_l[0]) ||
 	(d->r_cut > 0.5*d->box_l[1]) ||
 	(d->r_cut > 0.5*d->box_l[2]))
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "r_cut is larger than half a system box length.");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "r_cut is larger than half a system box length.");
 
     /* * check whether cutoff is larger than domain size */
   }
@@ -297,7 +297,7 @@ ifcs_p3m_tuneit(ifcs_p3m_data_struct *d,
     sprintf(msg, 
 	    "Cannot achieve required accuracy (p3m_tolerance_field=%" FCS_LMOD_FLOAT "e) for given parameters.", 
 	    d->tolerance_field);
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, msg);
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, msg);
   }
 
   P3M_INFO(printf( "    r_cut=%" FCS_LMOD_FLOAT "g cao=%d grid=(%d, %d, %d) alpha=%" FCS_LMOD_FLOAT "g\n", \

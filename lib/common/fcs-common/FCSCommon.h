@@ -83,7 +83,7 @@ fcs_int fcs_is_power_of_two(fcs_int x);
  * @param x - fcs_float* vector
  * @return fcs_float Euclidean norm of given vector x
  */
-fcs_float fcs_norm(fcs_float* x);
+fcs_float fcs_norm(const fcs_float* x);
 
 /**
  * @brief function to determine if two (3D)-vectors are orthogonal
@@ -91,7 +91,7 @@ fcs_float fcs_norm(fcs_float* x);
  * @param b - fcs_float* second vector
  * @return fcs_int 1 if the vectors are orthogonal, 0 otherwise
  */
-fcs_int fcs_two_are_orthogonal(fcs_float *a, fcs_float *b);
+fcs_int fcs_two_are_orthogonal(const fcs_float *a, const fcs_float *b);
 
 /**
  * @brief function to determine if three (3D)-vectors are mutually orthogonal
@@ -100,7 +100,7 @@ fcs_int fcs_two_are_orthogonal(fcs_float *a, fcs_float *b);
  * @param c - fcs_float* third vector
  * @return fcs_int 1 if the vectors are mutually orthogonal, 0 otherwise
  */
-fcs_int fcs_three_are_orthogonal(fcs_float *a, fcs_float *b, fcs_float *c);
+fcs_int fcs_three_are_orthogonal(const fcs_float *a, const fcs_float *b, const fcs_float *c);
 
 /**
  * @brief function to check if a (3D)-system of base vectors is orthogonal
@@ -109,7 +109,7 @@ fcs_int fcs_three_are_orthogonal(fcs_float *a, fcs_float *b, fcs_float *c);
  * @param c - fcs_float* third base vector
  * @return fcs_int 1 if the system is orthogonal, 0 otherwise
  */
-fcs_int fcs_is_orthogonal(fcs_float* a, fcs_float* b, fcs_float* c);
+fcs_int fcs_is_orthogonal(const fcs_float* a, const fcs_float* b, const fcs_float* c);
 
 /**
  * @brief function to check if a (3D)-system of base vectors is cubic
@@ -118,7 +118,7 @@ fcs_int fcs_is_orthogonal(fcs_float* a, fcs_float* b, fcs_float* c);
  * @param c - fcs_float* third base vector
  * @return fcs_int 1 if the system is cubic, 0 otherwise
  */
-fcs_int fcs_is_cubic(fcs_float *a, fcs_float *b, fcs_float *c);
+fcs_int fcs_is_cubic(const fcs_float *a, const fcs_float *b, const fcs_float *c);
 
 /**
  * @brief function to check if the base vectors of a (3D)-system are parallel to the principal axes.
@@ -127,7 +127,7 @@ fcs_int fcs_is_cubic(fcs_float *a, fcs_float *b, fcs_float *c);
  * @param c - fcs_float* third base vector
  * @return fcs_int 1 if the system uses the principal axes, 0 otherwise
  */
-fcs_int fcs_uses_principal_axes(fcs_float *a, fcs_float *b, fcs_float *c);
+fcs_int fcs_uses_principal_axes(const fcs_float *a, const fcs_float *b, const fcs_float *c);
 
 /**
  * @brief wrap particle positions according to periodic dimensions
@@ -139,7 +139,7 @@ fcs_int fcs_uses_principal_axes(fcs_float *a, fcs_float *b, fcs_float *c);
  * @param offset fcs_float* offet vector of system box
  * @param periodicity fcs_int* periodic boundaries
  */
-void fcs_wrap_positions(fcs_int nparticles, fcs_float *positions, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_float *offset, fcs_int *periodicity);
+void fcs_wrap_positions(fcs_int nparticles, fcs_float *positions, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_float *offset, const fcs_int *periodicity);
 
 /**
  * @brief expand particle system in open dimensions to enclose the given particles

@@ -27,7 +27,7 @@
 #include "FCSResult.h"
 
 FCSResult ifcs_p2nfft_tune(
-    void *rd, fcs_int *periodicity,
+    void *rd, const fcs_int *periodicity,
     fcs_int num_particles,
     fcs_float *positions, fcs_float *charges,
     fcs_float *box_l, fcs_int short_range_flag);

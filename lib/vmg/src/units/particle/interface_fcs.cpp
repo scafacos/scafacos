@@ -80,9 +80,9 @@ namespace VMGBackupSettings
   static MPI_Comm mpi_comm;
 }
 
-static void VMG_fcs_init(vmg_int level, vmg_int* periodic,vmg_int max_iter,
+static void VMG_fcs_init(vmg_int level, const vmg_int* periodic,vmg_int max_iter,
 			 vmg_int smoothing_steps, vmg_int cycle_type, vmg_float precision,
-			 vmg_float* box_offset, vmg_float box_size,
+			 const vmg_float* box_offset, vmg_float box_size,
 			 vmg_int near_field_cells, vmg_int interpolation_degree,
                          vmg_int discretization_order, MPI_Comm mpi_comm)
 {
@@ -163,9 +163,9 @@ static void VMG_fcs_init(vmg_int level, vmg_int* periodic,vmg_int max_iter,
   MG::IsInitialized();
 }
 
-void VMG_fcs_setup(vmg_int level, vmg_int* periodic, vmg_int max_iter,
+void VMG_fcs_setup(vmg_int level, const vmg_int* periodic, vmg_int max_iter,
 		   vmg_int smoothing_steps, vmg_int cycle_type, vmg_float precision,
-		   vmg_float* box_offset, vmg_float box_size,
+		   const vmg_float* box_offset, vmg_float box_size,
 		   vmg_int near_field_cells, vmg_int interpolation_degree,
                    vmg_int discretization_order, MPI_Comm mpi_comm)
 {

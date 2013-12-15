@@ -42,9 +42,9 @@
 
 #define DIRECT_HANDLE_CHECK(_h_, _f_) do { \
   if ((_h_) == FCS_NULL) \
-    return fcsResult_create(FCS_NULL_ARGUMENT, (_f_), "null pointer supplied as handle"); \
-  if ((_h_)->method != FCS_DIRECT) \
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, (_f_), "handle does not represent method \"direct\""); \
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, (_f_), "null pointer supplied as handle"); \
+  if ((_h_)->method != FCS_METHOD_DIRECT) \
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, (_f_), "handle does not represent method \"direct\""); \
 } while (0)
 
 
@@ -60,6 +60,8 @@ FCSResult fcs_direct_init(FCS handle)
   DEBUG_MOP(printf("fcs_direct_init\n"));
 
   DIRECT_HANDLE_CHECK(handle, func_name);
+
+  handle->direct_param = malloc(sizeof(*handle->direct_param));
 
   ctx = malloc(sizeof(fcs_direct_context_t));
 
@@ -114,6 +116,9 @@ FCSResult fcs_direct_destroy(FCS handle)
 
   fcs_set_method_context(handle, NULL);
 
+  free(handle->direct_param);
+  handle->direct_param = NULL;
+
   DEBUG_MOP(printf("fcs_direct_destroy: done\n"));
 
   return FCS_RESULT_SUCCESS;
@@ -158,8 +163,8 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
 
   fcs_float field_correction[3];
 
-  fcs_float *box_base, *box_a, *box_b, *box_c;
-  fcs_int *periodicity;
+  const fcs_float *box_base, *box_a, *box_b, *box_c;
+  const fcs_int *periodicity;
 
 
   DEBUG_MOP(printf("fcs_direct_run\n"));
@@ -168,7 +173,7 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
 
   ctx = fcs_get_method_context(handle);
 
-  box_base = fcs_get_offset(handle);
+  box_base = fcs_get_box_origin(handle);
   box_a = fcs_get_box_a(handle);
   box_b = fcs_get_box_b(handle);
   box_c = fcs_get_box_c(handle);
@@ -396,5 +401,5 @@ void fcs_direct_setup_f(void *handle, fcs_float cutoff, fcs_int *return_value)
   if (result == FCS_RESULT_SUCCESS)
     *return_value = 0;
   else
-    *return_value = fcsResult_getReturnCode(result);
+    *return_value = fcs_result_get_return_code(result);
 }

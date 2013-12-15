@@ -179,7 +179,7 @@ static fcs_int is_cubic(
     fcs_float *box_l);
 
 FCSResult ifcs_p2nfft_tune(
-    void *rd, fcs_int *periodicity,
+    void *rd, const fcs_int *periodicity,
     fcs_int local_particles,
     fcs_float *positions, fcs_float *charges,
     fcs_float *box_l, fcs_int short_range_flag
@@ -200,7 +200,7 @@ FCSResult ifcs_p2nfft_tune(
 
   /* Check consistency of user defined near field radius */
   if( !d->tune_epsI && !d->tune_r_cut )
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Nearfield radius was set in scaled ('epsI') and non-scaled ('r_cut') version. Choose one of them.");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "Nearfield radius was set in scaled ('epsI') and non-scaled ('r_cut') version. Choose one of them.");
 
   MPI_Comm_rank(d->cart_comm_3d, &comm_rank);
   FCS_P2NFFT_INIT_TIMING(d->cart_comm_3d);
@@ -240,14 +240,14 @@ FCSResult ifcs_p2nfft_tune(
 
   if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
     if(d->num_periodic_dims != 0)
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "FCS_P2NFFT_REG_FAR_RAD_CG is only available for 0d-periodicity.");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "FCS_P2NFFT_REG_FAR_RAD_CG is only available for 0d-periodicity.");
 
   if( (d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
       || (d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_EC)
       || (d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_IC) )
   {
     if(d->num_periodic_dims != 0)
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Rectangular regularization is only available for 0d-periodicity.");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Rectangular regularization is only available for 0d-periodicity.");
   }
 
   if(d->reg_far == FCS_P2NFFT_REG_FAR_DEFAULT){
@@ -353,7 +353,7 @@ FCSResult ifcs_p2nfft_tune(
     if(d->num_nonperiodic_dims)
       if(!d->tune_epsI && !d->tune_epsB)
         if(d->epsI + d->epsB >= 0.5)
-          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Sum of epsI and epsB must be less than 0.5.");
+          return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Sum of epsI and epsB must be less than 0.5.");
 
     /* At this point we hoose default value 7. */
     if(d->tune_p)
@@ -399,7 +399,7 @@ FCSResult ifcs_p2nfft_tune(
 
           /* Return error, if tuning of alpha failed. */
           if(error > d->tolerance)
-            return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy (Did not find feasible Ewald splitting parameter 'alpha').");
+            return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy (Did not find feasible Ewald splitting parameter 'alpha').");
         } else {
           /* calculation of real space error is fast */
           rs_error = p2nfft_real_space_error(d->sum_qpart, d->sum_q2, d->box_l, d->r_cut, d->alpha);
@@ -437,7 +437,7 @@ FCSResult ifcs_p2nfft_tune(
           /* Return error, if tuning of N failed. */
           if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE)
             if(error > d->tolerance)
-              return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy (Did not find feasible gridsize 'N').");
+              return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy (Did not find feasible gridsize 'N').");
         }
 
         /* tune m, only if we found a feasible gridsize N */
@@ -456,14 +456,14 @@ FCSResult ifcs_p2nfft_tune(
           /* Return error, if tuning of m failed. */
           if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE)
             if(error > d->tolerance)
-              return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy (Did not find feasible charge assignment order 'm').");
+              return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy (Did not find feasible charge assignment order 'm').");
         }
       }
      
       /* Return error, if accuracy tuning failed. */
       if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE)
         if(error > d->tolerance)
-          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy.");
+          return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy.");
 
 #if FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE
       if(!comm_rank)
@@ -492,7 +492,7 @@ FCSResult ifcs_p2nfft_tune(
         /* check user defined oversampling */
         for(int t=0; t<3; t++)
           if(d->N[t] > d->n[t] )
-            return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize is not allowed to be less than normal gridsize.");
+            return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize is not allowed to be less than normal gridsize.");
       }
 
       if(d->tune_epsB){
@@ -545,7 +545,7 @@ FCSResult ifcs_p2nfft_tune(
       unsigned err=0;
       d->near_interpolation_num_nodes = calc_interpolation_num_nodes_erf(d->interpolation_order, 0.1*d->tolerance, d->alpha, d->r_cut, &err);
       if(err)
-        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Number of nodes needed for interpolation exeedes 1e7. Try to use a higher interpolation order or less accuracy.");
+        return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Number of nodes needed for interpolation exeedes 1e7. Try to use a higher interpolation order or less accuracy.");
 
       if(d->near_interpolation_table_potential != NULL)
         free(d->near_interpolation_table_potential);
@@ -573,11 +573,11 @@ FCSResult ifcs_p2nfft_tune(
 
       if(reg_far == FCS_P2NFFT_REG_FAR_RAD_CG)
         if(reg_near != FCS_P2NFFT_REG_NEAR_CG)
-          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_RAD_CG is only available in combiniation with FCS_P2NFFT_REG_NEAR_CG.");
+          return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_RAD_CG is only available in combiniation with FCS_P2NFFT_REG_NEAR_CG.");
 
       if(!is_cubic(d->box_l))
         if(reg_far != FCS_P2NFFT_REG_FAR_RAD_T2P_EC)
-          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Noncubic boxes require far field regularization FCS_P2NFFT_REG_FAR_RAD_T2P_EC.");
+          return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Noncubic boxes require far field regularization FCS_P2NFFT_REG_FAR_RAD_T2P_EC.");
 
       if(reg_near == FCS_P2NFFT_REG_NEAR_T2P){
         /* TODO: implement parameter tuning for 2-point-Taylor regularization 
@@ -701,7 +701,7 @@ FCSResult ifcs_p2nfft_tune(
           /* Return error, if accuracy tuning failed. */
           if(N==2*N_max)
             if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE)
-              return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy.");
+              return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Not able to reach required accuracy.");
   
           /* We found the minimal N. This N corresponds to the minimal box length */
           d->N[mindim] = N;
@@ -728,7 +728,7 @@ FCSResult ifcs_p2nfft_tune(
             &m, &p, d->cg_cos_coeff);
 
         if(missed_coeff)
-          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Did not find an appropriate CG approximation.");
+          return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Did not find an appropriate CG approximation.");
 
         if(d->cg_sin_coeff != NULL)
           free(d->cg_sin_coeff);
@@ -739,7 +739,7 @@ FCSResult ifcs_p2nfft_tune(
         if(d->tune_m) d->m = m;
         if(d->tune_p) d->p = p;
       } else
-        return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown near field regularization flag. Choose either FCS_P2NFFT_REG_NEAR_T2P or FCS_P2NFFT_REG_NEAR_CG.");
+        return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown near field regularization flag. Choose either FCS_P2NFFT_REG_NEAR_T2P or FCS_P2NFFT_REG_NEAR_CG.");
 
       if (d->tune_c){
         d->c = 0.0; /* continue regularization with 0.0 */
@@ -758,7 +758,7 @@ FCSResult ifcs_p2nfft_tune(
         /* check user defined oversampling */
         for(int t=0; t<3; t++)
           if(d->N[t] > d->n[t] )
-            return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize 'n' is not allowed to be less than normal gridsize 'N'.");
+            return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Oversampled gridsize 'n' is not allowed to be less than normal gridsize 'N'.");
       }
 
       /* TODO: Optimize m for the field error. */
@@ -835,7 +835,7 @@ FCSResult ifcs_p2nfft_tune(
     }
 
 #if FCS_P2NFFT_EXIT_AFTER_TUNING
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "End of tuning.");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "End of tuning.");
 #endif
 
     /* calculate local data distribution according to PNFFT:
@@ -913,7 +913,7 @@ FCSResult ifcs_p2nfft_tune(
 #if FCS_P2NFFT_DEBUG_RETUNE
     printf("P2NFFT_DEBUG: d->N = [%td, %td, %td], d->np = [%d, %d, %d]\n", d->N[0], d->N[1], d->N[2], d->np[0], d->np[1], d->np[2]);
 #endif
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Procmesh too large for this gridsize.");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "Procmesh too large for this gridsize.");
   }
 
   return NULL;
@@ -1980,18 +1980,18 @@ static FCSResult check_tolerance(
       || (tolerance_type == FCS_TOLERANCE_TYPE_ENERGY_REL)
       || (tolerance_type == FCS_TOLERANCE_TYPE_POTENTIAL_REL)
       || (tolerance_type == FCS_TOLERANCE_TYPE_FIELD_REL) )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT does not support this kind of tolerance.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT does not support this kind of tolerance.");
 
   if(tolerance_type == FCS_TOLERANCE_TYPE_POTENTIAL)
     if( periodicity[0] || periodicity[1] || periodicity[2] )
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_POTENTIAL only for non-periodic boundary conditions. Use FCS_TOLERANCE_FIELD instead.");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_POTENTIAL only for non-periodic boundary conditions. Use FCS_TOLERANCE_FIELD instead.");
 
   if(tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
     if( !periodicity[0] && !periodicity[1] && !periodicity[2] )
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_FIELD only for 1d-, 2d- and 3d-periodic boundary conditions. Use FCS_TOLERANCE_POTENTIAL instead.");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_FIELD only for 1d-, 2d- and 3d-periodic boundary conditions. Use FCS_TOLERANCE_POTENTIAL instead.");
 
   if(tolerance < 0.0)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"Tolerance must be non-negative.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"Tolerance must be non-negative.");
 
   return NULL;
 }

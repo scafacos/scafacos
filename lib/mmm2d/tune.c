@@ -45,7 +45,7 @@ FCSResult mmm2d_tune(void* rd,
   /* Check for charge existence and neutrality */
   mmm2d_check_system_charges(d, num_particles, charges);
   if (!fcs_float_is_zero(d->total_charge))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "MMM2D requires a zero net charge.");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "MMM2D requires a zero net charge.");
   
   d->my_bottom = d->comm.rank*d->box_l[2]/(fcs_float)(d->comm.size);
   
@@ -71,7 +71,7 @@ FCSResult mmm2d_tune(void* rd,
   if (d->comm.size*d->layers_per_node < 3) {
     d->far_cut = 0.0;
     if (d->dielectric_contrast_on)
-      return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Definition of dielectric contrasts requires more than 3 layers");
+      return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "Definition of dielectric contrasts requires more than 3 layers");
   } else {
       res=mmm2d_tune_far(d);
       if (res) return res;
@@ -111,11 +111,11 @@ FCSResult mmm2d_tune_near(mmm2d_data_struct *d) {
   
   /* yes, it's y only... */
   if (d->max_near > d->box_l[1]/2.)
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Layer height too large for MMM2D near formula, increase nodes or layers_per_node.");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "Layer height too large for MMM2D near formula, increase nodes or layers_per_node.");
   if (d->min_far < 0)
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Layer height too small for MMM2D far formula, decrease nodes, layers_per_node or skin.");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "Layer height too small for MMM2D far formula, decrease nodes, layers_per_node or skin.");
   if (d->ux*d->box_l[1] >= 3./M_SQRT2 )
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "box_l[1]/box_l[0] too large for MMM2D near formula, please exchange x and y");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "box_l[1]/box_l[0] too large for MMM2D near formula, please exchange x and y");
 
   /* error is split into three parts:
      one part for bessel, one for complex
@@ -138,7 +138,7 @@ FCSResult mmm2d_tune_near(mmm2d_data_struct *d) {
   while (err > d->part_error && (P - 1) < MMM2D_MAXIMAL_B_CUT);
   P--;
   if (P == MMM2D_MAXIMAL_B_CUT)
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Could not find reasonable Bessel cutoff. Please decrease n_layers or the error bound.");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "Could not find reasonable Bessel cutoff. Please decrease n_layers or the error bound.");
   
   mmm_realloc_intlist(&(d->besselCutoff), d->besselCutoff.n = P);
   for (p = 1; p < P; p++)
@@ -168,7 +168,7 @@ FCSResult mmm2d_tune_near(mmm2d_data_struct *d) {
   }
   while (err > 0.1*d->part_error && n < MMM2D_MAXIMAL_POLYGAMMA);
   if (n == MMM2D_MAXIMAL_POLYGAMMA)
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Could find not reasonable Polygamma cutoff. Consider exchanging x and y");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "Could find not reasonable Polygamma cutoff. Consider exchanging x and y");
   //printf("polygamma cutoff %d %g\n", n, err);
   
   return NULL;
@@ -187,7 +187,7 @@ FCSResult mmm2d_tune_far(mmm2d_data_struct *d) {
   }
   while (err > d->maxPWerror && d->far_cut*d->layer_h < MMM2D_MAXIMAL_FAR_CUT);
   if (d->far_cut*d->layer_h >= MMM2D_MAXIMAL_FAR_CUT)
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Far cutoff too large, decrease the error bound.");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "Far cutoff too large, decrease the error bound.");
   d->far_cut -= min_inv_boxl;
   d->far_cut2 = d->far_cut*d->far_cut;
   return NULL;

@@ -33,7 +33,7 @@
  * can be entered
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_p3m_init(FCS handle, MPI_Comm communicator);
+FCSResult fcs_p3m_init(FCS handle);
 
 /**
  * @brief tuning method for setting/calculating last parameters, for which positions,

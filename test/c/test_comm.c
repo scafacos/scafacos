@@ -40,7 +40,7 @@ int test_solver(const char *method, MPI_Comm sub_comm)
   result = fcs_init(&fcs, method, sub_comm);
   if (result != FCS_RESULT_SUCCESS)
   {
-    if (fcsResult_getReturnCode(result) == FCS_WRONG_ARGUMENT)
+    if (fcs_result_get_return_code(result) == FCS_ERROR_WRONG_ARGUMENT)
     {
       printf("%d: solver method '%s' not available!\n", rank, method);
       return 10;

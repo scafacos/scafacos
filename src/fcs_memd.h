@@ -51,7 +51,7 @@ typedef struct fcs_memd_parameters_t
  * can be entered
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_memd_init(FCS handle, MPI_Comm communicator);
+extern FCSResult fcs_memd_init(FCS handle);
 
 /**
  * @brief tuning method for setting/calculating last parameters, for which positions,

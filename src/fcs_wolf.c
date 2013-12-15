@@ -42,9 +42,9 @@
 
 #define WOLF_HANDLE_CHECK(_h_, _f_) do { \
   if ((_h_) == FCS_NULL) \
-    return fcsResult_create(FCS_NULL_ARGUMENT, (_f_), "null pointer supplied as handle"); \
-  if ((_h_)->method != FCS_WOLF) \
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, (_f_), "handle does not represent method \"wolf\""); \
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, (_f_), "null pointer supplied as handle"); \
+  if ((_h_)->method != FCS_METHOD_WOLF) \
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, (_f_), "handle does not represent method \"wolf\""); \
 } while (0)
 
 
@@ -60,6 +60,8 @@ FCSResult fcs_wolf_init(FCS handle)
   DEBUG_MOP(printf("fcs_wolf_init\n"));
 
   WOLF_HANDLE_CHECK(handle, func_name);
+
+  handle->wolf_param = malloc(sizeof(*handle->wolf_param));
 
   ctx = malloc(sizeof(fcs_wolf_context_t));
 
@@ -111,6 +113,8 @@ FCSResult fcs_wolf_destroy(FCS handle)
 
   fcs_set_method_context(handle, NULL);
 
+  free(handle->wolf_param);
+
   DEBUG_MOP(printf("fcs_wolf_destroy: done\n"));
 
   return FCS_RESULT_SUCCESS;
@@ -154,8 +158,8 @@ FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 /*  fcs_int i;
   fcs_float field_correction[3];*/
 
-  fcs_float *box_base, *box_a, *box_b, *box_c;
-  fcs_int *periodicity;
+  const fcs_float *box_base, *box_a, *box_b, *box_c;
+  const fcs_int *periodicity;
 
 
   DEBUG_MOP(printf("fcs_wolf_run\n"));
@@ -164,7 +168,7 @@ FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 
   ctx = fcs_get_method_context(handle);
 
-  box_base = fcs_get_offset(handle);
+  box_base = fcs_get_box_origin(handle);
   box_a = fcs_get_box_a(handle);
   box_b = fcs_get_box_b(handle);
   box_c = fcs_get_box_c(handle);
@@ -357,5 +361,5 @@ void fcs_wolf_setup_f(void *handle, fcs_float cutoff, fcs_float alpha, fcs_int *
   if (result == FCS_RESULT_SUCCESS)
     *return_value = 0;
   else
-    *return_value = fcsResult_getReturnCode(result);
+    *return_value = fcs_result_get_return_code(result);
 }

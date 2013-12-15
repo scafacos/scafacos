@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011-2012 Rene Halver
+  Copyright (C) 2011, 2012, 2013 Rene Halver, Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -18,15 +18,18 @@
 */
 
 
-
 #ifndef FCS_DEFINITIONS_INCLUDED
 #define FCS_DEFINITIONS_INCLUDED
 
+
 /**
  * @file FCSInterface.h
- * @brief definitions for the ScaFaCoS library interface
- * @author Rene Halver
+ * @brief public definitions of the ScaFaCoS library interface
+ * @author Rene Halver, Michael Hofmann
  */
+
+
+#define FCS_ENABLE_DEPRECATED
 
 
 #if defined(FCS_FLOAT_IS_FLOAT)
@@ -62,20 +65,32 @@
 #define FCS_PISQR     FCS_CONST(9.8696044010893586188344909998761511)  /* pi^2 */
 #define FCS_EULER     FCS_CONST(0.5772156649015328606065120900824024)  /* Euler-Mascheroni constant */
 
+
 /**
- * @brief definition of a boolean data type
+ * @brief definition of bool data type
  */
 typedef fcs_int fcs_bool;
-#define FCS_TRUE           1
-#define FCS_FALSE          0
-#define FCS_IS_TRUE(_b_)   ((_b_))
-#define FCS_IS_FALSE(_b_)  (!(_b_))
+#define FCS_TRUE   1
+#define FCS_FALSE  0
+#define FCS_IS_TRUE(_b_)   ((_b_) != 0)
+#define FCS_IS_FALSE(_b_)  ((_b_) == 0)
 
 
 /**
  * @brief definitions of return codes
  */
-#define FCS_SUCCESS 0
+#define FCS_SUCCESS                    0
+#define FCS_ERROR_NULL_ARGUMENT        1
+#define FCS_ERROR_ALLOC_FAILED         2
+#define FCS_ERROR_WRONG_ARGUMENT       3
+#define FCS_ERROR_MISSING_ELEMENT      4
+#define FCS_ERROR_LOGICAL_ERROR        5
+#define FCS_ERROR_INCOMPATIBLE_METHOD  6
+#define FCS_ERROR_NOT_IMPLEMENTED      7
+#define FCS_ERROR_FORTRAN_CALL         8
+#define FCS_ERROR_RESULT_CREATE        9
+
+#ifdef FCS_ENABLE_DEPRECATED
 #define FCS_NULL_ARGUMENT 1
 #define FCS_ALLOC_FAILED 2
 #define FCS_WRONG_ARGUMENT 3
@@ -84,9 +99,28 @@ typedef fcs_int fcs_bool;
 #define FCS_INCOMPATIBLE_METHOD 6
 #define FCS_MPI_ERROR 7
 #define FCS_FORTRAN_CALL_ERROR 8
+#define FCS_ERROR_RESULT_CREATE  9
+#endif
+
+
 /**
- * @brief definitions of method flags
+ * @brief definitions of numerical method identifiers
  */
+#define FCS_METHOD_NONE   40
+#define FCS_METHOD_FMM    32
+#define FCS_METHOD_P2NFFT 33
+#define FCS_METHOD_PEPC   34
+#define FCS_METHOD_P3M    35
+#define FCS_METHOD_PP3MG  36
+#define FCS_METHOD_VMG    37
+#define FCS_METHOD_DIRECT 38
+#define FCS_METHOD_MEMD   39
+#define FCS_METHOD_MMM1D  41
+#define FCS_METHOD_EWALD  42
+#define FCS_METHOD_MMM2D  43
+#define FCS_METHOD_WOLF   44
+
+#ifdef FCS_ENABLE_DEPRECATED
 #define FCS_FMM 32
 #define FCS_P2NFFT 33
 #define FCS_PEPC 34
@@ -100,6 +134,8 @@ typedef fcs_int fcs_bool;
 #define FCS_EWALD 42
 #define FCS_MMM2D 43
 #define FCS_WOLF 44
+#endif
+
 
 /**
  * @brief definitions of tolerance types
@@ -111,5 +147,6 @@ typedef fcs_int fcs_bool;
 #define FCS_TOLERANCE_TYPE_POTENTIAL_REL  4
 #define FCS_TOLERANCE_TYPE_FIELD          5
 #define FCS_TOLERANCE_TYPE_FIELD_REL      6
+
 
 #endif

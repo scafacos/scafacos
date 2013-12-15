@@ -23,7 +23,7 @@
 #define ASSERT_FCS(_r_) \
   do { \
     if(_r_) { \
-      fcsResult_printResult(_r_); MPI_Finalize(); exit(-1); \
+      fcs_result_print_result(_r_); MPI_Finalize(); exit(-1); \
     } \
   } while (0)
 
@@ -238,7 +238,7 @@ int main(int argc, char **argv)
   fcs_result = fcs_set_common(fcs_handle, 1, box_a, box_b, box_c, box_base, periodicity, ntotal);
   ASSERT_FCS(fcs_result);
 
-  fcs_result = fcs_require_virial(fcs_handle, 1);
+  fcs_result = fcs_set_compute_virial(fcs_handle, 1);
   ASSERT_FCS(fcs_result);
 
   fcs_result = fcs_set_periodicity(fcs_handle, periodicity);

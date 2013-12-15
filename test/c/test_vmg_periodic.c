@@ -34,7 +34,7 @@
 void assert_fcs(FCSResult r)
 {
   if(r) {
-    fcsResult_printResult(r);
+    fcs_result_print_result(r);
     MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
     exit(-1);
   }

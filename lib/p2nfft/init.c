@@ -58,7 +58,7 @@ FCSResult ifcs_p2nfft_init(
 
   /* return error if method context is already allocated */
   if (*rd != NULL) 
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Multiple init of method context without finalize.");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "Multiple init of method context without finalize.");
   
   /* Initialize the PNFFT library */
   FCS_PNFFT(init)();
@@ -68,7 +68,7 @@ FCSResult ifcs_p2nfft_init(
 
   /* return error if allocation failed */
   if (d == NULL)
-    return fcsResult_create(FCS_ALLOC_FAILED, fnc_name, "Allocation of the p2nfft data structure failed.");
+    return fcs_result_create(FCS_ERROR_ALLOC_FAILED, fnc_name, "Allocation of the p2nfft data structure failed.");
 
 #if FCS_P2NFFT_USE_3D_PROCMESH 
   /* Create a three-dimensional cartesian comm

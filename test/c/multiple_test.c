@@ -229,56 +229,56 @@ int main (int argc, char **argv)
     printf ("Initializing %s method...\n", "pp3mg");
   result = fcs_init (&handle_pp3mg, "pp3mg", communicator);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_FMM
   if (comm_rank == 0)
     printf ("Initializing %s method...\n", "fmm");
   result = fcs_init (&handle_fmm, "fmm", communicator);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_MEMD
   if (comm_rank == 0)
     printf ("Initializing %s method...\n", "memd");
   result = fcs_init (&handle_memd, "memd", communicator);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_PEPC
   if (comm_rank == 0)
     printf ("Initializing %s method...\n", "pepc");
   result = fcs_init (&handle_pepc, "pepc", communicator);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_P2NFFT
   if (comm_rank == 0)
     printf ("Initializing %s method...\n", "p2nfft");
   result = fcs_init (&handle_p2nfft, "p2nfft", communicator);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_P3M
   if (comm_rank == 0)
     printf ("Initializing %s method...\n", "p3m");
   result = fcs_init (&handle_p3m, "p3m", communicator);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_VMG
   if (comm_rank == 0)
     printf ("Initializing %s method...\n", "vmg");
   result = fcs_init (&handle_vmg, "vmg", communicator);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 
   MPI_Barrier(communicator);
@@ -293,14 +293,14 @@ int main (int argc, char **argv)
     printf ("\n");
   if (comm_rank == 0)
     printf ("Setting common data for pp3mg...\n");
-  result = fcs_parser(handle_pp3mg, common_parameters, FCS_FALSE);
+  result = fcs_set_parameters(handle_pp3mg, common_parameters, FCS_FALSE);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   result = fcs_set_total_particles(handle_pp3mg, number_of_particles);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
@@ -308,7 +308,7 @@ int main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Parameters of pp3mg... \n");
   if (comm_rank == 0)
-    fcs_printHandle (handle_pp3mg);
+    fcs_print_parameters (handle_pp3mg);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
@@ -316,22 +316,22 @@ int main (int argc, char **argv)
   result =
     fcs_tune (handle_pp3mg, local_particles, local_particles, particles, charges);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_MEMD
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
     printf ("Setting common data for memd...\n");
-  result = fcs_parser(handle_memd, common_parameters, FCS_FALSE);
+  result = fcs_set_parameters(handle_memd, common_parameters, FCS_FALSE);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   result = fcs_set_total_particles(handle_memd, number_of_particles);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
@@ -339,7 +339,7 @@ int main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Parameters of memd... \n");
   if (comm_rank == 0)
-    fcs_printHandle (handle_memd);
+    fcs_print_parameters (handle_memd);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
@@ -347,28 +347,28 @@ int main (int argc, char **argv)
   result =
     fcs_tune (handle_memd, local_particles, local_particles, particles, charges);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_PEPC
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
     printf ("Setting common data for pepc...\n");
-  result = fcs_parser(handle_pepc, common_parameters, FCS_FALSE);
+  result = fcs_set_parameters(handle_pepc, common_parameters, FCS_FALSE);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   result = fcs_set_total_particles(handle_pepc, number_of_particles);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
     printf ("Parameters of pepc... \n");
   if (comm_rank == 0)
-    fcs_printHandle (handle_pepc);
+    fcs_print_parameters (handle_pepc);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
@@ -376,28 +376,28 @@ int main (int argc, char **argv)
   result =
     fcs_tune (handle_pepc, local_particles, local_particles, particles, charges);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_FMM
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
     printf ("Setting common data for fmm...\n");
-  result = fcs_parser(handle_fmm, common_parameters, FCS_FALSE);
+  result = fcs_set_parameters(handle_fmm, common_parameters, FCS_FALSE);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   result = fcs_set_total_particles(handle_fmm, number_of_particles);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
     printf ("Parameters of fmm... \n");
   if (comm_rank == 0)
-    fcs_printHandle (handle_fmm);
+    fcs_print_parameters (handle_fmm);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
@@ -405,28 +405,28 @@ int main (int argc, char **argv)
   result =
     fcs_tune (handle_fmm, local_particles, local_particles, particles, charges);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_P2NFFT
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
     printf ("Setting common data for p2nfft...\n");
-  result = fcs_parser(handle_p2nfft, common_parameters, FCS_FALSE);
+  result = fcs_set_parameters(handle_p2nfft, common_parameters, FCS_FALSE);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   result = fcs_set_total_particles(handle_p2nfft, number_of_particles);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
     printf ("Parameters of p2nfft ... \n");
   if (comm_rank == 0)
-    fcs_printHandle (handle_p2nfft);
+    fcs_print_parameters (handle_p2nfft);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
@@ -434,28 +434,28 @@ int main (int argc, char **argv)
   result =
     fcs_tune (handle_p2nfft, local_particles, local_particles, particles, charges);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_P3M
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
     printf ("Setting common data for p3m...\n");
-  result = fcs_parser(handle_p3m, common_parameters, FCS_FALSE);
+  result = fcs_set_parameters(handle_p3m, common_parameters, FCS_FALSE);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   result = fcs_set_total_particles(handle_p3m, number_of_particles);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
     printf ("Parameters of p3m ... \n");
   if (comm_rank == 0)
-    fcs_printHandle (handle_p3m);
+    fcs_print_parameters (handle_p3m);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
@@ -463,22 +463,22 @@ int main (int argc, char **argv)
   result =
     fcs_tune (handle_p3m, local_particles, local_particles, particles, charges);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 #if FCS_ENABLE_VMG
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
     printf ("Setting common data for vmg...\n");
-  result = fcs_parser(handle_vmg, common_parameters, FCS_FALSE);
+  result = fcs_set_parameters(handle_vmg, common_parameters, FCS_FALSE);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   result = fcs_set_total_particles(handle_vmg, number_of_particles);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
@@ -486,7 +486,7 @@ int main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Parameters of vmg... \n");
   if (comm_rank == 0)
-    fcs_printHandle (handle_vmg);
+    fcs_print_parameters (handle_vmg);
   if (comm_rank == 0)
     printf ("\n");
   if (comm_rank == 0)
@@ -494,8 +494,8 @@ int main (int argc, char **argv)
   result =
     fcs_tune (handle_vmg, local_particles, local_particles, particles, charges);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 #endif
 
   MPI_Barrier(communicator);         
@@ -580,8 +580,8 @@ int main (int argc, char **argv)
           break;
       }
       if (comm_rank == 0)
-        fcsResult_printResult (result);
-      fcsResult_destroy (result);
+        fcs_result_print_result (result);
+      fcs_result_destroy (result);
 //       if(comm_rank == 0) printf("Moving particles: %d... \n", i+1);
 //       for (j = 0; j < local_particles; ++j)
 //       {
@@ -649,10 +649,10 @@ int main (int argc, char **argv)
 //   if (comm_rank == 0)
 //     printf ("Parameters... \n");
 //   if (comm_rank == 0)
-//     fcs_printHandle (handle);
+//     fcs_print_parameters (handle);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 
   free (box_a);
   free (box_b);

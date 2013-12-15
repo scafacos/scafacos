@@ -171,7 +171,7 @@ extern void pepc_scafacos_run(fcs_int *local_particles, fcs_int *total_particles
 			      fcs_float *positions, fcs_float *charges, 
 			      fcs_float *efield, fcs_float *potentials, fcs_float *work,
 			      fcs_float *virial,
-			      fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_int *periodicity, 
+			      const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity, 
 			      fcs_int *lattice_corr, fcs_float *eps, fcs_float *theta, 
                               fcs_int *db_level, fcs_int *num_walk_threads, fcs_float *npm );
 

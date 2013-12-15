@@ -158,7 +158,7 @@ FCSResult ifcs_p3m_get_total_energy(void *rd, fcs_float *total_energy) {
     return NULL;
   } else 
     return 
-      fcsResult_create
-      (FCS_LOGICAL_ERROR, fnc_name, 
+      fcs_result_create
+      (FCS_ERROR_LOGICAL_ERROR, fnc_name, 
        "Trying to get total energy, but computation was not requested.");
 }

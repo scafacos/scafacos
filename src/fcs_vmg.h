@@ -160,9 +160,9 @@ extern FCSResult fcs_vmg_get_virial(FCS handle, fcs_float *virial);
  * @param discretization_order Discretization order.
  * @param comm MPI communicator.
  */
-extern void VMG_fcs_setup(fcs_int max_level, fcs_int* periodic, fcs_int max_iteration,
+extern void VMG_fcs_setup(fcs_int max_level, const fcs_int* periodic, fcs_int max_iteration,
 			  fcs_int smoothing_steps, fcs_int cycle_type, fcs_float precision,
-			  fcs_float* box_offset, fcs_float box_size, fcs_int near_field_cells,
+			  const fcs_float* box_offset, fcs_float box_size, fcs_int near_field_cells,
 			  fcs_int interpolation_order, fcs_int discretization_order,
 			  MPI_Comm comm);
 
