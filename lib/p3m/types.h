@@ -41,6 +41,12 @@
 /** Default for the accuracy. */
 #define P3M_DEFAULT_TOLERANCE_FIELD 1.0e-3
 
+/* DEBUG SWITCHES */
+/* Define to turn on additional sanity checks. */
+#define ADDITIONAL_CHECKS */
+/* Define to print out timings at the end of fcs_run */
+#define P3M_PRINT_TIMINGS
+
 /* COMPILE TIME SWITCHES */
 /* Differentiation method */
 /** ik-Differentiation */
