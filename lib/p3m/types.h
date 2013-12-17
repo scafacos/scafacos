@@ -28,8 +28,6 @@
 #include "communication.h"
 #include "fft.h"
 
-#define ADDITIONAL_CHECKS
-
 /* DEFAULTS */
 /** Default for number of interpolation points of the charge
     assignment function. */
@@ -43,15 +41,21 @@
 /** Default for the accuracy. */
 #define P3M_DEFAULT_TOLERANCE_FIELD 1.0e-3
 
+/* DEBUG SWITCHES */
+/* Define to turn on additional sanity checks. */
+#define ADDITIONAL_CHECKS */
+/* Define to print out timings at the end of fcs_run */
+#define P3M_PRINT_TIMINGS
+
 /* COMPILE TIME SWITCHES */
 /* Differentiation method */
 /** ik-Differentiation */
-#define P3M_IK
+//#define P3M_IK
 /** analytical differentiation */
-//#define P3M_AD
+#define P3M_AD
 
 /** Whether to use interlaced version of P3M alogorithm. */
-//#define P3M_INTERLACE
+#define P3M_INTERLACE
 
 /* Sanity checks */
 #if defined(P3M_AD) && defined(P3M_IK)

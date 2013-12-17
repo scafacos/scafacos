@@ -503,6 +503,33 @@ void ifcs_p3m_run(void* rd,
       MPI_Reduce(d->timings, 0,
                  NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
                  0, d->comm.mpicomm);
+
+#ifdef P3M_PRINT_TIMINGS
+    printf("  P3M TIMINGS:\n");
+    printf("    total=%le (%lf)\n", d->timings[TIMING], 1.0);
+    printf("      far=%le (%lf)\n", d->timings[TIMING_FAR], 
+      d->timings[TIMING_FAR]/d->timings[TIMING]);
+    printf("     near=%le (%lf)\n", d->timings[TIMING_NEAR], 
+      d->timings[TIMING_NEAR]/d->timings[TIMING]);
+    printf("       ca=%le (%lf)\n", d->timings[TIMING_CA], 
+      d->timings[TIMING_CA]/d->timings[TIMING]);
+    printf("      pot=%le (%lf)\n", d->timings[TIMING_POTENTIALS], 
+      d->timings[TIMING_POTENTIALS]/d->timings[TIMING]);
+    printf("   fields=%le (%lf)\n", d->timings[TIMING_FIELDS], 
+      d->timings[TIMING_FIELDS]/d->timings[TIMING]);
+    printf("   gather=%le (%lf)\n", d->timings[TIMING_GATHER], 
+      d->timings[TIMING_GATHER]/d->timings[TIMING]);
+    printf("   spread=%le (%lf)\n", d->timings[TIMING_SPREAD], 
+      d->timings[TIMING_SPREAD]/d->timings[TIMING]);
+    printf("  forward=%le (%lf)\n", d->timings[TIMING_FORWARD], 
+      d->timings[TIMING_FORWARD]/d->timings[TIMING]);
+    printf("     back=%le (%lf)\n", d->timings[TIMING_BACK], 
+      d->timings[TIMING_BACK]/d->timings[TIMING]);
+    printf("   decomp=%le (%lf)\n", d->timings[TIMING_DECOMP], 
+      d->timings[TIMING_DECOMP]/d->timings[TIMING]);
+    printf("     comp=%le (%lf)\n", d->timings[TIMING_COMP], 
+      d->timings[TIMING_COMP]/d->timings[TIMING]);
+#endif
   }
 
   P3M_INFO(printf( "ifcs_p3m_run() finished.\n"));

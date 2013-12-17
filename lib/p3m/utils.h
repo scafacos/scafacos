@@ -29,11 +29,10 @@
 #include <mpi.h>
 #include <stdio.h>
 
-//#define P3M_TIMINGS
-
 /* Debug macros */
 #ifdef FCS_ENABLE_DEBUG
 #define ADDITIONAL_CHECKS
+#define P3M_PRINT_TIMINGS
 #define P3M_TRACE(cmd) if (on_root()) cmd
 #define P3M_DEBUG(cmd) if (on_root()) cmd
 #define P3M_TRACE_LOCAL(cmd) cmd
