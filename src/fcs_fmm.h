@@ -163,6 +163,8 @@ extern FCSResult fcs_fmm_require_virial(FCS handle, fcs_int flag);
  */
 extern FCSResult fcs_fmm_get_virial(FCS handle, fcs_float *virial);
 
+extern FCSResult fcs_fmm_print_parameters(FCS handle);
+
 
 FCSResult fcs_fmm_set_max_particle_move(FCS handle, fcs_float max_particle_move);
 FCSResult fcs_fmm_set_resort(FCS handle, fcs_int resort);

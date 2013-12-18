@@ -494,3 +494,18 @@ extern FCSResult fcs_pepc_get_virial(FCS handle, fcs_float virial[9])
     }
 }
 
+extern FCSResult fcs_pepc_print_parameters(FCS handle)
+{
+  fcs_float theta, eps;
+  fcs_int num_walk_threads;
+  FCSResult res;
+  if ((res = fcs_pepc_get_theta(handle, &theta)))                       fcs_result_print_result(res);
+  if ((res = fcs_pepc_get_epsilon(handle, &eps)))                       fcs_result_print_result(res);
+  if ((res = fcs_pepc_get_num_walk_threads(handle, &num_walk_threads))) fcs_result_print_result(res);
+  printf("pepc theta: %e\n", theta);
+  printf("pepc epsilon: %e\n", eps);
+  printf("pepc num_walk_threads: %" FCS_LMOD_INT "d\n", num_walk_threads);
+  printf("pepc user requires virial: %4" FCS_LMOD_INT "d\n", handle->pepc_param->requirevirial);
+
+  return FCS_RESULT_SUCCESS;  
+}

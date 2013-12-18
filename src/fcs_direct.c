@@ -203,6 +203,30 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
 }
 
 
+FCSResult fcs_direct_print_parameters(FCS handle)
+{
+  fcs_float cutoff;
+  fcs_int images[3];
+  FCSResult result;
+
+  result = fcs_direct_get_cutoff(handle, &cutoff);
+  if (result != FCS_RESULT_SUCCESS)
+  {
+    printf("direct cutoff: FAILED!");
+    fcs_result_print_result(result);
+  } else printf("direct cutoff: %" FCS_LMOD_FLOAT "e\n", cutoff);
+
+  result = fcs_direct_get_periodic_images(handle, images);
+  if (result != FCS_RESULT_SUCCESS)
+  {
+    printf("direct cutoff: FAILED!");
+    fcs_result_print_result(result);
+  } else printf("direct periodic images: %5" FCS_LMOD_INT "d %5" FCS_LMOD_INT "d %5" FCS_LMOD_INT "d\n", images[0], images[1], images[2]);
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
 FCSResult fcs_direct_require_virial(FCS handle, fcs_int compute_virial)
 {
   static const char func_name[] = "fcs_direct_require_virial";

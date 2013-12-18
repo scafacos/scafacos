@@ -301,3 +301,11 @@ FCSResult fcs_p3m_get_virial(FCS handle, fcs_float *virial) {
   return NULL;
 }
 
+FCSResult fcs_p3m_print_parameters(FCS handle)
+{
+  fcs_float tolerance;
+  fcs_p3m_get_tolerance_field(handle, &tolerance);
+  printf("p3m absolute field tolerance: %" FCS_LMOD_FLOAT "e\n", tolerance);
+
+  return FCS_RESULT_SUCCESS;
+}

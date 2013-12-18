@@ -871,6 +871,34 @@ FCSResult fcs_fmm_get_virial(FCS handle, fcs_float *virial) {
 }
 
 
+FCSResult fcs_fmm_print_parameters(FCS handle)
+{
+  fcs_int absrel;
+  fcs_float tolerance_value;
+  fcs_int dipole_correction;
+  long long tuning;
+  long long maxdepth;
+  long long limit;
+  long long load;
+  fcs_fmm_get_absrel(handle, &absrel);
+  fcs_fmm_get_tolerance_energy(handle, &tolerance_value);
+  fcs_fmm_get_dipole_correction(handle, &dipole_correction);
+  fcs_fmm_get_internal_tuning(handle, &tuning);
+  fcs_fmm_get_balanceload(handle, &load);
+  fcs_fmm_get_maxdepth(handle, &maxdepth);
+  fcs_fmm_get_unroll_limit(handle, &limit);
+  printf("fmm absrel: %" FCS_LMOD_INT "d\n", absrel);
+  printf("fmm tolerance value: %e\n", tolerance_value);
+  printf("fmm dipole correction: %" FCS_LMOD_INT "d\n", dipole_correction);
+  printf("fmm internal tuning: %c\n", (tuning)?'T':'F');
+  printf("fmm maxdepth: %lld\n", maxdepth);
+  printf("fmm unroll limit: %lld\n", limit);
+  printf("fmm internal balance load: %c\n", (load)?'T':'F');
+  
+  return FCS_RESULT_SUCCESS;
+}
+
+
 FCSResult fcs_fmm_set_max_particle_move(FCS handle, fcs_float max_particle_move)
 {
   handle->fmm_param->max_particle_move = max_particle_move;

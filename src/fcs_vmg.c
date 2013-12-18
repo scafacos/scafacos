@@ -856,3 +856,36 @@ FCSResult fcs_vmg_get_virial(FCS handle, fcs_float *virial)
 
   return NULL;
 }
+
+
+FCSResult fcs_vmg_print_parameters(FCS handle)
+{
+  fcs_int level;
+  fcs_int max_iter;
+  fcs_int smoothing_steps;
+  fcs_int cycle_type;
+  fcs_float precision;
+  fcs_int near_field_cells;
+  fcs_int interpolation_order;
+  fcs_int discretization_order;
+
+  fcs_vmg_get_max_level(handle, &level);
+  fcs_vmg_get_max_iterations(handle, &max_iter);
+  fcs_vmg_get_smoothing_steps(handle, &smoothing_steps);
+  fcs_vmg_get_cycle_type(handle, &cycle_type);
+  fcs_vmg_get_precision(handle, &precision);
+  fcs_vmg_get_near_field_cells(handle, &near_field_cells);
+  fcs_vmg_get_interpolation_order(handle, &interpolation_order);
+  fcs_vmg_get_discretization_order(handle, &discretization_order);
+
+  printf("vmg max level:            %" FCS_LMOD_INT "d\n", level);
+  printf("vmg max iterations:       %" FCS_LMOD_INT "d\n", max_iter);
+  printf("vmg smoothing steps:      %" FCS_LMOD_INT "d\n", smoothing_steps);
+  printf("vmg cycle_type:           %" FCS_LMOD_INT "d\n", cycle_type);
+  printf("vmg precision:            %e\n", precision);
+  printf("vmg near field cells:     %" FCS_LMOD_INT "d\n", near_field_cells);
+  printf("vmg interpolation degree: %" FCS_LMOD_INT "d\n", interpolation_order);
+  printf("vmg discretization order: %" FCS_LMOD_INT "d\n", discretization_order);
+  
+  return FCS_RESULT_SUCCESS;
+}

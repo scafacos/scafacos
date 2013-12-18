@@ -139,6 +139,8 @@ extern FCSResult fcs_p2nfft_require_virial(FCS handle, fcs_int flag);
  */
 extern FCSResult fcs_p2nfft_get_virial(FCS handle, fcs_float *virial);
 
+extern FCSResult fcs_p2nfft_print_parameters(FCS handle);
+
 
 FCSResult fcs_p2nfft_set_max_particle_move(FCS handle, fcs_float max_particle_move);
 FCSResult fcs_p2nfft_set_resort(FCS handle, fcs_int resort);

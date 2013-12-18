@@ -149,6 +149,9 @@ extern FCSResult fcs_pp3mg_require_virial(FCS handle, fcs_int compute_virial);
 extern FCSResult fcs_pp3mg_get_virial(FCS handle, fcs_float *virial);
 
 
+extern FCSResult fcs_pp3mg_print_parameters(FCS handle);
+
+
 #ifdef __cplusplus
 }
 #endif

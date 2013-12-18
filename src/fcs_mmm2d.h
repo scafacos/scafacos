@@ -55,4 +55,6 @@ FCSResult fcs_mmm2d_destroy(FCS handle);
 FCSResult fcs_mmm2d_require_virial(FCS handle, fcs_int flag);
 FCSResult fcs_mmm2d_get_virial(FCS handle, fcs_float *virial);
 
+FCSResult fcs_mmm2d_print_parameters(FCS handle);
+
 #endif

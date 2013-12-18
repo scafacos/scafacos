@@ -95,4 +95,6 @@ FCSResult fcs_p3m_require_virial(FCS handle, fcs_int flag);
  */
 FCSResult fcs_p3m_get_virial(FCS handle, fcs_float *virial);
 
+FCSResult fcs_p3m_print_parameters(FCS handle);
+
 #endif

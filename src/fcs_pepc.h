@@ -154,6 +154,8 @@ extern FCSResult fcs_pepc_require_virial(FCS handle, fcs_int choice);
  */
 extern FCSResult fcs_pepc_get_virial(FCS handle, fcs_float virial[9]);
 
+extern FCSResult fcs_pepc_print_parameters(FCS handle);
+
 /**
  * @brief pepc init fortran routine that is wrapped by scafacos
  */

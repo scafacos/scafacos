@@ -259,3 +259,24 @@ FCSResult fcs_mmm2d_get_virial(FCS handle, fcs_float *virial) {
     virial[i] = 0.0;
   return NULL;
 }
+
+FCSResult fcs_mmm2d_print_parameters(FCS handle)
+{
+  fcs_float contrasts_min, contrasts_max;
+  fcs_float PWerror;
+  fcs_float cutoff;
+  fcs_int layers;
+  fcs_float skin;
+  fcs_mmm2d_get_dielectric_contrasts(handle, &contrasts_min, &contrasts_max);
+  fcs_mmm2d_get_far_cutoff(handle, &cutoff);
+  fcs_mmm2d_get_layers_per_node(handle, &layers);
+  fcs_mmm2d_get_maxPWerror(handle, &PWerror);
+  fcs_mmm2d_get_skin(handle, &skin);
+  printf("mmm2d dielectric contrasts: %e %e\n", contrasts_min, contrasts_max);
+  printf("mmm2d far cutoff: %e\n", cutoff);
+  printf("mmm2d layer per node: %" FCS_LMOD_INT "d\n", layers);
+  printf("mmm2d maximum PWerror: %e\n", PWerror);
+  printf("mmm2d skin: %e\n", skin);
+
+  return FCS_RESULT_SUCCESS;
+}

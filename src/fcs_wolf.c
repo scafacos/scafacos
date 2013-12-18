@@ -222,6 +222,20 @@ FCSResult fcs_wolf_get_virial(FCS handle, fcs_float *virial)
 }
 
 
+FCSResult fcs_wolf_print_parameters(FCS handle)
+{
+  fcs_float cutoff, alpha;
+
+  fcs_wolf_get_cutoff(handle, &cutoff);
+  fcs_wolf_get_alpha(handle, &alpha);
+
+  printf("wolf cutoff: %" FCS_LMOD_FLOAT "f\n", cutoff);
+  printf("wolf alpha: %" FCS_LMOD_FLOAT "f\n", alpha);
+  
+  return FCS_RESULT_SUCCESS;
+}
+
+
 FCSResult fcs_wolf_set_cutoff(FCS handle, fcs_float cutoff)
 {
   static const char func_name[] = "fcs_wolf_set_cutoff";

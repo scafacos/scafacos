@@ -123,6 +123,9 @@ FCSResult fcs_wolf_require_virial(FCS handle, fcs_int compute_virial);
 FCSResult fcs_wolf_get_virial(FCS handle, fcs_float *virial);
 
 
+FCSResult fcs_wolf_print_parameters(FCS handle);
+
+
 FCSResult fcs_wolf_set_max_particle_move(FCS handle, fcs_float max_particle_move);
 FCSResult fcs_wolf_set_resort(FCS handle, fcs_int resort);
 FCSResult fcs_wolf_get_resort(FCS handle, fcs_int *resort);

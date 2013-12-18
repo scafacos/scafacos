@@ -119,3 +119,9 @@ FCSResult fcs_memd_get_virial(FCS handle, fcs_float* virial)
 {
     return NULL;
 }
+
+FCSResult fcs_memd_print_parameters(FCS handle)
+{
+  printf("not implemented\n");
+  return FCS_RESULT_SUCCESS;
+}

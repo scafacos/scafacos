@@ -91,4 +91,6 @@ extern FCSResult fcs_memd_destroy(FCS handle);
 extern FCSResult fcs_memd_require_virial(FCS handle, fcs_int flagvalue);
 extern FCSResult fcs_memd_get_virial(FCS handle, fcs_float* virial);
 
+extern FCSResult fcs_memd_print_parameters(FCS handle);
+
 #endif /* FCS_MEMD_INCLUDED */

@@ -239,6 +239,24 @@ static FCSResult ifcs_p2nfft_check(
   return NULL;
 }
 
+
+/************************************************************
+ *     Print P2NFFT parameters
+ ************************************************************/
+extern FCSResult fcs_p2nfft_print_parameters(FCS handle)
+{
+  fcs_int tolerance_type;
+  fcs_float tolerance;
+  fcs_get_tolerance(handle, &tolerance_type, &tolerance);
+  if(tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
+    printf("p2nfft: tolerance_type = FCS_TOLERANCE_TYPE_FIELD, tolerance = %" FCS_LMOD_FLOAT "e\n", tolerance);
+  else if(tolerance_type == FCS_TOLERANCE_TYPE_POTENTIAL)
+    printf("p2nfft: tolerance_type = FCS_TOLERANCE_TYPE_POTENTIAL, tolerance = %" FCS_LMOD_FLOAT "e\n", tolerance);
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
 /************************************************************
  *     Nearfield computation 
  ************************************************************/

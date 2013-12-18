@@ -1252,6 +1252,7 @@ next_param:
 FCSResult fcs_print_parameters(FCS handle)
 {
   const char *fnc_name = "fcs_print_parameters";
+  FCSResult result;
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
@@ -1273,204 +1274,67 @@ FCSResult fcs_print_parameters(FCS handle)
   {
 #ifdef FCS_ENABLE_DIRECT
     case FCS_METHOD_DIRECT:
-      {
-        fcs_float cutoff;
-        fcs_int images[3];
-        FCSResult res;
-        if ((res = fcs_direct_get_cutoff(handle, &cutoff))) fcs_result_print_result(res);
-        printf("direct cutoff: %" FCS_LMOD_FLOAT "e\n", cutoff);
-        if ((res = fcs_direct_get_periodic_images(handle, images))) fcs_result_print_result(res);
-        printf("direct periodic images: %5" FCS_LMOD_INT "d %5" FCS_LMOD_INT "d %5" FCS_LMOD_INT "d\n", images[0], images[1], images[2]);
-        break;
-      }
+      result = fcs_direct_print_parameters(handle);
+      break;
 #endif
 #ifdef FCS_ENABLE_EWALD
-    case FCS_METHOD_EWALD: {
-      FCSResult res = fcs_ewald_print_parameters(handle);
-      if (res) 
-        fcs_result_print_result(res);
+    case FCS_METHOD_EWALD:
+      result = fcs_ewald_print_parameters(handle);
       break;
-    }
 #endif
 #ifdef FCS_ENABLE_FMM
-    case FCS_METHOD_FMM: {
-      fcs_int absrel;
-      fcs_float tolerance_value;
-      fcs_int dipole_correction;
-      long long tuning;
-      long long maxdepth;
-      long long limit;
-      long long load;
-      fcs_fmm_get_absrel(handle, &absrel);
-      fcs_fmm_get_tolerance_energy(handle, &tolerance_value);
-      fcs_fmm_get_dipole_correction(handle, &dipole_correction);
-      fcs_fmm_get_internal_tuning(handle, &tuning);
-      fcs_fmm_get_balanceload(handle, &load);
-      fcs_fmm_get_maxdepth(handle, &maxdepth);
-      fcs_fmm_get_unroll_limit(handle, &limit);
-      printf("fmm absrel: %" FCS_LMOD_INT "d\n", absrel);
-      printf("fmm tolerance value: %e\n", tolerance_value);
-      printf("fmm dipole correction: %" FCS_LMOD_INT "d\n", dipole_correction);
-      printf("fmm internal tuning: %c\n", (tuning)?'T':'F');
-      printf("fmm maxdepth: %lld\n", maxdepth);
-      printf("fmm unroll limit: %lld\n", limit);
-      printf("fmm internal balance load: %c\n", (load)?'T':'F');
+    case FCS_METHOD_FMM:
+      result = fcs_fmm_print_parameters(handle);
       break;
-    }
 #endif
 #ifdef FCS_ENABLE_MEMD
     case FCS_METHOD_MEMD:
+      result = fcs_memd_print_parameters(handle);
       break;
 #endif
 #ifdef FCS_ENABLE_MMM1D
-    case FCS_METHOD_MMM1D: {
-      fcs_float radius;
-      fcs_float PWerror;
-      fcs_int cutoff;
-      fcs_mmm1d_get_far_switch_radius(handle, &radius);
-      fcs_mmm1d_get_bessel_cutoff(handle, &cutoff);
-      fcs_mmm1d_get_maxPWerror(handle, &PWerror);
-      printf("mmm1d bessel cutoff: %" FCS_LMOD_INT "d\n", cutoff);
-      printf("mmm1d far switch radius: %e\n", radius);
-      printf("mmm1d maximum PWerror: %e\n", PWerror);
+    case FCS_METHOD_MMM1D:
+      result = fcs_mmm1d_print_parameters(handle);
       break;
-    }
 #endif
 #ifdef FCS_ENABLE_MMM2D
-  case FCS_METHOD_MMM2D: {
-      fcs_float contrasts_min, contrasts_max;
-      fcs_float PWerror;
-      fcs_float cutoff;
-      fcs_int layers;
-      fcs_float skin;
-      fcs_mmm2d_get_dielectric_contrasts(handle, &contrasts_min, &contrasts_max);
-      fcs_mmm2d_get_far_cutoff(handle, &cutoff);
-      fcs_mmm2d_get_layers_per_node(handle, &layers);
-      fcs_mmm2d_get_maxPWerror(handle, &PWerror);
-      fcs_mmm2d_get_skin(handle, &skin);
-      printf("mmm2d dielectric contrasts: %e %e\n", contrasts_min, contrasts_max);
-      printf("mmm2d far cutoff: %e\n", cutoff);
-      printf("mmm2d layer per node: %" FCS_LMOD_INT "d\n", layers);
-      printf("mmm2d maximum PWerror: %e\n", PWerror);
-      printf("mmm2d skin: %e\n", skin);
+  case FCS_METHOD_MMM2D:
+      result = fcs_mmm2d_print_parameters(handle);
       break;
-    }
 #endif
 #ifdef FCS_ENABLE_PEPC
     case FCS_METHOD_PEPC:
-      {
-        fcs_float theta, eps;
-        fcs_int num_walk_threads;
-        FCSResult res;
-        if ((res = fcs_pepc_get_theta(handle, &theta)))                       fcs_result_print_result(res);
-        if ((res = fcs_pepc_get_epsilon(handle, &eps)))                       fcs_result_print_result(res);
-        if ((res = fcs_pepc_get_num_walk_threads(handle, &num_walk_threads))) fcs_result_print_result(res);
-        printf("pepc theta: %e\n", theta);
-        printf("pepc epsilon: %e\n", eps);
-        printf("pepc num_walk_threads: %" FCS_LMOD_INT "d\n", num_walk_threads);
-        printf("pepc user requires virial: %4" FCS_LMOD_INT "d\n", handle->pepc_param->requirevirial);
-        break;
-      }
+      result = fcs_pepc_print_parameters(handle);
+      break;
 #endif
 #ifdef FCS_ENABLE_P2NFFT
     case FCS_METHOD_P2NFFT:
-      {
-        fcs_int tolerance_type;
-        fcs_float tolerance;
-        fcs_get_tolerance(handle, &tolerance_type, &tolerance);
-        if(tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
-          printf("p2nfft: tolerance_type = FCS_TOLERANCE_TYPE_FIELD, tolerance = %" FCS_LMOD_FLOAT "e\n", tolerance);
-        else if(tolerance_type == FCS_TOLERANCE_TYPE_POTENTIAL)
-          printf("p2nfft: tolerance_type = FCS_TOLERANCE_TYPE_POTENTIAL, tolerance = %" FCS_LMOD_FLOAT "e\n", tolerance);
-        break;
-      }      
+      result = fcs_p2nfft_print_parameters(handle);
       break;
 #endif
 #ifdef FCS_ENABLE_P3M
     case FCS_METHOD_P3M:
-      {
-        fcs_float tolerance;
-        fcs_p3m_get_tolerance_field(handle, &tolerance);
-        printf("p3m absolute field tolerance: %" FCS_LMOD_FLOAT "e\n", tolerance);
-        break;
-      }
+      result = fcs_p3m_print_parameters(handle);
+      break;
 #endif
 #ifdef FCS_ENABLE_PP3MG
     case FCS_METHOD_PP3MG:
-      {
-  fcs_int cells_x, cells_y, cells_z;
-  fcs_int ghosts;
-  fcs_int degree;
-  fcs_int max_particles;
-  fcs_int max_iterations;
-  fcs_float tol;
-  fcs_int distribution;
-  fcs_int discretization;
-
-  fcs_pp3mg_get_cells_x(handle, &cells_x);
-  fcs_pp3mg_get_cells_y(handle, &cells_y);
-  fcs_pp3mg_get_cells_z(handle, &cells_z);
-  fcs_pp3mg_get_ghosts(handle, &ghosts);
-  fcs_pp3mg_get_degree(handle, &degree);
-  fcs_pp3mg_get_max_particles(handle, &max_particles);
-  fcs_pp3mg_get_max_iterations(handle, &max_iterations);
-  fcs_pp3mg_get_tol(handle, &tol);
-  fcs_pp3mg_get_distribution(handle, &distribution);
-  fcs_pp3mg_get_discretization(handle, &discretization);
- 
-  printf("pp3mg cells x: %" FCS_LMOD_INT "d\n",cells_x);
-  printf("pp3mg cells y: %" FCS_LMOD_INT "d\n",cells_y);
-  printf("pp3mg cells z: %" FCS_LMOD_INT "d\n",cells_z);
-  printf("pp3mg ghosts: %" FCS_LMOD_INT "d\n",ghosts);
-  printf("pp3mg degree: %" FCS_LMOD_INT "d\n",degree);
-  printf("pp3mg max_particles: %" FCS_LMOD_INT "d\n",max_particles);
-  printf("pp3mg max_iterations: %" FCS_LMOD_INT "d\n",max_iterations);
-  printf("pp3mg tol: %e\n",tol);
-  printf("pp3mg distribution: %" FCS_LMOD_INT "d\n",distribution);
-  printf("pp3mg discretization: %" FCS_LMOD_INT "d\n",discretization);
-      }
+      result = fcs_pp3mg_print_parameters(handle);
       break;
 #endif
 #ifdef FCS_ENABLE_VMG
     case FCS_METHOD_VMG:
-    {
-      fcs_int level;
-      fcs_int max_iter;
-      fcs_int smoothing_steps;
-      fcs_int cycle_type;
-      fcs_float precision;
-      fcs_int near_field_cells;
-      fcs_int interpolation_order;
-      fcs_int discretization_order;
-
-      fcs_vmg_get_max_level(handle, &level);
-      fcs_vmg_get_max_iterations(handle, &max_iter);
-      fcs_vmg_get_smoothing_steps(handle, &smoothing_steps);
-      fcs_vmg_get_cycle_type(handle, &cycle_type);
-      fcs_vmg_get_precision(handle, &precision);
-      fcs_vmg_get_near_field_cells(handle, &near_field_cells);
-      fcs_vmg_get_interpolation_order(handle, &interpolation_order);
-      fcs_vmg_get_discretization_order(handle, &discretization_order);
-
-      printf("vmg max level:            %" FCS_LMOD_INT "d\n", level);
-      printf("vmg max iterations:       %" FCS_LMOD_INT "d\n", max_iter);
-      printf("vmg smoothing steps:      %" FCS_LMOD_INT "d\n", smoothing_steps);
-      printf("vmg cycle_type:           %" FCS_LMOD_INT "d\n", cycle_type);
-      printf("vmg precision:            %e\n", precision);
-      printf("vmg near field cells:     %" FCS_LMOD_INT "d\n", near_field_cells);
-      printf("vmg interpolation degree: %" FCS_LMOD_INT "d\n", interpolation_order);
-      printf("vmg discretization order: %" FCS_LMOD_INT "d\n", discretization_order);
-    }
+      result = fcs_vmg_print_parameters(handle);
       break;
 #endif
 #ifdef FCS_ENABLE_WOLF
     case FCS_METHOD_WOLF:
+      result = fcs_wolf_print_parameters(handle);
       break;
 #endif
-    default:
-      printf("no solver specific data found or unknown solver specified\n");
-      break;
   }
+
+  if (result != FCS_RESULT_SUCCESS) fcs_result_print_result(result);
 
   return FCS_RESULT_SUCCESS;
 }

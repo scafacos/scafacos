@@ -186,3 +186,18 @@ FCSResult fcs_mmm1d_get_virial(FCS handle, fcs_float *virial) {
     virial[i] = 0.0;
   return NULL;
 }
+
+FCSResult fcs_mmm1d_print_parameters(FCS handle)
+{
+  fcs_float radius;
+  fcs_float PWerror;
+  fcs_int cutoff;
+  fcs_mmm1d_get_far_switch_radius(handle, &radius);
+  fcs_mmm1d_get_bessel_cutoff(handle, &cutoff);
+  fcs_mmm1d_get_maxPWerror(handle, &PWerror);
+  printf("mmm1d bessel cutoff: %" FCS_LMOD_INT "d\n", cutoff);
+  printf("mmm1d far switch radius: %e\n", radius);
+  printf("mmm1d maximum PWerror: %e\n", PWerror);
+
+  return FCS_RESULT_SUCCESS;
+}

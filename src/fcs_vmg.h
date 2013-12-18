@@ -144,6 +144,8 @@ extern FCSResult fcs_vmg_require_virial(FCS handle, fcs_int flag);
  */
 extern FCSResult fcs_vmg_get_virial(FCS handle, fcs_float *virial);
 
+extern FCSResult fcs_vmg_print_parameters(FCS handle);
+
 /**
  * @brief External interface definition for setup of the vmg library.
  *
