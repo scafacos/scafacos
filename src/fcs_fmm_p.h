@@ -156,7 +156,7 @@ extern FCSResult fcs_fmm_set_cusp_radius(FCS handle, fcs_float radius);
 /**
  * @brief function to get the fmm cusp radius parameter
  * @param handle FCS-object that contains the parameter 
- * @param coulomb pointer to fcs_float variable where the function
+ * @param cusp_radius pointer to fcs_float variable where the function
  * returns the cusp radius
  * @return FCSResult-object containing the return state
  */
@@ -189,7 +189,7 @@ extern FCSResult fcs_fmm_set_unroll_limit(FCS handle, long long limit);
 /**
  * @brief function to get the optional fmm absrel parameter
  * @param handle FCS-object that contains the parameter
- * @param depth  fcs_int containing the limit for the unrolled functions
+ * @param limit  fcs_int containing the limit for the unrolled functions
  * @return FCSResult-object containing the return state
  */
 extern FCSResult fcs_fmm_get_unroll_limit(FCS handle, long long *limit);
@@ -197,7 +197,7 @@ extern FCSResult fcs_fmm_get_unroll_limit(FCS handle, long long *limit);
 /**
  * @brief function to set the optional fmm absrel parameter
  * @param handle FCS-object that is modified
- * @param depth fcs_int activates load balancing routines (0 (deactivated) or 1 (activated))
+ * @param load fcs_int activates load balancing routines (0 (deactivated) or 1 (activated))
  * @return FCSResult-object containing the return state
  */
 extern FCSResult fcs_fmm_set_balanceload(FCS handle, long long load);
@@ -205,7 +205,7 @@ extern FCSResult fcs_fmm_set_balanceload(FCS handle, long long load);
 /**
  * @brief function to get the optional fmm absrel parameter
  * @param handle FCS-object that contains the parameter
- * @param depth  fcs_int containing the load balancing status
+ * @param load fcs_int containing the load balancing status
  * @return FCSResult-object containing the return state
  */
 extern FCSResult fcs_fmm_get_balanceload(FCS handle, long long *load);

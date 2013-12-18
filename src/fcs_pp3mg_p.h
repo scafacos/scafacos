@@ -36,24 +36,6 @@
  */
 typedef struct fcs_pp3mg_parameters_t *fcs_pp3mg_parameters;
 
-
-/**
- * @brief function to set the optional direct cutoff parameter
- * @param handle FCS-object
- * @param cutoff cutoff radius to use
- *        =0 - no cutoff radius
- *        >0 - compute interactions only inside of the cutoff
- *        <0 - compute interactions only outside of the cutoff
- * @return FCSResult-object containing the return state
- */
-
-/**
- * @brief function to get the optional direct cutoff parameter
- * @param handle FCS-object
- * @param cutoff current cutoff radius
- * @return the parameter cutoff
- */
-
 /* setter for parameter cells_x */
 FCSResult fcs_pp3mg_set_cells_x(FCS handle, fcs_int cells_x);
 
@@ -114,12 +96,7 @@ FCSResult fcs_pp3mg_set_discretization(FCS handle, fcs_int discretization);
 /* getter for parameter discretization */
 FCSResult fcs_pp3mg_get_discretization(FCS handle, fcs_int *discertization);
 
-/**
- * @brief combined setter for all direct solver parameters
- * @param handle FCS-object data is stored into
- * @param cutoff fcs_float the chosen cutoff (see fcs_pp3mg_set_cutoff)
- * @return FCSResult-object containing th return state
- **/
+/* combined setter for all solver parameters */
 extern FCSResult fcs_pp3mg_setup(FCS handle, fcs_int cells_x, fcs_int cells_y, fcs_int cells_z, fcs_int ghosts, fcs_int degree, fcs_int max_particles, fcs_int maxiter, fcs_float tol, fcs_int distribution, fcs_int discretization);
 
 #endif

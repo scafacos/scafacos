@@ -27,7 +27,7 @@
 #include "FCSInterface_p.h"
 
 /**
- * @file fcs_vmg.h
+ * @file fcs_vmg_p.h
  * @brief file containing all vmg specific functions
  * @author Rene Halver
  */
@@ -39,8 +39,6 @@ typedef struct fcs_vmg_parameters_t *fcs_vmg_parameters;
  *
  * @param handle FCS-object that contains the parameters
  * @param max_level The maximum level of the algorithm, i.e. n_gridpoints = 2^max_level.
- * @param periodic Periodicity.
- * @param spline_degree The degree of the interpolating B-Splines.
  * @param max_iterations The maximum number of multigrid iterations.
  * @param smoothing_steps Number of pre/postsmoothing steps on each level.
  * @param cycle_type Cycle-number.
@@ -192,7 +190,7 @@ extern FCSResult fcs_vmg_get_near_field_cells(FCS handle, fcs_int *near_field_ce
  *        the gridded potential to the particle positions.
  *
  * @param handle FCS-object that contains the parameter.
- * @param interpolation order Interpolation order.
+ * @param interpolation_order Interpolation order.
  *
  * @return FCSResult-object containing the return value.
  */

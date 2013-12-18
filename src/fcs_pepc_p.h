@@ -92,7 +92,7 @@ extern FCSResult fcs_pepc_set_num_walk_threads(FCS handle, fcs_int num_walk_thre
 /**
  * @brief function to get pepcs number of walk threads per MPI rank
  * @param handle FCS-object that contains the parameter
- * @return num_walk_threads number of traversal threads per rank
+ * @param num_walk_threads number of traversal threads per rank
  */
 extern FCSResult fcs_pepc_get_num_walk_threads(FCS handle, fcs_int* num_walk_threads);
 
