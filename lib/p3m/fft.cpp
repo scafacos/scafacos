@@ -27,12 +27,11 @@
 #include <config.h>
 #endif
 
-#include "types.h"
-#include "fft.h"
-#include "utils.h"
+#include "types.hpp"
+#include "fft.hpp"
+#include "utils.hpp"
 #include <stdio.h>
 #include <stdlib.h>
-#include <fftw3.h>
 
 /* Append FFTW prefix to all required FFTW names (the FCS internal FFTW library uses the fcs_fftw_ namespace) */
 #if defined(FCS_FLOAT_IS_FLOAT)
@@ -113,7 +112,7 @@ ifcs_fft_print_fft_plan(ifcs_fft_forw_plan pl);
 /***************************************************/
 void ifcs_fft_init(ifcs_fft_data_struct *fft, ifcs_p3m_comm_struct *comm) {
   for(int i=0;i<4;i++) {
-    fft->plan[i].group = malloc(comm->size * sizeof(int));
+    fft->plan[i].group = static_cast<int*>(malloc(comm->size * sizeof(int)));
     fft->plan[i].send_block = NULL;
     fft->plan[i].send_size  = NULL;
     fft->plan[i].recv_block = NULL;
@@ -163,7 +162,6 @@ ifcs_fft_prepare(ifcs_fft_data_struct *fft, ifcs_p3m_comm_struct *comm,
 		 int *ks_pnum) {
   int i,j;
   /* helpers */
-  int mult[3];
 
   int n_grid[4][3]; /* The four node grids. */
   int my_pos[4][3]; /* The position of this_node in the node grids. */
@@ -178,8 +176,8 @@ ifcs_fft_prepare(ifcs_fft_data_struct *fft, ifcs_p3m_comm_struct *comm,
 
   fft->max_comm_size=0; fft->max_grid_size=0;
   for(i=0;i<4;i++) {
-    n_id[i]  = malloc(1*comm->size*sizeof(int));
-    n_pos[i] = malloc(3*comm->size*sizeof(int));
+    n_id[i]  = static_cast<int*>(malloc(1*comm->size*sizeof(int)));
+    n_pos[i] = static_cast<int*>(malloc(3*comm->size*sizeof(int)));
   }
 
   /* === node grids === */
@@ -217,8 +215,8 @@ ifcs_fft_prepare(ifcs_fft_data_struct *fft, ifcs_p3m_comm_struct *comm,
   fcs_int *g2d = n_grid[1];
   
   /* Using 1 node in z dir */
+
   if(g3d[2]==1) { 
-    for(i=0; i<3; i++) mult[i]=1;
     fft->plan[1].row_dir = 2;
   } else {
     fft->plan[1].row_dir=-1;
@@ -254,7 +252,6 @@ ifcs_fft_prepare(ifcs_fft_data_struct *fft, ifcs_p3m_comm_struct *comm,
 	g2d[0]=1; 
       }
     }
-    for(i=0;i<3;i++) mult[i]=g2d[i]/g3d[i];
   }
 
   
@@ -422,7 +419,7 @@ ifcs_fft_prepare(ifcs_fft_data_struct *fft, ifcs_p3m_comm_struct *comm,
       wisdom_status = fftw_import_wisdom_from_file(wisdom_file);
       fclose(wisdom_file);
     }
-    if (fft->init_tag==1) fftw_destroy_plan(fft->plan[i].fftw_plan);
+    if (fft->init_tag == 1) fftw_destroy_plan(fft->plan[i].fftw_plan);
 //printf("fft->plan[%d].n_ffts=%d\n",i,fft->plan[i].n_ffts);
     fft->plan[i].fftw_plan =
       fftw_plan_many_dft(1,&fft->plan[i].new_grid[2],fft->plan[i].n_ffts,

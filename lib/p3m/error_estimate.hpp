@@ -25,7 +25,7 @@
 #include <config.h>
 #endif
 #include <mpi.h>
-#include "types.h"
+#include "types.hpp"
 
 /** Determines a value for alpha that achieves the wanted_error, if at
     all possible. Also returns the achieved errors with these

@@ -1,6 +1,5 @@
 /*
-  Copyright (C) 2011 Olaf Lenz
-  
+  Copyright (C) 2013 Olaf Lenz
   This file is part of ScaFaCoS.
   
   ScaFaCoS is free software: you can redistribute it and/or modify
@@ -16,16 +15,28 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_P3M_H
-#define _P3M_P3M_H
-
+#ifndef _P3M_TUNE_BROADCAST_H 
+#define _P3M_TUNE_BROADCAST_H 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "init.h"
-#include "parameters.h"
-#include "tune.h"
-#include "run.h"
+#include "types.hpp"
+#include "FCSResult.h"
+
+/* Events during tuning */
+#define CMD_FAILED -1
+#define CMD_FINISHED 0
+#define CMD_COMPUTE_ERROR_ESTIMATE 1
+#define CMD_TIMING 2
+
+void
+ifcs_p3m_tune_broadcast_command
+(ifcs_p3m_data_struct *d, fcs_int command);
+
+FCSResult
+ifcs_p3m_tune_broadcast_slave
+(ifcs_p3m_data_struct *d, fcs_int num_particles, fcs_int max_particles,
+ fcs_float *positions, fcs_float *charges);
 
 #endif

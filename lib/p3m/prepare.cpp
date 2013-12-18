@@ -16,12 +16,12 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "prepare.h"
+#include "prepare.hpp"
 #include <stdlib.h>
 #include <stdio.h>
-#include "utils.h"
-#include "caf.h"
-#include "influence_function.h"
+#include "utils.hpp"
+#include "caf.hpp"
+#include "influence_function.hpp"
 #include "FCSCommon.h"
 
 /***************************************************/
@@ -299,7 +299,7 @@ static  void ifcs_p3m_calc_send_grid(ifcs_p3m_data_struct *d) {
  *           i.e. the prefactor i*2*PI/L is missing! */
 void ifcs_p3m_calc_differential_operator(ifcs_p3m_data_struct *d) {
   for (fcs_int i=0;i<3;i++) {
-    d->d_op[i] = realloc(d->d_op[i], d->grid[i]*sizeof(fcs_int));
+    d->d_op[i] = static_cast<fcs_int *>(realloc(d->d_op[i], d->grid[i]*sizeof(fcs_int)));
     d->d_op[i][0] = 0;
     d->d_op[i][d->grid[i]/2] = 0;
 

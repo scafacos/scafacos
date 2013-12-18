@@ -16,8 +16,8 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "parameters.h"
-#include "types.h"
+#include "parameters.hpp"
+#include "types.hpp"
 #include "FCSCommon.h"
 #include <stdio.h>
 

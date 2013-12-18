@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 Olaf Lenz
+  Copyright (C) 2013 Olaf Lenz
   
   This file is part of ScaFaCoS.
   
@@ -16,10 +16,21 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
+#ifndef _P3M_TIMING_H
+#define _P3M_TIMING_H
 
-#include "utils.h"
-#include <stdlib.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <mpi.h>
+#include "types.hpp"
 
-void errexit() {
-  exit(1);
-}
+/** Test run the method with the current parameters. Afterwards, the
+    timing variables in the data struct are set. */
+void
+ifcs_p3m_timing
+(ifcs_p3m_data_struct *d,
+ fcs_int _num_particles, fcs_int _max_num_particles,
+ fcs_float *_positions, fcs_float *_charges);
+
+#endif

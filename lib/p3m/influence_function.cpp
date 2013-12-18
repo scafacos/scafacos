@@ -20,8 +20,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 
-#include "influence_function.h"
-#include "utils.h"
+#include "influence_function.hpp"
+#include "utils.hpp"
 #include <stdlib.h>
 
 /***************************************************/
@@ -351,9 +351,9 @@ ifcs_p3m_perform_aliasing_sums_adi(ifcs_p3m_data_struct *d, fcs_int n[3],
 static void ifcs_p3m_calc_meshift(ifcs_p3m_data_struct *d) {
   int i;
   
-  d->meshift_x = (fcs_float *) realloc(d->meshift_x, d->grid[0]*sizeof(fcs_int));
-  d->meshift_y = (fcs_float *) realloc(d->meshift_y, d->grid[1]*sizeof(fcs_int));
-  d->meshift_z = (fcs_float *) realloc(d->meshift_z, d->grid[2]*sizeof(fcs_int));
+  d->meshift_x = (fcs_int *) realloc(d->meshift_x, d->grid[0]*sizeof(fcs_int));
+  d->meshift_y = (fcs_int *) realloc(d->meshift_y, d->grid[1]*sizeof(fcs_int));
+  d->meshift_z = (fcs_int *) realloc(d->meshift_z, d->grid[2]*sizeof(fcs_int));
   
   d->meshift_x[0] = d->meshift_y[0] = d->meshift_z[0] = 0;
   for (i = 1; i <= d->grid[RX]/2; i++) {

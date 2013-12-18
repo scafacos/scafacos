@@ -16,9 +16,9 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "error_estimate.h"
-#include "tune_broadcast.h"
-#include "utils.h"
+#include "error_estimate.hpp"
+#include "tune_broadcast.hpp"
+#include "utils.hpp"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

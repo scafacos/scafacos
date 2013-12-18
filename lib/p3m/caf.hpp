@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013 Olaf Lenz
+  Copyright (C) 2011 Olaf Lenz
   
   This file is part of ScaFaCoS.
   
@@ -16,21 +16,15 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_TIMING_H
-#define _P3M_TIMING_H
+#ifndef _P3M_CAF_HPP
+#define _P3M_CAF_HPP
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <mpi.h>
-#include "types.h"
+#include "types.hpp"
 
-/** Test run the method with the current parameters. Afterwards, the
-    timing variables in the data struct are set. */
-void
-ifcs_p3m_timing
-(ifcs_p3m_data_struct *d,
- fcs_int _num_particles, fcs_int _max_num_particles,
- fcs_float *_positions, fcs_float *_charges);
+/** Computes the charge assignment function of for the \a i'th degree
+    at value \a x. */
+fcs_float ifcs_p3m_caf(fcs_int i, fcs_float x, fcs_int cao_value);
+fcs_float ifcs_p3m_caf_d(fcs_int i, fcs_float x, fcs_int cao_value);
+void ifcs_p3m_interpolate_charge_assignment_function(ifcs_p3m_data_struct *d);
 
 #endif

@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 2010,2011 The ESPResSo project
-  Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010 
-    Max-Planck-Institute for Polymer Research, Theory Group
+  Copyright (C) 2013 Olaf Lenz
   
   This file is part of ScaFaCoS.
   
@@ -18,19 +16,23 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_RUN_H 
-#define _P3M_RUN_H
+
+#ifndef _P3M_INFLUENCE_FUNCTION_H
+#define _P3M_INFLUENCE_FUNCTION_H
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "types.h"
+#include "types.hpp"
 
-void ifcs_p3m_run(void* rd,
-		  fcs_int num_particles,
-		  fcs_int max_num_particles,
-		  fcs_float *positions, 
-		  fcs_float *charges,
-		  fcs_float *fields,
-		  fcs_float *potentials);
+void 
+ifcs_p3m_calc_influence_function_ik(ifcs_p3m_data_struct *d);
+
+void 
+ifcs_p3m_calc_influence_function_iki(ifcs_p3m_data_struct *d);
+
+void 
+ifcs_p3m_calc_influence_function_adi(ifcs_p3m_data_struct *d);
+
 
 #endif

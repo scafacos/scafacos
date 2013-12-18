@@ -16,11 +16,11 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "caf.h"
+#include "caf.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "utils.h"
+#include "utils.hpp"
 
 /** Computes the charge assignment function of for the \a i'th degree
     at value \a x. */

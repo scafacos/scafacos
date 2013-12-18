@@ -25,8 +25,8 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "communication.h"
-#include "fft.h"
+#include "communication.hpp"
+#include "fft.hpp"
 
 /* DEFAULTS */
 /** Default for number of interpolation points of the charge
@@ -43,7 +43,7 @@
 
 /* DEBUG SWITCHES */
 /* Define to turn on additional sanity checks. */
-#define ADDITIONAL_CHECKS */
+/* #define ADDITIONAL_CHECKS */
 /* Define to print out timings at the end of fcs_run */
 #define P3M_PRINT_TIMINGS
 

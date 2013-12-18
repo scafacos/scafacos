@@ -27,8 +27,8 @@
 
 #include "fcs_p3m.h"
 #include "FCSCommon.h"
-#include "p3m/p3m.h"
-#include "p3m/types.h"
+#include "p3m/p3m.hpp"
+#include "p3m/types.hpp"
 
 
 /* method to check if p3m parameters are entered into FCS */

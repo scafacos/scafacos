@@ -25,11 +25,11 @@
 #endif
 
 #include "FCSCommon.h"
-#include "run.h"
-#include "types.h"
-#include "utils.h"
-#include "caf.h"
-#include "tune.h"
+#include "run.hpp"
+#include "types.hpp"
+#include "utils.hpp"
+#include "caf.hpp"
+#include "tune.hpp"
 #include "fcs_p3m_p.h"
 #include "common/gridsort/gridsort.h"
 #include "common/near/near.h"
@@ -193,9 +193,9 @@ void ifcs_p3m_run(void* rd,
   fcs_float *fields = NULL; 
   fcs_float *potentials = NULL; 
   if (_fields != NULL)
-    fields = malloc(sizeof(fcs_float)*3*num_real_particles);
+    fields = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*3*num_real_particles));
   if (_potentials != NULL || d->require_total_energy)
-    potentials = malloc(sizeof(fcs_float)*num_real_particles);
+    potentials = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*num_real_particles));
   
   STOPSTART(TIMING_DECOMP, TIMING_CA);
 

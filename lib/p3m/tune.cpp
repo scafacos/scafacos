@@ -21,15 +21,15 @@
 #include <config.h>
 #endif
 
-#include "tune.h"
+#include "tune.hpp"
 
 #include "FCSCommon.h"
-#include "tune_broadcast.h"
-#include "error_estimate.h"
-#include "timing.h"
-#include "run.h"
-#include "utils.h"
-#include "prepare.h"
+#include "tune_broadcast.hpp"
+#include "error_estimate.hpp"
+#include "timing.hpp"
+#include "run.hpp"
+#include "utils.hpp"
+#include "prepare.hpp"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -252,7 +252,7 @@ ifcs_p3m_tune_r_cut_alpha_cao_grid(ifcs_p3m_data_struct *d,
                                    fcs_int num_particles, fcs_int max_num_particles,
                                    fcs_float *positions, fcs_float *charges,
                                    tune_params **params) {
-  *params = malloc(sizeof(tune_params));
+  *params = static_cast<tune_params*>(malloc(sizeof(tune_params)));
   (*params)->next_params = NULL;
   
   if (d->tune_r_cut) {
@@ -363,10 +363,10 @@ ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d,
   if (d->tune_cao) {
     for (tune_params *p = *params; p != NULL; p = p->next_params) {
       p->cao = P3M_MAX_CAO;
-      P3M_INFO(printf("    Testing cao={ ", p->r_cut));
+      P3M_INFO(printf("    Testing cao={ "));
       for (fcs_int cao = P3M_MAX_CAO-1; cao >= cao_min; cao--) {
         // Insert new param set
-        tune_params *pnew = malloc(sizeof(tune_params));
+        tune_params *pnew = static_cast<tune_params*>(malloc(sizeof(tune_params)));
         pnew->r_cut = p->r_cut;
         pnew->cao = cao;
         pnew->next_params = p->next_params;
@@ -415,7 +415,7 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
       fcs_int upper_ix;
       // test this step
       P3M_INFO(printf("    Trying to find grid for r_cut=" FFLOAT ", "  \
-                      "alpha=" FFLOAT ", ",                             \
+                      "alpha=" FFLOAT ", "                              \
                       "cao=" FINT "\n",                                 \
                       d->r_cut, d->alpha, d->cao));
       do {

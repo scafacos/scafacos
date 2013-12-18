@@ -18,9 +18,9 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "init.h"
-#include "types.h"
-#include "utils.h"
+#include "init.hpp"
+#include "types.hpp"
+#include "utils.hpp"
 #include <stdlib.h>
 
 void ifcs_p3m_init(void **rd, MPI_Comm communicator) {
@@ -29,7 +29,7 @@ void ifcs_p3m_init(void **rd, MPI_Comm communicator) {
   ifcs_p3m_data_struct *d;
   if (*rd == NULL) {
     /* allocate the memory for the p3m data structure */
-    d = malloc(sizeof(ifcs_p3m_data_struct));
+    d = static_cast<ifcs_p3m_data_struct *>(malloc(sizeof(ifcs_p3m_data_struct)));
     memset(d, 0, sizeof(ifcs_p3m_data_struct));
 
     /* store the new pointer in rd */
