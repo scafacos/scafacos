@@ -61,7 +61,7 @@ typedef struct fcs_fmm_parameters_t *fcs_fmm_parameters;
  *        FCS_FMM_CUSTOM_ABSOLUTE - absolute error with deltaE
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_set_absrel(FCS handle, fcs_int choice);
+FCSResult fcs_fmm_set_absrel(FCS handle, fcs_int choice);
 
 /**
  * @brief function to get the optional fmm absrel parameter
@@ -69,7 +69,7 @@ extern FCSResult fcs_fmm_set_absrel(FCS handle, fcs_int choice);
  * @param absrel pointer to fcs_int
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_get_absrel(FCS handle, fcs_int *absrel);
+FCSResult fcs_fmm_get_absrel(FCS handle, fcs_int *absrel);
 
 /**
  * @brief function to set the optional fmm deltaE parameter, which gives the energy tolerance for the FMM
@@ -78,7 +78,7 @@ extern FCSResult fcs_fmm_get_absrel(FCS handle, fcs_int *absrel);
  *        if absrel is either 1 or 2)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_value);
+FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_value);
 
 /**
  * @brief function to get the optional fmm energy tolerance (deltaE) parameter
@@ -86,7 +86,7 @@ extern FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_va
  * @param tolerance_value pointer to a fcs_float variable (only applicable if absrel is either 1 or 2)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_value);
+FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_value);
 
 /**
  * @brief function to set the optional fmm energy tolerance (deltaE) parameter
@@ -97,7 +97,7 @@ extern FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_v
  *        FCS_FMM_ACTIVE_DIPOLE_CORRECTION    dipole correction activated
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_set_dipole_correction(FCS handle, fcs_int dipole_correction);
+FCSResult fcs_fmm_set_dipole_correction(FCS handle, fcs_int dipole_correction);
 
 /**
  * @brief function to get the optional fmm dipole correction parameter
@@ -106,7 +106,7 @@ extern FCSResult fcs_fmm_set_dipole_correction(FCS handle, fcs_int dipole_correc
  * function returns the dipole correction
  * @return the parameter dipole correction
  */
-extern FCSResult fcs_fmm_get_dipole_correction(FCS handle, fcs_int *dipole_correction);
+FCSResult fcs_fmm_get_dipole_correction(FCS handle, fcs_int *dipole_correction);
 
 /**
  * @brief function to set the fmm parameter parameter
@@ -117,7 +117,7 @@ extern FCSResult fcs_fmm_get_dipole_correction(FCS handle, fcs_int *dipole_corre
  *        (exclusive to FFM_cusp!)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_set_potential(FCS handle, fcs_int coulomb);
+FCSResult fcs_fmm_set_potential(FCS handle, fcs_int coulomb);
 
 /**
  * @brief function to get the fmm coulomb parameter
@@ -126,7 +126,7 @@ extern FCSResult fcs_fmm_set_potential(FCS handle, fcs_int coulomb);
  * returns the potential parameter
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_get_potential(FCS handle, fcs_int *coulomb);
+FCSResult fcs_fmm_get_potential(FCS handle, fcs_int *coulomb);
 
 /**
  * @brief function to set the fmm internal tuning parameter
@@ -134,7 +134,7 @@ extern FCSResult fcs_fmm_get_potential(FCS handle, fcs_int *coulomb);
  * @param system long long defining the kind of system to tune for
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_set_internal_tuning(FCS handle, long long system);
+FCSResult fcs_fmm_set_internal_tuning(FCS handle, long long system);
 
 /**
  * @brief function to get the fmm internal tuning parameter
@@ -143,7 +143,7 @@ extern FCSResult fcs_fmm_set_internal_tuning(FCS handle, long long system);
  * which kind of system is used
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_get_internal_tuning(FCS handle, long long *system);
+FCSResult fcs_fmm_get_internal_tuning(FCS handle, long long *system);
 
 /**
  * @brief function to set the fmm cusp radius parameter
@@ -151,7 +151,7 @@ extern FCSResult fcs_fmm_get_internal_tuning(FCS handle, long long *system);
  * @param radius fcs_float the radius for the cusp potential
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_set_cusp_radius(FCS handle, fcs_float radius);
+FCSResult fcs_fmm_set_cusp_radius(FCS handle, fcs_float radius);
 
 /**
  * @brief function to get the fmm cusp radius parameter
@@ -160,7 +160,7 @@ extern FCSResult fcs_fmm_set_cusp_radius(FCS handle, fcs_float radius);
  * returns the cusp radius
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_get_cusp_radius(FCS handle, fcs_float *cusp_radius);
+FCSResult fcs_fmm_get_cusp_radius(FCS handle, fcs_float *cusp_radius);
 
 /**
  * @brief function to set the optional fmm absrel parameter
@@ -168,7 +168,7 @@ extern FCSResult fcs_fmm_get_cusp_radius(FCS handle, fcs_float *cusp_radius);
  * @param depth fcs_int containing the maximum tree depth for the FMM (0 to 19)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_set_maxdepth(FCS handle, long long depth);
+FCSResult fcs_fmm_set_maxdepth(FCS handle, long long depth);
 
 /**
  * @brief function to get the optional fmm absrel parameter
@@ -176,7 +176,7 @@ extern FCSResult fcs_fmm_set_maxdepth(FCS handle, long long depth);
  * @param depth  fcs_int containing the set maximum tree depth 
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_get_maxdepth(FCS handle, long long *depth);
+FCSResult fcs_fmm_get_maxdepth(FCS handle, long long *depth);
 
 /**
  * @brief function to set the optional fmm absrel parameter
@@ -184,7 +184,7 @@ extern FCSResult fcs_fmm_get_maxdepth(FCS handle, long long *depth);
  * @param limit fcs_int the limit for unrolled functions within the FMM (0 to 50)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_set_unroll_limit(FCS handle, long long limit);
+FCSResult fcs_fmm_set_unroll_limit(FCS handle, long long limit);
 
 /**
  * @brief function to get the optional fmm absrel parameter
@@ -192,7 +192,7 @@ extern FCSResult fcs_fmm_set_unroll_limit(FCS handle, long long limit);
  * @param limit  fcs_int containing the limit for the unrolled functions
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_get_unroll_limit(FCS handle, long long *limit);
+FCSResult fcs_fmm_get_unroll_limit(FCS handle, long long *limit);
 
 /**
  * @brief function to set the optional fmm absrel parameter
@@ -200,7 +200,7 @@ extern FCSResult fcs_fmm_get_unroll_limit(FCS handle, long long *limit);
  * @param load fcs_int activates load balancing routines (0 (deactivated) or 1 (activated))
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_set_balanceload(FCS handle, long long load);
+FCSResult fcs_fmm_set_balanceload(FCS handle, long long load);
 
 /**
  * @brief function to get the optional fmm absrel parameter
@@ -208,7 +208,7 @@ extern FCSResult fcs_fmm_set_balanceload(FCS handle, long long load);
  * @param load fcs_int containing the load balancing status
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_get_balanceload(FCS handle, long long *load);
+FCSResult fcs_fmm_get_balanceload(FCS handle, long long *load);
 
 /**
  * @brief function to set the optional fmm loadvector parameter
@@ -216,8 +216,8 @@ extern FCSResult fcs_fmm_get_balanceload(FCS handle, long long *load);
  * @param define_loadvector  fcs_int containing the load balancing initialization status
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_set_define_loadvector(FCS handle, long long  define_loadvector);
-extern FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loadvector);
+FCSResult fcs_fmm_set_define_loadvector(FCS handle, long long  define_loadvector);
+FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loadvector);
 
 /*
  * @brief combined setter function for all fmm related parameters
@@ -238,7 +238,7 @@ extern FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loa
  * @param radius fcs_float sets the radius for the cusp potential, if chosen
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_value, fcs_int dipole_correction, long long system, long long maxdepth, long long unroll_limit, long long load/*, fcs_int potential, fcs_float radius*/);
+FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_value, fcs_int dipole_correction, long long system, long long maxdepth, long long unroll_limit, long long load/*, fcs_int potential, fcs_float radius*/);
 
 void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float tolerance_value, fcs_int dipole_correction, fcs_int *return_value);
 

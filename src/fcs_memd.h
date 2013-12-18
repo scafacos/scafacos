@@ -51,7 +51,7 @@ typedef struct fcs_memd_parameters_t
  * can be entered
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_memd_init(FCS handle);
+FCSResult fcs_memd_init(FCS handle);
 
 /**
  * @brief tuning method for setting/calculating last parameters, for which positions,
@@ -65,7 +65,7 @@ extern FCSResult fcs_memd_init(FCS handle);
  * @param charges fcs_float* list of charges
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges);
+FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges);
 
 /**
  * @brief run method for memd
@@ -79,19 +79,19 @@ extern FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int loca
  * results after the run
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges, fcs_float *fields, fcs_float *potentials);
+FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges, fcs_float *fields, fcs_float *potentials);
 
 /**
  * @brief clean-up method for memd
  * @param handle the FCS-object, which contains the parameters
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_memd_destroy(FCS handle);
+FCSResult fcs_memd_destroy(FCS handle);
 
-extern FCSResult fcs_memd_require_virial(FCS handle, fcs_int flagvalue);
-extern FCSResult fcs_memd_get_virial(FCS handle, fcs_float* virial);
+FCSResult fcs_memd_require_virial(FCS handle, fcs_int flagvalue);
+FCSResult fcs_memd_get_virial(FCS handle, fcs_float* virial);
 
-extern FCSResult fcs_memd_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
-extern FCSResult fcs_memd_print_parameters(FCS handle);
+FCSResult fcs_memd_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+FCSResult fcs_memd_print_parameters(FCS handle);
 
 #endif /* FCS_MEMD_INCLUDED */

@@ -65,7 +65,7 @@ void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float deltaE, fcs_int dip
 */
 
 /* combined setter function for all fmm parameters */
-extern FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_value, fcs_int dipole_correction, long long system, long long maxdepth, long long unroll_limit, long long load/*, fcs_int potential, fcs_float radius*/)
+FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_value, fcs_int dipole_correction, long long system, long long maxdepth, long long unroll_limit, long long load/*, fcs_int potential, fcs_float radius*/)
 {
 /*  char* fnc_name = "fcs_fmm_setup"; */
   FCSResult result;
@@ -106,7 +106,7 @@ extern FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_v
 
 
 /* method to check if fmm parameters are consistent with requirements */
-extern FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles)
+FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles)
 {
   char* fnc_name = "fcs_fmm_check";
   const fcs_float *a,*b,*c;
@@ -178,7 +178,7 @@ extern FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles)
 }
 
 // /* method to check if fmm parameters are entered into checked FCS */
-// extern FCSResult fcs_fmm_check(FCS handle)
+// FCSResult fcs_fmm_check(FCS handle)
 // {
 //   char* fnc_name = "fcs_fmm_check";
 //   fcs_float *a,*b,*c;
@@ -404,7 +404,7 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_pa
   return NULL;
 }
 
-extern int fcs_mpi_fmm_sort_front_part, fcs_mpi_fmm_sort_back_part, fcs_mpi_fmm_sort_front_merge_presorted;
+int fcs_mpi_fmm_sort_front_part, fcs_mpi_fmm_sort_back_part, fcs_mpi_fmm_sort_front_merge_presorted;
 
 /* internal fmm-specific run function */
 FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, 
@@ -522,7 +522,7 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_par
 }
 
 /* clean-up function for fmm */
-extern FCSResult fcs_fmm_destroy(FCS handle)
+FCSResult fcs_fmm_destroy(FCS handle)
 {
 /*  char* fnc_name = "fcs_fmm_destroy"; */
   long long dotune;
@@ -550,7 +550,7 @@ extern FCSResult fcs_fmm_destroy(FCS handle)
 
 
 /* setter function for fmm parameter absrel */
-extern FCSResult fcs_fmm_set_absrel(FCS handle, fcs_int choice)
+FCSResult fcs_fmm_set_absrel(FCS handle, fcs_int choice)
 {
   char* fnc_name = "fcs_fmm_set_absrel";
 
@@ -568,7 +568,7 @@ extern FCSResult fcs_fmm_set_absrel(FCS handle, fcs_int choice)
 }
 
 /* getter function for fmm parameter absrel */
-extern FCSResult fcs_fmm_get_absrel(FCS handle, fcs_int *absrel)
+FCSResult fcs_fmm_get_absrel(FCS handle, fcs_int *absrel)
 {
   char* fnc_name = "fcs_fmm_get_absrel";
 
@@ -582,7 +582,7 @@ extern FCSResult fcs_fmm_get_absrel(FCS handle, fcs_int *absrel)
 }
 
 /* setter function for fmm parameter internal tuning */
-extern FCSResult fcs_fmm_set_internal_tuning(FCS handle, long long system)
+FCSResult fcs_fmm_set_internal_tuning(FCS handle, long long system)
 {
   char* fnc_name = "fcs_fmm_set_internal_tuning";
 
@@ -598,7 +598,7 @@ extern FCSResult fcs_fmm_set_internal_tuning(FCS handle, long long system)
 }
 
 /* getter function for fmm parameter internal tuning */
-extern FCSResult fcs_fmm_get_internal_tuning(FCS handle, long long *system)
+FCSResult fcs_fmm_get_internal_tuning(FCS handle, long long *system)
 {
   char* fnc_name = "fcs_fmm_get_internal_tuning";
 
@@ -612,7 +612,7 @@ extern FCSResult fcs_fmm_get_internal_tuning(FCS handle, long long *system)
 }
 
 /* setter function for fmm parameter energy tolerance (deltaE) */
-extern FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_value)
+FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_value)
 {
   char* fnc_name = "fcs_fmm_set_tolerance_energy";
 
@@ -630,7 +630,7 @@ extern FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_va
 
 
 /* getter function for fmm parameter energy tolerance (deltaE) */
-extern FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_value)
+FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_value)
 {
   char* fnc_name = "fcs_fmm_get_tolerance_energy";
 
@@ -645,7 +645,7 @@ extern FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_v
 
 
 /* setter function for fmm parameter dipole correction */
-extern FCSResult fcs_fmm_set_dipole_correction(FCS handle, fcs_int dipole_correction)
+FCSResult fcs_fmm_set_dipole_correction(FCS handle, fcs_int dipole_correction)
 {
   char* fnc_name = "fcs_fmm_set_dipole_correction";
 
@@ -661,7 +661,7 @@ extern FCSResult fcs_fmm_set_dipole_correction(FCS handle, fcs_int dipole_correc
 }
 
 /* getter function for fmm parameter dipole correction */
-extern FCSResult fcs_fmm_get_dipole_correction(FCS handle, fcs_int *dipole_correction)
+FCSResult fcs_fmm_get_dipole_correction(FCS handle, fcs_int *dipole_correction)
 {
   char* fnc_name = "fcs_fmm_get_dipole_correction";
 
@@ -675,7 +675,7 @@ extern FCSResult fcs_fmm_get_dipole_correction(FCS handle, fcs_int *dipole_corre
 }
 
 /* setter function for fmm parameter potential */
-extern FCSResult fcs_fmm_set_potential(FCS handle, fcs_int potential)
+FCSResult fcs_fmm_set_potential(FCS handle, fcs_int potential)
 {
   char* fnc_name = "fcs_fmm_set_potential";
 
@@ -691,7 +691,7 @@ extern FCSResult fcs_fmm_set_potential(FCS handle, fcs_int potential)
 }
 
 /* getter function for fmm parameter potential */
-extern FCSResult fcs_fmm_get_potential(FCS handle, fcs_int *potential)
+FCSResult fcs_fmm_get_potential(FCS handle, fcs_int *potential)
 {
   char* fnc_name = "fcs_fmm_get_potential";
 
@@ -705,7 +705,7 @@ extern FCSResult fcs_fmm_get_potential(FCS handle, fcs_int *potential)
 }
 
 /* setter function for maximum fmm tree depth */
-extern FCSResult fcs_fmm_set_maxdepth(FCS handle, long long depth)
+FCSResult fcs_fmm_set_maxdepth(FCS handle, long long depth)
 {
   char* fnc_name = "fcs_fmm_set_maxdepth";
   fcs_int int_depth = depth;
@@ -720,7 +720,7 @@ extern FCSResult fcs_fmm_set_maxdepth(FCS handle, long long depth)
 }
 
 /* getter function for maximum fmm tree depth */
-extern FCSResult fcs_fmm_get_maxdepth(FCS handle, long long *depth)
+FCSResult fcs_fmm_get_maxdepth(FCS handle, long long *depth)
 {
   char* fnc_name = "fcs_fmm_get_maxdepth";
 
@@ -734,7 +734,7 @@ extern FCSResult fcs_fmm_get_maxdepth(FCS handle, long long *depth)
 }
 
 /* setter function for maximum fmm unroll limit */
-extern FCSResult fcs_fmm_set_unroll_limit(FCS handle, long long limit)
+FCSResult fcs_fmm_set_unroll_limit(FCS handle, long long limit)
 {
   char* fnc_name = "fcs_fmm_set_unroll_limit";
   fcs_int int_limit = limit;
@@ -751,7 +751,7 @@ extern FCSResult fcs_fmm_set_unroll_limit(FCS handle, long long limit)
 }
 
 /* getter function for fmm unroll limit */
-extern FCSResult fcs_fmm_get_unroll_limit(FCS handle, long long *limit)
+FCSResult fcs_fmm_get_unroll_limit(FCS handle, long long *limit)
 {
   char* fnc_name = "fcs_fmm_get_unroll_limit";
   
@@ -765,7 +765,7 @@ extern FCSResult fcs_fmm_get_unroll_limit(FCS handle, long long *limit)
 }
 
 /* setter function for status of fmm load balancing */
-extern FCSResult fcs_fmm_set_balanceload(FCS handle, long long load)
+FCSResult fcs_fmm_set_balanceload(FCS handle, long long load)
 {
   char* fnc_name = "fcs_fmm_set_balanceload";
   fcs_int int_load = load;
@@ -781,7 +781,7 @@ extern FCSResult fcs_fmm_set_balanceload(FCS handle, long long load)
 }
 
 /* setter function for status of fmm loadvector definition */
-extern FCSResult fcs_fmm_set_define_loadvector(FCS handle, long long define_loadvector)
+FCSResult fcs_fmm_set_define_loadvector(FCS handle, long long define_loadvector)
 {
   char* fnc_name = "fcs_fmm_set_define_loadvector";
   fcs_int int_define_loadvector = define_loadvector;
@@ -796,7 +796,7 @@ extern FCSResult fcs_fmm_set_define_loadvector(FCS handle, long long define_load
 }
 
 /* getter function for status of fmm define loadvector */
-extern FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loadvector)
+FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loadvector)
 {
   char* fnc_name = "fcs_fmm_get_define_loadvector";
 
@@ -811,7 +811,7 @@ extern FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loa
 
 
 /* getter function for status of fmm load balancing */
-extern FCSResult fcs_fmm_get_balanceload(FCS handle, long long *load)
+FCSResult fcs_fmm_get_balanceload(FCS handle, long long *load)
 {
   char* fnc_name = "fcs_fmm_get_balanceload";
 
@@ -825,7 +825,7 @@ extern FCSResult fcs_fmm_get_balanceload(FCS handle, long long *load)
 }
 
 /* setter function for fmm parameter cusp_radius */
-extern FCSResult fcs_fmm_set_cusp_radius(FCS handle, fcs_float radius)
+FCSResult fcs_fmm_set_cusp_radius(FCS handle, fcs_float radius)
 {
   char* fnc_name = "fcs_fmm_set_radius";
 
@@ -841,7 +841,7 @@ extern FCSResult fcs_fmm_set_cusp_radius(FCS handle, fcs_float radius)
 }
 
 /* getter function for fmm parameter cusp radius */
-extern FCSResult fcs_fmm_get_cusp_radius(FCS handle, fcs_float *cusp_radius)
+FCSResult fcs_fmm_get_cusp_radius(FCS handle, fcs_float *cusp_radius)
 {
   char* fnc_name = "fcs_fmm_get_radius";
 

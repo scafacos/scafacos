@@ -82,7 +82,7 @@ static FCSResult ifcs_p2nfft_check(
  *     P2NFFT Interface 
  ************************************************************/
 /* initialization function for basic p2nfft parameters */
-extern FCSResult fcs_p2nfft_init(
+FCSResult fcs_p2nfft_init(
     FCS handle
     )
 {
@@ -140,7 +140,7 @@ static fcs_int nonperiodic_box_lengths_are_equal(
 
 
 /* internal p2nfft-specific tuning function */
-extern FCSResult fcs_p2nfft_tune(
+FCSResult fcs_p2nfft_tune(
     FCS handle, fcs_int local_particles, fcs_int local_max_particles,
     fcs_float *positions, fcs_float *charges
     )
@@ -182,7 +182,7 @@ extern FCSResult fcs_p2nfft_tune(
 }
 
 /* internal p2nfft-specific run function */
-extern FCSResult fcs_p2nfft_run(
+FCSResult fcs_p2nfft_run(
     FCS handle, fcs_int local_particles, fcs_int local_max_particles,
     fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials
     )
@@ -205,7 +205,7 @@ extern FCSResult fcs_p2nfft_run(
 }
 
 /* clean-up function for p2nfft */
-extern FCSResult fcs_p2nfft_destroy(
+FCSResult fcs_p2nfft_destroy(
     FCS handle
     )
 {
@@ -218,7 +218,7 @@ extern FCSResult fcs_p2nfft_destroy(
 /*********************************************************************
  * method to check if p2nfft parameters are entered into checked FCS 
  *********************************************************************/
-extern FCSResult fcs_p2nfft_check(
+FCSResult fcs_p2nfft_check(
     FCS handle
     )
 {
@@ -243,7 +243,7 @@ static FCSResult ifcs_p2nfft_check(
 /************************************************************
  *     General P2NFFT parameter handling
  ************************************************************/
-extern FCSResult fcs_p2nfft_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+FCSResult fcs_p2nfft_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
   const char *fnc_name = "fcs_p2nfft_set_parameter";
 
@@ -307,7 +307,7 @@ next_param:
 }
 
 
-extern FCSResult fcs_p2nfft_print_parameters(FCS handle)
+FCSResult fcs_p2nfft_print_parameters(FCS handle)
 {
   fcs_int tolerance_type;
   fcs_float tolerance;

@@ -30,7 +30,7 @@
 
 
 /* combined setter function for all pepc parameters */
-extern FCSResult fcs_pepc_setup(FCS handle, fcs_float epsilon, fcs_float theta)
+FCSResult fcs_pepc_setup(FCS handle, fcs_float epsilon, fcs_float theta)
 {
   /*	char* fnc_name = "fcs_pepc_setup"; */
   FCSResult result;
@@ -49,7 +49,7 @@ extern FCSResult fcs_pepc_setup(FCS handle, fcs_float epsilon, fcs_float theta)
 }
 
 /* method to check if pepc parameters are entered into checked FCS */
-extern FCSResult fcs_pepc_check(FCS handle)
+FCSResult fcs_pepc_check(FCS handle)
 {
   char* fnc_name = "fcs_pepc_check";
   const fcs_float *a,*b,*c;
@@ -211,7 +211,7 @@ FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 }
 
 /* clean-up function for pepc */
-extern FCSResult fcs_pepc_destroy(FCS handle)
+FCSResult fcs_pepc_destroy(FCS handle)
 {
   /*	char* fnc_name = "fcs_pepc_destroy"; */
 
@@ -238,7 +238,7 @@ extern FCSResult fcs_pepc_destroy(FCS handle)
 
 
 /* setter function for pepc parameter epsilon */
-extern FCSResult fcs_pepc_set_epsilon(FCS handle, fcs_float epsilon)
+FCSResult fcs_pepc_set_epsilon(FCS handle, fcs_float epsilon)
 {
   char* fnc_name = "fcs_pepc_set_epsilon";
 
@@ -261,7 +261,7 @@ extern FCSResult fcs_pepc_set_epsilon(FCS handle, fcs_float epsilon)
 }
 
 /* getter function for pepc parameter epsilon */
-extern FCSResult fcs_pepc_get_epsilon(FCS handle, fcs_float* epsilon)
+FCSResult fcs_pepc_get_epsilon(FCS handle, fcs_float* epsilon)
 {
   char* fnc_name = "fcs_pepc_get_epsilon";
 
@@ -274,7 +274,7 @@ extern FCSResult fcs_pepc_get_epsilon(FCS handle, fcs_float* epsilon)
 
 
 /* setter function for pepc parameter theta */
-extern FCSResult fcs_pepc_set_theta(FCS handle, fcs_float theta)
+FCSResult fcs_pepc_set_theta(FCS handle, fcs_float theta)
 {
   char* fnc_name = "fcs_pepc_set_theta";
 
@@ -295,7 +295,7 @@ extern FCSResult fcs_pepc_set_theta(FCS handle, fcs_float theta)
 }
 
 /* getter function for pepc parameter theta */
-extern FCSResult fcs_pepc_get_theta(FCS handle, fcs_float* theta)
+FCSResult fcs_pepc_get_theta(FCS handle, fcs_float* theta)
 {
   char* fnc_name = "fcs_pepc_get_theta";
 
@@ -307,7 +307,7 @@ extern FCSResult fcs_pepc_get_theta(FCS handle, fcs_float* theta)
 }
 
 /* getter function for pepc parameter num_walk_threads */
-extern FCSResult fcs_pepc_get_num_walk_threads(FCS handle, fcs_int *num_walk_threads)
+FCSResult fcs_pepc_get_num_walk_threads(FCS handle, fcs_int *num_walk_threads)
 {
   char* fnc_name = "fcs_pepc_get_num_walk_threads";
 
@@ -319,7 +319,7 @@ extern FCSResult fcs_pepc_get_num_walk_threads(FCS handle, fcs_int *num_walk_thr
 }
 
 /* setter function for pepc parameter num_walk_threads */
-extern FCSResult fcs_pepc_set_num_walk_threads(FCS handle, fcs_int num_walk_threads)
+FCSResult fcs_pepc_set_num_walk_threads(FCS handle, fcs_int num_walk_threads)
 {
   char* fnc_name = "fcs_pepc_set_num_walk_threads";
 
@@ -392,7 +392,7 @@ FCSResult fcs_pepc_get_dipole_correction(FCS handle, fcs_int* dipole_correction)
 }
 
 /* setter function for pepc parameter npm */
-extern FCSResult fcs_pepc_set_npm(FCS handle, fcs_float npm)
+FCSResult fcs_pepc_set_npm(FCS handle, fcs_float npm)
 {
   char* fnc_name = "fcs_pepc_set_npm";
 
@@ -409,7 +409,7 @@ extern FCSResult fcs_pepc_set_npm(FCS handle, fcs_float npm)
 }
 
 /* getter function for pepc parameter npm */
-extern FCSResult fcs_pepc_get_npm(FCS handle, fcs_float* npm)
+FCSResult fcs_pepc_get_npm(FCS handle, fcs_float* npm)
 {
   char* fnc_name = "fcs_pepc_get_npm";
 
@@ -421,7 +421,7 @@ extern FCSResult fcs_pepc_get_npm(FCS handle, fcs_float* npm)
 }
 
 /* setter function for pepc parameter debug_level */
-extern FCSResult fcs_pepc_set_debug_level(FCS handle, fcs_int level)
+FCSResult fcs_pepc_set_debug_level(FCS handle, fcs_int level)
 {
   char* fnc_name = "fcs_pepc_set_debuglevel";
 
@@ -438,7 +438,7 @@ extern FCSResult fcs_pepc_set_debug_level(FCS handle, fcs_int level)
 }
 
 /* getter function for pepc parameter debug_level */
-extern FCSResult fcs_pepc_get_debug_level(FCS handle, fcs_int* level)
+FCSResult fcs_pepc_get_debug_level(FCS handle, fcs_int* level)
 {
   char* fnc_name = "FCSResultfcs_pepc_get_debuglevel";
 
@@ -456,7 +456,7 @@ extern FCSResult fcs_pepc_get_debug_level(FCS handle, fcs_int* level)
  ******************************************************************************************************/
 
 /* setter function to (de)activate virial computation in pepc */
-extern FCSResult fcs_pepc_require_virial(FCS handle, fcs_int choice)
+FCSResult fcs_pepc_require_virial(FCS handle, fcs_int choice)
 {
   char* fnc_name = "fcs_pepc_require_virial";
 
@@ -474,7 +474,7 @@ extern FCSResult fcs_pepc_require_virial(FCS handle, fcs_int choice)
 }
 
 /* function getting the virial result from pepc */
-extern FCSResult fcs_pepc_get_virial(FCS handle, fcs_float virial[9])
+FCSResult fcs_pepc_get_virial(FCS handle, fcs_float virial[9])
 {
   char* fnc_name = "fcs_pepc_get_virial";
   int i;
@@ -494,7 +494,7 @@ extern FCSResult fcs_pepc_get_virial(FCS handle, fcs_float virial[9])
     }
 }
 
-extern FCSResult fcs_pepc_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+FCSResult fcs_pepc_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
   const char *fnc_name = "fcs_pepc_set_parameter";
 
@@ -522,7 +522,7 @@ next_param:
   return FCS_RESULT_SUCCESS;
 }
 
-extern FCSResult fcs_pepc_print_parameters(FCS handle)
+FCSResult fcs_pepc_print_parameters(FCS handle)
 {
   fcs_float theta, eps;
   fcs_int num_walk_threads;

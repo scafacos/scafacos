@@ -49,7 +49,7 @@ typedef struct fcs_vmg_parameters_t *fcs_vmg_parameters;
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_setup(FCS handle, fcs_int max_level, fcs_int max_iterations,
+FCSResult fcs_vmg_setup(FCS handle, fcs_int max_level, fcs_int max_iterations,
 			       fcs_int smoothing_steps, fcs_int cycle_type,
 			       fcs_float precision, fcs_int near_field_cells,
 			       fcs_int interpolation_order,
@@ -65,7 +65,7 @@ extern FCSResult fcs_vmg_setup(FCS handle, fcs_int max_level, fcs_int max_iterat
  *
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_set_max_level(FCS handle, fcs_int max_level);
+FCSResult fcs_vmg_set_max_level(FCS handle, fcs_int max_level);
 
 /**
  * @brief Get the maximum level of the multigrid algorithm.
@@ -77,7 +77,7 @@ extern FCSResult fcs_vmg_set_max_level(FCS handle, fcs_int max_level);
  *
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_get_max_level(FCS handle, fcs_int* max_level);
+FCSResult fcs_vmg_get_max_level(FCS handle, fcs_int* max_level);
 
 /**
  * @brief Set the maximum number of multigrid iterations.
@@ -87,7 +87,7 @@ extern FCSResult fcs_vmg_get_max_level(FCS handle, fcs_int* max_level);
  *
  * @return FCSResult-object containing the return state.
  */
-extern FCSResult fcs_vmg_set_max_iterations(FCS handle, fcs_int max_iterations);
+FCSResult fcs_vmg_set_max_iterations(FCS handle, fcs_int max_iterations);
 
 /**
  * @brief Get the maximum number of multigrid iterations.
@@ -97,7 +97,7 @@ extern FCSResult fcs_vmg_set_max_iterations(FCS handle, fcs_int max_iterations);
  *
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_get_max_iterations(FCS handle, fcs_int* max_iterations);
+FCSResult fcs_vmg_get_max_iterations(FCS handle, fcs_int* max_iterations);
 
 /**
  * @brief Set the number of pre/postsmoothing steps on each level
@@ -107,7 +107,7 @@ extern FCSResult fcs_vmg_get_max_iterations(FCS handle, fcs_int* max_iterations)
  *
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_set_smoothing_steps(FCS handle, fcs_int smoothing_steps);
+FCSResult fcs_vmg_set_smoothing_steps(FCS handle, fcs_int smoothing_steps);
 
 /**
  * @brief Get the number of pre/postsmoothing steps on each level
@@ -117,7 +117,7 @@ extern FCSResult fcs_vmg_set_smoothing_steps(FCS handle, fcs_int smoothing_steps
  *
  * @return FCSReturn-object containing the return state.
  */
-extern FCSResult fcs_vmg_get_smoothing_steps(FCS handle, fcs_int *smoothing_steps);
+FCSResult fcs_vmg_get_smoothing_steps(FCS handle, fcs_int *smoothing_steps);
 
 /**
  * @brief Set the cycle_type-number of the multigrid cycle used. E.g. 1 corresponds
@@ -128,7 +128,7 @@ extern FCSResult fcs_vmg_get_smoothing_steps(FCS handle, fcs_int *smoothing_step
  *
  * @return FCSReturn-object containing the return state.
  */
-extern FCSResult fcs_vmg_set_cycle_type(FCS handle, fcs_int cycle_type);
+FCSResult fcs_vmg_set_cycle_type(FCS handle, fcs_int cycle_type);
 
 /**
  * @brief Get the cycle_type-number of the multigrid cycle used. E.g. 1 corresponds
@@ -139,7 +139,7 @@ extern FCSResult fcs_vmg_set_cycle_type(FCS handle, fcs_int cycle_type);
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_get_cycle_type(FCS handle, fcs_int *cycle_type);
+FCSResult fcs_vmg_get_cycle_type(FCS handle, fcs_int *cycle_type);
 
 /**
  * @brief Set the precision of the vmg algorithm. Currently, the relative residual
@@ -150,7 +150,7 @@ extern FCSResult fcs_vmg_get_cycle_type(FCS handle, fcs_int *cycle_type);
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_set_precision(FCS handle, fcs_float precision);
+FCSResult fcs_vmg_set_precision(FCS handle, fcs_float precision);
 
 /**
  * @brief Get the precision of the vmg algorithm. Currently, the relative residual
@@ -161,7 +161,7 @@ extern FCSResult fcs_vmg_set_precision(FCS handle, fcs_float precision);
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_get_precision(FCS handle, fcs_float *precision);
+FCSResult fcs_vmg_get_precision(FCS handle, fcs_float *precision);
 
 /**
  * @brief Set the number of near field cells for separating the
@@ -172,7 +172,7 @@ extern FCSResult fcs_vmg_get_precision(FCS handle, fcs_float *precision);
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_set_near_field_cells(FCS handle, fcs_int near_field_cells);
+FCSResult fcs_vmg_set_near_field_cells(FCS handle, fcs_int near_field_cells);
 
 /**
  * @brief Get the number of near field cells for separating the
@@ -183,7 +183,7 @@ extern FCSResult fcs_vmg_set_near_field_cells(FCS handle, fcs_int near_field_cel
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_get_near_field_cells(FCS handle, fcs_int *near_field_cells);
+FCSResult fcs_vmg_get_near_field_cells(FCS handle, fcs_int *near_field_cells);
 
 /**
  * @brief Set the interpolation order for interpolating
@@ -194,7 +194,7 @@ extern FCSResult fcs_vmg_get_near_field_cells(FCS handle, fcs_int *near_field_ce
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_set_interpolation_order(FCS handle, fcs_int interpolation_order);
+FCSResult fcs_vmg_set_interpolation_order(FCS handle, fcs_int interpolation_order);
 
 /**
  * @brief Get the interpolation order for interpolating
@@ -205,7 +205,7 @@ extern FCSResult fcs_vmg_set_interpolation_order(FCS handle, fcs_int interpolati
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_get_interpolation_order(FCS handle, fcs_int *interpolation_order);
+FCSResult fcs_vmg_get_interpolation_order(FCS handle, fcs_int *interpolation_order);
 
 /**
  * @brief Set the discretization order.
@@ -218,7 +218,7 @@ extern FCSResult fcs_vmg_get_interpolation_order(FCS handle, fcs_int *interpolat
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_set_discretization_order(FCS handle, fcs_int discretization_order);
+FCSResult fcs_vmg_set_discretization_order(FCS handle, fcs_int discretization_order);
 
 /**
  * @brief Get the discretization order.
@@ -231,13 +231,13 @@ extern FCSResult fcs_vmg_set_discretization_order(FCS handle, fcs_int discretiza
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_get_discretization_order(FCS handle, fcs_int *discretization_order);
+FCSResult fcs_vmg_get_discretization_order(FCS handle, fcs_int *discretization_order);
 
 /**
  * @brief Print runtimes of various vmg subsystems. vmg has to be configured
  *        with --enable-debug-measure-time in order to do so.
  *
  */
-extern void vmg_fcs_print_timer();
+void vmg_fcs_print_timer();
 
 #endif

@@ -83,7 +83,7 @@ typedef struct fcs_pepc_internal_t
  * information needed by pepc is set (no plausibility check!)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_check(FCS handle);
+FCSResult fcs_pepc_check(FCS handle);
 
 /**
  * @brief initialization routine for the basic parameters needed by pepc
@@ -91,7 +91,7 @@ extern FCSResult fcs_pepc_check(FCS handle);
  * can be entered
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_init(FCS handle);
+FCSResult fcs_pepc_init(FCS handle);
 
 /**
  * @brief tuning routine for the basic parameters needed by pepc
@@ -99,7 +99,7 @@ extern FCSResult fcs_pepc_init(FCS handle);
  * can be entered
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges);
+FCSResult fcs_pepc_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges);
 
 /**
  * @brief run method for pepc
@@ -116,7 +116,7 @@ extern FCSResult fcs_pepc_tune(FCS handle, fcs_int local_particles, fcs_int loca
  * results after the run
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, 
+FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, 
 			      fcs_float *positions, 
 			      fcs_float *charges, fcs_float *field, fcs_float *potentials);
 
@@ -129,14 +129,14 @@ extern FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local
  * @param r distance for which the potential
  * @return fcs_float containing the potential value for the given distance (without charges, s. above)
  */
-extern FCSResult fcs_pepc_near_field_potential (FCS handle, fcs_float);
+FCSResult fcs_pepc_near_field_potential (FCS handle, fcs_float);
 
 /**
  * @brief clean-up method for pepc
  * @param handle the FCS-object, which contains the parameters
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_destroy(FCS handle);
+FCSResult fcs_pepc_destroy(FCS handle);
 
 /**
  * @brief function activate virial calculation in pepc
@@ -144,7 +144,7 @@ extern FCSResult fcs_pepc_destroy(FCS handle);
  * @param choice 1 - user requires virial calculation and can retrieve the result using fcs_pepc_get_virial() later, other values: deactivate this feture
  * @return the debug level
  */
-extern FCSResult fcs_pepc_require_virial(FCS handle, fcs_int choice);
+FCSResult fcs_pepc_require_virial(FCS handle, fcs_int choice);
 
 /**
  * @brief function to get the virial matrix after force caluclation (i.e. after having set fcs_pepc_require_virial(handle, 1) and calling fcs_pepc_run()
@@ -152,25 +152,25 @@ extern FCSResult fcs_pepc_require_virial(FCS handle, fcs_int choice);
  * @param virial field for storing virial matrix elements
  * @return the debug level
  */
-extern FCSResult fcs_pepc_get_virial(FCS handle, fcs_float virial[9]);
+FCSResult fcs_pepc_get_virial(FCS handle, fcs_float virial[9]);
 
-extern FCSResult fcs_pepc_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
-extern FCSResult fcs_pepc_print_parameters(FCS handle);
+FCSResult fcs_pepc_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+FCSResult fcs_pepc_print_parameters(FCS handle);
 
 /**
  * @brief pepc init fortran routine that is wrapped by scafacos
  */
-extern void pepc_scafacos_initialize(MPI_Fint *comm);
+void pepc_scafacos_initialize(MPI_Fint *comm);
 
 /**
  * @brief pepc finalize fortran routine that is wrapped by scafacos
  */
-extern void pepc_scafacos_finalize(MPI_Fint *comm);
+void pepc_scafacos_finalize(MPI_Fint *comm);
 
 /**
  * @brief central pepc fortran routine that is wrapped by scafacos
  */
-extern void pepc_scafacos_run(fcs_int *local_particles, fcs_int *total_particles,
+void pepc_scafacos_run(fcs_int *local_particles, fcs_int *total_particles,
 			      fcs_float *positions, fcs_float *charges, 
 			      fcs_float *efield, fcs_float *potentials, fcs_float *work,
 			      fcs_float *virial,

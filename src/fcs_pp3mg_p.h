@@ -97,6 +97,6 @@ FCSResult fcs_pp3mg_set_discretization(FCS handle, fcs_int discretization);
 FCSResult fcs_pp3mg_get_discretization(FCS handle, fcs_int *discertization);
 
 /* combined setter for all solver parameters */
-extern FCSResult fcs_pp3mg_setup(FCS handle, fcs_int cells_x, fcs_int cells_y, fcs_int cells_z, fcs_int ghosts, fcs_int degree, fcs_int max_particles, fcs_int maxiter, fcs_float tol, fcs_int distribution, fcs_int discretization);
+FCSResult fcs_pp3mg_setup(FCS handle, fcs_int cells_x, fcs_int cells_y, fcs_int cells_z, fcs_int ghosts, fcs_int degree, fcs_int max_particles, fcs_int maxiter, fcs_float tol, fcs_int distribution, fcs_int discretization);
 
 #endif

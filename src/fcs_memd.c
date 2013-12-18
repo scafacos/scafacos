@@ -44,7 +44,7 @@ static FCSResult fcs_memd_check(FCS handle, const char* fnc_name) {
     return NULL;
 }
 
-extern FCSResult fcs_memd_init(FCS handle)
+FCSResult fcs_memd_init(FCS handle)
 {
     char* fnc_name = "fcs_memd_init";
     FCSResult result;
@@ -57,7 +57,7 @@ extern FCSResult fcs_memd_init(FCS handle)
 }
 
 
-extern FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges)
+FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges)
 {
     char* fnc_name = "fcs_memd_tune";
     FCSResult result;
@@ -87,7 +87,7 @@ extern FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int loca
 }
 
 
-extern FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges, fcs_float *fields, fcs_float *potentials)
+FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges, fcs_float *fields, fcs_float *potentials)
 {
     /* retune if needed */
 /*    if (fcs_memd_needs_retuning(handle->method_context, local_particles, positions, charges))
@@ -100,7 +100,7 @@ extern FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_int local
 }
 
 
-extern FCSResult fcs_memd_destroy(FCS handle)
+FCSResult fcs_memd_destroy(FCS handle)
 {
   FCSResult result = fcs_memd_exit(handle->method_context);
 

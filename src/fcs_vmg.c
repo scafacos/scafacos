@@ -158,7 +158,7 @@ FCSResult fcs_vmg_destroy(FCS handle)
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_setup(FCS handle, fcs_int max_level,
+FCSResult fcs_vmg_setup(FCS handle, fcs_int max_level,
 			       fcs_int max_iterations, fcs_int smoothing_steps,
 			       fcs_int cycle_type, fcs_float precision, fcs_int near_field_cells,
                                fcs_int interpolation_order, fcs_int discretization_order)
@@ -212,7 +212,7 @@ extern FCSResult fcs_vmg_setup(FCS handle, fcs_int max_level,
  * @param handle the FCS-obect into which the default parameters will be entered
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_set_default(FCS handle)
+FCSResult fcs_vmg_set_default(FCS handle)
 {
   MPI_Comm comm;
   int rank;
@@ -329,7 +329,7 @@ extern FCSResult fcs_vmg_set_default(FCS handle)
  *
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_set_max_level(FCS handle, fcs_int max_level)
+FCSResult fcs_vmg_set_max_level(FCS handle, fcs_int max_level)
 {
   char fnc_name[] = "fcs_vmg_set_max_level";
 
@@ -357,7 +357,7 @@ extern FCSResult fcs_vmg_set_max_level(FCS handle, fcs_int max_level)
  *
  * @return FCSResult-object containing the return state.
  */
-extern FCSResult fcs_vmg_get_max_level(FCS handle, fcs_int *max_level)
+FCSResult fcs_vmg_get_max_level(FCS handle, fcs_int *max_level)
 {
   char fnc_name[] = "fcs_vmg_get_max_level";
 
@@ -380,7 +380,7 @@ extern FCSResult fcs_vmg_get_max_level(FCS handle, fcs_int *max_level)
  *
  * @return FCSResult-object containing the return state.
  */
-extern FCSResult fcs_vmg_set_max_iterations(FCS handle, fcs_int max_iterations)
+FCSResult fcs_vmg_set_max_iterations(FCS handle, fcs_int max_iterations)
 {
   char fnc_name[] = "fcs_vmg_set_max_iterations";
 
@@ -406,7 +406,7 @@ extern FCSResult fcs_vmg_set_max_iterations(FCS handle, fcs_int max_iterations)
  *
  * @return FCSResult-object containing the return state.
  */
-extern FCSResult fcs_vmg_get_max_iterations(FCS handle, fcs_int *max_iterations)
+FCSResult fcs_vmg_get_max_iterations(FCS handle, fcs_int *max_iterations)
 {
   char fnc_name[] = "fcs_vmg_get_max_iterations";
 
@@ -429,7 +429,7 @@ extern FCSResult fcs_vmg_get_max_iterations(FCS handle, fcs_int *max_iterations)
  *
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_set_smoothing_steps(FCS handle, fcs_int smoothing_steps)
+FCSResult fcs_vmg_set_smoothing_steps(FCS handle, fcs_int smoothing_steps)
 {
   char fnc_name[] = "fcs_vmg_set_smoothing_steps";
 
@@ -455,7 +455,7 @@ extern FCSResult fcs_vmg_set_smoothing_steps(FCS handle, fcs_int smoothing_steps
  *
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_get_smoothing_steps(FCS handle, fcs_int *smoothing_steps)
+FCSResult fcs_vmg_get_smoothing_steps(FCS handle, fcs_int *smoothing_steps)
 {
   char fnc_name[] = "fcs_vmg_get_smoothing_steps";
 
@@ -479,7 +479,7 @@ extern FCSResult fcs_vmg_get_smoothing_steps(FCS handle, fcs_int *smoothing_step
  *
  * @return FCSReturn-object containing the return state.
  */
-extern FCSResult fcs_vmg_set_cycle_type(FCS handle, fcs_int cycle_type)
+FCSResult fcs_vmg_set_cycle_type(FCS handle, fcs_int cycle_type)
 {
   char fnc_name[] = "fcs_vmg_set_cycle_type";
 
@@ -506,7 +506,7 @@ extern FCSResult fcs_vmg_set_cycle_type(FCS handle, fcs_int cycle_type)
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_get_cycle_type(FCS handle, fcs_int* cycle_type)
+FCSResult fcs_vmg_get_cycle_type(FCS handle, fcs_int* cycle_type)
 {
   char fnc_name[] = "fcs_vmg_get_cycle_type";
 
@@ -530,7 +530,7 @@ extern FCSResult fcs_vmg_get_cycle_type(FCS handle, fcs_int* cycle_type)
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_set_precision(FCS handle, fcs_float precision)
+FCSResult fcs_vmg_set_precision(FCS handle, fcs_float precision)
 {
   char fnc_name[] = "fcs_vmg_set_precision";
 
@@ -557,7 +557,7 @@ extern FCSResult fcs_vmg_set_precision(FCS handle, fcs_float precision)
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_get_precision(FCS handle, fcs_float* precision)
+FCSResult fcs_vmg_get_precision(FCS handle, fcs_float* precision)
 {
   char fnc_name[] = "fcs_vmg_get_precision";
 
@@ -581,7 +581,7 @@ extern FCSResult fcs_vmg_get_precision(FCS handle, fcs_float* precision)
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_set_near_field_cells(FCS handle, fcs_int near_field_cells)
+FCSResult fcs_vmg_set_near_field_cells(FCS handle, fcs_int near_field_cells)
 {
   char fnc_name[] = "fcs_vmg_set_near_field_cells";
 
@@ -608,7 +608,7 @@ extern FCSResult fcs_vmg_set_near_field_cells(FCS handle, fcs_int near_field_cel
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_get_near_field_cells(FCS handle, fcs_int* near_field_cells)
+FCSResult fcs_vmg_get_near_field_cells(FCS handle, fcs_int* near_field_cells)
 {
   char fnc_name[] = "fcs_vmg_get_near_field_cells";
 
@@ -632,7 +632,7 @@ extern FCSResult fcs_vmg_get_near_field_cells(FCS handle, fcs_int* near_field_ce
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_set_interpolation_order(FCS handle, fcs_int interpolation_order)
+FCSResult fcs_vmg_set_interpolation_order(FCS handle, fcs_int interpolation_order)
 {
   char fnc_name[] = "fcs_vmg_set_interpolation_order";
 
@@ -659,7 +659,7 @@ extern FCSResult fcs_vmg_set_interpolation_order(FCS handle, fcs_int interpolati
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_get_interpolation_order(FCS handle, fcs_int* interpolation_order)
+FCSResult fcs_vmg_get_interpolation_order(FCS handle, fcs_int* interpolation_order)
 {
   char fnc_name[] = "fcs_vmg_get_interpolation_order";
 
@@ -685,7 +685,7 @@ extern FCSResult fcs_vmg_get_interpolation_order(FCS handle, fcs_int* interpolat
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_set_discretization_order(FCS handle, fcs_int discretization_order)
+FCSResult fcs_vmg_set_discretization_order(FCS handle, fcs_int discretization_order)
 {
   char fnc_name[] = "fcs_vmg_set_discretization_order";
 
@@ -714,7 +714,7 @@ extern FCSResult fcs_vmg_set_discretization_order(FCS handle, fcs_int discretiza
  *
  * @return FCSResult-object containing the return value.
  */
-extern FCSResult fcs_vmg_get_discretization_order(FCS handle, fcs_int* discretization_order)
+FCSResult fcs_vmg_get_discretization_order(FCS handle, fcs_int* discretization_order)
 {
   char fnc_name[] = "fcs_vmg_get_discretization_order";
 
@@ -729,7 +729,7 @@ extern FCSResult fcs_vmg_get_discretization_order(FCS handle, fcs_int* discretiz
   return NULL;
 }
 
-extern FCSResult fcs_vmg_check(FCS handle)
+FCSResult fcs_vmg_check(FCS handle)
 {
   char fnc_name[] = "fcs_vmg_check";
   FCSResult result;

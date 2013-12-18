@@ -52,7 +52,7 @@ typedef struct fcs_vmg_parameters_t
  * @param handle the FCS-obect into which the default parameters will be entered
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_set_default(FCS handle);
+FCSResult fcs_vmg_set_default(FCS handle);
 
 /**
  * @brief function to check if obligatory vmg information is set
@@ -60,7 +60,7 @@ extern FCSResult fcs_vmg_set_default(FCS handle);
  * information needed by vmg is set.
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_check(FCS handle);
+FCSResult fcs_vmg_check(FCS handle);
 
 /**
  * @brief function to check if the vmg library reports any
@@ -69,7 +69,7 @@ extern FCSResult fcs_vmg_check(FCS handle);
  * information needed by vmg is set.
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_library_check(FCS handle);
+FCSResult fcs_vmg_library_check(FCS handle);
 
 /**
  * @brief initialization routine for the basic parameters needed by vmg
@@ -77,7 +77,7 @@ extern FCSResult fcs_vmg_library_check(FCS handle);
  * can be entered
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_init(FCS handle);
+FCSResult fcs_vmg_init(FCS handle);
 
 /**
  * @brief tuning method for setting/calculating last parameters, for which positions,
@@ -91,7 +91,7 @@ extern FCSResult fcs_vmg_init(FCS handle);
  * @param charges fcs_float* list of charges
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+FCSResult fcs_vmg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
 			      fcs_float *positions, fcs_float *charges);
 
 /**
@@ -105,7 +105,7 @@ extern FCSResult fcs_vmg_tune(FCS handle, fcs_int local_particles, fcs_int local
  * @param charges fcs_float* list of charges
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+FCSResult fcs_vmg_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
 			     fcs_float *positions, fcs_float *charges,
 			     fcs_float *field, fcs_float *potentials);
 
@@ -118,14 +118,14 @@ extern FCSResult fcs_vmg_run(FCS handle, fcs_int local_particles, fcs_int local_
  * @param r distance for which the potential
  * @return fcs_float containing the potential value for the given distance (without charges, s. above)
  */
-extern FCSResult fcs_vmg_near_field_potential (FCS handle, fcs_float);
+FCSResult fcs_vmg_near_field_potential (FCS handle, fcs_float);
 
 /**
  * @brief clean-up method for vmg
  * @param handle the FCS-object, which contains the parameters
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_destroy(FCS handle);
+FCSResult fcs_vmg_destroy(FCS handle);
 
 /**
  * @brief function to activate computation of the virial
@@ -134,7 +134,7 @@ extern FCSResult fcs_vmg_destroy(FCS handle);
  * to fcs_run().
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_require_virial(FCS handle, fcs_int flag);
+FCSResult fcs_vmg_require_virial(FCS handle, fcs_int flag);
 
 /**
  * @brief function to fetch the virial
@@ -142,10 +142,10 @@ extern FCSResult fcs_vmg_require_virial(FCS handle, fcs_int flag);
  * @param virial pointer to the array where the virial is returned.
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_vmg_get_virial(FCS handle, fcs_float *virial);
+FCSResult fcs_vmg_get_virial(FCS handle, fcs_float *virial);
 
-extern FCSResult fcs_vmg_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
-extern FCSResult fcs_vmg_print_parameters(FCS handle);
+FCSResult fcs_vmg_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+FCSResult fcs_vmg_print_parameters(FCS handle);
 
 /**
  * @brief External interface definition for setup of the vmg library.
@@ -163,7 +163,7 @@ extern FCSResult fcs_vmg_print_parameters(FCS handle);
  * @param discretization_order Discretization order.
  * @param comm MPI communicator.
  */
-extern void VMG_fcs_setup(fcs_int max_level, const fcs_int* periodic, fcs_int max_iteration,
+void VMG_fcs_setup(fcs_int max_level, const fcs_int* periodic, fcs_int max_iteration,
 			  fcs_int smoothing_steps, fcs_int cycle_type, fcs_float precision,
 			  const fcs_float* box_offset, fcs_float box_size, fcs_int near_field_cells,
 			  fcs_int interpolation_order, fcs_int discretization_order,
@@ -174,7 +174,7 @@ extern void VMG_fcs_setup(fcs_int max_level, const fcs_int* periodic, fcs_int ma
  *
  * @return Error code.
  */
-extern int VMG_fcs_check();
+int VMG_fcs_check();
 
 /**
  * @brief Run the vmg solver
@@ -185,12 +185,12 @@ extern int VMG_fcs_check();
  * @param f Forces
  * @param num_particles_local Number of particles on this process.
  */
-extern void VMG_fcs_run(fcs_float* x, fcs_float* q, fcs_float* p, fcs_float* f, fcs_int num_particles_local);
+void VMG_fcs_run(fcs_float* x, fcs_float* q, fcs_float* p, fcs_float* f, fcs_int num_particles_local);
 
  /**
  * @brief Bring the vmg library back to the starting state.
  *
  */
-extern void VMG_fcs_destroy();
+void VMG_fcs_destroy();
 
 #endif /* FCS_VMG_INCLUDED */
