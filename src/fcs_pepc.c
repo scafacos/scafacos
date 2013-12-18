@@ -494,6 +494,34 @@ extern FCSResult fcs_pepc_get_virial(FCS handle, fcs_float virial[9])
     }
 }
 
+extern FCSResult fcs_pepc_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_pepc_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_epsilon",           pepc_set_epsilon,           FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_theta",             pepc_set_theta,             FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_num_walk_threads",  pepc_set_num_walk_threads,  FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_dipole_correction", pepc_set_dipole_correction, FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_load_balancing",    pepc_set_load_balancing,    FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_npm",               pepc_set_npm,               FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_debug_level",       pepc_set_debug_level,       FCS_PARSE_VAL(fcs_int));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
 extern FCSResult fcs_pepc_print_parameters(FCS handle)
 {
   fcs_float theta, eps;

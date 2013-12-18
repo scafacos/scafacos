@@ -462,6 +462,38 @@ FCSResult fcs_pp3mg_get_virial(FCS handle, fcs_float *virial)
 }
 
 
+FCSResult fcs_pp3mg_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_pp3mg_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_x",        pp3mg_set_cells_x,        FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_y",        pp3mg_set_cells_y,        FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_z",        pp3mg_set_cells_z,        FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_ghosts",         pp3mg_set_ghosts,         FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_degree",         pp3mg_set_degree,         FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_max_particles",  pp3mg_set_max_particles,  FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_max_iterations", pp3mg_set_max_iterations, FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_tol",            pp3mg_set_tol,            FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_distribution",   pp3mg_set_distribution,   FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_discretization", pp3mg_set_discretization, FCS_PARSE_VAL(fcs_int));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
 FCSResult fcs_pp3mg_print_parameters(FCS handle)
 {
   fcs_int cells_x, cells_y, cells_z;

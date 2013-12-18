@@ -301,6 +301,32 @@ FCSResult fcs_p3m_get_virial(FCS handle, fcs_float *virial) {
   return NULL;
 }
 
+FCSResult fcs_p3m_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_p3m_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p3m_r_cut",                p3m_set_r_cut,            FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p3m_alpha",                p3m_set_alpha,            FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p3m_grid",                 p3m_set_grid,             FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p3m_cao",                  p3m_set_cao,              FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p3m_require_total_energy", p3m_require_total_energy, FCS_PARSE_VAL(fcs_int));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
 FCSResult fcs_p3m_print_parameters(FCS handle)
 {
   fcs_float tolerance;

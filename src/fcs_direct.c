@@ -203,6 +203,31 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
 }
 
 
+FCSResult fcs_direct_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_direct_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_periodic_images",  direct_set_periodic_images,  FCS_PARSE_SEQ(fcs_int, 3));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_cutoff",           direct_set_cutoff,           FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_cutoff_with_near", direct_set_cutoff_with_near, FCS_PARSE_VAL(fcs_int));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
 FCSResult fcs_direct_print_parameters(FCS handle)
 {
   fcs_float cutoff;

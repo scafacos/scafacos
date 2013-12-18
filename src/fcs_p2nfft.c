@@ -241,8 +241,72 @@ static FCSResult ifcs_p2nfft_check(
 
 
 /************************************************************
- *     Print P2NFFT parameters
+ *     General P2NFFT parameter handling
  ************************************************************/
+extern FCSResult fcs_p2nfft_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_p2nfft_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  /* P2NFFT specific parameters */
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_r_cut",            p2nfft_set_r_cut,                     FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsI",             p2nfft_set_epsI,                      FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsB",             p2nfft_set_epsB,                      FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_c",                p2nfft_set_c,                         FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_alpha",            p2nfft_set_alpha,                     FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_intpol_order",     p2nfft_set_interpolation_order,       FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_near",         p2nfft_set_reg_near,                  FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_near_name",    p2nfft_set_reg_near_by_name,          FCS_PARSE_VAL(fcs_p_char_t));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_far",          p2nfft_set_reg_far,                   FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_far_name",     p2nfft_set_reg_far_by_name,           FCS_PARSE_VAL(fcs_p_char_t));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_p",                p2nfft_set_p,                         FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_require_virial",   p2nfft_require_virial,                FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_ignore_tolerance", p2nfft_set_ignore_tolerance,          FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("p2nfft_grid",             p2nfft_set_grid,                      FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("p2nfft_oversampled_grid", p2nfft_set_oversampled_grid,          FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_cao",              p2nfft_set_cao,                       FCS_PARSE_VAL(fcs_int));
+
+  /* PNFFT specific parameters */
+  FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("pnfft_N",                 p2nfft_set_pnfft_N,                   FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("pnfft_n",                 p2nfft_set_pnfft_n,                   FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_window_name",       p2nfft_set_pnfft_window_by_name,      FCS_PARSE_VAL(fcs_p_char_t));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_window",            p2nfft_set_pnfft_window,              FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_m",                 p2nfft_set_pnfft_m,                   FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_intpol_order",      p2nfft_set_pnfft_interpolation_order, FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_phi_hat",       p2nfft_set_pnfft_pre_phi_hat,         FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_fg_psi",            p2nfft_set_pnfft_fg_psi,              FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_fft_in_place",      p2nfft_set_pnfft_fft_in_place,        FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_sort_nodes",        p2nfft_set_pnfft_sort_nodes,          FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_interlaced",        p2nfft_set_pnfft_interlaced,          FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_grad_ik",           p2nfft_set_pnfft_grad_ik,             FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_psi",           p2nfft_set_pnfft_pre_psi,             FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_fg_psi",        p2nfft_set_pnfft_pre_fg_psi,          FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_full_psi",      p2nfft_set_pnfft_pre_full_psi,        FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_full_fg_psi",   p2nfft_set_pnfft_pre_full_fg_psi,     FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_real_f",            p2nfft_set_pnfft_real_f,              FCS_PARSE_VAL(fcs_int));
+
+  /* PFFT specific parameters */
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_patience",           p2nfft_set_pfft_patience,             FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_patience_name",      p2nfft_set_pfft_patience_by_name,     FCS_PARSE_VAL(fcs_p_char_t));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_preserve_input",     p2nfft_set_pfft_preserve_input,       FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_tune",               p2nfft_set_pfft_tune,                 FCS_PARSE_VAL(fcs_int));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
 extern FCSResult fcs_p2nfft_print_parameters(FCS handle)
 {
   fcs_int tolerance_type;

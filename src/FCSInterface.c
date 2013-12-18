@@ -906,143 +906,6 @@ FCSResult fcs_get_r_cut(FCS handle, fcs_float *r_cut)
 }
 
 
-#if defined(FCS_ENABLE_DEBUG) || 0
-# define PRINT_PARAM_BEGIN(_f_)     printf("%s: calling " #_f_ "(handle", func_name)
-# define PRINT_PARAM_VAL(_f_, _v_)  printf( _f_, _v_)
-# define PRINT_PARAM_STR(_str_)     printf("%s", (_str_))
-# define PRINT_PARAM_END(_r_)       printf(") -> %p\n", _r_)
-#else
-# define PRINT_PARAM_BEGIN(_f_)     do {} while (0)
-# define PRINT_PARAM_VAL(_f_, _v_)  do {} while (0)
-# define PRINT_PARAM_STR(_str_)     do {} while (0)
-# define PRINT_PARAM_END(_r_)       do {} while (0)
-#endif
-
-typedef long long fcs_long_long_t;
-typedef char *fcs_p_char_t;
-
-#define MAKE_TYPE_FUNC(_type_, _atox_, _format_) \
-  static inline _type_ *parse_##_type_(char **s, _type_ *v) { \
-    if (v == NULL) return NULL; \
-    *v = (_type_) _atox_(*s); \
-    *s = strchr(*s, ','); \
-    if (*s) { **s = 0; *s += 1; } \
-    PRINT_PARAM_VAL(_format_, *v); \
-    return v; \
-  } \
-  static inline _type_ *const_##_type_(_type_ c, _type_ *v) { \
-    if (v == NULL) return NULL; \
-    *v = c; \
-    PRINT_PARAM_VAL(_format_, *v); \
-    return v; \
-  }
-
-static inline fcs_bool atob(const char *nptr)
-{
-  const char false_str[] = "false";
-  if ((strlen(nptr) == 1 && strncmp(nptr, "0", 1) == 0) || (strlen(nptr) == strlen(false_str) && strncasecmp(nptr, false_str, strlen(false_str)))) return FCS_FALSE;
-  return FCS_TRUE;
-}
-
-MAKE_TYPE_FUNC(fcs_int, atoll, "%" FCS_LMOD_INT "d")
-MAKE_TYPE_FUNC(fcs_float, atof, "%" FCS_LMOD_FLOAT "f")
-MAKE_TYPE_FUNC(fcs_bool, atob, "%" FCS_LMOD_INT "d")
-MAKE_TYPE_FUNC(fcs_long_long_t, atoll, "%lld")
-MAKE_TYPE_FUNC(fcs_p_char_t, , "%s")
-
-#define PARSE_SEQ_MAX  3
-
-#define PARAM_SELECTED(_str_, _param_) \
-  (strcmp(param, #_param_) == 0 || strcmp(param, _str_) == 0)
-
-#define IF_PARAM_INTRO(_str_, _param_) \
-  if (PARAM_SELECTED(_str_, _param_)) { \
-    FCSResult _r; \
-    struct { \
-      void *t; \
-      fcs_int v_fcs_int[PARSE_SEQ_MAX]; \
-      fcs_float v_fcs_float[PARSE_SEQ_MAX]; \
-      fcs_bool v_fcs_bool[PARSE_SEQ_MAX]; \
-      fcs_long_long_t v_fcs_long_long_t[PARSE_SEQ_MAX]; \
-      fcs_p_char_t v_fcs_p_char_t[PARSE_SEQ_MAX]; \
-    } _t; \
-    char *_n=NULL; \
-    PRINT_PARAM_BEGIN(_param_);
-
-#define IF_PARAM_EXTRO() \
-    PRINT_PARAM_END(_r); \
-    if (_r != FCS_RESULT_SUCCESS && FCS_IS_FALSE(continue_on_errors)) return _r; \
-    goto next_param; \
-  }
-
-#define PARSE_VAL(_type_) \
-  _t.v_##_type_; \
-  if (cur) { \
-    PRINT_PARAM_STR(", "); \
-    parse_##_type_(&cur, &_t.v_##_type_[0]); \
-    _n = cur; cur = NULL; \
-  } _type_
-
-#define PARSE_SEQ(_type_, _n_) \
-  &_t.v_##_type_; \
-  if (cur) { \
-    PRINT_PARAM_STR(", ["); \
-    for (int _i = 0; _i < (_n_) && _i < PARSE_SEQ_MAX; ++_i) { \
-      PRINT_PARAM_STR((_i == 0)?"":", "); \
-      parse_##_type_(&cur, &_t.v_##_type_[_i]); \
-    } \
-    _n = cur; cur = NULL; \
-    PRINT_PARAM_STR("]"); \
-  } _type_ *
-
-#define CONST_VAL(_type_, _c_) \
-  _t.v_##_type_; \
-  if (cur) { \
-    PRINT_PARAM_STR(", "); \
-    const_##_type_(_c_, &_t.v_##_type_[0]); \
-    _n = cur; cur = NULL; \
-  } _type_
-
-#define IF_PARAM_THEN_FUNC0_GOTO_NEXT(_str_, _param_) \
-  IF_PARAM_INTRO(_str_, _param_) \
-    _r = fcs_##_param_(handle); \
-  IF_PARAM_EXTRO()
-
-#define IF_PARAM_THEN_FUNC1_GOTO_NEXT(_str_, _param_, _p0_) \
-  IF_PARAM_INTRO(_str_, _param_) \
-    _t.t = _p0_ _v0 = *_p0_ _vv0 = _v0; cur = _n; \
-    _r = fcs_##_param_(handle, _vv0); \
-  IF_PARAM_EXTRO()
-
-#define IF_PARAM_THEN_FUNC2_GOTO_NEXT(_str_, _param_, _p0_, _p1_) \
-  IF_PARAM_INTRO(_str_, _param_) \
-    _t.t = _p0_ _v0 = *_p0_ _vv0 = _v0; cur = _n; \
-    _t.t = _p1_ _v1 = *_p1_ _vv1 = _v1; cur = _n; \
-    _r = fcs_##_param_(handle, _vv0, _vv1); \
-  IF_PARAM_EXTRO()
-
-#define IF_PARAM_THEN_FUNC3_GOTO_NEXT(_str_, _param_, _p0_, _p1_, _p2_) \
-  IF_PARAM_INTRO(_str_, _param_) \
-    _t.t = _p0_ _v0 = *_p0_ _vv0 = _v0; cur = _n; \
-    _t.t = _p1_ _v1 = *_p1_ _vv1 = _v1; cur = _n; \
-    _t.t = _p2_ _v2 = *_p2_ _vv2 = _v2; cur = _n; \
-    _r = fcs_##_param_(handle, _vv0, _vv1, _vv2); \
-  IF_PARAM_EXTRO()
-
-#define DUMMY_REFERENCE_TO_STATIC_FUNCTIONS(_str_) \
-  if (PARAM_SELECTED(_str_, "EVEN_IF_IT_MATCHES_IT_DOES_NOTHING")) { \
-    parse_fcs_int(NULL, NULL); \
-    const_fcs_int(0, NULL); \
-    parse_fcs_float(NULL, NULL); \
-    const_fcs_float(0, NULL); \
-    parse_fcs_bool(NULL, NULL); \
-    const_fcs_bool(0, NULL); \
-    parse_fcs_long_long_t(NULL, NULL); \
-    const_fcs_long_long_t(0, NULL); \
-    parse_fcs_p_char_t(NULL, NULL); \
-    const_fcs_p_char_t(NULL, NULL); \
-  }
-
 /**
  * set the parameters of the FCS solver based on a parameter string
  */
@@ -1056,7 +919,7 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
 
   char *cur;
   char *params, *param;
-  fcs_int params_strlen;
+  fcs_int params_strlen, matched;
 
   params_strlen = strlen(parameters) + 1;
   params = malloc(params_strlen * sizeof(char));
@@ -1079,157 +942,71 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
 /*    printf("param: %s\n", param);
     printf("cur: %s\n", cur);*/
 
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_a",                   set_box_a,           PARSE_SEQ(fcs_float, 3));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_b",                   set_box_b,           PARSE_SEQ(fcs_float, 3));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_c",                   set_box_c,           PARSE_SEQ(fcs_float, 3));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("offset",                  set_box_origin,      PARSE_SEQ(fcs_float, 3));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("periodicity",             set_periodicity,     PARSE_SEQ(fcs_int, 3));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("near_field_flag",         set_near_field_flag, PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("total_particles",         set_total_particles, PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("require_virial",          set_compute_virial,  PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC2_GOTO_NEXT("",                        set_tolerance,       PARSE_VAL(fcs_int),                                   PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy",        set_tolerance,       CONST_VAL(fcs_int, FCS_TOLERANCE_TYPE_ENERGY),        PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy_rel",    set_tolerance,       CONST_VAL(fcs_int, FCS_TOLERANCE_TYPE_ENERGY_REL),    PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential",     set_tolerance,       CONST_VAL(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL),     PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential_rel", set_tolerance,       CONST_VAL(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL_REL), PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field",         set_tolerance,       CONST_VAL(fcs_int, FCS_TOLERANCE_TYPE_FIELD),         PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field_rel",     set_tolerance,       CONST_VAL(fcs_int, FCS_TOLERANCE_TYPE_FIELD_REL),     PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_a",                   set_box_a,           FCS_PARSE_SEQ(fcs_float, 3));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_b",                   set_box_b,           FCS_PARSE_SEQ(fcs_float, 3));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_c",                   set_box_c,           FCS_PARSE_SEQ(fcs_float, 3));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("offset",                  set_box_origin,      FCS_PARSE_SEQ(fcs_float, 3));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("periodicity",             set_periodicity,     FCS_PARSE_SEQ(fcs_int, 3));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("near_field_flag",         set_near_field_flag, FCS_PARSE_VAL(fcs_int));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("total_particles",         set_total_particles, FCS_PARSE_VAL(fcs_int));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("require_virial",          set_compute_virial,  FCS_PARSE_VAL(fcs_int));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("",                        set_tolerance,       FCS_PARSE_VAL(fcs_int),                                     FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy",        set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_ENERGY),        FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy_rel",    set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_ENERGY_REL),    FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential",     set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL),     FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential_rel", set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL_REL), FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field",         set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_FIELD),         FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field_rel",     set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_FIELD_REL),     FCS_PARSE_VAL(fcs_float));
 #ifdef FCS_ENABLE_DIRECT
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_periodic_images",  direct_set_periodic_images,  PARSE_SEQ(fcs_int, 3));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_cutoff",           direct_set_cutoff,           PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_cutoff_with_near", direct_set_cutoff_with_near, PARSE_VAL(fcs_int));
+    r = fcs_direct_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 #ifdef FCS_ENABLE_EWALD
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("ewald_maxkmax", ewald_set_maxkmax, PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("ewald_kmax",    ewald_set_kmax,    PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("ewald_r_cut",   ewald_set_r_cut,   PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("ewald_alpha",   ewald_set_alpha,   PARSE_VAL(fcs_float));
+    r = fcs_ewald_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 #ifdef FCS_ENABLE_FMM
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_absrel",            fmm_set_absrel,            PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_tolerance_energy",  fmm_set_tolerance_energy,  PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_dipole_correction", fmm_set_dipole_correction, PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_potential",         fmm_set_potential,         PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_cusp_radius",       fmm_set_cusp_radius,       PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_internal_tuning",   fmm_set_internal_tuning,   PARSE_VAL(fcs_long_long_t));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_maxdepth",          fmm_set_maxdepth,          PARSE_VAL(fcs_long_long_t));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_unroll_limit",      fmm_set_unroll_limit,      PARSE_VAL(fcs_long_long_t));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_balanceload",       fmm_set_balanceload,       PARSE_VAL(fcs_long_long_t));
+    r = fcs_fmm_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 #ifdef FCS_ENABLE_MEMD
-/*    IF_PARAM_THEN_FUNC3_GOTO_NEXT("", fcs_memd_set_box_size,                  PARSE_VAL(fcs_float), PARSE_VAL(fcs_float), PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_time_step,                 PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_total_number_of_particles, PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_local_number_of_particles, PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_init_flag,                 PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_mesh_size_1D,              PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_speed_of_light,            PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_permittivity,              PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_temperature,               PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_bjerrum_length,            PARSE_VAL(fcs_float));*/
+    r = fcs_memd_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 #ifdef FCS_ENABLE_MMM1D
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm1d_far_switch_radius", mmm1d_set_far_switch_radius, PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm1d_bessel_cutoff",     mmm1d_set_bessel_cutoff,     PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm1d_maxPWerror",        mmm1d_set_maxPWerror,        PARSE_VAL(fcs_float));
+    r = fcs_mmm1d_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 #ifdef FCS_ENABLE_MMM2D
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm2d_maxPWerror",           mmm2d_set_maxPWerror,           PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm2d_far_cutoff",           mmm2d_set_far_cutoff,           PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC2_GOTO_NEXT("mmm2d_dielectric_contrasts", mmm2d_set_dielectric_contrasts, PARSE_VAL(fcs_float), PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm2d_layers_per_node",      mmm2d_set_layers_per_node,      PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm2d_skin",                 mmm2d_set_skin,                 PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("",                           mmm2d_require_total_energy,     PARSE_VAL(fcs_int));
+    r = fcs_mmm2d_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 #ifdef FCS_ENABLE_P2NFFT
-    /* P2NFFT specific parameters */
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_r_cut",                p2nfft_set_r_cut,                     PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsI",                 p2nfft_set_epsI,                      PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsB",                 p2nfft_set_epsB,                      PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_c",                    p2nfft_set_c,                         PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_alpha",                p2nfft_set_alpha,                     PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_intpol_order",         p2nfft_set_interpolation_order,       PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_near",             p2nfft_set_reg_near,                  PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_near_name",        p2nfft_set_reg_near_by_name,          PARSE_VAL(fcs_p_char_t));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_far",              p2nfft_set_reg_far,                   PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_far_name",         p2nfft_set_reg_far_by_name,           PARSE_VAL(fcs_p_char_t));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_p",                    p2nfft_set_p,                         PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_require_virial",       p2nfft_require_virial,                PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_ignore_tolerance",     p2nfft_set_ignore_tolerance,          PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC3_GOTO_NEXT("p2nfft_grid",                 p2nfft_set_grid,                      PARSE_VAL(fcs_int), PARSE_VAL(fcs_int), PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC3_GOTO_NEXT("p2nfft_oversampled_grid",     p2nfft_set_oversampled_grid,          PARSE_VAL(fcs_int), PARSE_VAL(fcs_int), PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_cao",                  p2nfft_set_cao,                       PARSE_VAL(fcs_int));
-
-    /* PNFFT specific parameters */
-    IF_PARAM_THEN_FUNC3_GOTO_NEXT("pnfft_N",                     p2nfft_set_pnfft_N,                   PARSE_VAL(fcs_int), PARSE_VAL(fcs_int), PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC3_GOTO_NEXT("pnfft_n",                     p2nfft_set_pnfft_n,                   PARSE_VAL(fcs_int), PARSE_VAL(fcs_int), PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_window_name",           p2nfft_set_pnfft_window_by_name,      PARSE_VAL(fcs_p_char_t));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_window",                p2nfft_set_pnfft_window,              PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_m",                     p2nfft_set_pnfft_m,                   PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_intpol_order",          p2nfft_set_pnfft_interpolation_order, PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_phi_hat",           p2nfft_set_pnfft_pre_phi_hat,         PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_fg_psi",                p2nfft_set_pnfft_fg_psi,              PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_fft_in_place",          p2nfft_set_pnfft_fft_in_place,        PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_sort_nodes",            p2nfft_set_pnfft_sort_nodes,          PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_interlaced",            p2nfft_set_pnfft_interlaced,          PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_grad_ik",               p2nfft_set_pnfft_grad_ik,             PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_psi",               p2nfft_set_pnfft_pre_psi,             PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_fg_psi",            p2nfft_set_pnfft_pre_fg_psi,          PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_full_psi",          p2nfft_set_pnfft_pre_full_psi,        PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_full_fg_psi",       p2nfft_set_pnfft_pre_full_fg_psi,     PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_real_f",                p2nfft_set_pnfft_real_f,              PARSE_VAL(fcs_int));
-
-    /* PFFT specific parameters */
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_patience",               p2nfft_set_pfft_patience,             PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_patience_name",          p2nfft_set_pfft_patience_by_name,      PARSE_VAL(fcs_p_char_t));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_preserve_input",         p2nfft_set_pfft_preserve_input,       PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_tune",                   p2nfft_set_pfft_tune,                 PARSE_VAL(fcs_int));
+    r = fcs_p2nfft_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 #ifdef FCS_ENABLE_P3M
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p3m_r_cut",           p3m_set_r_cut,            PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p3m_alpha",           p3m_set_alpha,            PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p3m_grid",            p3m_set_grid,             PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p3m_cao",             p3m_set_cao,              PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("p3m_require_total_energy",\
-                                                         p3m_require_total_energy, PARSE_VAL(fcs_int));
+    r = fcs_p3m_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 #ifdef FCS_ENABLE_PEPC
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_epsilon",           pepc_set_epsilon,           PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_theta",             pepc_set_theta,             PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_num_walk_threads",  pepc_set_num_walk_threads,  PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_dipole_correction", pepc_set_dipole_correction, PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_load_balancing",    pepc_set_load_balancing,    PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_npm",               pepc_set_npm,               PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pepc_debug_level",       pepc_set_debug_level,       PARSE_VAL(fcs_int));
+    r = fcs_pepc_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 #ifdef FCS_ENABLE_PP3MG
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_x",        pp3mg_set_cells_x,        PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_y",        pp3mg_set_cells_y,        PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_z",        pp3mg_set_cells_z,        PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_ghosts",         pp3mg_set_ghosts,         PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_degree",         pp3mg_set_degree,         PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_max_particles",  pp3mg_set_max_particles,  PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_max_iterations", pp3mg_set_max_iterations, PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_tol",            pp3mg_set_tol,            PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_distribution",   pp3mg_set_distribution,   PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_discretization", pp3mg_set_discretization, PARSE_VAL(fcs_int));
+    r = fcs_pp3mg_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 #ifdef FCS_ENABLE_VMG
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("vmg_max_level",            vmg_set_max_level,            PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("vmg_max_iterations",       vmg_set_max_iterations,       PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("vmg_smoothing_steps",      vmg_set_smoothing_steps,      PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("vmg_cycle_type",           vmg_set_cycle_type,           PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("vmg_precision",            vmg_set_precision,            PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("vmg_near_field_cells",     vmg_set_near_field_cells,     PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("vmg_interpolation_order",  vmg_set_interpolation_order,  PARSE_VAL(fcs_int));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("vmg_discretization_order", vmg_set_discretization_order, PARSE_VAL(fcs_int));
+    r = fcs_vmg_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 #ifdef FCS_ENABLE_WOLF
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("wolf_cutoff", wolf_set_cutoff, PARSE_VAL(fcs_float));
-    IF_PARAM_THEN_FUNC1_GOTO_NEXT("wolf_alpha", wolf_set_alpha, PARSE_VAL(fcs_float));
+    r = fcs_wolf_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 #endif
 
-    DUMMY_REFERENCE_TO_STATIC_FUNCTIONS(param);
+    FCS_PARSE_DUMMY_REFERENCE_TO_STATIC_FUNCTIONS(param);
 
     if (r == FCS_RESULT_SUCCESS)
       r = fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "interface (parser): error in parameter string at '%s'!", param); 

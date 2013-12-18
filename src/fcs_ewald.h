@@ -49,6 +49,7 @@ FCSResult fcs_ewald_run(FCS handle,
 			fcs_float *fields,
 			fcs_float *potentials);
 
+FCSResult fcs_ewald_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
 FCSResult fcs_ewald_print_parameters(FCS handle);
 
 #endif

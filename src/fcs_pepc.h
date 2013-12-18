@@ -154,6 +154,7 @@ extern FCSResult fcs_pepc_require_virial(FCS handle, fcs_int choice);
  */
 extern FCSResult fcs_pepc_get_virial(FCS handle, fcs_float virial[9]);
 
+extern FCSResult fcs_pepc_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
 extern FCSResult fcs_pepc_print_parameters(FCS handle);
 
 /**

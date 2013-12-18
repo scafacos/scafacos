@@ -120,6 +120,37 @@ FCSResult fcs_memd_get_virial(FCS handle, fcs_float* virial)
     return NULL;
 }
 
+FCSResult fcs_memd_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+/*  const char *fnc_name = "fcs_memd_set_parameter";*/
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+/*  FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("", fcs_memd_set_box_size,                  FCS_PARSE_VAL(fcs_float), FCS_PARSE_VAL(fcs_float), FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_time_step,                 FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_total_number_of_particles, FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_local_number_of_particles, FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_init_flag,                 FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_mesh_size_1D,              FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_speed_of_light,            FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_permittivity,              FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_temperature,               FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("", fcs_memd_set_bjerrum_length,            FCS_PARSE_VAL(fcs_float));*/
+
+  return FCS_RESULT_SUCCESS;
+
+/*next_param:*/
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
 FCSResult fcs_memd_print_parameters(FCS handle)
 {
   printf("not implemented\n");

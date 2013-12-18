@@ -139,6 +139,7 @@ extern FCSResult fcs_p2nfft_require_virial(FCS handle, fcs_int flag);
  */
 extern FCSResult fcs_p2nfft_get_virial(FCS handle, fcs_float *virial);
 
+extern FCSResult fcs_p2nfft_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
 extern FCSResult fcs_p2nfft_print_parameters(FCS handle);
 
 

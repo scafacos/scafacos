@@ -28,6 +28,7 @@
 #ifndef FCS_INTERFACE_INCLUDED
 #define FCS_INTERFACE_INCLUDED
 
+#include <string.h>
 #include <mpi.h>
 
 #include "FCSInterface_p.h"
@@ -185,6 +186,147 @@ fcs_int fcs_get_values_changed(FCS handle);
  * @return FCSResult-object containing the return state
  */
 FCSResult fcs_init_f(FCS *handle, const char *method_name, MPI_Fint communicator);
+
+
+/**
+ * tools for parameter parsing of fcs_set_parameters
+ */
+#if defined(FCS_ENABLE_DEBUG) || 1
+# define FCS_PARSE_PRINT_PARAM_BEGIN(_f_)     printf("%s: calling " #_f_ "(handle", fnc_name)
+# define FCS_PARSE_PRINT_PARAM_VAL(_f_, _v_)  printf( _f_, _v_)
+# define FCS_PARSE_PRINT_PARAM_STR(_str_)     printf("%s", (_str_))
+# define FCS_PARSE_PRINT_PARAM_END(_r_)       printf(") -> %p\n", _r_)
+#else
+# define FCS_PARSE_PRINT_PARAM_BEGIN(_f_)     do {} while (0)
+# define FCS_PARSE_PRINT_PARAM_VAL(_f_, _v_)  do {} while (0)
+# define FCS_PARSE_PRINT_PARAM_STR(_str_)     do {} while (0)
+# define FCS_PARSE_PRINT_PARAM_END(_r_)       do {} while (0)
+#endif
+
+typedef long long fcs_long_long_t;
+typedef char *fcs_p_char_t;
+
+#define FCS_PARSE_MAKE_TYPE_FUNC(_type_, _atox_, _format_) \
+  static inline _type_ *parse_##_type_(char **s, _type_ *v) { \
+    if (v == NULL) return NULL; \
+    *v = (_type_) _atox_(*s); \
+    *s = strchr(*s, ','); \
+    if (*s) { **s = 0; *s += 1; } \
+    FCS_PARSE_PRINT_PARAM_VAL(_format_, *v); \
+    return v; \
+  } \
+  static inline _type_ *const_##_type_(_type_ c, _type_ *v) { \
+    if (v == NULL) return NULL; \
+    *v = c; \
+    FCS_PARSE_PRINT_PARAM_VAL(_format_, *v); \
+    return v; \
+  }
+
+static inline fcs_bool atob(const char *nptr)
+{
+  const char false_str[] = "false";
+  if ((strlen(nptr) == 1 && strncmp(nptr, "0", 1) == 0) || (strlen(nptr) == strlen(false_str) && strncasecmp(nptr, false_str, strlen(false_str)))) return FCS_FALSE;
+  return FCS_TRUE;
+}
+
+FCS_PARSE_MAKE_TYPE_FUNC(fcs_int, atoll, "%" FCS_LMOD_INT "d")
+FCS_PARSE_MAKE_TYPE_FUNC(fcs_float, atof, "%" FCS_LMOD_FLOAT "f")
+FCS_PARSE_MAKE_TYPE_FUNC(fcs_bool, atob, "%" FCS_LMOD_INT "d")
+FCS_PARSE_MAKE_TYPE_FUNC(fcs_long_long_t, atoll, "%lld")
+FCS_PARSE_MAKE_TYPE_FUNC(fcs_p_char_t, , "%s")
+
+#define FCS_PARSE_SEQ_MAX  3
+
+#define FCS_PARSE_PARAM_SELECTED(_str_, _param_) \
+  (strcmp(param, #_param_) == 0 || strcmp(param, _str_) == 0)
+
+#define FCS_PARSE_IF_PARAM_INTRO(_str_, _param_) \
+  if (FCS_PARSE_PARAM_SELECTED(_str_, _param_)) { \
+    FCSResult _r; \
+    struct { \
+      void *t; \
+      fcs_int v_fcs_int[FCS_PARSE_SEQ_MAX]; \
+      fcs_float v_fcs_float[FCS_PARSE_SEQ_MAX]; \
+      fcs_bool v_fcs_bool[FCS_PARSE_SEQ_MAX]; \
+      fcs_long_long_t v_fcs_long_long_t[FCS_PARSE_SEQ_MAX]; \
+      fcs_p_char_t v_fcs_p_char_t[FCS_PARSE_SEQ_MAX]; \
+    } _t; \
+    char *_n=NULL; \
+    FCS_PARSE_PRINT_PARAM_BEGIN(_param_);
+
+#define FCS_PARSE_IF_PARAM_EXTRO() \
+    FCS_PARSE_PRINT_PARAM_END(_r); \
+    if (_r != FCS_RESULT_SUCCESS && FCS_IS_FALSE(continue_on_errors)) return _r; \
+    goto next_param; \
+  }
+
+#define FCS_PARSE_VAL(_type_) \
+  _t.v_##_type_; \
+  if (cur) { \
+    FCS_PARSE_PRINT_PARAM_STR(", "); \
+    parse_##_type_(&cur, &_t.v_##_type_[0]); \
+    _n = cur; cur = NULL; \
+  } _type_
+
+#define FCS_PARSE_SEQ(_type_, _n_) \
+  &_t.v_##_type_; \
+  if (cur) { \
+    FCS_PARSE_PRINT_PARAM_STR(", ["); \
+    for (int _i = 0; _i < (_n_) && _i < FCS_PARSE_SEQ_MAX; ++_i) { \
+      FCS_PARSE_PRINT_PARAM_STR((_i == 0)?"":", "); \
+      parse_##_type_(&cur, &_t.v_##_type_[_i]); \
+    } \
+    _n = cur; cur = NULL; \
+    FCS_PARSE_PRINT_PARAM_STR("]"); \
+  } _type_ *
+
+#define FCS_PARSE_CONST(_type_, _c_) \
+  _t.v_##_type_; \
+  if (cur) { \
+    FCS_PARSE_PRINT_PARAM_STR(", "); \
+    const_##_type_(_c_, &_t.v_##_type_[0]); \
+    _n = cur; cur = NULL; \
+  } _type_
+
+#define FCS_PARSE_IF_PARAM_THEN_FUNC0_GOTO_NEXT(_str_, _param_) \
+  FCS_PARSE_IF_PARAM_INTRO(_str_, _param_) \
+    _r = fcs_##_param_(handle); \
+  FCS_PARSE_IF_PARAM_EXTRO()
+
+#define FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT(_str_, _param_, _p0_) \
+  FCS_PARSE_IF_PARAM_INTRO(_str_, _param_) \
+    _t.t = _p0_ _v0 = *_p0_ _vv0 = _v0; cur = _n; \
+    _r = fcs_##_param_(handle, _vv0); \
+  FCS_PARSE_IF_PARAM_EXTRO()
+
+#define FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT(_str_, _param_, _p0_, _p1_) \
+  FCS_PARSE_IF_PARAM_INTRO(_str_, _param_) \
+    _t.t = _p0_ _v0 = *_p0_ _vv0 = _v0; cur = _n; \
+    _t.t = _p1_ _v1 = *_p1_ _vv1 = _v1; cur = _n; \
+    _r = fcs_##_param_(handle, _vv0, _vv1); \
+  FCS_PARSE_IF_PARAM_EXTRO()
+
+#define FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT(_str_, _param_, _p0_, _p1_, _p2_) \
+  FCS_PARSE_IF_PARAM_INTRO(_str_, _param_) \
+    _t.t = _p0_ _v0 = *_p0_ _vv0 = _v0; cur = _n; \
+    _t.t = _p1_ _v1 = *_p1_ _vv1 = _v1; cur = _n; \
+    _t.t = _p2_ _v2 = *_p2_ _vv2 = _v2; cur = _n; \
+    _r = fcs_##_param_(handle, _vv0, _vv1, _vv2); \
+  FCS_PARSE_IF_PARAM_EXTRO()
+
+#define FCS_PARSE_DUMMY_REFERENCE_TO_STATIC_FUNCTIONS(_str_) \
+  if (FCS_PARSE_PARAM_SELECTED(_str_, "EVEN_IF_IT_MATCHES_IT_DOES_NOTHING")) { \
+    parse_fcs_int(NULL, NULL); \
+    const_fcs_int(0, NULL); \
+    parse_fcs_float(NULL, NULL); \
+    const_fcs_float(0, NULL); \
+    parse_fcs_bool(NULL, NULL); \
+    const_fcs_bool(0, NULL); \
+    parse_fcs_long_long_t(NULL, NULL); \
+    const_fcs_long_long_t(0, NULL); \
+    parse_fcs_p_char_t(NULL, NULL); \
+    const_fcs_p_char_t(NULL, NULL); \
+  }
 
 
 #endif
