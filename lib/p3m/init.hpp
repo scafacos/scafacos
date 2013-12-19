@@ -24,6 +24,10 @@
 #endif
 #include <mpi.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** Initialize all structures, parameters and arrays needed for the 
  *  P3M algorithm and set their default values.
  */
@@ -31,5 +35,9 @@ void ifcs_p3m_init(void **rd, MPI_Comm communicator);
 
 /** Clean up P3M memory allocations. */
 void ifcs_p3m_destroy(void *rd);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

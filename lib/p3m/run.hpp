@@ -18,12 +18,15 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_RUN_H 
-#define _P3M_RUN_H
+#ifndef _P3M_RUN_HPP
+#define _P3M_RUN_HPP
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "types.hpp"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void ifcs_p3m_run(void* rd,
 		  fcs_int num_particles,
@@ -32,5 +35,9 @@ void ifcs_p3m_run(void* rd,
 		  fcs_float *charges,
 		  fcs_float *fields,
 		  fcs_float *potentials);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

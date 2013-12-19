@@ -4,7 +4,7 @@ else
 lib_LTLIBRARIES = libfcs_p3m.la
 endif
 
-libfcs_p3m_la_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/lib -I$(top_srcdir)/lib/common/fcs-common @fftw3_CPPFLAGS@
+libfcs_p3m_la_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/lib -I$(top_srcdir)/lib/common/fcs-common $(fftw3_CPPFLAGS)
 libfcs_p3m_la_SOURCES = \
 	utils.hpp utils.cpp \
 	communication.hpp communication.cpp \

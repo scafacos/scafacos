@@ -23,6 +23,9 @@
 #include "utils.hpp"
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 void ifcs_p3m_init(void **rd, MPI_Comm communicator) {
   P3M_DEBUG(printf( "ifcs_p3m_init() started...\n"));
 
@@ -153,3 +156,7 @@ void ifcs_p3m_destroy(void *rd) {
     sfree(d);
   }
 }
+
+#ifdef __cplusplus
+}
+#endif
