@@ -781,7 +781,7 @@ ifcs_get_ca_points(ifcs_p3m_data_struct *d,
 
   for (fcs_int dim=0; dim<3; dim++) {
     /* position in normalized coordinates in [0,1] */
-    fcs_float pos    = (real_pos[dim] - d->local_grid.ld_pos[dim]) * d->ai[dim];
+    fcs_float pos = (real_pos[dim] - d->local_grid.ld_pos[dim]) * d->ai[dim];
     /* shift position to the corner of the charge assignment area */
     pos -= d->pos_shift;
     /* if using the interlaced grid, shift it more */
@@ -820,11 +820,13 @@ ifcs_get_ca_points(ifcs_p3m_data_struct *d,
       caf_ptr[dim] = &d->int_caf[dim*cao];
       /* fill array */
       for (fcs_int i = 0; i < cao; i++)
-        caf_ptr[dim][i] = ifcs_p3m_caf(i, dist, cao);
+        caf_ptr[dim][i] = 
+          P3M::ChargeAssignmentFunction::compute(i, dist, cao);
 #ifdef P3M_AD
       caf_ptr[3+dim] = &d->int_caf_d[dim*cao];
       for (fcs_int i = 0; i < cao; i++)
-        caf_ptr[3+dim][i] = ifcs_p3m_caf_d(i, dist, cao);
+        caf_ptr[3+dim][i] = 
+          P3M::ChargeAssignmentFunction::compute_derivative(i, dist, cao);
 #endif
     }
 
@@ -865,9 +867,9 @@ ifcs_p3m_assign_single_charge(ifcs_p3m_data_struct *d,
   fcs_float *caf_begin[6];
   fcs_int linind_grid = 
     ifcs_get_ca_points(d, real_pos, shifted, caf_begin);
-  fcs_float *caf_end[3]  = { caf_begin[0]+cao,
-                             caf_begin[1]+cao,
-                             caf_begin[2]+cao };
+  fcs_float *caf_end[3]  = { caf_begin[0] + cao,
+                             caf_begin[1] + cao,
+                             caf_begin[2] + cao };
 
   /* Loop over all ca grid points nearby and compute charge assignment fraction */
   for (fcs_float *caf_x = caf_begin[0]; caf_x != caf_end[0]; caf_x++) {

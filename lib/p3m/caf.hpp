@@ -21,10 +21,28 @@
 
 #include "types.hpp"
 
-/** Computes the charge assignment function of for the \a i'th degree
-    at value \a x. */
-fcs_float ifcs_p3m_caf(fcs_int i, fcs_float x, fcs_int cao_value);
-fcs_float ifcs_p3m_caf_d(fcs_int i, fcs_float x, fcs_int cao_value);
 void ifcs_p3m_interpolate_charge_assignment_function(ifcs_p3m_data_struct *d);
+
+namespace P3M {
+  class ChargeAssignmentFunction {
+  public:
+    /** Computes the \a i'th point of the CAF centered around \a r0 of
+        the charge assignment function of order \a cao. */
+    static fcs_float compute(fcs_int i, fcs_float r0, fcs_int cao);
+    static fcs_float compute_derivative(fcs_int i, fcs_float r0, fcs_int cao);
+    
+    // /** Get the \a i'th point of the CAF centered around r0. */
+    // fcs_float get(const fcs_float r0, const fcs_int i) = 0;
+    // /** Get a pointer to an array that contains \a cao values of the caf. 
+    //     Note that the array may be modified when this function is
+    //     called a second time.
+    //     The array is owned by the object, so do not try to free it.
+    //  */
+    // virtual fcs_float *get_array(const fcs_float r0) = 0;
+
+    // virtual fcs_float get_diff(const fcs_float r0, const fcs_int i) = 0;
+    // virtual fcs_float *get_diff_array(const fcs_float r0) = 0;
+  };
+}
 
 #endif
