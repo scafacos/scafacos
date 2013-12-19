@@ -16,12 +16,12 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "tune_broadcast.h"
+#include "tune_broadcast.hpp"
 
-#include "utils.h"
-#include <stdio.h>
-#include "error_estimate.h"
-#include "timing.h"
+#include "utils.hpp"
+//#include <stdio.h>
+#include "error_estimate.hpp"
+#include "timing.hpp"
 
 /***************************************************/
 /* TYPES AND CONSTANTS */

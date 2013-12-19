@@ -20,8 +20,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 
-#include "influence_function.h"
-#include "utils.h"
+#include "influence_function.hpp"
+#include "utils.hpp"
 #include <stdlib.h>
 
 /***************************************************/
@@ -120,8 +120,6 @@ ifcs_p3m_perform_aliasing_sums_ik(ifcs_p3m_data_struct *d, fcs_int n[3],
                                   fcs_float numerator_force[3], 
                                   fcs_float* numerator_energy,
                                   fcs_float* denominator) {
-  const fcs_float limit = 30;
-
   *denominator = 0.0;
   *numerator_energy = 0.0;
   for (fcs_int i = 0; i < 3; i++)
@@ -130,20 +128,19 @@ ifcs_p3m_perform_aliasing_sums_ik(ifcs_p3m_data_struct *d, fcs_int n[3],
   fcs_float prefactor = SQR(FCS_PI/d->alpha);
 
   for (fcs_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
-    fcs_float nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
-    fcs_float sx  = pow(sinc(nmx/(fcs_float)d->grid[RX]),2.0*d->cao);
+    const fcs_int nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
+    const fcs_float sx  = pow(sinc(nmx/(fcs_float)d->grid[RX]),2.0*d->cao);
     for (fcs_int my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
-      fcs_float nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
-      fcs_float sy  = sx*pow(sinc(nmy/(fcs_float)d->grid[RY]),2.0*d->cao);
+      const fcs_int nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
+      const fcs_float sy  = sx*pow(sinc(nmy/(fcs_float)d->grid[RY]),2.0*d->cao);
       for (fcs_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
-	fcs_float nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
-	fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
-	fcs_float nm2 = 
+	const fcs_int nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
+	const fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
+	const fcs_float nm2 = 
 	  SQR(nmx/d->box_l[RX]) + 
 	  SQR(nmy/d->box_l[RY]) + 
 	  SQR(nmz/d->box_l[RZ]);
-	fcs_float prefactor2 =
-	  (prefactor*nm2 < limit) ? sz*exp(-prefactor*nm2)/nm2 : 0.0;
+	const fcs_float prefactor2 = sz*exp(-prefactor*nm2)/nm2;
 
 	*numerator_energy += prefactor2;
 	numerator_force[RX] += prefactor2*nmx/d->box_l[RX];
@@ -213,30 +210,27 @@ ifcs_p3m_perform_aliasing_sums_iki(ifcs_p3m_data_struct *d, fcs_int n[3],
                                    fcs_float numerator_force[3], 
                                    fcs_float* numerator_energy,
                                    fcs_float* denominator) {
-  const fcs_float limit = 30;
-
   denominator[0] = denominator[1] = 0.0;
   *numerator_energy = 0.0;
   for (fcs_int i = 0; i < 3; i++)
     numerator_force[i] = 0.0;
 
-  fcs_float prefactor = SQR(FCS_PI/d->alpha);
+  const fcs_float prefactor = SQR(FCS_PI/d->alpha);
 
   for (fcs_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
-    fcs_float nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
-    fcs_float sx  = pow(sinc(nmx/(fcs_float)d->grid[RX]),2.0*d->cao);
+    const fcs_int nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
+    const fcs_float sx  = pow(sinc(nmx/(fcs_float)d->grid[RX]),2.0*d->cao);
     for (fcs_int my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
-      fcs_float nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
-      fcs_float sy  = sx*pow(sinc(nmy/(fcs_float)d->grid[RY]),2.0*d->cao);
+      const fcs_int nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
+      const fcs_float sy  = sx*pow(sinc(nmy/(fcs_float)d->grid[RY]),2.0*d->cao);
       for (fcs_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
-	fcs_float nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
-	fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
-	fcs_float nm2 = 
+	const fcs_int nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
+	const fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
+	const fcs_float nm2 = 
 	  SQR(nmx/d->box_l[RX]) + 
 	  SQR(nmy/d->box_l[RY]) + 
 	  SQR(nmz/d->box_l[RZ]);
-	fcs_float prefactor2 =
-	  (prefactor*nm2 < limit) ? sz*exp(-prefactor*nm2)/nm2 : 0.0;
+	const fcs_float prefactor2 = sz*exp(-prefactor*nm2)/nm2;
 
 	*numerator_energy += prefactor2;
 	numerator_force[RX] += prefactor2*nmx/d->box_l[RX];
@@ -305,8 +299,6 @@ ifcs_p3m_perform_aliasing_sums_adi(ifcs_p3m_data_struct *d, fcs_int n[3],
                                    fcs_float *numerator_force, 
                                    fcs_float* numerator_energy,
                                    fcs_float* denominator) {
-  const fcs_float limit = 30;
-
   denominator[0] = denominator[1] = denominator[2] = denominator[3] = 0.0;
   *numerator_energy = 0.0;
   *numerator_force = 0.0;
@@ -314,20 +306,19 @@ ifcs_p3m_perform_aliasing_sums_adi(ifcs_p3m_data_struct *d, fcs_int n[3],
   fcs_float prefactor = SQR(FCS_PI/d->alpha);
 
   for (fcs_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
-    fcs_float nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
-    fcs_float sx  = pow(sinc(nmx/(fcs_float)d->grid[RX]),2.0*d->cao);
+    const fcs_int nmx = d->meshift_x[n[KX]] + d->grid[RX]*mx;
+    const fcs_float sx  = pow(sinc(nmx/(fcs_float)d->grid[RX]),2.0*d->cao);
     for (fcs_int my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
-      fcs_float nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
-      fcs_float sy  = sx*pow(sinc(nmy/(fcs_float)d->grid[RY]),2.0*d->cao);
+      const fcs_int nmy = d->meshift_y[n[KY]] + d->grid[RY]*my;
+      const fcs_float sy  = sx*pow(sinc(nmy/(fcs_float)d->grid[RY]),2.0*d->cao);
       for (fcs_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
-	fcs_float nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
-	fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
-	fcs_float nm2 = 
+	const fcs_int nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
+	const fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
+	const fcs_float nm2 = 
 	  SQR(nmx/d->box_l[RX]) + 
 	  SQR(nmy/d->box_l[RY]) + 
 	  SQR(nmz/d->box_l[RZ]);
-	fcs_float prefactor2 =
-	  (prefactor*nm2 < limit) ? sz*exp(-prefactor*nm2) : 0.0;
+	const fcs_float prefactor2 = sz*exp(-prefactor*nm2);
 
 	*numerator_energy += prefactor2/nm2;
 	*numerator_force  += prefactor2;
@@ -351,9 +342,9 @@ ifcs_p3m_perform_aliasing_sums_adi(ifcs_p3m_data_struct *d, fcs_int n[3],
 static void ifcs_p3m_calc_meshift(ifcs_p3m_data_struct *d) {
   int i;
   
-  d->meshift_x = (fcs_float *) realloc(d->meshift_x, d->grid[0]*sizeof(fcs_float));
-  d->meshift_y = (fcs_float *) realloc(d->meshift_y, d->grid[1]*sizeof(fcs_float));
-  d->meshift_z = (fcs_float *) realloc(d->meshift_z, d->grid[2]*sizeof(fcs_float));
+  d->meshift_x = (fcs_int *) realloc(d->meshift_x, d->grid[0]*sizeof(fcs_int));
+  d->meshift_y = (fcs_int *) realloc(d->meshift_y, d->grid[1]*sizeof(fcs_int));
+  d->meshift_z = (fcs_int *) realloc(d->meshift_z, d->grid[2]*sizeof(fcs_int));
   
   d->meshift_x[0] = d->meshift_y[0] = d->meshift_z[0] = 0;
   for (i = 1; i <= d->grid[RX]/2; i++) {

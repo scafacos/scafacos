@@ -18,26 +18,23 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_ERROR_ESTIMATE_H
-#define _P3M_ERROR_ESTIMATE_H
-
+#ifndef _P3M_TUNE_H 
+#define _P3M_TUNE_H
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <mpi.h>
-#include "types.h"
 
-/** Compute the error for this combination of parameters and tune
-    alpha if required.
-*/
-void
-ifcs_p3m_compute_error_and_tune_alpha(ifcs_p3m_data_struct *d);
+#include "FCSResult.h"
 
-/** Calculates the reciprocal space contribution to the rms error in the
-    force (as described in the book of Hockney and Eastwood
-    (Eqn. 8.23) (for a system of N randomly distributed particles in a
-    cubic box).
-*/
-void 
-ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+FCSResult ifcs_p3m_tune
+(void* rd, fcs_int num_particles, fcs_int max_particles,
+ fcs_float *positions, fcs_float *charges);
+
+#ifdef __cplusplus
+}
+#endif
 #endif

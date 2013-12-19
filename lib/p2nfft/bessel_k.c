@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_gamma.h>
+#include <gsl/gsl_sf_lambert.h>
 
 #include "bessel_k.h"
 
@@ -143,6 +144,33 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   fcs_float *pt, *D_Aki, *N_Aki;
   fcs_int N = n_max+1;
 
+  /* Fct. gsl_sf_gamma_inc aborts for large arguments due to underflows.
+     For nu > -1 we find the very crude upper bound
+     inc_upper_bessel(nu,x,y) < Exp[-x]/x < bound for x and solve it for x.
+     Return 0 whenever x is larger than necessary to fulfill the bound. 
+     For nu <= -1 we use the bounds 
+     inc_upper_bessel(nu,x,y) <= exp(1-x)*(-nu-1)!*x^nu for x<=1
+     inc_upper_bessel(nu,x,y) <= exp(1-x)*(-nu-1)!*x^(-1) for x>1 */
+  const fcs_float bound = 1e-100;
+
+  if(nu >= -1){
+    if( x > gsl_sf_lambert_W0(1/bound) )
+      return 0.0;
+  } else{
+      fcs_int fak = 1;
+      for(fcs_int t=1; t<-nu; t++){
+        fak*=t;
+      }
+      if(x<1){
+        if( fak*fcs_exp(1-x)*fcs_pow(x,nu) < bound )
+          return 0.0;
+      }
+      else{
+        if( fak*fcs_exp(1-x)*fcs_pow(x,-1) < bound )
+          return 0.0;
+      }
+  }
+
   /* for y==0 incompl. bessel_k can be computed using incompl. Gamma fct. */
   if(fcs_float_is_zero(y))
     return fcs_pow(x,nu) * gsl_sf_gamma_inc(-nu,x); 
@@ -150,8 +178,27 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
 
   /* for x<y compute the faster convergent complement integral,
    * see formula (4) of [Slevinsky-Safouhi 2010] */
-  if(x<y)
-    return 2 * fcs_pow(x/y, nu/2) * ifcs_p2nfft_bessel_k(nu, 2*fcs_sqrt(x*y)) - ifcs_p2nfft_inc_upper_bessel_k(-nu, y, x, eps);
+  if(x<y) /* upper bound for nu>=-1, in our application we always have nu>=-1 at this point */
+    if( 2*fcs_pow(x/y,nu/2)*fcs_exp(-fcs_sqrt(x*y))/fcs_sqrt(x*y) < 1e-100 ){
+      return 0.0;
+    }else{
+      return 2 * fcs_pow(x/y, nu/2) * ifcs_p2nfft_bessel_k(nu, 2*fcs_sqrt(x*y)) - ifcs_p2nfft_inc_upper_bessel_k(-nu, y, x, eps);
+    }
+  
+  /* for nu=0 and x,y small use Taylor approximation */
+  if(fcs_float_is_zero(nu)){
+    if(fcs_pow(x,2) + fcs_pow(y,2) < fcs_pow(0.75,2)){
+      fcs_int k = 0;
+      fcs_int fak = 1;
+      fcs_float z = 0.0;
+      while( fcs_exp(-x)*fcs_pow(y,k+1)/(x*(k+1)*fak) > eps){
+	z+=fcs_pow(-1,k)*fcs_pow(x*y,k)*gsl_sf_gamma_inc(-k,x)/fak;
+	k+=1;
+	fak*=k;
+      }
+      return z;
+    }
+  }
 
   /* init recurrence coefficients  and Pascal's triangle*/
   D_Aki = malloc(sizeof(fcs_float)*(N*(N+1))/2);
@@ -169,11 +216,11 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   while(err > eps){
 
     /* avoid overflow by division with very small numbers */
-    if(val_new < eps)
+    if(fabs(val_new) < eps)
       break;
 
     if(n >= n_max){
-      fprintf(stderr, "Inc_Bessel_K: Cannot reach accuracy within %" FCS_LMOD_INT "d iterations: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n_max, val_new, val_old, err, eps, nu, x, y);
+      //fprintf(stderr, "Inc_Bessel_K: Cannot reach accuracy within %" FCS_LMOD_INT "d iterations: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n_max, val_new, val_old, err, eps, nu, x, y);
       break;
     }
     n++;
@@ -190,7 +237,20 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
     err = fabs(val_new - val_old);
 
     if(isnan(val_new)){
-      fprintf(stderr, "Inc_Bessel_K: NAN at iteration %" FCS_LMOD_INT "d: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n, val_new, val_old, err, eps, nu, x, y);
+      //fprintf(stderr, "Inc_Bessel_K: NAN at iteration %" FCS_LMOD_INT "d: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n, val_new, val_old, err, eps, nu, x, y);
+      val_new=val_old;
+      break;
+    }
+
+    if(fcs_float_is_zero(val_new)){
+      //fprintf(stderr, "Inc_Bessel_K: value 0 at iteration %" FCS_LMOD_INT "d: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n, val_new, val_old, err, eps, nu, x, y);
+      val_new=val_old;
+      break;
+    }
+
+    if(isinf(val_new)){
+      //fprintf(stderr, "Inc_Bessel_K: Inf at iteration %" FCS_LMOD_INT "d: val_new = %e, val_old = %e, err = %e, eps = %e, nu = %e, x = %e, y = %e.\n", n, val_new, val_old, err, eps, nu, x, y);
+      val_new=val_old;
       break;
     }
   }

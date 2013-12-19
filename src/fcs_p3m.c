@@ -17,8 +17,6 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -27,8 +25,8 @@
 
 #include "fcs_p3m.h"
 #include "FCSCommon.h"
-#include "p3m/p3m.h"
-#include "p3m/types.h"
+#include "p3m/p3m.hpp"
+#include "p3m/types.hpp"
 
 /* method to check if p3m parameters are entered into FCS */
 static FCSResult fcs_p3m_check(FCS handle, const char* fnc_name) {

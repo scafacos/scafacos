@@ -16,16 +16,28 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_P3M_H
-#define _P3M_P3M_H
+#ifndef _P3M_INIT_H
+#define _P3M_INIT_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <mpi.h>
 
-#include "init.h"
-#include "parameters.h"
-#include "tune.h"
-#include "run.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** Initialize all structures, parameters and arrays needed for the 
+ *  P3M algorithm and set their default values.
+ */
+void ifcs_p3m_init(void **rd, MPI_Comm communicator);
+
+/** Clean up P3M memory allocations. */
+void ifcs_p3m_destroy(void *rd);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

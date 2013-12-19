@@ -25,11 +25,11 @@
 #endif
 
 #include "FCSCommon.h"
-#include "run.h"
-#include "types.h"
-#include "utils.h"
-#include "caf.h"
-#include "tune.h"
+#include "run.hpp"
+#include "types.hpp"
+#include "utils.hpp"
+#include "caf.hpp"
+#include "tune.hpp"
 #include "fcs_p3m_p.h"
 #include "common/gridsort/gridsort.h"
 #include "common/near/near.h"
@@ -140,6 +140,7 @@ FCS_NEAR_LOOP_FP(ifcs_p3m_compute_near_loop, ifcs_p3m_compute_near);
     d->timings[ID2] += -MPI_Wtime();                              \
   }                                                               \
 
+#if defined(P3M_INTERLACE) && defined(P3M_AD)
 void ifcs_p3m_run(void* rd,
 		  fcs_int _num_particles,
 		  fcs_int _max_num_particles,
@@ -152,13 +153,11 @@ void ifcs_p3m_run(void* rd,
   P3M_INFO(printf( "ifcs_p3m_run() started...\n"));
   ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*)rd;
 
-  
   /* reset all timers */
   if (d->require_timings) {
     for (int i = 0; i < NUM_TIMINGS; i++)
       d->timings[i] = 0.0;
   }
-  
 
   P3M_INFO(printf("    system parameters: box_l=" F3FLOAT "\n", \
                   d->box_l[0], d->box_l[1], d->box_l[2]));
@@ -172,7 +171,7 @@ void ifcs_p3m_run(void* rd,
   P3M_DEBUG_LOCAL(MPI_Barrier(d->comm.mpicomm));
   P3M_DEBUG_LOCAL(printf("    %d: num_particles=%d\n",	\
 			 d->comm.rank, _num_particles));
-  
+
 
   /* decompose system */
   fcs_int num_real_particles;
@@ -194,25 +193,16 @@ void ifcs_p3m_run(void* rd,
   fcs_float *fields = NULL; 
   fcs_float *potentials = NULL; 
   if (_fields != NULL)
-    fields = malloc(sizeof(fcs_float)*3*num_real_particles);
+    fields = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*3*num_real_particles));
   if (_potentials != NULL || d->require_total_energy)
-    potentials = malloc(sizeof(fcs_float)*num_real_particles);
+    potentials = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*num_real_particles));
   
   STOPSTART(TIMING_DECOMP, TIMING_CA);
+
   /* charge assignment */
   ifcs_p3m_assign_charges(d, d->fft.data_buf, num_real_particles, 
                           positions, charges, 0);
   STOPSTART(TIMING_CA, TIMING_GATHER);
-
-#ifndef P3M_INTERLACE
-  
-  /* gather the ca grid */
-  ifcs_p3m_gather_grid(d, d->fft.data_buf);
-  /* now d->rs_grid should contain the local ca grid */
-  STOP(TIMING_GATHER);
-
-#else /* P3M_INTERLACE */
-
   /* gather the ca grid */
   ifcs_p3m_gather_grid(d, d->fft.data_buf);
 
@@ -237,8 +227,6 @@ void ifcs_p3m_run(void* rd,
   for (fcs_int i = d->local_grid.size-1; i >= 0; i--)
     d->rs_grid[2*i+1] = d->fft.data_buf[i];
   STOP(TIMING_GATHER);
-
-#endif
 
   /* forward transform */
   START(TIMING_FORWARD);
@@ -272,8 +260,6 @@ void ifcs_p3m_run(void* rd,
       STOP(TIMING_BACK)
       P3M_DEBUG(printf( "  returned from ifcs_fft_perform_back.\n"));
 
-#ifdef P3M_INTERLACE
-
       /** First (unshifted) run */
       START(TIMING_SPREAD)
       for (fcs_int i=0; i<d->local_grid.size; i++) {
@@ -303,23 +289,6 @@ void ifcs_p3m_run(void* rd,
                                  charges, 1, potentials);
 
       STOP(TIMING_POTENTIALS)
-
-#else
-
-      /* redistribute energy grid */
-      START(TIMING_SPREAD)
-      ifcs_p3m_spread_grid(d, d->ks_grid);
-
-      STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS)
-
-      /* compute potentials */
-      ifcs_p3m_assign_potentials(d, d->ks_grid,
-                                 num_real_particles, positions, 
-                                 charges, 0,
-                                 potentials);
-
-      STOP(TIMING_POTENTIALS)
-#endif
     }
   }
 
@@ -332,8 +301,6 @@ void ifcs_p3m_run(void* rd,
     ifcs_p3m_apply_force_influence_function(d);
     STOP(TIMING_INFLUENCE);
     
-#ifdef P3M_AD
-#ifdef P3M_INTERLACE
     /* backtransform the grid */
     START(TIMING_BACK);
     P3M_DEBUG(printf( "  calling ifcs_fft_perform_back...\n"));
@@ -371,63 +338,12 @@ void ifcs_p3m_run(void* rd,
                               positions, 1, fields);
 
     STOP(TIMING_FIELDS)
-#endif /* P3M_INTERLACE */
-#else /* P3M_AD */
-  
-    /* result is in d->ks_grid */
-    for (int dim = 0; dim < 3; dim++) {
-      /* differentiate in direction dim */
-      /* result is stored in d->rs_grid */
-      START(TIMING_FIELDS)
-      ifcs_p3m_ik_diff(d, dim);
-      
-      STOPSTART(TIMING_FIELDS, TIMING_BACK)
+  } 
 
-      /* backtransform the grid */
-      P3M_DEBUG(printf( "  calling ifcs_fft_perform_back (field dim=%d)...\n", dim));
-      ifcs_fft_perform_back(&d->fft, &d->comm, d->rs_grid);
-      P3M_DEBUG(printf( "  returned from ifcs_fft_perform_back.\n"));
-      STOP(TIMING_BACK)
-      
-#ifdef P3M_INTERLACE
-      START(TIMING_SPREAD)
-      /** First (unshifted) run */
-      for(fcs_int i=0;i<d->local_grid.size;i++) {
-        d->fft.data_buf[i] = d->rs_grid[2*i];
-      } 
-      
-      ifcs_p3m_spread_grid(d, d->fft.data_buf);
-      STOPSTART(TIMING_SPREAD, TIMING_FIELDS)
-      ifcs_p3m_assign_fields_ik(d, d->fft.data_buf, dim, num_real_particles, 
-                                positions, 0, fields);
-      STOPSTART(TIMING_FIELDS, TIMING_SPREAD)
-      
-      /** Second (shifted) run */
-      for(fcs_int i=0;i<d->local_grid.size;i++) {
-        d->fft.data_buf[i] = d->rs_grid[2*i+1];
-      } 
-      
-      ifcs_p3m_spread_grid(d, d->fft.data_buf);
-      STOPSTART(TIMING_SPREAD, TIMING_FIELDS)
-      ifcs_p3m_assign_fields_ik(d, d->fft.data_buf, dim, num_real_particles, 
-                                positions, 1, fields);
-      STOP(TIMING_FIELDS)
-#else
-      /* redistribute force grid */
-      START(TIMING_SPREAD)
-      ifcs_p3m_spread_grid(d, d->rs_grid);
-      STOPSTART(TIMING_SPREAD, TIMING_FIELDS)
-      ifcs_p3m_assign_fields_ik(d, d->rs_grid, dim, num_real_particles, 
-                                positions, 0, fields);
-      STOP(TIMING_FIELDS)
-#endif /* P3M_INTERLACE */
-    }
-#endif /* P3M_IK */
-  }   
-  
-  if (d->near_field_flag) { 
+  if (d->near_field_flag) {
     /* start near timer */
     START(TIMING_NEAR)
+
     /* compute near field */
     fcs_near_t near;
     fcs_float alpha = d->alpha;
@@ -435,14 +351,12 @@ void ifcs_p3m_run(void* rd,
     fcs_near_create(&near);
     /*  fcs_near_set_field_potential(&near, ifcs_p3m_compute_near);*/
     fcs_near_set_loop(&near, ifcs_p3m_compute_near_loop);
+
     fcs_float box_base[3] = {0.0, 0.0, 0.0 };
-    
-/*
     fcs_float box_a[3] = {d->box_l[0], 0.0, 0.0 };
     fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
     fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
-*/
-    fcs_near_set_system(&near, box_base, d->box_vector_a, d->box_vector_b, d->box_vector_c, NULL);
+    fcs_near_set_system(&near, box_base, box_a, box_b, box_c, NULL);
 
     fcs_near_set_particles(&near, num_real_particles, num_real_particles,
                            positions, charges, indices,
@@ -455,7 +369,7 @@ void ifcs_p3m_run(void* rd,
     P3M_DEBUG(printf( "  calling fcs_near_compute()...\n"));
     fcs_near_compute(&near, d->r_cut, &alpha, d->comm.mpicomm);
     P3M_DEBUG(printf( "  returning from fcs_near_compute().\n"));
-    
+ 
     fcs_near_destroy(&near);
 
     STOP(TIMING_NEAR)
@@ -506,6 +420,268 @@ void ifcs_p3m_run(void* rd,
 
   P3M_INFO(printf( "ifcs_p3m_run() finished.\n"));
 }
+
+#elif !defined(P3M_INTERLACE) && defined(P3M_IK)
+void ifcs_p3m_run(void* rd,
+		  fcs_int _num_particles,
+		  fcs_int _max_num_particles,
+		  fcs_float *_positions, 
+		  fcs_float *_charges,
+		  fcs_float *_fields,
+		  fcs_float *_potentials) {
+  /* Here we assume, that the method is already tuned and that all
+     parameters are valid */
+  P3M_INFO(printf( "ifcs_p3m_run() started...\n"));
+  ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*)rd;
+
+  /* reset all timers */
+  if (d->require_timings) {
+    for (int i = 0; i < NUM_TIMINGS; i++)
+      d->timings[i] = 0.0;
+  }
+
+  P3M_INFO(printf("    system parameters: box_l=" F3FLOAT "\n", \
+                  d->box_l[0], d->box_l[1], d->box_l[2]));
+  P3M_INFO(printf(                                                      \
+                  "    p3m params: "                                    \
+                  "r_cut=" FFLOAT ", grid=" F3INT ", cao=" FINT ", "    \
+                  "alpha=" FFLOAT ", grid_off=" F3FLOAT "\n",           \
+                  d->r_cut, d->grid[0], d->grid[1], d->grid[2], d->cao, \
+                  d->alpha, d->grid_off[0], d->grid_off[1], d->grid_off[2]));
+
+  P3M_DEBUG_LOCAL(MPI_Barrier(d->comm.mpicomm));
+  P3M_DEBUG_LOCAL(printf("    %d: num_particles=%d\n",	\
+			 d->comm.rank, _num_particles));
+
+
+  /* decompose system */
+  fcs_int num_real_particles;
+  fcs_int num_ghost_particles;
+  fcs_float *positions, *ghost_positions;
+  fcs_float *charges, *ghost_charges;
+  fcs_gridsort_index_t *indices, *ghost_indices;
+  fcs_gridsort_t gridsort;
+
+  START(TIMING_DECOMP)
+  ifcs_p3m_domain_decompose(d, &gridsort, 
+                            _num_particles, _max_num_particles, _positions, _charges,
+                            &num_real_particles,
+                            &positions, &charges, &indices,
+                            &num_ghost_particles,
+                            &ghost_positions, &ghost_charges, &ghost_indices);
+
+  /* allocate local fields and potentials */
+  fcs_float *fields = NULL; 
+  fcs_float *potentials = NULL; 
+  if (_fields != NULL)
+    fields = malloc(sizeof(fcs_float)*3*num_real_particles);
+  if (_potentials != NULL || d->require_total_energy)
+    potentials = malloc(sizeof(fcs_float)*num_real_particles);
+  
+  STOPSTART(TIMING_DECOMP, TIMING_CA);
+
+  /* charge assignment */
+  ifcs_p3m_assign_charges(d, d->rs_grid, num_real_particles, 
+                          positions, charges, 0);
+  STOPSTART(TIMING_CA, TIMING_GATHER);
+  /* gather the ca grid */
+  ifcs_p3m_gather_grid(d, d->rs_grid);
+  /* now d->rs_grid should contain the local ca grid */
+  STOP(TIMING_GATHER);
+
+  /* forward transform */
+  START(TIMING_FORWARD);
+  P3M_DEBUG(printf( "  calling ifcs_fft_perform_forw()...\n"));
+  ifcs_fft_perform_forw(&d->fft, &d->comm, d->rs_grid);
+  P3M_DEBUG(printf( "  returned from ifcs_fft_perform_forw().\n"));
+  STOP(TIMING_FORWARD);
+  
+  /********************************************/
+  /* POTENTIAL COMPUTATION */
+  /********************************************/
+  if (d->require_total_energy || _potentials != NULL) {
+    /* apply energy optimized influence function */
+    START(TIMING_INFLUENCE)
+    ifcs_p3m_apply_energy_influence_function(d);
+    /* result is in d->ks_grid */
+    STOP(TIMING_INFLUENCE)
+
+    /* compute total energy, but not potentials */
+    if (d->require_total_energy && potentials == NULL) {
+      START(TIMING_POTENTIALS)
+      d->total_energy = ifcs_p3m_compute_total_energy(d);
+      STOP(TIMING_POTENTIALS)
+    }
+
+    if (_potentials != NULL) {
+      /* backtransform the grid */
+      P3M_DEBUG(printf( "  calling ifcs_fft_perform_back (potentials)...\n"));
+      START(TIMING_BACK)
+      ifcs_fft_perform_back(&d->fft, &d->comm, d->ks_grid);
+      STOP(TIMING_BACK)
+      P3M_DEBUG(printf( "  returned from ifcs_fft_perform_back.\n"));
+
+      /* redistribute energy grid */
+      START(TIMING_SPREAD)
+      ifcs_p3m_spread_grid(d, d->ks_grid);
+
+      STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS)
+
+      /* compute potentials */
+      ifcs_p3m_assign_potentials(d, d->ks_grid,
+                                 num_real_particles, positions, 
+                                 charges, 0,
+                                 potentials);
+
+      STOP(TIMING_POTENTIALS)
+    }
+  }
+
+  /********************************************/
+  /* FIELD COMPUTATION */
+  /********************************************/
+  if (_fields != NULL) {
+    /* apply force optimized influence function */
+    START(TIMING_INFLUENCE);
+    ifcs_p3m_apply_force_influence_function(d);
+    STOP(TIMING_INFLUENCE);
+    
+    /* result is in d->ks_grid */
+    for (int dim = 0; dim < 3; dim++) {
+      /* differentiate in direction dim */
+      /* result is stored in d->rs_grid */
+      START(TIMING_FIELDS);
+      ifcs_p3m_ik_diff(d, dim);
+      
+      STOPSTART(TIMING_FIELDS, TIMING_BACK);
+
+      /* backtransform the grid */
+      P3M_DEBUG(printf( "  calling ifcs_fft_perform_back (field dim=%d)...\n", dim));
+      ifcs_fft_perform_back(&d->fft, &d->comm, d->rs_grid);
+      P3M_DEBUG(printf( "  returned from ifcs_fft_perform_back.\n"));
+      STOP(TIMING_BACK);
+      
+      /* redistribute force grid */
+      START(TIMING_SPREAD);
+      ifcs_p3m_spread_grid(d, d->rs_grid);
+      STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
+      ifcs_p3m_assign_fields_ik(d, d->rs_grid, dim, num_real_particles, 
+                                positions, 0, fields);
+      STOP(TIMING_FIELDS);
+    }
+  }  
+
+  if (d->near_field_flag) {
+    /* start near timer */
+    START(TIMING_NEAR)
+
+    /* compute near field */
+    fcs_near_t near;
+    fcs_float alpha = d->alpha;
+  
+    fcs_near_create(&near);
+    /*  fcs_near_set_field_potential(&near, ifcs_p3m_compute_near);*/
+    fcs_near_set_loop(&near, ifcs_p3m_compute_near_loop);
+
+    fcs_float box_base[3] = {0.0, 0.0, 0.0 };
+    
+/*
+    fcs_float box_a[3] = {d->box_l[0], 0.0, 0.0 };
+    fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
+    fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
+*/
+    fcs_near_set_system(&near, box_base, d->box_vector_a, d->box_vector_b, d->box_vector_c, NULL);
+
+    fcs_near_set_particles(&near, num_real_particles, num_real_particles,
+                           positions, charges, indices,
+                           (_fields != NULL) ? fields : NULL, 
+                           (_potentials != NULL) ? potentials : NULL);
+
+    fcs_near_set_ghosts(&near, num_ghost_particles,
+                        ghost_positions, ghost_charges, ghost_indices);
+
+    P3M_DEBUG(printf( "  calling fcs_near_compute()...\n"));
+    fcs_near_compute(&near, d->r_cut, &alpha, d->comm.mpicomm);
+    P3M_DEBUG(printf( "  returning from fcs_near_compute().\n"));
+ 
+    fcs_near_destroy(&near);
+
+    STOP(TIMING_NEAR)
+  }
+
+  START(TIMING_COMP)
+  /* sort particles back */
+  P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
+  fcs_gridsort_sort_backward(&gridsort,
+                             fields, potentials,
+                             _fields, _potentials, 1,
+                             d->comm.mpicomm);
+  P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
+  
+  fcs_gridsort_free(&gridsort);
+  fcs_gridsort_destroy(&gridsort);
+
+  if (fields != NULL) free(fields);
+  if (potentials != NULL) free(potentials);
+
+  STOP(TIMING_COMP)
+
+  /* collect timings from the different nodes */
+  if (d->require_timings) {
+    d->timings[TIMING_FAR] += d->timings[TIMING_CA];
+    d->timings[TIMING_FAR] += d->timings[TIMING_GATHER];
+    d->timings[TIMING_FAR] += d->timings[TIMING_FORWARD];
+    d->timings[TIMING_FAR] += d->timings[TIMING_BACK];
+    d->timings[TIMING_FAR] += d->timings[TIMING_INFLUENCE];
+    d->timings[TIMING_FAR] += d->timings[TIMING_SPREAD];
+    d->timings[TIMING_FAR] += d->timings[TIMING_POTENTIALS];
+    d->timings[TIMING_FAR] += d->timings[TIMING_FIELDS];
+
+    d->timings[TIMING] += d->timings[TIMING_DECOMP];
+    d->timings[TIMING] += d->timings[TIMING_FAR];
+    d->timings[TIMING] += d->timings[TIMING_NEAR];
+    d->timings[TIMING] += d->timings[TIMING_COMP];
+
+    if (on_root())
+      MPI_Reduce(MPI_IN_PLACE, d->timings,
+                 NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
+                 0, d->comm.mpicomm);
+    else
+      MPI_Reduce(d->timings, 0,
+                 NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
+                 0, d->comm.mpicomm);
+
+#ifdef P3M_PRINT_TIMINGS
+    printf("  P3M TIMINGS:\n");
+    printf("    total=%le (%lf)\n", d->timings[TIMING], 1.0);
+    printf("      far=%le (%lf)\n", d->timings[TIMING_FAR], 
+      d->timings[TIMING_FAR]/d->timings[TIMING]);
+    printf("     near=%le (%lf)\n", d->timings[TIMING_NEAR], 
+      d->timings[TIMING_NEAR]/d->timings[TIMING]);
+    printf("       ca=%le (%lf)\n", d->timings[TIMING_CA], 
+      d->timings[TIMING_CA]/d->timings[TIMING]);
+    printf("      pot=%le (%lf)\n", d->timings[TIMING_POTENTIALS], 
+      d->timings[TIMING_POTENTIALS]/d->timings[TIMING]);
+    printf("   fields=%le (%lf)\n", d->timings[TIMING_FIELDS], 
+      d->timings[TIMING_FIELDS]/d->timings[TIMING]);
+    printf("   gather=%le (%lf)\n", d->timings[TIMING_GATHER], 
+      d->timings[TIMING_GATHER]/d->timings[TIMING]);
+    printf("   spread=%le (%lf)\n", d->timings[TIMING_SPREAD], 
+      d->timings[TIMING_SPREAD]/d->timings[TIMING]);
+    printf("  forward=%le (%lf)\n", d->timings[TIMING_FORWARD], 
+      d->timings[TIMING_FORWARD]/d->timings[TIMING]);
+    printf("     back=%le (%lf)\n", d->timings[TIMING_BACK], 
+      d->timings[TIMING_BACK]/d->timings[TIMING]);
+    printf("   decomp=%le (%lf)\n", d->timings[TIMING_DECOMP], 
+      d->timings[TIMING_DECOMP]/d->timings[TIMING]);
+    printf("     comp=%le (%lf)\n", d->timings[TIMING_COMP], 
+      d->timings[TIMING_COMP]/d->timings[TIMING]);
+#endif
+  }
+
+  P3M_INFO(printf( "ifcs_p3m_run() finished.\n"));
+}
+#endif
 
 /***************************************************/
 /* RUN COMPONENTS */
@@ -615,6 +791,19 @@ ifcs_get_ca_points(ifcs_p3m_data_struct *d,
     if (shifted) pos -= 0.5;
     /* nearest grid point in the ca grid */
     fcs_int grid_ind  = (fcs_int)floor(pos);
+#ifdef ADDITIONAL_CHECKS
+    if (grid_ind < 0) {
+      printf("grid_ind[%d]=%d < 0\n", dim, grid_ind);
+      printf("pos=%lf, pos_shift=%lf, real_pos=%lf, ld_pos=%lf, ai=%lf, shifted=%d", 
+             pos, d->pos_shift, real_pos[dim], d->local_grid.ld_pos[dim],  d->ai[dim], 
+             shifted);
+    } else if (grid_ind > d->local_grid.dim[dim]) {
+      printf("grid_ind[%d]=%d > %d\n", dim, grid_ind, d->local_grid.dim[dim]);
+      printf("pos=%lf, pos_shift=%lf, real_pos=%lf, ld_pos=%lf, ai=%lf, shifted=%d", 
+             pos, d->pos_shift, real_pos[dim], d->local_grid.ld_pos[dim],  d->ai[dim], 
+             shifted);
+    }
+#endif
     /* linear index of grid point */
     linind = grid_ind + linind*d->local_grid.dim[dim];
 
@@ -650,6 +839,14 @@ ifcs_get_ca_points(ifcs_p3m_data_struct *d,
     }
 #endif
   }
+
+#ifdef ADDITIONAL_CHECKS
+  if (linind < 0) {
+    printf("ERROR: %d: linind %d < 0\n", d->comm.rank, linind);
+  } else if (linind >= d->local_grid.size) {
+    printf("ERROR: %d: linind %d > %d\n", d->comm.rank, linind, d->local_grid.size);
+  }
+#endif
 
   return linind;
 }
@@ -793,7 +990,7 @@ static void ifcs_p3m_apply_force_influence_function(ifcs_p3m_data_struct* d) {
 static void ifcs_p3m_ik_diff(ifcs_p3m_data_struct* d, int dim) {
   fcs_int ind;
   fcs_int j[3];
-  fcs_float* d_operator = NULL;
+  fcs_int* d_operator = NULL;
   /* direction in k space: */
   fcs_int dim_rs = (dim+d->ks_pnum)%3;
 
@@ -809,7 +1006,7 @@ static void ifcs_p3m_ik_diff(ifcs_p3m_data_struct* d, int dim) {
     d_operator = d->d_op[RZ];
   }
     
-  /* sqrt(-1)*k differentiation */
+  /* srqt(-1)*k differentiation */
   ind=0;
   for(j[0]=0; j[0]<d->fft.plan[3].new_grid[0]; j[0]++) {
     for(j[1]=0; j[1]<d->fft.plan[3].new_grid[1]; j[1]++) {

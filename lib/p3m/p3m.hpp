@@ -16,15 +16,16 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_CAF_H
-#define _P3M_CAF_H
+#ifndef _P3M_P3M_HPP
+#define _P3M_P3M_HPP
 
-#include "types.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-/** Computes the charge assignment function of for the \a i'th degree
-    at value \a x. */
-fcs_float ifcs_p3m_caf(fcs_int i, fcs_float x, fcs_int cao_value);
-fcs_float ifcs_p3m_caf_d(fcs_int i, fcs_float x, fcs_int cao_value);
-void ifcs_p3m_interpolate_charge_assignment_function(ifcs_p3m_data_struct *d);
+#include "init.hpp"
+#include "parameters.hpp"
+#include "tune.hpp"
+#include "run.hpp"
 
 #endif

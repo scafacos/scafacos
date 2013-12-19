@@ -1,4 +1,5 @@
 /*
+  Copyright (C) 2013 Olaf Lenz
   Copyright (C) 2010,2011 The ESPResSo project
   Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010 
     Max-Planck-Institute for Polymer Research, Theory Group
@@ -33,17 +34,22 @@
  *  sufficient)
  *
  */
-#ifndef _P3M_FFT_H
-#define _P3M_FFT_H
+#ifndef _P3M_FFT_HPP
+#define _P3M_FFT_HPP
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "communication.h"
+#include "communication.hpp"
+#include "fftw3.h"
 
 /***************************************************/
 /* DATA TYPES */
 /***************************************************/
+
+#ifndef FCS_USE_COMMON_FFTW
+typedef fftw_plan fcs_fftw_plan;
+#endif
 
 /** Structure for performing a 1D FFT.  
  *
@@ -60,9 +66,9 @@ typedef struct {
   /** number of 1D FFTs. */ 
   fcs_int n_ffts;
   /** plan for fft. */
-  void *fftw_plan;
+  fcs_fftw_plan fftw_plan;
   /** function for fft. */
-  void (*fft_function)();
+  void (*fft_function)(fcs_fftw_plan);
 
   /** size of local grid before communication. */
   fcs_int old_grid[3];
@@ -79,7 +85,7 @@ typedef struct {
   fcs_int *group;
 
   /** packing function for send blocks. */
-  void (*pack_function)();
+  void (*pack_function)(double*, double*, int*, int*, int*, int);
   /** Send block specification. 6 integers for each node: start[3], size[3]. */ 
   fcs_int *send_block;
   /** Send block communication sizes. */ 
@@ -97,12 +103,12 @@ typedef struct {
   /** plan direction. (e.g. fftw makro)*/
   fcs_int dir;
   /** plan for fft. */
-  void *fftw_plan;
+  fcs_fftw_plan fftw_plan;
   /** function for fft. */
-  void (*fft_function)();
+  void (*fft_function)(fcs_fftw_plan);
 
   /** packing function for send blocks. */
-  void (*pack_function)(); 
+  void (*pack_function)(double*, double*, int*, int*, int*, int); 
 } ifcs_fft_back_plan;
 
 typedef struct {

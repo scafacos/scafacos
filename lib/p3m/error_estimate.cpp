@@ -16,9 +16,9 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "error_estimate.h"
-#include "tune_broadcast.h"
-#include "utils.h"
+#include "error_estimate.hpp"
+#include "tune_broadcast.hpp"
+#include "utils.hpp"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,30 +36,21 @@ ifcs_p3m_k_space_error_sum1
 static void 
 ifcs_p3m_k_space_error_sum2
 (fcs_int nx, fcs_int ny, fcs_int nz, 
- fcs_int grid[3], fcs_float grid_i[3], fcs_int cao, fcs_float alpha_L_i, 
+ fcs_int grid[3], fcs_float grid_i[3], 
+ fcs_int cao, fcs_float alpha_L_i, 
  fcs_float *alias1, fcs_float *alias2);
 #endif
 
-#ifdef P3M_AD
-#ifdef P3M_INTERLACE
 static void 
 ifcs_p3m_k_space_error_sum2_adi
 (fcs_int nx, fcs_int ny, fcs_int nz, 
  fcs_int grid[3], fcs_float grid_i[3], fcs_int cao, fcs_float alpha_L_i, 
  fcs_float *alias1, fcs_float *alias2, fcs_float *alias3, 
  fcs_float *alias4, fcs_float *alias5, fcs_float *alias6);
-#endif
-#endif
 
 #ifndef FCS_PI
 #include "FCSDefinitions.h"
 #endif
-
-static void 
-ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d);
-
-static void 
-ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d);
 
 /***************************************************/
 /* IMPLEMENTATION */
@@ -228,12 +219,13 @@ ifcs_p3m_k_space_error_sum1(fcs_int n, fcs_float grid_i, fcs_int cao) {
 }
 
 /** aliasing sum used by \ref ifcs_p3m_k_space_error. */
-static void 
+void 
 ifcs_p3m_k_space_error_sum2(fcs_int nx, fcs_int ny, fcs_int nz, 
                             fcs_int grid[3], fcs_float grid_i[3], 
                             fcs_int cao, fcs_float alpha_L_i, 
-                            fcs_float *alias1, fcs_float *alias2) {
-  fcs_float prefactor = SQR(M_PI*alpha_L_i);
+                            fcs_float *alias1, fcs_float *alias2)
+{
+  fcs_float prefactor = SQR(FCS_PI*alpha_L_i);
 
   *alias1 = *alias2 = 0.0;
   for (fcs_int mx=-P3M_BRILLOUIN; mx<=P3M_BRILLOUIN; mx++) {
@@ -259,8 +251,6 @@ ifcs_p3m_k_space_error_sum2(fcs_int nx, fcs_int ny, fcs_int nz,
 }
 #endif
 
-#ifdef P3M_AD
-#ifdef P3M_INTERLACE
 /** aliasing sum used by \ref ifcs_p3m_k_space_error. */
 static void 
 ifcs_p3m_k_space_error_sum2_adi(fcs_int nx, fcs_int ny, fcs_int nz, 
@@ -304,8 +294,6 @@ ifcs_p3m_k_space_error_sum2_adi(fcs_int nx, fcs_int ny, fcs_int nz,
     }
   }
 }
-#endif
-#endif
 
 
 /** Calculate the analytical approximation for the k-space part of the
@@ -372,7 +360,7 @@ ifcs_p3m_k_space_error_approx(ifcs_p3m_data_struct *d) {
     the book of Hockney and Eastwood (Eqn. 8.23) for a system of N
     randomly distributed particles.
 */
-static void
+void
 ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
   /* calculate real space and k space error */
   ifcs_p3m_real_space_error(d);
@@ -385,7 +373,7 @@ ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
 #ifdef FCS_ENABLE_DEBUG
     if (d->comm.rank == 0) {
       if (full_estimate)
-	printf( "        alpha*h[%d]=" FFLOAT " > %" 
+	printf( "        alpha*h[%d]=" FFLOAT " > " 
                 FFLOAT " => full estimate\n", 
                 i, alpha_h, FULL_ESTIMATE_ALPHA_H_THRESHOLD);
     }
@@ -419,7 +407,7 @@ ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d) {
     parameters. Check whether wanted_error > achieved_error to see
     whether the required error can actually be met.
 */
-static void
+void
 ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d) {
   /* Get the real space error for alpha=0 */
   d->alpha = 0.0;
@@ -435,25 +423,4 @@ ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d) {
     /* if the error is small enough even for alpha=0 */
     d->alpha = 0.1 * d->box_l[0];
   }
-  
-#ifdef FCS_ENABLE_DEBUG
-  if (d->comm.rank == 0)
-    printf( "        determined alpha=" FFLOAT "\n", d->alpha);
-#endif
-
-  ifcs_p3m_compute_error_estimate(d);
-}
-
-/** Get the error for this combination of parameters and tune alpha if
-    required. In fact, the real space error is tuned such that it
-    contributes half of the total error, and then the Fourier space
-    error is calculated. Returns the achieved error and the optimal
-    alpha.
-    */
-void
-ifcs_p3m_compute_error_and_tune_alpha(ifcs_p3m_data_struct *d) {
-  if (d->tune_alpha)
-    ifcs_p3m_determine_good_alpha(d);
-  else
-    ifcs_p3m_compute_error_estimate(d);
 }

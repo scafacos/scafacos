@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 Olaf Lenz
+  Copyright (C) 2013 Olaf Lenz
   
   This file is part of ScaFaCoS.
   
@@ -16,20 +16,23 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_INIT_H
-#define _P3M_INIT_H
+
+#ifndef _P3M_INFLUENCE_FUNCTION_H
+#define _P3M_INFLUENCE_FUNCTION_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <mpi.h>
+#include "types.hpp"
 
-/** Initialize all structures, parameters and arrays needed for the 
- *  P3M algorithm and set their default values.
- */
-void ifcs_p3m_init(void **rd, MPI_Comm communicator);
+void 
+ifcs_p3m_calc_influence_function_ik(ifcs_p3m_data_struct *d);
 
-/** Clean up P3M memory allocations. */
-void ifcs_p3m_destroy(void *rd);
+void 
+ifcs_p3m_calc_influence_function_iki(ifcs_p3m_data_struct *d);
+
+void 
+ifcs_p3m_calc_influence_function_adi(ifcs_p3m_data_struct *d);
+
 
 #endif

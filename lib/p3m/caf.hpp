@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 2010,2011 The ESPResSo project
-  Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010 
-    Max-Planck-Institute for Polymer Research, Theory Group
+  Copyright (C) 2011 Olaf Lenz
   
   This file is part of ScaFaCoS.
   
@@ -18,19 +16,15 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_RUN_H 
-#define _P3M_RUN_H
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include "types.h"
+#ifndef _P3M_CAF_HPP
+#define _P3M_CAF_HPP
 
-void ifcs_p3m_run(void* rd,
-		  fcs_int num_particles,
-		  fcs_int max_num_particles,
-		  fcs_float *positions, 
-		  fcs_float *charges,
-		  fcs_float *fields,
-		  fcs_float *potentials);
+#include "types.hpp"
+
+/** Computes the charge assignment function of for the \a i'th degree
+    at value \a x. */
+fcs_float ifcs_p3m_caf(fcs_int i, fcs_float x, fcs_int cao_value);
+fcs_float ifcs_p3m_caf_d(fcs_int i, fcs_float x, fcs_int cao_value);
+void ifcs_p3m_interpolate_charge_assignment_function(ifcs_p3m_data_struct *d);
 
 #endif

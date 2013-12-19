@@ -16,10 +16,10 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "tune_broadcast.h"
-#include "timing.h"
-#include "prepare.h"
-#include "run.h"
+#include "tune_broadcast.hpp"
+#include "timing.hpp"
+#include "prepare.hpp"
+#include "run.hpp"
 #include <stdlib.h>
 
 void
@@ -30,14 +30,15 @@ ifcs_p3m_timing
   if (d->comm.rank == 0)
     ifcs_p3m_tune_broadcast_command(d, CMD_TIMING);
 
-  ifcs_p3m_prepare(d, _max_num_particles);
-
-  fcs_float *fields = malloc(_num_particles*3*sizeof(fcs_float));
-  fcs_float *potentials = malloc(_num_particles*sizeof(fcs_float));
+  fcs_float *fields = 
+    static_cast<fcs_float *>(malloc(_num_particles*3*sizeof(fcs_float)));
+  fcs_float *potentials = 
+    static_cast<fcs_float *>(malloc(_num_particles*sizeof(fcs_float)));
 
   /* store require_timings */
   fcs_int require_timings_before = d->require_timings;
   d->require_timings = 2;
+  ifcs_p3m_prepare(d, _max_num_particles);
   ifcs_p3m_run(d, _num_particles, _max_num_particles,
                _positions, _charges,
                fields, potentials);

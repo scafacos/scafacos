@@ -692,6 +692,7 @@ if test "x$use_fcs_p3m" = xyes ; then
   AX_FCS_PACKAGE_ADD([p3m_LIBS],[-lfcs_p3m])
   AX_FCS_PACKAGE_ADD([p3m_LIBS_A],[lib/p3m/libfcs_p3m.la])
   AX_FCS_PACKAGE_ADD([fftw3_USE],[yes])
+  AX_FCS_PACKAGE_ADD([CXXLIBS_USE],[yes])
 fi
 if test "x$use_fcs_ewald" = xyes ; then
   AC_CONFIG_FILES([lib/ewald/Makefile])

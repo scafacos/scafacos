@@ -24,6 +24,9 @@
 #endif
 #include "FCSResult.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 void ifcs_p3m_set_near_field_flag(void *rd, fcs_int flag);
 
 void ifcs_p3m_set_box_a(void *rd, fcs_float a);
@@ -60,4 +63,7 @@ ifcs_p3m_get_timings(void *rd,
                      double *timing_near_field, 
                      double *timing_far_field);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

@@ -69,7 +69,7 @@ static fcs_float BasisPoly(fcs_int m, fcs_int r, fcs_float xx)
   for (k=0; k<=m-r; k++) {
     sum+=binom(m+k,k)*fcs_pow((xx+1.0)/2.0,(fcs_float)k);
   }
-  return sum*pow((xx+1.0),(fcs_float)r)*fcs_pow(1.0-xx,(fcs_float)(m+1))/(1<<(m+1))/fak(r); /* 1<<(m+1) = 2^(m+1) */
+  return sum*fcs_pow((xx+1.0),(fcs_float)r)*fcs_pow(1.0-xx,(fcs_float)(m+1))/(1<<(m+1))/fak(r); /* 1<<(m+1) = 2^(m+1) */
 }
 
 /** integrated basis polynomial for regularized kernel */
@@ -81,11 +81,11 @@ static fcs_float IntBasisPoly(fcs_int p, fcs_int j, fcs_float y)
   for (l=0; l<=p; l++) {
     sum1 = 0.0;
     for (k=0; k<=p-j-1; k++) {
-      sum1 += binom(p+k-1,k)*fak(j+k)/fak(j+k+1+l)*pow((1.0+y)/2.0,(fcs_float)k);
+      sum1 += binom(p+k-1,k)*fak(j+k)/fak(j+k+1+l)*fcs_pow((1.0+y)/2.0,(fcs_float)k);
     }
-    sum2 += pow(1.0+y,(fcs_float)l)*pow(1.0-y,(fcs_float)(p-l))/fak(p-l)*sum1;
+    sum2 += fcs_pow(1.0+y,(fcs_float)l)*fcs_pow(1.0-y,(fcs_float)(p-l))/fak(p-l)*sum1;
   }
-  return sum2 * fak(p)/fak(j)/(1<<p)*pow(1.0+y,(fcs_float)(j+1)); /* 1<<p = 2^p */
+  return sum2 * fak(p)/fak(j)/(1<<p)*fcs_pow(1.0+y,(fcs_float)(j+1)); /* 1<<p = 2^p */
 }
 
 static fcs_float IntBasisPoly2(fcs_int p, fcs_int j, fcs_float y)
@@ -212,7 +212,7 @@ fcs_float ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
     fcs_float y = (1.0-m)/r;
     fcs_float result = BasisPoly(p, 0, -y) * c;
     for (j = 0; j < p; ++j) {
-      result += BasisPoly(p, j, y) * pow(r, j) * k((0.5-eps_B)/xsnorm*x2norm, j, param) * pow(x2norm, j);
+      result += BasisPoly(p, j, y) * fcs_pow(r, j) * k((0.5-eps_B)/xsnorm*x2norm, j, param) * fcs_pow(x2norm, j);
     }
     return result;
   };
@@ -221,7 +221,7 @@ fcs_float ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
   if (x2norm < r_cut) {
     fcs_float result = 0.0;
     for (j=0; j<p; j++) {
-      result+=pow(-r_cut,(fcs_float)j)*k(r_cut,j,param)
+      result+=fcs_pow(-r_cut,(fcs_float)j)*k(r_cut,j,param)
         *(BasisPoly(p-1,j,x2norm/r_cut)+BasisPoly(p-1,j,-x2norm/r_cut));
     };
     return result;
@@ -253,8 +253,7 @@ fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
   if ( xsnorm > 0.5-epsB ) {
     for (j=0; j<=p-2; j++) {
       sum += fcs_pow(epsB/2.0,(fcs_float)j+1) * k(0.5-epsB,j+1,param)
-          * (IntBasisPoly(p-1,j,2.0*xsnorm/epsB-(1.0-epsB)/epsB) - IntBasisPoly(p-1,j,-1)
-       );
+          * ( IntBasisPoly(p-1,j,2.0*xsnorm/epsB-(1.0-epsB)/epsB) - IntBasisPoly(p-1,j,-1) );
     }
     return sum + k(0.5-epsB,0,param);
   }
@@ -272,12 +271,90 @@ fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
   return k(xsnorm,0,param);
 } 
 
-
-
-/** regularized kernel for even kernels without singularity, e.g. no K_I needed,
- *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)
+/** regularized kernel for even kernels without singularity, i.e. no K_I needed,
+ *  and K_B in [1/2-epsB,1/2+epsB) (used in 1D)
  */
-fcs_float ifcs_p2nfft_reg_far_no_singularity(
+fcs_float ifcs_p2nfft_reg_far_rad_sym_no_singularity(
+    ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB
+    )
+{
+  fcs_int j;
+  fcs_float sum=0.0;
+  fcs_float h = param[2];
+
+  x2norm = fcs_fabs(x2norm);
+
+  /* inner and outer border of regularization area */
+  fcs_float xi = h * (0.5 - epsB);
+  fcs_float xo = h * (0.5 + epsB);
+
+  /* constant continuation for radii > xo */
+  if (x2norm > xo)
+    x2norm = xo;
+
+  /* canonicalize x to y \in [-1,1] */
+  fcs_float r = 0.5 * (xo - xi);
+  fcs_float m = 0.5 * (xo + xi);
+  fcs_float y = (x2norm-m)/r;
+
+  /* regularization at farfield border */
+  if ( xi < x2norm ) {
+    for (j=0; j<=p-1; j++) {
+      sum += 
+        fcs_pow(r,(fcs_float)j) * k(xi,j,param)
+        * (BasisPoly(p-1,j,y) + BasisPoly(p-1,j,-y));
+    }
+    return sum;
+  }
+ 
+  /* near- and farfield (no singularity): original kernel function */ 
+  return k(x2norm,0,param);
+} 
+
+/** regularized kernel for even kernels without singularity, i.e. no K_I needed,
+ *  and K_B mirrored smooth into x=1/2 with explicit continuation value 'c' at 1/2 (used in dD, d>1)
+ */
+fcs_float ifcs_p2nfft_reg_far_rad_ec_no_singularity(
+    ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB, fcs_float c
+    )
+{
+  fcs_int j;
+  fcs_float sum=0.0;
+  fcs_float h = param[2];
+
+  x2norm = fcs_fabs(x2norm);
+
+  /* inner and outer border of regularization area */
+  fcs_float xi = h * (0.5 - epsB);
+  fcs_float xo = h * 0.5;
+
+  /* constant continuation for radii > xo */
+  if (x2norm > xo)
+    x2norm = xo;
+
+  /* canonicalize x to y \in [-1,1] */
+  fcs_float r = 0.5 * (xo - xi);
+  fcs_float m = 0.5 * (xo + xi);
+  fcs_float y = (x2norm-m)/r;
+
+  /* regularization at farfield border */
+  if ( xi < x2norm ) {
+    for (j=0; j<=p-1; j++) {
+      sum += 
+        fcs_pow(r,(fcs_float)j) * k(xi,j,param)
+        * BasisPoly(p-1,j,y);
+    }
+    return sum + c * BasisPoly(p-1,j,-y);
+  }
+ 
+  /* near- and farfield (no singularity): original kernel function */ 
+  return k(x2norm,0,param);
+} 
+
+/** regularized kernel for even kernels without singularity, i.e. no K_I needed,
+ *  and K_B mirrored smooth into x=1/2 with implicit continuation value at 1/2 (used in dD, d>1)
+ */
+fcs_float ifcs_p2nfft_reg_far_rad_ic_no_singularity(
     ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB
     )
 {
@@ -336,7 +413,7 @@ fcs_float ifcs_p2nfft_interpolation(
  * The number of variables of P is equal to the number of dimensions with xi > (0.5-epsB) * hi.
  */
 fcs_float ifcs_p2nfft_reg_far_rect_sym(
-    fcs_float *x, fcs_float *h,
+    const fcs_float *x, const fcs_float *h,
     fcs_int p, fcs_float epsB
     )
 {
@@ -430,7 +507,7 @@ static void sort(
 
 /* alternative implementation of reg_far_rect_sym */
 fcs_float ifcs_p2nfft_reg_far_rect_sym_version2(
-    fcs_float *x, fcs_float *h,
+    const fcs_float *x, const fcs_float *h,
     fcs_int p, fcs_float epsB
     )
 {
@@ -462,7 +539,7 @@ fcs_float ifcs_p2nfft_reg_far_rect_sym_version2(
 
 
 fcs_float ifcs_p2nfft_reg_far_rect_expl_cont(
-    fcs_float *x, fcs_float *h,
+    const fcs_float *x, const fcs_float *h,
     fcs_int p, fcs_float epsB, fcs_float c
     )
 {
@@ -505,7 +582,7 @@ fcs_float ifcs_p2nfft_reg_far_rect_expl_cont(
 }
 
 fcs_float ifcs_p2nfft_reg_far_rect_impl_cont(
-    fcs_float *x, fcs_float *h,
+    const fcs_float *x, const fcs_float *h,
     fcs_int p, fcs_float epsB
     )
 {
@@ -795,7 +872,7 @@ fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
       param[4] = 315.0/128.0/a;
       break;
     case 6:
-      param[0] = -63.0/256.0/pow(a,11.0);
+      param[0] = -63.0/256.0/fcs_pow(a,11.0);
       param[1] = 385.0/256.0/(a*a*a*a*a*a*a*a*a);
       param[2] = -495.0/128.0/(a*a*a*a*a*a*a);
       param[3] = 693.0/128.0/(a*a*a*a*a);
@@ -803,8 +880,8 @@ fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
       param[5] = 693.0/256.0/a;
       break;
     case 7:
-      param[0] = 231.0/1024.0/pow(a,13.0);
-      param[1] = -819.0/512.0/pow(a,11.0);
+      param[0] = 231.0/1024.0/fcs_pow(a,13.0);
+      param[1] = -819.0/512.0/fcs_pow(a,11.0);
       param[2] = 5005.0/1024.0/(a*a*a*a*a*a*a*a*a);
       param[3] = -2145.0/256.0/(a*a*a*a*a*a*a);
       param[4] = 9009.0/1024.0/(a*a*a*a*a);
@@ -812,9 +889,9 @@ fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
       param[6] = 3003.0/1024.0/a;
       break;
     case 8:
-      param[0] = -429.0/2048.0/pow(a,15.0);
-      param[1] = 3465.0/2048.0/pow(a,13.0);
-      param[2] = -12285.0/2048.0/pow(a,11.0);
+      param[0] = -429.0/2048.0/fcs_pow(a,15.0);
+      param[1] = 3465.0/2048.0/fcs_pow(a,13.0);
+      param[2] = -12285.0/2048.0/fcs_pow(a,11.0);
       param[3] = 25025.0/2048.0/(a*a*a*a*a*a*a*a*a);
       param[4] = -32175.0/2048.0/(a*a*a*a*a*a*a);
       param[5] = 27027.0/2048.0/(a*a*a*a*a);
@@ -822,10 +899,10 @@ fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
       param[7] = 6435.0/2048.0/a;
       break;
     case 9:
-      param[0] = 6435.0/32768.0/pow(a,17.0);
-      param[1] = -7293.0/4096.0/pow(a,15.0);
-      param[2] = 58905.0/8192.0/pow(a,13.0);
-      param[3] = -69615.0/4096.0/pow(a,11.0);
+      param[0] = 6435.0/32768.0/fcs_pow(a,17.0);
+      param[1] = -7293.0/4096.0/fcs_pow(a,15.0);
+      param[2] = 58905.0/8192.0/fcs_pow(a,13.0);
+      param[3] = -69615.0/4096.0/fcs_pow(a,11.0);
       param[4] = 425425.0/16384.0/(a*a*a*a*a*a*a*a*a);
       param[5] = -109395.0/4096.0/(a*a*a*a*a*a*a);
       param[6] = 153153.0/8192.0/(a*a*a*a*a);
@@ -833,11 +910,11 @@ fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
       param[8] = 109395.0/32768.0/a;
       break;
     case 10:
-      param[0] = -12155.0/65536.0/pow(a,19.0);
-      param[1] = 122265.0/65536.0/pow(a,17.0);
-      param[2] = -138567.0/16384.0/pow(a,15.0);
-      param[3] = 373065.0/16384.0/pow(a,13.0);
-      param[4] = -1322685.0/32768.0/pow(a,11.0);
+      param[0] = -12155.0/65536.0/fcs_pow(a,19.0);
+      param[1] = 122265.0/65536.0/fcs_pow(a,17.0);
+      param[2] = -138567.0/16384.0/fcs_pow(a,15.0);
+      param[3] = 373065.0/16384.0/fcs_pow(a,13.0);
+      param[4] = -1322685.0/32768.0/fcs_pow(a,11.0);
       param[5] = 1616615.0/32768.0/(a*a*a*a*a*a*a*a*a);
       param[6] = -692835.0/16384.0/(a*a*a*a*a*a*a);
       param[7] = 415701.0/16384.0/(a*a*a*a*a);
@@ -845,12 +922,12 @@ fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
       param[9] = 230945.0/65536.0/a;
       break;
     case 11:
-      param[0] = 46189.0/262144.0/pow(a,21.0);
-      param[1] = -255255.0/131072.0/pow(a,19.0);
-      param[2] = 2567565.0/262144.0/pow(a,17.0);
-      param[3] = -969969.0/32768.0/pow(a,15.0);
-      param[4] = 7834365.0/131072.0/pow(a,13.0);
-      param[5] = -5555277.0/65536.0/pow(a,11.0);
+      param[0] = 46189.0/262144.0/fcs_pow(a,21.0);
+      param[1] = -255255.0/131072.0/fcs_pow(a,19.0);
+      param[2] = 2567565.0/262144.0/fcs_pow(a,17.0);
+      param[3] = -969969.0/32768.0/fcs_pow(a,15.0);
+      param[4] = 7834365.0/131072.0/fcs_pow(a,13.0);
+      param[5] = -5555277.0/65536.0/fcs_pow(a,11.0);
       param[6] = 11316305.0/131072.0/(a*a*a*a*a*a*a*a*a);
       param[7] = -2078505.0/32768.0/(a*a*a*a*a*a*a);
       param[8] = 8729721.0/262144.0/(a*a*a*a*a);
@@ -858,13 +935,13 @@ fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
       param[10] = 969969.0/262144.0/a;
       break;
     case 12:
-      param[0] = -88179.0/524288.0/pow(a,23.0);
-      param[1] = 1062347.0/524288.0/pow(a,21.0);
-      param[2] = -5870865.0/524288.0/pow(a,19.0);
-      param[3] = 19684665.0/524288.0/pow(a,17.0);
-      param[4] = -22309287.0/262144.0/pow(a,15.0);
-      param[5] = 36038079.0/262144.0/pow(a,13.0);
-      param[6] = -42590457.0/262144.0/pow(a,11.0);
+      param[0] = -88179.0/524288.0/fcs_pow(a,23.0);
+      param[1] = 1062347.0/524288.0/fcs_pow(a,21.0);
+      param[2] = -5870865.0/524288.0/fcs_pow(a,19.0);
+      param[3] = 19684665.0/524288.0/fcs_pow(a,17.0);
+      param[4] = -22309287.0/262144.0/fcs_pow(a,15.0);
+      param[5] = 36038079.0/262144.0/fcs_pow(a,13.0);
+      param[6] = -42590457.0/262144.0/fcs_pow(a,11.0);
       param[7] = 37182145.0/262144.0/(a*a*a*a*a*a*a*a*a);
       param[8] = -47805615.0/524288.0/(a*a*a*a*a*a*a);
       param[9] = 22309287.0/524288.0/(a*a*a*a*a);
@@ -872,14 +949,14 @@ fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
       param[11] = 2028117.0/524288.0/a;
       break;
     case 13:
-      param[0] = 676039.0/4194304.0/pow(a,25.0);
-      param[1] = -2204475.0/1048576.0/pow(a,23.0);
-      param[2] = 26558675.0/2097152.0/pow(a,21.0);
-      param[3] = -48923875.0/1048576.0/pow(a,19.0);
-      param[4] = 492116625.0/4194304.0/pow(a,17.0);
-      param[5] = -111546435.0/524288.0/pow(a,15.0);
-      param[6] = 300317325.0/1048576.0/pow(a,13.0);
-      param[7] = -152108775.0/524288.0/pow(a,11.0);
+      param[0] = 676039.0/4194304.0/fcs_pow(a,25.0);
+      param[1] = -2204475.0/1048576.0/fcs_pow(a,23.0);
+      param[2] = 26558675.0/2097152.0/fcs_pow(a,21.0);
+      param[3] = -48923875.0/1048576.0/fcs_pow(a,19.0);
+      param[4] = 492116625.0/4194304.0/fcs_pow(a,17.0);
+      param[5] = -111546435.0/524288.0/fcs_pow(a,15.0);
+      param[6] = 300317325.0/1048576.0/fcs_pow(a,13.0);
+      param[7] = -152108775.0/524288.0/fcs_pow(a,11.0);
       param[8] = 929553625.0/4194304.0/(a*a*a*a*a*a*a*a*a);
       param[9] = -132793375.0/1048576.0/(a*a*a*a*a*a*a);
       param[10] = 111546435.0/2097152.0/(a*a*a*a*a);
@@ -887,15 +964,15 @@ fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
       param[12] = 16900975.0/4194304.0/a;
       break;
     case 14:
-      param[0] = -1300075.0/8388608.0/pow(a,27.0);
-      param[1] = 18253053.0/8388608.0/pow(a,25.0);
-      param[2] = -59520825.0/4194304.0/pow(a,23.0);
-      param[3] = 239028075.0/4194304.0/pow(a,21.0);
-      param[4] = -1320944625.0/8388608.0/pow(a,19.0);
-      param[5] = 2657429775.0/8388608.0/pow(a,17.0);
-      param[6] = -1003917915.0/2097152.0/pow(a,15.0);
-      param[7] = 1158366825.0/2097152.0/pow(a,13.0);
-      param[8] = -4106936925.0/8388608.0/pow(a,11.0);
+      param[0] = -1300075.0/8388608.0/fcs_pow(a,27.0);
+      param[1] = 18253053.0/8388608.0/fcs_pow(a,25.0);
+      param[2] = -59520825.0/4194304.0/fcs_pow(a,23.0);
+      param[3] = 239028075.0/4194304.0/fcs_pow(a,21.0);
+      param[4] = -1320944625.0/8388608.0/fcs_pow(a,19.0);
+      param[5] = 2657429775.0/8388608.0/fcs_pow(a,17.0);
+      param[6] = -1003917915.0/2097152.0/fcs_pow(a,15.0);
+      param[7] = 1158366825.0/2097152.0/fcs_pow(a,13.0);
+      param[8] = -4106936925.0/8388608.0/fcs_pow(a,11.0);
       param[9] = 2788660875.0/8388608.0/(a*a*a*a*a*a*a*a*a);
       param[10] = -717084225.0/4194304.0/(a*a*a*a*a*a*a);
       param[11] = 273795795.0/4194304.0/(a*a*a*a*a);
@@ -903,16 +980,16 @@ fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
       param[13] = 35102025.0/8388608.0/a;
       break;
     case 15:
-      param[0] = 5014575.0/33554432.0/pow(a,29.0);
-      param[1] = -37702175.0/16777216.0/pow(a,27.0);
-      param[2] = 529338537.0/33554432.0/pow(a,25.0);
-      param[3] = -575367975.0/8388608.0/pow(a,23.0);
-      param[4] = 6931814175.0/33554432.0/pow(a,21.0);
-      param[5] = -7661478825.0/16777216.0/pow(a,19.0);
-      param[6] = 25688487825.0/33554432.0/pow(a,17.0);
-      param[7] = -4159088505.0/4194304.0/pow(a,15.0);
-      param[8] = 33592637925.0/33554432.0/pow(a,13.0);
-      param[9] = -13233463425.0/16777216.0/pow(a,11.0);
+      param[0] = 5014575.0/33554432.0/fcs_pow(a,29.0);
+      param[1] = -37702175.0/16777216.0/fcs_pow(a,27.0);
+      param[2] = 529338537.0/33554432.0/fcs_pow(a,25.0);
+      param[3] = -575367975.0/8388608.0/fcs_pow(a,23.0);
+      param[4] = 6931814175.0/33554432.0/fcs_pow(a,21.0);
+      param[5] = -7661478825.0/16777216.0/fcs_pow(a,19.0);
+      param[6] = 25688487825.0/33554432.0/fcs_pow(a,17.0);
+      param[7] = -4159088505.0/4194304.0/fcs_pow(a,15.0);
+      param[8] = 33592637925.0/33554432.0/fcs_pow(a,13.0);
+      param[9] = -13233463425.0/16777216.0/fcs_pow(a,11.0);
       param[10] = 16174233075.0/33554432.0/(a*a*a*a*a*a*a*a*a);
       param[11] = -1890494775.0/8388608.0/(a*a*a*a*a*a*a);
       param[12] = 2646692685.0/33554432.0/(a*a*a*a*a);
@@ -920,17 +997,17 @@ fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
       param[14] = 145422675.0/33554432.0/a;
       break;
     case 16:
-      param[0] = -9694845.0/67108864.0/pow(a,31.0);
-      param[1] = 155451825.0/67108864.0/pow(a,29.0);
-      param[2] = -1168767425.0/67108864.0/pow(a,27.0);
-      param[3] = 5469831549.0/67108864.0/pow(a,25.0);
-      param[4] = -17836407225.0/67108864.0/pow(a,23.0);
-      param[5] = 42977247885.0/67108864.0/pow(a,21.0);
-      param[6] = -79168614525.0/67108864.0/pow(a,19.0);
-      param[7] = 113763303225.0/67108864.0/pow(a,17.0);
-      param[8] = -128931743655.0/67108864.0/pow(a,15.0);
-      param[9] = 115707975075.0/67108864.0/pow(a,13.0);
-      param[10] = -82047473235.0/67108864.0/pow(a,11.0);
+      param[0] = -9694845.0/67108864.0/fcs_pow(a,31.0);
+      param[1] = 155451825.0/67108864.0/fcs_pow(a,29.0);
+      param[2] = -1168767425.0/67108864.0/fcs_pow(a,27.0);
+      param[3] = 5469831549.0/67108864.0/fcs_pow(a,25.0);
+      param[4] = -17836407225.0/67108864.0/fcs_pow(a,23.0);
+      param[5] = 42977247885.0/67108864.0/fcs_pow(a,21.0);
+      param[6] = -79168614525.0/67108864.0/fcs_pow(a,19.0);
+      param[7] = 113763303225.0/67108864.0/fcs_pow(a,17.0);
+      param[8] = -128931743655.0/67108864.0/fcs_pow(a,15.0);
+      param[9] = 115707975075.0/67108864.0/fcs_pow(a,13.0);
+      param[10] = -82047473235.0/67108864.0/fcs_pow(a,11.0);
       param[11] = 45581929575.0/67108864.0/(a*a*a*a*a*a*a*a*a);
       param[12] = -19535112675.0/67108864.0/(a*a*a*a*a*a*a);
       param[13] = 6311344095.0/67108864.0/(a*a*a*a*a);
@@ -1138,132 +1215,132 @@ fcs_int ifcs_p2nfft_load_taylor2p_derive_coefficients_old(
       param[3] = -105.0/16.0/(a*a*a);
       break;
     case 6:
-      param[0] = -315.0/128.0/pow(a,11.0);
+      param[0] = -315.0/128.0/fcs_pow(a,11.0);
       param[1] = 385.0/32.0/(a*a*a*a*a*a*a*a*a);
       param[2] = -1485.0/64.0/(a*a*a*a*a*a*a);
       param[3] = 693.0/32.0/(a*a*a*a*a);
       param[4] = -1155.0/128.0/(a*a*a);
       break;
     case 7:
-      param[0] = 693.0/256.0/pow(a,13.0);
-      param[1] = -4095.0/256.0/pow(a,11.0);
+      param[0] = 693.0/256.0/fcs_pow(a,13.0);
+      param[1] = -4095.0/256.0/fcs_pow(a,11.0);
       param[2] = 5005.0/128.0/(a*a*a*a*a*a*a*a*a);
       param[3] = -6435.0/128.0/(a*a*a*a*a*a*a);
       param[4] = 9009.0/256.0/(a*a*a*a*a);
       param[5] = -3003.0/256.0/(a*a*a);
       break;
     case 8:
-      param[0] = -3003.0/1024.0/pow(a,15.0);
-      param[1] = 10395.0/512.0/pow(a,13.0);
-      param[2] = -61425.0/1024.0/pow(a,11.0);
+      param[0] = -3003.0/1024.0/fcs_pow(a,15.0);
+      param[1] = 10395.0/512.0/fcs_pow(a,13.0);
+      param[2] = -61425.0/1024.0/fcs_pow(a,11.0);
       param[3] = 25025.0/256.0/(a*a*a*a*a*a*a*a*a);
       param[4] = -96525.0/1024.0/(a*a*a*a*a*a*a);
       param[5] = 27027.0/512.0/(a*a*a*a*a);
       param[6] = -15015.0/1024.0/(a*a*a);
       break;
     case 9:
-      param[0] = 6435.0/2048.0/pow(a,17.0);
-      param[1] = -51051.0/2048.0/pow(a,15.0);
-      param[2] = 176715.0/2048.0/pow(a,13.0);
-      param[3] = -348075.0/2048.0/pow(a,11.0);
+      param[0] = 6435.0/2048.0/fcs_pow(a,17.0);
+      param[1] = -51051.0/2048.0/fcs_pow(a,15.0);
+      param[2] = 176715.0/2048.0/fcs_pow(a,13.0);
+      param[3] = -348075.0/2048.0/fcs_pow(a,11.0);
       param[4] = 425425.0/2048.0/(a*a*a*a*a*a*a*a*a);
       param[5] = -328185.0/2048.0/(a*a*a*a*a*a*a);
       param[6] = 153153.0/2048.0/(a*a*a*a*a);
       param[7] = -36465.0/2048.0/(a*a*a);
       break;
     case 10:
-      param[0] = -109395.0/32768.0/pow(a,19.0);
-      param[1] = 122265.0/4096.0/pow(a,17.0);
-      param[2] = -969969.0/8192.0/pow(a,15.0);
-      param[3] = 1119195.0/4096.0/pow(a,13.0);
-      param[4] = -6613425.0/16384.0/pow(a,11.0);
+      param[0] = -109395.0/32768.0/fcs_pow(a,19.0);
+      param[1] = 122265.0/4096.0/fcs_pow(a,17.0);
+      param[2] = -969969.0/8192.0/fcs_pow(a,15.0);
+      param[3] = 1119195.0/4096.0/fcs_pow(a,13.0);
+      param[4] = -6613425.0/16384.0/fcs_pow(a,11.0);
       param[5] = 1616615.0/4096.0/(a*a*a*a*a*a*a*a*a);
       param[6] = -2078505.0/8192.0/(a*a*a*a*a*a*a);
       param[7] = 415701.0/4096.0/(a*a*a*a*a);
       param[8] = -692835.0/32768.0/(a*a*a);
       break;
     case 11:
-      param[0] = 230945.0/65536.0/pow(a,21.0);
-      param[1] = -2297295.0/65536.0/pow(a,19.0);
-      param[2] = 2567565.0/16384.0/pow(a,17.0);
-      param[3] = -6789783.0/16384.0/pow(a,15.0);
-      param[4] = 23503095.0/32768.0/pow(a,13.0);
-      param[5] = -27776385.0/32768.0/pow(a,11.0);
+      param[0] = 230945.0/65536.0/fcs_pow(a,21.0);
+      param[1] = -2297295.0/65536.0/fcs_pow(a,19.0);
+      param[2] = 2567565.0/16384.0/fcs_pow(a,17.0);
+      param[3] = -6789783.0/16384.0/fcs_pow(a,15.0);
+      param[4] = 23503095.0/32768.0/fcs_pow(a,13.0);
+      param[5] = -27776385.0/32768.0/fcs_pow(a,11.0);
       param[6] = 11316305.0/16384.0/(a*a*a*a*a*a*a*a*a);
       param[7] = -6235515.0/16384.0/(a*a*a*a*a*a*a);
       param[8] = 8729721.0/65536.0/(a*a*a*a*a);
       param[9] = -1616615.0/65536.0/(a*a*a);
       break;
     case 12:
-      param[0] = -969969.0/262144.0/pow(a,23.0);
-      param[1] = 5311735.0/131072.0/pow(a,21.0);
-      param[2] = -52837785.0/262144.0/pow(a,19.0);
-      param[3] = 19684665.0/32768.0/pow(a,17.0);
-      param[4] = -156165009.0/131072.0/pow(a,15.0);
-      param[5] = 108114237.0/65536.0/pow(a,13.0);
-      param[6] = -212952285.0/131072.0/pow(a,11.0);
+      param[0] = -969969.0/262144.0/fcs_pow(a,23.0);
+      param[1] = 5311735.0/131072.0/fcs_pow(a,21.0);
+      param[2] = -52837785.0/262144.0/fcs_pow(a,19.0);
+      param[3] = 19684665.0/32768.0/fcs_pow(a,17.0);
+      param[4] = -156165009.0/131072.0/fcs_pow(a,15.0);
+      param[5] = 108114237.0/65536.0/fcs_pow(a,13.0);
+      param[6] = -212952285.0/131072.0/fcs_pow(a,11.0);
       param[7] = 37182145.0/32768.0/(a*a*a*a*a*a*a*a*a);
       param[8] = -143416845.0/262144.0/(a*a*a*a*a*a*a);
       param[9] = 22309287.0/131072.0/(a*a*a*a*a);
       param[10] = -7436429.0/262144.0/(a*a*a);
       break;
     case 13:
-      param[0] = 2028117.0/524288.0/pow(a,25.0);
-      param[1] = -24249225.0/524288.0/pow(a,23.0);
-      param[2] = 132793375.0/524288.0/pow(a,21.0);
-      param[3] = -440314875.0/524288.0/pow(a,19.0);
-      param[4] = 492116625.0/262144.0/pow(a,17.0);
-      param[5] = -780825045.0/262144.0/pow(a,15.0);
-      param[6] = 900951975.0/262144.0/pow(a,13.0);
-      param[7] = -760543875.0/262144.0/pow(a,11.0);
+      param[0] = 2028117.0/524288.0/fcs_pow(a,25.0);
+      param[1] = -24249225.0/524288.0/fcs_pow(a,23.0);
+      param[2] = 132793375.0/524288.0/fcs_pow(a,21.0);
+      param[3] = -440314875.0/524288.0/fcs_pow(a,19.0);
+      param[4] = 492116625.0/262144.0/fcs_pow(a,17.0);
+      param[5] = -780825045.0/262144.0/fcs_pow(a,15.0);
+      param[6] = 900951975.0/262144.0/fcs_pow(a,13.0);
+      param[7] = -760543875.0/262144.0/fcs_pow(a,11.0);
       param[8] = 929553625.0/524288.0/(a*a*a*a*a*a*a*a*a);
       param[9] = -398380125.0/524288.0/(a*a*a*a*a*a*a);
       param[10] = 111546435.0/524288.0/(a*a*a*a*a);
       param[11] = -16900975.0/524288.0/(a*a*a);
       break;
     case 14:
-      param[0] = -16900975.0/4194304.0/pow(a,27.0);
-      param[1] = 54759159.0/1048576.0/pow(a,25.0);
-      param[2] = -654729075.0/2097152.0/pow(a,23.0);
-      param[3] = 1195140375.0/1048576.0/pow(a,21.0);
-      param[4] = -11888501625.0/4194304.0/pow(a,19.0);
-      param[5] = 2657429775.0/524288.0/pow(a,17.0);
-      param[6] = -7027425405.0/1048576.0/pow(a,15.0);
-      param[7] = 3475100475.0/524288.0/pow(a,13.0);
-      param[8] = -20534684625.0/4194304.0/pow(a,11.0);
+      param[0] = -16900975.0/4194304.0/fcs_pow(a,27.0);
+      param[1] = 54759159.0/1048576.0/fcs_pow(a,25.0);
+      param[2] = -654729075.0/2097152.0/fcs_pow(a,23.0);
+      param[3] = 1195140375.0/1048576.0/fcs_pow(a,21.0);
+      param[4] = -11888501625.0/4194304.0/fcs_pow(a,19.0);
+      param[5] = 2657429775.0/524288.0/fcs_pow(a,17.0);
+      param[6] = -7027425405.0/1048576.0/fcs_pow(a,15.0);
+      param[7] = 3475100475.0/524288.0/fcs_pow(a,13.0);
+      param[8] = -20534684625.0/4194304.0/fcs_pow(a,11.0);
       param[9] = 2788660875.0/1048576.0/(a*a*a*a*a*a*a*a*a);
       param[10] = -2151252675.0/2097152.0/(a*a*a*a*a*a*a);
       param[11] = 273795795.0/1048576.0/(a*a*a*a*a);
       param[12] = -152108775.0/4194304.0/(a*a*a);
       break;
     case 15:
-      param[0] = 35102025.0/8388608.0/pow(a,29.0);
-      param[1] = -490128275.0/8388608.0/pow(a,27.0);
-      param[2] = 1588015611.0/4194304.0/pow(a,25.0);
-      param[3] = -6329047725.0/4194304.0/pow(a,23.0);
-      param[4] = 34659070875.0/8388608.0/pow(a,21.0);
-      param[5] = -68953309425.0/8388608.0/pow(a,19.0);
-      param[6] = 25688487825.0/2097152.0/pow(a,17.0);
-      param[7] = -29113619535.0/2097152.0/pow(a,15.0);
-      param[8] = 100777913775.0/8388608.0/pow(a,13.0);
-      param[9] = -66167317125.0/8388608.0/pow(a,11.0);
+      param[0] = 35102025.0/8388608.0/fcs_pow(a,29.0);
+      param[1] = -490128275.0/8388608.0/fcs_pow(a,27.0);
+      param[2] = 1588015611.0/4194304.0/fcs_pow(a,25.0);
+      param[3] = -6329047725.0/4194304.0/fcs_pow(a,23.0);
+      param[4] = 34659070875.0/8388608.0/fcs_pow(a,21.0);
+      param[5] = -68953309425.0/8388608.0/fcs_pow(a,19.0);
+      param[6] = 25688487825.0/2097152.0/fcs_pow(a,17.0);
+      param[7] = -29113619535.0/2097152.0/fcs_pow(a,15.0);
+      param[8] = 100777913775.0/8388608.0/fcs_pow(a,13.0);
+      param[9] = -66167317125.0/8388608.0/fcs_pow(a,11.0);
       param[10] = 16174233075.0/4194304.0/(a*a*a*a*a*a*a*a*a);
       param[11] = -5671484325.0/4194304.0/(a*a*a*a*a*a*a);
       param[12] = 2646692685.0/8388608.0/(a*a*a*a*a);
       param[13] = -339319575.0/8388608.0/(a*a*a);
       break;
     case 16:
-      param[0] = -145422675.0/33554432.0/pow(a,31.0);
-      param[1] = 1088162775.0/16777216.0/pow(a,29.0);
-      param[2] = -15193976525.0/33554432.0/pow(a,27.0);
-      param[3] = 16409494647.0/8388608.0/pow(a,25.0);
-      param[4] = -196200479475.0/33554432.0/pow(a,23.0);
-      param[5] = 214886239425.0/16777216.0/pow(a,21.0);
-      param[6] = -712517530725.0/33554432.0/pow(a,19.0);
-      param[7] = 113763303225.0/4194304.0/pow(a,17.0);
-      param[8] = -902522205585.0/33554432.0/pow(a,15.0);
-      param[9] = 347123925225.0/16777216.0/pow(a,13.0);
-      param[10] = -410237366175.0/33554432.0/pow(a,11.0);
+      param[0] = -145422675.0/33554432.0/fcs_pow(a,31.0);
+      param[1] = 1088162775.0/16777216.0/fcs_pow(a,29.0);
+      param[2] = -15193976525.0/33554432.0/fcs_pow(a,27.0);
+      param[3] = 16409494647.0/8388608.0/fcs_pow(a,25.0);
+      param[4] = -196200479475.0/33554432.0/fcs_pow(a,23.0);
+      param[5] = 214886239425.0/16777216.0/fcs_pow(a,21.0);
+      param[6] = -712517530725.0/33554432.0/fcs_pow(a,19.0);
+      param[7] = 113763303225.0/4194304.0/fcs_pow(a,17.0);
+      param[8] = -902522205585.0/33554432.0/fcs_pow(a,15.0);
+      param[9] = 347123925225.0/16777216.0/fcs_pow(a,13.0);
+      param[10] = -410237366175.0/33554432.0/fcs_pow(a,11.0);
       param[11] = 45581929575.0/8388608.0/(a*a*a*a*a*a*a*a*a);
       param[12] = -58605338025.0/33554432.0/(a*a*a*a*a*a*a);
       param[13] = 6311344095.0/16777216.0/(a*a*a*a*a);

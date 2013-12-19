@@ -23,7 +23,7 @@
 #include <config.h>
 #endif
 #include <mpi.h>
-#include "types.h"
+#include "types.hpp"
 
 /** Test run the method with the current parameters. Afterwards, the
     timing variables in the data struct are set. */

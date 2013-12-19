@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013 Olaf Lenz
+  Copyright (C) 2011 Olaf Lenz
   
   This file is part of ScaFaCoS.
   
@@ -16,23 +16,17 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-
-#ifndef _P3M_INFLUENCE_FUNCTION_H
-#define _P3M_INFLUENCE_FUNCTION_H
+#ifndef _P3M_INIT_H
+#define _P3M_INIT_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "types.h"
+#include "types.hpp"
 
+/* Call this function when all parameters are set correctly and the
+   P3M data structures should be prepared. */
 void 
-ifcs_p3m_calc_influence_function_ik(ifcs_p3m_data_struct *d);
-
-void 
-ifcs_p3m_calc_influence_function_iki(ifcs_p3m_data_struct *d);
-
-void 
-ifcs_p3m_calc_influence_function_adi(ifcs_p3m_data_struct *d);
-
-
+ifcs_p3m_prepare(ifcs_p3m_data_struct *d, 
+		 fcs_int max_particles);
 #endif
