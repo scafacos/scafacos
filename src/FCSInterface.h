@@ -191,7 +191,7 @@ FCSResult fcs_init_f(FCS *handle, const char *method_name, MPI_Fint communicator
 /**
  * tools for parameter parsing of fcs_set_parameters
  */
-#if defined(FCS_ENABLE_DEBUG) || 1
+#if defined(FCS_ENABLE_DEBUG)
 # define FCS_PARSE_PRINT_PARAM_BEGIN(_f_)     printf("%s: calling " #_f_ "(handle", fnc_name)
 # define FCS_PARSE_PRINT_PARAM_VAL(_f_, _v_)  printf( _f_, _v_)
 # define FCS_PARSE_PRINT_PARAM_STR(_str_)     printf("%s", (_str_))
