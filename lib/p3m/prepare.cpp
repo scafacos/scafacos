@@ -66,9 +66,18 @@ void ifcs_p3m_prepare(ifcs_p3m_data_struct *d, fcs_int max_charges) {
   d->send_grid = (fcs_float *) realloc(d->send_grid, sizeof(fcs_float)*d->sm.max);
   d->recv_grid = (fcs_float *) realloc(d->recv_grid, sizeof(fcs_float)*d->sm.max);
 
-  P3M_INFO(printf("    Interpolating charge assignment function...\n"));
-  ifcs_p3m_interpolate_charge_assignment_function(d);
-  
+  P3M_DEBUG(printf("    Interpolating charge assignment function...\n"));
+  d->caf = P3M::CAF::create(d->cao, d->n_interpol);
+  d->cafx = d->caf->createCache();
+  d->cafy = d->caf->createCache();
+  d->cafz = d->caf->createCache();
+#ifdef P3M_AD
+  d->caf_d = P3M::CAF::create(d->cao, d->n_interpol, true);
+  d->cafx_d = d->caf_d->createCache();
+  d->cafy_d = d->caf_d->createCache();
+  d->cafz_d = d->caf_d->createCache();
+#endif  
+
   /* position offset for calc. of first gridpoint */
   d->pos_shift = (fcs_float)((d->cao-1)/2) - (d->cao%2)/2.0;
   P3M_DEBUG(printf("    pos_shift=" FFLOAT "\n",d->pos_shift)); 

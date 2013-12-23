@@ -18,56 +18,19 @@
 */
 #include "caf.hpp"
 
-#include <cstdio>
 #include <cstdlib>
+#include <cassert>
 #include <sstream>
 #include <stdexcept>
+#include <limits>
 
 #include "utils.hpp"
 
-/** Interpolates the P-th order charge assignment function from
- * Hockney/Eastwood 5-189 (or 8-61). The following charge fractions
- * are also tabulated in Deserno/Holm. */
-void ifcs_p3m_interpolate_charge_assignment_function(ifcs_p3m_data_struct *d) {
-  const fcs_int N = d->n_interpol;
-  const fcs_float dInterpol = 0.5 / N;
-  const fcs_int cao = d->cao;
-  fcs_int i;
-  long j;
-
-
-  P3M_TRACE(printf("    ifcs_p3m_interpolate_caf: interpolating caf of order %d with %d points\n", \
-                   cao,N));
-
-  if (N > 0) {
-    d->int_caf = (fcs_float*)realloc(d->int_caf, sizeof(fcs_float)*(2*N+1)*d->cao);
-#ifdef P3M_AD
-    d->int_caf_d = (fcs_float*)realloc(d->int_caf_d, sizeof(fcs_float)*(2*N+1)*d->cao);
-#endif
-
-    /* loop over all interpolation points */
-    for (i = -N; i <= N; i++) {
-      /* loop over all cao */
-      for (j = 0; j < cao; j++) {
-        d->int_caf[(i+N)*cao + j] = 
-          P3M::ChargeAssignmentFunction::compute(j, i*dInterpol, cao);
-#ifdef P3M_AD
-        d->int_caf_d[(i+N)*cao + j] = 
-          P3M::ChargeAssignmentFunction::compute_derivative(j, i*dInterpol, cao);
-#endif
-      }
-    }
-  } else {
-    /* otherwise just allocate the memory to store the precomputed values */
-    d->int_caf = (fcs_float*)realloc(d->int_caf, sizeof(fcs_float)*3*d->cao);
-#ifdef P3M_AD
-    d->int_caf_d = (fcs_float*)realloc(d->int_caf_d, sizeof(fcs_float)*3*d->cao);
-#endif
-  }
-}
-
-namespace P3M {
-  fcs_float ChargeAssignmentFunction::
+namespace P3M { 
+  /** Compute the P-th order charge assignment function from
+   * Hockney/Eastwood 5-189 (or 8-61). The following charge fractions
+   * are also tabulated in Deserno/Holm. */
+  fcs_float CAF::
   compute(fcs_int i, fcs_float x, fcs_int cao) {
     switch (cao) {
     case 1 : 
@@ -135,10 +98,10 @@ namespace P3M {
     throw std::logic_error(s.str());
   }
 
-  /** Computes the gradient of the charge assignment function of for the \a i'th degree
-      at value \a x. */
-  fcs_float ChargeAssignmentFunction::
-  compute_derivative(fcs_int i, fcs_float x, fcs_int cao) {
+  /** Computes the gradient of the charge assignment function of for
+      the \a i'th degree at value \a x. */
+  fcs_float CAF::
+  computeDerivative(fcs_int i, fcs_float x, fcs_int cao) {
     fcs_int ip = cao - 1;
     switch (ip) 
       {
@@ -203,4 +166,119 @@ namespace P3M {
       << i << "'th point in scheme of order " << cao << ".";
     throw std::logic_error(s.str());
   }
+
+  /** Factory method to generate the right CAF Cache. */
+  CAF* CAF::create(fcs_int cao, 
+                   fcs_int n_interpol, 
+                   bool derivative) {
+    if (n_interpol > 0)
+      return new InterpolatedCAF(cao, n_interpol, derivative);
+    else
+      return new CAF(cao, derivative);
+  }
+
+  /* Cache for exact values */
+  CAF::DirectCache::DirectCache(CAF &_caf) : caf(_caf) {
+    pbegin = new fcs_float[caf.cao];
+    pend = pbegin + caf.cao;
+  }
+
+  CAF::DirectCache::~DirectCache() { delete[] pbegin; }
+
+  /* Fill the cache with the computed values. */
+  void CAF::DirectCache::update(fcs_float r0) {
+#ifdef ADDITIONAL_CHECKS
+    assert(r0 <= 0.5);
+    assert(r0 >= -0.5);
+#endif
+    for (fcs_int i = 0; i < caf.cao; ++i)
+      pbegin[i] = compute(i, r0, caf.cao);
+  }
+
+  /* Cache for exact values of the derivative */
+  CAF::DerivativeCache::DerivativeCache(CAF &_caf) : caf(_caf) {
+    pbegin = new fcs_float[caf.cao];
+    pend = pbegin + caf.cao;
+  }
+
+  CAF::DerivativeCache::~DerivativeCache() { delete[] pbegin; }
+
+  /* Fill the cache with the computed values. */
+  void CAF::DerivativeCache::update(fcs_float r0) {
+#ifdef ADDITIONAL_CHECKS
+    assert(r0 <= 0.5);
+    assert(r0 >= -0.5);
+#endif
+    for (fcs_int i = 0; i < caf.cao; ++i)
+      pbegin[i] = computeDerivative(i, r0, caf.cao);
+  }
+
+  CAF::CAF(fcs_int _cao, bool _derivative) : cao(_cao), derivative(_derivative) {
+    if (cao > max_cao || cao < 1) {
+      std::ostringstream s;
+      s << "Charge assignment order " << cao << " unknown.";
+      throw std::logic_error(s.str());
+    }
+   }
+
+  CAF::Cache *CAF::createCache() { 
+    if (derivative)
+      return new DerivativeCache(*this); 
+    else
+      return new DirectCache(*this);
+  }
+
+  /* Cache for interpolated values. */
+  void InterpolatedCAF::Cache::update(fcs_float r0) {
+    // get interpolated cache
+    pbegin = caf.getBase(r0);
+    pend = pbegin + caf.cao;
+  }
+
+  /* Interpolate the CAF. */
+  InterpolatedCAF::InterpolatedCAF(fcs_int cao, fcs_int _n_interpol,
+                                   bool derivative) 
+    : CAF(cao, derivative) {
+    if (_n_interpol <= 0) {
+      std::ostringstream s;
+      s << "Bad interpolation order " << _n_interpol << ".";
+      throw std::logic_error(s.str());
+    }
+
+    // interpolate CAF
+    n_interpol = _n_interpol;
+    data = new fcs_float[(2*n_interpol+1) * cao];
+
+    const fcs_float dInterpol = 0.5 / n_interpol;
+
+    P3M_TRACE(printf("    InterpolatedCAF: interpolating caf of "       \
+                     "order %d with %d points\n",                       \
+                     cao,n_interpol));
+    /* loop over all interpolation points */
+    for (fcs_int i = -n_interpol; i <= n_interpol; i++)
+      /* loop over all cao */
+      for (fcs_int j = 0; j < cao; j++)
+        data[(i+n_interpol)*cao + j] = 
+          (derivative ?
+           P3M::CAF::computeDerivative(j, i*dInterpol, cao) :
+           P3M::CAF::compute(j, i*dInterpol, cao));
+  }
+
+  InterpolatedCAF::~InterpolatedCAF() { delete[] data; }
+
+  fcs_float* InterpolatedCAF::getBase(fcs_float r0) {
+#ifdef ADDITIONAL_CHECKS
+    assert(r0 <= 0.5);
+    assert(r0 >= -0.5);
+#endif
+    const fcs_int ix = 
+      static_cast<fcs_int>((2*n_interpol+1) * (r0 + 0.5)) * cao;
+#ifdef ADDITIONAL_CHECKS
+    assert(ix >= 0);
+    assert(ix <= (2*n_interpol+1) * cao);
+#endif
+    return &data[ix];
+  }
+
+  CAF::Cache *InterpolatedCAF::createCache() { return new Cache(*this); }
 }

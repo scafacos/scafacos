@@ -62,12 +62,6 @@ static void ifcs_p3m_assign_charges(ifcs_p3m_data_struct* d,
 				    fcs_float *positions, 
 				    fcs_float *charges,
 				    fcs_int shifted);
-static void ifcs_p3m_assign_single_charge(ifcs_p3m_data_struct *d,
-					  fcs_float *data,
-					  fcs_int charge_id,
-					  fcs_float real_pos[3],
-					  fcs_float q,
-					  fcs_int shifted);
 
 /* collect grid from neighbor processes */
 static void ifcs_p3m_gather_grid(ifcs_p3m_data_struct* d, fcs_float* rs_grid);
@@ -474,9 +468,9 @@ void ifcs_p3m_run(void* rd,
   fcs_float *fields = NULL; 
   fcs_float *potentials = NULL; 
   if (_fields != NULL)
-    fields = malloc(sizeof(fcs_float)*3*num_real_particles);
+    fields = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*3*num_real_particles));
   if (_potentials != NULL || d->require_total_energy)
-    potentials = malloc(sizeof(fcs_float)*num_real_particles);
+    potentials = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*num_real_particles));
   
   STOPSTART(TIMING_DECOMP, TIMING_CA);
 
@@ -738,44 +732,18 @@ ifcs_p3m_domain_decompose(ifcs_p3m_data_struct *d, fcs_gridsort_t *gridsort,
 
 /***************************************************/
 /* CHARGE ASSIGNMENT */
-/** Assign the charges to the grid */
-static void 
-ifcs_p3m_assign_charges(ifcs_p3m_data_struct* d,
-			fcs_float *data,
-			fcs_int num_real_particles,
-			fcs_float *positions, 
-			fcs_float *charges,
-			fcs_int shifted) {
-
-  P3M_DEBUG(printf( "  ifcs_p3m_assign_charges() started...\n"));
-  /* init local charge grid */
-  for (fcs_int i=0; i<d->local_grid.size; i++) data[i] = 0.0;
-
-  /* now assign the charges */
-  for (fcs_int pid=0; pid < num_real_particles; pid++)
-    ifcs_p3m_assign_single_charge(d, data, pid, &positions[pid*3], 
-                                  charges[pid], shifted);
-
-  P3M_DEBUG(printf( "  ifcs_p3m_assign_charges() finished...\n"));
-}
-
 /** Compute the data of the charge assignment grid points.
 
     The function returns the linear index of the top left grid point
     in the charge assignment grid that corresponds to real_pos. When
     "shifted" is set, it uses the shifted position for interlacing.
-    After the call, "caf_ptr" contain pointers into fcs_float arrays
-    that contain the value of the charge assignment fraction (caf) for
-    x,y,z.
+    After the call, caf_cache contains a cache of the values of the
+    charge assignment fraction (caf) for x,y,z.
  */
 static fcs_int 
 ifcs_get_ca_points(ifcs_p3m_data_struct *d, 
                    fcs_float real_pos[3], 
-                   fcs_int shifted, 
-                   fcs_float *caf_ptr[6]) {
-  const fcs_int cao = d->cao;
-  const fcs_int interpol = d->n_interpol;
-
+                   fcs_int shifted) {
   /* linear index of the grid point */
   fcs_int linind = 0;
 
@@ -803,32 +771,22 @@ ifcs_get_ca_points(ifcs_p3m_data_struct *d,
 #endif
     /* linear index of grid point */
     linind = grid_ind + linind*d->local_grid.dim[dim];
+    /* normalized distance to grid point */
+    fcs_float dist = (pos-grid_ind)-0.5;
 
-    if (interpol > 0) {
-      /* index of nearest point in the interpolation grid */
-      fcs_int intind = (fcs_int) ((pos-grid_ind) * (2*d->n_interpol + 1));
-      /* generate pointer into interpolation grids */
-      caf_ptr[dim] = &d->int_caf[intind*cao];
-#ifdef P3M_AD
-      caf_ptr[3+dim] = &d->int_caf_d[intind*cao];
-#endif
-    } else {
-      /* distance between position and nearest grid point */
-      fcs_float dist = (pos-grid_ind)-0.5;
-      /* pointer to the interpolation grid, which is now used to
-         store the precomputed values of caf. */
-      caf_ptr[dim] = &d->int_caf[dim*cao];
-      /* fill array */
-      for (fcs_int i = 0; i < cao; i++)
-        caf_ptr[dim][i] = 
-          P3M::ChargeAssignmentFunction::compute(i, dist, cao);
-#ifdef P3M_AD
-      caf_ptr[3+dim] = &d->int_caf_d[dim*cao];
-      for (fcs_int i = 0; i < cao; i++)
-        caf_ptr[3+dim][i] = 
-          P3M::ChargeAssignmentFunction::compute_derivative(i, dist, cao);
-#endif
+    switch (dim) {
+    case 0: d->cafx->update(dist); break;
+    case 1: d->cafy->update(dist); break;
+    case 2: d->cafz->update(dist); break;
     }
+      
+#ifdef P3M_AD
+    switch (dim) {
+    case 0: d->cafx_d->update(dist); break;
+    case 1: d->cafy_d->update(dist); break;
+    case 2: d->cafz_d->update(dist); break;
+    }
+#endif
 
 #ifdef ADDITIONAL_CHECKS
     if (real_pos[dim] < d->comm.my_left[dim] 
@@ -850,40 +808,43 @@ ifcs_get_ca_points(ifcs_p3m_data_struct *d,
   return linind;
 }
 
-/** Assign a single charge to the grid. If pid <=0, the charge
-    fractions are not stored. This can be used to add virtual charges
-    to the system, where no field is computed. This can be used for e.g. ELC or ICC*. */
+/** Assign the charges to the grid */
 static void 
-ifcs_p3m_assign_single_charge(ifcs_p3m_data_struct *d,
-			      fcs_float *data,
-			      fcs_int pid,
-			      fcs_float real_pos[3],
-			      fcs_float q,
-			      fcs_int shifted) {
-  const fcs_int cao = d->cao;
+ifcs_p3m_assign_charges(ifcs_p3m_data_struct* d,
+			fcs_float *data,
+			fcs_int num_real_particles,
+			fcs_float *positions, 
+			fcs_float *charges,
+			fcs_int shifted) {
+  P3M_DEBUG(printf( "  ifcs_p3m_assign_charges() started...\n"));
+
   const fcs_int q2off = d->local_grid.q_2_off;
   const fcs_int q21off = d->local_grid.q_21_off;
-  
-  fcs_float *caf_begin[6];
-  fcs_int linind_grid = 
-    ifcs_get_ca_points(d, real_pos, shifted, caf_begin);
-  fcs_float *caf_end[3]  = { caf_begin[0] + cao,
-                             caf_begin[1] + cao,
-                             caf_begin[2] + cao };
 
-  /* Loop over all ca grid points nearby and compute charge assignment fraction */
-  for (fcs_float *caf_x = caf_begin[0]; caf_x != caf_end[0]; caf_x++) {
-    for (fcs_float *caf_y = caf_begin[1]; caf_y != caf_end[1]; caf_y++) {
-      fcs_float caf_xy = *caf_x * *caf_y;
-      for (fcs_float *caf_z = caf_begin[2]; caf_z != caf_end[2]; caf_z++) {
-        /* add it to the grid */
-        data[linind_grid] += q * caf_xy * *caf_z;
-        linind_grid++;
+  /* init local charge grid */
+  for (fcs_int i=0; i<d->local_grid.size; i++) data[i] = 0.0;
+
+  /* now assign the charges */
+  for (fcs_int pid=0; pid < num_real_particles; pid++) {
+    const fcs_float q = charges[pid];
+    fcs_int linind_grid = ifcs_get_ca_points(d, &positions[pid*3], shifted);
+
+    /* Loop over all ca grid points nearby and compute charge assignment fraction */
+    for (fcs_float *caf_x = d->cafx->begin(); caf_x < d->cafx->end(); caf_x++) {
+      for (fcs_float *caf_y = d->cafy->begin(); caf_y < d->cafy->end(); caf_y++) {
+        fcs_float caf_xy = *caf_x * *caf_y;
+        for (fcs_float *caf_z = d->cafz->begin(); caf_z < d->cafz->end(); caf_z++) {
+          /* add it to the grid */
+          data[linind_grid] += q * caf_xy * *caf_z;
+          linind_grid++;
+        }
+        linind_grid += q2off;
       }
-      linind_grid += q2off;
+      linind_grid += q21off;
     }
-    linind_grid += q21off;
-  } 
+  }
+
+  P3M_DEBUG(printf( "  ifcs_p3m_assign_charges() finished...\n"));
 }
 
 /* Gather information for FFT grid inside the nodes domain (inner local grid) */
@@ -1111,7 +1072,6 @@ ifcs_p3m_assign_potentials(ifcs_p3m_data_struct* d,
                            fcs_float* positions, fcs_float* charges, 
                            fcs_int shifted,
                            fcs_float* potentials) {
-  const fcs_int cao = d->cao;
   const fcs_int q2off = d->local_grid.q_2_off;
   const fcs_int q21off = d->local_grid.q_21_off;
   const fcs_float prefactor = 1.0 / (d->box_l[0] * d->box_l[1] * d->box_l[2]);
@@ -1120,26 +1080,21 @@ ifcs_p3m_assign_potentials(ifcs_p3m_data_struct* d,
   /* Loop over all particles */
   for (fcs_int pid=0; pid < num_real_particles; pid++) {
     fcs_float potential = 0.0;
-
-    fcs_float *caf_begin[6];
     fcs_int linind_grid = 
-      ifcs_get_ca_points(d, &positions[pid*3], shifted, caf_begin);
-    fcs_float *caf_end[3]  = { caf_begin[0]+cao,
-                               caf_begin[1]+cao,
-                               caf_begin[2]+cao };
-    
+      ifcs_get_ca_points(d, &positions[pid*3], shifted);
+
     /* Loop over all ca grid points nearby and compute charge assignment fraction */
-    for (fcs_float *caf_x = caf_begin[0]; caf_x != caf_end[0]; caf_x++) {
-      for (fcs_float *caf_y = caf_begin[1]; caf_y != caf_end[1]; caf_y++) {
+    for (fcs_float *caf_x = d->cafx->begin(); caf_x < d->cafx->end(); caf_x++) {
+      for (fcs_float *caf_y = d->cafy->begin(); caf_y < d->cafy->end(); caf_y++) {
         fcs_float caf_xy = *caf_x * *caf_y;
-        for (fcs_float *caf_z = caf_begin[2]; caf_z != caf_end[2]; caf_z++) {
+        for (fcs_float *caf_z = d->cafz->begin(); caf_z < d->cafz->end(); caf_z++) {
           potential += *caf_z * caf_xy * data[linind_grid];
           linind_grid++;
         }
         linind_grid += q2off;
       }
       linind_grid += q21off;
-    } 
+    }
 
     potential *= prefactor;
     /* self energy correction */
@@ -1167,7 +1122,6 @@ ifcs_p3m_assign_fields_ik(ifcs_p3m_data_struct* d,
                           fcs_float* positions,
                           fcs_int shifted,
                           fcs_float* fields) {
-  const fcs_int cao = d->cao;
   const fcs_int q2off = d->local_grid.q_2_off;
   const fcs_int q21off = d->local_grid.q_21_off;
   const fcs_float prefactor = 1.0 / (2.0 * d->box_l[0] * d->box_l[1] * d->box_l[2]);
@@ -1177,26 +1131,21 @@ ifcs_p3m_assign_fields_ik(ifcs_p3m_data_struct* d,
   /* Loop over all particles */
   for (fcs_int pid=0; pid < num_real_particles; pid++) {
     fcs_float field = 0.0;
-    
-    fcs_float *caf_begin[6];
     fcs_int linind_grid = 
-      ifcs_get_ca_points(d, &positions[3*pid], shifted, caf_begin);
-    fcs_float *caf_end[3]  = { caf_begin[0]+cao,
-                               caf_begin[1]+cao,
-                               caf_begin[2]+cao };
-    
+      ifcs_get_ca_points(d, &positions[3*pid], shifted);
+
     /* loop over the local grid, compute the field */
-    for (fcs_float *caf_x = caf_begin[0]; caf_x != caf_end[0]; caf_x++) {
-      for (fcs_float *caf_y = caf_begin[1]; caf_y != caf_end[1]; caf_y++) {
+    for (fcs_float *caf_x = d->cafx->begin(); caf_x < d->cafx->end(); caf_x++) {
+      for (fcs_float *caf_y = d->cafy->begin(); caf_y < d->cafy->end(); caf_y++) {
         fcs_float caf_xy = *caf_x * *caf_y;
-        for (fcs_float *caf_z = caf_begin[2]; caf_z != caf_end[2]; caf_z++) {
+        for (fcs_float *caf_z = d->cafz->begin(); caf_z < d->cafz->end(); caf_z++) {
           field -= *caf_z * caf_xy * data[linind_grid];
           linind_grid++;
         }
         linind_grid += q2off;
       }
       linind_grid += q21off;
-    } 
+    }
 
     field *= prefactor;
 
@@ -1218,7 +1167,6 @@ ifcs_p3m_assign_fields_ad(ifcs_p3m_data_struct* d,
 			  fcs_float* positions,
                           fcs_int shifted,
 			  fcs_float* fields) {
-  const fcs_int cao = d->cao;
   const fcs_int q2off = d->local_grid.q_2_off;
   const fcs_int q21off = d->local_grid.q_21_off;
   const fcs_float prefactor = 1.0 / (d->box_l[0] * d->box_l[1] * d->box_l[2]);
@@ -1230,26 +1178,20 @@ ifcs_p3m_assign_fields_ad(ifcs_p3m_data_struct* d,
       (fcs_float)d->grid[1], 
       (fcs_float)d->grid[2] };
 
-  fcs_float field[3] = { 0.0, 0.0, 0.0 };
 
   P3M_DEBUG(printf( "  ifcs_p3m_assign_fields() [AD] started...\n"));
   /* Loop over all particles */
-  for (fcs_int pid=0; pid < num_real_particles; pid++) {
-    field[0] = field[1] = field[2] = 0.0;
-
-    fcs_float *caf_begin[6];
+  for (fcs_int pid = 0; pid < num_real_particles; pid++) {
+    fcs_float field[3] = { 0.0, 0.0, 0.0 };
     fcs_int linind_grid = 
-      ifcs_get_ca_points(d, &positions[pid*3], shifted, caf_begin);
-    fcs_float *caf_end[3]  = { caf_begin[0]+cao,
-                               caf_begin[1]+cao,
-                               caf_begin[2]+cao };
+      ifcs_get_ca_points(d, &positions[pid*3], shifted);
 
-    fcs_float *caf_x_d = caf_begin[3];
-    for (fcs_float *caf_x = caf_begin[0]; caf_x != caf_end[0]; caf_x++) {
-      fcs_float *caf_y_d = caf_begin[4];
-      for (fcs_float *caf_y = caf_begin[1]; caf_y != caf_end[1]; caf_y++) {
-        fcs_float *caf_z_d = caf_begin[5];
-        for (fcs_float *caf_z = caf_begin[2]; caf_z != caf_end[2]; caf_z++) {
+    fcs_float *caf_x_d = d->cafx_d->begin();
+    for (fcs_float *caf_x = d->cafx->begin(); caf_x < d->cafx->end(); caf_x++) {
+      fcs_float *caf_y_d = d->cafy_d->begin();
+      for (fcs_float *caf_y = d->cafy->begin(); caf_y < d->cafy->end(); caf_y++) {
+        fcs_float *caf_z_d = d->cafz_d->begin();
+        for (fcs_float *caf_z = d->cafz->begin(); caf_z < d->cafz->end(); caf_z++) {
           field[0] -= *caf_x_d * *caf_y * *caf_z * l_x_inv 
             * data[linind_grid] * grid[0];
           field[1] -= *caf_x * *caf_y_d * *caf_z * l_y_inv 

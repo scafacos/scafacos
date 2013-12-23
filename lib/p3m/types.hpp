@@ -28,6 +28,8 @@
 #include "communication.hpp"
 #include "fft.hpp"
 
+#include "caf.hpp"
+
 /* DEFAULTS */
 /** Default for number of interpolation points of the charge
     assignment function. */
@@ -50,12 +52,12 @@
 /* COMPILE TIME SWITCHES */
 /* Differentiation method */
 /** ik-Differentiation */
-//#define P3M_IK
+#define P3M_IK
 /** analytical differentiation */
-#define P3M_AD
+//#define P3M_AD
 
 /** Whether to use interlaced version of P3M alogorithm. */
-#define P3M_INTERLACE
+//#define P3M_INTERLACE
 
 /* Sanity checks */
 #if defined(P3M_AD) && defined(P3M_IK)
@@ -67,9 +69,7 @@
 #endif
 
 /* CONSTANTS */
-/** maximal charge assignment order available */
-#define P3M_MAX_CAO 7
-/** Search horizon for maximal grid size*/
+/** Search horizon for maximal grid size. */
 #define P3M_MAX_GRID_DIFF 10
 /** This value for epsilon indicates metallic boundary conditions. */
 #define P3M_EPSILON_METALLIC 0.0
@@ -266,10 +266,16 @@ typedef struct {
   /** square of sum of charges */
   fcs_float square_sum_q;
 
-  /** interpolation of the charge assignment function. */
-  fcs_float *int_caf;
-  /** interpolation of the gradient of charge assignment function */
-  fcs_float *int_caf_d;
+  /** charge assignment function. */
+  P3M::CAF *caf;
+  P3M::CAF::Cache *cafx;
+  P3M::CAF::Cache *cafy;
+  P3M::CAF::Cache *cafz;
+  /** gradient of charge assignment function */
+  P3M::CAF *caf_d;
+  P3M::CAF::Cache *cafx_d;
+  P3M::CAF::Cache *cafy_d;
+  P3M::CAF::Cache *cafz_d;
 
   /** position shift for calc. of first assignment grid point. */
   fcs_float pos_shift;

@@ -19,29 +19,91 @@
 #ifndef _P3M_CAF_HPP
 #define _P3M_CAF_HPP
 
-#include "types.hpp"
-
-void ifcs_p3m_interpolate_charge_assignment_function(ifcs_p3m_data_struct *d);
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 namespace P3M {
-  class ChargeAssignmentFunction {
+
+  /** The CAF. */
+  class CAF {
   public:
+    static const fcs_int max_cao = 7;
+
     /** Computes the \a i'th point of the CAF centered around \a r0 of
         the charge assignment function of order \a cao. */
     static fcs_float compute(fcs_int i, fcs_float r0, fcs_int cao);
-    static fcs_float compute_derivative(fcs_int i, fcs_float r0, fcs_int cao);
     
-    // /** Get the \a i'th point of the CAF centered around r0. */
-    // fcs_float get(const fcs_float r0, const fcs_int i) = 0;
-    // /** Get a pointer to an array that contains \a cao values of the caf. 
-    //     Note that the array may be modified when this function is
-    //     called a second time.
-    //     The array is owned by the object, so do not try to free it.
-    //  */
-    // virtual fcs_float *get_array(const fcs_float r0) = 0;
+    /** Computes the \a i'th point of the CAF centered around \a r0 of
+        the charge assignment function of order \a cao. */
+    static fcs_float computeDerivative(fcs_int i, fcs_float r0, fcs_int cao);
 
-    // virtual fcs_float get_diff(const fcs_float r0, const fcs_int i) = 0;
-    // virtual fcs_float *get_diff_array(const fcs_float r0) = 0;
+    /** Factory method to create the fitting CAF class. */
+    static CAF* create(fcs_int cao, 
+                       fcs_int n_interpol,
+                       bool derivative = false);
+
+    /** Abstract base class that caches cao values of the CAF. */
+    class Cache {
+    public:
+      virtual void update(fcs_float r0) = 0;
+      fcs_float* begin() { return pbegin; }
+      fcs_float* end() { return pend; }
+    protected:
+      fcs_float *pbegin;
+      fcs_float *pend;
+    };
+
+    class DirectCache : public Cache {
+    public:
+      DirectCache(CAF &_caf);
+      virtual ~DirectCache();
+      virtual void update(fcs_float r0);
+    protected:
+      CAF &caf;
+    };
+
+    class DerivativeCache : public Cache {
+    public:
+      DerivativeCache(CAF &_caf);
+      virtual ~DerivativeCache();
+      virtual void update(fcs_float r0);
+    protected:
+      CAF &caf;
+    };
+
+    CAF(fcs_int _cao, bool derivative = false);
+
+    /* Factory method to create a matching cache. */
+    virtual Cache *createCache();
+    
+  protected:
+    friend class InterpolatedCAF;
+    fcs_int cao;
+    bool derivative;
+  };
+
+  class InterpolatedCAF: public CAF {
+  public:
+    class Cache: public CAF::Cache {
+    public:
+      Cache(InterpolatedCAF &_caf) : caf(_caf) {};
+      virtual ~Cache() {};
+      virtual void update(fcs_float r0);
+    protected:
+      InterpolatedCAF &caf;
+    };
+
+    InterpolatedCAF(fcs_int cao, fcs_int n_interpol, bool derivative = false);
+    virtual ~InterpolatedCAF();
+
+    /* Factory method to create a matching cache. */
+    virtual CAF::Cache *createCache();
+
+  protected:
+    fcs_float* getBase(fcs_float r0);
+    fcs_float* data;
+    fcs_int n_interpol;
   };
 }
 
