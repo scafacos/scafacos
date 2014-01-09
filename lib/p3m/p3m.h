@@ -16,16 +16,16 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_P3M_HPP
-#define _P3M_P3M_HPP
+#ifndef _P3M_P3M_H
+#define _P3M_P3M_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "init.hpp"
-#include "parameters.hpp"
-#include "tune.hpp"
-#include "run.hpp"
+#include "init.h"
+#include "parameters.h"
+#include "tune.h"
+#include "run.h"
 
 #endif

@@ -24,19 +24,22 @@
 #include "types.hpp"
 #include "FCSResult.h"
 
-/* Events during tuning */
-#define CMD_FAILED -1
-#define CMD_FINISHED 0
-#define CMD_COMPUTE_ERROR_ESTIMATE 1
-#define CMD_TIMING 2
-
-void
-ifcs_p3m_tune_broadcast_command
-(ifcs_p3m_data_struct *d, fcs_int command);
-
-FCSResult
-ifcs_p3m_tune_broadcast_slave
-(ifcs_p3m_data_struct *d, fcs_int num_particles, fcs_int max_particles,
- fcs_float *positions, fcs_float *charges);
-
+namespace ScaFaCoS {
+  namespace P3M {
+    /* Events during tuning */
+    const int CMD_FAILED = -1;
+    const int CMD_FINISHED = 0;
+    const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
+    const int CMD_TIMING = 2;
+    
+    void
+    tune_broadcast_command
+    (data_struct *d, fcs_int command);
+    
+    FCSResult
+    tune_broadcast_slave
+    (data_struct *d, fcs_int num_particles, fcs_int max_particles,
+     fcs_float *positions, fcs_float *charges);
+  }
+}
 #endif

@@ -26,7 +26,11 @@
 
 /* Call this function when all parameters are set correctly and the
    P3M data structures should be prepared. */
-void 
-ifcs_p3m_prepare(ifcs_p3m_data_struct *d, 
-		 fcs_int max_particles);
+namespace ScaFaCoS {
+  namespace P3M {
+    void 
+    prepare(data_struct *d, 
+                     fcs_int max_particles);
+  }
+}
 #endif

@@ -25,14 +25,19 @@
 #endif
 #include "types.hpp"
 
-void 
-ifcs_p3m_calc_influence_function_ik(ifcs_p3m_data_struct *d);
+namespace ScaFaCoS {
+  namespace P3M {
 
-void 
-ifcs_p3m_calc_influence_function_iki(ifcs_p3m_data_struct *d);
+    void 
+    calc_influence_function_ik(data_struct *d);
 
-void 
-ifcs_p3m_calc_influence_function_adi(ifcs_p3m_data_struct *d);
+    void 
+    calc_influence_function_iki(data_struct *d);
 
+    void 
+    calc_influence_function_adi(data_struct *d);
+
+  }
+}
 
 #endif

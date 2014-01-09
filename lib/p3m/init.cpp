@@ -18,38 +18,30 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "init.hpp"
+#include "init.h"
 #include "types.hpp"
 #include "utils.hpp"
-#include <stdlib.h>
 
-template<typename T>
-static void sdelete(T* ptr) {
-  if (ptr != 0)
-    delete[] ptr;
-  ptr = NULL;
-}
+using namespace ScaFaCoS::P3M;
 
-#ifdef __cplusplus
 extern "C" {
-#endif
   void ifcs_p3m_init(void **rd, MPI_Comm communicator) {
     P3M_DEBUG(printf( "ifcs_p3m_init() started...\n"));
 
-    ifcs_p3m_data_struct *d;
+    data_struct *d;
     if (*rd == NULL) {
       /* allocate the memory for the p3m data structure */
-      d = static_cast<ifcs_p3m_data_struct *>(malloc(sizeof(ifcs_p3m_data_struct)));
-      memset(d, 0, sizeof(ifcs_p3m_data_struct));
+      d = static_cast<data_struct *>(malloc(sizeof(data_struct)));
+      memset(d, 0, sizeof(data_struct));
 
       /* store the new pointer in rd */
       *rd = d;
     } else {
-      d = (ifcs_p3m_data_struct*)rd;
+      d = (data_struct*)rd;
     }
 
     /* Init the communication stuff */
-    ifcs_p3m_comm_init(&d->comm, communicator);
+    comm_init(&d->comm, communicator);
 
     /* Init the P3M parameters */
     d->box_l[0] = 1.0;
@@ -136,25 +128,17 @@ extern "C" {
     d->recv_grid = NULL;
 
     /* init the fft */
-    ifcs_fft_init(&d->fft, &d->comm);
+    fft_init(&d->fft, &d->comm);
 
     P3M_DEBUG(printf( "ifcs_p3m_init() finished.\n"));
   }
 
-  /* safe free */
-  static void sfree(void* ptr) {
-    if (ptr != NULL) {
-      free(ptr);
-      ptr = NULL;
-    }
-  }
-
   void ifcs_p3m_destroy(void *rd) {
     if (rd != NULL) {
-      ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*)rd;
+      data_struct *d = (data_struct*)rd;
     
-      ifcs_p3m_comm_destroy(&d->comm);
-      ifcs_fft_destroy(&d->fft, d->rs_grid, d->ks_grid);
+      comm_destroy(&d->comm);
+      fft_destroy(&d->fft, d->rs_grid, d->ks_grid);
 
       sfree(d->send_grid);
       sfree(d->recv_grid);
@@ -176,7 +160,5 @@ extern "C" {
     }
   }
 
-#ifdef __cplusplus
 }
-#endif
 

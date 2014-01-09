@@ -27,26 +27,30 @@
 #include <mpi.h>
 #include "types.hpp"
 
-/** Determines a value for alpha that achieves the wanted_error, if at
-    all possible. Also returns the achieved errors with these
-    parameters. Check whether wanted_error > achieved_error to see
-    whether the required error can actually be met.
-*/
-void
-ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d);
+namespace ScaFaCoS {
+  namespace P3M {
+    /** Determines a value for alpha that achieves the wanted_error, if at
+        all possible. Also returns the achieved errors with these
+        parameters. Check whether wanted_error > achieved_error to see
+        whether the required error can actually be met.
+    */
+    void
+    determine_good_alpha(data_struct *d);
 
-/** Calculates the rms error estimate in the force (as described in
-    the book of Hockney and Eastwood (Eqn. 8.23) for a system of N
-    randomly distributed particles.
-*/
-void 
-ifcs_p3m_compute_error_estimate(ifcs_p3m_data_struct *d);
+    /** Calculates the rms error estimate in the force (as described in
+        the book of Hockney and Eastwood (Eqn. 8.23) for a system of N
+        randomly distributed particles.
+    */
+    void 
+    compute_error_estimate(data_struct *d);
 
-/** Calculates the reciprocal space contribution to the rms error in the
-    force (as described in the book of Hockney and Eastwood
-    (Eqn. 8.23) (for a system of N randomly distributed particles in a
-    cubic box).
-*/
-void 
-ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d);
+    /** Calculates the reciprocal space contribution to the rms error in the
+        force (as described in the book of Hockney and Eastwood
+        (Eqn. 8.23) (for a system of N randomly distributed particles in a
+        cubic box).
+    */
+    void 
+    k_space_error(data_struct *d);
+  }
+}
 #endif
