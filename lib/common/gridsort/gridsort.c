@@ -939,14 +939,6 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
     return -1;
   }
 
-  if (with_bounds && with_triclinic)
-  {
-    fprintf(stderr, "ERROR: box shape ([%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f] x [%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f]"
-      " x [%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f]) not supported when using lower and upper bounds for gridsort\n",
-      gs->d.box_a[0], gs->d.box_a[1], gs->d.box_a[2], gs->d.box_b[0], gs->d.box_b[1], gs->d.box_b[2], gs->d.box_c[0], gs->d.box_c[1], gs->d.box_c[2]);
-    return -1;
-  }
-
   if (with_zslices)
   {
     if (with_triclinic)
