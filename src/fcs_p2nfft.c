@@ -147,7 +147,6 @@ FCSResult fcs_p2nfft_tune(
 {
   char* fnc_name = "fcs_p2nfft_tune";
   FCSResult result;
-  fcs_float box_l[3];
 
   result = ifcs_p2nfft_check(handle, fnc_name);
   if (result != NULL)
@@ -161,21 +160,18 @@ FCSResult fcs_p2nfft_tune(
   const fcs_float *b = fcs_get_box_b(handle);
   const fcs_float *c = fcs_get_box_c(handle);
   if (!fcs_uses_principal_axes(a, b, c))
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
-        "The p2nfft method needs a rectangular box with box vectors parallel to the principal axes.");
+    if(periodic_dims(periodicity) != 3)
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+          "Triclinic boxes are only available for 3d-periodic boundary conditions.");
+
   if(periodic_dims(periodicity) == 1)
     if(!nonperiodic_box_lengths_are_equal(a[0], b[1], c[2], periodicity))
       return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
           "The p2nfft method currently depends on equal nonperiodic box lengths with 1d-periodic boundary conditions.");
-   
-  /* Get box size */ 
-  box_l[0] = fcs_norm(a);
-  box_l[1] = fcs_norm(b);
-  box_l[2] = fcs_norm(c);
 
   /* Call the p2nfft solver's tuning routine */
   result = ifcs_p2nfft_tune(handle->method_context, periodicity,
-      local_particles, positions, charges, box_l,
+      local_particles, positions, charges, a, b, c, fcs_get_offset(handle), 
       fcs_get_near_field_flag(handle));
 
   return result;

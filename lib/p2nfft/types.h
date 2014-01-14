@@ -142,11 +142,35 @@ typedef struct {
   fcs_float sum_q;
   fcs_float sum_q2;
   fcs_float bg_charge;
+
+  /* TODO: deprecated, only valid for orthorombic boxes */
   fcs_float box_l[3];
 
-  /* introduce box shifts for non-cubic boxes */
+
+  /* pricipal axes of triclinic box */
+  fcs_float box_a[3];
+  fcs_float box_b[3];
+  fcs_float box_c[3];
+  fcs_float box_base[3];    /* box offset */
+  fcs_float box_V;          /* volume of unit cell */
+
+  /* pricipal axes of dual lattice (inverse box) */
+  fcs_float box_inv[9];
+
+  /* principal axes of the extended and regularized triclinic box */
+  fcs_float ebox_a[3];
+  fcs_float ebox_b[3];
+  fcs_float ebox_c[3];
+  fcs_float ebox_V;
+
+  /* pricipal axes of inverse extended box */
+  fcs_float ebox_inv[9];
+
+  /* box to ebox expansion factors */
+  fcs_float box_expand[3];
+
+  /* box_scales = box_l * box_expand (unit box to ebox expansion factors) */
   fcs_float box_scales[3];
-  fcs_float box_shifts[3];
   
   /* P2NFFT flags */
   unsigned flags;

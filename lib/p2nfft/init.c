@@ -134,11 +134,17 @@ FCSResult ifcs_p2nfft_init(
   d->sum_q2 = -1.0;
   d->sum_q = 0.0;
   d->bg_charge = 0.0;
+  d->box_V = 0.0;
   for(int t=0; t<3; t++){
     d->box_l[t] = -1.0; 
+    d->box_expand[t] = 1.0;
     d->box_scales[t] = 1.0;
-    d->box_shifts[t] = 0.0;
+    d->box_a[t] = 0.0;
+    d->box_b[t] = 0.0;
+    d->box_c[t] = 0.0;
   }
+  for(int t=0; t<9; t++)
+    d->box_inv[t] = 0.0;
   
   comm_get_periodicity(comm, d->periodicity);
 
