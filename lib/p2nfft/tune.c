@@ -256,10 +256,6 @@ FCSResult ifcs_p2nfft_tune(
 
   d->short_range_flag = short_range_flag;
 
-  /* compute dual lattice vectors */
-  d->box_V = det_3x3(d->box_a, d->box_b, d->box_c);
-  invert_3x3(d->box_a, d->box_b, d->box_c, d->box_inv);
-
   /* Retune if simulation box changed */
   if(box_differs(d->box_a, d->box_b, d->box_c, box_a, box_b, box_c))
     local_needs_retune = 1;
@@ -271,10 +267,14 @@ FCSResult ifcs_p2nfft_tune(
     d->box_base[t] = offset[t];
   }
 
-  /* Get box size */ 
+  /* Get box size for orthorombic boxes */ 
   box_l[0] = fcs_norm(box_a);
   box_l[1] = fcs_norm(box_b);
   box_l[2] = fcs_norm(box_c);
+
+  /* compute dual lattice vectors */
+  d->box_V = det_3x3(d->box_a, d->box_b, d->box_c);
+  invert_3x3(d->box_a, d->box_b, d->box_c, d->box_inv);
 
   /* Retune if total number of particles changed */
   MPI_Allreduce(&local_particles, &num_particles, 1, FCS_MPI_INT, MPI_SUM, d->cart_comm_3d);
@@ -477,7 +477,7 @@ FCSResult ifcs_p2nfft_tune(
       } else {
         if(d->tune_m)
           cao = FCS_P2NFFT_MAXCAO;
-    
+        
         /* tune the grid size N */
         if(d->tune_N){
           for (i = FCS_P2NFFT_MINGRID; i <= FCS_P2NFFT_MAXGRID; i *= 2) {
