@@ -122,8 +122,6 @@ FCSResult ifcs_p2nfft_run(
 
   fcs_gridsort_create(&gridsort);
   
-  fprintf(stderr, "\nd->ebox_a = [%.2e, %.2e, %.2e]\n\n", d->ebox_a[0], d->ebox_a[1], d->ebox_a[2]);
-  fprintf(stderr, "lower_border = [%.2e, %.2e, %.2e], upper_border = [%.2e, %.2e, %.2e]\n\n", d->lower_border[0], d->lower_border[1], d->lower_border[2], d->upper_border[0], d->upper_border[1], d->upper_border[2]);
   fcs_gridsort_set_system(&gridsort, d->box_base, d->ebox_a, d->ebox_b, d->ebox_c, d->periodicity);
 
   fcs_gridsort_set_bounds(&gridsort, d->lower_border, d->upper_border);
@@ -398,23 +396,14 @@ FCSResult ifcs_p2nfft_run(
   /* Perform NFFT */
   FCS_PNFFT(trafo)(d->pnfft);
 
-  /* For nonperiodic dims we include the 1.0/box_scales factor in the regularization.
-   * Therefore, we have to invert it here.
-   * TODO: avoid this scaling in tune.c and skip the following rescale factor */
-  fcs_float rescale_nonperiodic_dims = 1.0;
-  for(fcs_int t=0; t<3; t++)
-    if(!d->periodicity[t])
-      rescale_nonperiodic_dims *= d->box_scales[t];
-
-  /* Copy the results to the output vector and rescale */
+  /* Copy the results to the output vector and rescale with L^{-T} */
   for (fcs_int j = 0; j < sorted_num_particles; ++j){
-    sorted_potentials[j] += creal(f[j]) * rescale_nonperiodic_dims;
+    sorted_potentials[j] += creal(f[j]);
 
-    sorted_field[3 * j + 0] -= creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 0) ) * rescale_nonperiodic_dims;
-    sorted_field[3 * j + 1] -= creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 1) ) * rescale_nonperiodic_dims;
-    sorted_field[3 * j + 2] -= creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 2) ) * rescale_nonperiodic_dims;
+    sorted_field[3 * j + 0] -= creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 0) );
+    sorted_field[3 * j + 1] -= creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 1) );
+    sorted_field[3 * j + 2] -= creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 2) );
   }
-
 
   /* Checksum: fields resulting from farfield interactions */
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG

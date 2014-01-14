@@ -577,7 +577,7 @@ FCSResult ifcs_p2nfft_tune(
         /* shift and scale coordinates into [-0.5,0.5) */
         if(d->periodicity[t]) d->box_expand[t] = 1.0;
         /* shift and scale coordinates into sphere with radius (0.5-epsB) */
-        else d->box_expand[t] = 1.0 / (0.5 - d->epsB) * (reg_far_is_radial(reg_far)) ? fcs_sqrt(d->num_nonperiodic_dims) : 1.0;
+        else d->box_expand[t] = 1.0 / (0.5 - d->epsB) * ( reg_far_is_radial(reg_far) ? fcs_sqrt(d->num_nonperiodic_dims) : 1.0 );
 
         /* TODO: remove deprecated variable box_scales */
         d->box_scales[t] = d->box_l[t] * d->box_expand[t];
@@ -671,7 +671,7 @@ FCSResult ifcs_p2nfft_tune(
 
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
         for(int t=0; t<3; t++){
-          d->box_expand[t] = 1.0 / (0.5 - d->epsB) * (reg_far_is_radial(reg_far)) ? fcs_sqrt(3) : 1.0;
+          d->box_expand[t] = 1.0 / (0.5 - d->epsB) * ( reg_far_is_radial(reg_far) ? fcs_sqrt(3) : 1.0 );
           d->box_scales[t] = d->box_l[t] * d->box_expand[t];
         }
   
@@ -727,7 +727,7 @@ FCSResult ifcs_p2nfft_tune(
         
         /* shift and scale box with boxlength L/2 into 3d-ball with radius (0.25-epsB/2) */
         for(int t=0; t<3; t++){
-          d->box_expand[t] = 1.0 / (0.5 - d->epsB) * (reg_far_is_radial(reg_far)) ? fcs_sqrt(3) : 1.0;
+          d->box_expand[t] = 1.0 / (0.5 - d->epsB) * ( reg_far_is_radial(reg_far) ? fcs_sqrt(3) : 1.0 );
           d->box_scales[t] = d->box_l[t] * d->box_expand[t];
         }
 
@@ -917,7 +917,7 @@ FCSResult ifcs_p2nfft_tune(
      * local_N, local_N_start, lower_border, upper_border */
     FCS_PNFFT(local_size_guru)(3, d->N, d->n, d->x_max, d->m, d->cart_comm_pnfft, d->pnfft_flags,
         d->local_N, d->local_N_start, d->lower_border, d->upper_border);
-    
+
     /* shift decomposition of the torus from [-1/2,1/2)^3 to [0,1)^3 */
     for(int t=0; t<3; t++)
     {
