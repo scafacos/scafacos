@@ -178,12 +178,13 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
 
   /* for x<y compute the faster convergent complement integral,
    * see formula (4) of [Slevinsky-Safouhi 2010] */
-  if(x<y) /* upper bound for nu>=-1, in our application we always have nu>=-1 at this point */
+  if(x<y){ /* upper bound for nu>=-1, in our application we always have nu>=-1 at this point */
     if( 2*fcs_pow(x/y,nu/2)*fcs_exp(-fcs_sqrt(x*y))/fcs_sqrt(x*y) < 1e-100 ){
       return 0.0;
-    }else{
+    } else {
       return 2 * fcs_pow(x/y, nu/2) * ifcs_p2nfft_bessel_k(nu, 2*fcs_sqrt(x*y)) - ifcs_p2nfft_inc_upper_bessel_k(-nu, y, x, eps);
     }
+  }
   
   /* for nu=0 and x,y small use Taylor approximation */
   if(fcs_float_is_zero(nu)){
