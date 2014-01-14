@@ -433,17 +433,9 @@ FCSResult ifcs_p2nfft_run(
   fcs_float far_energy = 0.0;
   fcs_float far_global;
 
-  /* TODO: remove box_surf -- Only needed for mixed-periodic cases */
-  fcs_float box_surf = 1.0;
-  for(fcs_int t=0; t<3; t++)
-    if(d->periodicity[t])
-      box_surf *= d->box_scales[t];
-  if(d->num_periodic_dims == 3)
-    box_surf = 1;
-
   for(fcs_int j = 0; j < sorted_num_particles; ++j)
     if(d->use_ewald)
-      far_energy += 0.5 * sorted_charges[j] * f[j] / box_surf;
+      far_energy += 0.5 * sorted_charges[j] * f[j];
     else
       far_energy += 0.5 * sorted_charges[j] * f[j];
 

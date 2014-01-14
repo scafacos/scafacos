@@ -1664,7 +1664,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
 
   for(int t=0; t<3; t++){
     if(!periodicity[t])
-      scale *= 1.0 / N[t];
+      scale /= N[t];
+    else
+      scale /= box_l[t]; 
   }
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
@@ -1710,20 +1712,10 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
           if(!periodicity[t])
             h = box_scales[t];
 
-        /* TODO Do we need B? */
-        /* set B for 1d-periodic bc */
-//         fcs_float B = 1.0;
-//         for(fcs_int t=0; t<3; t++)
-//           if(periodicity[t])
-//             B = box_l[t];
-
         fcs_float param[3];
         param[0] = alpha;
         param[1] = kbnorm;
         param[2] = h;
-//         param[3] = xsnorm;
-
-        /* simplify for pure 2d geometry with periodic boundary conditions */
 
         /* Check if all indices corresponding to periodic dims are 0.
          * Index correspoding to non-periodic dim will be 0 per default. */
