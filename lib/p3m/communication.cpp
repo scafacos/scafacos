@@ -31,6 +31,7 @@ namespace ScaFaCoS {
       /* store the original communicator */
       comm->mpicomm_orig = communicator;
       MPI_Comm_size(communicator, &comm->size);
+      MPI_Comm_rank(communicator, &comm->rank);
 
       P3M_DEBUG(printf( "  comm_init() finished.\n"));
     }
