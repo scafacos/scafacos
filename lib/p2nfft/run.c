@@ -400,9 +400,9 @@ FCSResult ifcs_p2nfft_run(
   for (fcs_int j = 0; j < sorted_num_particles; ++j){
     sorted_potentials[j] += creal(f[j]);
 
-    sorted_field[3 * j + 0] -= creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 0) );
-    sorted_field[3 * j + 1] -= creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 1) );
-    sorted_field[3 * j + 2] -= creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 2) );
+    sorted_field[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 0) );
+    sorted_field[3 * j + 1] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 1) );
+    sorted_field[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 2) );
   }
 
   /* Checksum: fields resulting from farfield interactions */
@@ -412,9 +412,10 @@ FCSResult ifcs_p2nfft_run(
     for(fcs_int j = 0; (j < sorted_num_particles); ++j)
       rsum += fabs(sorted_field[3*j+t]);
     MPI_Reduce(&rsum, &rsum_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
-    if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: near plus far field %" FCS_LMOD_INT "d. component: %" FCS_LMOD_FLOAT "f\n", t, rsum_global);
+    if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: checksum near plus far field %" FCS_LMOD_INT "d. component: %" FCS_LMOD_FLOAT "f\n", t, rsum_global);
   }
 
+  if (myrank == 0) fprintf(stderr, "E_FAR(0) = %" FCS_LMOD_FLOAT "e\n", -fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*0, 0) ));
   if (myrank == 0) fprintf(stderr, "E_NEAR_FAR(0) = %" FCS_LMOD_FLOAT "e\n", sorted_field[0]);
 #endif
 

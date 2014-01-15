@@ -36,8 +36,6 @@
 #define FCS_P2NFFT_DEBUG_RETUNE 0
 #define FCS_P2NFFT_TIMING 0
 
-#define FCS_P2NFFT_NORMALIZED_2DP_EWALD 0
-
 #define CONCAT2(prefix, name)  prefix ## name
 #define CONCAT(prefix, name)  CONCAT2(prefix, name)
 

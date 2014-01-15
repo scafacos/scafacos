@@ -138,6 +138,33 @@ static fcs_int nonperiodic_box_lengths_are_equal(
   return 1;
 }
 
+static fcs_int is_principal_axis(const fcs_float *a)
+{
+  return (1 == (!fcs_float_is_zero(a[0]) +  !fcs_float_is_zero(a[1]) + !fcs_float_is_zero(a[2])) );
+}
+
+static fcs_int nonperiodic_axes_are_principal(
+    const fcs_float *a, const fcs_float *b, const fcs_float *c, const fcs_int *periodicity
+    )
+{
+  if( !periodicity[0] && !is_principal_axis(a) ) return 0;
+  if( !periodicity[1] && !is_principal_axis(b) ) return 0;
+  if( !periodicity[2] && !is_principal_axis(c) ) return 0;
+  return 1;
+}
+
+static fcs_int nonperiodic_axes_are_orthogonal_to_all_other_axes(
+    const fcs_float *a, const fcs_float *b, const fcs_float *c, const fcs_int *periodicity
+    )
+{
+  /* We use the fact that nonperiodic axes are principal axes */
+  if( !periodicity[0] ) if( !fcs_float_is_zero(b[0]) || !fcs_float_is_zero(c[0]) ) return 0;
+  if( !periodicity[1] ) if( !fcs_float_is_zero(a[1]) || !fcs_float_is_zero(c[1]) ) return 0;
+  if( !periodicity[2] ) if( !fcs_float_is_zero(a[2]) || !fcs_float_is_zero(b[2]) ) return 0;
+  return 1;
+}
+
+
 
 /* internal p2nfft-specific tuning function */
 FCSResult fcs_p2nfft_tune(
@@ -152,6 +179,8 @@ FCSResult fcs_p2nfft_tune(
   if (result != NULL)
     return result;
 
+//   fcs_wrap_positions(local_particles, positions, fcs_get_box_a(handle), fcs_get_box_b(handle), fcs_get_box_c(handle), fcs_get_offset(handle), fcs_get_periodicity(handle));
+
   /* Check for periodicity */
   const fcs_int *periodicity = fcs_get_periodicity(handle);
 
@@ -159,10 +188,14 @@ FCSResult fcs_p2nfft_tune(
   const fcs_float *a = fcs_get_box_a(handle);
   const fcs_float *b = fcs_get_box_b(handle);
   const fcs_float *c = fcs_get_box_c(handle);
-  if (!fcs_uses_principal_axes(a, b, c))
-    if(periodic_dims(periodicity) != 3)
-      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
-          "Triclinic boxes are only available for 3d-periodic boundary conditions.");
+
+  if( !nonperiodic_axes_are_principal(a, b, c, periodicity) )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+        "Principal box vectors are required for all nonperiodic dims.");
+
+  if( !nonperiodic_axes_are_orthogonal_to_all_other_axes(a, b, c, periodicity) )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+        "Nonperiodic dims require box vector that are orthognonal to all box vectors of periodic dims.");
 
   if(periodic_dims(periodicity) == 1)
     if(!nonperiodic_box_lengths_are_equal(a[0], b[1], c[2], periodicity))

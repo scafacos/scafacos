@@ -55,6 +55,8 @@ extern "C" {
 #define fcs_erf(_x_)       FCS_MATH(erf)(_x_)
 #define fcs_erfc(_x_)      FCS_MATH(erfc)(_x_)
 #define fcs_pow(_x_, _y_)  FCS_MATH(pow)(_x_, _y_)
+#define fcs_creal(_x_)     FCS_MATH(creal)(_x_)
+#define fcs_cimag(_x_)     FCS_MATH(cimag)(_x_)
 
 /**
  * @brief function to determine if two float values are equal
