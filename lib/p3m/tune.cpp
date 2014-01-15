@@ -21,13 +21,11 @@
 #include <config.h>
 #endif
 
-#include "tune.h"
-
+#include "p3m.h"
 #include "FCSCommon.h"
 #include "tune_broadcast.hpp"
 #include "error_estimate.hpp"
 #include "timing.hpp"
-#include "run.h"
 #include "utils.hpp"
 #include "prepare.hpp"
 #include <cstdlib>

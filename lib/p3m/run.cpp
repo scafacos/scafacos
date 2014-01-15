@@ -25,14 +25,14 @@
 #endif
 
 #include "FCSCommon.h"
-#include "run.h"
+
+#include "fcs_p3m_p.h"
+#include "p3m.h"
 #include "types.hpp"
 #include "utils.hpp"
 #include "caf.hpp"
-#include "tune.h"
-#include "fcs_p3m_p.h"
-#include "common/gridsort/gridsort.h"
 #include "common/near/near.h"
+#include "common/gridsort/gridsort.h"
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <stdlib.h>

@@ -34,23 +34,20 @@ namespace ScaFaCoS {
         parameters. Check whether wanted_error > achieved_error to see
         whether the required error can actually be met.
     */
-    void
-    determine_good_alpha(data_struct *d);
+    void determine_good_alpha(data_struct *d);
 
     /** Calculates the rms error estimate in the force (as described in
         the book of Hockney and Eastwood (Eqn. 8.23) for a system of N
         randomly distributed particles.
     */
-    void 
-    compute_error_estimate(data_struct *d);
+    void compute_error_estimate(data_struct *d);
 
     /** Calculates the reciprocal space contribution to the rms error in the
         force (as described in the book of Hockney and Eastwood
         (Eqn. 8.23) (for a system of N randomly distributed particles in a
         cubic box).
     */
-    void 
-    k_space_error(data_struct *d);
+    void k_space_error(data_struct *d);
   }
 }
 #endif

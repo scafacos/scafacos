@@ -16,11 +16,11 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
+#include "p3m.h"
 #include "utils.hpp"
 #include "tune_broadcast.hpp"
 #include "timing.hpp"
 #include "prepare.hpp"
-#include "run.h"
 #include <cstdlib>
 
 namespace ScaFaCoS {

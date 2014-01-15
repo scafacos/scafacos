@@ -22,10 +22,68 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <mpi.h>
+#include "FCSResult.h"
 
-#include "init.h"
-#include "parameters.h"
-#include "tune.h"
-#include "run.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  /** Initialize all structures, parameters and arrays needed for the 
+   *  P3M algorithm and set their default values.
+   */
+  void ifcs_p3m_init(void **rd, MPI_Comm communicator);
+
+  /** Clean up P3M memory allocations. */
+  void ifcs_p3m_destroy(void *rd);
+
+  void ifcs_p3m_set_near_field_flag(void *rd, fcs_int flag);
+
+  void ifcs_p3m_set_box_a(void *rd, fcs_float a);
+  void ifcs_p3m_set_box_b(void *rd, fcs_float b);
+  void ifcs_p3m_set_box_c(void *rd, fcs_float c);
+
+  void ifcs_p3m_set_r_cut(void *rd, fcs_float alpha);
+  void ifcs_p3m_set_r_cut_tune(void *rd);
+  void ifcs_p3m_get_r_cut(void *rd, fcs_float *r_cut);
+
+  void ifcs_p3m_set_alpha(void *rd, fcs_float alpha);
+  void ifcs_p3m_set_alpha_tune(void *rd);
+  void ifcs_p3m_get_alpha(void *rd, fcs_float *alpha);
+
+  void ifcs_p3m_set_grid(void *rd, fcs_int mesh);
+  void ifcs_p3m_set_grid_tune(void *rd);
+  void ifcs_p3m_get_grid(void *rd, fcs_int *mesh);
+
+  void ifcs_p3m_set_cao(void *rd, fcs_int cao);
+  void ifcs_p3m_set_cao_tune(void *rd);
+  void ifcs_p3m_get_cao(void *rd, fcs_int *cao);
+
+  void ifcs_p3m_set_tolerance_field(void *rd, fcs_float tolerance_field);
+  void ifcs_p3m_set_tolerance_field_tune(void *rd);
+  void ifcs_p3m_get_tolerance_field(void *rd, fcs_float* tolerance_field);
+
+  void ifcs_p3m_require_total_energy(void *rd, fcs_int flag);
+  FCSResult ifcs_p3m_get_total_energy(void *rd, fcs_float *total_energy);
+
+  void ifcs_p3m_require_timings(void *rd, fcs_int flag);
+  FCSResult 
+  ifcs_p3m_get_timings(void *rd, 
+                       double *timing, 
+                       double *timing_near_field, 
+                       double *timing_far_field);
+
+  FCSResult ifcs_p3m_tune
+  (void* rd, fcs_int num_particles, fcs_int max_particles,
+   fcs_float *positions, fcs_float *charges);
+  
+  void ifcs_p3m_run
+  (void* rd, fcs_int num_particles, fcs_int max_particles,
+   fcs_float *positions, fcs_float *charges,
+   fcs_float *fields, fcs_float *potentials);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

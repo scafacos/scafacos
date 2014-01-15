@@ -16,6 +16,11 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include "types.hpp"
 #include "prepare.hpp"
 #include <cstdlib>
 #include <cstdio>
@@ -45,8 +50,11 @@ namespace ScaFaCoS {
     calc_differential_operator(data_struct *d);
 
 #ifdef P3M_ENABLE_DEBUG
-    static void print_local_grid(local_grid l);
-    static void print_send_grid(send_grid sm);
+    static void 
+    print_local_grid(local_grid_t l);
+
+    static void 
+    print_send_grid(send_grid_t sm);
 #endif
 
     /***************************************************/
@@ -323,7 +331,7 @@ namespace ScaFaCoS {
 
 #ifdef P3M_ENABLE_DEBUG
     /** Debug function printing p3m structures */
-    static void print_local_grid(local_grid l) {
+    void print_local_grid(local_grid_t l) {
       printf( "    local_grid:\n");
       printf( "      dim=" F3INT ", size=" FINT "\n",
               l.dim[0], l.dim[1], l.dim[2], l.size);
@@ -343,7 +351,7 @@ namespace ScaFaCoS {
     }
 
     /** Debug function printing p3m structures */
-    static void print_send_grid(send_grid sm) {
+    void print_send_grid(send_grid_t sm) {
       int i;
       printf( "    send_grid:\n");
       printf( "      max=%d\n",sm.max);
