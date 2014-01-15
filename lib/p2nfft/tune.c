@@ -419,7 +419,6 @@ FCSResult ifcs_p2nfft_tune(
 
   /* compute the average distance between two charges 
    * (needed for computation of default r_cut) */
-  fprintf(stderr, "box_V = %.2e\n", d->box_V);
   avg_dist = fcs_pow(d->box_V/d->sum_qpart, 0.33333);
 
 #if FCS_P2NFFT_DEBUG_RETUNE
