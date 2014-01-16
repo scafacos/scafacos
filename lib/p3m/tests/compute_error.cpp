@@ -32,9 +32,10 @@ int main(int argc, char *argv[]) {
 
   for (d.alpha = 0.1; d.alpha < 10.0; d.alpha += 0.1) {
     k_space_error(&d);
-    fcs_float y = sqrt(d.ks_error)/(d.box_l[0]*d.box_l[0]);
-    fcs_float x = d.alpha*d.box_l[0];
-    printf("%lf %lf\n", x, y);
+    
+    fcs_float alpha_L = d.alpha*d.box_l[0];
+    fcs_float Q = sqrt(d.ks_error)/(d.box_l[0]*d.box_l[0]);
+    printf("%lf %lf %lf %lf\n", d.alpha, d.ks_error, alpha_L, Q);
   }
 
   MPI_Finalize();

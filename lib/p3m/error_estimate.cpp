@@ -50,10 +50,6 @@ namespace ScaFaCoS {
      fcs_float *alias1, fcs_float *alias2, fcs_float *alias3, 
      fcs_float *alias4, fcs_float *alias5, fcs_float *alias6);
 
-#ifndef FCS_PI
-#include "FCSDefinitions.h"
-#endif
-
     /***************************************************/
     /* IMPLEMENTATION */
     /***************************************************/
@@ -187,7 +183,7 @@ namespace ScaFaCoS {
     static fcs_float 
     k_space_error_sum1(fcs_int n, fcs_float grid_i, fcs_int cao) {
       fcs_float c, res=0.0;
-      c = SQR(cos(FCS_PI*grid_i*(fcs_float)n));
+      c = SQR(cos(M_PI*grid_i*(fcs_float)n));
   
       switch (cao) {
       case 1 : { 
@@ -227,7 +223,7 @@ namespace ScaFaCoS {
                                 fcs_int cao, fcs_float alpha_L_i, 
                                 fcs_float *alias1, fcs_float *alias2)
     {
-      fcs_float prefactor = SQR(FCS_PI*alpha_L_i);
+      fcs_float prefactor = SQR(M_PI*alpha_L_i);
 
       *alias1 = *alias2 = 0.0;
       for (fcs_int mx=-P3M_BRILLOUIN; mx<=P3M_BRILLOUIN; mx++) {
@@ -262,7 +258,7 @@ namespace ScaFaCoS {
                                     fcs_float *alias3, fcs_float *alias4,
                                     fcs_float *alias5, fcs_float *alias6)
     {
-      fcs_float prefactor = SQR(FCS_PI*alpha_L_i);
+      fcs_float prefactor = SQR(M_PI*alpha_L_i);
 
       *alias1 = *alias2 = *alias3 = *alias4 = *alias5 = *alias6 = 0.0;
       for (fcs_int mx=-P3M_BRILLOUIN; mx<=P3M_BRILLOUIN; mx++) {
@@ -355,7 +351,7 @@ namespace ScaFaCoS {
       d->ks_error =
         d->sum_q2 / (d->box_l[0]*d->box_l[0]) *
         pow(h*d->alpha, d->cao) * 
-        sqrt(d->alpha*d->box_l[0]/d->sum_qpart*sqrt(2.0*FCS_PI)*sum);
+        sqrt(d->alpha*d->box_l[0]/d->sum_qpart*sqrt(2.0*M_PI)*sum);
     }
 
     /** Calculates the rms error estimate in the force (as described in

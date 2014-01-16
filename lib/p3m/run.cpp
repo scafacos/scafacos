@@ -981,10 +981,10 @@ namespace ScaFaCoS {
           for(j[2]=0; j[2]<d->fft.plan[3].new_grid[2]; j[2]++) {
             /* i*k*(Re+i*Im) = - Im*k + i*Re*k     (i=sqrt(-1)) */
             d->rs_grid[ind] =
-              -2.0*FCS_PI*(d->ks_grid[ind+1] * d_operator[ j[dim]+d->fft.plan[3].start[dim] ])
+              -2.0*M_PI*(d->ks_grid[ind+1] * d_operator[ j[dim]+d->fft.plan[3].start[dim] ])
               / d->box_l[dim_rs];
             d->rs_grid[ind+1] =
-              2.0*FCS_PI*d->ks_grid[ind] * d_operator[ j[dim]+d->fft.plan[3].start[dim] ]
+              2.0*M_PI*d->ks_grid[ind] * d_operator[ j[dim]+d->fft.plan[3].start[dim] ]
               / d->box_l[dim_rs];
             ind+=2;
           }
@@ -1066,7 +1066,7 @@ namespace ScaFaCoS {
       /* self energy correction */
       k_space_energy -= d->sum_q2 * d->alpha * 0.5*FCS_2_SQRTPI;
       /* net charge correction */
-      k_space_energy -= d->square_sum_q * FCS_PI * prefactor / SQR(d->alpha);
+      k_space_energy -= d->square_sum_q * M_PI * prefactor / SQR(d->alpha);
 
       P3M_DEBUG(printf( "  compute_total_energy() finished.\n"));
       return k_space_energy;
