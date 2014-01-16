@@ -688,7 +688,7 @@ if test "x$use_fcs_mmm2d" = xyes ; then
   AX_FCS_PACKAGE_ADD([mmm2d_LIBS_A],[lib/mmm2d/libfcs_mmm2d.la])
 fi
 if test "x$use_fcs_p3m" = xyes ; then
-  AC_CONFIG_FILES([lib/p3m/Makefile])
+  AC_CONFIG_FILES([lib/p3m/Makefile lib/p3m/tests/Makefile])
   AX_FCS_PACKAGE_ADD([p3m_LIBS],[-lfcs_p3m])
   AX_FCS_PACKAGE_ADD([p3m_LIBS_A],[lib/p3m/libfcs_p3m.la])
   AX_FCS_PACKAGE_ADD([fftw3_USE],[yes])

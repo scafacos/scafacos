@@ -1,3 +1,5 @@
+SUBDIRS = tests
+
 if ENABLE_SINGLE_LIB
 noinst_LTLIBRARIES = libfcs_p3m.la
 else
@@ -22,9 +24,3 @@ libfcs_p3m_la_SOURCES = \
 	types.hpp \
 	error_estimate.cpp error_estimate.hpp
 
-DUMMY:=$(eval include $(top_builddir)/package/scafacos-fcs.mk)
-
-check_PROGRAMS = compute_error
-compute_error_SOURCES = tests/compute_error.cpp
-compute_error_LDADD = $(SCAFACOS_MK_LDADD) $(top_builddir)/src/libfcs.la
-compute_error_CPPFLAGS = -I $(top_srcdir)/src
