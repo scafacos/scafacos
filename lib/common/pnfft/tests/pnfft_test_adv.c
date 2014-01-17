@@ -5,7 +5,7 @@
 static void init_equispaced_x(
     const ptrdiff_t *N, const double *lo, const double *up,
     double *x);
-static void init_input_c2c_3d(
+static void init_input_complex_3d(
     const ptrdiff_t *n, const ptrdiff_t *local_n, const ptrdiff_t *local_start,
     pnfft_complex *data);
 static double check_output_c2c_3d(
@@ -70,7 +70,7 @@ int main(int argc, char **argv){
   x     = pnfft_get_x(pnfft);
 
   /* Initialize Fourier coefficients */
-  init_input_c2c_3d(N, local_N, local_N_start,
+  init_input_complex_3d(N, local_N, local_N_start,
       f_hat);
 
   /* Initialize nonequispaced nodes */
@@ -112,7 +112,7 @@ int main(int argc, char **argv){
   return 0;
 }
 
-static void init_input_c2c_3d(
+static void init_input_complex_3d(
     const ptrdiff_t *n, const ptrdiff_t *local_n, const ptrdiff_t *local_start,
     pnfft_complex *data
     )
