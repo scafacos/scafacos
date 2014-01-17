@@ -27,7 +27,6 @@
 #include "utils.hpp"
 #include "caf.hpp"
 #include "influence_function.hpp"
-#include "FCSCommon.h"
 
 namespace ScaFaCoS {
   namespace P3M {
@@ -165,11 +164,11 @@ namespace ScaFaCoS {
   
       /* correct roundof errors at boundary */
       for(i=0;i<3;i++) {
-        if (fcs_float_is_zero((d->comm.my_right[i] * d->ai[i] - d->grid_off[i]) 
-                              - d->local_grid.in_ur[i])) 
+        if (float_is_zero((d->comm.my_right[i] * d->ai[i] - d->grid_off[i]) 
+                          - d->local_grid.in_ur[i])) 
           d->local_grid.in_ur[i]--;
-        if (fcs_float_is_zero(1.0+(d->comm.my_left[i] * d->ai[i] - d->grid_off[i]) 
-                              - d->local_grid.in_ld[i])) 
+        if (float_is_zero(1.0+(d->comm.my_left[i] * d->ai[i] - d->grid_off[i]) 
+                          - d->local_grid.in_ld[i])) 
           d->local_grid.in_ld[i]--;
       }
       /* inner grid dimensions */

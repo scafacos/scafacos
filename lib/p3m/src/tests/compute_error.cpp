@@ -1,5 +1,4 @@
-#include "p3m.h"
-#include "types.hpp"
+#include "p3m.hpp"
 #include "communication.hpp"
 #include "error_estimate.hpp"
 #include <cstdlib>

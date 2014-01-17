@@ -405,8 +405,7 @@ namespace ScaFaCoS {
         parameters. Check whether wanted_error > achieved_error to see
         whether the required error can actually be met.
     */
-    void
-    determine_good_alpha(data_struct *d) {
+    void determine_good_alpha(data_struct *d) {
       /* Get the real space error for alpha=0 */
       d->alpha = 0.0;
       real_space_error(d);
@@ -415,8 +414,8 @@ namespace ScaFaCoS {
       /* We know how the real space error behaves, so we can compute the
          alpha where the real space error is half of the wanted
          error. This is the alpha that we return. */
-      if(FCS_SQRT2*max_rs_err > d->tolerance_field) {
-        d->alpha = sqrt(log(FCS_SQRT2*max_rs_err/d->tolerance_field)) / d->r_cut;
+      if(M_SQRT2*max_rs_err > d->tolerance_field) {
+        d->alpha = sqrt(log(M_SQRT2*max_rs_err/d->tolerance_field)) / d->r_cut;
       } else {
         /* if the error is small enough even for alpha=0 */
         d->alpha = 0.1 * d->box_l[0];

@@ -21,8 +21,6 @@
 #include <config.h>
 #endif
 
-#include "p3m.h"
-#include "FCSCommon.h"
 #include "tune_broadcast.hpp"
 #include "error_estimate.hpp"
 #include "timing.hpp"
@@ -30,6 +28,7 @@
 #include "prepare.hpp"
 #include <cstdlib>
 #include <cstdio>
+#include <stdexcept>
 
 namespace ScaFaCoS {
   namespace P3M {
@@ -82,56 +81,52 @@ namespace ScaFaCoS {
     /***************************************************/
     /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
     /***************************************************/
-    static FCSResult
+    void
     tune_broadcast_master(data_struct *d, 
-                                   fcs_int num_particles, fcs_int max_num_particles,
-                                   fcs_float *positions, fcs_float *charges);
-    static FCSResult
-    tune_r_cut_alpha_cao_grid(data_struct *d, 
-                                       fcs_int num_particles, fcs_int max_num_particles,
-                                       fcs_float *positions, fcs_float *charges,
-                                       tune_params **params);
-    static FCSResult
-    tune_alpha_cao_grid(data_struct *d, 
-                                 fcs_int num_particles, fcs_int max_num_particles,
-                                 fcs_float *positions, fcs_float *charges,
-                                 tune_params **params);
-    static FCSResult
-    tune_cao_grid(data_struct *d, 
-                           fcs_int num_particles, fcs_int max_num_particles,
-                           fcs_float *positions, fcs_float *charges,
-                           tune_params **params);
-    static FCSResult
-    tune_grid(data_struct *d, 
-                       fcs_int num_particles, fcs_int max_num_particles,
-                       fcs_float *positions, fcs_float *charges,
-                       tune_params **params);
-    static FCSResult
-    time_params(data_struct *d,
-                         fcs_int num_particles, fcs_int max_particles,
-                         fcs_float *positions, fcs_float *charges,
-                         tune_params **params_to_try);
+                          fcs_int num_particles, fcs_int max_num_particles,
+                          fcs_float *positions, fcs_float *charges);
 
-    static void  
+    void
+    tune_r_cut_alpha_cao_grid(data_struct *d, 
+                              fcs_int num_particles, fcs_int max_num_particles,
+                              fcs_float *positions, fcs_float *charges,
+                              tune_params **params);
+
+    void
+    tune_alpha_cao_grid(data_struct *d, 
+                        fcs_int num_particles, fcs_int max_num_particles,
+                        fcs_float *positions, fcs_float *charges,
+                        tune_params **params);
+    void
+    tune_cao_grid(data_struct *d, 
+                  fcs_int num_particles, fcs_int max_num_particles,
+                  fcs_float *positions, fcs_float *charges,
+                  tune_params **params);
+
+    void
+    tune_grid(data_struct *d, 
+              fcs_int num_particles, fcs_int max_num_particles,
+              fcs_float *positions, fcs_float *charges,
+              tune_params **params);
+
+    void
+    time_params(data_struct *d,
+                fcs_int num_particles, fcs_int max_particles,
+                fcs_float *positions, fcs_float *charges,
+                tune_params **params_to_try);
+    
+    void  
     count_charges
     (data_struct *d, fcs_int num_particles, fcs_float *charges);
-  }
-}
- 
-using namespace ScaFaCoS::P3M;
-extern "C" { 
+
     /***************************************************/
     /* IMPLEMENTATION */
     /***************************************************/
-    FCSResult 
-    ifcs_p3m_tune(void* rd,
-                  fcs_int num_particles,
-                  fcs_int max_particles,
-                  fcs_float *positions, 
-                  fcs_float *charges) {
-      data_struct *d = (data_struct*)rd;
-      const char* fnc_name = "tune";
-
+    void tune(data_struct *d,
+              fcs_int num_particles,
+              fcs_int max_particles,
+              fcs_float *positions, 
+              fcs_float *charges) {
       /* Distinguish between two types of parameters:
          Input params:
          * box length
@@ -159,85 +154,78 @@ extern "C" {
       count_charges(d, num_particles, charges);
 
       /* Retune if the number of charges has changed */
-      if (!d->needs_retune && !(fcs_float_is_equal(sum_q2_before, d->sum_q2))) {
+      if (!d->needs_retune && !(float_is_equal(sum_q2_before, d->sum_q2))) {
         P3M_INFO(printf( "  Number of charges changed, retuning is needed.\n"));
         d->needs_retune = 1;
       }
 
       /* Do not retune if there are no charges */
-      if (fcs_float_is_zero(d->sum_q2)) {
+      if (float_is_zero(d->sum_q2)) {
         P3M_INFO(printf( "  No charges in the system.\n"));
         P3M_INFO(printf( "  Retuning is not required.\n"));
         P3M_INFO(printf( "tune() finished.\n"));
-        return NULL;
+        return;
       }
 
       /* Exit if retuning is unnecessary */
       if (!d->needs_retune) {
         P3M_INFO(printf( "  Retuning is not required.\n"));
         P3M_INFO(printf( "tune() finished.\n"));
-        return NULL;
+        return;
       }
 
       P3M_INFO(printf( "  Retuning is required.\n"));
 
       /* check whether the input parameters are sane */
       if (!d->tune_r_cut) {
-        if (d->r_cut < 0.0) {
-          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "r_cut is negative!");
-        }
+        if (d->r_cut < 0.0)
+          throw std::domain_error("r_cut is negative!");
     
-        if (fcs_float_is_zero(d->r_cut)) {
-          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "r_cut is too small!");
-        }
+        if (float_is_zero(d->r_cut)) 
+          throw std::domain_error("r_cut is too small!");
     
         /* check whether cutoff is larger than half a box length */
         if ((d->r_cut > 0.5*d->box_l[0]) ||
             (d->r_cut > 0.5*d->box_l[1]) ||
             (d->r_cut > 0.5*d->box_l[2]))
-          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, 
-                                  "r_cut is larger than half a system box length.");
+          throw std::domain_error("r_cut is larger than half a system box length.");
 
         /* check whether cutoff is larger than domain size */
       }
 
-      FCSResult result = NULL;
-      if (d->comm.rank == 0)
-        result = tune_broadcast_master(d, num_particles, max_particles, positions, charges);
-      else 
-        result = tune_broadcast_slave(d, num_particles, max_particles, positions, charges);
-      if (result != NULL) {
+      try {
+        if (d->comm.rank == 0)
+          tune_broadcast_master(d, num_particles, max_particles, positions, charges);
+        else 
+          tune_broadcast_slave(d, num_particles, max_particles, positions, charges);
+      } catch (...) {
         P3M_INFO(printf( "  Tuning failed.\n"));
-      } else {
-        P3M_INFO(printf( "  Tuning was successful.\n"));
-
-        /* At the end of retuning, prepare the method */
-        prepare(d, max_particles);
-
-        /* mark that the method was retuned */
-        d->needs_retune = 0;
+        P3M_INFO(printf( "tune() finished.\n"));
+        throw;
       }
 
+      P3M_INFO(printf( "  Tuning was successful.\n"));
+
+      /* At the end of retuning, prepare the method */
+      prepare(d, max_particles);
+      
+      /* mark that the method was retuned */
+      d->needs_retune = 0;
+      
       P3M_INFO(printf( "tune() finished.\n"));
-      return result;
     }
-}
 
-namespace ScaFaCoS {
-  namespace P3M {
-
-    static FCSResult
+    void
     tune_broadcast_master(data_struct *d, 
-                                   fcs_int num_particles, fcs_int max_num_particles,
-                                   fcs_float *positions, fcs_float *charges) {
+                          fcs_int num_particles, fcs_int max_num_particles,
+                          fcs_float *positions, fcs_float *charges) {
       P3M_INFO(printf("  Tuning P3M to p3m_tolerance_field=" FFLOATE "\n",  \
                       d->tolerance_field));
 
       tune_params *params = NULL;
-      FCSResult result = NULL;
   
-      result = tune_r_cut_alpha_cao_grid(d, num_particles, max_num_particles, 
-                                                  positions, charges, &params);
+      tune_r_cut_alpha_cao_grid(d, num_particles, max_num_particles, 
+                                positions, charges, &params);
   
       /* Set and broadcast the final parameters. */
       d->r_cut = params->r_cut;
@@ -250,15 +238,13 @@ namespace ScaFaCoS {
 
       /* free the final param set */
       free(params);
-
-      return result;
     }
 
-    static FCSResult
+    void
     tune_r_cut_alpha_cao_grid(data_struct *d, 
-                                       fcs_int num_particles, fcs_int max_num_particles,
-                                       fcs_float *positions, fcs_float *charges,
-                                       tune_params **params) {
+                              fcs_int num_particles, fcs_int max_num_particles,
+                              fcs_float *positions, fcs_float *charges,
+                              tune_params **params) {
       *params = static_cast<tune_params*>(malloc(sizeof(tune_params)));
       (*params)->next_params = NULL;
   
@@ -283,10 +269,8 @@ namespace ScaFaCoS {
 
         P3M_INFO(printf( "    r_cut=" FFLOAT " (first estimate)\n", (*params)->r_cut));
 
-        FCSResult result = 
-          tune_alpha_cao_grid(d, num_particles, max_num_particles, 
-                                       positions, charges, params);
-        if (result) return result;
+        tune_alpha_cao_grid(d, num_particles, max_num_particles, 
+                            positions, charges, params);
 
         /* SECOND ESTIMATE */
         /* use the fact that we know that timing_near scales like r_cut**3
@@ -311,33 +295,29 @@ namespace ScaFaCoS {
     
         (*params)->r_cut = rcut_new;
         P3M_INFO(printf( "    r_cut=" FFLOAT " (second estimate)\n", (*params)->r_cut));
-        result = 
-          tune_alpha_cao_grid(d, num_particles, max_num_particles, 
-                                       positions, charges, params);
-        if (result) return result;
-
+        tune_alpha_cao_grid(d, num_particles, max_num_particles, 
+                            positions, charges, params);
+        
         rel_timing_diff = 
           fabs((*params)->timing_near - (*params)->timing_far) / 
           ((*params)->timing_near + (*params)->timing_far);
         P3M_INFO(printf("    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
         P3M_INFO(printf("    Finished tuning.\n"));
-
-        return NULL;
       } else {
         (*params)->r_cut = d->r_cut;
         P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", (*params)->r_cut));
-        return tune_alpha_cao_grid(d, num_particles, max_num_particles, 
+        tune_alpha_cao_grid(d, num_particles, max_num_particles, 
                                             positions, charges, params);
       }
    
     }
 
     /* Tune alpha */
-    static FCSResult
+    void
     tune_alpha_cao_grid(data_struct *d, 
-                                 fcs_int num_particles, fcs_int max_num_particles,
-                                 fcs_float *positions, fcs_float *charges,
-                                 tune_params **params) {
+                        fcs_int num_particles, fcs_int max_num_particles,
+                        fcs_float *positions, fcs_float *charges,
+                        tune_params **params) {
       if (d->tune_alpha)
         for (tune_params *p = *params; p != NULL; p = p->next_params) {
           d->r_cut = p->r_cut;
@@ -356,11 +336,11 @@ namespace ScaFaCoS {
     }
 
     /* Tune cao */
-    static FCSResult
+    void
     tune_cao_grid(data_struct *d, 
-                           fcs_int num_particles, fcs_int max_num_particles,
-                           fcs_float *positions, fcs_float *charges,
-                           tune_params **params) {
+                  fcs_int num_particles, fcs_int max_num_particles,
+                  fcs_float *positions, fcs_float *charges,
+                  tune_params **params) {
 #ifdef P3M_AD
       const fcs_int cao_min = 2;
 #else
@@ -396,11 +376,11 @@ namespace ScaFaCoS {
     }
 
     /* params with identical r_cut should be adjacent and have decreasing cao */
-    static FCSResult
+    void
     tune_grid(data_struct *d, 
-                       fcs_int num_particles, fcs_int max_num_particles,
-                       fcs_float *positions, fcs_float *charges,
-                       tune_params **params) {
+              fcs_int num_particles, fcs_int max_num_particles,
+              fcs_float *positions, fcs_float *charges,
+              tune_params **params) {
       if (d->tune_grid) {
         fcs_int step_ix = 0;
         // store the minimal grid size seen so far
@@ -574,13 +554,11 @@ namespace ScaFaCoS {
                                   params);
     }
 
-    static FCSResult
+    void
     time_params(data_struct *d,
-                         fcs_int num_particles, fcs_int max_particles,
-                         fcs_float *positions, fcs_float *charges,
-                         tune_params **params) {
-      const char* fnc_name = "time_params";
-
+                fcs_int num_particles, fcs_int max_particles,
+                fcs_float *positions, fcs_float *charges,
+                tune_params **params) {
       /* Now time the different parameter sets */
       tune_params *best_params = NULL;
       double best_timing = 1.e100;
@@ -627,8 +605,7 @@ namespace ScaFaCoS {
       }
 
       if (best_params == NULL)
-        return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, 
-                                "Internal error: No best timing.");
+        throw std::runtime_error("Internal error: Tuning could not get best timing.");
 
       /* Free the list, keep only the best */
       tune_params *current_params = *params;
@@ -641,16 +618,14 @@ namespace ScaFaCoS {
 
       best_params->next_params = NULL;
       *params = best_params;
-
-      return NULL;
     }
 
     /** Calculate number of charged particles, the sum of the squared
         charges and the squared sum of the charges. Called in parallel at
         the beginning of tuning. */
-    static void 
+    void 
     count_charges(data_struct *d, 
-                           fcs_int num_particles, fcs_float *charges) {  
+                  fcs_int num_particles, fcs_float *charges) {  
       int i;
       fcs_float node_sums[3], tot_sums[3];
 
@@ -660,7 +635,7 @@ namespace ScaFaCoS {
       }
 
       for (i = 0; i < num_particles; i++) {
-        if (!fcs_float_is_zero(charges[i])) {
+        if (!float_is_zero(charges[i])) {
           node_sums[0] += 1.0;
           node_sums[1] += SQR(charges[i]);
           node_sums[2] += charges[i];

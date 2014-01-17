@@ -15,17 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-SUBDIRS = src .
+SUBDIRS = . tests
 
-if ENABLE_SINGLE_LIB
-noinst_LTLIBRARIES = libfcs_p3m.la
-else
-lib_LTLIBRARIES = libfcs_p3m.la
-endif
-
-libfcs_p3m_la_CPPFLAGS = -I$(top_srcdir)/src $(fftw3_CPPFLAGS)
-libfcs_p3m_la_SOURCES = \
-	scafacos.h \
-	scafacos.cpp
-libfcs_p3m_la_LIBADD = src/libp3m.la
-
+noinst_LTLIBRARIES = libp3m.la
+libp3m_la_CPPFLAGS = $(fftw3_CPPFLAGS) -I $(top_srcdir)/src \
+	-I $(top_srcdir)/lib -I $(top_srcdir)/lib/common/fcs-common
+libp3m_la_SOURCES = \
+	utils.hpp \
+	communication.hpp communication.cpp \
+	caf.cpp caf.hpp \
+	fft.cpp fft.hpp \
+	influence_function.cpp influence_function.hpp \
+	init.cpp init.hpp \
+	prepare.cpp prepare.hpp \
+	timing.cpp timing.hpp \
+	tune.cpp tune.hpp \
+	tune_broadcast.cpp tune_broadcast.hpp \
+	run.cpp run.hpp \
+	types.hpp \
+	error_estimate.cpp error_estimate.hpp

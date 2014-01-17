@@ -16,8 +16,8 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "p3m.h"
 #include "utils.hpp"
+#include "p3m.hpp"
 #include "tune_broadcast.hpp"
 #include "timing.hpp"
 #include "prepare.hpp"
@@ -25,11 +25,9 @@
 
 namespace ScaFaCoS {
   namespace P3M {
-    void
-    timing
-    (data_struct *d,
-     fcs_int _num_particles, fcs_int _max_num_particles,
-     fcs_float *_positions, fcs_float *_charges) {
+    void timing(data_struct *d,
+                fcs_int _num_particles, fcs_int _max_num_particles,
+                fcs_float *_positions, fcs_float *_charges) {
       if (d->comm.rank == 0)
         tune_broadcast_command(d, CMD_TIMING);
 
@@ -42,9 +40,9 @@ namespace ScaFaCoS {
       fcs_int require_timings_before = d->require_timings;
       d->require_timings = 2;
       prepare(d, _max_num_particles);
-      ifcs_p3m_run(d, _num_particles, _max_num_particles,
-                   _positions, _charges,
-                   fields, potentials);
+      run(d, _num_particles, _max_num_particles,
+          _positions, _charges,
+          fields, potentials);
       /* Afterwards, d->timings is set */
       /* restore require_timings */
       d->require_timings = require_timings_before;

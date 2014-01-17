@@ -1080,7 +1080,7 @@ namespace ScaFaCoS {
      * \param pl fft/communication plan (see \ref forw_plan).
      */
     void fft_print_global_fft_grid(fft_data_struct *fft, comm_struct *comm,
-                                        forw_plan plan, fcs_float *data, fcs_int element, fcs_int num)
+                                   forw_plan plan, fcs_float *data, fcs_int element, fcs_int num)
     {
       fcs_int i0,i1,i2,b=1;
       fcs_int grid,divide=0,block1=-1,start1;

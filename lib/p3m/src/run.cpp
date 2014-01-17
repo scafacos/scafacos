@@ -24,19 +24,19 @@
 #include <config.h>
 #endif
 
-#include "FCSCommon.h"
-
-#include "fcs_p3m_p.h"
-#include "p3m.h"
-#include "types.hpp"
 #include "utils.hpp"
+#include "types.hpp"
+#include "p3m.hpp"
 #include "caf.hpp"
-#include "common/near/near.h"
-#include "common/gridsort/gridsort.h"
 #include <sys/time.h>
 #include <sys/resource.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
+
+#include "fcs_p3m_p.h"
+#include "FCSCommon.h"
+#include "common/near/near.h"
+#include "common/gridsort/gridsort.h"
 
 using namespace ScaFaCoS::P3M;
 
@@ -48,23 +48,34 @@ namespace ScaFaCoS {
     /* domain decomposition */
     static void
     domain_decompose(data_struct *d, fcs_gridsort_t *gridsort,
-                              fcs_int _num_particles, fcs_int _max_num_particles, 
-                              fcs_float *_positions, fcs_float *_charges,
-                              fcs_int *num_real_particles,
-                              fcs_float **positions, fcs_float **charges,
-                              fcs_gridsort_index_t **indices, 
-                              fcs_int *num_ghost_particles,
-                              fcs_float **ghost_positions, fcs_float **ghost_charges,
-                              fcs_gridsort_index_t **ghost_indices
-                              );
+                     fcs_int _num_particles, fcs_int _max_num_particles, 
+                     fcs_float *_positions, fcs_float *_charges,
+                     fcs_int *num_real_particles,
+                     fcs_float **positions, fcs_float **charges,
+                     fcs_gridsort_index_t **indices, 
+                     fcs_int *num_ghost_particles,
+                     fcs_float **ghost_positions, fcs_float **ghost_charges,
+                     fcs_gridsort_index_t **ghost_indices
+                     );
 
+    /* callback function for near field computations */
+    static inline void 
+    compute_near(const void *param, fcs_float dist, fcs_float *f, fcs_float *p)
+    {
+      fcs_float alpha = *((fcs_float *) param);
+      fcs_p3m_compute_near(alpha, dist, p, f);
+    }
+    
+    /* callback function for performing a whole loop of near field computations (using compute_near) */
+    FCS_NEAR_LOOP_FP(compute_near_loop, compute_near);
+    
     /* charge assignment */
     static void assign_charges(data_struct* d,
-                                        fcs_float *data,
-                                        fcs_int num_particles,
-                                        fcs_float *positions, 
-                                        fcs_float *charges,
-                                        fcs_int shifted);
+                               fcs_float *data,
+                               fcs_int num_particles,
+                               fcs_float *positions, 
+                               fcs_float *charges,
+                               fcs_int shifted);
 
     /* collect grid from neighbor processes */
     static void gather_grid(data_struct* d, fcs_float* rs_grid);
@@ -84,44 +95,32 @@ namespace ScaFaCoS {
     /* assign the potentials to the positions */
     static void 
     assign_potentials(data_struct* d, fcs_float *data, 
-                               fcs_int num_particles, 
-                               fcs_float* positions, fcs_float* charges,
-                               fcs_int shifted,
-                               fcs_float* potentials);
+                      fcs_int num_particles, 
+                      fcs_float* positions, fcs_float* charges,
+                      fcs_int shifted,
+                      fcs_float* potentials);
 
 #ifdef P3M_IK
     /* assign the fields to the positions in dimension dim [IK]*/
     static void 
     assign_fields_ik(data_struct* d, 
-                              fcs_float *data,
-                              fcs_int dim,
-                              fcs_int num_particles, 
-                              fcs_float* positions,
-                              fcs_int shifted,
-                              fcs_float* fields);
+                     fcs_float *data,
+                     fcs_int dim,
+                     fcs_int num_particles, 
+                     fcs_float* positions,
+                     fcs_int shifted,
+                     fcs_float* fields);
 #endif
 #ifdef P3M_AD
     /* Backinterpolate the forces obtained from k-space to the positions [AD]*/
     static void 
     assign_fields_ad(data_struct* d,
-                              fcs_float *data,
-                              fcs_int num_real_particles, 
-                              fcs_float* positions,
-                              fcs_int shifted,
-                              fcs_float* fields);
+                     fcs_float *data,
+                     fcs_int num_real_particles, 
+                     fcs_float* positions,
+                     fcs_int shifted,
+                     fcs_float* fields);
 #endif
-
-    /* callback function for near field computations */
-    static inline void 
-    compute_near(const void *param, fcs_float dist, fcs_float *f, fcs_float *p)
-    {
-      fcs_float alpha = *((fcs_float *) param);
-
-      fcs_p3m_compute_near(alpha, dist, p, f);
-    }
-
-    /* callback function for performing a whole loop of near field computations (using compute_near) */
-    FCS_NEAR_LOOP_FP(compute_near_loop, compute_near);
 
 
     /***************************************************/
@@ -137,21 +136,18 @@ namespace ScaFaCoS {
       d->timings[ID2] += -MPI_Wtime();          \
     }                                           \
 
-  }
-}
 
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
-    void ifcs_p3m_run(void* rd,
-                      fcs_int _num_particles,
-                      fcs_int _max_num_particles,
-                      fcs_float *_positions, 
-                      fcs_float *_charges,
-                      fcs_float *_fields,
-                      fcs_float *_potentials) {
+    void run(data_struct* d,
+             fcs_int _num_particles,
+             fcs_int _max_num_particles,
+             fcs_float *_positions, 
+             fcs_float *_charges,
+             fcs_float *_fields,
+             fcs_float *_potentials) {
       /* Here we assume, that the method is already tuned and that all
          parameters are valid */
-      P3M_INFO(printf( "ifcs_p3m_run() started...\n"));
-      data_struct *d = (data_struct*)rd;
+      P3M_INFO(printf( "P3M::run() started...\n"));
 
       /* reset all timers */
       if (d->require_timings) {
@@ -183,11 +179,11 @@ namespace ScaFaCoS {
 
       START(TIMING_DECOMP)
         domain_decompose(d, &gridsort, 
-                                  _num_particles, _max_num_particles, _positions, _charges,
-                                  &num_real_particles,
-                                  &positions, &charges, &indices,
-                                  &num_ghost_particles,
-                                  &ghost_positions, &ghost_charges, &ghost_indices);
+                         _num_particles, _max_num_particles, _positions, _charges,
+                         &num_real_particles,
+                         &positions, &charges, &indices,
+                         &num_ghost_particles,
+                         &ghost_positions, &ghost_charges, &ghost_indices);
 
       /* allocate local fields and potentials */
       fcs_float *fields = NULL; 
@@ -201,7 +197,7 @@ namespace ScaFaCoS {
 
       /* charge assignment */
       assign_charges(d, d->fft.data_buf, num_real_particles, 
-                              positions, charges, 0);
+                     positions, charges, 0);
       STOPSTART(TIMING_CA, TIMING_GATHER);
       /* gather the ca grid */
       gather_grid(d, d->fft.data_buf);
@@ -215,7 +211,7 @@ namespace ScaFaCoS {
       // Second (shifted) run
       /* charge assignment */
       assign_charges(d, d->fft.data_buf, num_real_particles, 
-                              positions, charges, 1);
+                     positions, charges, 1);
 
       STOPSTART(TIMING_CA, TIMING_GATHER);
 
@@ -271,8 +267,8 @@ namespace ScaFaCoS {
           STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS)
 
             assign_potentials(d, d->fft.data_buf,
-                                       num_real_particles, positions, 
-                                       charges, 0, potentials);
+                              num_real_particles, positions, 
+                              charges, 0, potentials);
 
           STOPSTART(TIMING_POTENTIALS, TIMING_SPREAD)
 
@@ -285,8 +281,8 @@ namespace ScaFaCoS {
           STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS)
 
             assign_potentials(d, d->fft.data_buf,
-                                       num_real_particles, positions,
-                                       charges, 1, potentials);
+                              num_real_particles, positions,
+                              charges, 1, potentials);
 
           STOP(TIMING_POTENTIALS)
             }
@@ -320,7 +316,7 @@ namespace ScaFaCoS {
         STOPSTART(TIMING_SPREAD, TIMING_FIELDS)
 
           assign_fields_ad(d, d->fft.data_buf, num_real_particles, 
-                                    positions, 0, fields);
+                           positions, 0, fields);
 
         STOPSTART(TIMING_FIELDS, TIMING_SPREAD)
     
@@ -335,7 +331,7 @@ namespace ScaFaCoS {
         STOPSTART(TIMING_SPREAD, TIMING_FIELDS)
 
           assign_fields_ad(d, d->fft.data_buf, num_real_particles, 
-                                    positions, 1, fields);
+                           positions, 1, fields);
 
         STOP(TIMING_FIELDS)
           } 
@@ -418,17 +414,17 @@ namespace ScaFaCoS {
                        0, d->comm.mpicomm);
         }
 
-      P3M_INFO(printf( "ifcs_p3m_run() finished.\n"));
+      P3M_INFO(printf( "P3M::run() finished.\n"));
     }
 
 #elif !defined(P3M_INTERLACE) && defined(P3M_IK)
-    void ifcs_p3m_run(void* rd,
-                      fcs_int _num_particles,
-                      fcs_int _max_num_particles,
-                      fcs_float *_positions, 
-                      fcs_float *_charges,
-                      fcs_float *_fields,
-                      fcs_float *_potentials) {
+    void run(data_struct* rd,
+             fcs_int _num_particles,
+             fcs_int _max_num_particles,
+             fcs_float *_positions, 
+             fcs_float *_charges,
+             fcs_float *_fields,
+             fcs_float *_potentials) {
       /* Here we assume, that the method is already tuned and that all
          parameters are valid */
       P3M_INFO(printf( "ifcs_p3m_run() started...\n"));
@@ -464,11 +460,11 @@ namespace ScaFaCoS {
 
       START(TIMING_DECOMP)
         domain_decompose(d, &gridsort, 
-                                  _num_particles, _max_num_particles, _positions, _charges,
-                                  &num_real_particles,
-                                  &positions, &charges, &indices,
-                                  &num_ghost_particles,
-                                  &ghost_positions, &ghost_charges, &ghost_indices);
+                         _num_particles, _max_num_particles, _positions, _charges,
+                         &num_real_particles,
+                         &positions, &charges, &indices,
+                         &num_ghost_particles,
+                         &ghost_positions, &ghost_charges, &ghost_indices);
 
       /* allocate local fields and potentials */
       fcs_float *fields = NULL; 
@@ -482,7 +478,7 @@ namespace ScaFaCoS {
 
       /* charge assignment */
       assign_charges(d, d->rs_grid, num_real_particles, 
-                              positions, charges, 0);
+                     positions, charges, 0);
       STOPSTART(TIMING_CA, TIMING_GATHER);
       /* gather the ca grid */
       gather_grid(d, d->rs_grid);
@@ -529,9 +525,9 @@ namespace ScaFaCoS {
 
             /* compute potentials */
             assign_potentials(d, d->ks_grid,
-                                       num_real_particles, positions, 
-                                       charges, 0,
-                                       potentials);
+                              num_real_particles, positions, 
+                              charges, 0,
+                              potentials);
 
           STOP(TIMING_POTENTIALS)
             }
@@ -566,7 +562,7 @@ namespace ScaFaCoS {
           spread_grid(d, d->rs_grid);
           STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
           assign_fields_ik(d, d->rs_grid, dim, num_real_particles, 
-                                    positions, 0, fields);
+                           positions, 0, fields);
           STOP(TIMING_FIELDS);
         }
       }  
@@ -680,21 +676,19 @@ namespace ScaFaCoS {
     }
 #endif
 
-namespace ScaFaCoS {
-  namespace P3M {
     /***************************************************/
     /* RUN COMPONENTS */
     static void
     domain_decompose(data_struct *d, fcs_gridsort_t *gridsort,
-                              fcs_int _num_particles, fcs_int _max_num_particles, 
-                              fcs_float *_positions, fcs_float *_charges,
-                              fcs_int *num_real_particles,
-                              fcs_float **positions, fcs_float **charges,
-                              fcs_gridsort_index_t **indices, 
-                              fcs_int *num_ghost_particles,
-                              fcs_float **ghost_positions, fcs_float **ghost_charges,
-                              fcs_gridsort_index_t **ghost_indices
-                              ) {
+                     fcs_int _num_particles, fcs_int _max_num_particles, 
+                     fcs_float *_positions, fcs_float *_charges,
+                     fcs_int *num_real_particles,
+                     fcs_float **positions, fcs_float **charges,
+                     fcs_gridsort_index_t **indices, 
+                     fcs_int *num_ghost_particles,
+                     fcs_float **ghost_positions, fcs_float **ghost_charges,
+                     fcs_gridsort_index_t **ghost_indices
+                     ) {
       fcs_float box_base[3] = {0.0, 0.0, 0.0 };
       fcs_float box_a[3] = {d->box_l[0], 0.0, 0.0 };
       fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
@@ -750,8 +744,8 @@ namespace ScaFaCoS {
     */
     static fcs_int 
     get_ca_points(data_struct *d, 
-                       fcs_float real_pos[3], 
-                       fcs_int shifted) {
+                  fcs_float real_pos[3], 
+                  fcs_int shifted) {
       /* linear index of the grid point */
       fcs_int linind = 0;
 
@@ -819,11 +813,11 @@ namespace ScaFaCoS {
     /** Assign the charges to the grid */
     static void 
     assign_charges(data_struct* d,
-                            fcs_float *data,
-                            fcs_int num_real_particles,
-                            fcs_float *positions, 
-                            fcs_float *charges,
-                            fcs_int shifted) {
+                   fcs_float *data,
+                   fcs_int num_real_particles,
+                   fcs_float *positions, 
+                   fcs_float *charges,
+                   fcs_int shifted) {
       P3M_DEBUG(printf( "  assign_charges() started...\n"));
 
       const fcs_int q2off = d->local_grid.q_2_off;
@@ -870,7 +864,7 @@ namespace ScaFaCoS {
         /* pack send block */
         if (d->sm.s_size[s_dir]>0)
           fft_pack_block(rs_grid, d->send_grid, d->sm.s_ld[s_dir], 
-                              d->sm.s_dim[s_dir], d->local_grid.dim, 1);
+                         d->sm.s_dim[s_dir], d->local_grid.dim, 1);
       
         /* communication */
         /** @todo Replace with MPI_Sendrecv */
@@ -902,7 +896,7 @@ namespace ScaFaCoS {
         /* add recv block */
         if(d->sm.r_size[r_dir]>0) {
           add_block(d->recv_grid, rs_grid, d->sm.r_ld[r_dir], 
-                             d->sm.r_dim[r_dir], d->local_grid.dim);
+                    d->sm.r_dim[r_dir], d->local_grid.dim);
         }
       }
 
@@ -1075,11 +1069,11 @@ namespace ScaFaCoS {
     /* Backinterpolate the potentials obtained from k-space to the positions */
     static void 
     assign_potentials(data_struct* d, 
-                               fcs_float *data,
-                               fcs_int num_real_particles, 
-                               fcs_float* positions, fcs_float* charges, 
-                               fcs_int shifted,
-                               fcs_float* potentials) {
+                      fcs_float *data,
+                      fcs_int num_real_particles, 
+                      fcs_float* positions, fcs_float* charges, 
+                      fcs_int shifted,
+                      fcs_float* potentials) {
       const fcs_int q2off = d->local_grid.q_2_off;
       const fcs_int q21off = d->local_grid.q_21_off;
       const fcs_float prefactor = 1.0 / (d->box_l[0] * d->box_l[1] * d->box_l[2]);
@@ -1124,12 +1118,12 @@ namespace ScaFaCoS {
     /* Backinterpolate the forces obtained from k-space to the positions */
     static void 
     assign_fields_ik(data_struct* d, 
-                              fcs_float *data,
-                              fcs_int dim,
-                              fcs_int num_real_particles,
-                              fcs_float* positions,
-                              fcs_int shifted,
-                              fcs_float* fields) {
+                     fcs_float *data,
+                     fcs_int dim,
+                     fcs_int num_real_particles,
+                     fcs_float* positions,
+                     fcs_int shifted,
+                     fcs_float* fields) {
       const fcs_int q2off = d->local_grid.q_2_off;
       const fcs_int q21off = d->local_grid.q_21_off;
       const fcs_float prefactor = 1.0 / (2.0 * d->box_l[0] * d->box_l[1] * d->box_l[2]);
@@ -1170,11 +1164,11 @@ namespace ScaFaCoS {
     /* Backinterpolate the forces obtained from k-space to the positions */
     static void 
     assign_fields_ad(data_struct* d,
-                              fcs_float *data,
-                              fcs_int num_real_particles, 
-                              fcs_float* positions,
-                              fcs_int shifted,
-                              fcs_float* fields) {
+                     fcs_float *data,
+                     fcs_int num_real_particles, 
+                     fcs_float* positions,
+                     fcs_int shifted,
+                     fcs_float* fields) {
       const fcs_int q2off = d->local_grid.q_2_off;
       const fcs_int q21off = d->local_grid.q_21_off;
       const fcs_float prefactor = 1.0 / (d->box_l[0] * d->box_l[1] * d->box_l[2]);

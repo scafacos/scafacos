@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 Olaf Lenz
+  Copyright (C) 2011,2014 Olaf Lenz
   
   This file is part of ScaFaCoS.
   
@@ -16,8 +16,8 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_P3M_H
-#define _P3M_P3M_H
+#ifndef _P3M_SCAFACOS_H
+#define _P3M_SCAFACOS_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -32,7 +32,7 @@ extern "C" {
   /** Initialize all structures, parameters and arrays needed for the 
    *  P3M algorithm and set their default values.
    */
-  void ifcs_p3m_init(void **rd, MPI_Comm communicator);
+  FCSResult ifcs_p3m_init(void **rd, MPI_Comm communicator);
 
   /** Clean up P3M memory allocations. */
   void ifcs_p3m_destroy(void *rd);
@@ -73,15 +73,15 @@ extern "C" {
                        double *timing_near_field, 
                        double *timing_far_field);
 
-  FCSResult ifcs_p3m_tune
-  (void* rd, fcs_int num_particles, fcs_int max_particles,
-   fcs_float *positions, fcs_float *charges);
+  FCSResult 
+  ifcs_p3m_tune(void* rd, fcs_int num_particles, fcs_int max_particles,
+                fcs_float *positions, fcs_float *charges);
   
-  void ifcs_p3m_run
-  (void* rd, fcs_int num_particles, fcs_int max_particles,
-   fcs_float *positions, fcs_float *charges,
-   fcs_float *fields, fcs_float *potentials);
-
+  FCSResult 
+  ifcs_p3m_run(void* rd, fcs_int num_particles, fcs_int max_particles,
+               fcs_float *positions, fcs_float *charges,
+               fcs_float *fields, fcs_float *potentials);
+  
 #ifdef __cplusplus
 }
 #endif

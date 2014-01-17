@@ -25,7 +25,7 @@
 
 #include "fcs_p3m.h"
 #include "FCSCommon.h"
-#include "p3m/p3m.h"
+#include "p3m/scafacos.h"
 
 /* method to check if p3m parameters are entered into FCS */
 static FCSResult fcs_p3m_check(FCS handle, const char* fnc_name) {

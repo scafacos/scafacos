@@ -67,15 +67,6 @@
 #define ROUND_ERROR_PREC 1.0e-6
 #endif
 
-/* Wrap math functions */
-#ifdef FCS_FLOAT_IS_FLOAT
-#define fabs(x) fabsf(x)
-#endif
-
-#ifdef FCS_FLOAT_IS_LONG_DOUBLE
-#define fabs(x) fabsl(x)
-#endif
-
 /* Mathematical constants, from gcc's math.h */
 /* These should be defined here and not be included from
    FCSDefinitions.h to reduce the dependencies of this code from the
@@ -99,14 +90,14 @@
 namespace ScaFaCoS {
   namespace P3M {
     template<typename T>
-    static void sdelete(T* ptr) {
+    inline void sdelete(T* ptr) {
       if (ptr != 0)
         delete[] ptr;
       ptr = NULL;
     }
 
     /* safe free */
-    static void sfree(void* ptr) {
+    inline void sfree(void* ptr) {
       if (ptr != NULL) {
         free(ptr);
         ptr = NULL;
@@ -202,6 +193,25 @@ namespace ScaFaCoS {
       }
     }
 
+    /**
+     * @brief function to determine if two float values are equal
+     * @param x - fcs_float first float value
+     * @param y - fcs_float second float value
+     * @return fcs_int 1 if x and y are equal, 0 otherwise
+     */ 
+    static inline fcs_int float_is_equal(fcs_float x, fcs_float y) {
+        return (fabs(x-y) < ROUND_ERROR_PREC);
+    }
+    
+    /** 
+     * @brief function to determine if a float value is zero
+     * @param x - fcs_float float value
+     * @return fcs_int 1 if x is equal to 0.0, 0 otherwise
+     */ 
+    static inline fcs_int float_is_zero(fcs_float x) {
+      return (fabs(x) < ROUND_ERROR_PREC);
+    }
+    
     static inline int on_root()
     {
       static int rank = -1;

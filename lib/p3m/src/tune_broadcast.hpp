@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013 Olaf Lenz
+  Copyright (C) 2013,2014 Olaf Lenz
   This file is part of ScaFaCoS.
   
   ScaFaCoS is free software: you can redistribute it and/or modify
@@ -15,14 +15,13 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#ifndef _P3M_TUNE_BROADCAST_H 
-#define _P3M_TUNE_BROADCAST_H 
+#ifndef _P3M_TUNE_BROADCAST_HPP
+#define _P3M_TUNE_BROADCAST_HPP
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include "types.hpp"
-#include "FCSResult.h"
 
 namespace ScaFaCoS {
   namespace P3M {
@@ -32,14 +31,12 @@ namespace ScaFaCoS {
     const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
     const int CMD_TIMING = 2;
     
-    void
-    tune_broadcast_command
-    (data_struct *d, fcs_int command);
+    void tune_broadcast_command(data_struct *d, fcs_int command);
     
-    FCSResult
-    tune_broadcast_slave
-    (data_struct *d, fcs_int num_particles, fcs_int max_particles,
-     fcs_float *positions, fcs_float *charges);
+    void 
+    tune_broadcast_slave(data_struct *d, 
+                         fcs_int num_particles, fcs_int max_particles,
+                         fcs_float *positions, fcs_float *charges);
   }
 }
 #endif

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012 Olaf Lenz
+  Copyright (C) 2014 Olaf Lenz
   
   This file is part of ScaFaCoS.
   
@@ -16,14 +16,43 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "p3m.h"
-#include "types.hpp"
-#include "FCSCommon.h"
-#include <cstdio>
+/* Implements the functions that translate between the scafacos
+   C-interface and the C++-P3M interface. */
+#include "scafacos.h"
+#include "src/p3m.hpp"
+#include <stdexcept>
 
 using namespace ScaFaCoS::P3M;
 
 extern "C" {
+
+  FCSResult ifcs_p3m_init(void **rd, MPI_Comm communicator) {
+    data_struct *d;
+
+    if (*rd == NULL) {
+      /* allocate the memory for the p3m data structure */
+      d = static_cast<data_struct *>(malloc(sizeof(data_struct)));
+      memset(d, 0, sizeof(data_struct));
+      
+      /* store the new pointer in rd */
+      *rd = d;
+    } else d = static_cast<data_struct*>(*rd);
+    
+    try {
+      init(d, communicator);
+    } catch (std::exception &e) {
+      return fcsResult_create(FCS_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
+    }
+    return FCS_RESULT_SUCCESS;
+  }
+
+  void ifcs_p3m_destroy(void *rd) {
+    if (rd != NULL) {
+      data_struct *d = (data_struct*)rd;
+      destroy(d);
+    }
+  }
+
   void ifcs_p3m_set_near_field_flag(void *rd, fcs_int flag) {
     data_struct *d = (data_struct*)rd;
     d->near_field_flag = flag;
@@ -31,28 +60,28 @@ extern "C" {
 
   void ifcs_p3m_set_box_a(void* rd, fcs_float a) {
     data_struct *d = (data_struct*)rd;
-    if (!fcs_float_is_equal(a, d->box_l[0]))
+    if (!float_is_equal(a, d->box_l[0]))
       d->needs_retune = 1;
     d->box_l[0] = a;
   }
 
   void ifcs_p3m_set_box_b(void *rd, fcs_float b) {
     data_struct *d = (data_struct*)rd;
-    if (!fcs_float_is_equal(b, d->box_l[1]))
+    if (!float_is_equal(b, d->box_l[1]))
       d->needs_retune = 1;
     d->box_l[1] = b;
   }
 
   void ifcs_p3m_set_box_c(void *rd, fcs_float c) {
     data_struct *d = (data_struct*)rd;
-    if (!fcs_float_is_equal(c, d->box_l[2]))
+    if (!float_is_equal(c, d->box_l[2]))
       d->needs_retune = 1;
     d->box_l[2] = c;
   }
 
   void ifcs_p3m_set_r_cut(void *rd, fcs_float r_cut) {
     data_struct *d = (data_struct*)rd;
-    if (!fcs_float_is_equal(r_cut, d->r_cut))
+    if (!float_is_equal(r_cut, d->r_cut))
       d->needs_retune = 1;
     d->r_cut = r_cut;
     d->tune_r_cut = 0;
@@ -71,7 +100,7 @@ extern "C" {
 
   void ifcs_p3m_set_alpha(void *rd, fcs_float alpha) {
     data_struct *d = (data_struct*)rd;
-    if (!fcs_float_is_equal(alpha, d->alpha))
+    if (!float_is_equal(alpha, d->alpha))
       d->needs_retune = 1;
     d->alpha = alpha;
     d->tune_alpha = 0;
@@ -132,7 +161,7 @@ extern "C" {
 
   void ifcs_p3m_set_tolerance_field(void *rd, fcs_float tolerance_field) {
     data_struct *d = (data_struct*)rd;
-    if (!fcs_float_is_equal(tolerance_field, d->tolerance_field))
+    if (!float_is_equal(tolerance_field, d->tolerance_field))
       d->needs_retune = 1;
     d->tolerance_field = tolerance_field;
   }
@@ -158,7 +187,7 @@ extern "C" {
     data_struct *d = (data_struct*)rd;
     if (d->require_total_energy) {
       *total_energy = d->total_energy;
-      return NULL;
+      return FCS_RESULT_SUCCESS;
     } else 
       return 
         fcsResult_create
@@ -172,10 +201,8 @@ extern "C" {
   }
 
   FCSResult 
-  ifcs_p3m_get_timings(void *rd, 
-                       double *timing, 
-                       double *timing_near_field, 
-                       double *timing_far_field) {
+  ifcs_p3m_get_timings(void *rd, double *timing, 
+                       double *timing_near_field, double *timing_far_field) {
     const char* fnc_name = "ifcs_p3m_get_timings";
     data_struct *d = (data_struct*)rd;
 
@@ -190,5 +217,44 @@ extern "C" {
     *timing_far_field = d->timings[TIMING_FAR];
 
     return NULL;
+  }
+
+  FCSResult 
+  ifcs_p3m_run(void* rd,
+               fcs_int _num_particles,
+               fcs_int _max_num_particles,
+               fcs_float *_positions, 
+               fcs_float *_charges,
+               fcs_float *_fields,
+               fcs_float *_potentials) {
+    /* Here we assume, that the method is already tuned and that all
+       parameters are valid */
+    data_struct *d = (data_struct*)rd;
+
+    try {
+      run(d, _num_particles, _max_num_particles, 
+          _positions, _charges, _fields, _potentials);
+    } catch (std::exception &e) {
+      return fcsResult_create(FCS_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
+    }
+
+    return FCS_RESULT_SUCCESS;
+  }
+
+  FCSResult
+  ifcs_p3m_tune(void* rd,
+                fcs_int num_particles,
+                fcs_int max_particles,
+                fcs_float *positions, 
+                fcs_float *charges) {
+    data_struct *d = (data_struct*)rd;
+
+    try {
+      tune(d, num_particles, max_particles, positions, charges);
+    } catch (std::exception &e) {
+      return fcsResult_create(FCS_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
+    }
+
+    return FCS_RESULT_SUCCESS;
   }
 }

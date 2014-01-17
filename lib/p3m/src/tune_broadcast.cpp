@@ -20,6 +20,7 @@
 
 #include "utils.hpp"
 #include <cstdio>
+#include <stdexcept>
 #include "error_estimate.hpp"
 #include "timing.hpp"
 
@@ -33,10 +34,10 @@ namespace ScaFaCoS {
     /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
     /***************************************************/
 
-    static void
+    void
     tune_broadcast_params(data_struct *d);
 
-    static void
+    void
     tune_receive_params(data_struct *d);
 
 
@@ -62,18 +63,16 @@ namespace ScaFaCoS {
       }
     }
 
-    FCSResult
+    void
     tune_broadcast_slave
     (data_struct *d, fcs_int num_particles, fcs_int max_particles,
      fcs_float *positions, fcs_float *charges) {
       const char* fnc_name = "tune_broadcast_slave";
 
       P3M_DEBUG(printf( "tune_broadcast_slave() started...\n"));
-      if (d->comm.rank == 0) {
-        return fcsResult_create
-          (FCS_LOGICAL_ERROR, fnc_name, 
-           "Internal error: Function should not be called on master node.");
-      }
+      if (d->comm.rank == 0)
+        throw std::logic_error("Internal error: tune_broadcast_slave " 
+                               "should not be called on master!");
 
       for (;;) {
         /* Receive the command */
@@ -93,21 +92,21 @@ namespace ScaFaCoS {
           break;
         case CMD_FINISHED:
           tune_receive_params(d);
-          return NULL;
+          return;
         case CMD_FAILED: {
           char msg[255];
           sprintf(msg, 
                   "Cannot achieve required accuracy (p3m_tolerance_field=" FFLOATE \
                   ") for given parameters.", 
                   d->tolerance_field);
-          return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, msg);
+          throw std::logic_error(msg);
         }
         }
       }
       P3M_DEBUG(printf( "tune_broadcast_slave() finished.\n"));
     }
 
-    static void
+    void
     tune_broadcast_params(data_struct *d) {
       // broadcast parameters and mark as final
       fcs_int int_buffer[4];
@@ -129,7 +128,7 @@ namespace ScaFaCoS {
       MPI_Bcast(float_buffer, 5, FCS_MPI_FLOAT, 0, d->comm.mpicomm);
     }
 
-    static void
+    void
     tune_receive_params(data_struct *d) {
       fcs_int int_buffer[4];
       fcs_float float_buffer[5];
