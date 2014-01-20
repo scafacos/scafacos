@@ -189,12 +189,14 @@ void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
                 d->require_timings == ESTIMATE_ASSIGNMENT;
             }
                 break;
-            case 1:
+            case 4:
+            {
                 d->require_timings == FULL;
+            }
+                break;
         }
-        break;
     }
-  
+    
   FCSResult 
   ifcs_p3m_get_timings(void *rd, 
                        double *timing, 
