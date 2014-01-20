@@ -49,17 +49,18 @@ namespace ScaFaCoS {
     /* Define to turn on additional sanity checks. */
     /* #define ADDITIONAL_CHECKS */
     /* Define to print out timings at the end of fcs_run */
-#define P3M_PRINT_TIMINGS
-
+    #define P3M_PRINT_TIMINGS
+   /*enumeration to specify the type of timings*/
+    enum timingEnum{NONE,ESTIMATE_ALL, ESTIMATE_FFT, ESTIMATE_ASSIGNMENT,FULL};
     /* COMPILE TIME SWITCHES */
     /* Differentiation method */
     /** ik-Differentiation */
-    //#define P3M_IK
+    #define P3M_IK
     /** analytical differentiation */
-    #define P3M_AD
+    //#define P3M_AD
 
-    /** Whether to use interlaced version of P3M alogorithm. */
-    #define P3M_INTERLACE
+    /** Whether to use interlaced version of P3M algorithm. */
+    //#define P3M_INTERLACE
 
     /* Sanity checks */
 #if defined(P3M_AD) && defined(P3M_IK)
@@ -207,9 +208,11 @@ namespace ScaFaCoS {
       fcs_int require_total_energy;
       /** The total energy. */
       fcs_float total_energy;
-      /** Whether or not timings are to be taken. */
-      fcs_int require_timings;
-      /* 0: total timing, 1: near field, 2: far field */
+      /** Whether and how timings are to be taken.
+       * 0: run without timings
+       * 1: partial timing to estimate without results
+       * 2: full means all timings and correct results*/
+      timingEnum require_timings;
 #define TIMING 0
 #define TIMING_NEAR 1
 #define TIMING_FAR 2

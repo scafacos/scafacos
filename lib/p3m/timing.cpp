@@ -39,9 +39,13 @@ namespace ScaFaCoS {
         static_cast<fcs_float *>(malloc(_num_particles*sizeof(fcs_float)));
 
       /* store require_timings */
-      fcs_int require_timings_before = d->require_timings;
-      d->require_timings = 2;
+     
       prepare(d, _max_num_particles);
+      
+       timingEnum require_timings_before = d->require_timings;
+      if(d->require_timings==NONE || d->require_timings == FULL){
+      d->require_timings = ESTIMATE_ALL;
+      }
       ifcs_p3m_run(d, _num_particles, _max_num_particles,
                    _positions, _charges,
                    fields, potentials);
