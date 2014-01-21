@@ -29,13 +29,11 @@ namespace ScaFaCoS {
 
     void tune(data_struct *d,
               fcs_int num_particles,
-              fcs_int max_particles,
               fcs_float *positions, 
               fcs_float *charges);
 
     void run(data_struct* d,
              fcs_int _num_particles,
-             fcs_int _max_num_particles,
              fcs_float *_positions, 
              fcs_float *_charges,
              fcs_float *_fields,

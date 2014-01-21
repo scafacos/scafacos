@@ -82,36 +82,30 @@ namespace ScaFaCoS {
     /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
     /***************************************************/
     void
-    tune_broadcast_master(data_struct *d, 
-                          fcs_int num_particles, fcs_int max_num_particles,
+    tune_broadcast_master(data_struct *d, fcs_int num_particles,
                           fcs_float *positions, fcs_float *charges);
 
     void
-    tune_r_cut_alpha_cao_grid(data_struct *d, 
-                              fcs_int num_particles, fcs_int max_num_particles,
+    tune_r_cut_alpha_cao_grid(data_struct *d, fcs_int num_particles,
                               fcs_float *positions, fcs_float *charges,
                               tune_params **params);
 
     void
-    tune_alpha_cao_grid(data_struct *d, 
-                        fcs_int num_particles, fcs_int max_num_particles,
+    tune_alpha_cao_grid(data_struct *d, fcs_int num_particles,
                         fcs_float *positions, fcs_float *charges,
                         tune_params **params);
     void
-    tune_cao_grid(data_struct *d, 
-                  fcs_int num_particles, fcs_int max_num_particles,
+    tune_cao_grid(data_struct *d, fcs_int num_particles,
                   fcs_float *positions, fcs_float *charges,
                   tune_params **params);
 
     void
-    tune_grid(data_struct *d, 
-              fcs_int num_particles, fcs_int max_num_particles,
+    tune_grid(data_struct *d, fcs_int num_particles,
               fcs_float *positions, fcs_float *charges,
               tune_params **params);
 
     void
-    time_params(data_struct *d,
-                fcs_int num_particles, fcs_int max_particles,
+    time_params(data_struct *d, fcs_int num_particles,
                 fcs_float *positions, fcs_float *charges,
                 tune_params **params_to_try);
     
@@ -124,7 +118,6 @@ namespace ScaFaCoS {
     /***************************************************/
     void tune(data_struct *d,
               fcs_int num_particles,
-              fcs_int max_particles,
               fcs_float *positions, 
               fcs_float *charges) {
       /* Distinguish between two types of parameters:
@@ -195,9 +188,9 @@ namespace ScaFaCoS {
 
       try {
         if (d->comm.rank == 0)
-          tune_broadcast_master(d, num_particles, max_particles, positions, charges);
+          tune_broadcast_master(d, num_particles, positions, charges);
         else 
-          tune_broadcast_slave(d, num_particles, max_particles, positions, charges);
+          tune_broadcast_slave(d, num_particles, positions, charges);
       } catch (...) {
         P3M_INFO(printf( "  Tuning failed.\n"));
         P3M_INFO(printf( "tune() finished.\n"));
@@ -207,7 +200,7 @@ namespace ScaFaCoS {
       P3M_INFO(printf( "  Tuning was successful.\n"));
 
       /* At the end of retuning, prepare the method */
-      prepare(d, max_particles);
+      prepare(d);
       
       /* mark that the method was retuned */
       d->needs_retune = 0;
@@ -216,17 +209,16 @@ namespace ScaFaCoS {
     }
 
     void
-    tune_broadcast_master(data_struct *d, 
-                          fcs_int num_particles, fcs_int max_num_particles,
+    tune_broadcast_master(data_struct *d, fcs_int num_particles,
                           fcs_float *positions, fcs_float *charges) {
       P3M_INFO(printf("  Tuning P3M to p3m_tolerance_field=" FFLOATE "\n",  \
                       d->tolerance_field));
 
       tune_params *params = NULL;
   
-      tune_r_cut_alpha_cao_grid(d, num_particles, max_num_particles, 
+      tune_r_cut_alpha_cao_grid(d, num_particles,
                                 positions, charges, &params);
-  
+      
       /* Set and broadcast the final parameters. */
       d->r_cut = params->r_cut;
       d->alpha = params->alpha;
@@ -241,8 +233,7 @@ namespace ScaFaCoS {
     }
 
     void
-    tune_r_cut_alpha_cao_grid(data_struct *d, 
-                              fcs_int num_particles, fcs_int max_num_particles,
+    tune_r_cut_alpha_cao_grid(data_struct *d, fcs_int num_particles,
                               fcs_float *positions, fcs_float *charges,
                               tune_params **params) {
       *params = static_cast<tune_params*>(malloc(sizeof(tune_params)));
@@ -269,7 +260,7 @@ namespace ScaFaCoS {
 
         P3M_INFO(printf( "    r_cut=" FFLOAT " (first estimate)\n", (*params)->r_cut));
 
-        tune_alpha_cao_grid(d, num_particles, max_num_particles, 
+        tune_alpha_cao_grid(d, num_particles,
                             positions, charges, params);
 
         /* SECOND ESTIMATE */
@@ -295,7 +286,7 @@ namespace ScaFaCoS {
     
         (*params)->r_cut = rcut_new;
         P3M_INFO(printf( "    r_cut=" FFLOAT " (second estimate)\n", (*params)->r_cut));
-        tune_alpha_cao_grid(d, num_particles, max_num_particles, 
+        tune_alpha_cao_grid(d, num_particles,
                             positions, charges, params);
         
         rel_timing_diff = 
@@ -306,16 +297,14 @@ namespace ScaFaCoS {
       } else {
         (*params)->r_cut = d->r_cut;
         P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", (*params)->r_cut));
-        tune_alpha_cao_grid(d, num_particles, max_num_particles, 
-                                            positions, charges, params);
+        tune_alpha_cao_grid(d, num_particles, positions, charges, params);
       }
    
     }
 
     /* Tune alpha */
     void
-    tune_alpha_cao_grid(data_struct *d, 
-                        fcs_int num_particles, fcs_int max_num_particles,
+    tune_alpha_cao_grid(data_struct *d, fcs_int num_particles,
                         fcs_float *positions, fcs_float *charges,
                         tune_params **params) {
       if (d->tune_alpha)
@@ -331,14 +320,12 @@ namespace ScaFaCoS {
           p->alpha = d->alpha;
       }
 
-      return tune_cao_grid(d, num_particles, max_num_particles, 
-                                    positions, charges, params);
+      return tune_cao_grid(d, num_particles, positions, charges, params);
     }
 
     /* Tune cao */
     void
-    tune_cao_grid(data_struct *d, 
-                  fcs_int num_particles, fcs_int max_num_particles,
+    tune_cao_grid(data_struct *d, fcs_int num_particles,
                   fcs_float *positions, fcs_float *charges,
                   tune_params **params) {
 #ifdef P3M_AD
@@ -370,15 +357,12 @@ namespace ScaFaCoS {
         P3M_INFO(printf( "    cao=" FINT " (fixed)\n", (*params)->cao));
       }
 
-      return tune_grid(d, num_particles, max_num_particles, 
-                                positions, charges,
-                                params);
+      return tune_grid(d, num_particles, positions, charges, params);
     }
 
     /* params with identical r_cut should be adjacent and have decreasing cao */
     void
-    tune_grid(data_struct *d, 
-              fcs_int num_particles, fcs_int max_num_particles,
+    tune_grid(data_struct *d, fcs_int num_particles,
               fcs_float *positions, fcs_float *charges,
               tune_params **params) {
       if (d->tune_grid) {
@@ -549,14 +533,11 @@ namespace ScaFaCoS {
         }
       }
 
-      return time_params(d, num_particles, max_num_particles, 
-                                  positions, charges,
-                                  params);
+      return time_params(d, num_particles, positions, charges, params);
     }
 
     void
-    time_params(data_struct *d,
-                fcs_int num_particles, fcs_int max_particles,
+    time_params(data_struct *d, fcs_int num_particles, 
                 fcs_float *positions, fcs_float *charges,
                 tune_params **params) {
       /* Now time the different parameter sets */
@@ -583,7 +564,7 @@ namespace ScaFaCoS {
         d->grid[2] = current_params->grid[2];
         d->cao = current_params->cao;
     
-        timing(d, num_particles, max_particles, positions, charges);
+        timing(d, num_particles, positions, charges);
         current_params->timing = d->timings[TIMING];
         current_params->timing_near = d->timings[TIMING_NEAR];
         current_params->timing_far = d->timings[TIMING_FAR];

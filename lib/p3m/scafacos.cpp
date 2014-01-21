@@ -258,8 +258,7 @@ void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
     data_struct *d = (data_struct*)rd;
 
     try {
-      run(d, _num_particles, _max_num_particles, 
-          _positions, _charges, _fields, _potentials);
+      run(d, _num_particles, _positions, _charges, _fields, _potentials);
     } catch (std::exception &e) {
       return fcsResult_create(FCS_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
     }
@@ -276,7 +275,7 @@ void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
     data_struct *d = (data_struct*)rd;
 
     try {
-      tune(d, num_particles, max_particles, positions, charges);
+      tune(d, num_particles, positions, charges);
     } catch (std::exception &e) {
       return fcsResult_create(FCS_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
     }

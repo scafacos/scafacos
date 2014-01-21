@@ -65,8 +65,7 @@ namespace ScaFaCoS {
     }
 
     void
-    tune_broadcast_slave(data_struct *d, 
-                         fcs_int num_particles, fcs_int max_particles,
+    tune_broadcast_slave(data_struct *d, fcs_int num_particles,
                          fcs_float *positions, fcs_float *charges) {
       const char* fnc_name = "tune_broadcast_slave";
 
@@ -91,7 +90,7 @@ namespace ScaFaCoS {
           break;
         case CMD_TIMING:
           tune_receive_params(d);
-          timing(d, num_particles, max_particles, positions, charges);
+          timing(d, num_particles, positions, charges);
           break;
         case CMD_FINISHED:
           tune_receive_params(d);

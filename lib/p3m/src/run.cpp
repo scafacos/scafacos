@@ -48,7 +48,7 @@ namespace ScaFaCoS {
     /* domain decomposition */
     static void
     domain_decompose(data_struct *d, fcs_gridsort_t *gridsort,
-                     fcs_int _num_particles, fcs_int _max_num_particles, 
+                     fcs_int _num_particles, 
                      fcs_float *_positions, fcs_float *_charges,
                      fcs_int *num_real_particles,
                      fcs_float **positions, fcs_float **charges,
@@ -140,7 +140,6 @@ namespace ScaFaCoS {
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
     void run(data_struct* d,
              fcs_int _num_particles,
-             fcs_int _max_num_particles,
              fcs_float *_positions, 
              fcs_float *_charges,
              fcs_float *_fields,
@@ -179,7 +178,7 @@ namespace ScaFaCoS {
 
       START(TIMING_DECOMP)
         domain_decompose(d, &gridsort, 
-                         _num_particles, _max_num_particles, _positions, _charges,
+                         _num_particles, _positions, _charges,
                          &num_real_particles,
                          &positions, &charges, &indices,
                          &num_ghost_particles,
@@ -472,7 +471,6 @@ namespace ScaFaCoS {
 #elif !defined(P3M_INTERLACE) && defined(P3M_IK)
     void run(data_struct* rd,
              fcs_int _num_particles,
-             fcs_int _max_num_particles,
              fcs_float *_positions, 
              fcs_float *_charges,
              fcs_float *_fields,
@@ -514,7 +512,7 @@ namespace ScaFaCoS {
 
       START(TIMING_DECOMP)
         domain_decompose(d, &gridsort, 
-                         _num_particles, _max_num_particles, _positions, _charges,
+                         _num_particles, _positions, _charges,
                          &num_real_particles,
                          &positions, &charges, &indices,
                          &num_ghost_particles,
@@ -761,7 +759,7 @@ namespace ScaFaCoS {
     /* RUN COMPONENTS */
     static void
     domain_decompose(data_struct *d, fcs_gridsort_t *gridsort,
-                     fcs_int _num_particles, fcs_int _max_num_particles, 
+                     fcs_int _num_particles,
                      fcs_float *_positions, fcs_float *_charges,
                      fcs_int *num_real_particles,
                      fcs_float **positions, fcs_float **charges,
@@ -779,7 +777,8 @@ namespace ScaFaCoS {
       fcs_gridsort_create(gridsort);
   
       fcs_gridsort_set_system(gridsort, box_base, box_a, box_b, box_c, NULL);
-      fcs_gridsort_set_particles(gridsort, _num_particles, _max_num_particles, _positions, _charges);
+      fcs_gridsort_set_particles(gridsort, _num_particles, _num_particles, 
+                                 _positions, _charges);
 
       P3M_DEBUG(printf( "  calling fcs_gridsort_sort_forward()...\n"));
       /* @todo: Set skin to r_cut only, when near field is wanted! */

@@ -34,8 +34,7 @@ namespace ScaFaCoS {
     void tune_broadcast_command(data_struct *d, fcs_int command);
     
     void 
-    tune_broadcast_slave(data_struct *d, 
-                         fcs_int num_particles, fcs_int max_particles,
+    tune_broadcast_slave(data_struct *d, fcs_int num_particles,
                          fcs_float *positions, fcs_float *charges);
   }
 }

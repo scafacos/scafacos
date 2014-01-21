@@ -29,11 +29,8 @@ namespace ScaFaCoS {
   namespace P3M {
     /** Test run the method with the current parameters. Afterwards, the
         timing variables in the data struct are set. */
-    void
-    timing
-    (data_struct *d,
-     fcs_int _num_particles, fcs_int _max_num_particles,
-     fcs_float *_positions, fcs_float *_charges);
+    void timing(data_struct *d, fcs_int _num_particles, 
+                fcs_float *_positions, fcs_float *_charges);
   }
 }
 #endif

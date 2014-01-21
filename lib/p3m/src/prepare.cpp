@@ -58,7 +58,7 @@ namespace ScaFaCoS {
     /***************************************************/
     /** Prepare the data structures and constants of the P3M algorithm.
         All parameters have to be set. */
-    void prepare(data_struct *d, fcs_int max_charges) {
+    void prepare(data_struct *d) {
       P3M_DEBUG(printf("  prepare() started... \n"));
 
       /* initializes the (inverse) grid constant d->a

@@ -28,9 +28,7 @@
    P3M data structures should be prepared. */
 namespace ScaFaCoS {
   namespace P3M {
-    void 
-    prepare(data_struct *d, 
-                     fcs_int max_particles);
+    void prepare(data_struct *d);
   }
 }
 #endif
