@@ -127,11 +127,11 @@ namespace ScaFaCoS {
     /* IMPLEMENTATION */
     /***************************************************/
 #define START(ID)                                               \
-    if (d->require_timings) d->timings[ID] += -MPI_Wtime();
+    if (d->require_timings!=NONE) d->timings[ID] += -MPI_Wtime();
 #define STOP(ID)                                                \
-    if (d->require_timings) d->timings[ID] += MPI_Wtime();
+    if (d->require_timings!=NONE) d->timings[ID] += MPI_Wtime();
 #define STOPSTART(ID1, ID2)                     \
-    if (d->require_timings) {                   \
+    if (d->require_timings!=NONE) {                   \
       d->timings[ID1] += MPI_Wtime();           \
       d->timings[ID2] += -MPI_Wtime();          \
     }                                           \
@@ -148,9 +148,9 @@ namespace ScaFaCoS {
       /* Here we assume, that the method is already tuned and that all
          parameters are valid */
       P3M_INFO(printf( "P3M::run() started...\n"));
-
+      P3M_DEBUG(printf("  type of timing: %d\n", d->require_timings));
       /* reset all timers */
-      if (d->require_timings) {
+      if (d->require_timings!=NONE) {
         for (int i = 0; i < NUM_TIMINGS; i++)
           d->timings[i] = 0.0;
       }
@@ -225,12 +225,12 @@ namespace ScaFaCoS {
       STOP(TIMING_GATHER);
 
       /* forward transform */
-      START(TIMING_FORWARD);
-      P3M_DEBUG(printf( "  calling fft_perform_forw()...\n"));
-      fft_perform_forw(&d->fft, &d->comm, d->rs_grid);
-      P3M_DEBUG(printf( "  returned from fft_perform_forw().\n"));
-      STOP(TIMING_FORWARD);
-  
+    P3M_DEBUG(printf("  calling fft_perform_forw()...\n"));
+    START(TIMING_FORWARD);
+    fft_perform_forw(&d->fft, &d->comm, d->rs_grid);
+    STOP(TIMING_FORWARD);
+    P3M_DEBUG(printf("  returned from fft_perform_forw().\n"));
+    
       /********************************************/
       /* POTENTIAL COMPUTATION */
       /********************************************/
@@ -250,12 +250,15 @@ namespace ScaFaCoS {
 
         if (_potentials != NULL) {
           /* backtransform the grid */
-          P3M_DEBUG(printf( "  calling fft_perform_back (potentials)...\n"));
-          START(TIMING_BACK)
-            fft_perform_back(&d->fft, &d->comm, d->ks_grid);
-          STOP(TIMING_BACK)
-            P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
-
+          
+          if( d->require_timings != ESTIMATE_ALL
+           && d->require_timings != ESTIMATE_FFT ){
+              P3M_DEBUG(printf( "  calling fft_perform_back (potentials)...\n"));
+              START(TIMING_BACK)
+              fft_perform_back(&d->fft, &d->comm, d->ks_grid);
+              STOP(TIMING_BACK)
+              P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
+          }
           /** First (unshifted) run */
           START(TIMING_SPREAD)
             for (fcs_int i=0; i<d->local_grid.size; i++) {
@@ -298,13 +301,16 @@ namespace ScaFaCoS {
         STOP(TIMING_INFLUENCE);
     
         /* backtransform the grid */
-        START(TIMING_BACK);
-        P3M_DEBUG(printf( "  calling fft_perform_back...\n"));
-        fft_perform_back(&d->fft, &d->comm, d->ks_grid);
-        P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
-
-        STOPSTART(TIMING_BACK, TIMING_SPREAD)
-    
+        if(d->require_timings != ESTIMATE_ALL
+        && d->require_timings != ESTIMATE_FFT){
+            P3M_DEBUG(printf("  calling fft_perform_back...\n"));
+            START(TIMING_BACK);
+            fft_perform_back(&d->fft, &d->comm, d->ks_grid);
+            STOP(TIMING_BACK);
+            P3M_DEBUG(printf("  returned from fft_perform_back.\n"));            
+        }
+        
+        START(TIMING_SPREAD);
           /* First (unshifted) run */
           P3M_INFO(printf("  computing unshifted grid\n"));
         for (fcs_int i=0; i<d->local_grid.size; i++) {
@@ -333,10 +339,10 @@ namespace ScaFaCoS {
           assign_fields_ad(d, d->fft.data_buf, num_real_particles, 
                            positions, 1, fields);
 
-        STOP(TIMING_FIELDS)
-          } 
+            STOP(TIMING_FIELDS)
+        }
 
-      if (d->near_field_flag) {
+    if (d->near_field_flag) {
         /* start near timer */
         START(TIMING_NEAR)
 
@@ -382,14 +388,22 @@ namespace ScaFaCoS {
   
       fcs_gridsort_free(&gridsort);
       fcs_gridsort_destroy(&gridsort);
-
+      
       if (fields != NULL) free(fields);
       if (potentials != NULL) free(potentials);
 
       STOP(TIMING_COMP)
-
+              
+      /* estimate FFT back timing*/
+      if(d->require_timings == ESTIMATE_ALL
+      || d->require_timings == ESTIMATE_FFT) {
+          if (_potentials != NULL)
+              d->timings[TIMING_BACK] = 2 * d->timings[TIMING_FORWARD];
+          else
+              d->timings[TIMING_BACK] = d->timings[TIMING_FORWARD];
+      }      
         /* collect timings from the different nodes */
-        if (d->require_timings) {
+        if (d->require_timings!=NONE) {
           d->timings[TIMING_FAR] += d->timings[TIMING_CA];
           d->timings[TIMING_FAR] += d->timings[TIMING_GATHER];
           d->timings[TIMING_FAR] += d->timings[TIMING_FORWARD];
@@ -412,6 +426,44 @@ namespace ScaFaCoS {
             MPI_Reduce(d->timings, 0,
                        NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
                        0, d->comm.mpicomm);
+#ifdef P3M_PRINT_TIMINGS
+          printf("  P3M TIMINGS:\n");
+          printf("    total=%le (%lf)\n", d->timings[TIMING], 1.0);
+          printf("      far=%le (%lf)\n", d->timings[TIMING_FAR], 
+                 d->timings[TIMING_FAR]/d->timings[TIMING]);
+          printf("     near=%le (%lf)\n", d->timings[TIMING_NEAR], 
+                 d->timings[TIMING_NEAR]/d->timings[TIMING]);
+          printf("       ca=%le (%lf)\n", d->timings[TIMING_CA], 
+                 d->timings[TIMING_CA]/d->timings[TIMING]);
+          printf("      pot=%le (%lf)\n", d->timings[TIMING_POTENTIALS], 
+                 d->timings[TIMING_POTENTIALS]/d->timings[TIMING]);
+          if(d->require_timings == ESTIMATE_ALL
+          || d->require_timings == ESTIMATE_ASSIGNMENT)
+              printf(" (empirical estimate)");
+          printf("\n");
+          printf("   fields=%le (%lf)", d->timings[TIMING_FIELDS], 
+                 d->timings[TIMING_FIELDS]/d->timings[TIMING]);
+          if(d->require_timings == ESTIMATE_ALL
+          || d->require_timings == ESTIMATE_ASSIGNMENT)
+              printf(" (empirical estimate)");
+          printf("\n");
+          printf("   gather=%le (%lf)\n", d->timings[TIMING_GATHER], 
+                 d->timings[TIMING_GATHER]/d->timings[TIMING]);
+          printf("   spread=%le (%lf)\n", d->timings[TIMING_SPREAD], 
+                 d->timings[TIMING_SPREAD]/d->timings[TIMING]);
+          printf("  forward=%le (%lf)\n", d->timings[TIMING_FORWARD], 
+                 d->timings[TIMING_FORWARD]/d->timings[TIMING]);
+          printf("     back=%le (%lf)", d->timings[TIMING_BACK], 
+                 d->timings[TIMING_BACK]/d->timings[TIMING]);
+          if(d->require_timings == ESTIMATE_ALL
+          || d->require_timings == ESTIMATE_FFT)
+              printf(" (theoretical estimate)");
+          printf("\n");
+          printf("   decomp=%le (%lf)\n", d->timings[TIMING_DECOMP], 
+                 d->timings[TIMING_DECOMP]/d->timings[TIMING]);
+          printf("     comp=%le (%lf)\n", d->timings[TIMING_COMP], 
+                 d->timings[TIMING_COMP]/d->timings[TIMING]);
+#endif
         }
 
       P3M_INFO(printf( "P3M::run() finished.\n"));
@@ -429,9 +481,11 @@ namespace ScaFaCoS {
          parameters are valid */
       P3M_INFO(printf( "ifcs_p3m_run() started...\n"));
       data_struct *d = (data_struct*)rd;
+      
+      P3M_DEBUG(printf("type of timing: %d\n",d->require_timings));
 
       /* reset all timers */
-      if (d->require_timings) {
+      if (d->require_timings!=NONE) {
         for (int i = 0; i < NUM_TIMINGS; i++)
           d->timings[i] = 0.0;
       }
@@ -486,12 +540,13 @@ namespace ScaFaCoS {
       STOP(TIMING_GATHER);
 
       /* forward transform */
-      START(TIMING_FORWARD);
+      
       P3M_DEBUG(printf( "  calling fft_perform_forw()...\n"));
+      START(TIMING_FORWARD);
       fft_perform_forw(&d->fft, &d->comm, d->rs_grid);
-      P3M_DEBUG(printf( "  returned from fft_perform_forw().\n"));
       STOP(TIMING_FORWARD);
-  
+      P3M_DEBUG(printf("  returned from fft_perform_forw().\n"));
+      
       /********************************************/
       /* POTENTIAL COMPUTATION */
       /********************************************/
@@ -511,26 +566,29 @@ namespace ScaFaCoS {
 
         if (_potentials != NULL) {
           /* backtransform the grid */
-          P3M_DEBUG(printf( "  calling fft_perform_back (potentials)...\n"));
-          START(TIMING_BACK)
-            fft_perform_back(&d->fft, &d->comm, d->ks_grid);
-          STOP(TIMING_BACK)
-            P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
-
+          
+          if(d->require_timings != ESTIMATE_ALL
+          && d->require_timings != ESTIMATE_FFT){
+              P3M_DEBUG(printf( "  calling fft_perform_back (potentials)...\n"));
+              START(TIMING_BACK)
+              fft_perform_back(&d->fft, &d->comm, d->ks_grid);
+              STOP(TIMING_BACK)
+              P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
+          }
           /* redistribute energy grid */
-          START(TIMING_SPREAD)
-            spread_grid(d, d->ks_grid);
+          START(TIMING_SPREAD);
+          spread_grid(d, d->ks_grid);
 
-          STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS)
+          STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
 
-            /* compute potentials */
-            assign_potentials(d, d->ks_grid,
-                              num_real_particles, positions, 
-                              charges, 0,
-                              potentials);
+          /* compute potentials */
+          assign_potentials(d, d->ks_grid,
+                            num_real_particles, positions,
+                            charges, 0,
+                            potentials);
 
-          STOP(TIMING_POTENTIALS)
-            }
+          STOP(TIMING_POTENTIALS);
+        }
       }
 
       /********************************************/
@@ -547,25 +605,29 @@ namespace ScaFaCoS {
           /* differentiate in direction dim */
           /* result is stored in d->rs_grid */
           START(TIMING_FIELDS);
-          ik_diff(d, dim);
-      
-          STOPSTART(TIMING_FIELDS, TIMING_BACK);
-
-          /* backtransform the grid */
-          P3M_DEBUG(printf( "  calling fft_perform_back (field dim=%d)...\n", dim));
-          fft_perform_back(&d->fft, &d->comm, d->rs_grid);
-          P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
-          STOP(TIMING_BACK);
-      
+          ik_diff(d, dim);     
+          STOP(TIMING_FIELDS);
+          
+        if(d->require_timings != ESTIMATE_ALL
+        && d->require_timings != ESTIMATE_FFT){
+            
+           /* backtransform the grid */
+            P3M_DEBUG(printf( "  calling fft_perform_back (field dim=%d)...\n", dim));
+            START(TIMING_BACK);
+            fft_perform_back(&d->fft, &d->comm, d->rs_grid);
+            STOP(TIMING_BACK);
+            P3M_DEBUG(printf("  returned from fft_perform_back.\n"));            
+        }
+          
           /* redistribute force grid */
-          START(TIMING_SPREAD);
+        START(TIMING_SPREAD);          
           spread_grid(d, d->rs_grid);
           STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
           assign_fields_ik(d, d->rs_grid, dim, num_real_particles, 
                            positions, 0, fields);
           STOP(TIMING_FIELDS);
+          }
         }
-      }  
 
       if (d->near_field_flag) {
         /* start near timer */
@@ -620,7 +682,7 @@ namespace ScaFaCoS {
       STOP(TIMING_COMP)
 
         /* collect timings from the different nodes */
-        if (d->require_timings) {
+        if (d->require_timings!=NONE) {
           d->timings[TIMING_FAR] += d->timings[TIMING_CA];
           d->timings[TIMING_FAR] += d->timings[TIMING_GATHER];
           d->timings[TIMING_FAR] += d->timings[TIMING_FORWARD];
@@ -644,6 +706,13 @@ namespace ScaFaCoS {
                        NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
                        0, d->comm.mpicomm);
 
+        if (d->require_timings == ESTIMATE_ALL || d->require_timings == ESTIMATE_FFT) {
+            if (_potentials != NULL)
+                d->timings[TIMING_BACK] = 4 * d->timings[TIMING_FORWARD];
+            else
+                d->timings[TIMING_BACK] = 3 * d->timings[TIMING_FORWARD];
+        }
+
 #ifdef P3M_PRINT_TIMINGS
           printf("  P3M TIMINGS:\n");
           printf("    total=%le (%lf)\n", d->timings[TIMING], 1.0);
@@ -655,16 +724,28 @@ namespace ScaFaCoS {
                  d->timings[TIMING_CA]/d->timings[TIMING]);
           printf("      pot=%le (%lf)\n", d->timings[TIMING_POTENTIALS], 
                  d->timings[TIMING_POTENTIALS]/d->timings[TIMING]);
-          printf("   fields=%le (%lf)\n", d->timings[TIMING_FIELDS], 
+          if(d->require_timings == ESTIMATE_ALL
+          || d->require_timings == ESTIMATE_ASSIGNMENT)
+              printf(" (empirical estimate)");
+          printf("\n");
+          printf("   fields=%le (%lf)", d->timings[TIMING_FIELDS], 
                  d->timings[TIMING_FIELDS]/d->timings[TIMING]);
+          if(d->require_timings == ESTIMATE_ALL
+          || d->require_timings == ESTIMATE_ASSIGNMENT)
+              printf(" (empirical estimate)");
+          printf("\n");
           printf("   gather=%le (%lf)\n", d->timings[TIMING_GATHER], 
                  d->timings[TIMING_GATHER]/d->timings[TIMING]);
           printf("   spread=%le (%lf)\n", d->timings[TIMING_SPREAD], 
                  d->timings[TIMING_SPREAD]/d->timings[TIMING]);
           printf("  forward=%le (%lf)\n", d->timings[TIMING_FORWARD], 
                  d->timings[TIMING_FORWARD]/d->timings[TIMING]);
-          printf("     back=%le (%lf)\n", d->timings[TIMING_BACK], 
+          printf("     back=%le (%lf)", d->timings[TIMING_BACK], 
                  d->timings[TIMING_BACK]/d->timings[TIMING]);
+          if(d->require_timings == ESTIMATE_ALL
+          || d->require_timings == ESTIMATE_FFT)
+              printf(" (theoretical estimate)");
+          printf("\n");
           printf("   decomp=%le (%lf)\n", d->timings[TIMING_DECOMP], 
                  d->timings[TIMING_DECOMP]/d->timings[TIMING]);
           printf("     comp=%le (%lf)\n", d->timings[TIMING_COMP], 

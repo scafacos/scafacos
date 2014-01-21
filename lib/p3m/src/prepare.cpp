@@ -33,27 +33,24 @@ namespace ScaFaCoS {
     /***************************************************/
     /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
     /***************************************************/
-    static void 
+    void 
     calc_send_grid(data_struct *d);
 
-    static void 
+    void 
     prepare_a_ai_cao_cut(data_struct *d);
 
-    static void 
+    void 
     calc_lm_ld_pos(data_struct *d);
 
-    static void 
+    void 
     calc_local_ca_grid(data_struct *d);
 
-    static void 
+    void 
     calc_differential_operator(data_struct *d);
 
 #ifdef P3M_ENABLE_DEBUG
-    static void 
-    print_local_grid(local_grid_t l);
-
-    static void 
-    print_send_grid(send_grid_t sm);
+    void print_local_grid(local_grid_t l);
+    void print_send_grid(send_grid_t sm);
 #endif
 
     /***************************************************/
@@ -118,7 +115,7 @@ namespace ScaFaCoS {
         struct::cao_cut, which has to be done by \ref init_charges
         once and by \ref scaleby_box_l whenever the \ref box_l
         changed.  */
-    static void prepare_a_ai_cao_cut(data_struct *d) {
+    void prepare_a_ai_cao_cut(data_struct *d) {
       P3M_DEBUG(printf("    prepare_a_ai_cao_cut() started... \n"));
       for (fcs_int i=0; i<3; i++) {
         d->ai[i]      = (fcs_float)d->grid[i]/d->box_l[i]; 
@@ -132,7 +129,7 @@ namespace ScaFaCoS {
         local grid, to be stored in \ref local_grid::ld_pos; function
         called by \ref calc_local_ca_grid once and by \ref
         scaleby_box_l whenever the \ref box_l changed. */
-    static void calc_lm_ld_pos(data_struct *d) {
+    void calc_lm_ld_pos(data_struct *d) {
       fcs_int i; 
       /* spacial position of left bottom grid point */
       for(i=0;i<3;i++) {
@@ -143,7 +140,7 @@ namespace ScaFaCoS {
 
     /** Calculates properties of the local FFT grid for the 
         charge assignment process. */
-    static void calc_local_ca_grid(data_struct *d) {
+    void calc_local_ca_grid(data_struct *d) {
       fcs_int i;
       fcs_int ind[3];
       /* total skin size */
@@ -215,7 +212,7 @@ namespace ScaFaCoS {
     /** Calculates the properties of the send/recv sub-grides of the local
      *  FFT grid.  In order to calculate the recv sub-grides there is a
      *  communication of the margins between neighbouring nodes. */ 
-    static  void calc_send_grid(data_struct *d) {
+     void calc_send_grid(data_struct *d) {
       fcs_int i,j, evenodd;
       fcs_int done[3]={0,0,0};
       MPI_Status status;

@@ -59,9 +59,9 @@ namespace ScaFaCoS {
       d->total_energy = 0.0;
 
 #ifdef P3M_PRINT_TIMINGS
-      d->require_timings = 1;
+    d->require_timings = FULL;
 #else
-      d->require_timings = 0;
+    d->require_timings = NONE;
 #endif
       for (int i=0; i < NUM_TIMINGS; i++)
         d->timings[i] = 0.0;

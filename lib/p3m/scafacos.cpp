@@ -194,19 +194,45 @@ extern "C" {
         (FCS_LOGICAL_ERROR, fnc_name, 
          "Trying to get total energy, but computation was not requested.");
   }
-
-  void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
-    data_struct *d = (data_struct*)rd;
-    d->require_timings = flag;
-  }
-
+  
+void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
+        data_struct *d = (data_struct*) rd;
+        switch (flag) {
+            case 0:
+            {
+                d->require_timings == NONE;
+            }
+                break;
+            case 1:
+            {
+                d->require_timings == ESTIMATE_ALL;
+            }
+                break;
+            case 2:
+            {
+                d->require_timings == ESTIMATE_FFT;
+            }
+                break;
+            case 3:
+            {
+                d->require_timings == ESTIMATE_ASSIGNMENT;
+            }
+                break;
+            case 4:
+            {
+                d->require_timings == FULL;
+            }
+                break;
+        }
+    }
+    
   FCSResult 
   ifcs_p3m_get_timings(void *rd, double *timing, 
                        double *timing_near_field, double *timing_far_field) {
     const char* fnc_name = "ifcs_p3m_get_timings";
     data_struct *d = (data_struct*)rd;
 
-    if (!d->require_timings)
+    if (d->require_timings==NONE)
       return 
         fcsResult_create
         (FCS_LOGICAL_ERROR, fnc_name, 
