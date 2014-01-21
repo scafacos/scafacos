@@ -48,7 +48,8 @@ namespace ScaFaCoS {
     tune_broadcast_command
     (data_struct *d, fcs_int command) {
       /* First send the command */
-      P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %d.\n", d->comm.rank, command));
+      P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %d.\n", \
+                             d->comm.rank, command));
       MPI_Bcast(&command, 1, FCS_MPI_INT, 0, d->comm.mpicomm);
 
       /* Now send the parameters, depending on the command */
@@ -64,9 +65,9 @@ namespace ScaFaCoS {
     }
 
     void
-    tune_broadcast_slave
-    (data_struct *d, fcs_int num_particles, fcs_int max_particles,
-     fcs_float *positions, fcs_float *charges) {
+    tune_broadcast_slave(data_struct *d, 
+                         fcs_int num_particles, fcs_int max_particles,
+                         fcs_float *positions, fcs_float *charges) {
       const char* fnc_name = "tune_broadcast_slave";
 
       P3M_DEBUG(printf( "tune_broadcast_slave() started...\n"));
@@ -77,9 +78,11 @@ namespace ScaFaCoS {
       for (;;) {
         /* Receive the command */
         fcs_int command;
-        P3M_DEBUG_LOCAL(printf("      %2d: Waiting to receive command.\n", d->comm.rank));
+        P3M_DEBUG_LOCAL(printf("      %2d: Waiting to receive command.\n", \
+                               d->comm.rank));
         MPI_Bcast(&command, 1, FCS_MPI_INT, 0, d->comm.mpicomm);
-        P3M_DEBUG_LOCAL(printf("      %2d: Received command %d.\n", d->comm.rank, command));
+        P3M_DEBUG_LOCAL(printf("      %2d: Received command %d.\n", \
+                               d->comm.rank, command));
 
         switch (command) {
         case CMD_COMPUTE_ERROR_ESTIMATE:
