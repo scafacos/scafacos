@@ -1667,20 +1667,20 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
   fcs_int num_periodic_dims = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
   fcs_float scale = 1.0, twiddle, twiddle_k0=1.0, twiddle_k1=1.0, twiddle_k2=1.0;
   fcs_float xs[3];
-  pfft_plan pfft;
+  FCS_PFFT(plan) pfft;
   fcs_pnfft_complex *regkern_hat;
 
-  alloc_local = pfft_local_size_many_dft(3, N, N, N, howmany,
+  alloc_local = FCS_PFFT(local_size_many_dft)(3, N, N, N, howmany,
       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, PFFT_TRANSPOSED_OUT,
       local_Ni, local_Ni_start, local_No, local_No_start);
 
-  regkern_hat = pfft_alloc_complex(alloc_local);
+  regkern_hat = FCS_PFFT(alloc_complex)(alloc_local);
 
   int skipped_dims[3];
   for(int t=0; t<3; t++)
     skipped_dims[t] = periodicity[t];
 
-  pfft = pfft_plan_many_dft_skipped(3, N, N, N, howmany,
+  pfft = FCS_PFFT(plan_many_dft_skipped)(3, N, N, N, howmany,
       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, skipped_dims, regkern_hat, regkern_hat, comm_cart,
       PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_ESTIMATE);
 //       PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT| PFFT_ESTIMATE);
@@ -1876,7 +1876,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
     if (myrank == 0) fprintf(stderr, "sum of regkernel: %e + I* %e\n", creal(csum_global), cimag(csum_global));
 #endif
     
-  pfft_execute(pfft);
+  FCS_PFFT(execute)(pfft);
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
     csum = 0.0;
@@ -1908,7 +1908,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
   if (myrank == 0) fprintf(stderr, "sum of regkernel_hat: %e + I* %e\n", creal(csum_global), cimag(csum_global));
 #endif
   
-  pfft_destroy_plan(pfft);
+  FCS_PFFT(destroy_plan)(pfft);
 
   return regkern_hat;
 }
