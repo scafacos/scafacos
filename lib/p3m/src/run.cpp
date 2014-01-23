@@ -59,7 +59,7 @@ namespace ScaFaCoS {
                      );
 
     /* callback function for near field computations */
-    static inline void 
+    inline void 
     compute_near(const void *param, fcs_float dist, fcs_float *f, fcs_float *p)
     {
       fcs_float alpha = *((fcs_float *) param);
@@ -68,9 +68,9 @@ namespace ScaFaCoS {
     
     /* callback function for performing a whole loop of near field computations (using compute_near) */
     FCS_NEAR_LOOP_FP(compute_near_loop, compute_near);
-    
+
     /* charge assignment */
-    static void assign_charges(data_struct* d,
+    void assign_charges(data_struct* d,
                                fcs_float *data,
                                fcs_int num_particles,
                                fcs_float *positions, 
@@ -78,22 +78,22 @@ namespace ScaFaCoS {
                                fcs_int shifted);
 
     /* collect grid from neighbor processes */
-    static void gather_grid(data_struct* d, fcs_float* rs_grid);
-    static void add_block(fcs_float *in, fcs_float *out, int start[3], int size[3], int dim[3]);
+    void gather_grid(data_struct* d, fcs_float* rs_grid);
+    void add_block(fcs_float *in, fcs_float *out, int start[3], int size[3], int dim[3]);
     /* spread grid to neighbor processors */
-    static void spread_grid(data_struct* d, fcs_float* rs_grid);
+    void spread_grid(data_struct* d, fcs_float* rs_grid);
 
     /* apply energy optimized influence function */
-    static void apply_energy_influence_function(data_struct* d);
+    void apply_energy_influence_function(data_struct* d);
     /* apply force optimized influence function */
-    static void apply_force_influence_function(data_struct* d);
+    void apply_force_influence_function(data_struct* d);
     /* differentiate kspace in direction dim */
-    static void ik_diff(data_struct* d, int dim);
+    void ik_diff(data_struct* d, int dim);
 
     /* compute the total energy (in k-space, so no backtransform) */
-    static fcs_float compute_total_energy(data_struct* d);
+    fcs_float compute_total_energy(data_struct* d);
     /* assign the potentials to the positions */
-    static void 
+    void 
     assign_potentials(data_struct* d, fcs_float *data, 
                       fcs_int num_particles, 
                       fcs_float* positions, fcs_float* charges,
@@ -102,7 +102,7 @@ namespace ScaFaCoS {
 
 #ifdef P3M_IK
     /* assign the fields to the positions in dimension dim [IK]*/
-    static void 
+    void 
     assign_fields_ik(data_struct* d, 
                      fcs_float *data,
                      fcs_int dim,
@@ -113,7 +113,7 @@ namespace ScaFaCoS {
 #endif
 #ifdef P3M_AD
     /* Backinterpolate the forces obtained from k-space to the positions [AD]*/
-    static void 
+    void 
     assign_fields_ad(data_struct* d,
                      fcs_float *data,
                      fcs_int num_real_particles, 
@@ -122,6 +122,13 @@ namespace ScaFaCoS {
                      fcs_float* fields);
 #endif
 
+
+    void compute_far(data_struct* d,
+                     fcs_int num_charges, 
+                     fcs_float* positions,
+                     fcs_float* charges,
+                     fcs_float* fields,
+                     fcs_float* potentials);
 
     /***************************************************/
     /* IMPLEMENTATION */
@@ -137,7 +144,7 @@ namespace ScaFaCoS {
     }                                           \
 
 
-#if defined(P3M_INTERLACE) && defined(P3M_AD)
+
     void run(data_struct* d,
              fcs_int _num_particles,
              fcs_float *_positions, 
@@ -175,15 +182,15 @@ namespace ScaFaCoS {
       fcs_float *charges, *ghost_charges;
       fcs_gridsort_index_t *indices, *ghost_indices;
       fcs_gridsort_t gridsort;
-
-      START(TIMING_DECOMP)
-        domain_decompose(d, &gridsort, 
-                         _num_particles, _positions, _charges,
-                         &num_real_particles,
-                         &positions, &charges, &indices,
-                         &num_ghost_particles,
-                         &ghost_positions, &ghost_charges, &ghost_indices);
-
+      
+      START(TIMING_DECOMP);
+      domain_decompose(d, &gridsort, 
+                       _num_particles, _positions, _charges,
+                       &num_real_particles,
+                       &positions, &charges, &indices,
+                       &num_ghost_particles,
+                       &ghost_positions, &ghost_charges, &ghost_indices);
+      
       /* allocate local fields and potentials */
       fcs_float *fields = NULL; 
       fcs_float *potentials = NULL; 
@@ -191,159 +198,14 @@ namespace ScaFaCoS {
         fields = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*3*num_real_particles));
       if (_potentials != NULL || d->require_total_energy)
         potentials = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*num_real_particles));
-  
-      STOPSTART(TIMING_DECOMP, TIMING_CA);
+      
+      STOP(TIMING_DECOMP);
+      
+      compute_far(d, num_real_particles, positions, charges, fields, potentials);
 
-      /* charge assignment */
-      assign_charges(d, d->fft.data_buf, num_real_particles, 
-                     positions, charges, 0);
-      STOPSTART(TIMING_CA, TIMING_GATHER);
-      /* gather the ca grid */
-      gather_grid(d, d->fft.data_buf);
-
-      // Complexify
-      for (fcs_int i = d->local_grid.size-1; i >= 0; i--)
-        d->rs_grid[2*i] = d->fft.data_buf[i];
-
-      STOPSTART(TIMING_GATHER, TIMING_CA);
-
-      // Second (shifted) run
-      /* charge assignment */
-      assign_charges(d, d->fft.data_buf, num_real_particles, 
-                     positions, charges, 1);
-
-      STOPSTART(TIMING_CA, TIMING_GATHER);
-
-      /* gather the ca grid */
-      gather_grid(d, d->fft.data_buf);
-      /* now d->rs_grid should contain the local ca grid */
-
-      // Complexify
-      for (fcs_int i = d->local_grid.size-1; i >= 0; i--)
-        d->rs_grid[2*i+1] = d->fft.data_buf[i];
-      STOP(TIMING_GATHER);
-
-      /* forward transform */
-    P3M_DEBUG(printf("  calling fft_perform_forw()...\n"));
-    START(TIMING_FORWARD);
-    fft_perform_forw(&d->fft, &d->comm, d->rs_grid);
-    STOP(TIMING_FORWARD);
-    P3M_DEBUG(printf("  returned from fft_perform_forw().\n"));
-    
-      /********************************************/
-      /* POTENTIAL COMPUTATION */
-      /********************************************/
-      if (d->require_total_energy || _potentials != NULL) {
-        /* apply energy optimized influence function */
-        START(TIMING_INFLUENCE)
-          apply_energy_influence_function(d);
-        /* result is in d->ks_grid */
-        STOP(TIMING_INFLUENCE)
-
-          /* compute total energy, but not potentials */
-          if (d->require_total_energy && potentials == NULL) {
-            START(TIMING_POTENTIALS)
-              d->total_energy = compute_total_energy(d);
-            STOP(TIMING_POTENTIALS)
-              }
-
-        if (_potentials != NULL) {
-          /* backtransform the grid */
-          
-          if( d->require_timings != ESTIMATE_ALL
-           && d->require_timings != ESTIMATE_FFT ){
-              P3M_DEBUG(printf( "  calling fft_perform_back (potentials)...\n"));
-              START(TIMING_BACK)
-              fft_perform_back(&d->fft, &d->comm, d->ks_grid);
-              STOP(TIMING_BACK)
-              P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
-          }
-          /** First (unshifted) run */
-          START(TIMING_SPREAD)
-            for (fcs_int i=0; i<d->local_grid.size; i++) {
-              d->fft.data_buf[i] = d->ks_grid[2*i];
-            } 
-
-          spread_grid(d, d->fft.data_buf);
-
-          STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS)
-
-            assign_potentials(d, d->fft.data_buf,
-                              num_real_particles, positions, 
-                              charges, 0, potentials);
-
-          STOPSTART(TIMING_POTENTIALS, TIMING_SPREAD)
-
-            /** Second (shifted) run */
-            for (fcs_int i=0; i<d->local_grid.size; i++) {
-              d->fft.data_buf[i] = d->ks_grid[2*i+1];
-            }
-          spread_grid(d, d->fft.data_buf);
-
-          STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS)
-
-            assign_potentials(d, d->fft.data_buf,
-                              num_real_particles, positions,
-                              charges, 1, potentials);
-
-          STOP(TIMING_POTENTIALS)
-            }
-      }
-
-      /********************************************/
-      /* FIELD COMPUTATION */
-      /********************************************/
-      if (_fields != NULL) {
-        /* apply force optimized influence function */
-        START(TIMING_INFLUENCE);
-        apply_force_influence_function(d);
-        STOP(TIMING_INFLUENCE);
-    
-        /* backtransform the grid */
-        if(d->require_timings != ESTIMATE_ALL
-        && d->require_timings != ESTIMATE_FFT){
-            P3M_DEBUG(printf("  calling fft_perform_back...\n"));
-            START(TIMING_BACK);
-            fft_perform_back(&d->fft, &d->comm, d->ks_grid);
-            STOP(TIMING_BACK);
-            P3M_DEBUG(printf("  returned from fft_perform_back.\n"));            
-        }
-        
-        START(TIMING_SPREAD);
-          /* First (unshifted) run */
-          P3M_INFO(printf("  computing unshifted grid\n"));
-        for (fcs_int i=0; i<d->local_grid.size; i++) {
-          d->fft.data_buf[i] = d->ks_grid[2*i];
-        } 
-    
-        spread_grid(d, d->fft.data_buf);
-
-        STOPSTART(TIMING_SPREAD, TIMING_FIELDS)
-
-          assign_fields_ad(d, d->fft.data_buf, num_real_particles, 
-                           positions, 0, fields);
-
-        STOPSTART(TIMING_FIELDS, TIMING_SPREAD)
-    
-          /* Second (shifted) run */
-          P3M_INFO(printf("  computing shifted grid\n"));
-        for (fcs_int i=0; i<d->local_grid.size; i++) {
-          d->fft.data_buf[i] = d->ks_grid[2*i+1];
-        }
-    
-        spread_grid(d, d->fft.data_buf);
-    
-        STOPSTART(TIMING_SPREAD, TIMING_FIELDS)
-
-          assign_fields_ad(d, d->fft.data_buf, num_real_particles, 
-                           positions, 1, fields);
-
-            STOP(TIMING_FIELDS)
-        }
-
-    if (d->near_field_flag) {
+      if (d->near_field_flag) {
         /* start near timer */
-        START(TIMING_NEAR)
+        START(TIMING_NEAR);
 
           /* compute near field */
           fcs_near_t near;
@@ -373,30 +235,191 @@ namespace ScaFaCoS {
  
         fcs_near_destroy(&near);
 
-        STOP(TIMING_NEAR)
-          }
-
-      START(TIMING_COMP)
-        /* sort particles back */
-        P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
+        STOP(TIMING_NEAR);
+      }
+      
+      START(TIMING_COMP);
+      /* sort particles back */
+      P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
       fcs_gridsort_sort_backward(&gridsort,
                                  fields, potentials,
                                  _fields, _potentials, 1,
                                  d->comm.mpicomm);
       P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
-  
+      
       fcs_gridsort_free(&gridsort);
       fcs_gridsort_destroy(&gridsort);
       
       if (fields != NULL) free(fields);
       if (potentials != NULL) free(potentials);
+      
+      STOP(TIMING_COMP);
+      P3M_INFO(printf( "P3M::run() finished.\n"));
+    }
+      
+#if defined(P3M_INTERLACE) && defined(P3M_AD)
+    void compute_far(data_struct* d,
+                     fcs_int num_charges, 
+                     fcs_float* positions,
+                     fcs_float* charges,
+                     fcs_float* fields,
+                     fcs_float* potentials) {
+      P3M_INFO(printf( "P3M::compute_far() [ADI] started...\n"));
 
-      STOP(TIMING_COMP)
+      START(TIMING_CA);
+
+      /* charge assignment */
+      assign_charges(d, d->fft.data_buf, num_charges, 
+                     positions, charges, 0);
+      STOPSTART(TIMING_CA, TIMING_GATHER);
+      /* gather the ca grid */
+      gather_grid(d, d->fft.data_buf);
+
+      // Complexify
+      for (fcs_int i = d->local_grid.size-1; i >= 0; i--)
+        d->rs_grid[2*i] = d->fft.data_buf[i];
+
+      STOPSTART(TIMING_GATHER, TIMING_CA);
+
+      // Second (shifted) run
+      /* charge assignment */
+      assign_charges(d, d->fft.data_buf, num_charges, 
+                     positions, charges, 1);
+
+      STOPSTART(TIMING_CA, TIMING_GATHER);
+
+      /* gather the ca grid */
+      gather_grid(d, d->fft.data_buf);
+      /* now d->rs_grid should contain the local ca grid */
+
+      // Complexify
+      for (fcs_int i = d->local_grid.size-1; i >= 0; i--)
+        d->rs_grid[2*i+1] = d->fft.data_buf[i];
+      STOP(TIMING_GATHER);
+      
+      /* forward transform */
+      P3M_DEBUG(printf("  calling fft_perform_forw()...\n"));
+      START(TIMING_FORWARD);
+      fft_perform_forw(&d->fft, &d->comm, d->rs_grid);
+      STOP(TIMING_FORWARD);
+      P3M_DEBUG(printf("  returned from fft_perform_forw().\n"));
+      
+      /********************************************/
+      /* POTENTIAL COMPUTATION */
+      /********************************************/
+      if (d->require_total_energy || potentials != NULL) {
+        /* apply energy optimized influence function */
+        START(TIMING_INFLUENCE)
+          apply_energy_influence_function(d);
+        /* result is in d->ks_grid */
+        STOP(TIMING_INFLUENCE)
+
+          /* compute total energy, but not potentials */
+          if (d->require_total_energy && potentials == NULL) {
+            START(TIMING_POTENTIALS)
+              d->total_energy = compute_total_energy(d);
+            STOP(TIMING_POTENTIALS)
+              }
+
+        if (potentials != NULL) {
+          /* backtransform the grid */
+          
+          if( d->require_timings != ESTIMATE_ALL
+           && d->require_timings != ESTIMATE_FFT ){
+              P3M_DEBUG(printf( "  calling fft_perform_back (potentials)...\n"));
+              START(TIMING_BACK)
+              fft_perform_back(&d->fft, &d->comm, d->ks_grid);
+              STOP(TIMING_BACK)
+              P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
+          }
+          /** First (unshifted) run */
+          START(TIMING_SPREAD)
+            for (fcs_int i=0; i<d->local_grid.size; i++) {
+              d->fft.data_buf[i] = d->ks_grid[2*i];
+            } 
+
+          spread_grid(d, d->fft.data_buf);
+
+          STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
+
+          assign_potentials(d, d->fft.data_buf,
+                            num_charges, positions, 
+                            charges, 0, potentials);
+          
+          STOPSTART(TIMING_POTENTIALS, TIMING_SPREAD);
+          
+          /** Second (shifted) run */
+          for (fcs_int i=0; i<d->local_grid.size; i++) {
+            d->fft.data_buf[i] = d->ks_grid[2*i+1];
+          }
+          spread_grid(d, d->fft.data_buf);
+          
+          STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
+          
+          assign_potentials(d, d->fft.data_buf,
+                            num_charges, positions,
+                            charges, 1, potentials);
+          
+          STOP(TIMING_POTENTIALS);
+        }
+      }
+      
+      /********************************************/
+      /* FIELD COMPUTATION */
+      /********************************************/
+      if (fields != NULL) {
+        /* apply force optimized influence function */
+        START(TIMING_INFLUENCE);
+        apply_force_influence_function(d);
+        STOP(TIMING_INFLUENCE);
+    
+        /* backtransform the grid */
+        if(d->require_timings != ESTIMATE_ALL
+        && d->require_timings != ESTIMATE_FFT){
+            P3M_DEBUG(printf("  calling fft_perform_back...\n"));
+            START(TIMING_BACK);
+            fft_perform_back(&d->fft, &d->comm, d->ks_grid);
+            STOP(TIMING_BACK);
+            P3M_DEBUG(printf("  returned from fft_perform_back.\n"));            
+        }
+        
+        START(TIMING_SPREAD);
+          /* First (unshifted) run */
+          P3M_INFO(printf("  computing unshifted grid\n"));
+        for (fcs_int i=0; i<d->local_grid.size; i++) {
+          d->fft.data_buf[i] = d->ks_grid[2*i];
+        } 
+    
+        spread_grid(d, d->fft.data_buf);
+
+        STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
+
+        assign_fields_ad(d, d->fft.data_buf, num_charges, 
+                         positions, 0, fields);
+
+        STOPSTART(TIMING_FIELDS, TIMING_SPREAD);
+        
+        /* Second (shifted) run */
+        P3M_INFO(printf("  computing shifted grid\n"));
+        for (fcs_int i=0; i<d->local_grid.size; i++) {
+          d->fft.data_buf[i] = d->ks_grid[2*i+1];
+        }
+        
+        spread_grid(d, d->fft.data_buf);
+    
+        STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
+        
+        assign_fields_ad(d, d->fft.data_buf, num_charges, 
+                         positions, 1, fields);
+
+        STOP(TIMING_FIELDS);
+        }
+
               
       /* estimate FFT back timing*/
       if(d->require_timings == ESTIMATE_ALL
-      || d->require_timings == ESTIMATE_FFT) {
-          if (_potentials != NULL)
+         || d->require_timings == ESTIMATE_FFT) {
+        if (potentials != NULL)
               d->timings[TIMING_BACK] = 2 * d->timings[TIMING_FORWARD];
           else
               d->timings[TIMING_BACK] = d->timings[TIMING_FORWARD];
@@ -465,71 +488,22 @@ namespace ScaFaCoS {
 #endif
         }
 
-      P3M_INFO(printf( "P3M::run() finished.\n"));
+      P3M_INFO(printf( "P3M::compute_far() [ADI] finished.\n"));
     }
 
 #elif !defined(P3M_INTERLACE) && defined(P3M_IK)
-    void run(data_struct* rd,
-             fcs_int _num_particles,
-             fcs_float *_positions, 
-             fcs_float *_charges,
-             fcs_float *_fields,
-             fcs_float *_potentials) {
-      /* Here we assume, that the method is already tuned and that all
-         parameters are valid */
-      P3M_INFO(printf( "ifcs_p3m_run() started...\n"));
-      data_struct *d = (data_struct*)rd;
-      
-      P3M_DEBUG(printf("type of timing: %d\n",d->require_timings));
+    void compute_far(data_struct* d,
+                     fcs_int num_charges, 
+                     fcs_float* positions,
+                     fcs_float* charges,
+                     fcs_float* fields,
+                     fcs_float* potentials) {
+      P3M_INFO(printf( "P3M::compute_far() [IK] started...\n"));
 
-      /* reset all timers */
-      if (d->require_timings!=NONE) {
-        for (int i = 0; i < NUM_TIMINGS; i++)
-          d->timings[i] = 0.0;
-      }
-
-      P3M_INFO(printf("    system parameters: box_l=" F3FLOAT "\n", \
-                      d->box_l[0], d->box_l[1], d->box_l[2]));
-      P3M_INFO(printf(                                                      \
-                      "    p3m params: "                                    \
-                      "r_cut=" FFLOAT ", grid=" F3INT ", cao=" FINT ", "    \
-                      "alpha=" FFLOAT ", grid_off=" F3FLOAT "\n",           \
-                      d->r_cut, d->grid[0], d->grid[1], d->grid[2], d->cao, \
-                      d->alpha, d->grid_off[0], d->grid_off[1], d->grid_off[2]));
-
-      P3M_DEBUG_LOCAL(MPI_Barrier(d->comm.mpicomm));
-      P3M_DEBUG_LOCAL(printf("    %d: num_particles=%d\n",	\
-                             d->comm.rank, _num_particles));
-
-
-      /* decompose system */
-      fcs_int num_real_particles;
-      fcs_int num_ghost_particles;
-      fcs_float *positions, *ghost_positions;
-      fcs_float *charges, *ghost_charges;
-      fcs_gridsort_index_t *indices, *ghost_indices;
-      fcs_gridsort_t gridsort;
-
-      START(TIMING_DECOMP)
-        domain_decompose(d, &gridsort, 
-                         _num_particles, _positions, _charges,
-                         &num_real_particles,
-                         &positions, &charges, &indices,
-                         &num_ghost_particles,
-                         &ghost_positions, &ghost_charges, &ghost_indices);
-
-      /* allocate local fields and potentials */
-      fcs_float *fields = NULL; 
-      fcs_float *potentials = NULL; 
-      if (_fields != NULL)
-        fields = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*3*num_real_particles));
-      if (_potentials != NULL || d->require_total_energy)
-        potentials = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*num_real_particles));
-  
-      STOPSTART(TIMING_DECOMP, TIMING_CA);
+      START(TIMING_CA);
 
       /* charge assignment */
-      assign_charges(d, d->rs_grid, num_real_particles, 
+      assign_charges(d, d->rs_grid, num_charges, 
                      positions, charges, 0);
       STOPSTART(TIMING_CA, TIMING_GATHER);
       /* gather the ca grid */
@@ -548,7 +522,7 @@ namespace ScaFaCoS {
       /********************************************/
       /* POTENTIAL COMPUTATION */
       /********************************************/
-      if (d->require_total_energy || _potentials != NULL) {
+      if (d->require_total_energy || potentials != NULL) {
         /* apply energy optimized influence function */
         START(TIMING_INFLUENCE)
           apply_energy_influence_function(d);
@@ -562,7 +536,7 @@ namespace ScaFaCoS {
             STOP(TIMING_POTENTIALS)
               }
 
-        if (_potentials != NULL) {
+        if (potentials != NULL) {
           /* backtransform the grid */
           
           if(d->require_timings != ESTIMATE_ALL
@@ -581,7 +555,7 @@ namespace ScaFaCoS {
 
           /* compute potentials */
           assign_potentials(d, d->ks_grid,
-                            num_real_particles, positions,
+                            num_charges, positions,
                             charges, 0,
                             potentials);
 
@@ -592,7 +566,7 @@ namespace ScaFaCoS {
       /********************************************/
       /* FIELD COMPUTATION */
       /********************************************/
-      if (_fields != NULL) {
+      if (fields != NULL) {
         /* apply force optimized influence function */
         START(TIMING_INFLUENCE);
         apply_force_influence_function(d);
@@ -621,63 +595,11 @@ namespace ScaFaCoS {
         START(TIMING_SPREAD);          
           spread_grid(d, d->rs_grid);
           STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
-          assign_fields_ik(d, d->rs_grid, dim, num_real_particles, 
+          assign_fields_ik(d, d->rs_grid, dim, num_charges, 
                            positions, 0, fields);
           STOP(TIMING_FIELDS);
           }
         }
-
-      if (d->near_field_flag) {
-        /* start near timer */
-        START(TIMING_NEAR)
-
-          /* compute near field */
-          fcs_near_t near;
-        fcs_float alpha = d->alpha;
-  
-        fcs_near_create(&near);
-        /*  fcs_near_set_field_potential(&near, compute_near);*/
-        fcs_near_set_loop(&near, compute_near_loop);
-
-        fcs_float box_base[3] = {0.0, 0.0, 0.0 };
-        fcs_float box_a[3] = {d->box_l[0], 0.0, 0.0 };
-        fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
-        fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
-        fcs_near_set_system(&near, box_base, box_a, box_b, box_c, NULL);
-
-        fcs_near_set_particles(&near, num_real_particles, num_real_particles,
-                               positions, charges, indices,
-                               (_fields != NULL) ? fields : NULL, 
-                               (_potentials != NULL) ? potentials : NULL);
-
-        fcs_near_set_ghosts(&near, num_ghost_particles,
-                            ghost_positions, ghost_charges, ghost_indices);
-
-        P3M_DEBUG(printf( "  calling fcs_near_compute()...\n"));
-        fcs_near_compute(&near, d->r_cut, &alpha, d->comm.mpicomm);
-        P3M_DEBUG(printf( "  returning from fcs_near_compute().\n"));
- 
-        fcs_near_destroy(&near);
-
-        STOP(TIMING_NEAR)
-          }
-
-      START(TIMING_COMP)
-        /* sort particles back */
-        P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
-      fcs_gridsort_sort_backward(&gridsort,
-                                 fields, potentials,
-                                 _fields, _potentials, 1,
-                                 d->comm.mpicomm);
-      P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
-  
-      fcs_gridsort_free(&gridsort);
-      fcs_gridsort_destroy(&gridsort);
-
-      if (fields != NULL) free(fields);
-      if (potentials != NULL) free(potentials);
-
-      STOP(TIMING_COMP)
 
         /* collect timings from the different nodes */
         if (d->require_timings!=NONE) {
@@ -705,7 +627,7 @@ namespace ScaFaCoS {
                        0, d->comm.mpicomm);
 
         if (d->require_timings == ESTIMATE_ALL || d->require_timings == ESTIMATE_FFT) {
-            if (_potentials != NULL)
+            if (potentials != NULL)
                 d->timings[TIMING_BACK] = 4 * d->timings[TIMING_FORWARD];
             else
                 d->timings[TIMING_BACK] = 3 * d->timings[TIMING_FORWARD];
@@ -751,13 +673,13 @@ namespace ScaFaCoS {
 #endif
         }
 
-      P3M_INFO(printf( "ifcs_p3m_run() finished.\n"));
+      P3M_INFO(printf( "ifcs_p3m_run() [IK] finished.\n"));
     }
 #endif
 
     /***************************************************/
     /* RUN COMPONENTS */
-    static void
+    void
     domain_decompose(data_struct *d, fcs_gridsort_t *gridsort,
                      fcs_int _num_particles,
                      fcs_float *_positions, fcs_float *_charges,
@@ -822,7 +744,7 @@ namespace ScaFaCoS {
         After the call, caf_cache contains a cache of the values of the
         charge assignment fraction (caf) for x,y,z.
     */
-    static fcs_int 
+    fcs_int 
     get_ca_points(data_struct *d, 
                   fcs_float real_pos[3], 
                   fcs_int shifted) {
@@ -891,7 +813,7 @@ namespace ScaFaCoS {
     }
 
     /** Assign the charges to the grid */
-    static void 
+    void 
     assign_charges(data_struct* d,
                    fcs_float *data,
                    fcs_int num_real_particles,
@@ -930,7 +852,7 @@ namespace ScaFaCoS {
     }
 
     /* Gather information for FFT grid inside the nodes domain (inner local grid) */
-    static void gather_grid(data_struct* d, fcs_float* rs_grid) {
+    void gather_grid(data_struct* d, fcs_float* rs_grid) {
       MPI_Status status;
       fcs_float *tmp_ptr;
 
@@ -983,7 +905,7 @@ namespace ScaFaCoS {
       P3M_DEBUG(printf( "  gather_grid() finished.\n"));
     }
 
-    static void add_block(fcs_float *in, fcs_float *out, int start[3], int size[3], int dim[3]) {
+    void add_block(fcs_float *in, fcs_float *out, int start[3], int size[3], int dim[3]) {
       /* fast,mid and slow changing indices */
       int f,m,s;
       /* linear index of in grid, linear index of out grid */
@@ -1008,7 +930,7 @@ namespace ScaFaCoS {
 
 
     /* apply the influence function */
-    static void apply_energy_influence_function(data_struct* d) {
+    void apply_energy_influence_function(data_struct* d) {
       P3M_DEBUG(printf( "  apply_energy_influence_function() started...\n"));
       const fcs_int size = d->fft.plan[3].new_size;
       for (fcs_int i=0; i < size; i++) {
@@ -1019,7 +941,7 @@ namespace ScaFaCoS {
     }
 
     /* apply the influence function */
-    static void apply_force_influence_function(data_struct* d) {
+    void apply_force_influence_function(data_struct* d) {
       P3M_DEBUG(printf( "  apply_force_influence_function() started...\n"));
       const fcs_int size = d->fft.plan[3].new_size;
       for (fcs_int i=0; i < size; i++) {
@@ -1029,7 +951,7 @@ namespace ScaFaCoS {
       P3M_DEBUG(printf( "  apply_force_influence_function() finished.\n"));
     }
 
-    static void ik_diff(data_struct* d, int dim) {
+    void ik_diff(data_struct* d, int dim) {
       fcs_int ind;
       fcs_int j[3];
       fcs_int* d_operator = NULL;
@@ -1069,7 +991,7 @@ namespace ScaFaCoS {
       /* store the result in d->rs_grid */
     }
 
-    static void spread_grid(data_struct* d, fcs_float* rs_grid) {
+    void spread_grid(data_struct* d, fcs_float* rs_grid) {
       int s_dir,r_dir,evenodd;
       MPI_Status status;
       fcs_float *tmp_ptr;
@@ -1115,7 +1037,7 @@ namespace ScaFaCoS {
 
     /** Compute the total energy of the system in kspace. No need to
         backtransform the FFT grid in this case! */
-    static fcs_float compute_total_energy(data_struct* d) {
+    fcs_float compute_total_energy(data_struct* d) {
       fcs_float local_k_space_energy;
       fcs_float k_space_energy;
 
@@ -1147,7 +1069,7 @@ namespace ScaFaCoS {
     }
 
     /* Backinterpolate the potentials obtained from k-space to the positions */
-    static void 
+    void 
     assign_potentials(data_struct* d, 
                       fcs_float *data,
                       fcs_int num_real_particles, 
@@ -1196,7 +1118,7 @@ namespace ScaFaCoS {
     }
 
     /* Backinterpolate the forces obtained from k-space to the positions */
-    static void 
+    void 
     assign_fields_ik(data_struct* d, 
                      fcs_float *data,
                      fcs_int dim,
@@ -1242,7 +1164,7 @@ namespace ScaFaCoS {
 
 #ifdef P3M_AD
     /* Backinterpolate the forces obtained from k-space to the positions */
-    static void 
+    void 
     assign_fields_ad(data_struct* d,
                      fcs_float *data,
                      fcs_int num_real_particles, 

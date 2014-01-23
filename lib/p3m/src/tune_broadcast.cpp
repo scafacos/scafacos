@@ -67,8 +67,6 @@ namespace ScaFaCoS {
     void
     tune_broadcast_slave(data_struct *d, fcs_int num_particles,
                          fcs_float *positions, fcs_float *charges) {
-      const char* fnc_name = "tune_broadcast_slave";
-
       P3M_DEBUG(printf( "tune_broadcast_slave() started...\n"));
       if (d->comm.rank == 0)
         throw std::logic_error("Internal error: tune_broadcast_slave " 

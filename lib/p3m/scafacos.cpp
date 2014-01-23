@@ -199,30 +199,20 @@ void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
         data_struct *d = (data_struct*) rd;
         switch (flag) {
             case 0:
-            {
-                d->require_timings == NONE;
-            }
-                break;
+              d->require_timings = NONE;
+              break;
             case 1:
-            {
-                d->require_timings == ESTIMATE_ALL;
-            }
-                break;
+              d->require_timings = ESTIMATE_ALL;
+              break;
             case 2:
-            {
-                d->require_timings == ESTIMATE_FFT;
-            }
-                break;
+              d->require_timings = ESTIMATE_FFT;
+              break;
             case 3:
-            {
-                d->require_timings == ESTIMATE_ASSIGNMENT;
-            }
-                break;
+              d->require_timings = ESTIMATE_ASSIGNMENT;
+              break;
             case 4:
-            {
-                d->require_timings == FULL;
-            }
-                break;
+              d->require_timings = FULL;
+              break;
         }
     }
     
