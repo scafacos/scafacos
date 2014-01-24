@@ -138,11 +138,6 @@ static void precompute_inv_phi_hat_general_window(
     const INT *local_N, const INT *local_N_start,
     const PNX(plan) window_param,
     C *pre_inv_phi_hat);
-static void twiddle_phi_hat(
-    const INT *n, const INT *no,
-    const INT *local_N, const INT *local_N_start,
-    int sign,
-    C *pre_phi_hat);
 
 /* Return the inverse window Fourier coefficients.
  * Since we use tensor product structure, only the return the factor that belongs to dimension 'dim'. */
@@ -250,11 +245,11 @@ static void convolution_with_general_window(
   if(pnfft_flags & PNFFT_TRANSPOSED_F_HAT){
     /* g_hat is transposed N1 x N2 x N0 */
     for(k1=local_N_start[1]; k1<local_N_start[1] + local_N[1]; k1++){
-      inv_phi_x = PNX(inv_phi_hat)(window_param, 1, k1) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k1*no[1]/((R)n[1]) ) );
+      inv_phi_x = PNX(inv_phi_hat)(window_param, 1, k1);
       for(k2=local_N_start[2]; k2<local_N_start[2] + local_N[2]; k2++){
-        inv_phi_xy = inv_phi_x * PNX(inv_phi_hat)(window_param, 2, k2) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k2*no[2]/((R)n[2]) ) );
+        inv_phi_xy = inv_phi_x * PNX(inv_phi_hat)(window_param, 2, k2);
         for(k0=local_N_start[0]; k0<local_N_start[0] + local_N[0]; k0++, k++){
-          inv_phi_xyz = inv_phi_xy * PNX(inv_phi_hat)(window_param, 0, k0) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k0*no[0]/((R)n[0]) ) );
+          inv_phi_xyz = inv_phi_xy * PNX(inv_phi_hat)(window_param, 0, k0);
           out[k] = in[k] * inv_phi_xyz;
         }
       }
@@ -262,11 +257,11 @@ static void convolution_with_general_window(
   } else {
     /* g_hat is non-transposed N0 x N1 x N2 */
     for(k0=local_N_start[0]; k0<local_N_start[0] + local_N[0]; k0++){
-      inv_phi_x = PNX(inv_phi_hat)(window_param, 0, k0) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k0*no[0]/((R)n[0]) ) );
+      inv_phi_x = PNX(inv_phi_hat)(window_param, 0, k0);
       for(k1=local_N_start[1]; k1<local_N_start[1] + local_N[1]; k1++){
-        inv_phi_xy = inv_phi_x * PNX(inv_phi_hat)(window_param, 1, k1) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k1*no[1]/((R)n[1]) ) );
+        inv_phi_xy = inv_phi_x * PNX(inv_phi_hat)(window_param, 1, k1);
         for(k2=local_N_start[2]; k2<local_N_start[2] + local_N[2]; k2++, k++){
-          inv_phi_xyz = inv_phi_xy * PNX(inv_phi_hat)(window_param, 2, k2) * pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k2*no[2]/((R)n[2]) ) );
+          inv_phi_xyz = inv_phi_xy * PNX(inv_phi_hat)(window_param, 2, k2);
           out[k] = in[k] * inv_phi_xyz;
         }
       }
@@ -309,8 +304,6 @@ void PNX(precompute_inv_phi_hat_trafo)(
 {
   precompute_inv_phi_hat_general_window(ths->local_N, ths->local_N_start, ths,
       pre_phi_hat_trafo);
-  twiddle_phi_hat(ths->n, ths->no, ths->local_N, ths->local_N_start, FFTW_FORWARD,
-      pre_phi_hat_trafo);
 }
 
 void PNX(precompute_inv_phi_hat_adj)(
@@ -319,8 +312,6 @@ void PNX(precompute_inv_phi_hat_adj)(
     )
 {
   precompute_inv_phi_hat_general_window(ths->local_N, ths->local_N_start, ths,
-      pre_phi_hat_adj);
-  twiddle_phi_hat(ths->n, ths->no, ths->local_N, ths->local_N_start, FFTW_BACKWARD,
       pre_phi_hat_adj);
 }
 
@@ -335,19 +326,5 @@ static void precompute_inv_phi_hat_general_window(
   for(INT t=0; t<3; t++)
     for(INT k=local_N_start[t]; k<local_N_start[t] + local_N[t]; k++, l++)
       pre_inv_phi_hat[l] = PNX(inv_phi_hat)(window_param, t, k);
-}
-
-static void twiddle_phi_hat(
-    const INT *n, const INT *no,
-    const INT *local_N, const INT *local_N_start,
-    int sign,
-    C *pre_inv_phi_hat
-    )
-{
-  INT l=0;
-
-  for(INT t=0; t<3; t++)
-    for(INT k=local_N_start[t]; k<local_N_start[t] + local_N[t]; k++, l++)
-      pre_inv_phi_hat[l] *= pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( k*no[t]/((R)n[t]) ) );
 }
 

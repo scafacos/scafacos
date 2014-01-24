@@ -46,7 +46,6 @@
 #define FCS_P2NFFT_EXIT_AFTER_TUNING 0
 #define FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE 0
 #define FCS_P2NFFT_ENABLE_TUNING_BUG 0
-#define FCS_P2NFFT_TEST_PFFT_SHIFT 1
 
 /* compute d-th component of A^T * v */
 #define At_TIMES_VEC(_A_, _v_, _d_) ( (_v_)[0] * (_A_)[_d_] + (_v_)[1] * (_A_)[_d_ + 3] + (_v_)[2] * (_A_)[_d_ + 6] )
@@ -1465,24 +1464,19 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
 {
   ptrdiff_t howmany = 1, alloc_local, m;
   ptrdiff_t local_Ni[3], local_Ni_start[3], local_No[3], local_No_start[3];
-  fcs_float x0, x1, x2, x2norm, xsnorm, scale = 1.0, twiddle, twiddle_k0, twiddle_k1, twiddle_k2;
+  fcs_float x0, x1, x2, x2norm, xsnorm, scale = 1.0;
   FCS_PFFT(plan) pfft;
   fcs_pnfft_complex *regkern_hat;
 
   alloc_local = FCS_PFFT(local_size_many_dft)(3, N, N, N, howmany,
-      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, PFFT_TRANSPOSED_OUT,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT,
       local_Ni, local_Ni_start, local_No, local_No_start);
 
   regkern_hat = FCS_PFFT(alloc_complex)(alloc_local);
   
   pfft = FCS_PFFT(plan_many_dft)(3, N, N, N, howmany,
       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, regkern_hat, regkern_hat, comm_cart,
-#if FCS_P2NFFT_TEST_PFFT_SHIFT
-      PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT| PFFT_ESTIMATE
-#else
-      PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_ESTIMATE
-#endif
-      );
+      PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT| PFFT_ESTIMATE);
 
   for(int t=0; t<3; t++)
     scale *= 1.0 / N[t];
@@ -1497,21 +1491,13 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
  
   /* shift FFT output via twiddle factors on the input */ 
   m=0;
-  twiddle_k0 = (local_Ni_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
-  for(ptrdiff_t k0 = local_Ni_start[0]; k0 < local_Ni_start[0] + local_Ni[0]; k0++, twiddle_k0 *= -1.0){
-    x0 = (fcs_float) k0 / N[0] - 0.5;
-    twiddle_k1 = (local_Ni_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
-    for(ptrdiff_t k1 = local_Ni_start[1]; k1 < local_Ni_start[1] + local_Ni[1]; k1++, twiddle_k1 *= -1.0){
-      x1 = (fcs_float) k1 / N[1] - 0.5;
-      twiddle_k2 = (local_Ni_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
-      for(ptrdiff_t k2 = local_Ni_start[2]; k2 < local_Ni_start[2] + local_Ni[2]; k2++, twiddle_k2 *= -1.0, m++){
-        x2 = (fcs_float) k2 / N[2] - 0.5;
+  for(ptrdiff_t k0 = local_Ni_start[0]; k0 < local_Ni_start[0] + local_Ni[0]; k0++){
+    x0 = (fcs_float) k0 / N[0];
+    for(ptrdiff_t k1 = local_Ni_start[1]; k1 < local_Ni_start[1] + local_Ni[1]; k1++){
+      x1 = (fcs_float) k1 / N[1];
+      for(ptrdiff_t k2 = local_Ni_start[2]; k2 < local_Ni_start[2] + local_Ni[2]; k2++, m++){
+        x2 = (fcs_float) k2 / N[2];
         xsnorm = fcs_sqrt(x0*x0+x1*x1+x2*x2);
-#if FCS_P2NFFT_TEST_PFFT_SHIFT
-        twiddle = 1.0;
-#else
-        twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
-#endif
 
         /* constant continuation outside the ball with radius 0.5 */
         x2norm = fcs_sqrt(x0*x0*box_scales[0]*box_scales[0]
@@ -1578,7 +1564,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
 //         regkern_hat[m] = ifcs_p2nfft_reg_far_expl_cont(
 //             ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB, c*box_scales[0]) / box_scales[0];
         
-        regkern_hat[m] *= scale * twiddle;
+        regkern_hat[m] *= scale;
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
@@ -1599,27 +1585,18 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
     csum = 0.0;
 #endif
 
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   /* take care of transposed order N1 x N2 x N0 */
   /* shift FFT input via twiddle factors on the output */
   m=0;
-  twiddle_k1 = (local_No_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
-  for(ptrdiff_t k1 = 0; k1 < local_No[1]; k1++, twiddle_k1 *= -1.0){
-    twiddle_k2 = (local_No_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
-    for(ptrdiff_t k2 = 0; k2 < local_No[2]; k2++, twiddle_k2 *= -1.0){
-      twiddle_k0 = (local_No_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
-      for(ptrdiff_t k0 = 0; k0 < local_No[0]; k0++, twiddle_k0 *= -1.0, m++){
-#if FCS_P2NFFT_TEST_PFFT_SHIFT
-        twiddle = 1.0;
-#else
-        twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
-#endif
-        regkern_hat[m] *= twiddle;
-#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  for(ptrdiff_t k1 = 0; k1 < local_No[1]; k1++){
+    for(ptrdiff_t k2 = 0; k2 < local_No[2]; k2++){
+      for(ptrdiff_t k0 = 0; k0 < local_No[0]; k0++, m++){
         csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
-#endif
       }
     }
   }
+#endif
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -1678,13 +1655,13 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
   ptrdiff_t local_Ni[3], local_Ni_start[3], local_No[3], local_No_start[3], k[3];
   fcs_float lk[3];
   fcs_int num_periodic_dims = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
-  fcs_float scale = 1.0, twiddle, twiddle_k0=1.0, twiddle_k1=1.0, twiddle_k2=1.0;
+  fcs_float scale = 1.0;
   fcs_float xs[3];
   FCS_PFFT(plan) pfft;
   fcs_pnfft_complex *regkern_hat;
 
   alloc_local = FCS_PFFT(local_size_many_dft)(3, N, N, N, howmany,
-      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, PFFT_TRANSPOSED_OUT,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT,
       local_Ni, local_Ni_start, local_No, local_No_start);
 
   regkern_hat = FCS_PFFT(alloc_complex)(alloc_local);
@@ -1695,12 +1672,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
 
   pfft = FCS_PFFT(plan_many_dft_skipped)(3, N, N, N, howmany,
       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, skipped_dims, regkern_hat, regkern_hat, comm_cart,
-#if FCS_P2NFFT_TEST_PFFT_SHIFT
-      PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT| PFFT_ESTIMATE
-#else
-      PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_ESTIMATE
-#endif
-      );
+      PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT| PFFT_ESTIMATE);
 
   /* compute the volume element corresponding to periodic dims */
   scale /= volume_of_periodic_dims(box_a, box_b, box_c, periodicity);
@@ -1719,23 +1691,15 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
   /* shift FFT output via twiddle factors on the input */
   /* twiddle only the non-periodic dims, since there we need to calculate 1d-FFTs */ 
   m=0;
-  if(!periodicity[0]) twiddle_k0 = (local_Ni_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
   for(ptrdiff_t l0 = local_Ni_start[0]; l0 < local_Ni_start[0] + local_Ni[0]; l0++){
-    xs[0] = (periodicity[0]) ? 0.0 : (fcs_float) l0 / N[0] - 0.5;
-    k[0] = (periodicity[0]) ? l0 - N[0]/2 : 0;  
-    if(!periodicity[1]) twiddle_k1 = (local_Ni_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
+    xs[0] = (periodicity[0]) ? 0.0 : (fcs_float) l0 / N[0];
+    k[0] = (periodicity[0]) ? l0 : 0;  
     for(ptrdiff_t l1 = local_Ni_start[1]; l1 < local_Ni_start[1] + local_Ni[1]; l1++){
-      xs[1] = (periodicity[1]) ? 0.0 : (fcs_float) l1 / N[1] - 0.5;
-      k[1] = (periodicity[1]) ? l1 - N[1]/2 : 0;  
-      if(!periodicity[2]) twiddle_k2 = (local_Ni_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
+      xs[1] = (periodicity[1]) ? 0.0 : (fcs_float) l1 / N[1];
+      k[1] = (periodicity[1]) ? l1 : 0;  
       for(ptrdiff_t l2 = local_Ni_start[2]; l2 < local_Ni_start[2] + local_Ni[2]; l2++, m++){
-        xs[2] = (periodicity[2]) ? 0.0 : (fcs_float) l2 / N[2] - 0.5;
-        k[2] = (periodicity[2]) ? l2 - N[2]/2 : 0;  
-#if FCS_P2NFFT_TEST_PFFT_SHIFT
-        twiddle = 1.0;
-#else
-        twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
-#endif
+        xs[2] = (periodicity[2]) ? 0.0 : (fcs_float) l2 / N[2];
+        k[2] = (periodicity[2]) ? l2 : 0;  
 
         /* New regularization for mixed boundary conditions */
         fcs_float lknorm = 0.0, x2norm = 0.0, xsnorm = 0.0, h = 1.0;
@@ -1828,19 +1792,13 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
           }
         }
 
-        regkern_hat[m] *= scale * twiddle;
-#if !FCS_P2NFFT_TEST_PFFT_SHIFT
-        fprintf(stderr, "tune.c: regkern[%2td] = %.2e + I* %.2e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m]));
-#endif
+        regkern_hat[m] *= scale;
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
 #endif
-        if(!periodicity[2]) twiddle_k2 *= -1.0;
       }
-      if(!periodicity[1]) twiddle_k1 *= -1.0;
     }
-    if(!periodicity[0]) twiddle_k0 *= -1.0;
   }
 
 
@@ -1905,34 +1863,18 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
     csum = 0.0;
 #endif
 
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   /* take care of transposed order N1 x N2 x N0 */
   /* shift FFT input via twiddle factors on the output */
   m=0;
-  if(!periodicity[1]) twiddle_k1 = (local_No_start[1] - N[1]/2) % 2 ? -1.0 : 1.0;
   for(ptrdiff_t k1 = 0; k1 < local_No[1]; k1++){
-    if(!periodicity[2]) twiddle_k2 = (local_No_start[2] - N[2]/2) % 2 ? -1.0 : 1.0;
     for(ptrdiff_t k2 = 0; k2 < local_No[2]; k2++){
-      if(!periodicity[0]) twiddle_k0 = (local_No_start[0] - N[0]/2) % 2 ? -1.0 : 1.0;
       for(ptrdiff_t k0 = 0; k0 < local_No[0]; k0++, m++){
-#if FCS_P2NFFT_TEST_PFFT_SHIFT
-        twiddle = 1.0;
-#else
-        twiddle = twiddle_k0 * twiddle_k1 * twiddle_k2;
-#endif
-        regkern_hat[m] *= twiddle;
-#if !FCS_P2NFFT_TEST_PFFT_SHIFT
-        fprintf(stderr, "tune.c: regkern_hat[%2td] = %.2e + I* %.2e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m]));
-#endif
-
-#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
         csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
-#endif
-        if(!periodicity[0]) twiddle_k0 *= -1.0;
       }
-      if(!periodicity[2]) twiddle_k2 *= -1.0;
     }
-    if(!periodicity[1]) twiddle_k1 *= -1.0;
   }
+#endif
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);

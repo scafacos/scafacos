@@ -37,8 +37,6 @@
 
 #define PNFFT_SORT_RADIX 1
 
-
-
 /* Begin: This part is based on ifftw3.h */
 #include <stdlib.h>             /* size_t */
 #include <stdarg.h>             /* va_list */
