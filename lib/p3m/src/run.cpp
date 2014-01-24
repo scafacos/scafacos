@@ -544,9 +544,9 @@ namespace ScaFaCoS {
         for (int dim = 0; dim < 3; dim++) {
           /* differentiate in direction dim */
           /* result is stored in d->rs_grid */
-          //START(TIMING_FIELDS);
+          START(TIMING_FIELDS);
           ik_diff(d, dim);     
-          //STOP(TIMING_FIELDS);
+          STOP(TIMING_FIELDS);
           
         if(d->require_timings != ESTIMATE_ALL
         && d->require_timings != ESTIMATE_FFT){
