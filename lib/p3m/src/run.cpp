@@ -99,6 +99,8 @@ namespace ScaFaCoS {
                       fcs_float* positions, fcs_float* charges,
                       fcs_int shifted,
                       fcs_float* potentials);
+    
+    static void collect_print_timings(data_struct *d);
 
 #ifdef P3M_IK
     /* assign the fields to the positions in dimension dim [IK]*/
@@ -400,70 +402,10 @@ namespace ScaFaCoS {
               d->timings[TIMING_BACK] = 2 * d->timings[TIMING_FORWARD];
           else
               d->timings[TIMING_BACK] = d->timings[TIMING_FORWARD];
-      }      
+      }  
+      
         /* collect timings from the different nodes */
-        if (d->require_timings!=NONE) {
-          d->timings[TIMING_FAR] += d->timings[TIMING_CA];
-          d->timings[TIMING_FAR] += d->timings[TIMING_GATHER];
-          d->timings[TIMING_FAR] += d->timings[TIMING_FORWARD];
-          d->timings[TIMING_FAR] += d->timings[TIMING_BACK];
-          d->timings[TIMING_FAR] += d->timings[TIMING_INFLUENCE];
-          d->timings[TIMING_FAR] += d->timings[TIMING_SPREAD];
-          d->timings[TIMING_FAR] += d->timings[TIMING_POTENTIALS];
-          d->timings[TIMING_FAR] += d->timings[TIMING_FIELDS];
-
-          d->timings[TIMING] += d->timings[TIMING_DECOMP];
-          d->timings[TIMING] += d->timings[TIMING_FAR];
-          d->timings[TIMING] += d->timings[TIMING_NEAR];
-          d->timings[TIMING] += d->timings[TIMING_COMP];
-
-          if (on_root())
-            MPI_Reduce(MPI_IN_PLACE, d->timings,
-                       NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
-                       0, d->comm.mpicomm);
-          else
-            MPI_Reduce(d->timings, 0,
-                       NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
-                       0, d->comm.mpicomm);
-#ifdef P3M_PRINT_TIMINGS
-          printf("  P3M TIMINGS:\n");
-          printf("    total=%le (%lf)\n", d->timings[TIMING], 1.0);
-          printf("      far=%le (%lf)\n", d->timings[TIMING_FAR], 
-                 d->timings[TIMING_FAR]/d->timings[TIMING]);
-          printf("     near=%le (%lf)\n", d->timings[TIMING_NEAR], 
-                 d->timings[TIMING_NEAR]/d->timings[TIMING]);
-          printf("       ca=%le (%lf)\n", d->timings[TIMING_CA], 
-                 d->timings[TIMING_CA]/d->timings[TIMING]);
-          printf("      pot=%le (%lf)\n", d->timings[TIMING_POTENTIALS], 
-                 d->timings[TIMING_POTENTIALS]/d->timings[TIMING]);
-          if(d->require_timings == ESTIMATE_ALL
-          || d->require_timings == ESTIMATE_ASSIGNMENT)
-              printf(" (empirical estimate)");
-          printf("\n");
-          printf("   fields=%le (%lf)", d->timings[TIMING_FIELDS], 
-                 d->timings[TIMING_FIELDS]/d->timings[TIMING]);
-          if(d->require_timings == ESTIMATE_ALL
-          || d->require_timings == ESTIMATE_ASSIGNMENT)
-              printf(" (empirical estimate)");
-          printf("\n");
-          printf("   gather=%le (%lf)\n", d->timings[TIMING_GATHER], 
-                 d->timings[TIMING_GATHER]/d->timings[TIMING]);
-          printf("   spread=%le (%lf)\n", d->timings[TIMING_SPREAD], 
-                 d->timings[TIMING_SPREAD]/d->timings[TIMING]);
-          printf("  forward=%le (%lf)\n", d->timings[TIMING_FORWARD], 
-                 d->timings[TIMING_FORWARD]/d->timings[TIMING]);
-          printf("     back=%le (%lf)", d->timings[TIMING_BACK], 
-                 d->timings[TIMING_BACK]/d->timings[TIMING]);
-          if(d->require_timings == ESTIMATE_ALL
-          || d->require_timings == ESTIMATE_FFT)
-              printf(" (theoretical estimate)");
-          printf("\n");
-          printf("   decomp=%le (%lf)\n", d->timings[TIMING_DECOMP], 
-                 d->timings[TIMING_DECOMP]/d->timings[TIMING]);
-          printf("     comp=%le (%lf)\n", d->timings[TIMING_COMP], 
-                 d->timings[TIMING_COMP]/d->timings[TIMING]);
-#endif
-        }
+        if (d->require_timings!=NONE) collect_print_timings(d);
 
       P3M_INFO(printf( "P3M::run() finished.\n"));
     }
@@ -602,9 +544,9 @@ namespace ScaFaCoS {
         for (int dim = 0; dim < 3; dim++) {
           /* differentiate in direction dim */
           /* result is stored in d->rs_grid */
-          START(TIMING_FIELDS);
+          //START(TIMING_FIELDS);
           ik_diff(d, dim);     
-          STOP(TIMING_FIELDS);
+          //STOP(TIMING_FIELDS);
           
         if(d->require_timings != ESTIMATE_ALL
         && d->require_timings != ESTIMATE_FFT){
@@ -678,81 +620,20 @@ namespace ScaFaCoS {
       if (potentials != NULL) free(potentials);
 
       STOP(TIMING_COMP)
-
-        /* collect timings from the different nodes */
-        if (d->require_timings!=NONE) {
-          d->timings[TIMING_FAR] += d->timings[TIMING_CA];
-          d->timings[TIMING_FAR] += d->timings[TIMING_GATHER];
-          d->timings[TIMING_FAR] += d->timings[TIMING_FORWARD];
-          d->timings[TIMING_FAR] += d->timings[TIMING_BACK];
-          d->timings[TIMING_FAR] += d->timings[TIMING_INFLUENCE];
-          d->timings[TIMING_FAR] += d->timings[TIMING_SPREAD];
-          d->timings[TIMING_FAR] += d->timings[TIMING_POTENTIALS];
-          d->timings[TIMING_FAR] += d->timings[TIMING_FIELDS];
-
-          d->timings[TIMING] += d->timings[TIMING_DECOMP];
-          d->timings[TIMING] += d->timings[TIMING_FAR];
-          d->timings[TIMING] += d->timings[TIMING_NEAR];
-          d->timings[TIMING] += d->timings[TIMING_COMP];
-
-          if (on_root())
-            MPI_Reduce(MPI_IN_PLACE, d->timings,
-                       NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
-                       0, d->comm.mpicomm);
-          else
-            MPI_Reduce(d->timings, 0,
-                       NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
-                       0, d->comm.mpicomm);
-
-        if (d->require_timings == ESTIMATE_ALL || d->require_timings == ESTIMATE_FFT) {
+              
+              /* estimate FFT back timing*/
+if (d->require_timings == ESTIMATE_ALL || d->require_timings == ESTIMATE_FFT) {
             if (_potentials != NULL)
                 d->timings[TIMING_BACK] = 4 * d->timings[TIMING_FORWARD];
             else
                 d->timings[TIMING_BACK] = 3 * d->timings[TIMING_FORWARD];
-        }
-
-#ifdef P3M_PRINT_TIMINGS
-          printf("  P3M TIMINGS:\n");
-          printf("    total=%le (%lf)\n", d->timings[TIMING], 1.0);
-          printf("      far=%le (%lf)\n", d->timings[TIMING_FAR], 
-                 d->timings[TIMING_FAR]/d->timings[TIMING]);
-          printf("     near=%le (%lf)\n", d->timings[TIMING_NEAR], 
-                 d->timings[TIMING_NEAR]/d->timings[TIMING]);
-          printf("       ca=%le (%lf)\n", d->timings[TIMING_CA], 
-                 d->timings[TIMING_CA]/d->timings[TIMING]);
-          printf("      pot=%le (%lf)\n", d->timings[TIMING_POTENTIALS], 
-                 d->timings[TIMING_POTENTIALS]/d->timings[TIMING]);
-          if(d->require_timings == ESTIMATE_ALL
-          || d->require_timings == ESTIMATE_ASSIGNMENT)
-              printf(" (empirical estimate)");
-          printf("\n");
-          printf("   fields=%le (%lf)", d->timings[TIMING_FIELDS], 
-                 d->timings[TIMING_FIELDS]/d->timings[TIMING]);
-          if(d->require_timings == ESTIMATE_ALL
-          || d->require_timings == ESTIMATE_ASSIGNMENT)
-              printf(" (empirical estimate)");
-          printf("\n");
-          printf("   gather=%le (%lf)\n", d->timings[TIMING_GATHER], 
-                 d->timings[TIMING_GATHER]/d->timings[TIMING]);
-          printf("   spread=%le (%lf)\n", d->timings[TIMING_SPREAD], 
-                 d->timings[TIMING_SPREAD]/d->timings[TIMING]);
-          printf("  forward=%le (%lf)\n", d->timings[TIMING_FORWARD], 
-                 d->timings[TIMING_FORWARD]/d->timings[TIMING]);
-          printf("     back=%le (%lf)", d->timings[TIMING_BACK], 
-                 d->timings[TIMING_BACK]/d->timings[TIMING]);
-          if(d->require_timings == ESTIMATE_ALL
-          || d->require_timings == ESTIMATE_FFT)
-              printf(" (theoretical estimate)");
-          printf("\n");
-          printf("   decomp=%le (%lf)\n", d->timings[TIMING_DECOMP], 
-                 d->timings[TIMING_DECOMP]/d->timings[TIMING]);
-          printf("     comp=%le (%lf)\n", d->timings[TIMING_COMP], 
-                 d->timings[TIMING_COMP]/d->timings[TIMING]);
-#endif
-        }
+        
+            /* collect timings from the different nodes */
+        if (d->require_timings!=NONE) collect_print_timings(d);       
 
       P3M_INFO(printf( "ifcs_p3m_run() finished.\n"));
-    }
+            }
+        }
 #endif
 
     /***************************************************/
@@ -1028,6 +909,74 @@ namespace ScaFaCoS {
       }
       P3M_DEBUG(printf( "  apply_force_influence_function() finished.\n"));
     }
+    
+    /* Add up the measured timings and collect information from all nodes.
+     * Print the timings if requested so.
+     */
+        static void collect_print_timings(data_struct *d) {
+            d->timings[TIMING_FAR] += d->timings[TIMING_CA];
+            d->timings[TIMING_FAR] += d->timings[TIMING_GATHER];
+            d->timings[TIMING_FAR] += d->timings[TIMING_FORWARD];
+            d->timings[TIMING_FAR] += d->timings[TIMING_BACK];
+            d->timings[TIMING_FAR] += d->timings[TIMING_INFLUENCE];
+            d->timings[TIMING_FAR] += d->timings[TIMING_SPREAD];
+            d->timings[TIMING_FAR] += d->timings[TIMING_POTENTIALS];
+            d->timings[TIMING_FAR] += d->timings[TIMING_FIELDS];
+
+            d->timings[TIMING] += d->timings[TIMING_DECOMP];
+            d->timings[TIMING] += d->timings[TIMING_FAR];
+            d->timings[TIMING] += d->timings[TIMING_NEAR];
+            d->timings[TIMING] += d->timings[TIMING_COMP];
+
+            if (on_root())
+                MPI_Reduce(MPI_IN_PLACE, d->timings,
+                    NUM_TIMINGS, MPI_DOUBLE, MPI_MAX,
+                    0, d->comm.mpicomm);
+            else
+                MPI_Reduce(d->timings, 0,
+                    NUM_TIMINGS, MPI_DOUBLE, MPI_MAX,
+                    0, d->comm.mpicomm);
+
+#ifdef P3M_PRINT_TIMINGS
+          printf("  P3M TIMINGS:\n");
+          printf("    total=%le (%lf)\n", d->timings[TIMING], 1.0);
+          printf("      far=%le (%lf)\n", d->timings[TIMING_FAR], 
+                 d->timings[TIMING_FAR]/d->timings[TIMING]);
+          printf("     near=%le (%lf)\n", d->timings[TIMING_NEAR], 
+                 d->timings[TIMING_NEAR]/d->timings[TIMING]);
+          printf("       ca=%le (%lf)\n", d->timings[TIMING_CA], 
+                 d->timings[TIMING_CA]/d->timings[TIMING]);
+          printf("      pot=%le (%lf)", d->timings[TIMING_POTENTIALS], 
+                 d->timings[TIMING_POTENTIALS]/d->timings[TIMING]);
+          //if(d->require_timings == ESTIMATE_ALL //not yet implemented
+          //|| d->require_timings == ESTIMATE_ASSIGNMENT)
+          //    printf(" (empirical estimate)");
+          printf("\n");
+          printf("   fields=%le (%lf)", d->timings[TIMING_FIELDS], 
+                 d->timings[TIMING_FIELDS]/d->timings[TIMING]);
+          //if(d->require_timings == ESTIMATE_ALL //not yet implemented
+          //|| d->require_timings == ESTIMATE_ASSIGNMENT)
+          //    printf(" (empirical estimate)");
+          printf("\n");
+          printf("   gather=%le (%lf)\n", d->timings[TIMING_GATHER], 
+                 d->timings[TIMING_GATHER]/d->timings[TIMING]);
+          printf("   spread=%le (%lf)\n", d->timings[TIMING_SPREAD], 
+                 d->timings[TIMING_SPREAD]/d->timings[TIMING]);
+          printf("  forward=%le (%lf)\n", d->timings[TIMING_FORWARD], 
+                 d->timings[TIMING_FORWARD]/d->timings[TIMING]);
+          printf("     back=%le (%lf)", d->timings[TIMING_BACK], 
+                 d->timings[TIMING_BACK]/d->timings[TIMING]);
+          if(d->require_timings == ESTIMATE_ALL
+          || d->require_timings == ESTIMATE_FFT)
+              printf(" (theoretical estimate)");
+          printf("\n");
+          printf("   decomp=%le (%lf)\n", d->timings[TIMING_DECOMP], 
+                 d->timings[TIMING_DECOMP]/d->timings[TIMING]);
+          printf("     comp=%le (%lf)\n", d->timings[TIMING_COMP], 
+                 d->timings[TIMING_COMP]/d->timings[TIMING]);
+#endif
+
+        }
 
     static void ik_diff(data_struct* d, int dim) {
       fcs_int ind;
