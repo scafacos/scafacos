@@ -378,7 +378,7 @@ static void local_size_B(
   }
 }
 
-void PNX(local_size_internal)(
+INT PNX(local_size_internal)(
     const INT *N, const INT *n, const INT *no,
     MPI_Comm comm_cart, unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,
@@ -388,7 +388,7 @@ void PNX(local_size_internal)(
   INT howmany = 1;
   unsigned pfft_flags = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
 
-  PX(local_size_many_dft)(3, n, N, no, howmany,
+  return PX(local_size_many_dft)(3, n, N, no, howmany,
       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT,
       local_N, local_N_start, local_no, local_no_start);
 }
@@ -409,7 +409,6 @@ PNX(plan) PNX(init_internal)(
   INT howmany = 1;
   INT alloc_local_data_in, alloc_local_gc;
   INT gcells_below[3], gcells_above[3];
-  INT local_no[3], local_no_start[3];
   INT local_ngc[3], local_gc_start[3];
   PNX(plan) ths;
 
@@ -526,19 +525,13 @@ PNX(plan) PNX(init_internal)(
   get_size_gcells(m, ths->cutoff, pnfft_flags,
       gcells_below, gcells_above);
 
-  pfft_flags = (ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
-  alloc_local_data_in = PX(local_size_many_dft)(3, n, N, no, howmany,
-      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags,
-      ths->local_N, ths->local_N_start, local_no, local_no_start);
+  alloc_local_data_in = PNX(local_size_internal)(N, n, no, comm_cart, ths->pnfft_flags,
+      ths->local_N, ths->local_N_start, ths->local_no, ths->local_no_start);
 
-  alloc_local_gc = PX(local_size_many_gc)(3, local_no, local_no_start,
+  alloc_local_gc = PX(local_size_many_gc)(3, ths->local_no, ths->local_no_start,
       alloc_local_data_in, howmany, gcells_below, gcells_above,
       local_ngc, local_gc_start);
 
-  /* update offsets such that they run from -N/2,...,N/2-1 */
-  PNX(local_size_internal)(N, n, no, comm_cart, ths->pnfft_flags,
-      ths->local_N, ths->local_N_start, ths->local_no, ths->local_no_start);
-  
   ths->local_N_total  = PNX(prod_INT)(d, ths->local_N);
   ths->local_no_total = PNX(prod_INT)(d, ths->local_no);
 
