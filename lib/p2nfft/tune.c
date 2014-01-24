@@ -46,7 +46,7 @@
 #define FCS_P2NFFT_EXIT_AFTER_TUNING 0
 #define FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE 0
 #define FCS_P2NFFT_ENABLE_TUNING_BUG 0
-#define FCS_P2NFFT_TEST_PFFT_SHIFT 0
+#define FCS_P2NFFT_TEST_PFFT_SHIFT 1
 
 /* compute d-th component of A^T * v */
 #define At_TIMES_VEC(_A_, _v_, _d_) ( (_v_)[0] * (_A_)[_d_] + (_v_)[1] * (_A_)[_d_ + 3] + (_v_)[2] * (_A_)[_d_ + 6] )
