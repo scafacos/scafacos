@@ -25,15 +25,13 @@
 
 namespace ScaFaCoS {
   namespace P3M {
-    void timing(data_struct *d, fcs_int _num_particles, 
-                fcs_float *_positions, fcs_float *_charges) {
+    void timing(data_struct *d, fcs_int num_particles, 
+                fcs_float *positions, fcs_float *charges) {
       if (d->comm.rank == 0)
         tune_broadcast_command(d, CMD_TIMING);
 
-      fcs_float *fields = 
-        static_cast<fcs_float *>(malloc(_num_particles*3*sizeof(fcs_float)));
-      fcs_float *potentials = 
-        static_cast<fcs_float *>(malloc(_num_particles*sizeof(fcs_float)));
+      fcs_float *fields = new fcs_float[3*num_particles];
+      fcs_float *potentials = new fcs_float[num_particles];
 
       prepare(d);
 
@@ -41,13 +39,13 @@ namespace ScaFaCoS {
       timingEnum require_timings_before = d->require_timings;
       if(d->require_timings == NONE || d->require_timings == FULL)
         d->require_timings = ESTIMATE_ALL;
-      run(d, _num_particles, _positions, _charges, fields, potentials);
+      run(d, num_particles, positions, charges, fields, potentials);
       /* Afterwards, d->timings is set */
       /* restore require_timings */
       d->require_timings = require_timings_before;
 
-      sfree(fields);
-      sfree(potentials);
+      delete[] fields;
+      delete[] potentials;
     }
   }
 }

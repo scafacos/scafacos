@@ -197,9 +197,9 @@ namespace ScaFaCoS {
       fcs_float *fields = NULL; 
       fcs_float *potentials = NULL; 
       if (_fields != NULL)
-        fields = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*3*num_real_particles));
+        fields = new fcs_float[3*num_real_particles];
       if (_potentials != NULL || d->require_total_energy)
-        potentials = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*num_real_particles));
+        potentials = new fcs_float[num_real_particles];
       
       STOP(TIMING_DECOMP);
       
@@ -252,8 +252,8 @@ namespace ScaFaCoS {
       fcs_gridsort_free(&gridsort);
       fcs_gridsort_destroy(&gridsort);
       
-      if (fields != NULL) free(fields);
-      if (potentials != NULL) free(potentials);
+      sdelete(fields);
+      sdelete(potentials);
       
       STOP(TIMING_COMP);
       P3M_INFO(printf( "P3M::run() finished.\n"));
@@ -626,9 +626,7 @@ namespace ScaFaCoS {
         charge assignment fraction (caf) for x,y,z.
     */
     fcs_int 
-    get_ca_points(data_struct *d, 
-                  fcs_float real_pos[3], 
-                  fcs_int shifted) {
+    get_ca_points(data_struct *d, fcs_float real_pos[3], fcs_int shifted) {
       /* linear index of the grid point */
       fcs_int linind = 0;
 

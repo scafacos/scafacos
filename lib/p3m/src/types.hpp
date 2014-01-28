@@ -176,7 +176,7 @@ namespace ScaFaCoS {
       /** number of interpolation points for charge assignment function */
       fcs_int n_interpol;
       /** whether to compute the near field in the method */
-      fcs_int near_field_flag;
+      bool near_field_flag;
 
       /* TUNABLE PARAMETERS */
       /** cutoff radius */
@@ -189,15 +189,15 @@ namespace ScaFaCoS {
       fcs_int cao;
   
       /* Whether or not it is necessary to retune the method before running it. */
-      int needs_retune;
+      bool needs_retune;
       /** Whether or not rcut is to be automatically tuned. */
-      int tune_r_cut;
+      bool tune_r_cut;
       /** Whether or not alpha is to be automatically tuned. */
-      int tune_alpha;
+      bool tune_alpha;
       /** Whether or not the grid is to be automatically tuned. */
-      int tune_grid;
+      bool tune_grid;
       /** Whether or not the charge assignment order is to be automatically tuned. */
-      int tune_cao;
+      bool tune_cao;
 
       /****************************************************
        * FLAGS TO TURN ON/OFF COMPUTATION OF DIFFERENT COMPONENTS
