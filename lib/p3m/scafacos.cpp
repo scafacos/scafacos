@@ -41,7 +41,7 @@ extern "C" {
     try {
       init(d, communicator);
     } catch (std::exception &e) {
-      return fcsResult_create(FCS_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
+      return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
     }
     return FCS_RESULT_SUCCESS;
   }
@@ -189,10 +189,8 @@ extern "C" {
       *total_energy = d->total_energy;
       return FCS_RESULT_SUCCESS;
     } else 
-      return 
-        fcsResult_create
-        (FCS_LOGICAL_ERROR, fnc_name, 
-         "Trying to get total energy, but computation was not requested.");
+      return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name,
+				"Trying to get total energy, but computation was not requested.");
   }
   
 void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
@@ -224,9 +222,8 @@ void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
 
     if (d->require_timings==NONE)
       return 
-        fcsResult_create
-        (FCS_LOGICAL_ERROR, fnc_name, 
-         "Trying to get timings, but timings were not requested.");
+        fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name,
+				"Trying to get timings, but timings were not requested.");
 
     *timing = d->timings[TIMING];
     *timing_near_field = d->timings[TIMING_NEAR];
@@ -250,7 +247,7 @@ void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
     try {
       run(d, _num_particles, _positions, _charges, _fields, _potentials);
     } catch (std::exception &e) {
-      return fcsResult_create(FCS_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
+      return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
     }
 
     return FCS_RESULT_SUCCESS;
@@ -267,7 +264,7 @@ void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
     try {
       tune(d, num_particles, positions, charges);
     } catch (std::exception &e) {
-      return fcsResult_create(FCS_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
+      return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
     }
 
     return FCS_RESULT_SUCCESS;

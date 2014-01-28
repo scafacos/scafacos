@@ -19,9 +19,7 @@
 #ifndef _P3M_SCAFACOS_H
 #define _P3M_SCAFACOS_H
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 #include <mpi.h>
 #include "FCSResult.h"
 

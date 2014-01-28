@@ -22,9 +22,7 @@
 #ifndef _P3M_TYPES_H
 #define _P3M_TYPES_H
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 #include "communication.hpp"
 #include "fft.hpp"
 

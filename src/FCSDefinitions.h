@@ -18,9 +18,12 @@
 */
 
 
-#ifndef FCS_DEFINITIONS_INCLUDED
-#define FCS_DEFINITIONS_INCLUDED
+#ifndef _FCSDEFINITIONS_H
+#define _FCSDEFINITIONS_H
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 /**
  * @file FCSInterface.h

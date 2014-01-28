@@ -19,9 +19,7 @@
 #ifndef _P3M_UTILS_HPP
 #define _P3M_UTILS_HPP
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <cmath>
 #include <cstring>

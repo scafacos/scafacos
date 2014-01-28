@@ -17,9 +17,7 @@
 */
 #ifndef _P3M_TUNE_BROADCAST_HPP
 #define _P3M_TUNE_BROADCAST_HPP
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include "types.hpp"
 

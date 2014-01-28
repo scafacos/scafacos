@@ -45,8 +45,7 @@ namespace ScaFaCoS {
     /* IMPLEMENTATION */
     /***************************************************/
     void
-    tune_broadcast_command
-    (data_struct *d, fcs_int command) {
+    tune_broadcast_command(data_struct *d, fcs_int command) {
       /* First send the command */
       P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %d.\n", \
                              d->comm.rank, command));
