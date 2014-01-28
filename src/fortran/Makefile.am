@@ -17,6 +17,7 @@ lib_LTLIBRARIES = libfcs4fortran.la
 endif
 
 libfcs4fortran_la_SOURCES = \
+	fcs4fortran_definitions.h \
 	fcs4fortran.f90
 
 fcs_module.$(FC_MODEXT): fcs4fortran.lo

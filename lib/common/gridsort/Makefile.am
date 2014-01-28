@@ -77,8 +77,10 @@ sl_SOURCE = \
   ../sl/include/sl_globals.h \
   ../sl/include/sl_index.h \
   ../sl/include/sl_key.h \
+  ../sl/include/sl_macros.h \
   ../sl/include/sl_pelem.h \
   ../sl/include/sl_protos.h \
+  ../sl/include/sl_protos_intern.h \
   ../sl/include/sl_protos_mpi.h \
   ../sl/include/sl_rename.h \
   ../sl/include/sl_rti_intern.h \
@@ -87,6 +89,7 @@ sl_SOURCE = \
   ../sl/include/sl_types.h \
   ../sl/include/sl_types_intern.h \
   ../sl/include/sl_xelem_call.h \
+  ../sl/include/spec_common.h \
   ../sl/include/spec_conf.h \
   ../sl/include/spec_core.h \
   ../sl/include/spec_public_conf.h \
@@ -108,7 +111,11 @@ sl_SOURCE = \
 libfcs_gridsort_back__p_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.h \
   z_tools.h \
@@ -122,7 +129,11 @@ libfcs_gridsort_back__p_la_SOURCES = \
 libfcs_gridsort_back_f__la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.h \
   z_tools.h \
@@ -136,7 +147,11 @@ libfcs_gridsort_back_f__la_SOURCES = \
 libfcs_gridsort_back_fp_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.h \
   z_tools.h \
@@ -150,7 +165,11 @@ libfcs_gridsort_back_fp_la_SOURCES = \
 libfcs_gridsort_back_x_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.h \
   z_tools.h \
@@ -164,7 +183,11 @@ libfcs_gridsort_back_x_la_SOURCES = \
 libfcs_gridsort_forw_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.h \
   z_tools.h \
@@ -214,6 +237,7 @@ libfcs_gridsort_extra_la_SOURCES = \
   ../sl/extra/zmpi_ataip/zmpi_ataip.h \
   ../sl/extra/zmpi_ataip/zmpi_ataip_rename.h \
   ../sl/extra/zmpi_atasp/spec.c \
+  ../sl/extra/zmpi_atasp/spec_common.h \
   ../sl/extra/zmpi_atasp/spec_conf.h \
   ../sl/extra/zmpi_atasp/spec_core.h \
   ../sl/extra/zmpi_atasp/spec_public_conf.h \
@@ -226,8 +250,12 @@ libfcs_gridsort_extra_la_SOURCES = \
 libfcs_gridsort_mpiwrap_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
   gridsort.c \
+  gridsort_front_tproc_combinations.h \
   gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
   gridsort.h \
   gridsort_resort.c \
   gridsort_resort.h \

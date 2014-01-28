@@ -45,7 +45,7 @@ static const fcs_float EPSILON_METALLIC = -1.0;
 class Configuration {
 public:
   struct {
-    fcs_float offset[3];
+    fcs_float box_origin[3];
     fcs_float box_a[3];
     fcs_float box_b[3];
     fcs_float box_c[3];

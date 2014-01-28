@@ -50,8 +50,29 @@
 /* alltoall_2step.c */
 #define ZMPI_Alltoall_2step_int  ZMPI_FUNC(ZMPI_Alltoall_2step_int)
 
-/* alltoallv_proclists.c */
+/* alltoall_int.c */
+#define ZMPI_Alltoall_int_c2c_alltoall  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_alltoall)
+#define ZMPI_Alltoall_int_c2c_2step  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_2step)
+#define ZMPI_Alltoall_int_c2c_put  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_put)
+#define ZMPI_Alltoall_int_c2c_put_alloc  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_put_alloc)
+#define ZMPI_Alltoall_int_c2c_put_2phases  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_put_2phases)
+#define ZMPI_Alltoall_int_c2c_put_2phases_alloc  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_put_2phases_alloc)
+#define ZMPI_Alltoall_int_c2c_put_3phases  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_put_3phases)
+#define ZMPI_Alltoall_int_c2c_put_3phases_alloc  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_put_3phases_alloc)
+#define ZMPI_Alltoall_int_c2c_proclists_isendirecv  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_proclists_isendirecv)
+#define ZMPI_Alltoall_int_c2c_proclists_alltoallv  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_proclists_alltoallv)
+#define ZMPI_Alltoall_int_c2c_proclists_put  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_proclists_put)
+#define ZMPI_Alltoall_int_c2c_proclists_put_alloc  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_proclists_put_alloc)
+#define ZMPI_Alltoall_int_c2c_proclists_2phases_put  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_proclists_2phases_put)
+#define ZMPI_Alltoall_int_c2c_proclists_2phases_put_alloc  ZMPI_FUNC(ZMPI_Alltoall_int_c2c_proclists_2phases_put_alloc)
+
+/* alltoallx_proclists.c */
+#define ZMPI_Alltoall_proclists_isendirecv  ZMPI_FUNC(ZMPI_Alltoall_proclists_isendirecv)
+#define ZMPI_Alltoall_proclists  ZMPI_FUNC(ZMPI_Alltoall_proclists)
+#define ZMPI_Alltoallv_proclists_isendirecv  ZMPI_FUNC(ZMPI_Alltoallv_proclists_isendirecv)
 #define ZMPI_Alltoallv_proclists  ZMPI_FUNC(ZMPI_Alltoallv_proclists)
+#define ZMPI_Alltoallw_proclists_isendirecv  ZMPI_FUNC(ZMPI_Alltoallw_proclists_isendirecv)
+#define ZMPI_Alltoallw_proclists  ZMPI_FUNC(ZMPI_Alltoallw_proclists)
 
 
 #endif /* __ZMPI_TOOLS_RENAME_H__ */

@@ -12,7 +12,7 @@
 static void assert_fcs(FCSResult r)
 {
   if (r) {
-    fcsResult_printResult(r);
+    fcs_result_print_result(r);
     MPI_Finalize();
     exit(-1);
   }
@@ -21,7 +21,6 @@ static void assert_fcs(FCSResult r)
 int main (int argc, char** argv) {
   fcs_int num_particles = TEST_N_PARTICLES;
   fcs_float box_size = TEST_BOX_SIZE;
-  fcs_float box_l[3] = {TEST_BOX_SIZE, TEST_BOX_SIZE, TEST_BOX_SIZE};
   fcs_int i, px, py, pz;
   fcs_float positions[3*TEST_N_PARTICLES];
   fcs_float charges[TEST_N_PARTICLES];
@@ -79,7 +78,7 @@ int main (int argc, char** argv) {
     printf("===================================\n");
     printf("Trying tolerance %" FCS_LMOD_FLOAT "f.\n", tolerance);
     fcs_p2nfft_set_tolerance(rd, FCS_TOLERANCE_TYPE_FIELD, tolerance);
-    ifcs_p2nfft_tune(rd, periodicity, num_particles, positions, charges, box_l, near_field_flag);
+    ifcs_p2nfft_tune(rd, periodicity, num_particles, positions, charges, box_a, box_b, box_c, offset, near_field_flag);
     ifcs_p2nfft_run(rd, num_particles, num_particles, positions, charges, potentials, field);
 
     printf("Potentials via P2NFFT\n");

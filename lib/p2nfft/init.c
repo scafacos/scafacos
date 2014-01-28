@@ -58,7 +58,7 @@ FCSResult ifcs_p2nfft_init(
 
   /* return error if method context is already allocated */
   if (*rd != NULL) 
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "Multiple init of method context without finalize.");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "Multiple init of method context without finalize.");
   
   /* Initialize the PNFFT library */
   FCS_PNFFT(init)();
@@ -68,7 +68,7 @@ FCSResult ifcs_p2nfft_init(
 
   /* return error if allocation failed */
   if (d == NULL)
-    return fcsResult_create(FCS_ALLOC_FAILED, fnc_name, "Allocation of the p2nfft data structure failed.");
+    return fcs_result_create(FCS_ERROR_ALLOC_FAILED, fnc_name, "Allocation of the p2nfft data structure failed.");
 
 #if FCS_P2NFFT_USE_3D_PROCMESH 
   /* Create a three-dimensional cartesian comm
@@ -134,11 +134,17 @@ FCSResult ifcs_p2nfft_init(
   d->sum_q2 = -1.0;
   d->sum_q = 0.0;
   d->bg_charge = 0.0;
+  d->box_V = 0.0;
   for(int t=0; t<3; t++){
     d->box_l[t] = -1.0; 
+    d->box_expand[t] = 1.0;
     d->box_scales[t] = 1.0;
-    d->box_shifts[t] = 0.0;
+    d->box_a[t] = 0.0;
+    d->box_b[t] = 0.0;
+    d->box_c[t] = 0.0;
   }
+  for(int t=0; t<9; t++)
+    d->box_inv[t] = 0.0;
   
   comm_get_periodicity(comm, d->periodicity);
 
@@ -157,6 +163,7 @@ FCSResult ifcs_p2nfft_init(
 
   d->regkern_hat = NULL;  
 
+  /* init gridsort data */
   d->max_particle_move = -1;
   d->resort = d->local_num_particles = 0;
   d->gridsort_resort = FCS_GRIDSORT_RESORT_NULL;
@@ -242,6 +249,10 @@ void ifcs_p2nfft_destroy(
   /* destroy virial */
   if(d->virial != NULL)
     free(d->virial);
+
+  /* free gridsort data */
+  fcs_gridsort_release_cache(&d->gridsort_cache);
+  fcs_gridsort_resort_destroy(&d->gridsort_resort);
 
   /* free Cartesian communicators */
   MPI_Comm_free(&d->cart_comm_pnfft);

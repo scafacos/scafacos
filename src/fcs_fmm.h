@@ -88,7 +88,7 @@ typedef struct fcs_fmm_parameters_t
  * information needed by fmm is set (no plausibility check!)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles);
+FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles);
 
 /**
  * @brief initialization routine for the basic parameters needed by fmm
@@ -96,7 +96,7 @@ extern FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles);
  * can be entered
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_init(FCS handle );
+FCSResult fcs_fmm_init(FCS handle );
 
 /**
  * @brief tuning routine for the basic parameters needed by fmm
@@ -109,7 +109,7 @@ extern FCSResult fcs_fmm_init(FCS handle );
  * @param charges fcs_float* list of charges
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges);
+FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges);
 
 /**
  * @brief run method for fmm
@@ -124,7 +124,7 @@ extern FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local
  * results after the run
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
                              fcs_float *positions, fcs_float *charges,
                              fcs_float *field, fcs_float *potentials);
 
@@ -137,14 +137,14 @@ extern FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_
  * @param r distance for which the potential
  * @return fcs_float containing the potential value for the given distance (without charges, s. above)
  */
-extern FCSResult fcs_fmm_near_field_potential (FCS handle, fcs_float);
+FCSResult fcs_fmm_near_field_potential (FCS handle, fcs_float);
 
 /**
  * @brief clean-up method for fmm
  * @param handle the FCS-object, which contains the parameters
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_destroy(FCS handle);
+FCSResult fcs_fmm_destroy(FCS handle);
 
 /**
  * @brief function to activate computation of the virial 
@@ -153,7 +153,7 @@ extern FCSResult fcs_fmm_destroy(FCS handle);
  * to fcs_run().
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_require_virial(FCS handle, fcs_int flag);
+FCSResult fcs_fmm_require_virial(FCS handle, fcs_int flag);
 
 /**
  * @brief function to fetch the virial
@@ -161,7 +161,10 @@ extern FCSResult fcs_fmm_require_virial(FCS handle, fcs_int flag);
  * @param virial pointer to the array where the virial is returned.
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_fmm_get_virial(FCS handle, fcs_float *virial);
+FCSResult fcs_fmm_get_virial(FCS handle, fcs_float *virial);
+
+FCSResult fcs_fmm_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+FCSResult fcs_fmm_print_parameters(FCS handle);
 
 
 FCSResult fcs_fmm_set_max_particle_move(FCS handle, fcs_float max_particle_move);

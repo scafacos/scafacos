@@ -13,7 +13,7 @@
 void assert_fcs(FCSResult r)
 {
   if (r) {
-    fcsResult_printResult(r);
+    fcs_result_print_result(r);
     MPI_Finalize();
     exit(-1);
   }
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
   result = fcs_set_common(handle, 1, box_a, box_b, box_c, 
            offset, periodicity, total_particles);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Finalize();
     exit(1);
   }
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
   if (comm_rank == 0) printf("\nTesting tuning routine...\n");
   result = fcs_tune(handle, n_particles, n_particles, positions, charges);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Finalize();
     exit(1);
   }

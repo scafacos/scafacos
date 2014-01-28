@@ -153,7 +153,7 @@ void fcs_near_set_loop(fcs_near_t *near, fcs_near_loop_f compute_loop);
  * @param box_c fcs_float* 3rd base vector of the system box
  * @param periodicity fcs_int* periodicity of the system, if NULL then periodicities of the (cartesian) communicator are used
  */
-void fcs_near_set_system(fcs_near_t *near, fcs_float *box_base, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_int *periodicity);
+void fcs_near_set_system(fcs_near_t *near, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity);
 
 /**
  * @brief set particle information

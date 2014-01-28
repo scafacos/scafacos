@@ -181,7 +181,7 @@ FCSResult ifcs_memd_sanity_checks(memd_struct* memd)
 {
     FCSResult result = NULL;
     const char* fnc_name = "ifcs_memd_sanity_checks";
-//    fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "You can only set 2 of the parameters bjerrum, temperature and epsilon.");
+//    fcs_result_create(FCS_LOGICAL_ERROR, fnc_name, "You can only set 2 of the parameters bjerrum, temperature and epsilon.");
     
     /*
     char *errtxt;

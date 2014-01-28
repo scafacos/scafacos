@@ -57,7 +57,7 @@ static const char DUPLICATE_TAG[] = "duplicate";
 
 Configuration::Configuration() {
 
-  params.offset[0] = params.offset[1] = params.offset[2] = 0.0;
+  params.box_origin[0] = params.box_origin[1] = params.box_origin[2] = 0.0;
   params.box_a[0] = params.box_a[1] = params.box_a[2] = 0.0;
   params.box_b[0] = params.box_b[1] = params.box_b[2] = 0.0;
   params.box_c[0] = params.box_c[1] = params.box_c[2] = 0.0;
@@ -180,7 +180,7 @@ void Configuration::read_config(xml_node<> *config_node, const char *basename)
   // Read configuration data
   for (attr = config_node->first_attribute(); attr; attr = attr->next_attribute()) {
     aname = attr->name();
-    if (aname == "offset") parse_sequence(attr->value(), 3, params.offset);
+    if (aname == "offset") parse_sequence(attr->value(), 3, params.box_origin);
     else if (aname == "box_a") parse_sequence(attr->value(), 3, params.box_a);
     else if (aname == "box_b") parse_sequence(attr->value(), 3, params.box_b);
     else if (aname == "box_c") parse_sequence(attr->value(), 3, params.box_c);
@@ -271,7 +271,7 @@ void Configuration::write_config(xml_document<> *doc, xml_node<> *config_node, c
     os.precision(16);
 
     os.str(string(""));
-    os << params.offset[0] << " " << params.offset[1] << " " << params.offset[2];
+    os << params.box_origin[0] << " " << params.box_origin[1] << " " << params.box_origin[2];
     s = doc->allocate_string(os.str().c_str());
     attr = doc->allocate_attribute("offset", s);
     config_node->append_attribute(attr);
@@ -374,7 +374,7 @@ void Configuration::print_config(fcs_int n)
 {
   cout << "  config " << n << ":" << endl;
   cout << "    system:" << endl;
-  cout << "      box: offset: [" << params.offset[0] << "," << params.offset[1] << "," << params.offset[2] << "], size: "
+  cout << "      box: box_origin: [" << params.box_origin[0] << "," << params.box_origin[1] << "," << params.box_origin[2] << "], size: "
        << "[" << params.box_a[0] << "," << params.box_a[1] << "," << params.box_a[2] << "]x"
        << "[" << params.box_b[0] << "," << params.box_b[1] << "," << params.box_b[2] << "]x"
        << "[" << params.box_c[0] << "," << params.box_c[1] << "," << params.box_c[2] << "]" << endl;
@@ -515,7 +515,7 @@ void Configuration::generate_input_particles()
 
     } else
     {
-      input_generators[i].set_box(params.offset, params.box_a, params.box_b, params.box_c);
+      input_generators[i].set_box(params.box_origin, params.box_a, params.box_b, params.box_c);
 
       my_modulo = input_generators[i].get_local_nparticles(all_on_master, comm_size, comm_rank, communicator);
 
@@ -581,11 +581,11 @@ void Configuration::generate_input_particles()
 //               cout << "duplicate particle #" << x << endl;
 
                 // Make duplicated particle positions and scale if necessary
-                dup_input_positions[3 * pid + 0] = params.offset[0] * (1.0 - scale[0]) +
+                dup_input_positions[3 * pid + 0] = params.box_origin[0] * (1.0 - scale[0]) +
                   scale[0] * (input_plain.positions[3 * x + 0] + d0 * params.box_a[0] +  d1 * params.box_b[0] +  d2 * params.box_c[0]);
-                dup_input_positions[3 * pid + 1] = params.offset[1] * (1.0 - scale[1]) +
+                dup_input_positions[3 * pid + 1] = params.box_origin[1] * (1.0 - scale[1]) +
                   scale[1] * (input_plain.positions[3 * x + 1] + d0 * params.box_a[1] +  d1 * params.box_b[1] +  d2 * params.box_c[1]);
-                dup_input_positions[3 * pid + 2] = params.offset[2] * (1.0 - scale[2]) +
+                dup_input_positions[3 * pid + 2] = params.box_origin[2] * (1.0 - scale[2]) +
                   scale[2] * (input_plain.positions[3 * x + 2] + d0 * params.box_a[2] +  d1 * params.box_b[2] +  d2 * params.box_c[2]);
 
                 // Duplicated particles have the same charge as their orignals
@@ -636,11 +636,11 @@ void Configuration::generate_input_particles()
               {
 //                cout << "duplicate particle #" << x << endl;
 
-                dup_input_positions[3 * pid + 0] = params.offset[0] * (1.0 - scale[0]) +
+                dup_input_positions[3 * pid + 0] = params.box_origin[0] * (1.0 - scale[0]) +
                   scale[0] * (dup_input_positions[3 * (first_pid + x) + 0] + d0 * params.box_a[0] +  d1 * params.box_b[0] +  d2 * params.box_c[0]);
-                dup_input_positions[3 * pid + 1] = params.offset[1] * (1.0 - scale[1]) +
+                dup_input_positions[3 * pid + 1] = params.box_origin[1] * (1.0 - scale[1]) +
                   scale[1] * (dup_input_positions[3 * (first_pid + x) + 1] + d0 * params.box_a[1] +  d1 * params.box_b[1] +  d2 * params.box_c[1]);
-                dup_input_positions[3 * pid + 2] = params.offset[2] * (1.0 - scale[2]) +
+                dup_input_positions[3 * pid + 2] = params.box_origin[2] * (1.0 - scale[2]) +
                   scale[2] * (dup_input_positions[3 * (first_pid + x) + 2] + d0 * params.box_a[2] +  d1 * params.box_b[2] +  d2 * params.box_c[2]);
 
                 dup_input_charges[pid] = dup_input_charges[first_pid + x];
@@ -749,10 +749,10 @@ void Configuration::decompose_particles(fcs_float minalloc, fcs_float overalloc)
   dup_input_overalloc = overalloc;
 
   /* wrap particle positions of periodic dimensions */
-  fcs_wrap_positions(dup_input_nparticles, dup_input_positions, params.box_a, params.box_b, params.box_c, params.offset, params.periodicity);
+  fcs_wrap_positions(dup_input_nparticles, dup_input_positions, params.box_a, params.box_b, params.box_c, params.box_origin, params.periodicity);
   
   /* increase particle system in open dimensions to enclose all particles */
-  fcs_expand_system_box(dup_input_nparticles, dup_input_positions, params.box_a, params.box_b, params.box_c, params.offset, params.periodicity);
+  fcs_expand_system_box(dup_input_nparticles, dup_input_positions, params.box_a, params.box_b, params.box_c, params.box_origin, params.periodicity);
 
   MPI_Bcast(have_reference_values, 2, FCS_MPI_INT, MASTER_RANK, communicator);
 
@@ -823,7 +823,7 @@ void Configuration::decompose_particles(fcs_float minalloc, fcs_float overalloc)
       decomp_comm = cart_comm;
 
       fcs_gridsort_create(&gridsort);
-      fcs_gridsort_set_system(&gridsort, params.offset, params.box_a, params.box_b, params.box_c, params.periodicity);
+      fcs_gridsort_set_system(&gridsort, params.box_origin, params.box_a, params.box_b, params.box_c, params.periodicity);
       fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_nparticles, dup_input_positions, dup_input_charges);
       fcs_gridsort_set_minalloc(&gridsort, dup_input_minalloc);
       fcs_gridsort_set_overalloc(&gridsort, dup_input_overalloc);

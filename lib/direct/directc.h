@@ -59,7 +59,7 @@ typedef struct _fcs_directc_t
 
 void fcs_directc_create(fcs_directc_t *directc);
 void fcs_directc_destroy(fcs_directc_t *directc);
-void fcs_directc_set_system(fcs_directc_t *directc, fcs_float *box_base, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_int *periodicity);
+void fcs_directc_set_system(fcs_directc_t *directc, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity);
 void fcs_directc_set_particles(fcs_directc_t *directc, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
 void fcs_directc_set_in_particles(fcs_directc_t *directc, fcs_int in_nparticles, fcs_float *in_positions, fcs_float *in_charges);
 void fcs_directc_set_out_particles(fcs_directc_t *directc, fcs_int out_nparticles, fcs_float *out_positions, fcs_float *out_field, fcs_float *out_potentials);

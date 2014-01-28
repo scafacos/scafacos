@@ -33,7 +33,7 @@
  * can be entered
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_p3m_init(FCS handle, MPI_Comm communicator);
+FCSResult fcs_p3m_init(FCS handle);
 
 /**
  * @brief tuning method for setting/calculating last parameters, for which positions,
@@ -94,5 +94,8 @@ FCSResult fcs_p3m_require_virial(FCS handle, fcs_int flag);
  * @return FCSResult-object containing the return state
  */
 FCSResult fcs_p3m_get_virial(FCS handle, fcs_float *virial);
+
+FCSResult fcs_p3m_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+FCSResult fcs_p3m_print_parameters(FCS handle);
 
 #endif

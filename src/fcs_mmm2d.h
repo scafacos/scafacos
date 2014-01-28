@@ -30,7 +30,7 @@
 /**
  * @brief initialization routine
  */
-FCSResult fcs_mmm2d_init(FCS handle, MPI_Comm communicator);
+FCSResult fcs_mmm2d_init(FCS handle);
 
 /**
  * @brief tuning method
@@ -54,5 +54,8 @@ FCSResult fcs_mmm2d_destroy(FCS handle);
 
 FCSResult fcs_mmm2d_require_virial(FCS handle, fcs_int flag);
 FCSResult fcs_mmm2d_get_virial(FCS handle, fcs_float *virial);
+
+FCSResult fcs_mmm2d_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+FCSResult fcs_mmm2d_print_parameters(FCS handle);
 
 #endif

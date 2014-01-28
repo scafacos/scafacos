@@ -122,7 +122,7 @@ void fcs_gridsort_destroy(fcs_gridsort_t *gs);
  * @param box_c fcs_float* 3rd base vector of the system box
  * @param periodicity fcs_int* periodicity of the system, if NULL then periodicities of the (cartesian) communicator are used
  */
-void fcs_gridsort_set_system(fcs_gridsort_t *gs, fcs_float *box_base, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_int *periodicity);
+void fcs_gridsort_set_system(fcs_gridsort_t *gs, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity);
 
 /**
  * @brief set lower and upper bounds of the local process within in the grid

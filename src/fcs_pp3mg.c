@@ -54,6 +54,18 @@ FCSResult fcs_pp3mg_init(FCS handle)
 
   DEBUG_MOP(printf("fcs_pp3mg_init\n"));
 
+  handle->pp3mg_param = malloc(sizeof(*handle->pp3mg_param));
+  handle->pp3mg_param->m = -1;
+  handle->pp3mg_param->n = -1;
+  handle->pp3mg_param->o = -1;
+  handle->pp3mg_param->ghosts = -1;
+  handle->pp3mg_param->max_particles = -1;
+  handle->pp3mg_param->degree = -1;
+  handle->pp3mg_param->maxiter = -1;
+  handle->pp3mg_param->tol = -1.0;
+  handle->pp3mg_param->distribution = 0;
+  handle->pp3mg_param->discretization = 0;
+
   ctx = malloc(sizeof(fcs_pp3mg_context_t));
   ctx->data = malloc(sizeof(pp3mg_data));
   ctx->parameters = malloc(sizeof(pp3mg_parameters));
@@ -91,6 +103,8 @@ FCSResult fcs_pp3mg_destroy(FCS handle)
 
   fcs_set_method_context(handle, NULL);
 
+  free(handle->pp3mg_param);
+
   DEBUG_MOP(printf("fcs_pp3mg_destroy: done\n"));
 
   return NULL;
@@ -101,7 +115,7 @@ FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_
 {
   MPI_Comm comm;
   fcs_pp3mg_context_t *ctx;
-  fcs_float *box_a, *box_b, *box_c;
+  const fcs_float *box_a, *box_b, *box_c;
   fcs_float x, y, z;
   FCSResult result;
 
@@ -230,7 +244,7 @@ FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_num_particles, fcs_int local_m
 
 
 /* combined setter function for all pp3mg parameters */
-extern FCSResult fcs_pp3mg_setup(FCS handle, fcs_int cells_x, fcs_int cells_y, fcs_int cells_z, fcs_int ghosts, fcs_int degree, fcs_int max_particles, fcs_int max_iterations, fcs_float tol, fcs_int distribution, fcs_int discretization)
+FCSResult fcs_pp3mg_setup(FCS handle, fcs_int cells_x, fcs_int cells_y, fcs_int cells_z, fcs_int ghosts, fcs_int degree, fcs_int max_particles, fcs_int max_iterations, fcs_float tol, fcs_int distribution, fcs_int discretization)
 {
   FCSResult result;
 
@@ -445,4 +459,73 @@ FCSResult fcs_pp3mg_get_virial(FCS handle, fcs_float *virial)
   for (i = 0; i < 9; ++i) virial[i] = 0.0;
 
   return NULL;
+}
+
+
+FCSResult fcs_pp3mg_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_pp3mg_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_x",        pp3mg_set_cells_x,        FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_y",        pp3mg_set_cells_y,        FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_cells_z",        pp3mg_set_cells_z,        FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_ghosts",         pp3mg_set_ghosts,         FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_degree",         pp3mg_set_degree,         FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_max_particles",  pp3mg_set_max_particles,  FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_max_iterations", pp3mg_set_max_iterations, FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_tol",            pp3mg_set_tol,            FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_distribution",   pp3mg_set_distribution,   FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pp3mg_discretization", pp3mg_set_discretization, FCS_PARSE_VAL(fcs_int));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+FCSResult fcs_pp3mg_print_parameters(FCS handle)
+{
+  fcs_int cells_x, cells_y, cells_z;
+  fcs_int ghosts;
+  fcs_int degree;
+  fcs_int max_particles;
+  fcs_int max_iterations;
+  fcs_float tol;
+  fcs_int distribution;
+  fcs_int discretization;
+
+  fcs_pp3mg_get_cells_x(handle, &cells_x);
+  fcs_pp3mg_get_cells_y(handle, &cells_y);
+  fcs_pp3mg_get_cells_z(handle, &cells_z);
+  fcs_pp3mg_get_ghosts(handle, &ghosts);
+  fcs_pp3mg_get_degree(handle, &degree);
+  fcs_pp3mg_get_max_particles(handle, &max_particles);
+  fcs_pp3mg_get_max_iterations(handle, &max_iterations);
+  fcs_pp3mg_get_tol(handle, &tol);
+  fcs_pp3mg_get_distribution(handle, &distribution);
+  fcs_pp3mg_get_discretization(handle, &discretization);
+ 
+  printf("pp3mg cells x: %" FCS_LMOD_INT "d\n",cells_x);
+  printf("pp3mg cells y: %" FCS_LMOD_INT "d\n",cells_y);
+  printf("pp3mg cells z: %" FCS_LMOD_INT "d\n",cells_z);
+  printf("pp3mg ghosts: %" FCS_LMOD_INT "d\n",ghosts);
+  printf("pp3mg degree: %" FCS_LMOD_INT "d\n",degree);
+  printf("pp3mg max_particles: %" FCS_LMOD_INT "d\n",max_particles);
+  printf("pp3mg max_iterations: %" FCS_LMOD_INT "d\n",max_iterations);
+  printf("pp3mg tol: %e\n",tol);
+  printf("pp3mg distribution: %" FCS_LMOD_INT "d\n",distribution);
+  printf("pp3mg discretization: %" FCS_LMOD_INT "d\n",discretization);
+
+  return FCS_RESULT_SUCCESS;
 }

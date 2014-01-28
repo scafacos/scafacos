@@ -40,7 +40,7 @@ typedef struct fcs_pepc_parameters_t *fcs_pepc_parameters;
  * @param epsilon epsilon (Plummer potential parameter)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_set_epsilon(FCS handle, fcs_float epsilon);
+FCSResult fcs_pepc_set_epsilon(FCS handle, fcs_float epsilon);
 
 /**
  * @brief function to get the optional pepc epsilon parameter
@@ -48,7 +48,7 @@ extern FCSResult fcs_pepc_set_epsilon(FCS handle, fcs_float epsilon);
  * @param epsilon epsilon (Plummer potential parameter)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_get_epsilon(FCS handle, fcs_float* epsilon);
+FCSResult fcs_pepc_get_epsilon(FCS handle, fcs_float* epsilon);
 
 /**
  * @brief function to set the optional pepc theta parameter
@@ -56,7 +56,7 @@ extern FCSResult fcs_pepc_get_epsilon(FCS handle, fcs_float* epsilon);
  * @param theta multipole acceptance parameter for Barnes-Hut MAC
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_set_theta(FCS handle, fcs_float theta);
+FCSResult fcs_pepc_set_theta(FCS handle, fcs_float theta);
 
 /**
  * @brief function to get the optional pepc theta parameter
@@ -64,7 +64,7 @@ extern FCSResult fcs_pepc_set_theta(FCS handle, fcs_float theta);
  * @param theta multipole acceptance parameter for Barnes-Hut MAC
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_get_theta(FCS handle, fcs_float* theta);
+FCSResult fcs_pepc_get_theta(FCS handle, fcs_float* theta);
 
 /**
  * @brief function to set the pepc debug level
@@ -72,7 +72,7 @@ extern FCSResult fcs_pepc_get_theta(FCS handle, fcs_float* theta);
  * @param level user-set debug level of pepc solver
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_set_debug_level(FCS handle, fcs_int level);
+FCSResult fcs_pepc_set_debug_level(FCS handle, fcs_int level);
 
 /**
  * @brief function to get the pepc debug level
@@ -80,49 +80,49 @@ extern FCSResult fcs_pepc_set_debug_level(FCS handle, fcs_int level);
  * @param level user-set debug level of pepc solver
  * @return the debug level
  */
-extern FCSResult fcs_pepc_get_debug_level(FCS handle, fcs_int* level);
+FCSResult fcs_pepc_get_debug_level(FCS handle, fcs_int* level);
 
 /**
  * @brief function to set pepcs number of walk threads per MPI rank
  * @param handle FCS-object that contains the parameter
  * @param num_walk_threads number of traversal threads per rank
  */
-extern FCSResult fcs_pepc_set_num_walk_threads(FCS handle, fcs_int num_walk_threads);
+FCSResult fcs_pepc_set_num_walk_threads(FCS handle, fcs_int num_walk_threads);
 
 /**
  * @brief function to get pepcs number of walk threads per MPI rank
  * @param handle FCS-object that contains the parameter
- * @return num_walk_threads number of traversal threads per rank
+ * @param num_walk_threads number of traversal threads per rank
  */
-extern FCSResult fcs_pepc_get_num_walk_threads(FCS handle, fcs_int* num_walk_threads);
+FCSResult fcs_pepc_get_num_walk_threads(FCS handle, fcs_int* num_walk_threads);
 
 /**
  * @brief function for setting pepcs switch for load balancing
  * @param handle FCS-object that contains the parameter
  * @param load_balancing if >0 load balancing is enabled. may only be activated if the frontend does not reorder any particles
  */
-extern FCSResult fcs_pepc_set_load_balancing(FCS handle, fcs_int load_balancing);
+FCSResult fcs_pepc_set_load_balancing(FCS handle, fcs_int load_balancing);
 
 /**
  * @brief function for getting pepcs switch for load balancing
  * @param handle FCS-object that contains the parameter
  * @param load_balancing if >0 load balancing is enabled. may only be activated if the frontend does not reorder any particles
  */
-extern FCSResult fcs_pepc_get_load_balancing(FCS handle, fcs_int* load_balancing);
+FCSResult fcs_pepc_get_load_balancing(FCS handle, fcs_int* load_balancing);
 
 /**
  * @brief function for setting pepcs switch for adding a dipole correction for periodic systems
  * @param handle FCS-object that contains the parameter
  * @param dipole_correction if >0 the dipole correction is enabled
  */
-extern FCSResult fcs_pepc_set_dipole_correction(FCS handle, fcs_int dipole_correction);
+FCSResult fcs_pepc_set_dipole_correction(FCS handle, fcs_int dipole_correction);
 
 /**
  * @brief function for getting pepcs switch for adding a dipole correction for periodic systems
  * @param handle FCS-object that contains the parameter
  * @param dipole_correction if >0 the dipole correction is enabled
  */
-extern FCSResult fcs_pepc_get_dipole_correction(FCS handle, fcs_int* dipole_correction);
+FCSResult fcs_pepc_get_dipole_correction(FCS handle, fcs_int* dipole_correction);
 
 /**
  * @brief function to set the optional pepc npm (aka np_mult)
@@ -130,7 +130,7 @@ extern FCSResult fcs_pepc_get_dipole_correction(FCS handle, fcs_int* dipole_corr
  * @param npm npm (aka np_mult)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_set_npm(FCS handle, fcs_float npm);
+FCSResult fcs_pepc_set_npm(FCS handle, fcs_float npm);
 
 /**
  * @brief function to get the optional pepc npm (aka np_mult)
@@ -138,10 +138,10 @@ extern FCSResult fcs_pepc_set_npm(FCS handle, fcs_float npm);
  * @param npm npm (aka np_mult)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pepc_get_npm(FCS handle, fcs_float* npm);
+FCSResult fcs_pepc_get_npm(FCS handle, fcs_float* npm);
 
 
-extern FCSResult fcs_pepc_setup(FCS handle, fcs_float epsilon, fcs_float theta);
+FCSResult fcs_pepc_setup(FCS handle, fcs_float epsilon, fcs_float theta);
 
 void fcs_pepc_setup_f(void *handle, fcs_float epsilon, fcs_float theta, fcs_int level, fcs_int *return_value);
 

@@ -41,7 +41,7 @@
 /* zmpi_var ZMPI_Alltoallv_inplace_sym_type */
 int ZMPI_Alltoallv_inplace_sym_type = ZMPI_ALLTOALLV_INPLACE_SYM_TYPE_DEFAULT;
 
-/* zmpi_var ZMPI_Alltoallv_inplace_aux_type ZMPI_Alltoallv_inplace_aux ZMPI_Alltoallv_inplace_aux_size ZMPI_Alltoallv_inplace_aux_blocks */
+/* zmpi_var ZMPI_Alltoallv_inplace_aux_type ZMPI_Alltoallv_inplace_aux ZMPI_Alltoallv_inplace_aux_size ZMPI_Alltoallv_inplace_aux_static_blocks */
 int ZMPI_Alltoallv_inplace_aux_type = ZMPI_ALLTOALLV_INPLACE_AUX_TYPE_HEAP;
 void *ZMPI_Alltoallv_inplace_aux = NULL;
 int ZMPI_Alltoallv_inplace_aux_size = 1000000;  /* default: 1 MB */
@@ -303,6 +303,12 @@ int ZMPI_Neighbor_alltoallv_inplace(void *sbuf, int *scounts, int *sdispls, MPI_
 exit:
 
   return exit_code;
+}
+
+
+int ZMPI_Alltoallv_inplace_proclists(void *sbuf, int *scounts, int *sdispls, MPI_Datatype stype, int nsprocs, int *sprocs, void *rbuf, int *rcounts, int *rdispls, MPI_Datatype rtype, int nrprocs, int *rprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoallv_inplace_proclists */
+{
+  return _ZMPI_Alltoallv_inplace(sbuf, scounts, sdispls, stype, nsprocs, sprocs, rbuf, rcounts, rdispls, rtype, nrprocs, rprocs, comm);
 }
 
 

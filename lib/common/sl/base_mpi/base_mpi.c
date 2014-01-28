@@ -973,12 +973,12 @@ slint_t tproc_create_tproc(tproc_t *tproc, tproc_f *tfn, tproc_reset_f *rfn, tpr
 
   _tproc_create(tproc);
 
-  spec_tproc_create(&(*tproc)->spec_tproc, tfn, NULL, NULL, NULL);
+  spec_tproc_create(&(*tproc)->spec_tproc, tfn, NULL, NULL, NULL, 0);
 
   spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
 
   if (exdef != TPROC_EXDEF_NULL)
-    spec_tproc_set_ext_tproc(&(*tproc)->spec_tproc, exdef->tproc_count_db, exdef->tproc_count_ip, exdef->tproc_rearrange_db, exdef->tproc_rearrange_ip);
+    spec_tproc_set_ext_tproc(&(*tproc)->spec_tproc, exdef->tproc_count_db, exdef->tproc_count_ip, exdef->tproc_rearrange_db, exdef->tproc_rearrange_ip, exdef->tproc_indices_db);
 
   return 0;
 }
@@ -990,7 +990,7 @@ slint_t tproc_create_tproc_mod(tproc_t *tproc, tproc_mod_f *tfn, tproc_reset_f *
 
   _tproc_create(tproc);
 
-  spec_tproc_create(&(*tproc)->spec_tproc, NULL, tfn, NULL, NULL);
+  spec_tproc_create(&(*tproc)->spec_tproc, NULL, tfn, NULL, NULL, 0);
 
   spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
 
@@ -1001,30 +1001,30 @@ slint_t tproc_create_tproc_mod(tproc_t *tproc, tproc_mod_f *tfn, tproc_reset_f *
 }
 
 
-slint_t tproc_create_tprocs(tproc_t *tproc, tprocs_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef) /* sl_proto, sl_func tproc_create_tprocs */
+slint_t tproc_create_tprocs(tproc_t *tproc, slint_t max_tprocs, tprocs_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef) /* sl_proto, sl_func tproc_create_tprocs */
 {
   if (exdef != TPROC_EXDEF_NULL && exdef->type != 3) return 1;
 
   _tproc_create(tproc);
   
-  spec_tproc_create(&(*tproc)->spec_tproc, NULL, NULL, tfn, NULL);
+  spec_tproc_create(&(*tproc)->spec_tproc, NULL, NULL, tfn, NULL, max_tprocs);
 
   spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
 
   if (exdef != TPROC_EXDEF_NULL)
-    spec_tproc_set_ext_tprocs(&(*tproc)->spec_tproc, exdef->tprocs_count_db, exdef->tprocs_count_ip, exdef->tprocs_rearrange_db, exdef->tprocs_rearrange_ip);
+    spec_tproc_set_ext_tprocs(&(*tproc)->spec_tproc, exdef->tprocs_count_db, exdef->tprocs_count_ip, exdef->tprocs_rearrange_db, exdef->tprocs_rearrange_ip, exdef->tprocs_indices_db);
   
   return 0;
 }
 
 
-slint_t tproc_create_tprocs_mod(tproc_t *tproc, tprocs_mod_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef) /* sl_proto, sl_func tproc_create_tprocs_mod */
+slint_t tproc_create_tprocs_mod(tproc_t *tproc, slint_t max_tprocs, tprocs_mod_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef) /* sl_proto, sl_func tproc_create_tprocs_mod */
 {
   if (exdef != TPROC_EXDEF_NULL && exdef->type != 4) return 1;
 
   _tproc_create(tproc);
   
-  spec_tproc_create(&(*tproc)->spec_tproc, NULL, NULL, NULL, tfn);
+  spec_tproc_create(&(*tproc)->spec_tproc, NULL, NULL, NULL, tfn, max_tprocs);
 
   spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
   
@@ -1490,7 +1490,7 @@ slint_t mpi_elements_alltoallv_ip(elements_t *s, elements_t *sx, int *scounts, i
 #endif
 
 
-#ifdef HAVE_ZMPI_ALLTOALLV_PROCLISTS
+#ifdef HAVE_ZMPI_ALLTOALLX_PROCLISTS
 
 slint_t mpi_elements_alltoallv_proclists_db(elements_t *sbuf, int *scounts, int *sdispls, int nsendprocs, int *sendprocs, elements_t *rbuf, int *rcounts, int *rdispls, int nrecvprocs, int *recvprocs, int size, int rank, MPI_Comm comm) /* sl_proto, sl_func mpi_elements_alltoallv_proclists_db */
 {

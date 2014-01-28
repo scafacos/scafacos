@@ -82,7 +82,7 @@ static FCSResult ifcs_p2nfft_check(
  *     P2NFFT Interface 
  ************************************************************/
 /* initialization function for basic p2nfft parameters */
-extern FCSResult fcs_p2nfft_init(
+FCSResult fcs_p2nfft_init(
     FCS handle
     )
 {
@@ -108,7 +108,7 @@ extern FCSResult fcs_p2nfft_init(
 }
 
 static fcs_int periodic_dims(
-    fcs_int *periodicity
+    const fcs_int *periodicity
     )
 {
   fcs_int count = 0;
@@ -120,7 +120,7 @@ static fcs_int periodic_dims(
 }
 
 static fcs_int nonperiodic_box_lengths_are_equal(
-    fcs_float a, fcs_float b, fcs_float c, fcs_int *periodicity
+    fcs_float a, fcs_float b, fcs_float c, const fcs_int *periodicity
     )
 {
   if(!periodicity[0] && !periodicity[1])
@@ -138,51 +138,80 @@ static fcs_int nonperiodic_box_lengths_are_equal(
   return 1;
 }
 
+static fcs_int is_principal_axis(const fcs_float *a)
+{
+  return (1 == (!fcs_float_is_zero(a[0]) +  !fcs_float_is_zero(a[1]) + !fcs_float_is_zero(a[2])) );
+}
+
+static fcs_int nonperiodic_axes_are_principal(
+    const fcs_float *a, const fcs_float *b, const fcs_float *c, const fcs_int *periodicity
+    )
+{
+  if( !periodicity[0] && !is_principal_axis(a) ) return 0;
+  if( !periodicity[1] && !is_principal_axis(b) ) return 0;
+  if( !periodicity[2] && !is_principal_axis(c) ) return 0;
+  return 1;
+}
+
+static fcs_int nonperiodic_axes_are_orthogonal_to_all_other_axes(
+    const fcs_float *a, const fcs_float *b, const fcs_float *c, const fcs_int *periodicity
+    )
+{
+  /* We use the fact that nonperiodic axes are principal axes */
+  if( !periodicity[0] ) if( !fcs_float_is_zero(b[0]) || !fcs_float_is_zero(c[0]) ) return 0;
+  if( !periodicity[1] ) if( !fcs_float_is_zero(a[1]) || !fcs_float_is_zero(c[1]) ) return 0;
+  if( !periodicity[2] ) if( !fcs_float_is_zero(a[2]) || !fcs_float_is_zero(b[2]) ) return 0;
+  return 1;
+}
+
+
 
 /* internal p2nfft-specific tuning function */
-extern FCSResult fcs_p2nfft_tune(
+FCSResult fcs_p2nfft_tune(
     FCS handle, fcs_int local_particles, fcs_int local_max_particles,
     fcs_float *positions, fcs_float *charges
     )
 {
   char* fnc_name = "fcs_p2nfft_tune";
   FCSResult result;
-  fcs_float box_l[3];
 
   result = ifcs_p2nfft_check(handle, fnc_name);
   if (result != NULL)
     return result;
 
+//   fcs_wrap_positions(local_particles, positions, fcs_get_box_a(handle), fcs_get_box_b(handle), fcs_get_box_c(handle), fcs_get_offset(handle), fcs_get_periodicity(handle));
+
   /* Check for periodicity */
-  fcs_int *periodicity = fcs_get_periodicity(handle);
+  const fcs_int *periodicity = fcs_get_periodicity(handle);
 
   /* Check for correct box parameters */
-  fcs_float *a = fcs_get_box_a(handle);
-  fcs_float *b = fcs_get_box_b(handle);
-  fcs_float *c = fcs_get_box_c(handle);
-  if (!fcs_uses_principal_axes(a, b, c))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
-        "The p2nfft method needs a rectangular box with box vectors parallel to the principal axes.");
+  const fcs_float *a = fcs_get_box_a(handle);
+  const fcs_float *b = fcs_get_box_b(handle);
+  const fcs_float *c = fcs_get_box_c(handle);
+
+  if( !nonperiodic_axes_are_principal(a, b, c, periodicity) )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+        "Principal box vectors are required for all nonperiodic dims.");
+
+  if( !nonperiodic_axes_are_orthogonal_to_all_other_axes(a, b, c, periodicity) )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+        "Nonperiodic dims require box vector that are orthognonal to all box vectors of periodic dims.");
+
   if(periodic_dims(periodicity) == 1)
     if(!nonperiodic_box_lengths_are_equal(a[0], b[1], c[2], periodicity))
-      return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
           "The p2nfft method currently depends on equal nonperiodic box lengths with 1d-periodic boundary conditions.");
-   
-  /* Get box size */ 
-  box_l[0] = fcs_norm(a);
-  box_l[1] = fcs_norm(b);
-  box_l[2] = fcs_norm(c);
 
   /* Call the p2nfft solver's tuning routine */
   result = ifcs_p2nfft_tune(handle->method_context, periodicity,
-      local_particles, positions, charges, box_l,
+      local_particles, positions, charges, a, b, c, fcs_get_offset(handle), 
       fcs_get_near_field_flag(handle));
 
   return result;
 }
 
 /* internal p2nfft-specific run function */
-extern FCSResult fcs_p2nfft_run(
+FCSResult fcs_p2nfft_run(
     FCS handle, fcs_int local_particles, fcs_int local_max_particles,
     fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials
     )
@@ -205,7 +234,7 @@ extern FCSResult fcs_p2nfft_run(
 }
 
 /* clean-up function for p2nfft */
-extern FCSResult fcs_p2nfft_destroy(
+FCSResult fcs_p2nfft_destroy(
     FCS handle
     )
 {
@@ -218,7 +247,7 @@ extern FCSResult fcs_p2nfft_destroy(
 /*********************************************************************
  * method to check if p2nfft parameters are entered into checked FCS 
  *********************************************************************/
-extern FCSResult fcs_p2nfft_check(
+FCSResult fcs_p2nfft_check(
     FCS handle
     )
 {
@@ -231,13 +260,95 @@ static FCSResult ifcs_p2nfft_check(
     )
 {
   if (handle == NULL) 
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "Supplied handle must not be a null pointer.");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "Supplied handle must not be a null pointer.");
 
-  if (fcs_get_method(handle) != FCS_P2NFFT)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. Please choose \"p2nfft\".");
+  if (fcs_get_method(handle) != FCS_METHOD_P2NFFT)
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. Please choose \"p2nfft\".");
 
   return NULL;
 }
+
+
+/************************************************************
+ *     General P2NFFT parameter handling
+ ************************************************************/
+FCSResult fcs_p2nfft_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_p2nfft_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  /* P2NFFT specific parameters */
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_r_cut",            p2nfft_set_r_cut,                     FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsI",             p2nfft_set_epsI,                      FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsB",             p2nfft_set_epsB,                      FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_c",                p2nfft_set_c,                         FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_alpha",            p2nfft_set_alpha,                     FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_intpol_order",     p2nfft_set_interpolation_order,       FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_near",         p2nfft_set_reg_near,                  FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_near_name",    p2nfft_set_reg_near_by_name,          FCS_PARSE_VAL(fcs_p_char_t));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_far",          p2nfft_set_reg_far,                   FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_far_name",     p2nfft_set_reg_far_by_name,           FCS_PARSE_VAL(fcs_p_char_t));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_p",                p2nfft_set_p,                         FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_require_virial",   p2nfft_require_virial,                FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_ignore_tolerance", p2nfft_set_ignore_tolerance,          FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("p2nfft_grid",             p2nfft_set_grid,                      FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("p2nfft_oversampled_grid", p2nfft_set_oversampled_grid,          FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_cao",              p2nfft_set_cao,                       FCS_PARSE_VAL(fcs_int));
+
+  /* PNFFT specific parameters */
+  FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("pnfft_N",                 p2nfft_set_pnfft_N,                   FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("pnfft_n",                 p2nfft_set_pnfft_n,                   FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_window_name",       p2nfft_set_pnfft_window_by_name,      FCS_PARSE_VAL(fcs_p_char_t));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_window",            p2nfft_set_pnfft_window,              FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_m",                 p2nfft_set_pnfft_m,                   FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_intpol_order",      p2nfft_set_pnfft_interpolation_order, FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_phi_hat",       p2nfft_set_pnfft_pre_phi_hat,         FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_fg_psi",            p2nfft_set_pnfft_fg_psi,              FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_fft_in_place",      p2nfft_set_pnfft_fft_in_place,        FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_sort_nodes",        p2nfft_set_pnfft_sort_nodes,          FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_interlaced",        p2nfft_set_pnfft_interlaced,          FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_grad_ik",           p2nfft_set_pnfft_grad_ik,             FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_psi",           p2nfft_set_pnfft_pre_psi,             FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_fg_psi",        p2nfft_set_pnfft_pre_fg_psi,          FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_full_psi",      p2nfft_set_pnfft_pre_full_psi,        FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_pre_full_fg_psi",   p2nfft_set_pnfft_pre_full_fg_psi,     FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_real_f",            p2nfft_set_pnfft_real_f,              FCS_PARSE_VAL(fcs_int));
+
+  /* PFFT specific parameters */
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_patience",           p2nfft_set_pfft_patience,             FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_patience_name",      p2nfft_set_pfft_patience_by_name,     FCS_PARSE_VAL(fcs_p_char_t));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_preserve_input",     p2nfft_set_pfft_preserve_input,       FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pfft_tune",               p2nfft_set_pfft_tune,                 FCS_PARSE_VAL(fcs_int));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+FCSResult fcs_p2nfft_print_parameters(FCS handle)
+{
+  fcs_int tolerance_type;
+  fcs_float tolerance;
+  fcs_get_tolerance(handle, &tolerance_type, &tolerance);
+  if(tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
+    printf("p2nfft: tolerance_type = FCS_TOLERANCE_TYPE_FIELD, tolerance = %" FCS_LMOD_FLOAT "e\n", tolerance);
+  else if(tolerance_type == FCS_TOLERANCE_TYPE_POTENTIAL)
+    printf("p2nfft: tolerance_type = FCS_TOLERANCE_TYPE_POTENTIAL, tolerance = %" FCS_LMOD_FLOAT "e\n", tolerance);
+
+  return FCS_RESULT_SUCCESS;
+}
+
 
 /************************************************************
  *     Nearfield computation 

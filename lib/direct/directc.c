@@ -125,7 +125,7 @@ void fcs_directc_destroy(fcs_directc_t *directc)
 }
 
 
-void fcs_directc_set_system(fcs_directc_t *directc, fcs_float *box_base, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_int *periodicity)
+void fcs_directc_set_system(fcs_directc_t *directc, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity)
 {
   fcs_int i;
 

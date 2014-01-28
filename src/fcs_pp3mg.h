@@ -70,7 +70,7 @@ typedef struct fcs_pp3mg_context_t
 extern "C" {
 #endif
 
-extern FCSResult fcs_pp3mg_check(FCS handle);
+FCSResult fcs_pp3mg_check(FCS handle);
 
 
 /**
@@ -79,7 +79,7 @@ extern FCSResult fcs_pp3mg_check(FCS handle);
  * can be entered
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pp3mg_init(FCS handle);
+FCSResult fcs_pp3mg_init(FCS handle);
 
 
 /**
@@ -88,7 +88,7 @@ extern FCSResult fcs_pp3mg_init(FCS handle);
  * deallocated
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pp3mg_destroy(FCS handle);
+FCSResult fcs_pp3mg_destroy(FCS handle);
 
 
 /**
@@ -101,7 +101,7 @@ extern FCSResult fcs_pp3mg_destroy(FCS handle);
  * @param charges fcs_float* list of charges
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges);
+FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges);
 
 
 /**
@@ -115,7 +115,7 @@ extern FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_int loc
  * results after the run
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
+FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
 
 
 /**
@@ -126,7 +126,7 @@ extern FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_particles, fcs_int loca
  * @param r distance for which the potential
  * @return fcs_float containing the potential value for the given distance (without charges, s. above)
  */
-extern FCSResult fcs_pp3mg_near_field_potential(FCS handle, fcs_float);
+FCSResult fcs_pp3mg_near_field_potential(FCS handle, fcs_float);
 
 
 /**
@@ -137,7 +137,7 @@ extern FCSResult fcs_pp3mg_near_field_potential(FCS handle, fcs_float);
  *        != 0 - compute virial
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pp3mg_require_virial(FCS handle, fcs_int compute_virial);
+FCSResult fcs_pp3mg_require_virial(FCS handle, fcs_int compute_virial);
 
 
 /**
@@ -146,7 +146,12 @@ extern FCSResult fcs_pp3mg_require_virial(FCS handle, fcs_int compute_virial);
  * @param virial array to store the virial
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_pp3mg_get_virial(FCS handle, fcs_float *virial);
+FCSResult fcs_pp3mg_get_virial(FCS handle, fcs_float *virial);
+
+
+FCSResult fcs_pp3mg_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+
+FCSResult fcs_pp3mg_print_parameters(FCS handle);
 
 
 #ifdef __cplusplus

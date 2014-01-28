@@ -31,7 +31,7 @@
 static FCSResult fcs_mmm1d_check(FCS handle, const char* fnc_name);
 
 /* initialization function for basic p3m parameters */
-FCSResult fcs_mmm1d_init(FCS handle, MPI_Comm communicator)
+FCSResult fcs_mmm1d_init(FCS handle)
 {
   char* fnc_name = "fcs_mmm1d_init";
   FCSResult result;
@@ -39,7 +39,7 @@ FCSResult fcs_mmm1d_init(FCS handle, MPI_Comm communicator)
   result = fcs_mmm1d_check(handle, fnc_name);
   if (result != NULL) return result;
   
-  mmm1d_init(&handle->method_context, communicator);
+  mmm1d_init(&handle->method_context, handle->communicator);
   return NULL;
 }
 
@@ -54,18 +54,18 @@ FCSResult fcs_mmm1d_tune(FCS handle,
   if (result != NULL) return result;
   
   /* Check box periodicity */
-  fcs_int *periodicity = fcs_get_periodicity(handle);
+  const fcs_int *periodicity = fcs_get_periodicity(handle);
   if (periodicity[0] != 0 ||
       periodicity[1] != 0 ||
       periodicity[2] != 1)
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "mmm1d requires z-axis periodic boundary.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "mmm1d requires z-axis periodic boundary.");
   
   /* Check box shape */
-  fcs_float *a = fcs_get_box_a(handle);
-  fcs_float *b = fcs_get_box_b(handle);
-  fcs_float *c = fcs_get_box_c(handle);
+  const fcs_float *a = fcs_get_box_a(handle);
+  const fcs_float *b = fcs_get_box_b(handle);
+  const fcs_float *c = fcs_get_box_c(handle);
   if (!fcs_is_cubic(a, b, c))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "mmm1d requires a cubic box.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "mmm1d requires a cubic box.");
   
   mmm1d_set_box_a(handle->method_context, a[0]);
   mmm1d_set_box_b(handle->method_context, b[1]);
@@ -104,10 +104,10 @@ FCSResult fcs_mmm1d_destroy(FCS handle)
 /* method to check if mmm1d parameters are entered into FCS */
 FCSResult fcs_mmm1d_check(FCS handle, const char* fnc_name) {
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
 
-  if (fcs_get_method(handle) != FCS_MMM1D)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"mmm1d\".");
+  if (fcs_get_method(handle) != FCS_METHOD_MMM1D)
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"mmm1d\".");
   
   return NULL;
 }
@@ -179,10 +179,49 @@ FCSResult fcs_mmm1d_get_virial(FCS handle, fcs_float *virial) {
   FCSResult result = fcs_mmm1d_check(handle, fnc_name);
   if (result != NULL) return result;
   if (virial == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"null pointer supplied for virial"); 
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for virial"); 
 
   fcs_int i;
   for (i=0; i < 9; i++)
     virial[i] = 0.0;
   return NULL;
+}
+
+FCSResult fcs_mmm1d_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_mmm1d_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm1d_far_switch_radius", mmm1d_set_far_switch_radius, FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm1d_bessel_cutoff",     mmm1d_set_bessel_cutoff,     FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm1d_maxPWerror",        mmm1d_set_maxPWerror,        FCS_PARSE_VAL(fcs_float));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+FCSResult fcs_mmm1d_print_parameters(FCS handle)
+{
+  fcs_float radius;
+  fcs_float PWerror;
+  fcs_int cutoff;
+  fcs_mmm1d_get_far_switch_radius(handle, &radius);
+  fcs_mmm1d_get_bessel_cutoff(handle, &cutoff);
+  fcs_mmm1d_get_maxPWerror(handle, &PWerror);
+  printf("mmm1d bessel cutoff: %" FCS_LMOD_INT "d\n", cutoff);
+  printf("mmm1d far switch radius: %e\n", radius);
+  printf("mmm1d maximum PWerror: %e\n", PWerror);
+
+  return FCS_RESULT_SUCCESS;
 }

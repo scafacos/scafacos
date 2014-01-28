@@ -102,5 +102,9 @@ rti_cmc_t
 rti_tim_t
 rti_mem_t
 rti_t
+_sl_mpi_context_t
+sl_mpi_context_t
+_sl_omp_context_t
+sl_omp_context_t
 _sl_context_t
 sl_context_t

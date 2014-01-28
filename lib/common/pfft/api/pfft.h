@@ -80,6 +80,8 @@ BEGIN_C_DECLS
     double *trafo;                                                                      \
     double *remap;                                                                      \
     double remap_3dto2d[2];                                                             \
+    double itwiddle;                                                                    \
+    double otwiddle;                                                                    \
   } PX(timer_s);                                                                        \
   typedef PX(timer_s) *PX(timer);                                                       \
                                                                                         \
@@ -103,45 +105,31 @@ BEGIN_C_DECLS
   PFFT_EXTERN void PX(execute)(PX(plan) fftplan);                                       \
   PFFT_EXTERN void PX(destroy_plan)(PX(plan) fftplan);                                  \
                                                                                         \
-  PFFT_EXTERN void PX(init_input_c2c_3d)(                                               \
+  PFFT_EXTERN void PX(init_input_complex_3d)(                                           \
     const INT *n, const INT *local_n, const INT *local_n_start,                         \
     C *data);                                                                           \
-  PFFT_EXTERN void PX(init_input_c2c)(                                                  \
+  PFFT_EXTERN void PX(init_input_complex)(                                              \
       int rnk_n, const INT *n, const INT *local_n, const INT *local_start,              \
       C *data);                                                                         \
                                                                                         \
-  PFFT_EXTERN void PX(init_input_r2c_3d)(                                               \
+  PFFT_EXTERN void PX(init_input_real_3d)(                                              \
     const INT *n, const INT *local_n, const INT *local_n_start,                         \
     R *data);                                                                           \
-  PFFT_EXTERN void PX(init_input_r2c)(                                                  \
+  PFFT_EXTERN void PX(init_input_real)(                                                 \
       int rnk_n, const INT *n, const INT *local_n, const INT *local_start,              \
       R *data);                                                                         \
                                                                                         \
-  PFFT_EXTERN void PX(init_input_r2r_3d)(                                               \
-    const INT *n, const INT *local_n, const INT *local_n_start,                         \
-    R *data);                                                                           \
-  PFFT_EXTERN void PX(init_input_r2r)(                                                  \
-      int rnk_n, const INT *n, const INT *local_n, const INT *local_start,              \
-      R *data);                                                                         \
-                                                                                        \
-  PFFT_EXTERN R PX(check_output_c2c_3d)(                                                \
+  PFFT_EXTERN R PX(check_output_complex_3d)(                                            \
     const INT *n, const INT *local_n, const INT *local_n_start,                         \
     const C *data, MPI_Comm comm);                                                      \
-  PFFT_EXTERN R PX(check_output_c2c)(                                                   \
+  PFFT_EXTERN R PX(check_output_complex)(                                               \
       int rnk_n, const INT *n, const INT *local_n, const INT *local_start,              \
       const C *data, MPI_Comm comm);                                                    \
                                                                                         \
-  PFFT_EXTERN R PX(check_output_c2r_3d)(                                                \
+ PFFT_EXTERN R PX(check_output_real_3d)(                                                \
     const INT *n, const INT *local_n, const INT *local_n_start,                         \
     const R *data, MPI_Comm comm);                                                      \
-  PFFT_EXTERN R PX(check_output_c2r)(                                                   \
-    int rnk_n, const INT *n, const INT *local_n, const INT *local_start,                \
-    const R *data, MPI_Comm comm);                                                      \
-                                                                                        \
- PFFT_EXTERN R PX(check_output_r2r_3d)(                                                 \
-    const INT *n, const INT *local_n, const INT *local_n_start,                         \
-    const R *data, MPI_Comm comm);                                                      \
-  PFFT_EXTERN R PX(check_output_r2r)(                                                   \
+  PFFT_EXTERN R PX(check_output_real)(                                                  \
     int rnk_n, const INT *n, const INT *local_n, const INT *local_start,                \
     const R *data, MPI_Comm comm);                                                      \
                                                                                         \
@@ -436,6 +424,7 @@ PFFT_DEFINE_API(PFFT_MANGLE_LONG_DOUBLE, FFTW_MANGLE_LONG_DOUBLE, long double, p
 #define PFFT_TRANSPOSED_NONE      (0U)
 #define PFFT_TRANSPOSED_IN        (1U<< 0)
 #define PFFT_TRANSPOSED_OUT       (1U<< 1)
+#define PFFT_SHIFTED_NONE         (0U)
 #define PFFT_SHIFTED_IN           (1U<< 2)
 #define PFFT_SHIFTED_OUT          (1U<< 3)
 #define PFFT_MEASURE              (0U)     /* default: use FFTW_MEASURE for fftw planer */

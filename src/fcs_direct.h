@@ -103,6 +103,10 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
                          fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
 
 
+FCSResult fcs_direct_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+FCSResult fcs_direct_print_parameters(FCS handle);
+
+
 /**
  * @brief function to enable the virial computation
  * @param handle FCS-object

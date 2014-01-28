@@ -325,7 +325,7 @@ common parameter not related to the system is the near field flag, which determi
 By default, all solvers compute the interactions entirely by themselves. However, some solvers provide the possibility to delegate their near field 
 computations to the main program. If the near field flag is set to false (i.e. 0), then interactions inside a solver-specific cutoff range are not computed.
 The cutoff range can be retrieved (set) with a separate getter (setter) function. The solver methods provide separate potential functions for performing their
-near field computations in the main program. The functionality of the near field flag is currently supported by methods P3M and P2NFFT.
+near field computations in the main program. The functionality of the near field flag is currently supported by methods \pthreem and \ptwonfft.
 
 \begin{table}
 \begin{center}
@@ -377,7 +377,7 @@ the parameter \textit{n\_maxlocp} gives an estimation of the maximum number of p
 routine.\\
 This routine is mandatory to be called, in order to grant a unified interface for the library. Some methods, e.g. PEPC, do not need this tuning step. But to be
 able to switch the methods within a code without the need to greatly modify the code again, the tuning routine has to be called. If the user wants to use e.g. PEPC
-as well as e.g. P2NFFT, he can use the same program (except for the method-specific setter routines), when including the tuning routine. 
+as well as e.g. \ptwonfft, he can use the same program (except for the method-specific setter routines), when including the tuning routine. 
 
 \subsection{Calculation Step}
 \label{sec:run_step}
@@ -451,11 +451,11 @@ output functions within the library and the parser for parameters.
 \label{sec:near_field_solver}
 
 \todo[inline]{Should the near field solver be available to the user?}
-Within the library a near field solver for given near field potentials is included. Some of the methods (P2NFFT and P3M) need to calculate separate near field
+Within the library a near field solver for given near field potentials is included. Some of the methods (\ptwonfft and \pthreem) need to calculate separate near field
 interactions, which is done by this solver. The solver uses a linked cell scheme for fast interaction calculation and uses the sorting library to create and
 duplicate the particles (ghost-particles). It is able to handle periodicity and linked cell sizes that are smaller than the cut-off radius. With the near field
 flag described in section \ref{sec:par_setup} the calculation of the near field portions of the Coulomb interactions can be delegated to external routines.
-In order to do this the methods which support this (currently P3M and P2NFFT) provide a functions which can then be called from the user's program to calculate the
+In order to do this the methods which support this (currently \pthreem and \ptwonfft) provide a functions which can then be called from the user's program to calculate the
 corresponding near field portions of the Coulomb interactions (see figure \ref{fig:fcs_compute_near_field} to \ref{fig:fcs_compute_near}). The aforementioned
 functions are generic function that will calculate the according values for the chosen method. It is possible to check if the chosen method is able to relegate
 the near field calculation by use of \textit{fcs\_method\_has\_near} (\ref{fig:fcs_method_has_near}).

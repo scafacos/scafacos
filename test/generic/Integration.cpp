@@ -85,12 +85,12 @@ void integ_setup(integration_t *integ, fcs_int time_steps, fcs_int resort, char 
 }
 
 
-void integ_system_setup(integration_t *integ, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_float *offset, fcs_int *periodicity)
+void integ_system_setup(integration_t *integ, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_float *box_origin, fcs_int *periodicity)
 {
   integ->box_a[0] = box_a[0]; integ->box_a[1] = box_a[1]; integ->box_a[2] = box_a[2];
   integ->box_b[0] = box_b[0]; integ->box_b[1] = box_b[1]; integ->box_b[2] = box_b[2];
   integ->box_c[0] = box_c[0]; integ->box_c[1] = box_c[1]; integ->box_c[2] = box_c[2];
-  integ->offset[0] = offset[0]; integ->offset[1] = offset[1]; integ->offset[2] = offset[2];
+  integ->box_origin[0] = box_origin[0]; integ->box_origin[1] = box_origin[1]; integ->box_origin[2] = box_origin[2];
   integ->periodicity[0] = periodicity[0]; integ->periodicity[1] = periodicity[1]; integ->periodicity[2] = periodicity[2];
 }
 
@@ -155,8 +155,8 @@ void integ_update_positions(integration_t *integ, fcs_int nparticles, fcs_float 
 void integ_correct_positions(integration_t *integ, fcs_int nparticles, fcs_float *pos)
 {
   /* wrap particle positions of periodic dimensions */
-  fcs_wrap_positions(nparticles, pos, integ->box_a, integ->box_b, integ->box_c, integ->offset, integ->periodicity);
+  fcs_wrap_positions(nparticles, pos, integ->box_a, integ->box_b, integ->box_c, integ->box_origin, integ->periodicity);
   
   /* increase particle system in open dimensions to enclose all particles */
-  fcs_expand_system_box(nparticles, pos, integ->box_a, integ->box_b, integ->box_c, integ->offset, integ->periodicity);
+  fcs_expand_system_box(nparticles, pos, integ->box_a, integ->box_b, integ->box_c, integ->box_origin, integ->periodicity);
 }

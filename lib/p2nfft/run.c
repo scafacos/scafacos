@@ -32,7 +32,6 @@
 #include <common/near/near.h>
 //#include "constants.h"
 
-#define WORKAROUND_GRIDSORT_BUG 1
 #define FCS_P2NFFT_DISABLE_PNFFT_INFO 1
 #define CREATE_GHOSTS_SEPARATE 0
 
@@ -48,6 +47,35 @@ static FCS_NEAR_LOOP_FP(ifcs_p2nfft_compute_near_interpolation_cub_loop, ifcs_p2
 static void convolution(
     const INT *local_N, const fcs_pnfft_complex *regkern_hat,
     fcs_pnfft_complex *f_hat);
+
+#define SPROD3(_u_, _v_) ( (_u_)[0] * (_v_)[0] + (_u_)[1] * (_v_)[1] + (_u_)[2] * (_v_)[2] ) 
+#define XYZ2TRI(_d_, _x_, _ib_) ( SPROD3((_ib_) + 3*(_d_), (_x_)) )
+/* compute d-th component of A^T * v */
+#define At_TIMES_VEC(_A_, _v_, _d_) ( (_v_)[0] * (_A_)[_d_] + (_v_)[1] * (_A_)[_d_ + 3] + (_v_)[2] * (_A_)[_d_ + 6] )
+
+
+static fcs_int box_not_large_enough(
+    fcs_int npart, fcs_float *pos, fcs_float *ibox, fcs_int *periodicity
+    )
+{
+  for(fcs_int j=0; j<npart; j++)
+  {
+    if( (periodicity[0] == 0) && (XYZ2TRI(0, pos, ibox) < 0.0) ) return 1;
+    if( (periodicity[0] == 0) && (XYZ2TRI(0, pos, ibox) > 1.0) ) return 1;
+
+    if( (periodicity[1] == 0) && (XYZ2TRI(1, pos, ibox) < 0.0) ) return 1;
+    if( (periodicity[1] == 0) && (XYZ2TRI(1, pos, ibox) > 1.0) ) return 1;
+
+    if( (periodicity[2] == 0) && (XYZ2TRI(2, pos, ibox) < 0.0) ) return 1;
+    if( (periodicity[2] == 0) && (XYZ2TRI(2, pos, ibox) > 1.0) ) return 1;
+
+    pos += 3;
+  }
+
+  return 0;
+}
+
+
 
 
 FCSResult ifcs_p2nfft_run(
@@ -72,50 +100,19 @@ FCSResult ifcs_p2nfft_run(
 
   FCS_P2NFFT_INIT_TIMING(d->cart_comm_3d);
 
-  /* Tuning was called in fcs_run */
-//  result = ifcs_p2nfft_tune(rd, local_num_particles, positions, charges, d->box_l[0]);
-
   /* handle particles, that left the box [0,L] */
   /* for non-periodic boundary conditions: user must increase the box */
-  for(fcs_int j=0; j<local_num_particles; j++)
-    for(fcs_int t=0; t<3; t++)
-      if(!d->periodicity[t]) /* for mixed periodicity: only handle the non-periodic dimensions */
-        if( (positions[3*j+t] < 0) || (positions[3*j+t] > d->box_l[t]) )
-//        if( (positions[3*j+t] < 0) || fcs_float_is_zero(d->box_[t] - positions[3*j+t])  || (positions[3*j+t] > d->box_l[t]) )
-          return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box or reached the upper border.");
+  if(box_not_large_enough(local_num_particles, positions, d->box_inv, d->periodicity))
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box.");
+
   /* TODO: implement additional scaling of particles to ensure x \in [0,L)
    * Idea: use allreduce to get min and max coordinates, adapt scaling of particles for every time step */
 
   /* Start forw sort timing */
   FCS_P2NFFT_START_TIMING();
   
-#if WORKAROUND_GRIDSORT_BUG
-  fcs_float lo[3], up[3];
-  for(int t=0; t<3; t++){
-    lo[t] = d->lower_border[t];
-    up[t] = d->upper_border[t];
-    if(!d->periodicity[t]){ /* for mixed periodicity: only handle the non-periodic dimensions */
-      if(fcs_float_is_zero(lo[t]-d->box_l[t]))
-        lo[t] += 0.1;
-      if(fcs_float_is_zero(up[t]-d->box_l[t]))
-        up[t] += 0.1;
-    }
-  }
-#endif
-  
   /* Compute the near field */
-  fcs_float box_a[3] = { d->box_l[0], 0, 0 };
-  fcs_float box_b[3] = { 0, d->box_l[1], 0 };
-  fcs_float box_c[3] = { 0, 0, d->box_l[2] };
-  fcs_float box_base[3] = { 0, 0, 0 };
   fcs_near_t near;
-
-#if WORKAROUND_GRIDSORT_BUG
-  /* for mixed periodicity: only handle the non-periodic dimensions */
-  if(!d->periodicity[0]) box_a[0] += 0.1;
-  if(!d->periodicity[1]) box_b[1] += 0.1;
-  if(!d->periodicity[2]) box_c[2] += 0.1;
-#endif
 
   fcs_int sorted_num_particles, ghost_num_particles;
   fcs_float *sorted_positions, *ghost_positions;
@@ -125,13 +122,9 @@ FCSResult ifcs_p2nfft_run(
 
   fcs_gridsort_create(&gridsort);
   
-  fcs_gridsort_set_system(&gridsort, box_base, box_a, box_b, box_c, d->periodicity);
-  
-#if WORKAROUND_GRIDSORT_BUG
-  fcs_gridsort_set_bounds(&gridsort, lo, up);
-#else
+  fcs_gridsort_set_system(&gridsort, d->box_base, d->ebox_a, d->ebox_b, d->ebox_c, d->periodicity);
+
   fcs_gridsort_set_bounds(&gridsort, d->lower_border, d->upper_border);
-#endif
 
   fcs_gridsort_set_particles(&gridsort, local_num_particles, max_local_num_particles, positions, charges);
 
@@ -165,18 +158,7 @@ FCSResult ifcs_p2nfft_run(
   /* Handle particles, that left the box [0,L] */
   /* For periodic boundary conditions: just fold them back.
    * We change sorted_positions (and not positions), since we are allowed to overwrite them. */
-  if(d->periodicity[0] || d->periodicity[1] || d->periodicity[2]){
-    for(fcs_int j=0; j<sorted_num_particles; j++){
-      for(fcs_int t=0; t<3; t++){
-        if(d->periodicity[t]){
-          while(sorted_positions[3*j+t] < 0)
-            sorted_positions[3*j+t] += d->box_l[t];
-          while(sorted_positions[3*j+t] >= d->box_l[t])
-            sorted_positions[3*j+t] -= d->box_l[t];
-        }
-      }
-    }
-  }
+  fcs_wrap_positions(sorted_num_particles, sorted_positions, d->box_a, d->box_b, d->box_c, d->box_base, d->periodicity);
 
   /* Start near field timing */
   FCS_P2NFFT_START_TIMING();
@@ -207,7 +189,7 @@ FCSResult ifcs_p2nfft_run(
         case 1: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_lin_loop); break;
         case 2: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_quad_loop); break;
         case 3: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_cub_loop); break;
-        default: return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
+        default: return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
       } 
     } else if(d->use_ewald){
       if(d->interpolation_order == -1)
@@ -219,10 +201,8 @@ FCSResult ifcs_p2nfft_run(
       fcs_near_set_potential(&near, ifcs_p2nfft_compute_near_potential);
     }
 
-    // fcs_int periodicity[3] = { 1, 1, 1 };
-    // fcs_int periodicity[3] = { 0, 0, 0 };
     // fcs_int *periodicity = NULL; /* sorter uses periodicity of the communicator */
-    fcs_near_set_system(&near, box_base, box_a, box_b, box_c, d->periodicity);
+    fcs_near_set_system(&near, d->box_base, d->box_a, d->box_b, d->box_c, d->periodicity);
   
     fcs_near_set_particles(&near, sorted_num_particles, sorted_num_particles, sorted_positions, sorted_charges, sorted_indices,
         (compute_field)?sorted_field:NULL, (compute_potentials)?sorted_potentials:NULL);
@@ -314,15 +294,18 @@ FCSResult ifcs_p2nfft_run(
 //   fprintf(stderr, "myrank = %d, sorted_num_particles = %d\n", myrank, sorted_num_particles);
 // #endif
   
-  /* Set the NFFT nodes and values */
+  /* Set NFFT nodes within [-0.5,0.5]^3 */
   for (fcs_int j = 0; j < sorted_num_particles; ++j)
   {
-    x[3 * j + 0] = (sorted_positions[3 * j + 0] - d->box_shifts[0]) / d->box_scales[0];
-    x[3 * j + 1] = (sorted_positions[3 * j + 1] - d->box_shifts[1]) / d->box_scales[1];
-    x[3 * j + 2] = (sorted_positions[3 * j + 2] - d->box_shifts[2]) / d->box_scales[2];
-    
-    f[j] = sorted_charges[j];
+    fcs_float *pos = &sorted_positions[3*j];
+
+    x[3 * j + 0] = ( XYZ2TRI(0, pos, d->box_inv) - 0.5 ) / d->box_expand[0];
+    x[3 * j + 1] = ( XYZ2TRI(1, pos, d->box_inv) - 0.5 ) / d->box_expand[1];
+    x[3 * j + 2] = ( XYZ2TRI(2, pos, d->box_inv) - 0.5 ) / d->box_expand[2];
   }
+    
+  /* Set NFFT values */
+  for (fcs_int j = 0; j < sorted_num_particles; ++j) f[j] = sorted_charges[j];
 
 // #if FCS_ENABLE_INFO
 //   fcs_float min[3], max[3], gmin[3], gmax[3];
@@ -413,24 +396,14 @@ FCSResult ifcs_p2nfft_run(
   /* Perform NFFT */
   FCS_PNFFT(trafo)(d->pnfft);
 
-  fcs_float box_surf = 1.0;
-  for(fcs_int t=0; t<3; t++)
-    if(d->periodicity[t])
-      box_surf *= d->box_scales[t];
-
-  /* Copy the results to the output vector and rescale */
+  /* Copy the results to the output vector and rescale with L^{-T} */
   for (fcs_int j = 0; j < sorted_num_particles; ++j){
-    if(d->use_ewald){
-      sorted_potentials[j] += creal(f[j]) / box_surf;
-      for(fcs_int t=0; t<3; t++)
-        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / (box_surf * d->box_scales[t]);
-    } else {
-      sorted_potentials[j] += creal(f[j]);
-      for(fcs_int t=0; t<3; t++)
-        sorted_field[3 * j + t] -= creal(grad_f[3 * j + t]) / d->box_scales[t];
-    }
-  }
+    sorted_potentials[j] += creal(f[j]);
 
+    sorted_field[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 0) );
+    sorted_field[3 * j + 1] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 1) );
+    sorted_field[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 2) );
+  }
 
   /* Checksum: fields resulting from farfield interactions */
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
@@ -439,9 +412,10 @@ FCSResult ifcs_p2nfft_run(
     for(fcs_int j = 0; (j < sorted_num_particles); ++j)
       rsum += fabs(sorted_field[3*j+t]);
     MPI_Reduce(&rsum, &rsum_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
-    if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: near plus far field %" FCS_LMOD_INT "d. component: %" FCS_LMOD_FLOAT "f\n", t, rsum_global);
+    if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: checksum near plus far field %" FCS_LMOD_INT "d. component: %" FCS_LMOD_FLOAT "f\n", t, rsum_global);
   }
 
+  if (myrank == 0) fprintf(stderr, "E_FAR(0) = %" FCS_LMOD_FLOAT "e\n", -fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*0, 0) ));
   if (myrank == 0) fprintf(stderr, "E_NEAR_FAR(0) = %" FCS_LMOD_FLOAT "e\n", sorted_field[0]);
 #endif
 
@@ -459,9 +433,10 @@ FCSResult ifcs_p2nfft_run(
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   fcs_float far_energy = 0.0;
   fcs_float far_global;
+
   for(fcs_int j = 0; j < sorted_num_particles; ++j)
     if(d->use_ewald)
-      far_energy += 0.5 * sorted_charges[j] * f[j] / box_surf;
+      far_energy += 0.5 * sorted_charges[j] * f[j];
     else
       far_energy += 0.5 * sorted_charges[j] * f[j];
 

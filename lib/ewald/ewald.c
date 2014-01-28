@@ -147,15 +147,15 @@ typedef struct {
 /* method to check whether a given FCS is EWALD */
 static FCSResult fcs_ewald_check(FCS handle, const char* fnc_name) {
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
 
-  if (fcs_get_method(handle) != FCS_EWALD)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"EWALD\".");
+  if (fcs_get_method(handle) != FCS_METHOD_EWALD)
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"EWALD\".");
 
   return NULL;
 }
 
-FCSResult fcs_ewald_init(FCS handle, MPI_Comm communicator) {
+FCSResult fcs_ewald_init(FCS handle) {
   const char* fnc_name = "ewald_init";
   FCSResult result;
 
@@ -172,7 +172,7 @@ FCSResult fcs_ewald_init(FCS handle, MPI_Comm communicator) {
   }
 
   /* MPI communicator */
-  d->comm = communicator;
+  d->comm = handle->communicator;
   MPI_Comm_size(d->comm, &d->comm_size);
   MPI_Comm_rank(d->comm, &d->comm_rank);
 
@@ -398,28 +398,28 @@ fcs_ewald_get_components(FCS handle,
 
   if (far_fields != NULL) {
     if (d->far_fields == NULL)
-      return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"far_fields wanted but not computed."); 
+      return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"far_fields wanted but not computed."); 
     else
       *far_fields = d->far_fields;
   }
 
   if (near_fields != NULL) {
     if (d->near_fields == NULL)
-      return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"near_fields wanted but not computed."); 
+      return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"near_fields wanted but not computed."); 
     else
       *near_fields = d->near_fields;
   }
 
   if (far_potentials != NULL) {
     if (d->far_potentials == NULL)
-      return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"far_potentials wanted but not computed."); 
+      return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"far_potentials wanted but not computed."); 
     else
       *far_potentials = d->far_potentials;
   }
 
   if (near_potentials != NULL) {
     if (d->near_potentials == NULL)
-      return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"near_potentials wanted but not computed."); 
+      return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"near_potentials wanted but not computed."); 
     else
       *near_potentials = d->near_potentials;
   }
@@ -516,21 +516,21 @@ FCSResult fcs_ewald_tune(FCS handle,
   FCS_INFO(fprintf(stderr, "fcs_ewald_tune() started...\n"));
 
   /* Handle periodicity */
-  fcs_int *periodicity = fcs_get_periodicity(handle);
+  const fcs_int *periodicity = fcs_get_periodicity(handle);
   if (! (periodicity[0] && periodicity[1] && periodicity[2]))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
   			    "EWALD requires periodic boundary conditions.");
   
   /* Handle box size */
-  fcs_float *a = fcs_get_box_a(handle);
-  fcs_float *b = fcs_get_box_b(handle);
-  fcs_float *c = fcs_get_box_c(handle);
+  const fcs_float *a = fcs_get_box_a(handle);
+  const fcs_float *b = fcs_get_box_b(handle);
+  const fcs_float *c = fcs_get_box_c(handle);
   if (!fcs_is_orthogonal(a, b, c))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
   			    "EWALD requires the box to be orthorhombic.");
   
   if (!fcs_uses_principal_axes(a, b, c))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
   			    "EWALD requires the box vectors to be parallel to the principal axes.");
   
   if (!fcs_float_is_equal(a[0], d->box_l[0])) {
@@ -558,18 +558,18 @@ FCSResult fcs_ewald_tune(FCS handle,
   /* Check whether the input parameters are sane */
   if (!d->tune_r_cut) {
     if (d->r_cut < 0.0) {
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "r_cut is negative!");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "r_cut is negative!");
     }
     
     if (fcs_float_is_zero(d->r_cut)) {
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "r_cut is too small!");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "r_cut is too small!");
     }
     
     /* check whether cutoff is larger than half a box length */
     if ((d->r_cut > 0.5*d->box_l[0]) ||
   	(d->r_cut > 0.5*d->box_l[1]) ||
   	(d->r_cut > 0.5*d->box_l[2]))
-      return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "r_cut is larger than half a system box length.");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "r_cut is larger than half a system box length.");
   }
 
   /* Init tuning */
@@ -615,7 +615,7 @@ FCSResult fcs_ewald_tune(FCS handle,
   	  static char msg[255];
   	  sprintf(msg, "EWALD cannot achieve required accuracy with given r_cut=%" FCS_LMOD_FLOAT "f with a kmax<=%" FCS_LMOD_INT "d",
   		  d->r_cut, d->maxkmax);
-  	  return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, msg);
+  	  return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, msg);
   	}
 
 	ewald_tune_alpha(num_charges, q2, d->box_l, d->r_cut, d->kmax, 
@@ -636,7 +636,7 @@ FCSResult fcs_ewald_tune(FCS handle,
 	  sprintf(msg, "EWALD cannot achieve required accuracy with given kmax=%" FCS_LMOD_INT "d and r_cut=%" FCS_LMOD_FLOAT "f", d->kmax, d->r_cut);
 	else
 	  sprintf(msg, "EWALD cannot achieve required accuracy with given kmax=%" FCS_LMOD_INT "d, r_cut=%" FCS_LMOD_FLOAT "f and alpha=%" FCS_LMOD_FLOAT "f", d->kmax, d->r_cut, d->alpha);
-  	return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, msg);
+  	return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, msg);
       }
     }
   }
@@ -930,10 +930,10 @@ void ewald_compute_rspace(ewald_data_struct* d,
   fcs_float *local_charges, *local_ghost_charges;
   fcs_gridsort_index_t *local_indices, *local_ghost_indices;
   fcs_gridsort_t gridsort;
-  fcs_float box_base[3] = {0.0, 0.0, 0.0 };
-  fcs_float box_a[3] = {d->box_l[0], 0.0, 0.0 };
-  fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
-  fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
+  const fcs_float box_base[3] = {0.0, 0.0, 0.0 };
+  const fcs_float box_a[3] = {d->box_l[0], 0.0, 0.0 };
+  const fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
+  const fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
 
   /* DOMAIN DECOMPOSE */
   fcs_gridsort_create(&gridsort);
@@ -1109,6 +1109,33 @@ FCSResult fcs_ewald_run(FCS handle,
   FCS_INFO(fprintf(stderr, "fcs_ewald_run() finished.\n"));
   return NULL;
 }
+
+
+FCSResult fcs_ewald_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_ewald_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("ewald_maxkmax", ewald_set_maxkmax, FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("ewald_kmax",    ewald_set_kmax,    FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("ewald_r_cut",   ewald_set_r_cut,   FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("ewald_alpha",   ewald_set_alpha,   FCS_PARSE_VAL(fcs_float));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
 
 FCSResult
 fcs_ewald_print_parameters(FCS handle) {

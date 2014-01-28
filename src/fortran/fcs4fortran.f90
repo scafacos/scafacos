@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2011-2012 Rene Halver
+! Copyright (C) 2011, 2012, 2013 Rene Halver, Michael Hofmann
 !
 ! This file is part of ScaFaCoS.
 !
@@ -23,47 +23,51 @@
 #include <fconfig.h>
 #endif
 
+#include <fcs_fconfig.h>
+
+#include "fcs4fortran_definitions.h"
+
+
 module fcs_module
 
-use iso_c_binding
-
-#include <fcs_fconfig.h>
+  use iso_c_binding
 
   implicit none
 
   ! boolean data type
   
   integer, parameter :: fcs_boolean_kind = fcs_integer_kind
-  integer, parameter :: fcs_boolean_kind_isoc = fcs_integer_kind_isoc
   integer(kind = fcs_boolean_kind), parameter :: FCS_TRUE = 1
   integer(kind = fcs_boolean_kind), parameter :: FCS_FALSE = 0
 
   ! ScaFaCoS return values
 
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_SUCCESS = 0
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_NULL_ARGUMENT = 1
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_ALLOC_FAILED = 2
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_WRONG_ARGUMENT = 3
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_MISSING_ELEMENT = 4
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_LOGICAL_ERROR = 5
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_INCOMPATIBLE_METHOD = 6
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_MPI_ERROR = 7
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_FORTRAN_CALL_ERROR = 8
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_SUCCESS                   = FCS4FORTRAN_SUCCESS
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_ERROR_NULL_ARGUMENT       = FCS4FORTRAN_ERROR_NULL_ARGUMENT
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_ERROR_ALLOC_FAILED        = FCS4FORTRAN_ERROR_ALLOC_FAILED
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_ERROR_WRONG_ARGUMENT      = FCS4FORTRAN_ERROR_WRONG_ARGUMENT
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_ERROR_MISSING_ELEMENT     = FCS4FORTRAN_ERROR_MISSING_ELEMENT
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_ERROR_LOGICAL_ERROR       = FCS4FORTRAN_ERROR_LOGICAL_ERROR
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_ERROR_INCOMPATIBLE_METHOD = FCS4FORTRAN_ERROR_INCOMPATIBLE_METHOD
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_ERROR_NOT_IMPLEMENTED     = FCS4FORTRAN_ERROR_NOT_IMPLEMENTED
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_ERROR_FORTRAN_CALL_ERROR  = FCS4FORTRAN_ERROR_FORTRAN_CALL
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_ERROR_RESULT_CREATE       = FCS4FORTRAN_ERROR_RESULT_CREATE
 
   ! definitions of method flags
 
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_FMM = 32
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_P2NFFT = 33
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_PEPC = 34
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_P3M = 35
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_PP3MG = 36
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_VMG = 37
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_DIRECT = 38
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_MEMD = 39
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_NO_METHOD_CHOSEN = 40
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_MMM1D = 41
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_EWALD = 42
-  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_MMM2D = 43
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_NONE   = FCS4FORTRAN_METHOD_NONE
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_DIRECT = FCS4FORTRAN_METHOD_DIRECT
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_EWALD  = FCS4FORTRAN_METHOD_EWALD
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_FMM    = FCS4FORTRAN_METHOD_FMM
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_MEMD   = FCS4FORTRAN_METHOD_MEMD
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_MMM1D  = FCS4FORTRAN_METHOD_MMM1D
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_MMM2D  = FCS4FORTRAN_METHOD_MMM2D
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_P2NFFT = FCS4FORTRAN_METHOD_P2NFFT
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_P3M    = FCS4FORTRAN_METHOD_P3M
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_PEPC   = FCS4FORTRAN_METHOD_PEPC
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_PP3MG  = FCS4FORTRAN_METHOD_PP3MG
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_VMG    = FCS4FORTRAN_METHOD_VMG
+  integer(kind = fcs_integer_kind_isoc), parameter ::  FCS_METHOD_WOLF   = FCS4FORTRAN_METHOD_WOLF
 
 #ifdef FCS_ENABLE_FMM
   ! fmm specific parameter definition
@@ -78,21 +82,55 @@ use iso_c_binding
   integer(kind = fcs_integer_kind_isoc), parameter :: FCS_FMM_CUSTOM_RELATIVE = 2
 #endif
 
-  ! length of error messages in return type
-  integer, parameter                                :: MESSAGE_LENGTH = 256
+  ! length of function names and description messages of the return state
+  integer, parameter                               :: MAX_FUNCTION_LENGTH = 64
+  integer, parameter                               :: MAX_MESSAGE_LENGTH = 512
 
   ! interface containing the calls to the wrapper functions in C
 
   interface
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                               return value handling
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      subroutine fcs_result_destroy(res) BIND(C, name="fcs_result_destroy")
+          use iso_c_binding
+          type(c_ptr), value                                    ::  res
+      end subroutine
+
+      function fcs_result_get_return_code_f(res) BIND(C, name="fcs_result_get_return_code")
+          use iso_c_binding
+          implicit none
+          type(c_ptr), value                                    ::  res
+          integer(kind = fcs_integer_kind_isoc)                 ::  fcs_result_get_return_code_f
+      end function
+      
+      function fcs_result_get_message_f(res) BIND(C, name="fcs_result_get_message")
+          use iso_c_binding
+          import MAX_MESSAGE_LENGTH
+          implicit none
+          type(c_ptr), value                                    ::  res
+          type(c_ptr)                                           ::  fcs_result_get_message_f
+      end function
+
+      function fcs_result_get_function_f(res) BIND(C, name="fcs_result_get_function")
+          use iso_c_binding
+          import MAX_FUNCTION_LENGTH
+          implicit none
+          type(c_ptr), value                                    ::  res
+          type(c_ptr)                                           ::  fcs_result_get_function_f
+      end function
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                 basic ScaFaCoS functions
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      function fcs_init(handle,method,communicator) BIND(C,name="fcs_init_f")
+
+      function fcs_init(handle,method_name,communicator) BIND(C,name="fcs_init_f")
           use iso_c_binding
           implicit none
           type(c_ptr)                                       :: handle
-          character(kind = c_char)                          :: method(*)
+          character(kind = c_char)                          :: method_name(*)
           integer, value                                    :: communicator
           type(c_ptr)                                       :: fcs_init
       end function
@@ -131,71 +169,152 @@ use iso_c_binding
       end function
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                                  ScaFaCoS parser
+!                               general parameter handling
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      function fcs_parser(handle,parameters,continue_on_errors) BIND(C,name="fcs_parser")
+
+      function fcs_get_method(handle) BIND(C,name="fcs_get_method")
+          use iso_c_binding
+          implicit none
+          type(c_ptr), value                        :: handle
+          integer(kind = fcs_integer_kind_isoc)     :: fcs_get_method
+      end function
+
+! Missing: fcs_get_method_name
+! Missing: fcs_get_communicator
+
+      function fcs_set_common_f(handle, near_field_flag, box_a, box_b, box_c, &
+           box_origin, periodicity, total_parts) BIND(C,name="fcs_set_common")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          integer(kind = fcs_integer_kind_isoc), value      ::  near_field_flag
+          real(kind = fcs_real_kind_isoc)                   ::  box_a(3)
+          real(kind = fcs_real_kind_isoc)                   ::  box_b(3)
+          real(kind = fcs_real_kind_isoc)                   ::  box_c(3)
+          real(kind = fcs_real_kind_isoc)                   ::  box_origin(3)
+          integer(kind = fcs_integer_kind_isoc)             ::  periodicity(3)
+          integer(kind = fcs_integer_kind_isoc), value      ::  total_parts
+          type(c_ptr)                                       ::  fcs_set_common_f
+      end function
+
+! Missing: fcs_set_dimensions
+! Missing: fcs_get_dimensions
+
+      function fcs_set_near_field_flag(handle, near_field_flag) &
+           BIND(C,name="fcs_set_near_field_flag")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          integer(kind = fcs_integer_kind_isoc),value       ::  near_field_flag
+          type(c_ptr)                                       ::  fcs_set_near_field_flag
+      end function
+
+! Missing: fcs_get_near_field_flag
+      
+      function fcs_set_box_a(handle, box_a) BIND(C,name="fcs_set_box_a")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          real(kind = fcs_real_kind_isoc)                   ::  box_a(3)
+          type(c_ptr)                                       ::  fcs_set_box_a
+      end function
+
+! Missing: fcs_get_box_a
+
+      function fcs_set_box_b(handle, box_b) BIND(C,name="fcs_set_box_b")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          real(kind = fcs_real_kind_isoc)                   ::  box_b(3)
+          type(c_ptr)                                       ::  fcs_set_box_b
+      end function
+
+! Missing: fcs_get_box_b
+      
+      function fcs_set_box_c(handle, box_c) BIND(C,name="fcs_set_box_c")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          real(kind = fcs_real_kind_isoc)                   ::  box_c(3)
+          type(c_ptr)                                       ::  fcs_set_box_c
+      end function
+
+! Missing: fcs_get_box_c
+
+      function fcs_set_box_origin(handle, box_origin) BIND(C,name="fcs_set_box_origin")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          real(kind = fcs_real_kind_isoc)                   ::  box_origin(3)
+          type(c_ptr)                                       ::  fcs_set_box_origin
+      end function
+
+! Missing: fcs_get_box_origin
+
+      function fcs_set_periodicity_f(handle, periodicity) &
+                 BIND(C,name="fcs_set_periodicity")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          integer(kind = fcs_integer_kind_isoc)             ::  periodicity(3)
+          type(c_ptr)                                       ::  fcs_set_periodicity_f
+      end function
+
+! Missing: fcs_get_periodicity_f
+      
+      function fcs_set_total_particles(handle, total_particles) &
+                 BIND(C,name="fcs_set_total_particles")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          integer(kind = fcs_integer_kind_isoc),value       ::  total_particles
+          type(c_ptr)                                       ::  fcs_set_total_particles
+      end function
+
+! Missing: fcs_get_total_particles
+! Missing: fcs_set_tolerance
+! Missing: fcs_get_tolerance
+! Missing: fcs_set_r_cut
+! Missing: fcs_unset_r_cut
+! Missing: fcs_get_r_cut
+
+      function fcs_set_parameters(handle,parameters,continue_on_errors) BIND(C,name="fcs_set_parameters")
           use iso_c_binding
           implicit none
           type(c_ptr), value                                :: handle
           character(kind = c_char)                          :: parameters(*)
-          type(c_ptr)                                       :: fcs_parser
-          integer(kind = fcs_integer_kind_isoc)             :: continue_on_errors
+          type(c_ptr)                                       :: fcs_set_parameters
+          integer(kind = fcs_boolean_kind_isoc)             :: continue_on_errors
       end function
 
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                               return value handling
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      function fcsResult_getReturnCode_f(res) BIND(C, name="fcsResult_getReturnCode")
+      subroutine fcs_print_parameters(handle) BIND(C,name="fcs_print_parameters")
           use iso_c_binding
-          import MESSAGE_LENGTH
           implicit none
-          type(c_ptr), value                                    ::  res
-          integer(kind = fcs_integer_kind_isoc)                 ::  fcsResult_getReturnCode_f
-      end function
-      
-      function fcsResult_getErrorMessage_f(res) BIND(C, name="fcsResult_getErrorMessage")
-          use iso_c_binding
-          import MESSAGE_LENGTH
-          implicit none
-          type(c_ptr), value                                    ::  res
-          type(c_ptr)                                           ::  fcsResult_getErrorMessage_f
-      end function
-
-      function fcsResult_getErrorSource_f(res) BIND(C, name="fcsResult_getErrorSource")
-          use iso_c_binding
-          import MESSAGE_LENGTH
-          implicit none
-          type(c_ptr), value                                    ::  res
-          type(c_ptr)                                           ::  fcsResult_getErrorSource_f
-      end function
-
-      function fcsResult_destroy(res) BIND(C, name="fcsResult_destroy")
-          use iso_c_binding
-          type(c_ptr), value                                    ::  res
-          integer(kind = fcs_integer_kind_isoc)                 ::  fcsResult_destroy
-      end function
+          type(c_ptr), value                        :: handle
+      end subroutine
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                 handling of near field portions of Coulomb interactions
+!                                    misc functions
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      function fcs_method_has_near_f(handle, has_near) BIND(C,name="fcs_method_has_near")
+! Missing: fcs_compute_dipole_correction
+
+      function fcs_get_near_field_delegation_f(handle, has_near) BIND(C,name="fcs_get_near_field_delegation")
           use iso_c_binding
           implicit none
           type(c_ptr), value                                  ::  handle
           integer(kind = fcs_integer_kind_isoc)               ::  has_near
-          type(c_ptr)                                         ::  fcs_method_has_near_f
+          type(c_ptr)                                         ::  fcs_get_near_field_delegation_f
       end function
 
-      function fcs_compute_near_field(handle, dist, field) BIND(C,name="fcs_compute_near_field")
+      function fcs_compute_near(handle, dist, pot, field) BIND(C,name="fcs_compute_near")
           use iso_c_binding
           implicit none
           type(c_ptr), value                                  ::  handle
           real(kind = fcs_real_kind_isoc), value              ::  dist
-          real(kind = fcs_real_kind_isoc), dimension(3)       ::  field
-          type(c_ptr)                                         ::  fcs_compute_near_field
+          real(kind = fcs_real_kind_isoc)                     ::  pot
+          real(kind = fcs_real_kind_isoc)                     ::  field
+          type(c_ptr)                                         ::  fcs_compute_near
       end function
 
       function fcs_compute_near_potential(handle, dist, pot) BIND(C,name="fcs_compute_near_potential")
@@ -207,33 +326,31 @@ use iso_c_binding
           type(c_ptr)                                         ::  fcs_compute_near_potential
       end function
 
-      function fcs_compute_near(handle, dist, pot, field) BIND(C,name="fcs_compute_near")
+      function fcs_compute_near_field(handle, dist, field) BIND(C,name="fcs_compute_near_field")
           use iso_c_binding
           implicit none
           type(c_ptr), value                                  ::  handle
           real(kind = fcs_real_kind_isoc), value              ::  dist
-          real(kind = fcs_real_kind_isoc)                     ::  pot
-          real(kind = fcs_real_kind_isoc), dimension(3)       ::  field
-          type(c_ptr)                                         ::  fcs_compute_near
+          real(kind = fcs_real_kind_isoc)                     ::  field
+          type(c_ptr)                                         ::  fcs_compute_near_field
       end function
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                                   common setup
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      function fcs_set_common_f(handle, near_field_flag, box_a, box_b, box_c, &
-           offset, periodicity, total_parts) BIND(C,name="fcs_set_common")
+      function fcs_set_compute_virial_f(handle, flag) BIND(C,name="fcs_set_compute_virial")
           use iso_c_binding
           implicit none
-          type(c_ptr),value                                 ::  handle
-          integer(kind = fcs_integer_kind_isoc), value      ::  near_field_flag
-          real(kind = fcs_real_kind_isoc)                   ::  box_a(3)
-          real(kind = fcs_real_kind_isoc)                   ::  box_b(3)
-          real(kind = fcs_real_kind_isoc)                   ::  box_c(3)
-          real(kind = fcs_real_kind_isoc)                   ::  offset(3)
-          integer(kind = fcs_integer_kind_isoc)             ::  periodicity(3)
-          integer(kind = fcs_integer_kind_isoc), value      ::  total_parts
-          type(c_ptr)                                       ::  fcs_set_common_f
+          type(c_ptr), value                                :: handle
+          integer(kind = fcs_integer_kind_isoc),value       :: flag
+          type(c_ptr)                                       :: fcs_set_compute_virial_f
+      end function
+
+! Missing: fcs_get_compute_virial
+      
+      function fcs_get_virial(handle, virial) BIND(C,name="fcs_get_virial")
+          use iso_c_binding
+          implicit none
+          type(c_ptr), value                                :: handle
+          real(kind = fcs_real_kind_isoc)                   :: virial(9)
+          type(c_ptr)                                       :: fcs_get_virial
       end function
       
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -718,103 +835,6 @@ use iso_c_binding
       end function
 
 #endif
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                                output routine for handle
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine fcs_printHandle(handle) BIND(C,name="fcs_printHandle")
-          use iso_c_binding
-          implicit none
-          type(c_ptr), value                        :: handle
-      end subroutine
-      
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                                    common getters and setters
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      function fcs_get_method(handle) BIND(C,name="fcs_get_method")
-          use iso_c_binding
-          implicit none
-          type(c_ptr), value                        :: handle
-          integer(kind = fcs_integer_kind_isoc)     :: fcs_get_method
-      end function
-      
-      function fcs_set_near_field_flag(handle, near_field_flag) &
-           BIND(C,name="fcs_set_near_field_flag")
-          use iso_c_binding
-          implicit none
-          type(c_ptr),value                                 ::  handle
-          integer(kind = fcs_integer_kind_isoc),value       ::  near_field_flag
-          type(c_ptr)                                       ::  fcs_set_near_field_flag
-      end function
-      
-      function fcs_set_box_a(handle, box_a) BIND(C,name="fcs_set_box_a")
-          use iso_c_binding
-          implicit none
-          type(c_ptr),value                                 ::  handle
-          real(kind = fcs_real_kind_isoc)                   ::  box_a(3)
-          type(c_ptr)                                       ::  fcs_set_box_a
-      end function
-      
-      function fcs_set_box_b(handle, box_b) BIND(C,name="fcs_set_box_b")
-          use iso_c_binding
-          implicit none
-          type(c_ptr),value                                 ::  handle
-          real(kind = fcs_real_kind_isoc)                   ::  box_b(3)
-          type(c_ptr)                                       ::  fcs_set_box_b
-      end function
-      
-      function fcs_set_box_c(handle, box_c) BIND(C,name="fcs_set_box_c")
-          use iso_c_binding
-          implicit none
-          type(c_ptr),value                                 ::  handle
-          real(kind = fcs_real_kind_isoc)                   ::  box_c(3)
-          type(c_ptr)                                       ::  fcs_set_box_c
-      end function
-      
-      function fcs_set_offset(handle, offset) BIND(C,name="fcs_set_offset")
-          use iso_c_binding
-          implicit none
-          type(c_ptr),value                                 ::  handle
-          real(kind = fcs_real_kind_isoc)                   ::  offset(3)
-          type(c_ptr)                                       ::  fcs_set_offset
-      end function
-
-      function fcs_set_periodicity_f(handle, periodicity) &
-                 BIND(C,name="fcs_set_periodicity")
-          use iso_c_binding
-          implicit none
-          type(c_ptr),value                                 ::  handle
-          integer(kind = fcs_integer_kind_isoc)             ::  periodicity(3)
-          type(c_ptr)                                       ::  fcs_set_periodicity_f
-      end function
-      
-      function fcs_set_total_particles(handle, total_particles) &
-                 BIND(C,name="fcs_set_total_particles")
-          use iso_c_binding
-          implicit none
-          type(c_ptr),value                                 ::  handle
-          integer(kind = fcs_integer_kind_isoc),value       ::  total_particles
-          type(c_ptr)                                       ::  fcs_set_total_particles
-      end function
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                                    non-default output
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      function fcs_require_virial_f(handle, flag) BIND(C,name="fcs_require_virial")
-          use iso_c_binding
-          implicit none
-          type(c_ptr), value                                :: handle
-          integer(kind = fcs_integer_kind_isoc),value       :: flag
-          type(c_ptr)                                       :: fcs_require_virial_f
-      end function
-      
-      function fcs_get_virial(handle, virial) BIND(C,name="fcs_get_virial")
-          use iso_c_binding
-          implicit none
-          type(c_ptr), value                                :: handle
-          real(kind = fcs_real_kind_isoc)                   :: virial(9)
-          type(c_ptr)                                       :: fcs_get_virial
-      end function
    end interface
 
 
@@ -828,67 +848,67 @@ use iso_c_binding
 
   contains
 
-  function fcsResult_getReturnCode(res)
+  function fcs_result_get_return_code(res)
     use iso_c_binding
     implicit none
     type(c_ptr), target                               ::  res
-    integer(kind = fcs_integer_kind_isoc)             ::  fcsResult_getReturnCode
+    integer(kind = fcs_integer_kind_isoc)             ::  fcs_result_get_return_code
     
     if (C_ASSOCIATED(res)) then
-      fcsResult_getReturnCode = fcsResult_getReturnCode_f(res)
+      fcs_result_get_return_code = fcs_result_get_return_code_f(res)
     else
-      fcsResult_getReturnCode = FCS_SUCCESS
+      fcs_result_get_return_code = FCS_SUCCESS
     end if
     
   end function
 
-  function fcsResult_getErrorMessage(res)
+  function fcs_result_get_message(res)
     use iso_c_binding
     implicit none
     type(c_ptr), target                                                         ::  res
-    character(kind = c_char, len = MESSAGE_LENGTH)                              ::  fcsResult_getErrorMessage
-    character(kind = c_char, len = MESSAGE_LENGTH), dimension(:),pointer        ::  message
+    character(kind = c_char, len = MAX_MESSAGE_LENGTH)                              ::  fcs_result_get_message
+    character(kind = c_char, len = MAX_MESSAGE_LENGTH), dimension(:),pointer        ::  message
     type(c_ptr)                                                                 ::  c_str
     
     if (C_ASSOCIATED(res)) then
-      c_str = fcsResult_getErrorMessage_f(res)
+      c_str = fcs_result_get_message_f(res)
       call c_f_pointer(cptr = c_str, fptr = message, shape = [1])
-      fcsResult_getErrorMessage = message(1)
-      if ( fcs_get_position_char(fcsResult_getErrorMessage,C_NULL_CHAR) == 1) then
-        fcsResult_getErrorMessage = "no specific error message availiable"
+      fcs_result_get_message = message(1)
+      if ( fcs_get_position_char(fcs_result_get_message,C_NULL_CHAR) == 1) then
+        fcs_result_get_message = "no specific error message availiable"
       else
-        fcsResult_getErrorMessage = fcsResult_getErrorMessage(1:fcs_get_position_char(fcsResult_getErrorMessage,C_NULL_CHAR)-1)
+        fcs_result_get_message = fcs_result_get_message(1:fcs_get_position_char(fcs_result_get_message,C_NULL_CHAR)-1)
       end if
     else
-      fcsResult_getErrorMessage = "call successful"
+      fcs_result_get_message = "call successful"
     end if
   end function
 
-  function fcsResult_getErrorSource(res)
+  function fcs_result_get_function(res)
     use iso_c_binding
     implicit none
     type(c_ptr), target                                                         ::  res
-    character(kind = c_char, len = MESSAGE_LENGTH)                              ::  fcsResult_getErrorSource
-    character(kind = c_char, len = MESSAGE_LENGTH), dimension(:), pointer       ::  message
+    character(kind = c_char, len = MAX_MESSAGE_LENGTH)                              ::  fcs_result_get_function
+    character(kind = c_char, len = MAX_MESSAGE_LENGTH), dimension(:), pointer       ::  message
     type(c_ptr)                                                                 ::  c_str
     
     if (C_ASSOCIATED(res)) then
-      c_str = fcsResult_getErrorSource_f(res)
+      c_str = fcs_result_get_function_f(res)
       call c_f_pointer(cptr = c_str, fptr = message, shape = [1])
-      fcsResult_getErrorSource = message(1)
-      if ( fcs_get_position_char(fcsResult_getErrorSource,C_NULL_CHAR) == 1) then
-        fcsResult_getErrorSource = "no specific error source availiable"
+      fcs_result_get_function = message(1)
+      if ( fcs_get_position_char(fcs_result_get_function,C_NULL_CHAR) == 1) then
+        fcs_result_get_function = "no specific error source availiable"
       else
-        fcsResult_getErrorSource = fcsResult_getErrorSource(1:fcs_get_position_char(fcsResult_getErrorSource,C_NULL_CHAR)-1)
+        fcs_result_get_function = fcs_result_get_function(1:fcs_get_position_char(fcs_result_get_function,C_NULL_CHAR)-1)
       end if
     else
-      fcsResult_getErrorSource = ""
+      fcs_result_get_function = ""
     end if
      
   end function
 
   function fcs_set_common(handle, near_field_flag, box_a, box_b, box_c, &
-                          offset, periodicity, total_parts)
+                          box_origin, periodicity, total_parts)
     use iso_c_binding
     implicit none
     type(c_ptr)                                       ::  handle
@@ -896,7 +916,7 @@ use iso_c_binding
     real(kind = fcs_real_kind_isoc)                   ::  box_a(3)
     real(kind = fcs_real_kind_isoc)                   ::  box_b(3)
     real(kind = fcs_real_kind_isoc)                   ::  box_c(3)
-    real(kind = fcs_real_kind_isoc)                   ::  offset(3)
+    real(kind = fcs_real_kind_isoc)                   ::  box_origin(3)
     logical                                           ::  periodicity(3)
     integer(kind = fcs_integer_kind_isoc)             ::  total_parts
     integer(kind = fcs_integer_kind_isoc)             ::  p_c(3)
@@ -915,7 +935,7 @@ use iso_c_binding
       srf_c = 0
     end if
     
-    fcs_set_common = fcs_set_common_f(handle, srf_c, box_a, box_b, box_c, offset, p_c, total_parts)
+    fcs_set_common = fcs_set_common_f(handle, srf_c, box_a, box_b, box_c, box_origin, p_c, total_parts)
   end function
 
   function fcs_set_periodicity(handle, periodicity)
@@ -936,12 +956,12 @@ use iso_c_binding
   end function
 
 
-  function fcs_require_virial(handle, flag) 
+  function fcs_set_compute_virial(handle, flag) 
     use iso_c_binding
     implicit none
     type(c_ptr)                                       :: handle
     logical                                           :: flag
-    type(c_ptr)                                       :: fcs_require_virial
+    type(c_ptr)                                       :: fcs_set_compute_virial
     integer(kind = fcs_integer_kind_isoc)             :: c_flag
     
     if (flag) then
@@ -950,18 +970,18 @@ use iso_c_binding
       c_flag = 0
     end if
     
-    fcs_require_virial = fcs_require_virial_f(handle, c_flag)
+    fcs_set_compute_virial = fcs_set_compute_virial_f(handle, c_flag)
    end function
 
-   function fcs_method_has_near(handle, has_near)
+   function fcs_get_near_field_delegation(handle, has_near)
     use iso_c_binding
     implicit none
     type(c_ptr), value                                :: handle
     logical                                           :: has_near
-    type(c_ptr)                                       :: fcs_method_has_near
+    type(c_ptr)                                       :: fcs_get_near_field_delegation
     integer(kind = fcs_integer_kind_isoc)             :: c_has_near
 
-    fcs_method_has_near = fcs_method_has_near_f(handle,c_has_near)
+    fcs_get_near_field_delegation = fcs_get_near_field_delegation_f(handle,c_has_near)
     if (c_has_near == 0) then
       has_near = .false.
     else

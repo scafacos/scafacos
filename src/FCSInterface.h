@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011-2012 Rene Halver
+  Copyright (C) 2011, 2012, 2013 Rene Halver, Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -18,10 +18,17 @@
 */
 
 
+/**
+ * @file FCSInterface.h
+ * @brief supplying the C-interface routine for the ScaFaCoS library
+ * @author Rene Halver, Olaf Lenz
+ */
+
 
 #ifndef FCS_INTERFACE_INCLUDED
 #define FCS_INTERFACE_INCLUDED
 
+#include <string.h>
 #include <mpi.h>
 
 #include "FCSInterface_p.h"
@@ -65,43 +72,37 @@
 #endif
 
 
-/**
- * @file FCSInterface.h
- * @brief supplying the C-interface routine for the ScaFaCoS library
- * @author Rene Halver, Olaf Lenz
- */
+#define FCS_MAX_METHOD_NAME_LENGTH  32
 
-/* definition of FCS_t structure */
-typedef struct FCS_t
+
+/*
+ * @brief data structure that is used for storing the parameters of an FCS solver
+ */
+typedef struct _FCS_t
 {
   /* list of obligatory parameters for all runs (set in fcs_init) */
 
-  /* the chosen method */
+  /* numerical identifier of the solver method */
   fcs_int method;
-  /* communicator to be used in methods */
+  /* name of the solver method */
+  char method_name[FCS_MAX_METHOD_NAME_LENGTH];
+  /* MPI communicator to be used for the parallel execution */
   MPI_Comm communicator;
-  /* dimension of the system */
-  fcs_int dimension;
-  /* flag marking near field calculation
+  /* dimensions of the system */
+  fcs_int dimensions;
+  /* whether near-field computations should be performed
      0 = done by calling routine
      1 = done by library routine*/
   fcs_int near_field_flag;
-  /* the three vectors spanning the system box */
+  /* the three base vectors of the system box */
   fcs_float box_a[3];
   fcs_float box_b[3];
   fcs_float box_c[3];
-  /* offset of each particle [for boxes from -L/2:L/2] */
-  fcs_float offset[3];
-  /* total number of particles */
+  /* origin vector of the system box */
+  fcs_float box_origin[3];
+  /* total number of particles in the system */
   fcs_int total_particles;
-  /* total number of charges */
-  fcs_int total_charges;
-  /* periodicity, fcs_int[3] to set in which direction the */
-  /* system has to be periodic, as a result the sum over   */
-  /* the array gives the dimension of periodicity */
-  /* 0 = system is not periodic in given direction */
-  /* 1 = system is periodic in given direction */
-  /* [0] -> x, [1] -> y, [2] -> z */
+  /* periodicity of the system in each dimension (value 0: open, value 1: periodic) */
   fcs_int periodicity[3];
   
   /* structures containing the method-specific parameters */
@@ -146,23 +147,186 @@ typedef struct FCS_t
 
 } FCS_t;
 
+
 /**
- * @brief getter function for values changed
- * @param handle FCS-object to be changed
- * @return fcs_int indicating if one of the parameters in
- * handle has been changed since the last call to fcs_tune
+ * @brief function to set the method context information
+ * @param handle FCS-object representing an FCS solver
+ * @param pointer to the method context informations
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_set_method_context(FCS handle, void *method_context);
+
+/**
+ * @brief function to return the method context information
+ * @param handle FCS handle representing an FCS solver object
+ * @return pointer to the method context informations
+ */
+void *fcs_get_method_context(FCS handle);
+
+/**
+ * @brief function to set whether parameter values of the FCS solver have changed
+ * @param handle FCS-object representing an FCS solver
+ * @param values_changed whether parameter values of the FCS solver have changed
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_set_values_changed(FCS handle, fcs_int values_changed);
+
+/**
+ * @brief function to return whether parameter values of the FCS solver have changed
+ * @param handle FCS-object representing an FCS solver
+ * @return whether parameter values of the FCS solver have changed
  */
 fcs_int fcs_get_values_changed(FCS handle);
 
 /**
- * @brief setter function for values changed
- * @param handle FCS-object to be changed
- * @param changed indicating if one of the parameters in 
- * handle has been changed since the last call to fcs_tune
+ * @brief Fortran wrapper function ot initialize an FCS solver method
+ * @param handle FCS-object representing an FCS solver
+ * @param method string for selecting the solver method
+ * @param communicator MPI communicator to be used for parallel execution
  * @return FCSResult-object containing the return state
- * or NULL if successful
  */
-FCSResult fcs_set_values_changed(FCS handle, fcs_int changed);
+FCSResult fcs_init_f(FCS *handle, const char *method_name, MPI_Fint communicator);
+
+
+/**
+ * tools for parameter parsing of fcs_set_parameters
+ */
+#if defined(FCS_ENABLE_DEBUG)
+# define FCS_PARSE_PRINT_PARAM_BEGIN(_f_)     printf("%s: calling " #_f_ "(handle", fnc_name)
+# define FCS_PARSE_PRINT_PARAM_VAL(_f_, _v_)  printf( _f_, _v_)
+# define FCS_PARSE_PRINT_PARAM_STR(_str_)     printf("%s", (_str_))
+# define FCS_PARSE_PRINT_PARAM_END(_r_)       printf(") -> %p\n", _r_)
+#else
+# define FCS_PARSE_PRINT_PARAM_BEGIN(_f_)     do {} while (0)
+# define FCS_PARSE_PRINT_PARAM_VAL(_f_, _v_)  do {} while (0)
+# define FCS_PARSE_PRINT_PARAM_STR(_str_)     do {} while (0)
+# define FCS_PARSE_PRINT_PARAM_END(_r_)       do {} while (0)
+#endif
+
+typedef long long fcs_long_long_t;
+typedef char *fcs_p_char_t;
+
+#define FCS_PARSE_MAKE_TYPE_FUNC(_type_, _atox_, _format_) \
+  static inline _type_ *parse_##_type_(char **s, _type_ *v) { \
+    if (v == NULL) return NULL; \
+    *v = (_type_) _atox_(*s); \
+    *s = strchr(*s, ','); \
+    if (*s) { **s = 0; *s += 1; } \
+    FCS_PARSE_PRINT_PARAM_VAL(_format_, *v); \
+    return v; \
+  } \
+  static inline _type_ *const_##_type_(_type_ c, _type_ *v) { \
+    if (v == NULL) return NULL; \
+    *v = c; \
+    FCS_PARSE_PRINT_PARAM_VAL(_format_, *v); \
+    return v; \
+  }
+
+static inline fcs_bool atob(const char *nptr)
+{
+  const char false_str[] = "false";
+  if ((strlen(nptr) == 1 && strncmp(nptr, "0", 1) == 0) || (strlen(nptr) == strlen(false_str) && strncasecmp(nptr, false_str, strlen(false_str)))) return FCS_FALSE;
+  return FCS_TRUE;
+}
+
+FCS_PARSE_MAKE_TYPE_FUNC(fcs_int, atoll, "%" FCS_LMOD_INT "d")
+FCS_PARSE_MAKE_TYPE_FUNC(fcs_float, atof, "%" FCS_LMOD_FLOAT "f")
+FCS_PARSE_MAKE_TYPE_FUNC(fcs_bool, atob, "%" FCS_LMOD_INT "d")
+FCS_PARSE_MAKE_TYPE_FUNC(fcs_long_long_t, atoll, "%lld")
+FCS_PARSE_MAKE_TYPE_FUNC(fcs_p_char_t, , "%s")
+
+#define FCS_PARSE_SEQ_MAX  3
+
+#define FCS_PARSE_PARAM_SELECTED(_str_, _param_) \
+  (strcmp(param, #_param_) == 0 || strcmp(param, _str_) == 0)
+
+#define FCS_PARSE_IF_PARAM_INTRO(_str_, _param_) \
+  if (FCS_PARSE_PARAM_SELECTED(_str_, _param_)) { \
+    FCSResult _r; \
+    struct { \
+      void *t; \
+      fcs_int v_fcs_int[FCS_PARSE_SEQ_MAX]; \
+      fcs_float v_fcs_float[FCS_PARSE_SEQ_MAX]; \
+      fcs_bool v_fcs_bool[FCS_PARSE_SEQ_MAX]; \
+      fcs_long_long_t v_fcs_long_long_t[FCS_PARSE_SEQ_MAX]; \
+      fcs_p_char_t v_fcs_p_char_t[FCS_PARSE_SEQ_MAX]; \
+    } _t; \
+    char *_n=NULL; \
+    FCS_PARSE_PRINT_PARAM_BEGIN(_param_);
+
+#define FCS_PARSE_IF_PARAM_EXTRO() \
+    FCS_PARSE_PRINT_PARAM_END(_r); \
+    if (_r != FCS_RESULT_SUCCESS && FCS_IS_FALSE(continue_on_errors)) return _r; \
+    goto next_param; \
+  }
+
+#define FCS_PARSE_VAL(_type_) \
+  _t.v_##_type_; \
+  if (cur) { \
+    FCS_PARSE_PRINT_PARAM_STR(", "); \
+    parse_##_type_(&cur, &_t.v_##_type_[0]); \
+    _n = cur; cur = NULL; \
+  } _type_
+
+#define FCS_PARSE_SEQ(_type_, _n_) \
+  &_t.v_##_type_; \
+  if (cur) { \
+    FCS_PARSE_PRINT_PARAM_STR(", ["); \
+    for (int _i = 0; _i < (_n_) && _i < FCS_PARSE_SEQ_MAX; ++_i) { \
+      FCS_PARSE_PRINT_PARAM_STR((_i == 0)?"":", "); \
+      parse_##_type_(&cur, &_t.v_##_type_[_i]); \
+    } \
+    _n = cur; cur = NULL; \
+    FCS_PARSE_PRINT_PARAM_STR("]"); \
+  } _type_ *
+
+#define FCS_PARSE_CONST(_type_, _c_) \
+  _t.v_##_type_; \
+  if (cur) { \
+    FCS_PARSE_PRINT_PARAM_STR(", "); \
+    const_##_type_(_c_, &_t.v_##_type_[0]); \
+    _n = cur; cur = NULL; \
+  } _type_
+
+#define FCS_PARSE_IF_PARAM_THEN_FUNC0_GOTO_NEXT(_str_, _param_) \
+  FCS_PARSE_IF_PARAM_INTRO(_str_, _param_) \
+    _r = fcs_##_param_(handle); \
+  FCS_PARSE_IF_PARAM_EXTRO()
+
+#define FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT(_str_, _param_, _p0_) \
+  FCS_PARSE_IF_PARAM_INTRO(_str_, _param_) \
+    _t.t = _p0_ _v0 = *_p0_ _vv0 = _v0; cur = _n; \
+    _r = fcs_##_param_(handle, _vv0); \
+  FCS_PARSE_IF_PARAM_EXTRO()
+
+#define FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT(_str_, _param_, _p0_, _p1_) \
+  FCS_PARSE_IF_PARAM_INTRO(_str_, _param_) \
+    _t.t = _p0_ _v0 = *_p0_ _vv0 = _v0; cur = _n; \
+    _t.t = _p1_ _v1 = *_p1_ _vv1 = _v1; cur = _n; \
+    _r = fcs_##_param_(handle, _vv0, _vv1); \
+  FCS_PARSE_IF_PARAM_EXTRO()
+
+#define FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT(_str_, _param_, _p0_, _p1_, _p2_) \
+  FCS_PARSE_IF_PARAM_INTRO(_str_, _param_) \
+    _t.t = _p0_ _v0 = *_p0_ _vv0 = _v0; cur = _n; \
+    _t.t = _p1_ _v1 = *_p1_ _vv1 = _v1; cur = _n; \
+    _t.t = _p2_ _v2 = *_p2_ _vv2 = _v2; cur = _n; \
+    _r = fcs_##_param_(handle, _vv0, _vv1, _vv2); \
+  FCS_PARSE_IF_PARAM_EXTRO()
+
+#define FCS_PARSE_DUMMY_REFERENCE_TO_STATIC_FUNCTIONS(_str_) \
+  if (FCS_PARSE_PARAM_SELECTED(_str_, "EVEN_IF_IT_MATCHES_IT_DOES_NOTHING")) { \
+    parse_fcs_int(NULL, NULL); \
+    const_fcs_int(0, NULL); \
+    parse_fcs_float(NULL, NULL); \
+    const_fcs_float(0, NULL); \
+    parse_fcs_bool(NULL, NULL); \
+    const_fcs_bool(0, NULL); \
+    parse_fcs_long_long_t(NULL, NULL); \
+    const_fcs_long_long_t(0, NULL); \
+    parse_fcs_p_char_t(NULL, NULL); \
+    const_fcs_p_char_t(NULL, NULL); \
+  }
 
 
 #endif

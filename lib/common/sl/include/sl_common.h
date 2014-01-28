@@ -114,6 +114,8 @@
 #include "sl_types.h"
 #include "sl_types_intern.h"
 
+#include "sl_macros.h"
+
 #include "sl_globals.h"
 
 #include "sl_adds.h"
@@ -126,10 +128,13 @@
 
 #define SL_PROTO(_f_)  _f_
 #include "sl_protos.h"
+#include "sl_protos_intern.h"
 #undef SL_PROTO
 #undef __SL_PROTOS_H__
+#undef __SL_PROTOS_INTERN_H__
 #define SL_PROTO(_f_)  _f_##_di
 #include "sl_protos.h"
+#include "sl_protos_intern.h"
 #undef SL_PROTO
 
 #ifdef SL_USE_MPI

@@ -20,12 +20,21 @@
 /* BOUNDS_XYZ2COORDS_NAME */
 /* BOUNDS_XYZ2COORDS_GHOST */
 /* BOUNDS_XYZ2COORDS_PERIODIC */
+/* BOUNDS_XYZ2COORDS_TRICLINIC */
+
+
+#ifdef BOUNDS_XYZ2COORDS_TRICLINIC
+# define GET_COORD(_d_, _p_, _gb_, _gf_)  (((_p_)[0] - (_gb_)[0]) * (_gf_)[0] + ((_p_)[1] - (_gb_)[1]) * (_gf_)[1] + ((_p_)[2] - (_gb_)[2]) * (_gf_)[2])
+#else
+# define GET_COORD(_d_, _p_, _gb_, _gf_)  (((_p_)[_d_] - (_gb_)[_d_]) * (_gf_)[_d_])
+#endif
 
 
 static void BOUNDS_XYZ2COORDS_NAME(int *coord, fcs_float *xyz, fcs_float *base, fcs_float *bounds, int *cart_dims
 #if defined(BOUNDS_XYZ2COORDS_GHOST) && defined(BOUNDS_XYZ2COORDS_PERIODIC)
-  , fcs_int *periodicity, fcs_float *box_size
+  , fcs_int *periodicity
 #endif
+  , fcs_float *grid_data
   )
 {
   fcs_float v;
@@ -36,7 +45,7 @@ static void BOUNDS_XYZ2COORDS_NAME(int *coord, fcs_float *xyz, fcs_float *base, 
 #endif
 
 
-  v = xyz[0] - base[0];
+  v = GET_COORD(0, xyz, base, &grid_data[GRID_DATA_INVERT_0]);
   l = 0;
   h = cart_dims[0];
 
@@ -45,14 +54,14 @@ static void BOUNDS_XYZ2COORDS_NAME(int *coord, fcs_float *xyz, fcs_float *base, 
   p = 0;
   if (periodicity[0])
   {
-    while (v < bounds[l]) { v += box_size[0]; --p; }
-    while (v >= bounds[h]) { v -= box_size[0]; ++p; }
+    while (v < 0.0) { v += 1.0; --p; }
+    while (v >= 1.0) { v -= 1.0; ++p; }
 
   } else
 # endif
   {
-    if (v < bounds[l]) h = l++ - 1;
-    if (v >= bounds[h]) l = h--;
+    if (v < 0.0) h = l++ - 1;
+    if (v >= 1.0) l = h--;
   }
 #endif
 
@@ -65,7 +74,7 @@ static void BOUNDS_XYZ2COORDS_NAME(int *coord, fcs_float *xyz, fcs_float *base, 
 #endif
 
 
-  v = xyz[1] - base[1];
+  v = GET_COORD(1, xyz, base, &grid_data[GRID_DATA_INVERT_1]);
   l = cart_dims[0] + 1;
   h = cart_dims[0] + cart_dims[1] + 1;
 
@@ -74,14 +83,14 @@ static void BOUNDS_XYZ2COORDS_NAME(int *coord, fcs_float *xyz, fcs_float *base, 
   p = 0;
   if (periodicity[1])
   {
-    while (v < bounds[l]) { v += box_size[1]; --p; }
-    while (v >= bounds[h]) { v -= box_size[1]; ++p; }
+    while (v < 0.0) { v += 1; --p; }
+    while (v >= 1.0) { v -= 1; ++p; }
 
   } else
 # endif
   {
-    if (v < bounds[l]) h = l++ - 1;
-    if (v >= bounds[h]) l = h--;
+    if (v < 0.0) h = l++ - 1;
+    if (v >= 1.0) l = h--;
   }
 #endif
 
@@ -94,7 +103,7 @@ static void BOUNDS_XYZ2COORDS_NAME(int *coord, fcs_float *xyz, fcs_float *base, 
 #endif
 
 
-  v = xyz[2] - base[2];
+  v = GET_COORD(2, xyz, base, &grid_data[GRID_DATA_INVERT_2]);
   l = cart_dims[0] + cart_dims[1] + 2;
   h = cart_dims[0] + cart_dims[1] + cart_dims[2] + 2;
 
@@ -103,14 +112,14 @@ static void BOUNDS_XYZ2COORDS_NAME(int *coord, fcs_float *xyz, fcs_float *base, 
   p = 0;
   if (periodicity[2])
   {
-    while (v < bounds[l]) { v += box_size[2]; --p; }
-    while (v >= bounds[h]) { v -= box_size[2]; ++p; }
+    while (v < 0.0) { v += 1; --p; }
+    while (v >= 1.0) { v -= 1; ++p; }
 
   } else
 # endif
   {
-    if (v < bounds[l]) h = l++ - 1;
-    if (v >= bounds[h]) l = h--;
+    if (v < 0.0) h = l++ - 1;
+    if (v >= 1.0) l = h--;
   }
 #endif
 
@@ -126,5 +135,7 @@ static void BOUNDS_XYZ2COORDS_NAME(int *coord, fcs_float *xyz, fcs_float *base, 
     xyz[0], xyz[1], xyz[2], base[0], base[1], base[2], coord[0], coord[1], coord[2]);*/
 }
 
+
+#undef GET_COORD
 
 #undef BOUNDS_XYZ2COORDS_NAME

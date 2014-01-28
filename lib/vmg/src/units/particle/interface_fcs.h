@@ -30,9 +30,9 @@
 extern "C" {
 #endif
 
-void VMG_fcs_setup(fcs_int level, fcs_int* periodic, fcs_int max_iter,
+void VMG_fcs_setup(fcs_int level, const fcs_int* periodic, fcs_int max_iter,
 		   fcs_int smoothing_steps, fcs_int cycle_type, fcs_float precision,
-		   fcs_float* box_offset, fcs_float box_size,
+		   const fcs_float* box_offset, fcs_float box_size,
 		   fcs_int near_field_cells, fcs_int interpolation_degree,
                    fcs_int discretization_order, MPI_Comm mpi_comm);
 

@@ -15,7 +15,7 @@
 #define ASSERT_FCS(err) \
   do { \
     if(err) { \
-      fcsResult_printResult(err); MPI_Finalize(); exit(-1); \
+      fcs_result_print_result(err); MPI_Finalize(); exit(-1); \
     } \
   } while (0)
 

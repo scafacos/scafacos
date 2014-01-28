@@ -30,7 +30,7 @@ typedef struct _integration_t
   fcs_int max_move;
   fcs_int output_steps;
 
-  fcs_float box_a[3], box_b[3], box_c[3], offset[3];
+  fcs_float box_a[3], box_b[3], box_c[3], box_origin[3];
   fcs_int periodicity[3];
 
 } integration_t;

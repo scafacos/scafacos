@@ -1,7 +1,7 @@
-\chapter{P2NFFT -- Particle-Particle NFFT}
+\chapter{\ptwonfftcap -- Particle-Particle NFFT}
 \label{cha:p2nfft}
 
-\solvertoindex{P2NFFT}
+\solvertoindex{\ptwonfft}
 \solvertoindex{Particle-Particle NFFT}
 
 \def\alp{13}
@@ -13,10 +13,10 @@
 %%% End: 
 
 
-P2NFFT is a common framework for almost all FFT based fast Coulomb solvers.
+\ptwonfft is a common framework for almost all FFT based fast Coulomb solvers.
 The computation of Coulomb interactions is split into a short range interaction (near field) and
 a long range interaction (far field).
-For sake of simplicity, we describe the idea of P2NFFT only for the one-dimensional case.
+For sake of simplicity, we describe the idea of \ptwonfft only for the one-dimensional case.
 In addition, we do not stress all the details, that arise from the difference between periodic and
 non-periodic boundary conditions. More detailed descriptions of the algorithms can be found in \cite{PiPo10}.
 
@@ -162,7 +162,7 @@ Near field interactions are computed with the ScaFaCoS near field solver, but ca
 
 Far field interactions are computed via convolution in Fourier space.
 With the appropriate choice of window functions and convolutions in Fourier space,
-P2NFFT becomes the P3M (default for fully periodic boundaries), the NFFT based fast summation (default for fully non-periodic boundaries)
+\ptwonfft becomes the P3M (default for fully periodic boundaries), the NFFT based fast summation (default for fully non-periodic boundaries)
 or almost any other FFT based fast Coulomb solver like PME, SPME, Gaussian split Ewald or plain Ewald summation.
 Note, that an uniform particle distribution is required in order to achieve the typical $\mathcal{O}(N\log N)$ scaling.
 
@@ -191,17 +191,17 @@ Note, that an uniform particle distribution is required in order to achieve the 
 \end{description}
 
 \section{Solver-specific Parameters}
-The tolerance parameters are common to all ScaFaCoS solvers. At the moment P2NFFT only supports automatic parameter tuning for the following tolerance types.
+The tolerance parameters are common to all ScaFaCoS solvers. At the moment \ptwonfft only supports automatic parameter tuning for the following tolerance types.
 \begin{itemize}
   \item \verb!tolerance_type! -
     The type of error that we want to check for. Allowed values are \verb!FCS_TOLERANCE_TYPE_FIELD! (absolute rms error in the fields)
     for fully periodic boundaries and \verb!FCS_TOLERANCE_TYPE_POTENTIAL! (absolute rms error in the potentials) for non-periodic boundaries.
   \item \verb!tolerance! -
     The allowed tolerance of the error. Type of the error is given by \verb!tolerance_type!. If the required tolerance can't be achieved
-    with the given parameters, P2NFFT aborts with an error message.
+    with the given parameters, \ptwonfft aborts with an error message.
 \end{itemize}
 
-In addition, P2NFFT offers the following parameters, which can be adjusted by the P2NFFT-specific functions described in the next section.
+In addition, \ptwonfft offers the following parameters, which can be adjusted by the \ptwonfft-specific functions described in the next section.
 Alternatively, you can use the ScaFaCoS test program together with the optional command line argument \verb!-c! and a comma separated list
 of parameter settings, e.g., use
 \begin{verbatim}
@@ -223,12 +223,12 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     computation is done in the near field region.
     This parameter corresponds to \verb!r_cut! of the P3M solver.
   \item \verb!p2nfft_epsI! -
-    Relative cutoff distance of the near field. P2NFFT scales the original box size into a cube of side length 1.
+    Relative cutoff distance of the near field. \ptwonfft scales the original box size into a cube of side length 1.
     For fully periodic boundary conditions this corresponds to a simple scaling by the box size. However, the scaling is more complicated if non-periodic
     boundary conditions are involved. Application of the same scaling factor on \verb!r_cut! gives \verb!epsI!.
     Feasible values are any positive floats that fulfill $\verb!epsI! < 0.5$.
   \item \verb!p2nfft_epsB! -
-    Regularization border for P2NFFT with non-periodic boundary conditions. This parameter corresponds to the rescaled system into a unit cube of side length 1.
+    Regularization border for \ptwonfft with non-periodic boundary conditions. This parameter corresponds to the rescaled system into a unit cube of side length 1.
     Feasible values are any positive floats that fulfill $\verb!epsI! + \verb!epsB! < 0.5$.
     This parameter does not have any effect for fully periodic boundary conditions. Default value is $\verb!epsB! := \verb!epsI!$.
   \item \verb!p2nfft_alpha! -
@@ -237,9 +237,9 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
   \item \verb!p2nfft_cao! -
     Charge assignment order. Can be automatically tuned. This parameter mostly corresponds to \verb!cao! of the P3M solver.
     However, note that this is only a wrapper that sets \verb!pnfft_m! to the value \verb!(p2nfft_cao+1)/2! (division rounded down).
-    Therefore, P2NFFT will always use an even charge assignment order.
+    Therefore, \ptwonfft will always use an even charge assignment order.
   \item \verb!p2nfft_intpol_order! -
-    P2NFFT uses interpolation tables to speed up the repeated computation of the near field correction. The order of interpolation is given by \verb!intpol_order!.
+    \ptwonfft uses interpolation tables to speed up the repeated computation of the near field correction. The order of interpolation is given by \verb!intpol_order!.
     Feasible values are $-2$ (approximation of the error function according to \cite[eq.~(7.1.26)]{AbSt72}, which yields an error of $1.5\times 10^{-7}$),
     $-1$ (direct evaluation of the error function), $0$ (constant interpolation), $1$ (linear interpolation), $2$ (quadratic interpolation) and $3$ (cubic interpolation).
     Default value is $3$.
@@ -270,12 +270,12 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     The degree of the two-point Taylor polynomial. This parameter only takes affect, if regularization \verb!t2p! has been enabled.
     Feasible values are any integers between $1$ and $16$. Default value is $7$.
   \item \verb!p2nfft_virial! -
-    Decide if the computation of the virial should be included in P2NFFT.
+    Decide if the computation of the virial should be included in \ptwonfft.
     Feasible values are $0$ (disable virial computation), or any other integer (enable virial computation).
     Default value is $0$ (disable virial computation).
   \item \verb!p2nfft_ignore_tolerance! -
-    On default, P2NFFT aborts with an error message, if the required error tolerance can not be reached.
-    This flag disables the check for accuracy and gives the possibility to run P2NFFT
+    On default, \ptwonfft aborts with an error message, if the required error tolerance can not be reached.
+    This flag disables the check for accuracy and gives the possibility to run \ptwonfft
     with any set of parameters. It is intended for very experienced users that tune all parameters manually.
     Default value is $0$ (abort if tolerance check fails). Any other value disables the tolerance check.
 \end{itemize}

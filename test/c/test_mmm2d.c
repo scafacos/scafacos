@@ -14,7 +14,7 @@
 void assert_fcs(FCSResult r)
 {
   if (r) {
-    fcsResult_printResult(r);
+    fcs_result_print_result(r);
     MPI_Finalize();
     exit(-1);
   }
@@ -159,7 +159,7 @@ node_grid[2]);
   result = fcs_set_common(handle, 1, box_a, box_b, box_c,
            offset, periodicity, total_particles);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Finalize();
     exit(1);
   }
@@ -191,13 +191,13 @@ node_grid[2]);
   */
   result=fcs_mmm2d_set_maxPWerror(handle, 1.e-3);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Finalize();
     exit(1);
   }
   result=fcs_mmm2d_get_maxPWerror(handle, &val1);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Finalize();
     exit(1);
   }
@@ -207,7 +207,7 @@ node_grid[2]);
   
   result=fcs_mmm2d_set_layers_per_node(handle, n_layers_per_node);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Finalize();
     exit(1);
   }
@@ -227,7 +227,7 @@ node_grid[2]);
   MPI_Barrier(comm);
   result = fcs_tune(handle, n_particles, n_particles, positions, charges);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Finalize();
     exit(1);
   }
@@ -382,7 +382,7 @@ n_particles-2],positions[3*n_particles-1]);
   result = fcs_set_common(handle, 1, box_a, box_b, box_c, 
            periodicity, n_particles, n_particles);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Finalize();
     exit(1);
   }
@@ -429,7 +429,7 @@ n_particles-2],positions[3*n_particles-1]);
   printf("\nTesting tuning routine...\n");
   result = fcs_tune(handle, n_particles, n_particles, positions, charges, 0);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Finalize();
     exit(1);
   }
