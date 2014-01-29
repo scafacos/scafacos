@@ -346,6 +346,8 @@ static void fprint_average_timer_internal(
     PX(fprintf)(comm, file, "%s_shift_in(%d)   = %.3e;  ", prefix, idx, mt[PNFFT_TIMER_SHIFT_INPUT]);
     PX(fprintf)(comm, file, "%s_shift_out(%d)  = %.3e;\n", prefix, idx, mt[PNFFT_TIMER_SHIFT_OUTPUT]);
   }
+
+  PNX(rmtimer)(mt);
 }
 
 static void fprint_average_timer(
