@@ -139,6 +139,7 @@ static void perform_pnfft_adj_guru(
   x      = pnfft_get_x(pnfft);
 
   /* initialize Fourier coefficients */
+  srand(1);
   pnfft_init_f(local_M,
       f);
 
