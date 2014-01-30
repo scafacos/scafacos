@@ -17,23 +17,21 @@
 */
 #ifndef _P3M_TUNE_BROADCAST_HPP
 #define _P3M_TUNE_BROADCAST_HPP
-#include <config.h>
+
 
 #include "types.hpp"
 
-namespace ScaFaCoS {
-  namespace P3M {
-    /* Events during tuning */
-    const int CMD_FAILED = -1;
-    const int CMD_FINISHED = 0;
-    const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
-    const int CMD_TIMING = 2;
-    
-    void tune_broadcast_command(data_struct *d, fcs_int command);
-    
-    void 
-    tune_broadcast_slave(data_struct *d, fcs_int num_particles,
-                         fcs_float *positions, fcs_float *charges);
-  }
+namespace P3M {
+  /* Events during tuning */
+  const int CMD_FAILED = -1;
+  const int CMD_FINISHED = 0;
+  const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
+  const int CMD_TIMING = 2;
+  
+  void tune_broadcast_command(data_struct *d, fcs_int command);
+  
+  void 
+  tune_broadcast_slave(data_struct *d, fcs_int num_particles,
+                       fcs_float *positions, fcs_float *charges);
 }
 #endif

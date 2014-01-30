@@ -22,36 +22,34 @@
 #include <config.h>
 #include <mpi.h>
 
-namespace ScaFaCoS {
-  namespace P3M {
-    typedef struct {
-      /* The MPI communicator to use (cartesian) */
-      MPI_Comm mpicomm;
-      /* The original MPI communicator to use (possibly not cartesian) */
-      MPI_Comm mpicomm_orig;
-      /* The size of the communicator */
-      fcs_int size;
-      /* The rank within the communicator */
-      fcs_int rank;
+namespace P3M {
+  typedef struct {
+    /* The MPI communicator to use (cartesian) */
+    MPI_Comm mpicomm;
+    /* The original MPI communicator to use (possibly not cartesian) */
+    MPI_Comm mpicomm_orig;
+    /* The size of the communicator */
+    fcs_int size;
+    /* The rank within the communicator */
+    fcs_int rank;
 
-      /** The number of nodes in each spatial dimension. */
-      fcs_int node_grid[3];
-      /** position of this node in the node grid */
-      fcs_int node_pos[3];
-      /** the six nearest neighbors of a node in the node grid. */
-      fcs_int node_neighbors[6];
+    /** The number of nodes in each spatial dimension. */
+    fcs_int node_grid[3];
+    /** position of this node in the node grid */
+    fcs_int node_pos[3];
+    /** the six nearest neighbors of a node in the node grid. */
+    fcs_int node_neighbors[6];
 
-      /** Size of the local box. */
-      fcs_float local_box_l[3];
-      /** Left (bottom, front) corner of this nodes local box. */ 
-      fcs_float my_left[3];
-      /** Right (top, back) corner of this nodes local box. */ 
-      fcs_float my_right[3];
-    } comm_struct;
+    /** Size of the local box. */
+    fcs_float local_box_l[3];
+    /** Left (bottom, front) corner of this nodes local box. */ 
+    fcs_float my_left[3];
+    /** Right (top, back) corner of this nodes local box. */ 
+    fcs_float my_right[3];
+  } comm_struct;
 
-    void comm_init(comm_struct *comm, MPI_Comm communicator);
-    void comm_prepare(comm_struct *comm, fcs_float *box_l);
-    void comm_destroy(comm_struct *comm);
-  }
+  void comm_init(comm_struct *comm, MPI_Comm communicator);
+  void comm_prepare(comm_struct *comm, fcs_float *box_l);
+  void comm_destroy(comm_struct *comm);
 }
 #endif

@@ -19,16 +19,11 @@
 #ifndef _P3M_INIT_H
 #define _P3M_INIT_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 #include "types.hpp"
 
 /* Call this function when all parameters are set correctly and the
    P3M data structures should be prepared. */
-namespace ScaFaCoS {
-  namespace P3M {
-    void prepare(data_struct *d);
-  }
+namespace P3M {
+  void prepare(data_struct *d);
 }
 #endif

@@ -20,24 +20,19 @@
 #ifndef _P3M_INFLUENCE_FUNCTION_H
 #define _P3M_INFLUENCE_FUNCTION_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 #include "types.hpp"
 
-namespace ScaFaCoS {
-  namespace P3M {
-
-    void 
-    calc_influence_function_ik(data_struct *d);
-
-    void 
-    calc_influence_function_iki(data_struct *d);
-
-    void 
-    calc_influence_function_adi(data_struct *d);
-
-  }
+namespace P3M {
+  
+  void 
+  calc_influence_function_ik(data_struct *d);
+  
+  void 
+  calc_influence_function_iki(data_struct *d);
+  
+  void 
+  calc_influence_function_adi(data_struct *d);
+  
 }
 
 #endif

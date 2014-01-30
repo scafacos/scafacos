@@ -26,6 +26,6 @@ endif
 libfcs_p3m_la_CPPFLAGS = -I$(top_srcdir)/src $(fftw3_CPPFLAGS)
 libfcs_p3m_la_SOURCES = \
 	scafacos.h \
-	scafacos.cpp
+	scafacos.cpp run.cpp
 libfcs_p3m_la_LIBADD = src/libp3m.la
 

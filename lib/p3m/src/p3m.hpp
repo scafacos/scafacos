@@ -21,25 +21,27 @@
 
 #include "types.hpp"
 
-namespace ScaFaCoS {
-  namespace P3M {
-    void init(data_struct *d, MPI_Comm communicator);
-
-    void destroy(data_struct *d);
-
-    void tune(data_struct *d,
-              fcs_int num_particles,
-              fcs_float *positions, 
-              fcs_float *charges);
-
-    void run(data_struct* d,
-             fcs_int _num_particles,
-             fcs_float *_positions, 
-             fcs_float *_charges,
-             fcs_float *_fields,
-             fcs_float *_potentials);
-
-  }
+namespace P3M {
+  void init(data_struct *d, MPI_Comm communicator);
+  
+  void destroy(data_struct *d);
+  
+  void tune(data_struct *d,
+            fcs_int num_particles,
+            fcs_float *positions, 
+            fcs_float *charges);
+  
+  void compute_far(data_struct* d,
+                   fcs_int num_charges, 
+                   fcs_float* positions,
+                   fcs_float* charges,
+                   fcs_float* fields,
+                   fcs_float* potentials);
+  
+  void run(data_struct* d,
+           fcs_int _num_particles, fcs_float *_positions, fcs_float *_charges,
+           fcs_float *_fields,
+           fcs_float *_potentials);
 }
 
 #endif

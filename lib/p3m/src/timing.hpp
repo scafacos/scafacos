@@ -19,16 +19,13 @@
 #ifndef _P3M_TIMING_H
 #define _P3M_TIMING_H
 
-#include <config.h>
 #include <mpi.h>
 #include "types.hpp"
 
-namespace ScaFaCoS {
-  namespace P3M {
-    /** Test run the method with the current parameters. Afterwards, the
-        timing variables in the data struct are set. */
-    void timing(data_struct *d, fcs_int _num_particles, 
-                fcs_float *_positions, fcs_float *_charges);
-  }
+namespace P3M {
+  /** Test run the method with the current parameters. Afterwards, the
+      timing variables in the data struct are set. */
+  void timing(data_struct *d, p3m_int _num_particles, 
+              p3m_float *_positions, p3m_float *_charges);
 }
 #endif

@@ -20,11 +20,12 @@
    C-interface and the C++-P3M interface. */
 #include "scafacos.h"
 #include "src/p3m.hpp"
+#include "src/utils.hpp"
 #include <stdexcept>
 
-using namespace ScaFaCoS::P3M;
-
 extern "C" {
+
+  using namespace P3M;
 
   FCSResult ifcs_p3m_init(void **rd, MPI_Comm communicator) {
     data_struct *d;
@@ -232,26 +233,6 @@ void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
     return NULL;
   }
 
-  FCSResult 
-  ifcs_p3m_run(void* rd,
-               fcs_int _num_particles,
-               fcs_int _max_num_particles,
-               fcs_float *_positions, 
-               fcs_float *_charges,
-               fcs_float *_fields,
-               fcs_float *_potentials) {
-    /* Here we assume, that the method is already tuned and that all
-       parameters are valid */
-    data_struct *d = (data_struct*)rd;
-
-    try {
-      run(d, _num_particles, _positions, _charges, _fields, _potentials);
-    } catch (std::exception &e) {
-      return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, "ifcs_p3m_init", e.what());
-    }
-
-    return FCS_RESULT_SUCCESS;
-  }
 
   FCSResult
   ifcs_p3m_tune(void* rd,

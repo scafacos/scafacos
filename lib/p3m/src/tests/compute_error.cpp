@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cmath>
 
-using namespace ScaFaCoS::P3M;
+using namespace P3M;
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);

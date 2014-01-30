@@ -21,6 +21,7 @@ noinst_LTLIBRARIES = libp3m.la
 libp3m_la_CPPFLAGS = $(fftw3_CPPFLAGS) -I $(top_srcdir)/src \
 	-I $(top_srcdir)/lib -I $(top_srcdir)/lib/common/fcs-common
 libp3m_la_SOURCES = \
+	p3mconfig.hpp \
 	utils.hpp \
 	communication.hpp communication.cpp \
 	caf.cpp caf.hpp \

@@ -23,30 +23,28 @@
 #include "prepare.hpp"
 #include <cstdlib>
 
-namespace ScaFaCoS {
-  namespace P3M {
-    void timing(data_struct *d, fcs_int num_particles, 
-                fcs_float *positions, fcs_float *charges) {
-      if (d->comm.rank == 0)
-        tune_broadcast_command(d, CMD_TIMING);
+namespace P3M {
+  void timing(data_struct *d, fcs_int num_particles, 
+              fcs_float *positions, fcs_float *charges) {
+    if (d->comm.rank == 0)
+      tune_broadcast_command(d, CMD_TIMING);
 
-      fcs_float *fields = new fcs_float[3*num_particles];
-      fcs_float *potentials = new fcs_float[num_particles];
+    fcs_float *fields = new fcs_float[3*num_particles];
+    fcs_float *potentials = new fcs_float[num_particles];
 
-      prepare(d);
+    prepare(d);
 
-      /* store require_timings */
-      timingEnum require_timings_before = d->require_timings;
-      if(d->require_timings == NONE || d->require_timings == FULL)
-        d->require_timings = ESTIMATE_ALL;
-      run(d, num_particles, positions, charges, fields, potentials);
-      /* Afterwards, d->timings is set */
-      /* restore require_timings */
-      d->require_timings = require_timings_before;
+    /* store require_timings */
+    timingEnum require_timings_before = d->require_timings;
+    if(d->require_timings == NONE || d->require_timings == FULL)
+      d->require_timings = ESTIMATE_ALL;
+    run(d, num_particles, positions, charges, fields, potentials);
+    /* Afterwards, d->timings is set */
+    /* restore require_timings */
+    d->require_timings = require_timings_before;
 
-      delete[] fields;
-      delete[] potentials;
-    }
+    delete[] fields;
+    delete[] potentials;
   }
 }
 
