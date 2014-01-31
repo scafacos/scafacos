@@ -29,6 +29,7 @@
 #define FCS_INTERFACE_INCLUDED
 
 #include <string.h>
+#include <stdlib.h>
 #include <mpi.h>
 #include <stdlib.h>
 
