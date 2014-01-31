@@ -30,6 +30,7 @@
 
 #include <string.h>
 #include <mpi.h>
+#include <stdlib.h>
 
 #include "FCSInterface_p.h"
 #include "FCSResult.h"
