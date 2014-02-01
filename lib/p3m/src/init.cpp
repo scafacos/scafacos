@@ -83,8 +83,6 @@ namespace P3M {
     d->additional_grid[2] = 0.0;
 
     /* init the P3M data */
-    d->rs_grid = NULL;
-    d->ks_grid = NULL;
     d->sum_qpart = 0;
     d->sum_q2 = 0.0;
     d->square_sum_q = 0.0;
@@ -115,15 +113,16 @@ namespace P3M {
     d->recv_grid = NULL;
 
     /* init the fft */
-    fft_init(&d->fft, &d->comm);
+    d->fft = new Parallel3DFFT(&d->comm);
 
     P3M_DEBUG(printf( "P3M::init() finished.\n"));
   }
 
   void destroy(data_struct *d) {
+    d->fft->free_data(d->rs_grid);
+    d->fft->free_data(d->ks_grid);
+    delete d->fft;
     comm_destroy(&d->comm);
-    fft_destroy(&d->fft, d->rs_grid, d->ks_grid);
-    
     sfree(d->send_grid);
     sfree(d->recv_grid);
     sdelete(d->caf);

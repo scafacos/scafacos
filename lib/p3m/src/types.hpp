@@ -250,7 +250,7 @@ namespace P3M {
     /****************************************************
      * METHOD DATA
      ****************************************************/
-    fft_data_struct fft;
+    Parallel3DFFT *fft;
     comm_struct comm;
 
     /** local grid. */

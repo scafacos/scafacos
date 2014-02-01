@@ -85,11 +85,11 @@ namespace P3M {
   
     /* FFT */
     P3M_INFO(printf("    Preparing FFTs...\n"));
-    fft_prepare(&d->fft, &d->comm, 
-                &d->rs_grid, &d->ks_grid,
-                d->local_grid.dim,d->local_grid.margin,
-                d->grid, d->grid_off,
-                &d->ks_pnum);
+    d->fft->prepare(d->local_grid.dim,d->local_grid.margin,
+                    d->grid, d->grid_off,
+                    &d->ks_pnum);
+    d->rs_grid = d->fft->malloc_data();
+    d->ks_grid = d->fft->malloc_data();
   
     /* k-space part */
     calc_differential_operator(d);

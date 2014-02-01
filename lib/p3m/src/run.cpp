@@ -487,7 +487,7 @@ namespace P3M {
       
     P3M_DEBUG(printf( "  calling fft_perform_forw()...\n"));
     START(TIMING_FORWARD);
-    fft_perform_forw(&d->fft, &d->comm, d->rs_grid);
+    d->fft->forward(d->rs_grid);
     STOP(TIMING_FORWARD);
     P3M_DEBUG(printf("  returned from fft_perform_forw().\n"));
       
@@ -514,10 +514,10 @@ namespace P3M {
         if(d->require_timings != ESTIMATE_ALL
            && d->require_timings != ESTIMATE_FFT){
           P3M_DEBUG(printf( "  calling fft_perform_back (potentials)...\n"));
-          START(TIMING_BACK)
-            fft_perform_back(&d->fft, &d->comm, d->ks_grid);
-          STOP(TIMING_BACK)
-            P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
+          START(TIMING_BACK);
+          d->fft->backward(d->ks_grid);
+          STOP(TIMING_BACK);
+          P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
         }
         /* redistribute energy grid */
         START(TIMING_SPREAD);
@@ -556,11 +556,11 @@ namespace P3M {
             && d->require_timings != ESTIMATE_FFT) {
             
           /* backtransform the grid */
-          P3M_DEBUG(printf( "  calling fft_perform_back (field dim=%d)...\n", dim));
+          P3M_DEBUG(printf( "  calling backward (field dim=%d)...\n", dim));
           START(TIMING_BACK);
-          fft_perform_back(&d->fft, &d->comm, d->rs_grid);
+          d->fft->backward(d->rs_grid);
           STOP(TIMING_BACK);
-          P3M_DEBUG(printf("  returned from fft_perform_back.\n"));            
+          P3M_DEBUG(printf("  returned from backward.\n"));            
         }
           
         /* redistribute force grid */
@@ -720,8 +720,8 @@ namespace P3M {
       else           r_dir = s_dir-1;
       /* pack send block */
       if (d->sm.s_size[s_dir]>0)
-        fft_pack_block(rs_grid, d->send_grid, d->sm.s_ld[s_dir], 
-                       d->sm.s_dim[s_dir], d->local_grid.dim, 1);
+        Parallel3DFFT::pack_block(rs_grid, d->send_grid, d->sm.s_ld[s_dir], 
+                                  d->sm.s_dim[s_dir], d->local_grid.dim, 1);
       
       /* communication */
       /** @todo Replace with MPI_Sendrecv */
@@ -787,7 +787,7 @@ namespace P3M {
   /* apply the influence function */
   void apply_energy_influence_function(data_struct* d) {
     P3M_DEBUG(printf( "  apply_energy_influence_function() started...\n"));
-    const p3m_int size = d->fft.plan[3].new_size;
+    const p3m_int size = d->fft->plan[3].new_size;
     for (p3m_int i=0; i < size; i++) {
       d->ks_grid[2*i] = d->g_energy[i] * d->rs_grid[2*i]; 
       d->ks_grid[2*i+1] = d->g_energy[i] * d->rs_grid[2*i+1]; 
@@ -798,7 +798,7 @@ namespace P3M {
   /* apply the influence function */
   void apply_force_influence_function(data_struct* d) {
     P3M_DEBUG(printf( "  apply_force_influence_function() started...\n"));
-    const p3m_int size = d->fft.plan[3].new_size;
+    const p3m_int size = d->fft->plan[3].new_size;
     for (p3m_int i=0; i < size; i++) {
       d->ks_grid[2*i] = d->g_force[i] * d->rs_grid[2*i]; 
       d->ks_grid[2*i+1] = d->g_force[i] * d->rs_grid[2*i+1]; 
@@ -895,15 +895,15 @@ namespace P3M {
     
     /* srqt(-1)*k differentiation */
     ind=0;
-    for(j[0]=0; j[0]<d->fft.plan[3].new_grid[0]; j[0]++) {
-      for(j[1]=0; j[1]<d->fft.plan[3].new_grid[1]; j[1]++) {
-        for(j[2]=0; j[2]<d->fft.plan[3].new_grid[2]; j[2]++) {
+    for(j[0]=0; j[0]<d->fft->plan[3].new_grid[0]; j[0]++) {
+      for(j[1]=0; j[1]<d->fft->plan[3].new_grid[1]; j[1]++) {
+        for(j[2]=0; j[2]<d->fft->plan[3].new_grid[2]; j[2]++) {
           /* i*k*(Re+i*Im) = - Im*k + i*Re*k     (i=sqrt(-1)) */
           d->rs_grid[ind] =
-            -2.0*M_PI*(d->ks_grid[ind+1] * d_operator[ j[dim]+d->fft.plan[3].start[dim] ])
+            -2.0*M_PI*(d->ks_grid[ind+1] * d_operator[ j[dim]+d->fft->plan[3].start[dim] ])
             / d->box_l[dim_rs];
           d->rs_grid[ind+1] =
-            2.0*M_PI*d->ks_grid[ind] * d_operator[ j[dim]+d->fft.plan[3].start[dim] ]
+            2.0*M_PI*d->ks_grid[ind] * d_operator[ j[dim]+d->fft->plan[3].start[dim] ]
             / d->box_l[dim_rs];
           ind+=2;
         }
@@ -915,18 +915,17 @@ namespace P3M {
   }
 
   void spread_grid(data_struct* d, p3m_float* rs_grid) {
-    int s_dir,r_dir,evenodd;
-    MPI_Status status;
-    p3m_float *tmp_ptr;
+    int r_dir,evenodd;
     P3M_DEBUG(printf( "  spread_grid() started...\n"));
   
     /* direction loop */
-    for(s_dir=5; s_dir>=0; s_dir--) {
-      if(s_dir%2==0) r_dir = s_dir+1;
+    for (int s_dir=5; s_dir>=0; s_dir--) {
+      if (s_dir%2==0) r_dir = s_dir+1;
       else           r_dir = s_dir-1;
       /* pack send block */ 
       if(d->sm.s_size[s_dir]>0) 
-        fft_pack_block(rs_grid, d->send_grid, d->sm.r_ld[r_dir], d->sm.r_dim[r_dir], d->local_grid.dim, 1);
+        Parallel3DFFT::pack_block(rs_grid, d->send_grid, d->sm.r_ld[r_dir], 
+                                  d->sm.r_dim[r_dir], d->local_grid.dim, 1);
       /* communication */
       /** @todo Replace with MPI_Sendrecv */
       if (d->comm.node_neighbors[r_dir] != d->comm.rank) {
@@ -939,18 +938,16 @@ namespace P3M {
           else {
             if (d->sm.s_size[s_dir]>0) 
               MPI_Recv(d->recv_grid, d->sm.s_size[s_dir], P3M_MPI_FLOAT, 
-                       d->comm.node_neighbors[s_dir], REQ_P3M_SPREAD, d->comm.mpicomm, &status); 	    
+                       d->comm.node_neighbors[s_dir], REQ_P3M_SPREAD, d->comm.mpicomm, 
+                       MPI_STATUS_IGNORE); 	    
           }
         }
       }
-      else {
-        tmp_ptr = d->recv_grid;
-        d->recv_grid = d->send_grid;
-        d->send_grid = tmp_ptr;
-      }
+      else std::swap(d->recv_grid, d->send_grid);
       /* unpack recv block */
-      if(d->sm.s_size[s_dir]>0) {
-        fft_unpack_block(d->recv_grid, rs_grid, d->sm.s_ld[s_dir], d->sm.s_dim[s_dir], d->local_grid.dim, 1); 
+      if (d->sm.s_size[s_dir]>0) {
+        Parallel3DFFT::unpack_block(d->recv_grid, rs_grid, d->sm.s_ld[s_dir], 
+                                    d->sm.s_dim[s_dir], d->local_grid.dim, 1); 
       }
     }
 
@@ -967,9 +964,10 @@ namespace P3M {
     P3M_DEBUG(printf( "  compute_total_energy() started...\n"));
 
     local_k_space_energy = 0.0;
-    for (p3m_int i=0; i < d->fft.plan[3].new_size; i++)
+    for (p3m_int i=0; i < d->fft->plan[3].new_size; i++)
       /* Use the energy optimized influence function */
-      local_k_space_energy += d->g_energy[i] * ( SQR(d->rs_grid[2*i]) + SQR(d->rs_grid[2*i+1]) );
+      local_k_space_energy += d->g_energy[i] * ( SQR(d->rs_grid[2*i]) + 
+                                                 SQR(d->rs_grid[2*i+1]) );
 
     MPI_Reduce(&local_k_space_energy, &k_space_energy, 1, P3M_MPI_FLOAT, 
                MPI_SUM, 0, d->comm.mpicomm);
