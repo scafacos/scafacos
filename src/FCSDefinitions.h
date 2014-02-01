@@ -26,7 +26,7 @@
 #endif
 
 /**
- * @file FCSInterface.h
+ * @file FCSDefinitions.h
  * @brief public definitions of the ScaFaCoS library interface
  * @author Rene Halver, Michael Hofmann
  */

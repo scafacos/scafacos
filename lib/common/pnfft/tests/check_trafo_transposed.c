@@ -125,9 +125,6 @@ static void pnfft_perform_guru(
   pnfft_local_size_guru(3, N, n, x_max, m, comm_cart_3d, PNFFT_TRANSPOSED_F_HAT,
       local_N, local_N_start, lower_border, upper_border);
 
-printf("local_N = [%td, %td, %td]\n", local_N[0], local_N[1], local_N[2]);
-printf("local_N_start = [%td, %td, %td]\n", local_N_start[0], local_N_start[1], local_N_start[2]);
-
   /* plan parallel NFFT */
   pnfft = pnfft_init_guru(3, N, n, x_max, local_M, m,
       PNFFT_MALLOC_X| PNFFT_MALLOC_F_HAT| PNFFT_MALLOC_F| PNFFT_TRANSPOSED_F_HAT| window_flag, PFFT_ESTIMATE,
