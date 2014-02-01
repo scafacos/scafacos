@@ -44,11 +44,11 @@ namespace P3M {
   /* IMPLEMENTATION */
   /***************************************************/
   void
-  tune_broadcast_command(data_struct *d, fcs_int command) {
+  tune_broadcast_command(data_struct *d, p3m_int command) {
     /* First send the command */
     P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %d.\n", \
                            d->comm.rank, command));
-    MPI_Bcast(&command, 1, FCS_MPI_INT, 0, d->comm.mpicomm);
+    MPI_Bcast(&command, 1, P3M_MPI_INT, 0, d->comm.mpicomm);
 
     /* Now send the parameters, depending on the command */
     switch (command) {
@@ -63,8 +63,8 @@ namespace P3M {
   }
 
   void
-  tune_broadcast_slave(data_struct *d, fcs_int num_particles,
-                       fcs_float *positions, fcs_float *charges) {
+  tune_broadcast_slave(data_struct *d, p3m_int num_particles,
+                       p3m_float *positions, p3m_float *charges) {
     P3M_DEBUG(printf( "tune_broadcast_slave() started...\n"));
     if (d->comm.rank == 0)
       throw std::logic_error("Internal error: tune_broadcast_slave " 
@@ -72,10 +72,10 @@ namespace P3M {
 
     for (;;) {
       /* Receive the command */
-      fcs_int command;
+      p3m_int command;
       P3M_DEBUG_LOCAL(printf("      %2d: Waiting to receive command.\n", \
                              d->comm.rank));
-      MPI_Bcast(&command, 1, FCS_MPI_INT, 0, d->comm.mpicomm);
+      MPI_Bcast(&command, 1, P3M_MPI_INT, 0, d->comm.mpicomm);
       P3M_DEBUG_LOCAL(printf("      %2d: Received command %d.\n", \
                              d->comm.rank, command));
 
@@ -107,15 +107,15 @@ namespace P3M {
   void
   tune_broadcast_params(data_struct *d) {
     // broadcast parameters and mark as final
-    fcs_int int_buffer[4];
-    fcs_float float_buffer[5];
+    p3m_int int_buffer[4];
+    p3m_float float_buffer[5];
   
     // pack int data
     int_buffer[0] = d->grid[0];
     int_buffer[1] = d->grid[1];
     int_buffer[2] = d->grid[2];
     int_buffer[3] = d->cao;
-    MPI_Bcast(int_buffer, 4, FCS_MPI_INT, 0, d->comm.mpicomm);
+    MPI_Bcast(int_buffer, 4, P3M_MPI_INT, 0, d->comm.mpicomm);
   
     // pack float data
     float_buffer[0] = d->alpha;
@@ -123,22 +123,22 @@ namespace P3M {
     float_buffer[2] = d->error;
     float_buffer[3] = d->rs_error;
     float_buffer[4] = d->ks_error;
-    MPI_Bcast(float_buffer, 5, FCS_MPI_FLOAT, 0, d->comm.mpicomm);
+    MPI_Bcast(float_buffer, 5, P3M_MPI_FLOAT, 0, d->comm.mpicomm);
   }
 
   void
   tune_receive_params(data_struct *d) {
-    fcs_int int_buffer[4];
-    fcs_float float_buffer[5];
+    p3m_int int_buffer[4];
+    p3m_float float_buffer[5];
 
-    MPI_Bcast(int_buffer, 4, FCS_MPI_INT, 0, d->comm.mpicomm);
+    MPI_Bcast(int_buffer, 4, P3M_MPI_INT, 0, d->comm.mpicomm);
     d->grid[0] = int_buffer[0];
     d->grid[1] = int_buffer[1];
     d->grid[2] = int_buffer[2];
     d->cao = int_buffer[3];
   
     // unpack float data
-    MPI_Bcast(float_buffer, 5, FCS_MPI_FLOAT, 0,  d->comm.mpicomm);
+    MPI_Bcast(float_buffer, 5, P3M_MPI_FLOAT, 0,  d->comm.mpicomm);
     d->alpha = float_buffer[0];
     d->r_cut = float_buffer[1];
     d->error = float_buffer[2];

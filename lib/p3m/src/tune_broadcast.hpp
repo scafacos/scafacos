@@ -28,10 +28,10 @@ namespace P3M {
   const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
   const int CMD_TIMING = 2;
   
-  void tune_broadcast_command(data_struct *d, fcs_int command);
+  void tune_broadcast_command(data_struct *d, p3m_int command);
   
   void 
-  tune_broadcast_slave(data_struct *d, fcs_int num_particles,
-                       fcs_float *positions, fcs_float *charges);
+  tune_broadcast_slave(data_struct *d, p3m_int num_particles,
+                       p3m_float *positions, p3m_float *charges);
 }
 #endif

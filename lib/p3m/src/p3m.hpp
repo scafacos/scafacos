@@ -27,21 +27,21 @@ namespace P3M {
   void destroy(data_struct *d);
   
   void tune(data_struct *d,
-            fcs_int num_particles,
-            fcs_float *positions, 
-            fcs_float *charges);
+            p3m_int num_particles,
+            p3m_float *positions, 
+            p3m_float *charges);
   
   void compute_far(data_struct* d,
-                   fcs_int num_charges, 
-                   fcs_float* positions,
-                   fcs_float* charges,
-                   fcs_float* fields,
-                   fcs_float* potentials);
+                   p3m_int num_charges, 
+                   p3m_float* positions,
+                   p3m_float* charges,
+                   p3m_float* fields,
+                   p3m_float* potentials);
   
   void run(data_struct* d,
-           fcs_int _num_particles, fcs_float *_positions, fcs_float *_charges,
-           fcs_float *_fields,
-           fcs_float *_potentials);
+           p3m_int _num_particles, p3m_float *_positions, p3m_float *_charges,
+           p3m_float *_fields,
+           p3m_float *_potentials);
 }
 
 #endif

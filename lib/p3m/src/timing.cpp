@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013 Olaf Lenz
+  Copyright (C) 2013,2014 Olaf Lenz
   
   This file is part of ScaFaCoS.
   
@@ -24,13 +24,13 @@
 #include <cstdlib>
 
 namespace P3M {
-  void timing(data_struct *d, fcs_int num_particles, 
-              fcs_float *positions, fcs_float *charges) {
+  void timing(data_struct *d, p3m_int num_particles, 
+              p3m_float *positions, p3m_float *charges) {
     if (d->comm.rank == 0)
       tune_broadcast_command(d, CMD_TIMING);
 
-    fcs_float *fields = new fcs_float[3*num_particles];
-    fcs_float *potentials = new fcs_float[num_particles];
+    p3m_float *fields = new p3m_float[3*num_particles];
+    p3m_float *potentials = new p3m_float[num_particles];
 
     prepare(d);
 

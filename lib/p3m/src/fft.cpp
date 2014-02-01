@@ -1,4 +1,5 @@
 /*
+  Copyright (C) 2014 Olaf Lenz
   Copyright (C) 2010,2011 The ESPResSo project
   Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010 
   Max-Planck-Institute for Polymer Research, Theory Group
@@ -29,7 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Append FFTW prefix to all required FFTW names (the FCS internal FFTW library uses the fcs_fftw_ namespace) */
+/* Append FFTW prefix to all required FFTW names (the FCS internal FFTW library uses the fcs_fftw namespace) */
 #if defined(FCS_FLOAT_IS_FLOAT)
 # define FFTW_MANGLE  FFTW_MANGLE_FLOAT
 #elif defined(FCS_FLOAT_IS_LONG_DOUBLE)
@@ -939,7 +940,6 @@ namespace P3M {
       li_in += s_in_offset;
     }
   }
-
 
   /** pack a block with dimensions (size[0] * size[1] * aize[2]) starting
    *  at start[3] of an input 3d-grid with dimension dim[3] into an

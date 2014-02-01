@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012,2013 Olaf Lenz
+  Copyright (C) 2011,2012,2013,2014 Olaf Lenz
   
   This file is part of ScaFaCoS.
   
@@ -64,8 +64,8 @@ namespace P3M {
     calc_send_grid(d);
     P3M_DEBUG(print_local_grid(d->local_grid));
     P3M_DEBUG(print_send_grid(d->sm));
-    d->send_grid = (fcs_float *) realloc(d->send_grid, sizeof(fcs_float)*d->sm.max);
-    d->recv_grid = (fcs_float *) realloc(d->recv_grid, sizeof(fcs_float)*d->sm.max);
+    d->send_grid = (p3m_float *) realloc(d->send_grid, sizeof(p3m_float)*d->sm.max);
+    d->recv_grid = (p3m_float *) realloc(d->recv_grid, sizeof(p3m_float)*d->sm.max);
 
     P3M_DEBUG(printf("    Interpolating charge assignment function...\n"));
     d->caf = P3M::CAF::create(d->cao, d->n_interpol);
@@ -80,7 +80,7 @@ namespace P3M {
 #endif  
 
     /* position offset for calc. of first gridpoint */
-    d->pos_shift = (fcs_float)((d->cao-1)/2) - (d->cao%2)/2.0;
+    d->pos_shift = (p3m_float)((d->cao-1)/2) - (d->cao%2)/2.0;
     P3M_DEBUG(printf("    pos_shift=" FFLOAT "\n",d->pos_shift)); 
   
     /* FFT */
@@ -112,8 +112,8 @@ namespace P3M {
       changed.  */
   void prepare_a_ai_cao_cut(data_struct *d) {
     P3M_DEBUG(printf("    prepare_a_ai_cao_cut() started... \n"));
-    for (fcs_int i=0; i<3; i++) {
-      d->ai[i]      = (fcs_float)d->grid[i]/d->box_l[i]; 
+    for (p3m_int i=0; i<3; i++) {
+      d->ai[i]      = (p3m_float)d->grid[i]/d->box_l[i]; 
       d->a[i]       = 1.0/d->ai[i];
       d->cao_cut[i] = 0.5*d->a[i]*d->cao;
     }
@@ -125,7 +125,7 @@ namespace P3M {
       called by \ref calc_local_ca_grid once and by \ref
       scaleby_box_l whenever the \ref box_l changed. */
   void calc_lm_ld_pos(data_struct *d) {
-    fcs_int i; 
+    p3m_int i; 
     /* spacial position of left bottom grid point */
     for(i=0;i<3;i++) {
       d->local_grid.ld_pos[i] = 
@@ -136,10 +136,10 @@ namespace P3M {
   /** Calculates properties of the local FFT grid for the 
       charge assignment process. */
   void calc_local_ca_grid(data_struct *d) {
-    fcs_int i;
-    fcs_int ind[3];
+    p3m_int i;
+    p3m_int ind[3];
     /* total skin size */
-    fcs_float full_skin[3];
+    p3m_float full_skin[3];
   
     P3M_DEBUG(printf("    calc_local_ca_grid() started... \n"));
     for(i=0;i<3;i++)
@@ -148,11 +148,11 @@ namespace P3M {
     /* inner left down grid point (global index) */
     for(i=0;i<3;i++) 
       d->local_grid.in_ld[i] = 
-        (fcs_int)ceil(d->comm.my_left[i]*d->ai[i]-d->grid_off[i]);
+        (p3m_int)ceil(d->comm.my_left[i]*d->ai[i]-d->grid_off[i]);
     /* inner up right grid point (global index) */
     for(i=0;i<3;i++) 
       d->local_grid.in_ur[i] = 
-        (fcs_int)floor(d->comm.my_right[i]*d->ai[i]-d->grid_off[i]);
+        (p3m_int)floor(d->comm.my_right[i]*d->ai[i]-d->grid_off[i]);
   
     /* correct roundof errors at boundary */
     for(i=0;i<3;i++) {
@@ -169,7 +169,7 @@ namespace P3M {
     /* index of left down grid point in global grid */
     for(i=0; i<3; i++) 
       d->local_grid.ld_ind[i] = 
-        (fcs_int)ceil((d->comm.my_left[i]-full_skin[i])*d->ai[i]-d->grid_off[i]);
+        (p3m_int)ceil((d->comm.my_left[i]-full_skin[i])*d->ai[i]-d->grid_off[i]);
     /* spatial position of left down grid point */
     calc_lm_ld_pos(d);
     /* left down margin */
@@ -178,7 +178,7 @@ namespace P3M {
     /* up right grid point */
     for(i=0;i<3;i++) 
       ind[i] =
-        (fcs_int)floor((d->comm.my_right[i]+full_skin[i])*d->ai[i]-d->grid_off[i]);
+        (p3m_int)floor((d->comm.my_right[i]+full_skin[i])*d->ai[i]-d->grid_off[i]);
     /* correct roundof errors at up right boundary */
     for(i=0;i<3;i++)
       if (((d->comm.my_right[i]+full_skin[i])*d->ai[i]-d->grid_off[i])-ind[i]==0) 
@@ -208,8 +208,8 @@ namespace P3M {
    *  FFT grid.  In order to calculate the recv sub-grides there is a
    *  communication of the margins between neighbouring nodes. */ 
   void calc_send_grid(data_struct *d) {
-    fcs_int i,j, evenodd;
-    fcs_int done[3]={0,0,0};
+    p3m_int i,j, evenodd;
+    p3m_int done[3]={0,0,0};
     MPI_Status status;
 
     P3M_DEBUG(printf("    calc_send_grid() started... \n"));
@@ -248,12 +248,12 @@ namespace P3M {
           if ((d->comm.node_pos[i/2]+evenodd)%2 == 0) {
             P3M_DEBUG(printf("      %d: sending local_grid.margin to %d\n", \
                              d->comm.rank, d->comm.node_neighbors[i]));
-            MPI_Send(&(d->local_grid.margin[i]), 1, FCS_MPI_INT, 
+            MPI_Send(&(d->local_grid.margin[i]), 1, P3M_MPI_INT, 
                      d->comm.node_neighbors[i], 0, d->comm.mpicomm);
           } else {
             P3M_DEBUG(printf("      %d: receiving local_grid.margin from %d\n", \
                              d->comm.rank, d->comm.node_neighbors[j]));
-            MPI_Recv(&(d->local_grid.r_margin[j]), 1, FCS_MPI_INT,
+            MPI_Recv(&(d->local_grid.r_margin[j]), 1, P3M_MPI_INT,
                      d->comm.node_neighbors[j], 0, d->comm.mpicomm, &status);    
           }
         }
@@ -265,15 +265,15 @@ namespace P3M {
     /* /\* communication *\/ */
     /* for (i = 0; i < 3; i++) { */
     /*   /\* upshift *\/ */
-    /*   MPI_Sendrecv(&(d->local_grid.margin[2*i]), 1, FCS_MPI_INT, */
+    /*   MPI_Sendrecv(&(d->local_grid.margin[2*i]), 1, P3M_MPI_INT, */
     /* 		 d->comm.node_neighbors[2*i+1], 0, */
-    /* 		 &(d->local_grid.r_margin[2*i]), 1, FCS_MPI_INT, */
+    /* 		 &(d->local_grid.r_margin[2*i]), 1, P3M_MPI_INT, */
     /* 		 d->comm.node_neighbors[2*i], 0, */
     /* 		 d->comm.mpicomm, &status); */
     /*   /\* downshift *\/ */
-    /*   MPI_Sendrecv(&(d->local_grid.margin[2*i+1]), 1, FCS_MPI_INT, */
+    /*   MPI_Sendrecv(&(d->local_grid.margin[2*i+1]), 1, P3M_MPI_INT, */
     /* 		 d->comm.node_neighbors[2*i], 0, */
-    /* 		 &(d->local_grid.r_margin[2*i+1]), 1, FCS_MPI_INT, */
+    /* 		 &(d->local_grid.r_margin[2*i+1]), 1, P3M_MPI_INT, */
     /* 		 d->comm.node_neighbors[2*i+1], 0, */
     /* 		 d->comm.mpicomm, &status); */
     /* } */
@@ -308,12 +308,12 @@ namespace P3M {
    *  Remark: This is done on the level of n-vectors and not k-vectors,
    *           i.e. the prefactor i*2*PI/L is missing! */
   void calc_differential_operator(data_struct *d) {
-    for (fcs_int i=0;i<3;i++) {
-      d->d_op[i] = static_cast<fcs_int *>(realloc(d->d_op[i], d->grid[i]*sizeof(fcs_int)));
+    for (p3m_int i=0;i<3;i++) {
+      d->d_op[i] = static_cast<p3m_int *>(realloc(d->d_op[i], d->grid[i]*sizeof(p3m_int)));
       d->d_op[i][0] = 0;
       d->d_op[i][d->grid[i]/2] = 0;
 
-      for (fcs_int j = 1; j < d->grid[i]/2; j++) {
+      for (p3m_int j = 1; j < d->grid[i]/2; j++) {
         d->d_op[i][j] = j;
         d->d_op[i][d->grid[i] - j] = -j;
       }

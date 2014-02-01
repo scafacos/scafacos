@@ -68,50 +68,50 @@ namespace P3M {
    */
   struct forw_plan {
     /** plan direction: 0 = Forward FFT, 1 = Backward FFT. */
-    fcs_int dir;
+    p3m_int dir;
     /** row direction of that FFT. */
-    fcs_int row_dir;
+    p3m_int row_dir;
     /** permutations from normal coordinate system. */
-    fcs_int n_permute;
+    p3m_int n_permute;
     /** number of 1D FFTs. */ 
-    fcs_int n_ffts;
+    p3m_int n_ffts;
     /** plan for fft. */
     fcs_fftw_plan fftw_plan;
     /** function for fft. */
     void (*fft_function)(fcs_fftw_plan);
 
     /** size of local grid before communication. */
-    fcs_int old_grid[3];
+    p3m_int old_grid[3];
     /** size of local grid after communication, also used for actual FFT. */
-    fcs_int new_grid[3];
+    p3m_int new_grid[3];
     /** lower left point of local FFT grid in global FFT grid coordinates. */
-    fcs_int start[3];
+    p3m_int start[3];
     /** size of new grid (number of grid points). */
-    fcs_int new_size;
+    p3m_int new_size;
 
     /** number of nodes which have to communicate with each other. */ 
-    fcs_int g_size;
+    p3m_int g_size;
     /** group of nodes which have to communicate with each other. */ 
-    fcs_int *group;
+    p3m_int *group;
 
     /** packing function for send blocks. */
     void (*pack_function)(double*, double*, int*, int*, int*, int);
     /** Send block specification. 6 integers for each node: start[3], size[3]. */ 
-    fcs_int *send_block;
+    p3m_int *send_block;
     /** Send block communication sizes. */ 
-    fcs_int *send_size;
+    p3m_int *send_size;
     /** Recv block specification. 6 integers for each node: start[3], size[3]. */ 
-    fcs_int *recv_block;
+    p3m_int *recv_block;
     /** Recv block communication sizes. */ 
-    fcs_int *recv_size;
+    p3m_int *recv_size;
     /** size of send block elements. */
-    fcs_int element;
+    p3m_int element;
   };
 
   /** Additional information for backwards FFT.*/
   struct back_plan {
     /** plan direction. (e.g. fftw makro)*/
-    fcs_int dir;
+    p3m_int dir;
     /** plan for fft. */
     fcs_fftw_plan fftw_plan;
     /** function for fft. */
@@ -133,20 +133,20 @@ namespace P3M {
     back_plan back[4];
 
     /** Whether FFT is initialized or not. */
-    fcs_int init_tag;
+    p3m_int init_tag;
 
     /** Maximal size of the communication buffers. */
-    fcs_int max_comm_size;
+    p3m_int max_comm_size;
 
     /** Maximal local grid size. */
-    fcs_int max_grid_size;
+    p3m_int max_grid_size;
 
     /** send buffer. */
-    fcs_float *send_buf;
+    p3m_float *send_buf;
     /** receive buffer. */
-    fcs_float *recv_buf;
+    p3m_float *recv_buf;
     /** Buffer for receive data. */
-    fcs_float *data_buf;
+    p3m_float *data_buf;
   };
 
   /***************************************************/
@@ -158,8 +158,8 @@ namespace P3M {
            comm_struct *comm);
 
   void 
-  fft_destroy(fft_data_struct *fft, fcs_float *data, 
-              fcs_float *ks_data);
+  fft_destroy(fft_data_struct *fft, p3m_float *data, 
+              p3m_float *ks_data);
 
   /** Prepare the 3D-FFT for a given size.
 
@@ -172,12 +172,12 @@ namespace P3M {
    * \param global_grid_off   Pointer to global CA grid margins.
    * \param ks_pnum           Pointer to number of permutations in k-space.
    */
-  fcs_int 
+  p3m_int 
   fft_prepare(fft_data_struct *fft, comm_struct *comm,
-              fcs_float **data, fcs_float **ks_data,  
-              fcs_int *local_grid_dim, fcs_int *local_grid_margin, 
-              fcs_int* global_grid_dim, fcs_float *global_grid_off, 
-              fcs_int *ks_pnum);
+              p3m_float **data, p3m_float **ks_data,  
+              p3m_int *local_grid_dim, p3m_int *local_grid_margin, 
+              p3m_int* global_grid_dim, p3m_float *global_grid_off, 
+              p3m_int *ks_pnum);
 
   /** perform the forward 3D FFT.
       The assigned charges are in \a data. The result is also stored in \a data.
@@ -187,7 +187,7 @@ namespace P3M {
   void 
   fft_perform_forw(fft_data_struct *fft, 
                    comm_struct *comm,
-                   fcs_float *data);
+                   p3m_float *data);
 
   /** perform the backward 3D FFT.
       \warning The content of \a data is overwritten.
@@ -196,7 +196,7 @@ namespace P3M {
   void 
   fft_perform_back(fft_data_struct *fft, 
                    comm_struct *comm,
-                   fcs_float *data);
+                   p3m_float *data);
 
   /** pack a block (size[3] starting at start[3]) of an input 3d-grid
    *  with dimension dim[3] into an output 3d-block with dimension size[3].
@@ -215,14 +215,14 @@ namespace P3M {
    *  \param element size of a grid element (e.g. 1 for Real, 2 for Complex).
    */
   void 
-  fft_pack_block(fcs_float *in, fcs_float *out, 
-                 fcs_int start[3], fcs_int size[3], 
-                 fcs_int dim[3], fcs_int element);
+  fft_pack_block(p3m_float *in, p3m_float *out, 
+                 p3m_int start[3], p3m_int size[3], 
+                 p3m_int dim[3], p3m_int element);
 
   /** unpack a 3d-grid input block (size[3]) into an output 3d-grid
    *  with dimension dim[3] at start position start[3].
    *
-   *  see also \ref fcs_fft_pack_block.
+   *  see also \ref p3m_fft_pack_block.
    *
    *  \param in      pointer to input 3d-grid.
    *  \param out     pointer to output 3d-grid (block).
@@ -232,9 +232,9 @@ namespace P3M {
    *  \param element size of a grid element (e.g. 1 for Real, 2 for Complex).
    */
   void 
-  fft_unpack_block(fcs_float *in, fcs_float *out, 
-                   fcs_int start[3], fcs_int size[3],
-                   fcs_int dim[3], fcs_int element);
+  fft_unpack_block(p3m_float *in, p3m_float *out, 
+                   p3m_int start[3], p3m_int size[3],
+                   p3m_int dim[3], p3m_int element);
 
 }
 #endif

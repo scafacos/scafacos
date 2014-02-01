@@ -136,7 +136,7 @@ namespace P3M {
     sdelete(d->cafz_d);
     sfree(d->g_energy);
     sfree(d->g_force);
-    for (fcs_int i=0; i<3; i++) {
+    for (p3m_int i=0; i<3; i++) {
       sfree(d->d_op[i]);
     }
     
