@@ -31,6 +31,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <mpi.h>
+#include <stdlib.h>
 
 #include "FCSInterface_p.h"
 #include "FCSResult.h"
