@@ -301,38 +301,38 @@ namespace P3M {
     START(TIMING_CA);
 
     /* charge assignment */
-    assign_charges(d, d->fft.data_buf, num_charges, 
+    assign_charges(d, d->fft->data_buf, num_charges,
                    positions, charges, 0);
     STOPSTART(TIMING_CA, TIMING_GATHER);
     /* gather the ca grid */
-    gather_grid(d, d->fft.data_buf);
+    gather_grid(d, d->fft->data_buf);
 
     // Complexify
     for (p3m_int i = d->local_grid.size-1; i >= 0; i--)
-      d->rs_grid[2*i] = d->fft.data_buf[i];
+      d->rs_grid[2*i] = d->fft->data_buf[i];
 
     STOPSTART(TIMING_GATHER, TIMING_CA);
 
     // Second (shifted) run
     /* charge assignment */
-    assign_charges(d, d->fft.data_buf, num_charges, 
+    assign_charges(d, d->fft->data_buf, num_charges,
                    positions, charges, 1);
 
     STOPSTART(TIMING_CA, TIMING_GATHER);
 
     /* gather the ca grid */
-    gather_grid(d, d->fft.data_buf);
+    gather_grid(d, d->fft->data_buf);
     /* now d->rs_grid should contain the local ca grid */
 
     // Complexify
     for (p3m_int i = d->local_grid.size-1; i >= 0; i--)
-      d->rs_grid[2*i+1] = d->fft.data_buf[i];
+      d->rs_grid[2*i+1] = d->fft->data_buf[i];
     STOP(TIMING_GATHER);
       
     /* forward transform */
     P3M_DEBUG(printf("  calling fft_perform_forw()...\n"));
     START(TIMING_FORWARD);
-    fft_perform_forw(&d->fft, &d->comm, d->rs_grid);
+    d->fft->forward(d->rs_grid);
     STOP(TIMING_FORWARD);
     P3M_DEBUG(printf("  returned from fft_perform_forw().\n"));
       
@@ -359,22 +359,22 @@ namespace P3M {
         if( d->require_timings != ESTIMATE_ALL
             && d->require_timings != ESTIMATE_FFT ){
           P3M_DEBUG(printf( "  calling fft_perform_back (potentials)...\n"));
-          START(TIMING_BACK)
-            fft_perform_back(&d->fft, &d->comm, d->ks_grid);
-          STOP(TIMING_BACK)
-            P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
-        }
+          START(TIMING_BACK);
+          d->fft->backward(d->ks_grid);
+		  STOP(TIMING_BACK);
+		  P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
+		}
         /** First (unshifted) run */
         START(TIMING_SPREAD)
           for (p3m_int i=0; i<d->local_grid.size; i++) {
-            d->fft.data_buf[i] = d->ks_grid[2*i];
+            d->fft->data_buf[i] = d->ks_grid[2*i];
           } 
 
-        spread_grid(d, d->fft.data_buf);
+        spread_grid(d, d->fft->data_buf);
 
         STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
 
-        assign_potentials(d, d->fft.data_buf,
+        assign_potentials(d, d->fft->data_buf,
                           num_charges, positions, 
                           charges, 0, potentials);
           
@@ -382,13 +382,13 @@ namespace P3M {
           
         /** Second (shifted) run */
         for (p3m_int i=0; i<d->local_grid.size; i++) {
-          d->fft.data_buf[i] = d->ks_grid[2*i+1];
+          d->fft->data_buf[i] = d->ks_grid[2*i+1];
         }
-        spread_grid(d, d->fft.data_buf);
+        spread_grid(d, d->fft->data_buf);
           
         STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
           
-        assign_potentials(d, d->fft.data_buf,
+        assign_potentials(d, d->fft->data_buf,
                           num_charges, positions,
                           charges, 1, potentials);
           
@@ -410,7 +410,7 @@ namespace P3M {
          && d->require_timings != ESTIMATE_FFT){
         P3M_DEBUG(printf("  calling fft_perform_back...\n"));
         START(TIMING_BACK);
-        fft_perform_back(&d->fft, &d->comm, d->ks_grid);
+        d->fft->backward(d->ks_grid);
         STOP(TIMING_BACK);
         P3M_DEBUG(printf("  returned from fft_perform_back.\n"));            
       }
@@ -419,14 +419,14 @@ namespace P3M {
       /* First (unshifted) run */
       P3M_INFO(printf("  computing unshifted grid\n"));
       for (p3m_int i=0; i<d->local_grid.size; i++) {
-        d->fft.data_buf[i] = d->ks_grid[2*i];
+        d->fft->data_buf[i] = d->ks_grid[2*i];
       } 
     
-      spread_grid(d, d->fft.data_buf);
+      spread_grid(d, d->fft->data_buf);
 
       STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
 
-      assign_fields_ad(d, d->fft.data_buf, num_charges, 
+      assign_fields_ad(d, d->fft->data_buf, num_charges,
                        positions, 0, fields);
 
       STOPSTART(TIMING_FIELDS, TIMING_SPREAD);
@@ -434,14 +434,14 @@ namespace P3M {
       /* Second (shifted) run */
       P3M_INFO(printf("  computing shifted grid\n"));
       for (p3m_int i=0; i<d->local_grid.size; i++) {
-        d->fft.data_buf[i] = d->ks_grid[2*i+1];
+        d->fft->data_buf[i] = d->ks_grid[2*i+1];
       }
         
-      spread_grid(d, d->fft.data_buf);
+      spread_grid(d, d->fft->data_buf);
     
       STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
         
-      assign_fields_ad(d, d->fft.data_buf, num_charges, 
+      assign_fields_ad(d, d->fft->data_buf, num_charges,
                        positions, 1, fields);
 
       STOP(TIMING_FIELDS);
