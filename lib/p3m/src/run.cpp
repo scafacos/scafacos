@@ -708,9 +708,6 @@ namespace P3M {
 
   /* Gather information for FFT grid inside the nodes domain (inner local grid) */
   void gather_grid(data_struct* d, p3m_float* rs_grid) {
-    MPI_Status status;
-    p3m_float *tmp_ptr;
-
     P3M_DEBUG(printf( "  gather_grid() started...\n"));
 
     /* direction loop */
@@ -724,32 +721,15 @@ namespace P3M {
                                   d->sm.s_dim[s_dir], d->local_grid.dim, 1);
       
       /* communication */
-      /** @todo Replace with MPI_Sendrecv */
-      if (d->comm.node_neighbors[s_dir] != d->comm.rank) {
-        for (p3m_int evenodd=0; evenodd<2; evenodd++) {
-          if ((d->comm.node_pos[s_dir/2]+evenodd)%2 == 0) {
-            if (d->sm.s_size[s_dir] > 0) {
-              P3M_DEBUG_LOCAL(printf("    %d: sending %d floats to %d (s_dir=%d)\n", \
-                                     d->comm.rank, d->sm.s_size[s_dir],	\
-                                     d->comm.node_neighbors[s_dir], s_dir));
-              MPI_Send(d->send_grid, d->sm.s_size[s_dir], P3M_MPI_FLOAT,
-                       d->comm.node_neighbors[s_dir], REQ_P3M_GATHER, d->comm.mpicomm);
-            }
-          } else {
-            if (d->sm.r_size[r_dir] > 0) {
-              P3M_DEBUG_LOCAL(printf( "    %d: receiving %d floats from %d (r_dir=%d)\n", \
-                                      d->comm.rank, d->sm.r_size[r_dir],	\
-                                      d->comm.node_neighbors[r_dir], r_dir));
-              MPI_Recv(d->recv_grid, d->sm.r_size[r_dir], P3M_MPI_FLOAT,
-                       d->comm.node_neighbors[r_dir], REQ_P3M_GATHER, d->comm.mpicomm, &status);
-            }
-          }
-        }
-      } else {
-        tmp_ptr = d->recv_grid;
-        d->recv_grid = d->send_grid;
-        d->send_grid = tmp_ptr;
-      }
+      if (d->comm.node_neighbors[s_dir] != d->comm.rank)
+          MPI_Sendrecv(d->send_grid, d->sm.s_size[s_dir], P3M_MPI_FLOAT,
+                  d->comm.node_neighbors[s_dir], REQ_P3M_GATHER,
+                  d->recv_grid, d->sm.r_size[r_dir], P3M_MPI_FLOAT,
+                  d->comm.node_neighbors[r_dir], REQ_P3M_GATHER,
+                  d->comm.mpicomm, MPI_STATUS_IGNORE);
+      else
+          std::swap(d->recv_grid, d->send_grid);
+
       /* add recv block */
       if(d->sm.r_size[r_dir]>0) {
         add_block(d->recv_grid, rs_grid, d->sm.r_ld[r_dir], 
@@ -929,28 +909,18 @@ namespace P3M {
         Parallel3DFFT::pack_block(rs_grid, d->send_grid, d->sm.r_ld[r_dir], 
                                   d->sm.r_dim[r_dir], d->local_grid.dim, 1);
       /* communication */
-      /** @todo Replace with MPI_Sendrecv */
-      if (d->comm.node_neighbors[r_dir] != d->comm.rank) {
-        for (evenodd=0; evenodd<2;evenodd++) {
-          if ((d->comm.node_pos[r_dir/2]+evenodd)%2==0) {
-            if (d->sm.r_size[r_dir]>0) 
-              MPI_Send(d->send_grid, d->sm.r_size[r_dir], P3M_MPI_FLOAT, 
-                       d->comm.node_neighbors[r_dir], REQ_P3M_SPREAD, d->comm.mpicomm);
-          }
-          else {
-            if (d->sm.s_size[s_dir]>0) 
-              MPI_Recv(d->recv_grid, d->sm.s_size[s_dir], P3M_MPI_FLOAT, 
-                       d->comm.node_neighbors[s_dir], REQ_P3M_SPREAD, d->comm.mpicomm, 
-                       MPI_STATUS_IGNORE); 	    
-          }
-        }
-      }
+      if (d->comm.node_neighbors[r_dir] != d->comm.rank)
+          MPI_Sendrecv(d->send_grid, d->sm.r_size[r_dir], P3M_MPI_FLOAT,
+                  d->comm.node_neighbors[r_dir], REQ_P3M_SPREAD,
+                  d->recv_grid, d->sm.s_size[s_dir], P3M_MPI_FLOAT,
+                  d->comm.node_neighbors[s_dir], REQ_P3M_SPREAD, d->comm.mpicomm,
+                  MPI_STATUS_IGNORE);
       else std::swap(d->recv_grid, d->send_grid);
+
       /* unpack recv block */
-      if (d->sm.s_size[s_dir]>0) {
+      if (d->sm.s_size[s_dir]>0)
         Parallel3DFFT::unpack_block(d->recv_grid, rs_grid, d->sm.s_ld[s_dir], 
                                     d->sm.s_dim[s_dir], d->local_grid.dim, 1); 
-      }
     }
 
     P3M_DEBUG(printf( "  spread_grid() finished.\n"));

@@ -571,8 +571,8 @@ void Parallel3DFFT::backward(p3m_float *data) {
  * \param in   input grid.
  * \param out  output grid.
  */
-void Parallel3DFFT::forward_grid_comm(forward_plan plan, p3m_float *in,
-		p3m_float *out) {
+void Parallel3DFFT::forward_grid_comm(forward_plan plan,
+        p3m_float *in, p3m_float *out) {
 	for (int i = 0; i < plan.g_size; i++) {
 		plan.pack_function(in, send_buf, &(plan.send_block[6 * i]),
 				&(plan.send_block[6 * i + 3]), plan.old_grid, plan.element);
