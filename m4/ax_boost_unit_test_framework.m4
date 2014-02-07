@@ -29,7 +29,7 @@
 #   and this notice are preserved. This file is offered as-is, without any
 #   warranty.
 
-#serial 17
+#serial 19 (modified: don't fail if unit framework is not available)
 
 AC_DEFUN([AX_BOOST_UNIT_TEST_FRAMEWORK],
 [
@@ -55,9 +55,11 @@ AC_DEFUN([AX_BOOST_UNIT_TEST_FRAMEWORK],
         AC_REQUIRE([AC_PROG_CC])
 		CPPFLAGS_SAVED="$CPPFLAGS"
 		CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+		export CPPFLAGS
 
 		LDFLAGS_SAVED="$LDFLAGS"
 		LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
+		export LDFLAGS
 
         AC_CACHE_CHECK(whether the Boost::Unit_Test_Framework library is available,
 					   ax_cv_boost_unit_test_framework,
@@ -72,13 +74,13 @@ AC_DEFUN([AX_BOOST_UNIT_TEST_FRAMEWORK],
 			AC_DEFINE(HAVE_BOOST_UNIT_TEST_FRAMEWORK,,[define if the Boost::Unit_Test_Framework library is available])
             BOOSTLIBDIR=`echo $BOOST_LDFLAGS | sed -e 's/@<:@^\/@:>@*//'`
 
-	    AC_MSG_CHECKING([whether the boost::unit_test library is present])
+            AC_MSG_CHECKING([for linking against Boost::Unit_Test_Framework library])
+            ax_lib=""
             if test "x$ax_boost_user_unit_test_framework_lib" = "x"; then
 			saved_ldflags="${LDFLAGS}"
-		ax_lib=""
-                for monitor_library in `ls $BOOSTLIBDIR/libboost_unit_test_framework*.so* $BOOSTLIBDIR/libboost_unit_test_framework*.a* 2>/dev/null` ; do
+                for monitor_library in `ls $BOOSTLIBDIR/libboost_unit_test_framework*.so* $BOOSTLIBDIR/libboost_unit_test_framework*.dylib* $BOOSTLIBDIR/libboost_unit_test_framework*.a* 2>/dev/null` ; do
                     if test -r $monitor_library ; then
-                       libextension=`echo $monitor_library | sed 's,.*/,,' | sed -e 's;^lib\(boost_unit_test_framework.*\)\.so.*$;\1;' -e 's;^lib\(boost_unit_test_framework.*\)\.a*$;\1;'`
+                       libextension=`echo $monitor_library | sed 's,.*/,,' | sed -e 's;^lib\(boost_unit_test_framework.*\)\.so.*$;\1;' -e 's;^lib\(boost_unit_test_framework.*\)\.dylib.*$;\1;' -e 's;^lib\(boost_unit_test_framework.*\)\.a.*$;\1;'`
                        ax_lib=${libextension}
                        link_unit_test_framework="yes"
                     else
@@ -92,7 +94,7 @@ AC_DEFUN([AX_BOOST_UNIT_TEST_FRAMEWORK],
 				    fi
                 done
                 if test "x$link_unit_test_framework" != "xyes"; then
-                for libextension in `ls $BOOSTLIBDIR/boost_unit_test_framework*.{dll,a}* 2>/dev/null  | sed 's,.*/,,' | sed -e 's;^\(boost_unit_test_framework.*\)\.dll.*$;\1;' -e 's;^\(boost_unit_test_framework.*\)\.a*$;\1;'` ; do
+                for libextension in `ls $BOOSTLIBDIR/boost_unit_test_framework*.dll* $BOOSTLIBDIR/boost_unit_test_framework*.a* 2>/dev/null  | sed 's,.*/,,' | sed -e 's;^\(boost_unit_test_framework.*\)\.dll.*$;\1;' -e 's;^\(boost_unit_test_framework.*\)\.a.*$;\1;'` ; do
                      ax_lib=${libextension}
 				    AC_CHECK_LIB($ax_lib, exit,
                                  [BOOST_UNIT_TEST_FRAMEWORK_LIB="-l$ax_lib"; AC_SUBST(BOOST_UNIT_TEST_FRAMEWORK_LIB) link_unit_test_framework="yes"; break],
@@ -124,14 +126,16 @@ AC_DEFUN([AX_BOOST_UNIT_TEST_FRAMEWORK],
                done
             fi
             if test "x$ax_lib" = "x"; then
-                AC_MSG_RESULT(not found)
-		else
-			if test "x$link_unit_test_framework" != "xyes"; then
-			   AC_DEFINE(HAVE_BOOST_UNIT_TEST_FRAMEWORK_LIB,,[define if the boost::unit_test library is available])
-			   AC_CACHE_CHECK([boost::unit_test library is present], ax_cv_boost_unit_test_framework_lib, [ax_cv_boost_unit_test_framework_lib=1])
-			   AC_MSG_RESULT(linking failed)
-			fi
-		fi
+#                AC_MSG_ERROR(Could not find a version of the library!)
+                AC_MSG_RESULT([no (could not find a version of the library)])
+            elif test "x$link_unit_test_framework" != "xyes"; then
+#                AC_MSG_ERROR(Could not link against $ax_lib !)
+                AC_MSG_RESULT([no (could not link against $ax_lib)])
+            else
+              AC_MSG_RESULT([yes])
+              AC_DEFINE(HAVE_BOOST_UNIT_TEST_FRAMEWORK_LIB,[1],[define if the Boost::Unit_Test_Framework library can be linked])
+            fi
+
             fi
 
 		CPPFLAGS="$CPPFLAGS_SAVED"
