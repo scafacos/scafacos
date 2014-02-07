@@ -55,8 +55,6 @@ namespace P3M {
 /* Tag for wisdom file I/O */
 #define FFTW_FAILURE 0
 
-#define fftw_plan FFTW_MANGLE(plan)
-
 /** Structure for performing a 1D FFT.
  *
  *  This includes the information about the redistribution of the 3D

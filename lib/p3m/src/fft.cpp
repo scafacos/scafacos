@@ -512,7 +512,7 @@ void Parallel3DFFT::forward(p3m_float *data) {
 	forward_grid_comm(plan[3], data_buf, data);
 	/* perform FFT (in/out is data)*/
 	fftw_execute_dft(plan[3].plan, c_data, c_data);
-	P3M_DEBUG_LOCAL(print_global_grid(comm, plan[3], data, 1, 0));
+	//P3M_DEBUG_LOCAL(print_global_grid(comm, plan[3], data, 1, 0));
 
 	// REMARK: Result has to be in data.
 }

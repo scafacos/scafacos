@@ -76,7 +76,11 @@ namespace P3M {
   tune_far(data_struct *d,
            p3m_int num_particles, p3m_float *positions, p3m_float *charges,
            p3m_float r_cut);
-    
+
+  void
+  tune_far(data_struct *d,
+          p3m_int num_particles, p3m_float *positions, p3m_float *charges);
+
   void
   tune_broadcast_master(data_struct *d, p3m_int num_particles,
                         p3m_float *positions, p3m_float *charges);
@@ -119,94 +123,112 @@ namespace P3M {
     p3m_float sum_q2_before = d->sum_q2;
     count_charges(d, num_particles, charges);
       
-    /* Retune if the number of charges has changed */
-    if (!d->needs_retune && !(float_is_equal(sum_q2_before, d->sum_q2))) {
-      P3M_INFO(printf( "  Number of charges changed, retuning is needed.\n"));
-      d->needs_retune = 1;
+    if (!on_master()) {
+        int howoften;
+        P3M_DEBUG_LOCAL(printf("  %d: How often to run tune_far?\n", d->comm.rank));
+        MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
+        P3M_DEBUG_LOCAL(printf("  %d: Running tune_far %d times.\n", d->comm.rank, howoften));
+        for (; howoften > 0; howoften--)
+            tune_far(d, num_particles, positions, charges);
+
+        d->needs_retune = false;
+        return;
     }
-      
+
+    /* Retune if the number of charges has changed */
+    if (!(float_is_equal(sum_q2_before, d->sum_q2))) {
+        P3M_INFO(printf( "  Number of charges changed, retuning is needed.\n"));
+        d->needs_retune = true;
+    }
+
     /* Do not retune if there are no charges */
     if (float_is_zero(d->sum_q2)) {
-      P3M_INFO(printf( "  No charges in the system.\n"));
-      P3M_INFO(printf( "  Retuning is not required.\n"));
-      P3M_INFO(printf( "tune_far() finished.\n"));
-      return;
+        P3M_INFO(printf( "  No charges in the system.\n"));
+        d->needs_retune = false;
     }
-      
+
     /* Exit if retuning is unnecessary */
     if (!d->needs_retune) {
-      P3M_INFO(printf( "  Retuning is not required.\n"));
-      P3M_INFO(printf( "tune_far() finished.\n"));
-      return;
+        P3M_INFO(printf( "  Retuning is not required.\n"));
+        int howoften = 0;
+        MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
+        P3M_INFO(printf( "tune() finished.\n"));
+        return;
     }
-      
+
     P3M_INFO(printf( "  Retuning is required.\n"));
 
-    if (d->tune_r_cut) {
+    if (!d->tune_r_cut) {
+        P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", d->r_cut));
+        int howoften = 1;
+        MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
+        tune_far(d, num_particles, positions, charges, d->r_cut);
+    } else {
+        int howoften = 2;
+        MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
 
-      /* compute the average distance between two charges  */
-      p3m_float avg_dist = 
-        pow((d->box_l[0]*d->box_l[1]*d->box_l[2]) 
-            / d->sum_qpart, 0.33333);
-        
-      /* FIRST ESTIMATE */
-      /* set the initial r_cut to 3 times the average distance between
+        /* compute the average distance between two charges  */
+        p3m_float avg_dist =
+                pow((d->box_l[0]*d->box_l[1]*d->box_l[2])
+                        / d->sum_qpart, 0.33333);
+
+        /* FIRST ESTIMATE */
+        /* set the initial r_cut to 3 times the average distance between
          charges */
-      p3m_float r_cut = 3.0 * avg_dist;
-        
-      /* tune r_cut to half the box length */
-      if (0.5*d->box_l[1]-d->skin < r_cut)
-        r_cut = 0.5*d->box_l[0] - d->skin;
-      if (0.5*d->box_l[1]-d->skin < r_cut)
-        r_cut = 0.5*d->box_l[1] - d->skin;
-      if (0.5*d->box_l[2]-d->skin < r_cut)
-        r_cut = 0.5*d->box_l[2] - d->skin;
+        p3m_float r_cut = 3.0 * avg_dist;
 
-      P3M_INFO(printf( "    r_cut=" FFLOAT " (first estimate)\n", r_cut));
+        /* tune r_cut to half the box length */
+        if (0.5*d->box_l[1]-d->skin < r_cut)
+            r_cut = 0.5*d->box_l[0] - d->skin;
+        if (0.5*d->box_l[1]-d->skin < r_cut)
+            r_cut = 0.5*d->box_l[1] - d->skin;
+        if (0.5*d->box_l[2]-d->skin < r_cut)
+            r_cut = 0.5*d->box_l[2] - d->skin;
 
-      // @todo get near timing
-      tune_params *p = 
-        tune_far(d, num_particles, positions, charges, r_cut);
-        
-      /* SECOND ESTIMATE */
-      /* use the fact that we know that timing_near scales like r_cut**3
+        P3M_INFO(printf( "    r_cut=" FFLOAT " (first estimate)\n", r_cut));
+
+        // @todo get near timing
+        tune_params *p =
+                tune_far(d, num_particles, positions, charges, r_cut);
+
+        /* SECOND ESTIMATE */
+        /* use the fact that we know that timing_near scales like r_cut**3
          and timing_far like r_cut**(-3) to get the second estimate */
 
-      p3m_float rel_timing_diff = 
-        fabs(p->timing_near - p->timing_far) / 
-        (p->timing_near + p->timing_far);
-      P3M_INFO(printf( "    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
+        p3m_float rel_timing_diff =
+                fabs(p->timing_near - p->timing_far) /
+                (p->timing_near + p->timing_far);
+        P3M_INFO(printf( "    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
 
-      p3m_float rcut3 = pow(r_cut, 3);
-      p3m_float c_near = p->timing_near/rcut3;
-      p3m_float c_far = p->timing_far*rcut3;
-      p3m_float rcut_new = pow(c_far/c_near, 1./6.);
-    
-      r_cut = rcut_new;
-      P3M_INFO(printf( "    r_cut=" FFLOAT " (second estimate)\n", r_cut));
+        p3m_float rcut3 = pow(r_cut, 3);
+        p3m_float c_near = p->timing_near/rcut3;
+        p3m_float c_far = p->timing_far*rcut3;
+        p3m_float rcut_new = pow(c_far/c_near, 1./6.);
 
-      // @todo get near timing
-      p = tune_far(d, num_particles, positions, charges, r_cut);
-        
-      rel_timing_diff = 
-        fabs(p->timing_near - p->timing_far) / 
-        (p->timing_near + p->timing_far);
-      P3M_INFO(printf("    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
-      P3M_INFO(printf("    Finished tuning.\n"));
-    } else {
-      P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", d->r_cut));
-      tune_far(d, num_particles, positions, charges, d->r_cut);
+        r_cut = rcut_new;
+        P3M_INFO(printf( "    r_cut=" FFLOAT " (second estimate)\n", r_cut));
+
+        // @todo get near timing
+        // second far tuning
+        p = tune_far(d, num_particles, positions, charges, r_cut);
+
+        rel_timing_diff =
+                fabs(p->timing_near - p->timing_far) /
+                (p->timing_near + p->timing_far);
+        P3M_INFO(printf("    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
+        P3M_INFO(printf("    Finished tuning.\n"));
     }
 
     /* mark that the method was retuned */
-    d->needs_retune = 0;
+    d->needs_retune = false;
   }
 
   tune_params* 
   tune_far(data_struct *d,
-           p3m_int num_particles, p3m_float *positions, p3m_float *charges,
-           p3m_float r_cut) {
-    /* Distinguish between two types of parameters:
+          p3m_int num_particles, p3m_float *positions, p3m_float *charges,
+          p3m_float r_cut) {
+      /* r_cut is ignored on the slaves */
+      /* Distinguish between two types of parameters:
        Input params:
        * box length
        * #charges
@@ -225,44 +247,48 @@ namespace P3M {
        */
     P3M_INFO(printf( "tune_far() started...\n"));
 
-    /* check whether the input parameters are sane */
-    if (r_cut < 0.0)
-      throw std::domain_error("r_cut is negative!");
-    
-    if (float_is_zero(r_cut)) 
-      throw std::domain_error("r_cut is too small!");
-    
-    /* check whether cutoff is larger than half a box length */
-    if ((r_cut > 0.5*d->box_l[0]) ||
-        (r_cut > 0.5*d->box_l[1]) ||
-        (r_cut > 0.5*d->box_l[2]))
-      throw std::domain_error("r_cut is larger than half a system box length.");
-
-    /* check whether cutoff is larger than domain size */
-
     tune_params *final_params = NULL;
-    try {
-      d->r_cut = r_cut;
-      if (d->comm.rank == 0) {
-        final_params = 
-          tune_alpha_cao_grid(d, num_particles, positions, charges, r_cut);
-          
-        // @todo: move to tune function
-        /* Set and broadcast the final parameters. */
-        d->r_cut = r_cut;
-        d->alpha = final_params->alpha;
-        d->grid[0] = final_params->grid[0];
-        d->grid[1] = final_params->grid[1];
-        d->grid[2] = final_params->grid[2];
-        d->cao = final_params->cao;
-        tune_broadcast_command(d, CMD_FINISHED);
-      } else {
+
+    if (!on_master()) {
         tune_broadcast_slave(d, num_particles, positions, charges);
-      }
-    } catch (...) {
-      P3M_INFO(printf( "  Tuning failed.\n"));
-      P3M_INFO(printf( "tune_far() finished.\n"));
-      throw;
+    } else {
+    
+        /* check whether the input parameters are sane */
+        if (r_cut < 0.0)
+            throw std::domain_error("r_cut is negative!");
+
+        if (float_is_zero(r_cut))
+            throw std::domain_error("r_cut is too small!");
+
+        /* check whether cutoff is larger than half a box length */
+        if ((r_cut > 0.5*d->box_l[0]) ||
+                (r_cut > 0.5*d->box_l[1]) ||
+                (r_cut > 0.5*d->box_l[2]))
+            throw std::domain_error("r_cut is larger than half a system box length.");
+
+        /* check whether cutoff is larger than domain size */
+
+        try {
+            d->r_cut = r_cut;
+            final_params =
+                    tune_alpha_cao_grid(d, num_particles,
+                            positions, charges, r_cut);
+
+            // @todo: move to tune function
+            /* Set and broadcast the final parameters. */
+            d->r_cut = r_cut;
+            d->alpha = final_params->alpha;
+            d->grid[0] = final_params->grid[0];
+            d->grid[1] = final_params->grid[1];
+            d->grid[2] = final_params->grid[2];
+            d->cao = final_params->cao;
+            tune_broadcast_command(d, CMD_FINISHED);
+        } catch (...) {
+            P3M_INFO(printf( "  Tuning failed.\n"));
+            tune_broadcast_command(d, CMD_FAILED);
+            P3M_INFO(printf( "tune_far() finished.\n"));
+            throw;
+        }
     }
 
     P3M_INFO(printf( "  Tuning was successful.\n"));
@@ -270,10 +296,17 @@ namespace P3M {
     /* At the end of retuning, prepare the method */
     prepare(d);
       
-      
     P3M_INFO(printf( "tune_far() finished.\n"));
 
     return final_params;
+  }
+
+  /** Slave variant of tune_far. */
+  void
+  tune_far(data_struct *d,
+          p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
+      if (on_master()) throw std::runtime_error("tune_far without r_cut cannot be called on master node.");
+      tune_far(d, num_particles, positions, charges, 0.0);
   }
 
 

@@ -66,7 +66,7 @@ namespace P3M {
   tune_broadcast_slave(data_struct *d, p3m_int num_particles,
                        p3m_float *positions, p3m_float *charges) {
     P3M_DEBUG(printf( "tune_broadcast_slave() started...\n"));
-    if (d->comm.rank == 0)
+    if (on_master())
       throw std::logic_error("Internal error: tune_broadcast_slave " 
                              "should not be called on master!");
 

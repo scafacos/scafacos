@@ -824,7 +824,7 @@ namespace P3M {
     d->timings[TIMING] += d->timings[TIMING_NEAR];
     d->timings[TIMING] += d->timings[TIMING_COMP];
       
-    if (on_root())
+    if (on_master())
       MPI_Reduce(MPI_IN_PLACE, d->timings,
                  NUM_TIMINGS, MPI_DOUBLE, MPI_MAX,
                  0, d->comm.mpicomm);
@@ -834,42 +834,44 @@ namespace P3M {
                  0, d->comm.mpicomm);
       
 #ifdef P3M_PRINT_TIMINGS
-    printf("  P3M TIMINGS:\n");
-    printf("    total=%le (%lf)\n", d->timings[TIMING], 1.0);
-    printf("      far=%le (%lf)\n", d->timings[TIMING_FAR], 
-           d->timings[TIMING_FAR]/d->timings[TIMING]);
-    printf("     near=%le (%lf)\n", d->timings[TIMING_NEAR], 
-           d->timings[TIMING_NEAR]/d->timings[TIMING]);
-    printf("       ca=%le (%lf)\n", d->timings[TIMING_CA], 
-           d->timings[TIMING_CA]/d->timings[TIMING]);
-    printf("      pot=%le (%lf)", d->timings[TIMING_POTENTIALS], 
-           d->timings[TIMING_POTENTIALS]/d->timings[TIMING]);
-    //if(d->require_timings == ESTIMATE_ALL //not yet implemented
-    //|| d->require_timings == ESTIMATE_ASSIGNMENT)
-    //    printf(" (empirical estimate)");
-    printf("\n");
-    printf("   fields=%le (%lf)", d->timings[TIMING_FIELDS], 
-           d->timings[TIMING_FIELDS]/d->timings[TIMING]);
-    //if(d->require_timings == ESTIMATE_ALL //not yet implemented
-    //|| d->require_timings == ESTIMATE_ASSIGNMENT)
-    //    printf(" (empirical estimate)");
-    printf("\n");
-    printf("   gather=%le (%lf)\n", d->timings[TIMING_GATHER], 
-           d->timings[TIMING_GATHER]/d->timings[TIMING]);
-    printf("   spread=%le (%lf)\n", d->timings[TIMING_SPREAD], 
-           d->timings[TIMING_SPREAD]/d->timings[TIMING]);
-    printf("  forward=%le (%lf)\n", d->timings[TIMING_FORWARD], 
-           d->timings[TIMING_FORWARD]/d->timings[TIMING]);
-    printf("     back=%le (%lf)", d->timings[TIMING_BACK], 
-           d->timings[TIMING_BACK]/d->timings[TIMING]);
-    if(d->require_timings == ESTIMATE_ALL
-       || d->require_timings == ESTIMATE_FFT)
-      printf(" (theoretical estimate)");
-    printf("\n");
-    printf("   decomp=%le (%lf)\n", d->timings[TIMING_DECOMP], 
-           d->timings[TIMING_DECOMP]/d->timings[TIMING]);
-    printf("     comp=%le (%lf)\n", d->timings[TIMING_COMP], 
-           d->timings[TIMING_COMP]/d->timings[TIMING]);
+    if (on_master()) {
+        printf("  P3M TIMINGS:\n");
+        printf("    total=%le (%lf)\n", d->timings[TIMING], 1.0);
+        printf("      far=%le (%lf)\n", d->timings[TIMING_FAR],
+                d->timings[TIMING_FAR]/d->timings[TIMING]);
+        printf("     near=%le (%lf)\n", d->timings[TIMING_NEAR],
+                d->timings[TIMING_NEAR]/d->timings[TIMING]);
+        printf("       ca=%le (%lf)\n", d->timings[TIMING_CA],
+                d->timings[TIMING_CA]/d->timings[TIMING]);
+        printf("      pot=%le (%lf)", d->timings[TIMING_POTENTIALS],
+                d->timings[TIMING_POTENTIALS]/d->timings[TIMING]);
+        //if(d->require_timings == ESTIMATE_ALL //not yet implemented
+        //|| d->require_timings == ESTIMATE_ASSIGNMENT)
+        //    printf(" (empirical estimate)");
+        printf("\n");
+        printf("   fields=%le (%lf)", d->timings[TIMING_FIELDS],
+                d->timings[TIMING_FIELDS]/d->timings[TIMING]);
+        //if(d->require_timings == ESTIMATE_ALL //not yet implemented
+        //|| d->require_timings == ESTIMATE_ASSIGNMENT)
+        //    printf(" (empirical estimate)");
+        printf("\n");
+        printf("   gather=%le (%lf)\n", d->timings[TIMING_GATHER],
+                d->timings[TIMING_GATHER]/d->timings[TIMING]);
+        printf("   spread=%le (%lf)\n", d->timings[TIMING_SPREAD],
+                d->timings[TIMING_SPREAD]/d->timings[TIMING]);
+        printf("  forward=%le (%lf)\n", d->timings[TIMING_FORWARD],
+                d->timings[TIMING_FORWARD]/d->timings[TIMING]);
+        printf("     back=%le (%lf)", d->timings[TIMING_BACK],
+                d->timings[TIMING_BACK]/d->timings[TIMING]);
+        if(d->require_timings == ESTIMATE_ALL
+                || d->require_timings == ESTIMATE_FFT)
+            printf(" (theoretical estimate)");
+        printf("\n");
+        printf("   decomp=%le (%lf)\n", d->timings[TIMING_DECOMP],
+                d->timings[TIMING_DECOMP]/d->timings[TIMING]);
+        printf("     comp=%le (%lf)\n", d->timings[TIMING_COMP],
+                d->timings[TIMING_COMP]/d->timings[TIMING]);
+    }
 #endif
       
   }
