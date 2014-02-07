@@ -577,21 +577,17 @@ void Parallel3DFFT::forward_grid_comm(forward_plan plan, p3m_float *in,
 		plan.pack_function(in, send_buf, &(plan.send_block[6 * i]),
 				&(plan.send_block[6 * i + 3]), plan.old_grid, plan.element);
 
-		if (plan.group[i] < comm->rank) { /* send first, receive second */
-			MPI_Send(send_buf, plan.send_size[i], P3M_MPI_FLOAT, plan.group[i],
-					REQ_FFT_FORW, comm->mpicomm);
-			MPI_Recv(recv_buf, plan.recv_size[i], P3M_MPI_FLOAT, plan.group[i],
-					REQ_FFT_FORW, comm->mpicomm, MPI_STATUS_IGNORE);
-		} else if (plan.group[i] > comm->rank) { /* receive first, send second */
-			MPI_Recv(recv_buf, plan.recv_size[i], P3M_MPI_FLOAT, plan.group[i],
-					REQ_FFT_FORW, comm->mpicomm, MPI_STATUS_IGNORE);
-			MPI_Send(send_buf, plan.send_size[i], P3M_MPI_FLOAT, plan.group[i],
-					REQ_FFT_FORW, comm->mpicomm);
-		} else
-			/* Self communication... */
-			std::swap(send_buf, recv_buf);
+		if (plan.group[i] == comm->rank)
+		    /* Self communication... */
+		    std::swap(send_buf, recv_buf);
+		else {
+		    MPI_Sendrecv(send_buf, plan.send_size[i], P3M_MPI_FLOAT, plan.group[i],
+		            REQ_FFT_FORW, recv_buf, plan.recv_size[i], P3M_MPI_FLOAT, plan.group[i],
+		            REQ_FFT_FORW, comm->mpicomm, MPI_STATUS_IGNORE);
+		}
+
 		unpack_block(recv_buf, out, &(plan.recv_block[6 * i]),
-				&(plan.recv_block[6 * i + 3]), plan.new_grid, plan.element);
+		        &(plan.recv_block[6 * i + 3]), plan.new_grid, plan.element);
 	}
 }
 
@@ -613,24 +609,17 @@ void Parallel3DFFT::backward_grid_comm(forward_plan plan_f,
 				&(plan_f.recv_block[6 * i + 3]), plan_f.new_grid,
 				plan_f.element);
 
-		if (plan_f.group[i] < comm->rank) { /* send first, receive second */
-			MPI_Send(send_buf, plan_f.recv_size[i], P3M_MPI_FLOAT,
-					plan_f.group[i], REQ_FFT_BACK, comm->mpicomm);
-			MPI_Recv(recv_buf, plan_f.send_size[i], P3M_MPI_FLOAT,
-					plan_f.group[i], REQ_FFT_BACK, comm->mpicomm,
-					MPI_STATUS_IGNORE);
-		} else if (plan_f.group[i] > comm->rank) { /* receive first, send second */
-			MPI_Recv(recv_buf, plan_f.send_size[i], P3M_MPI_FLOAT,
-					plan_f.group[i], REQ_FFT_BACK, comm->mpicomm,
-					MPI_STATUS_IGNORE);
-			MPI_Send(send_buf, plan_f.recv_size[i], P3M_MPI_FLOAT,
-					plan_f.group[i], REQ_FFT_BACK, comm->mpicomm);
-		} else
-			/* Self communication... */
-			std::swap(send_buf, recv_buf);
-		unpack_block(recv_buf, out, &(plan_f.send_block[6 * i]),
-				&(plan_f.send_block[6 * i + 3]), plan_f.old_grid,
-				plan_f.element);
+        if (plan_f.group[i] == comm->rank)
+            /* Self communication... */
+            std::swap(send_buf, recv_buf);
+        else {
+            MPI_Sendrecv(send_buf, plan_f.recv_size[i], P3M_MPI_FLOAT, plan_f.group[i],
+                    REQ_FFT_BACK, recv_buf, plan_f.send_size[i], P3M_MPI_FLOAT, plan_f.group[i],
+                    REQ_FFT_BACK, comm->mpicomm, MPI_STATUS_IGNORE);
+        }
+
+        unpack_block(recv_buf, out, &(plan_f.send_block[6 * i]),
+                &(plan_f.send_block[6 * i + 3]), plan_f.old_grid, plan_f.element);
 	}
 }
 
