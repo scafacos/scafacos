@@ -246,12 +246,15 @@ int main(int argc, char **argv)
 
   for (i = 0; i < nlocal; ++i) p[i] = f[i * 3 + 0] = f[i * 3 + 1] = f[i * 3 + 2] = 0;
 
-  fcs_result = fcs_tune(fcs_handle, nlocal, nlocal_max, xyz, q);
+  fcs_result = fcs_set_max_local_particles(fcs_handle, nlocal_max);
+  ASSERT_FCS(fcs_result);
+
+  fcs_result = fcs_tune(fcs_handle, nlocal, xyz, q);
   ASSERT_FCS(fcs_result);
 
   MPI_Barrier(comm);
   t = MPI_Wtime();
-  fcs_result = fcs_run(fcs_handle, nlocal, nlocal_max, xyz, q, f, p);
+  fcs_result = fcs_run(fcs_handle, nlocal, xyz, q, f, p);
   ASSERT_FCS(fcs_result);
   MPI_Barrier(comm);
   t = MPI_Wtime() - t;

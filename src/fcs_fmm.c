@@ -295,6 +295,9 @@ FCSResult fcs_fmm_init(FCS handle)
   fcs_fmm_set_resort(handle, 0);
   handle->fmm_param->fmm_resort = FCS_FMM_RESORT_NULL;
 
+  handle->tune = fcs_fmm_tune;
+  handle->run = fcs_fmm_run;
+
   handle->set_max_particle_move = fcs_fmm_set_max_particle_move;
   handle->set_resort = fcs_fmm_set_resort;
   handle->get_resort = fcs_fmm_get_resort;
@@ -308,7 +311,7 @@ FCSResult fcs_fmm_init(FCS handle)
 }
 
 /* internal fmm-specific tuning function */
-FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges)
+FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges)
 {
   char* fnc_name = "fcs_fmm_tune";
   FCSResult result;
@@ -407,7 +410,7 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 int fcs_mpi_fmm_sort_front_part, fcs_mpi_fmm_sort_back_part, fcs_mpi_fmm_sort_front_merge_presorted;
 
 /* internal fmm-specific run function */
-FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, 
+FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,
                       fcs_float *positions, fcs_float *charges, 
                       fcs_float *field, fcs_float *potentials)
 {

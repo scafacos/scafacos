@@ -51,6 +51,9 @@ FCSResult fcs_p3m_init(FCS handle)
   result = fcs_p3m_check(handle, fnc_name);
   if (result != NULL) return result;
 
+  handle->tune = fcs_p3m_tune;
+  handle->run = fcs_p3m_run;
+
   ifcs_p3m_init(&handle->method_context, handle->communicator);
   
   return NULL;
@@ -58,7 +61,7 @@ FCSResult fcs_p3m_init(FCS handle)
 
 /* internal p3m-specific tuning function */
 FCSResult fcs_p3m_tune(FCS handle, 
-		       fcs_int local_particles, fcs_int local_max_particles, 
+		       fcs_int local_particles,
 		       fcs_float *positions, fcs_float *charges)
 {
   char* fnc_name = "fcs_p3m_tune";
@@ -91,26 +94,32 @@ FCSResult fcs_p3m_tune(FCS handle,
   ifcs_p3m_set_near_field_flag(handle->method_context, 
 				 fcs_get_near_field_flag(handle));
 
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
   /* Effectively, tune initializes the algorithm. */
   result = ifcs_p3m_tune(handle->method_context, 
-                         local_particles, local_max_particles,
+                         local_particles, max_local_particles,
 			 positions, charges);
   return result;
 }
 
 /* internal p3m-specific run function */
 FCSResult fcs_p3m_run(FCS handle, 
-		      fcs_int local_particles, fcs_int local_max_particles, 
+		      fcs_int local_particles,
 		      fcs_float *positions, fcs_float *charges,
 		      fcs_float *fields, fcs_float *potentials)
 {
 //   char* fnc_name = "fcs_p3m_run";
 //   FCSResult result;
 
-  fcs_p3m_tune(handle, local_particles, local_max_particles, positions, charges);
+  fcs_p3m_tune(handle, local_particles, positions, charges);
+
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
 
   ifcs_p3m_run(handle->method_context,
-		 local_particles, local_max_particles, positions, charges, fields, potentials);
+		 local_particles, max_local_particles, positions, charges, fields, potentials);
 
   return NULL;
 }

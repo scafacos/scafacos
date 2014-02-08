@@ -135,10 +135,13 @@ int main(int argc, char* argv[])
                              interpolation_degree, discretization_order);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_tune(fcs_handle, n_local, n_local_max, x, q);
+  fcs_result = fcs_set_max_local_particles(fcs_handle, n_local_max);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_run(fcs_handle, n_local, n_local_max, x, q, f, p);
+  fcs_result = fcs_tune(fcs_handle, n_local, x, q);
+  assert_fcs(fcs_result);
+
+  fcs_result = fcs_run(fcs_handle, n_local, x, q, f, p);
   assert_fcs(fcs_result);
 
   fcs_destroy(fcs_handle);

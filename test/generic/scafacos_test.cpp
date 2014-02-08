@@ -497,11 +497,13 @@ static void run_method(particles_t *parts)
   memcpy(original_charges, parts->charges, parts->nparticles * sizeof(fcs_float));
 #endif
 
+  fcs_set_max_local_particles(fcs, parts->max_nparticles);
+
   // Tune and time method
   MASTER(cout << "  Tuning method..." << endl);
   MPI_Barrier(communicator);
   t = MPI_Wtime();
-  result = fcs_tune(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges);
+  result = fcs_tune(fcs, parts->nparticles, parts->positions, parts->charges);
   if (!check_result(result)) return;
   MPI_Barrier(communicator);
   t = MPI_Wtime() - t;
@@ -530,7 +532,7 @@ static void run_method(particles_t *parts)
 
     MPI_Barrier(communicator);
     t = MPI_Wtime();
-    result = fcs_run(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+    result = fcs_run(fcs, parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
     if (!check_result(result)) return;
     MPI_Barrier(communicator);
     t = MPI_Wtime() - t;
@@ -663,11 +665,13 @@ static void run_integration(particles_t *parts, Testcase *testcase)
 
     if (fcs != FCS_NULL)
     {
+      fcs_set_max_local_particles(fcs, parts->max_nparticles);
+
       /* tune method */
       MASTER(cout << "    Tune method..." << endl);
       MPI_Barrier(communicator);
       t = MPI_Wtime();
-      result = fcs_tune(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges);
+      result = fcs_tune(fcs, parts->nparticles, parts->positions, parts->charges);
       MPI_Barrier(communicator);
       t = MPI_Wtime() - t;
       if (!check_result(result)) return;
@@ -683,7 +687,7 @@ static void run_integration(particles_t *parts, Testcase *testcase)
       MASTER(cout << "    Run method..." << endl);
       MPI_Barrier(communicator);
       t = MPI_Wtime();
-      result = fcs_run(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+      result = fcs_run(fcs, parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
       MPI_Barrier(communicator);
       t = MPI_Wtime() - t;
       if (!check_result(result)) return;

@@ -93,6 +93,9 @@ FCSResult fcs_p2nfft_init(
   if (result != NULL)
     return result;
 
+  handle->tune = fcs_p2nfft_tune;
+  handle->run = fcs_p2nfft_run;
+
   ifcs_p2nfft_init(&(handle->method_context), handle->communicator);
 
   handle->set_max_particle_move = fcs_p2nfft_set_max_particle_move;
@@ -168,7 +171,7 @@ static fcs_int nonperiodic_axes_are_orthogonal_to_all_other_axes(
 
 /* internal p2nfft-specific tuning function */
 FCSResult fcs_p2nfft_tune(
-    FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+    FCS handle, fcs_int local_particles,
     fcs_float *positions, fcs_float *charges
     )
 {
@@ -212,7 +215,7 @@ FCSResult fcs_p2nfft_tune(
 
 /* internal p2nfft-specific run function */
 FCSResult fcs_p2nfft_run(
-    FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+    FCS handle, fcs_int local_particles,
     fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials
     )
 {
@@ -223,11 +226,14 @@ FCSResult fcs_p2nfft_run(
   if (result != NULL)
     return result;
 
-  result = fcs_p2nfft_tune(handle, local_particles, local_max_particles, positions, charges);
+  result = fcs_p2nfft_tune(handle, local_particles, positions, charges);
   if (result != NULL)
     return result;
   
-  result = ifcs_p2nfft_run(handle->method_context, local_particles, local_max_particles,
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
+  result = ifcs_p2nfft_run(handle->method_context, local_particles, max_local_particles,
       positions, charges, potentials, field);
 
   return result;

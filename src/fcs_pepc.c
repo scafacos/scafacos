@@ -84,6 +84,9 @@ FCSResult fcs_pepc_init(FCS handle)
   /*	char* fnc_name = "fcs_pepc_init"; */
   FCSResult result;
 
+  handle->tune = fcs_pepc_tune;
+  handle->run = fcs_pepc_run;
+
   handle->pepc_param = malloc(sizeof(*handle->pepc_param));
   handle->pepc_param->theta = -1.0;
   handle->pepc_param->epsilon = -1.0;
@@ -114,7 +117,7 @@ FCSResult fcs_pepc_init(FCS handle)
 }
 
 /* internal pepc-specific tuning function */
-FCSResult fcs_pepc_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges)
+FCSResult fcs_pepc_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges)
 {
   /*	char* fnc_name = "fcs_pepc_tune"; */
   FCSResult result;
@@ -125,7 +128,7 @@ FCSResult fcs_pepc_tune(FCS handle, fcs_int local_particles, fcs_int local_max_p
 }
 
 /* internal pepc-specific run function */
-FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, 
+FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles,
 		       fcs_float *positions, fcs_float *charges, 
 		       fcs_float *field, fcs_float *potentials)
 {
@@ -165,10 +168,13 @@ FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
   if (result != NULL)
     return result;
 
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
   if (db_level > 3) {
     printf("*** run pepc kernel\n");
     printf("** local particles :       %" FCS_LMOD_INT "d\n", local_particles);
-    printf("** local max particles :   %" FCS_LMOD_INT "d\n", local_max_particles);
+    printf("** max local particles :   %" FCS_LMOD_INT "d\n", max_local_particles);
     printf("** total particles :       %" FCS_LMOD_INT "d\n", nparts_tot);
     printf("** epsilon :               %f\n", eps);
     printf("** theta :                 %f\n", theta);

@@ -135,25 +135,23 @@ module fcs_module
           type(c_ptr)                                       :: fcs_init
       end function
 
-      function fcs_tune(handle,n_locparts,n_maxlocparts,positions,charges) BIND(C,name="fcs_tune")
+      function fcs_tune(handle,n_locparts,positions,charges) BIND(C,name="fcs_tune")
           use iso_c_binding
           implicit none
           type(c_ptr), value                                :: handle
           integer(kind = fcs_integer_kind_isoc),value       :: n_locparts
-          integer(kind = fcs_integer_kind_isoc),value       :: n_maxlocparts
           real(kind = fcs_real_kind_isoc)                   :: positions(3*n_locparts)
           real(kind = fcs_real_kind_isoc)                   :: charges(n_locparts)
           type(c_ptr)                                       :: fcs_tune
       end function
 
 
-      function fcs_run(handle,n_locparts,n_maxlocparts,positions,charges,fields,&
+      function fcs_run(handle,n_locparts,positions,charges,fields,&
                            potentials) BIND(C,name="fcs_run")
           use iso_c_binding
           implicit none
           type(c_ptr),value                                 :: handle
           integer(kind = fcs_integer_kind_isoc),value       :: n_locparts
-          integer(kind = fcs_integer_kind_isoc),value       :: n_maxlocparts
           real(kind = fcs_real_kind_isoc)                   :: positions(3*n_locparts)
           real(kind = fcs_real_kind_isoc)                   :: charges(n_locparts)
           real(kind = fcs_real_kind_isoc)                   :: fields(3*n_locparts)
@@ -261,7 +259,7 @@ module fcs_module
       end function
 
 ! Missing: fcs_get_periodicity_f
-      
+
       function fcs_set_total_particles(handle, total_particles) &
                  BIND(C,name="fcs_set_total_particles")
           use iso_c_binding
@@ -272,6 +270,17 @@ module fcs_module
       end function
 
 ! Missing: fcs_get_total_particles
+
+      function fcs_set_max_local_particles(handle, max_local_particles) &
+                 BIND(C,name="fcs_set_max_local_particles")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          integer(kind = fcs_integer_kind_isoc),value       ::  max_local_particles
+          type(c_ptr)                                       ::  fcs_set_max_local_particles
+      end function
+
+! Missing: fcs_get_max_local_particles
 ! Missing: fcs_set_tolerance
 ! Missing: fcs_get_tolerance
 ! Missing: fcs_set_r_cut

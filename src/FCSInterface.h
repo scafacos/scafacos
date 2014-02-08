@@ -102,7 +102,7 @@ typedef struct _FCS_t
   /* origin vector of the system box */
   fcs_float box_origin[3];
   /* total number of particles in the system */
-  fcs_int total_particles;
+  fcs_int total_particles, max_local_particles;
   /* periodicity of the system in each dimension (value 0: open, value 1: periodic) */
   fcs_int periodicity[3];
   
@@ -137,6 +137,10 @@ typedef struct _FCS_t
 
   fcs_int values_changed;
 
+  FCSResult (*tune)(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges);
+  FCSResult (*run)(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
+
+  FCSResult (*set_max_local_particles)(FCS handle, fcs_int max_local_particles);
   FCSResult (*set_max_particle_move)(FCS handle, fcs_float max_particle_move);
   FCSResult (*set_resort)(FCS handle, fcs_int resort);
   FCSResult (*get_resort)(FCS handle, fcs_int *resort);

@@ -32,6 +32,9 @@
 
 FCSResult fcs_vmg_init(FCS handle)
 {
+  handle->tune = fcs_vmg_tune;
+  handle->run = fcs_vmg_run;
+
   handle->vmg_param = malloc(sizeof(*handle->vmg_param));
   handle->vmg_param->max_level = -1;
   handle->vmg_param->max_iterations = -1;
@@ -45,7 +48,7 @@ FCSResult fcs_vmg_init(FCS handle)
   return NULL;
 }
 
-FCSResult fcs_vmg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+FCSResult fcs_vmg_tune(FCS handle, fcs_int local_particles,
 		       fcs_float* positions, fcs_float* charges)
 {
   FCSResult result;
@@ -126,7 +129,7 @@ FCSResult fcs_vmg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_pa
   return NULL;
 }
 
-FCSResult fcs_vmg_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+FCSResult fcs_vmg_run(FCS handle, fcs_int local_particles,
 		      fcs_float* positions, fcs_float* charges, fcs_float *field,
 		      fcs_float *potentials)
 {

@@ -503,7 +503,7 @@ main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Tuning... \n");
   result =
-    fcs_tune (handle, local_particles, local_particles, particles, charges);
+    fcs_tune (handle, local_particles, particles, charges);
   if (comm_rank == 0)
     fcs_result_print_result (result);
   fcs_result_destroy (result);
@@ -518,7 +518,7 @@ main (int argc, char **argv)
     {
       /*if(comm_rank == 0) printf("\n"); */
       /*if(comm_rank == 0) printf("Run %d... \n", i+1); */
-      result = fcs_run (handle, local_particles, local_particles, particles,
+      result = fcs_run (handle, local_particles, particles,
 			charges, field, potentials);
       /*if(comm_rank == 0) fcs_result_print_result(result);
          if(comm_rank == 0) printf("\n");

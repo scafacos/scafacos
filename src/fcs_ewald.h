@@ -37,13 +37,11 @@ FCSResult fcs_ewald_destroy(FCS handle);
 
 FCSResult fcs_ewald_tune(FCS handle,
 			 fcs_int num_particles,
-			 fcs_int local_max_particles,
 			 fcs_float *positions, 
 			 fcs_float *charges);
 
 FCSResult fcs_ewald_run(FCS handle,
 			fcs_int num_particles,
-			fcs_int local_max_particles,
 			fcs_float *positions, 
 			fcs_float *charges,
 			fcs_float *fields,

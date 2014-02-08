@@ -89,13 +89,16 @@ positions[3*num_particles] = TEST_BOX_SIZE*(px % 2); //px + 0.5;
   fcs_result = fcs_set_common(fcs_handle, 1, box_a, box_b, box_c, offset, periodicity, total_num_particles);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_tune(fcs_handle, num_particles, max_num_particles, positions, charges);
+  fcs_result = fcs_set_max_local_particles(fcs_handle, max_num_particles);
+  assert_fcs(fcs_result);
+
+  fcs_result = fcs_tune(fcs_handle, num_particles, positions, charges);
   assert_fcs(fcs_result);
 
   fcs_result = fcs_set_compute_virial(fcs_handle, 1);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_run(fcs_handle, num_particles, max_num_particles, positions, charges,
+  fcs_result = fcs_run(fcs_handle, num_particles, positions, charges,
       direct_fields, direct_potentials);
   assert_fcs(fcs_result);
 
@@ -134,14 +137,17 @@ positions[3*num_particles] = TEST_BOX_SIZE*(px % 2); //px + 0.5;
   fcs_result = fcs_set_common(fcs_handle, 1, box_a, box_b, box_c, offset, periodicity, total_num_particles);
   assert_fcs(fcs_result);
 
+  fcs_result = fcs_set_max_local_particles(fcs_handle, max_num_particles);
+  assert_fcs(fcs_result);
+
   fcs_set_tolerance(fcs_handle, FCS_TOLERANCE_TYPE_POTENTIAL, tolerance);
-  fcs_result = fcs_tune(fcs_handle, num_particles, max_num_particles, positions, charges);
+  fcs_result = fcs_tune(fcs_handle, num_particles, positions, charges);
   assert_fcs(fcs_result);
 
   fcs_result = fcs_set_compute_virial(fcs_handle, 1);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_run(fcs_handle, num_particles, max_num_particles, positions, charges,
+  fcs_result = fcs_run(fcs_handle, num_particles, positions, charges,
       p2nfft_fields, p2nfft_potentials);
   assert_fcs(fcs_result);
 

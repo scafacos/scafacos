@@ -294,7 +294,7 @@ int main (int argc, char **argv)
                                       cells_z, ghosts, max_iterations, max_particles,
                                       periodic_flags[0] /* FIXME */, degree, err_bound);
   ASSERT_FCS(fcs_result);
-  fcs_result = fcs_tune(fcs_handle, local_particles, local_particles, pos, charges);
+  fcs_result = fcs_tune(fcs_handle, local_particles, pos, charges);
   ASSERT_FCS(fcs_result);
 
   MPI_Barrier(mpi_comm_cart);
@@ -304,7 +304,7 @@ int main (int argc, char **argv)
 
   /* 2. step: run pp3mg. IMPORTANT: domain decomposition, particles must be distributed */
   /*          according to the specified MPI communicator */
-  fcs_result = fcs_run(fcs_handle, local_particles, local_particles, pos, charges, field, potentials);
+  fcs_result = fcs_run(fcs_handle, local_particles, pos, charges, field, potentials);
   ASSERT_FCS(fcs_result);
 
   /* analyze results */

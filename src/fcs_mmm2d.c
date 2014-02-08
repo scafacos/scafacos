@@ -39,6 +39,9 @@ FCSResult fcs_mmm2d_init(FCS handle)
   result = fcs_mmm2d_check(handle, fnc_name);
   if (result != NULL) return result;
   
+  handle->tune = fcs_mmm2d_tune;
+  handle->run = fcs_mmm2d_run;
+
   ///* @TODO: check here for unidimensional mpi grid (1,1,n)*/
   
   mmm2d_init(&handle->method_context, handle->communicator);
@@ -47,7 +50,7 @@ FCSResult fcs_mmm2d_init(FCS handle)
 
 /* internal p3m-specific tuning function */
 FCSResult fcs_mmm2d_tune(FCS handle,
-		       fcs_int local_particles, fcs_int local_max_particles,
+		       fcs_int local_particles,
 		       fcs_float *positions, fcs_float *charges)
 {
   char* fnc_name = "fcs_mmm2d_tune";
@@ -93,16 +96,19 @@ FCSResult fcs_mmm2d_tune(FCS handle,
 
 /* internal mmm2d-specific run function */
 FCSResult fcs_mmm2d_run(FCS handle, 
-		      fcs_int local_particles, fcs_int local_max_particles, 
+		      fcs_int local_particles,
 		      fcs_float *positions, fcs_float *charges,
 		      fcs_float *fields, fcs_float *potentials)
 {
 //   char* fnc_name = "fcs_mmm2d_run";
 //   FCSResult result;
   
-  fcs_mmm2d_tune(handle, local_particles, local_max_particles, positions, charges);
+  fcs_mmm2d_tune(handle, local_particles, positions, charges);
   
-  mmm2d_run(handle->method_context, local_particles, local_max_particles, positions, charges, fields, potentials);
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
+  mmm2d_run(handle->method_context, local_particles, max_local_particles, positions, charges, fields, potentials);
   
   return NULL;
 }

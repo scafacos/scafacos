@@ -57,9 +57,9 @@ int main (int argc, char** argv) {
   assert_fcs(fcs_result);
   fcs_result = fcs_set_common(fcs_handle, near_field_flag, box_a, box_b, box_c, offset, periodicity, num_particles);
   assert_fcs(fcs_result);
-  fcs_result = fcs_tune(fcs_handle, num_particles, num_particles, positions, charges);
+  fcs_result = fcs_tune(fcs_handle, num_particles, positions, charges);
   assert_fcs(fcs_result);
-  fcs_result = fcs_run(fcs_handle, num_particles, num_particles, positions, charges, field, potentials);
+  fcs_result = fcs_run(fcs_handle, num_particles, positions, charges, field, potentials);
   assert_fcs(fcs_result);
 
   printf("Potentials via FCS DIRECT:\n");

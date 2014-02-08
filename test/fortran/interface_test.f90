@@ -372,10 +372,13 @@ program test
 
     call MPI_Barrier(communicator,ierr)
 
+    ret = fcs_set_max_local_particles(handle, local_max_particles)
+    call fcs_result_destroy(ret)
+
     if (my_rank == 0) write(*,*) "----------------------------call tune---------------------------------"
 !     call fcs_tune(handle, local_particle_count, local_max_particles, local_particles, local_charges, return_value)
 !     if (my_rank == 0) write(*,*) "fcs_tune returns: ", return_value
-    ret = fcs_tune(handle, local_particle_count, local_max_particles, local_particles, local_charges)
+    ret = fcs_tune(handle, local_particle_count, local_particles, local_charges)
     if (my_rank == 0) write(*,*) "fcs_tune returns: ", fcs_result_get_return_code(ret)
     if (my_rank == 0) write(*,*) "fcs_tune returns: ", trim(adjustl(fcs_result_get_message(ret)))
     if (my_rank == 0) write(*,*) "fcs_tune returns: ", trim(adjustl(fcs_result_get_function(ret)))
@@ -425,7 +428,7 @@ program test
     do i = 1, run_count
         if (my_rank == 0 .and. modulo(i,RUN_STEP_INTERVAL) == 0) write(*,'(a,i7,a)') "----------------------------call run ", i,&
                                                "---------------------------------"
-        ret = fcs_run(handle, local_particle_count, local_max_particles, local_particles, local_charges, fields, &
+        ret = fcs_run(handle, local_particle_count, local_particles, local_charges, fields, &
                       potentials)
         if (my_rank == 0 .and. modulo(i,RUN_STEP_INTERVAL) == 0) write(*,*) "fcs_run returns: ",&
         fcs_result_get_return_code(ret)

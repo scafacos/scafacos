@@ -39,12 +39,15 @@ FCSResult fcs_mmm1d_init(FCS handle)
   result = fcs_mmm1d_check(handle, fnc_name);
   if (result != NULL) return result;
   
+  handle->tune = fcs_mmm1d_tune;
+  handle->run = fcs_mmm1d_run;
+
   mmm1d_init(&handle->method_context, handle->communicator);
   return NULL;
 }
 
 FCSResult fcs_mmm1d_tune(FCS handle, 
-		       fcs_int local_particles, fcs_int local_max_particles, 
+		       fcs_int local_particles,
 		       fcs_float *positions, fcs_float *charges)
 {
   char* fnc_name = "fcs_mmm1d_tune";
@@ -81,16 +84,20 @@ FCSResult fcs_mmm1d_tune(FCS handle,
 
 /* internal mmm1d-specific run function */
 FCSResult fcs_mmm1d_run(FCS handle, 
-		      fcs_int local_particles, fcs_int local_max_particles, 
+		      fcs_int local_particles,
 		      fcs_float *positions, fcs_float *charges,
 		      fcs_float *fields, fcs_float *potentials)
 {
 //   char* fnc_name = "fcs_mmm1d_run";
 //   FCSResult result;
-  fcs_mmm1d_tune(handle, local_particles, local_max_particles, positions, charges);
+
+  fcs_mmm1d_tune(handle, local_particles, positions, charges);
   
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
   mmm1d_run(handle->method_context,
-	  local_particles, local_max_particles, positions, charges, fields, potentials);
+	  local_particles, max_local_particles, positions, charges, fields, potentials);
   return NULL;
 }
 

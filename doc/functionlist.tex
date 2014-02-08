@@ -46,14 +46,13 @@ type(c_ptr)                                 ::  fcs_set_common
 \begin{figure}[htb]
 \begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
 /* C */
-FCSResult fcs_tune (FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges);
+FCSResult fcs_tune (FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges);
 \end{lstlisting}
 \begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
 ! Fortran
 function fcs_tune(handle,n_locp,n_maxlocp,positions,charges)
 type(c_ptr), value                          :: handle
 integer(kind = fcs_integer_kind_isoc),value :: n_locp
-integer(kind = fcs_integer_kind_isoc),value :: n_maxlocp
 real(kind = fcs_real_kind_isoc)             :: positions(3*n_locp)
 real(kind = fcs_real_kind_isoc)             :: charges(n_locp)
 type(c_ptr)                                 :: fcs_tune
@@ -65,14 +64,13 @@ type(c_ptr)                                 :: fcs_tune
 \begin{figure}[htb]
 \begin{lstlisting}[language=C,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
 /* C */
-FCSResult fcs_run (FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
+FCSResult fcs_run (FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
 \end{lstlisting}
 \begin{lstlisting}[language=Fortran,frame=trBL,breaklines,basicstyle=\ttfamily,prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}}]
 ! Fortran
 function fcs_run(handle,n_locp,n_maxlocp,positions,charges,field,potential)
 type(c_ptr), value                          :: handle
 integer(kind = fcs_integer_kind_isoc),value :: n_locp
-integer(kind = fcs_integer_kind_isoc),value :: n_maxlocp
 real(kind = fcs_real_kind_isoc)             :: positions(3*n_locp)
 real(kind = fcs_real_kind_isoc)             :: charges(n_locp)
 real(kind = fcs_real_kind_isoc)             :: field(3*n_locp)
