@@ -51,8 +51,18 @@ FCSResult fcs_p3m_init(FCS handle)
   result = fcs_p3m_check(handle, fnc_name);
   if (result != NULL) return result;
 
+  handle->destroy = fcs_p3m_destroy;
+  handle->set_r_cut = fcs_p3m_set_r_cut;
+  handle->unset_r_cut = fcs_p3m_set_r_cut_tune;
+  handle->get_r_cut = fcs_p3m_get_r_cut;
+  handle->set_tolerance = fcs_p3m_set_tolerance;
+  handle->get_tolerance = fcs_p3m_get_tolerance;
+  handle->set_parameter = fcs_p3m_set_parameter;
+  handle->print_parameters = fcs_p3m_print_parameters;
   handle->tune = fcs_p3m_tune;
   handle->run = fcs_p3m_run;
+  handle->set_compute_virial = fcs_p3m_require_virial;
+  handle->get_virial = fcs_p3m_get_virial;
 
   ifcs_p3m_init(&handle->method_context, handle->communicator);
   
@@ -308,6 +318,28 @@ FCSResult fcs_p3m_get_virial(FCS handle, fcs_float *virial) {
   for (i=0; i < 9; i++)
     virial[i] = 0.0;
   return NULL;
+}
+
+FCSResult fcs_p3m_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolerance)
+{
+  const char *fnc_name = "fcs_p3m_set_tolerance";
+
+  if (tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
+  {
+    fcs_p3m_set_tolerance_field(handle, tolerance);
+    return FCS_RESULT_SUCCESS;
+
+  }
+  
+  return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "Unsupported tolerance type. P3M only supports FCS_TOLERANCE_TYPE_FIELD.");
+}
+
+FCSResult fcs_p3m_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance)
+{
+  *tolerance_type = FCS_TOLERANCE_TYPE_FIELD;
+  fcs_p3m_get_tolerance_field(handle, tolerance);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 FCSResult fcs_p3m_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)

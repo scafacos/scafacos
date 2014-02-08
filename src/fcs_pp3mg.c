@@ -54,8 +54,13 @@ FCSResult fcs_pp3mg_init(FCS handle)
 
   DEBUG_MOP(printf("fcs_pp3mg_init\n"));
 
+  handle->destroy = fcs_pp3mg_destroy;
+  handle->set_parameter = fcs_pp3mg_set_parameter;
+  handle->print_parameters = fcs_pp3mg_print_parameters;
   handle->tune = fcs_pp3mg_tune;
   handle->run = fcs_pp3mg_run;
+  handle->set_compute_virial = fcs_pp3mg_require_virial;
+  handle->get_virial = fcs_pp3mg_get_virial;
 
   handle->pp3mg_param = malloc(sizeof(*handle->pp3mg_param));
   handle->pp3mg_param->m = -1;

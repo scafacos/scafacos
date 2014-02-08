@@ -51,8 +51,13 @@ FCSResult fcs_memd_init(FCS handle)
     result = fcs_memd_check(handle, fnc_name);
     if (result != NULL) return result;
 
+    handle->destroy = fcs_memd_destroy;
+    handle->set_parameter = fcs_memd_set_parameter;
+    handle->print_parameters = fcs_memd_print_parameters;
     handle->tune = fcs_memd_tune;
     handle->run = fcs_memd_run;
+    handle->set_compute_virial = fcs_memd_require_virial;
+    handle->get_virial = fcs_memd_get_virial;
 
     ifcs_memd_init(&handle->method_context, handle->communicator);
     

@@ -164,6 +164,8 @@ FCSResult fcs_fmm_get_virial(FCS handle, fcs_float *virial);
 FCSResult fcs_fmm_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
 FCSResult fcs_fmm_print_parameters(FCS handle);
 
+FCSResult fcs_fmm_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolerance);
+FCSResult fcs_fmm_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance);
 
 FCSResult fcs_fmm_set_max_particle_move(FCS handle, fcs_float max_particle_move);
 FCSResult fcs_fmm_set_resort(FCS handle, fcs_int resort);

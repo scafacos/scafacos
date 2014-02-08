@@ -93,8 +93,18 @@ FCSResult fcs_p2nfft_init(
   if (result != NULL)
     return result;
 
+  handle->destroy = fcs_p2nfft_destroy;
+  handle->set_r_cut = fcs_p2nfft_set_r_cut;
+  handle->unset_r_cut = fcs_p2nfft_set_r_cut_tune;
+  handle->get_r_cut = fcs_p2nfft_get_r_cut;
+  handle->set_tolerance = fcs_p2nfft_set_tolerance;
+  handle->get_tolerance = fcs_p2nfft_get_tolerance;
+  handle->set_parameter = fcs_p2nfft_set_parameter;
+  handle->print_parameters = fcs_p2nfft_print_parameters;
   handle->tune = fcs_p2nfft_tune;
   handle->run = fcs_p2nfft_run;
+  handle->set_compute_virial = fcs_p2nfft_require_virial;
+  handle->get_virial = fcs_p2nfft_get_virial;
 
   ifcs_p2nfft_init(&(handle->method_context), handle->communicator);
 

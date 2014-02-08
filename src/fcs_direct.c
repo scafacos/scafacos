@@ -82,8 +82,13 @@ FCSResult fcs_direct_init(FCS handle)
 
   handle->direct_param->metallic_boundary_conditions = 1;
 
+  handle->destroy = fcs_direct_destroy;
+  handle->set_parameter = fcs_direct_set_parameter;
+  handle->print_parameters = fcs_direct_print_parameters;
   handle->tune = fcs_direct_tune;
   handle->run = fcs_direct_run;
+  handle->set_compute_virial = fcs_direct_require_virial;
+  handle->get_virial = fcs_direct_get_virial;
 
   handle->set_max_particle_move = fcs_direct_set_max_particle_move;
   handle->set_resort = fcs_direct_set_resort;

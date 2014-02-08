@@ -84,8 +84,13 @@ FCSResult fcs_pepc_init(FCS handle)
   /*	char* fnc_name = "fcs_pepc_init"; */
   FCSResult result;
 
+  handle->destroy = fcs_pepc_destroy;
+  handle->set_parameter = fcs_pepc_set_parameter;
+  handle->print_parameters = fcs_pepc_print_parameters;
   handle->tune = fcs_pepc_tune;
   handle->run = fcs_pepc_run;
+  handle->set_compute_virial = fcs_pepc_require_virial;
+  handle->get_virial = fcs_pepc_get_virial;
 
   handle->pepc_param = malloc(sizeof(*handle->pepc_param));
   handle->pepc_param->theta = -1.0;

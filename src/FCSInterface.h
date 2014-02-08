@@ -137,8 +137,19 @@ typedef struct _FCS_t
 
   fcs_int values_changed;
 
+  FCSResult (*destroy)(FCS handle);
+  FCSResult (*set_r_cut)(FCS handle, fcs_float r_cut);
+  FCSResult (*unset_r_cut)(FCS handle);
+  FCSResult (*get_r_cut)(FCS handle, fcs_float *r_cut);
+  FCSResult (*set_tolerance)(FCS handle, fcs_int tolerance_type, fcs_float tolerance);
+  FCSResult (*get_tolerance)(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance);
+  FCSResult (*set_parameter)(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+  FCSResult (*print_parameters)(FCS handle);
   FCSResult (*tune)(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges);
   FCSResult (*run)(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
+  FCSResult (*set_compute_virial)(FCS handle, fcs_int compute_virial);
+  FCSResult (*get_compute_virial)(FCS handle, fcs_int *compute_virial);
+  FCSResult (*get_virial)(FCS handle, fcs_float *virial);
 
   FCSResult (*set_max_local_particles)(FCS handle, fcs_int max_local_particles);
   FCSResult (*set_max_particle_move)(FCS handle, fcs_float max_particle_move);

@@ -79,8 +79,13 @@ FCSResult fcs_wolf_init(FCS handle)
 
 /*  handle->wolf_param->metallic_boundary_conditions = 1;*/
 
+  handle->destroy = fcs_wolf_destroy;
+  handle->set_parameter = fcs_wolf_set_parameter;
+  handle->print_parameters = fcs_wolf_print_parameters;
   handle->tune = fcs_wolf_tune;
   handle->run = fcs_wolf_run;
+  handle->set_compute_virial = fcs_wolf_require_virial;
+  handle->get_virial = fcs_wolf_get_virial;
 
   handle->set_max_particle_move = fcs_wolf_set_max_particle_move;
   handle->set_resort = fcs_wolf_set_resort;

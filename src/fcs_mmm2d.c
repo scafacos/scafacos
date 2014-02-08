@@ -39,8 +39,13 @@ FCSResult fcs_mmm2d_init(FCS handle)
   result = fcs_mmm2d_check(handle, fnc_name);
   if (result != NULL) return result;
   
+  handle->destroy = fcs_mmm2d_destroy;
+  handle->set_parameter = fcs_mmm2d_set_parameter;
+  handle->print_parameters = fcs_mmm2d_print_parameters;
   handle->tune = fcs_mmm2d_tune;
   handle->run = fcs_mmm2d_run;
+  handle->set_compute_virial = fcs_mmm2d_require_virial;
+  handle->get_virial = fcs_mmm2d_get_virial;
 
   ///* @TODO: check here for unidimensional mpi grid (1,1,n)*/
   

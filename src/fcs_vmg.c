@@ -32,8 +32,13 @@
 
 FCSResult fcs_vmg_init(FCS handle)
 {
+  handle->destroy = fcs_vmg_destroy;
+  handle->set_parameter = fcs_vmg_set_parameter;
+  handle->print_parameters = fcs_vmg_print_parameters;
   handle->tune = fcs_vmg_tune;
   handle->run = fcs_vmg_run;
+  handle->set_compute_virial = fcs_vmg_require_virial;
+  handle->get_virial = fcs_vmg_get_virial;
 
   handle->vmg_param = malloc(sizeof(*handle->vmg_param));
   handle->vmg_param->max_level = -1;

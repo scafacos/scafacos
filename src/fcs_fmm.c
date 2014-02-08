@@ -295,8 +295,15 @@ FCSResult fcs_fmm_init(FCS handle)
   fcs_fmm_set_resort(handle, 0);
   handle->fmm_param->fmm_resort = FCS_FMM_RESORT_NULL;
 
+  handle->destroy = fcs_fmm_destroy;
+  handle->set_tolerance = fcs_fmm_set_tolerance;
+/*  handle->get_tolerance = fcs_fmm_get_tolerance;*/
+  handle->set_parameter = fcs_fmm_set_parameter;
+  handle->print_parameters = fcs_fmm_print_parameters;
   handle->tune = fcs_fmm_tune;
   handle->run = fcs_fmm_run;
+  handle->set_compute_virial = fcs_fmm_require_virial;
+  handle->get_virial = fcs_fmm_get_virial;
 
   handle->set_max_particle_move = fcs_fmm_set_max_particle_move;
   handle->set_resort = fcs_fmm_set_resort;
@@ -872,6 +879,32 @@ FCSResult fcs_fmm_get_virial(FCS handle, fcs_float *virial) {
     virial[i] = handle->fmm_param->virial[i];
   return NULL;
 }
+
+
+FCSResult fcs_fmm_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolerance)
+{
+  const char *fnc_name = "fcs_fmm_set_tolerance";
+
+  if (tolerance_type == FCS_TOLERANCE_TYPE_ENERGY)
+  {
+    fcs_fmm_set_absrel(handle, FCS_FMM_CUSTOM_ABSOLUTE);
+    fcs_fmm_set_tolerance_energy(handle, tolerance);
+    return FCS_RESULT_SUCCESS;
+
+  } else if (tolerance_type == FCS_TOLERANCE_TYPE_ENERGY_REL)
+  {
+    fcs_fmm_set_absrel(handle, FCS_FMM_CUSTOM_RELATIVE);
+    fcs_fmm_set_tolerance_energy(handle, tolerance);
+    return FCS_RESULT_SUCCESS;
+  }
+  
+  return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "Unsupported tolerance type. FMM only supports FCS_TOLERANCE_TYPE_ENERGY and FCS_TOLERANCE_TYPE_ENERGY_REL.");
+}
+
+
+/*FCSResult fcs_fmm_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance)
+{
+}*/
 
 
 FCSResult fcs_fmm_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
