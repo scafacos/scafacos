@@ -729,9 +729,10 @@ FCSResult fcs_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolera
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
-  if (handle->set_tolerance) return handle->set_tolerance(handle, tolerance_type, tolerance);
+  if (handle->set_tolerance == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->set_tolerance(handle, tolerance_type, tolerance);
 }
 
 
@@ -747,9 +748,10 @@ FCSResult fcs_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tole
   *tolerance_type = FCS_TOLERANCE_TYPE_UNDEFINED;
   *tolerance = -1.0; 
 
-  if (handle->get_tolerance) return handle->get_tolerance(handle, tolerance_type, tolerance);
+  if (handle->get_tolerance == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Return tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Return tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->get_tolerance(handle, tolerance_type, tolerance);
 }
 
 
@@ -762,9 +764,10 @@ FCSResult fcs_set_r_cut(FCS handle, fcs_float r_cut)
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
-  if (handle->set_r_cut) return handle->set_r_cut(handle, r_cut);
+  if (handle->set_r_cut == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->set_r_cut(handle, r_cut);
 }
 
 
@@ -777,9 +780,10 @@ FCSResult fcs_unset_r_cut(FCS handle)
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
-  if (handle->unset_r_cut) return handle->unset_r_cut(handle);
+  if (handle->unset_r_cut == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Disabling a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Disabling a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->unset_r_cut(handle);
 }
 
 
@@ -792,9 +796,10 @@ FCSResult fcs_get_r_cut(FCS handle, fcs_float *r_cut)
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
-  if (handle->get_r_cut) return handle->get_r_cut(handle, r_cut);
+  if (handle->get_r_cut == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->get_r_cut(handle, r_cut);
 }
 
 
@@ -925,9 +930,10 @@ FCSResult fcs_tune(FCS handle, fcs_int local_particles,
 
   fcs_set_values_changed(handle, 0);
 
-  if (handle->tune) return handle->tune(handle, local_particles, positions, charges);
+  if (handle->tune == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Tuning solver method '%s' not implemented", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Tuning solver method '%s' not implemented", fcs_get_method_name(handle));
+  return handle->tune(handle, local_particles, positions, charges);
 }
 
 
@@ -954,9 +960,10 @@ FCSResult fcs_run(FCS handle, fcs_int local_particles,
   if (!fcs_init_check(handle) || !fcs_run_check(handle))
     return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "not all needed data has been inserted into the given handle");
 
-  if (handle->run) return handle->run(handle, local_particles, positions, charges, field, potentials);
+  if (handle->run == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Running solver method '%s' not implemented", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Running solver method '%s' not implemented", fcs_get_method_name(handle));
+  return handle->run(handle, local_particles, positions, charges, field, potentials);
 }
 
 
@@ -1153,9 +1160,10 @@ FCSResult fcs_set_compute_virial(FCS handle, fcs_int compute_virial)
   if (compute_virial != 0 && compute_virial != 1)
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "parameter compute_virial must be 0 or 1");
 
-  if (handle->set_compute_virial) handle->set_compute_virial(handle, compute_virial);
+  if (handle->set_compute_virial == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->set_compute_virial(handle, compute_virial);
 }
 
 
@@ -1171,9 +1179,10 @@ FCSResult fcs_get_compute_virial(FCS handle, fcs_int *compute_virial)
   if (compute_virial == NULL)
     return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as argument");
 
-  if (handle->get_compute_virial) handle->get_compute_virial(handle, compute_virial);
+  if (handle->get_compute_virial == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->get_compute_virial(handle, compute_virial);
 }
 
 
@@ -1189,9 +1198,10 @@ FCSResult fcs_get_virial(FCS handle, fcs_float *virial)
   if (virial == NULL)
     return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as argument");
 
-  if (handle->get_virial) handle->get_virial(handle, virial);
+  if (handle->get_virial == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning the computed virial not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning the computed virial not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->get_virial(handle, virial);
 }
 
 
