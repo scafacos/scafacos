@@ -114,113 +114,113 @@ namespace P3M {
   /***************************************************/
   void
   tune(data_struct *d, p3m_int num_particles,
-       p3m_float *positions, p3m_float *charges) {
+		  p3m_float *positions, p3m_float *charges) {
 
-    /* Prepare the communicator before tuning */
-    comm_prepare(&d->comm, d->box_l);
+	  /* Prepare the communicator before tuning */
+	  d->comm.prepare(d->box_l);
 
-    /* Count the charges */
-    p3m_float sum_q2_before = d->sum_q2;
-    count_charges(d, num_particles, charges);
-      
-    if (!on_master()) {
-        int howoften;
-        P3M_DEBUG_LOCAL(printf("  %d: How often to run tune_far?\n", d->comm.rank));
-        MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
-        P3M_DEBUG_LOCAL(printf("  %d: Running tune_far %d times.\n", d->comm.rank, howoften));
-        for (; howoften > 0; howoften--)
-            tune_far(d, num_particles, positions, charges);
+	  /* Count the charges */
+	  p3m_float sum_q2_before = d->sum_q2;
+	  count_charges(d, num_particles, charges);
 
-        d->needs_retune = false;
-        return;
-    }
+	  if (!on_master()) {
+		  int howoften;
+		  P3M_DEBUG_LOCAL(printf("  %d: How often to run tune_far?\n", d->comm.rank));
+		  MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
+		  P3M_DEBUG_LOCAL(printf("  %d: Running tune_far %d times.\n", d->comm.rank, howoften));
+		  for (; howoften > 0; howoften--)
+			  tune_far(d, num_particles, positions, charges);
 
-    /* Retune if the number of charges has changed */
-    if (!(float_is_equal(sum_q2_before, d->sum_q2))) {
-        P3M_INFO(printf( "  Number of charges changed, retuning is needed.\n"));
-        d->needs_retune = true;
-    }
+		  d->needs_retune = false;
+		  return;
+	  }
 
-    /* Do not retune if there are no charges */
-    if (float_is_zero(d->sum_q2)) {
-        P3M_INFO(printf( "  No charges in the system.\n"));
-        d->needs_retune = false;
-    }
+	  /* Retune if the number of charges has changed */
+	  if (!(float_is_equal(sum_q2_before, d->sum_q2))) {
+		  P3M_INFO(printf( "  Number of charges changed, retuning is needed.\n"));
+		  d->needs_retune = true;
+	  }
 
-    /* Exit if retuning is unnecessary */
-    if (!d->needs_retune) {
-        P3M_INFO(printf( "  Retuning is not required.\n"));
-        int howoften = 0;
-        MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
-        P3M_INFO(printf( "tune() finished.\n"));
-        return;
-    }
+	  /* Do not retune if there are no charges */
+	  if (float_is_zero(d->sum_q2)) {
+		  P3M_INFO(printf( "  No charges in the system.\n"));
+		  d->needs_retune = false;
+	  }
 
-    P3M_INFO(printf( "  Retuning is required.\n"));
+	  /* Exit if retuning is unnecessary */
+	  if (!d->needs_retune) {
+		  P3M_INFO(printf( "  Retuning is not required.\n"));
+		  int howoften = 0;
+		  MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
+		  P3M_INFO(printf( "tune() finished.\n"));
+		  return;
+	  }
 
-    if (!d->tune_r_cut) {
-        P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", d->r_cut));
-        int howoften = 1;
-        MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
-        tune_far(d, num_particles, positions, charges, d->r_cut);
-    } else {
-        int howoften = 2;
-        MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
+	  P3M_INFO(printf( "  Retuning is required.\n"));
 
-        /* compute the average distance between two charges  */
-        p3m_float avg_dist =
-                pow((d->box_l[0]*d->box_l[1]*d->box_l[2])
-                        / d->sum_qpart, 0.33333);
+	  if (!d->tune_r_cut) {
+		  P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", d->r_cut));
+		  int howoften = 1;
+		  MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
+		  tune_far(d, num_particles, positions, charges, d->r_cut);
+	  } else {
+		  int howoften = 2;
+		  MPI_Bcast(&howoften, 1, MPI_INT, MPI_MASTER, d->comm.mpicomm);
 
-        /* FIRST ESTIMATE */
-        /* set the initial r_cut to 3 times the average distance between
+		  /* compute the average distance between two charges  */
+		  p3m_float avg_dist =
+				  pow((d->box_l[0]*d->box_l[1]*d->box_l[2])
+						  / d->sum_qpart, 0.33333);
+
+		  /* FIRST ESTIMATE */
+		  /* set the initial r_cut to 3 times the average distance between
          charges */
-        p3m_float r_cut = 3.0 * avg_dist;
+		  p3m_float r_cut = 3.0 * avg_dist;
 
-        /* tune r_cut to half the box length */
-        if (0.5*d->box_l[1]-d->skin < r_cut)
-            r_cut = 0.5*d->box_l[0] - d->skin;
-        if (0.5*d->box_l[1]-d->skin < r_cut)
-            r_cut = 0.5*d->box_l[1] - d->skin;
-        if (0.5*d->box_l[2]-d->skin < r_cut)
-            r_cut = 0.5*d->box_l[2] - d->skin;
+		  /* tune r_cut to half the box length */
+		  if (0.5*d->box_l[1]-d->skin < r_cut)
+			  r_cut = 0.5*d->box_l[0] - d->skin;
+		  if (0.5*d->box_l[1]-d->skin < r_cut)
+			  r_cut = 0.5*d->box_l[1] - d->skin;
+		  if (0.5*d->box_l[2]-d->skin < r_cut)
+			  r_cut = 0.5*d->box_l[2] - d->skin;
 
-        P3M_INFO(printf( "    r_cut=" FFLOAT " (first estimate)\n", r_cut));
+		  P3M_INFO(printf( "    r_cut=" FFLOAT " (first estimate)\n", r_cut));
 
-        // @todo get near timing
-        tune_params *p =
-                tune_far(d, num_particles, positions, charges, r_cut);
+		  // @todo get near timing
+		  tune_params *p =
+				  tune_far(d, num_particles, positions, charges, r_cut);
 
-        /* SECOND ESTIMATE */
-        /* use the fact that we know that timing_near scales like r_cut**3
+		  /* SECOND ESTIMATE */
+		  /* use the fact that we know that timing_near scales like r_cut**3
          and timing_far like r_cut**(-3) to get the second estimate */
 
-        p3m_float rel_timing_diff =
-                fabs(p->timing_near - p->timing_far) /
-                (p->timing_near + p->timing_far);
-        P3M_INFO(printf( "    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
+		  p3m_float rel_timing_diff =
+				  fabs(p->timing_near - p->timing_far) /
+				  (p->timing_near + p->timing_far);
+		  P3M_INFO(printf( "    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
 
-        p3m_float rcut3 = pow(r_cut, 3);
-        p3m_float c_near = p->timing_near/rcut3;
-        p3m_float c_far = p->timing_far*rcut3;
-        p3m_float rcut_new = pow(c_far/c_near, 1./6.);
+		  p3m_float rcut3 = pow(r_cut, 3);
+		  p3m_float c_near = p->timing_near/rcut3;
+		  p3m_float c_far = p->timing_far*rcut3;
+		  p3m_float rcut_new = pow(c_far/c_near, 1./6.);
 
-        r_cut = rcut_new;
-        P3M_INFO(printf( "    r_cut=" FFLOAT " (second estimate)\n", r_cut));
+		  r_cut = rcut_new;
+		  P3M_INFO(printf( "    r_cut=" FFLOAT " (second estimate)\n", r_cut));
 
-        // @todo get near timing
-        // second far tuning
-        p = tune_far(d, num_particles, positions, charges, r_cut);
+		  // @todo get near timing
+		  // second far tuning
+		  p = tune_far(d, num_particles, positions, charges, r_cut);
 
-        rel_timing_diff =
-                fabs(p->timing_near - p->timing_far) /
-                (p->timing_near + p->timing_far);
-        P3M_INFO(printf("    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
-        P3M_INFO(printf("    Finished tuning.\n"));
-    }
+		  rel_timing_diff =
+				  fabs(p->timing_near - p->timing_far) /
+				  (p->timing_near + p->timing_far);
+		  P3M_INFO(printf("    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
+		  P3M_INFO(printf("    Finished tuning.\n"));
+	  }
 
-    /* mark that the method was retuned */
-    d->needs_retune = false;
+	  /* mark that the method was retuned */
+	  d->needs_retune = false;
   }
 
   tune_params* 

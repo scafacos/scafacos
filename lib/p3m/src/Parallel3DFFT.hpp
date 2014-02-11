@@ -40,7 +40,7 @@
 #include <config.h>
 #include "p3mconfig.hpp"
 #include "utils.hpp"
-#include "communication.hpp"
+#include "Communication.hpp"
 
 namespace P3M {
 /***************************************************/
@@ -133,7 +133,7 @@ public:
 	p3m_float *data_buf;
 
 private:
-	comm_struct* comm;
+	Communication& comm;
 
 	/** Whether FFT is initialized or not. */
 	bool is_prepared;
@@ -153,7 +153,7 @@ public:
 	/***************************************************/
 	/* MEMBER FUNCTIONS */
 	/***************************************************/
-	Parallel3DFFT(comm_struct *comm);
+	Parallel3DFFT(Communication &comm);
 	~Parallel3DFFT();
 
 	/** Prepare the 3D-FFT for a given size.

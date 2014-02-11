@@ -25,7 +25,7 @@
  *
  */
 #include "types.hpp"
-#include "fft.hpp"
+#include "Parallel3DFFT.hpp"
 #include "utils.hpp"
 #include <cstdio>
 #include <cstdlib>
@@ -48,7 +48,7 @@ namespace P3M {
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
 /***************************************************/
 static int
-find_comm_groups(comm_struct *comm, int grid1[3], int grid2[3], int *node_list1,
+find_comm_groups(Communication &comm, int grid1[3], int grid2[3], int *node_list1,
 		int *node_list2, int *group, int *pos, int *my_pos);
 
 static int
@@ -68,7 +68,7 @@ pack_block_permute2(p3m_float *in, p3m_float *out, int start[3], int size[3],
 		int dim[3], int element);
 
 static void
-print_global_grid(comm_struct *comm, Parallel3DFFT::forward_plan plan,
+print_global_grid(Communication &comm, Parallel3DFFT::forward_plan plan,
 		p3m_float *data, p3m_int element, p3m_int num);
 
 /***************************************************/
@@ -109,10 +109,9 @@ void Parallel3DFFT::forward_plan::print() {
 	printf("]\n");
 }
 
-Parallel3DFFT::Parallel3DFFT(comm_struct *comm) {
-	this->comm = comm;
+Parallel3DFFT::Parallel3DFFT(Communication &comm) : comm(comm) {
 	for (int i = 0; i < 4; i++) {
-		plan[i].group = new int[comm->size];
+		plan[i].group = new int[comm.size];
 		plan[i].send_block = NULL;
 		plan[i].send_size = NULL;
 		plan[i].recv_block = NULL;
@@ -166,8 +165,8 @@ void Parallel3DFFT::prepare(p3m_int *local_grid_dim, p3m_int *local_grid_margin,
 	int *n_id[4]; /* linear node identity lists for the node grids. */
 	int *n_pos[4]; /* positions of nodes in the node grids. */
 	for (int i = 0; i < 4; i++) {
-		n_id[i] = new int[comm->size];
-		n_pos[i] = new int[3 * comm->size];
+		n_id[i] = new int[comm.size];
+		n_pos[i] = new int[3 * comm.size];
 	}
 
 	int n_grid[4][3]; /* The four node grids. */
@@ -175,21 +174,21 @@ void Parallel3DFFT::prepare(p3m_int *local_grid_dim, p3m_int *local_grid_margin,
 	/* === node grids === */
 	/* real space node grid (n_grid[0]) */
 	for (int i = 0; i < 3; i++) {
-		n_grid[0][i] = comm->node_grid[i];
-		my_pos[0][i] = comm->node_pos[i];
+		n_grid[0][i] = comm.node_grid[i];
+		my_pos[0][i] = comm.node_pos[i];
 	}
 
-	for (int i = 0; i < comm->size; i++) {
-		MPI_Cart_coords(comm->mpicomm, i, 3, &(n_pos[0][3 * i]));
+	for (int i = 0; i < comm.size; i++) {
+		MPI_Cart_coords(comm.mpicomm, i, 3, &(n_pos[0][3 * i]));
 		int lin_ind = get_linear_index(n_pos[0][3 * i], n_pos[0][3 * i + 1],
 				n_pos[0][3 * i + 2], n_grid[0]);
 		n_id[0][lin_ind] = i;
 	}
 
 	/* Calc 2D FFT node grids (n_grid[1 - 3]) */
-	for (int i = static_cast<p3m_int>(sqrt(comm->size)); i >= 1; i--)
-		if (comm->size % i == 0) {
-			n_grid[1][0] = comm->size / i;
+	for (int i = static_cast<p3m_int>(sqrt(comm.size)); i >= 1; i--)
+		if (comm.size % i == 0) {
+			n_grid[1][0] = comm.size / i;
 			n_grid[1][1] = i;
 			n_grid[1][2] = 1;
 			break;
@@ -465,7 +464,7 @@ void Parallel3DFFT::forward(p3m_float *data) {
 
 	/* int m,n,o; */
 	/* ===== first direction  ===== */
-	P3M_DEBUG(printf("    %d: fft_perform_forward: dir 1:\n", comm->rank));
+	P3M_DEBUG(printf("    %d: fft_perform_forward: dir 1:\n", comm.rank));
 
 	fftw_complex *c_data = (fftw_complex *) data;
 	fftw_complex *c_data_buf = (fftw_complex *) data_buf;
@@ -474,7 +473,7 @@ void Parallel3DFFT::forward(p3m_float *data) {
 	forward_grid_comm(plan[1], data, data_buf);
 
 	/*
-	 printf("%d: start grid \n",comm->rank);
+	 printf("%d: start grid \n",comm.rank);
 	 i=0;
 	 for(m=0;m<8;m++) {
 	 for(n=0;n<8;n++) {
@@ -501,13 +500,13 @@ void Parallel3DFFT::forward(p3m_float *data) {
 	fftw_execute_dft(plan[1].plan, c_data, c_data);
 
 	/* ===== second direction ===== */
-	P3M_DEBUG_LOCAL(printf("    %d: fft_perform_forward: dir 2\n", comm->rank));
+	P3M_DEBUG_LOCAL(printf("    %d: fft_perform_forward: dir 2\n", comm.rank));
 	/* communication to current dir row format (in is data) */
 	forward_grid_comm(plan[2], data, data_buf);
 	/* perform FFT (in/out is data_buf)*/
 	fftw_execute_dft(plan[2].plan, c_data_buf, c_data_buf);
 	/* ===== third direction  ===== */
-	P3M_DEBUG_LOCAL(printf("    %d: fft_perform_forward: dir 3\n", comm->rank));
+	P3M_DEBUG_LOCAL(printf("    %d: fft_perform_forward: dir 3\n", comm.rank));
 	/* communication to current dir row format (in is data_buf) */
 	forward_grid_comm(plan[3], data_buf, data);
 	/* perform FFT (in/out is data)*/
@@ -524,7 +523,7 @@ void Parallel3DFFT::backward(p3m_float *data) {
 	fftw_complex *c_data_buf = (fftw_complex *) data_buf;
 
 	/* ===== third direction  ===== */
-	P3M_DEBUG(printf("    %d: backward: dir 3\n", comm->rank));
+	P3M_DEBUG(printf("    %d: backward: dir 3\n", comm.rank));
 
 	/* perform FFT (in is data) */
 	fftw_execute_dft(back[3].plan, c_data, c_data);
@@ -532,14 +531,14 @@ void Parallel3DFFT::backward(p3m_float *data) {
 	backward_grid_comm(plan[3], back[3], data, data_buf);
 
 	/* ===== second direction ===== */
-	P3M_DEBUG_LOCAL(printf("    %d: back: dir 2\n", comm->rank));
+	P3M_DEBUG_LOCAL(printf("    %d: back: dir 2\n", comm.rank));
 	/* perform FFT (in is data_buf) */
 	fftw_execute_dft(back[2].plan, c_data_buf, c_data_buf);
 	/* communicate (in is data_buf) */
 	backward_grid_comm(plan[2], back[2], data_buf, data);
 
 	/* ===== first direction  ===== */
-	P3M_DEBUG_LOCAL(printf("    %d: backward: dir 1\n", comm->rank));
+	P3M_DEBUG_LOCAL(printf("    %d: backward: dir 1\n", comm.rank));
 	/* perform FFT (in is data) */
 	fftw_execute_dft(back[1].plan, c_data, c_data);
 #ifndef P3M_INTERLACE
@@ -550,7 +549,7 @@ void Parallel3DFFT::backward(p3m_float *data) {
 	for (i = 0; i < plan[1].new_size; i++)
 		if (data[2 * i + 1] > 1e-5) {
 			printf("    %d: Complex value is not zero (i=%d,data=%g)!!!\n",
-					comm->rank, i, data[2 * i + 1]);
+					comm.rank, i, data[2 * i + 1]);
 			if (i > 100)
 				exit(-1);
 		}
@@ -577,13 +576,13 @@ void Parallel3DFFT::forward_grid_comm(forward_plan plan,
 		plan.pack_function(in, send_buf, &(plan.send_block[6 * i]),
 				&(plan.send_block[6 * i + 3]), plan.old_grid, plan.element);
 
-		if (plan.group[i] == comm->rank)
+		if (plan.group[i] == comm.rank)
 		    /* Self communication... */
 		    std::swap(send_buf, recv_buf);
 		else {
 		    MPI_Sendrecv(send_buf, plan.send_size[i], P3M_MPI_FLOAT, plan.group[i],
 		            REQ_FFT_FORW, recv_buf, plan.recv_size[i], P3M_MPI_FLOAT, plan.group[i],
-		            REQ_FFT_FORW, comm->mpicomm, MPI_STATUS_IGNORE);
+		            REQ_FFT_FORW, comm.mpicomm, MPI_STATUS_IGNORE);
 		}
 
 		unpack_block(recv_buf, out, &(plan.recv_block[6 * i]),
@@ -609,13 +608,13 @@ void Parallel3DFFT::backward_grid_comm(forward_plan plan_f,
 				&(plan_f.recv_block[6 * i + 3]), plan_f.new_grid,
 				plan_f.element);
 
-        if (plan_f.group[i] == comm->rank)
+        if (plan_f.group[i] == comm.rank)
             /* Self communication... */
             std::swap(send_buf, recv_buf);
         else {
             MPI_Sendrecv(send_buf, plan_f.recv_size[i], P3M_MPI_FLOAT, plan_f.group[i],
                     REQ_FFT_BACK, recv_buf, plan_f.send_size[i], P3M_MPI_FLOAT, plan_f.group[i],
-                    REQ_FFT_BACK, comm->mpicomm, MPI_STATUS_IGNORE);
+                    REQ_FFT_BACK, comm.mpicomm, MPI_STATUS_IGNORE);
         }
 
         unpack_block(recv_buf, out, &(plan_f.send_block[6 * i]),
@@ -646,7 +645,7 @@ void Parallel3DFFT::backward_grid_comm(forward_plan plan_f,
  * \param pos        positions of the nodes in in grid2 (Output).
  * \param my_pos      position of this_node in  grid2.
  * \return Size of the communication group (Output of course!).  */
-p3m_int find_comm_groups(comm_struct *comm, p3m_int grid1[3], p3m_int grid2[3],
+p3m_int find_comm_groups(Communication &comm, p3m_int grid1[3], p3m_int grid2[3],
 		p3m_int *node_list1, p3m_int *node_list2, p3m_int *group, p3m_int *pos,
 		p3m_int *my_pos) {
 	p3m_int i;
@@ -719,7 +718,7 @@ p3m_int find_comm_groups(comm_struct *comm, p3m_int grid1[3], p3m_int grid2[3],
 					pos[3 * n + 2] = p2[2];
 					if (my_group == 1)
 						group[i] = n;
-					if (n == comm->rank && my_group == 0) {
+					if (n == comm.rank && my_group == 0) {
 						my_group = 1;
 						c_pos = i;
 						my_pos[0] = p2[0];
@@ -1015,7 +1014,7 @@ void Parallel3DFFT::unpack_block(p3m_float *in, p3m_float *out,
  * \param num      element index to print.
  */
 
-static void print_global_grid(comm_struct *comm,
+static void print_global_grid(Communication &comm,
 		Parallel3DFFT::forward_plan plan, p3m_float *data, p3m_int element,
 		p3m_int num) {
 	p3m_int st[3], en[3], si[3];
@@ -1026,19 +1025,19 @@ static void print_global_grid(comm_struct *comm,
 	}
 
 	int grid = plan.new_grid[2];
-	MPI_Barrier(comm->mpicomm);
+	MPI_Barrier(comm.mpicomm);
 
-	if (comm->rank == 0)
+	if (comm.rank == 0)
 		printf("    global grid: (%d of %d elements)\n", num + 1, element);
-	MPI_Barrier(comm->mpicomm);
+	MPI_Barrier(comm.mpicomm);
 
-	for (int i = 0; i < comm->size; i++) {
-		MPI_Barrier(comm->mpicomm);
-		if (i == comm->rank)
-			printf("    %d: range (%d,%d,%d)-(%d,%d,%d)\n", comm->rank, st[0],
+	for (int i = 0; i < comm.size; i++) {
+		MPI_Barrier(comm.mpicomm);
+		if (i == comm.rank)
+			printf("    %d: range (%d,%d,%d)-(%d,%d,%d)\n", comm.rank, st[0],
 					st[1], st[2], en[0], en[1], en[2]);
 	}
-	MPI_Barrier(comm->mpicomm);
+	MPI_Barrier(comm.mpicomm);
 
 	int divide = 0;
 	int block1 = -1;
@@ -1057,7 +1056,7 @@ static void print_global_grid(comm_struct *comm,
 					my = (i0 >= st[0] && i0 < en[0] && i1 >= st[1] && i1 < en[1]
 							&& i2 >= st[2] && i2 < en[2]);
 
-					MPI_Barrier(comm->mpicomm);
+					MPI_Barrier(comm.mpicomm);
 					if (my) {
 						p3m_float tmp =
 								data[num
@@ -1077,7 +1076,7 @@ static void print_global_grid(comm_struct *comm,
 							printf(" %1.2e", 0.0);
 						}
 					}
-					MPI_Barrier(comm->mpicomm);
+					MPI_Barrier(comm.mpicomm);
 				}
 				if (my)
 					printf(" | ");

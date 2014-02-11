@@ -23,8 +23,8 @@
 #define _P3M_TYPES_H
 
 #include "p3mconfig.hpp"
-#include "communication.hpp"
-#include "fft.hpp"
+#include "Communication.hpp"
+#include "Parallel3DFFT.hpp"
 
 #include "caf.hpp"
 
@@ -158,8 +158,25 @@ struct send_grid_t {
 	p3m_int max;
 };
 
+struct Parameters {
+	/** cutoff radius */
+	p3m_float r_cut;
+	/** Ewald splitting parameter */
+	p3m_float alpha;
+	/** number of grid points per coordinate direction (>0). */
+	p3m_int grid[3];
+	/** charge assignment order ([0,P3M_MAX_CAO]). */
+	p3m_int cao;
+};
+
 /** Structure that holds all data of the P3M algorithm */
 struct data_struct {
+	data_struct(MPI_Comm mpicomm);
+	~data_struct();
+
+	Communication comm;
+	Parallel3DFFT fft;
+
 	/****************************************************
 	 * SYSTEM PARAMETERS
 	 ****************************************************/
@@ -250,8 +267,6 @@ struct data_struct {
 	/****************************************************
 	 * METHOD DATA
 	 ****************************************************/
-	Parallel3DFFT *fft;
-	comm_struct comm;
 
 	/** local grid. */
 	local_grid_t local_grid;

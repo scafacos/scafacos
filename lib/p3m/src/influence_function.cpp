@@ -67,11 +67,11 @@ namespace P3M {
 
     int size = 1;
     int end[3];
-    int *new_grid = d->fft->plan[3].new_grid;;
-    int *start = d->fft->plan[3].start;
+    int *new_grid = d->fft.plan[3].new_grid;;
+    int *start = d->fft.plan[3].start;
     for (p3m_int i=0;i<3;i++) {
       size *= new_grid[i];
-      end[i] = d->fft->plan[3].start[i] + new_grid[i];
+      end[i] = d->fft.plan[3].start[i] + new_grid[i];
     }
     d->g_force = (p3m_float *) realloc(d->g_force, size*sizeof(p3m_float));
     d->g_energy = (p3m_float *) realloc(d->g_energy, size*sizeof(p3m_float));
@@ -160,11 +160,11 @@ namespace P3M {
 
     int size = 1;
     int end[3];
-    int *new_grid = d->fft->plan[3].new_grid;;
-    int *start = d->fft->plan[3].start;
+    int *new_grid = d->fft.plan[3].new_grid;;
+    int *start = d->fft.plan[3].start;
     for (p3m_int i=0;i<3;i++) {
       size *= new_grid[i];
-      end[i] = d->fft->plan[3].start[i] + new_grid[i];
+      end[i] = d->fft.plan[3].start[i] + new_grid[i];
     }
     d->g_force = (p3m_float *) realloc(d->g_force, size*sizeof(p3m_float));
     d->g_energy = (p3m_float *) realloc(d->g_energy, size*sizeof(p3m_float));
@@ -256,11 +256,11 @@ namespace P3M {
 
     int size = 1;
     int end[3];
-    int *new_grid = d->fft->plan[3].new_grid;;
-    int *start = d->fft->plan[3].start;
+    int *new_grid = d->fft.plan[3].new_grid;;
+    int *start = d->fft.plan[3].start;
     for (p3m_int i=0;i<3;i++) {
       size *= new_grid[i];
-      end[i] = d->fft->plan[3].start[i] + new_grid[i];
+      end[i] = d->fft.plan[3].start[i] + new_grid[i];
     }
     d->g_force = (p3m_float *) realloc(d->g_force, size*sizeof(p3m_float));
     d->g_energy = (p3m_float *) realloc(d->g_energy, size*sizeof(p3m_float));

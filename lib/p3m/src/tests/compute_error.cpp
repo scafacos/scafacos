@@ -1,5 +1,5 @@
 #include "p3m.hpp"
-#include "communication.hpp"
+#include "Communication.hpp"
 #include "error_estimate.hpp"
 #include <cstdlib>
 #include <cmath>
@@ -15,12 +15,11 @@ int main(int argc, char *argv[]) {
   }
   p3m_int grid = atoi(argv[1]);
 
-  data_struct d;
+  data_struct d(MPI_COMM_WORLD);
   d.box_l[0] = 10.;
   d.box_l[1] = 10.;
   d.box_l[2] = 10.;
-  comm_init(&d.comm, MPI_COMM_WORLD);
-  comm_prepare(&d.comm, d.box_l);
+  d.comm.prepare(d.box_l);
 
   d.sum_qpart = 300.0;
   d.sum_q2 = 300.0;

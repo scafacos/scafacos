@@ -22,9 +22,19 @@
 #define _P3M_ERROR_ESTIMATE_H
 
 #include <mpi.h>
+#include "Communication.hpp"
 #include "types.hpp"
 
 namespace P3M {
+//	class ErrorEstimate {
+//		// return ks_error, rs_error, alpha
+//		virtual void determine_good_alpha(Parameters &p,
+//				p3m_float &rs_grid, p3m_float &ks_grid, p3m_float &alpha);
+//		virtual void compute(Parameters &p, p3m_float &rs_grid, p3m_float &ks_grid);
+//		virtual p3m_float compute_rs_error(Parameters &p);
+//		virtual p3m_float compute_ks_error(Parameters &p, );
+//	};
+
   /** Determines a value for alpha that achieves the wanted_error, if at
       all possible. Also returns the achieved errors with these
       parameters. Check whether wanted_error > achieved_error to see

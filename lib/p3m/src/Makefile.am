@@ -23,9 +23,9 @@ libp3m_la_CPPFLAGS = $(fftw3_CPPFLAGS) -I $(top_srcdir)/src \
 libp3m_la_SOURCES = \
 	p3mconfig.hpp \
 	utils.hpp \
-	communication.hpp communication.cpp \
+	Communication.hpp Communication.cpp \
 	caf.cpp caf.hpp \
-	fft.cpp fft.hpp \
+	Parallel3DFFT.cpp Parallel3DFFT.hpp \
 	influence_function.cpp influence_function.hpp \
 	init.cpp init.hpp \
 	prepare.cpp prepare.hpp \

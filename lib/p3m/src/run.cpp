@@ -301,38 +301,38 @@ namespace P3M {
     START(TIMING_CA);
 
     /* charge assignment */
-    assign_charges(d, d->fft->data_buf, num_charges,
+    assign_charges(d, d->fft.data_buf, num_charges,
                    positions, charges, 0);
     STOPSTART(TIMING_CA, TIMING_GATHER);
     /* gather the ca grid */
-    gather_grid(d, d->fft->data_buf);
+    gather_grid(d, d->fft.data_buf);
 
     // Complexify
     for (p3m_int i = d->local_grid.size-1; i >= 0; i--)
-      d->rs_grid[2*i] = d->fft->data_buf[i];
+      d->rs_grid[2*i] = d->fft.data_buf[i];
 
     STOPSTART(TIMING_GATHER, TIMING_CA);
 
     // Second (shifted) run
     /* charge assignment */
-    assign_charges(d, d->fft->data_buf, num_charges,
+    assign_charges(d, d->fft.data_buf, num_charges,
                    positions, charges, 1);
 
     STOPSTART(TIMING_CA, TIMING_GATHER);
 
     /* gather the ca grid */
-    gather_grid(d, d->fft->data_buf);
+    gather_grid(d, d->fft.data_buf);
     /* now d->rs_grid should contain the local ca grid */
 
     // Complexify
     for (p3m_int i = d->local_grid.size-1; i >= 0; i--)
-      d->rs_grid[2*i+1] = d->fft->data_buf[i];
+      d->rs_grid[2*i+1] = d->fft.data_buf[i];
     STOP(TIMING_GATHER);
       
     /* forward transform */
     P3M_DEBUG(printf("  calling fft_perform_forw()...\n"));
     START(TIMING_FORWARD);
-    d->fft->forward(d->rs_grid);
+    d->fft.forward(d->rs_grid);
     STOP(TIMING_FORWARD);
     P3M_DEBUG(printf("  returned from fft_perform_forw().\n"));
       
@@ -360,21 +360,21 @@ namespace P3M {
             && d->require_timings != ESTIMATE_FFT ){
           P3M_DEBUG(printf( "  calling fft_perform_back (potentials)...\n"));
           START(TIMING_BACK);
-          d->fft->backward(d->ks_grid);
+          d->fft.backward(d->ks_grid);
 		  STOP(TIMING_BACK);
 		  P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
 		}
         /** First (unshifted) run */
         START(TIMING_SPREAD)
           for (p3m_int i=0; i<d->local_grid.size; i++) {
-            d->fft->data_buf[i] = d->ks_grid[2*i];
+            d->fft.data_buf[i] = d->ks_grid[2*i];
           } 
 
-        spread_grid(d, d->fft->data_buf);
+        spread_grid(d, d->fft.data_buf);
 
         STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
 
-        assign_potentials(d, d->fft->data_buf,
+        assign_potentials(d, d->fft.data_buf,
                           num_charges, positions, 
                           charges, 0, potentials);
           
@@ -382,13 +382,13 @@ namespace P3M {
           
         /** Second (shifted) run */
         for (p3m_int i=0; i<d->local_grid.size; i++) {
-          d->fft->data_buf[i] = d->ks_grid[2*i+1];
+          d->fft.data_buf[i] = d->ks_grid[2*i+1];
         }
-        spread_grid(d, d->fft->data_buf);
+        spread_grid(d, d->fft.data_buf);
           
         STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
           
-        assign_potentials(d, d->fft->data_buf,
+        assign_potentials(d, d->fft.data_buf,
                           num_charges, positions,
                           charges, 1, potentials);
           
@@ -410,7 +410,7 @@ namespace P3M {
          && d->require_timings != ESTIMATE_FFT){
         P3M_DEBUG(printf("  calling fft_perform_back...\n"));
         START(TIMING_BACK);
-        d->fft->backward(d->ks_grid);
+        d->fft.backward(d->ks_grid);
         STOP(TIMING_BACK);
         P3M_DEBUG(printf("  returned from fft_perform_back.\n"));            
       }
@@ -419,14 +419,14 @@ namespace P3M {
       /* First (unshifted) run */
       P3M_INFO(printf("  computing unshifted grid\n"));
       for (p3m_int i=0; i<d->local_grid.size; i++) {
-        d->fft->data_buf[i] = d->ks_grid[2*i];
+        d->fft.data_buf[i] = d->ks_grid[2*i];
       } 
     
-      spread_grid(d, d->fft->data_buf);
+      spread_grid(d, d->fft.data_buf);
 
       STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
 
-      assign_fields_ad(d, d->fft->data_buf, num_charges,
+      assign_fields_ad(d, d->fft.data_buf, num_charges,
                        positions, 0, fields);
 
       STOPSTART(TIMING_FIELDS, TIMING_SPREAD);
@@ -434,14 +434,14 @@ namespace P3M {
       /* Second (shifted) run */
       P3M_INFO(printf("  computing shifted grid\n"));
       for (p3m_int i=0; i<d->local_grid.size; i++) {
-        d->fft->data_buf[i] = d->ks_grid[2*i+1];
+        d->fft.data_buf[i] = d->ks_grid[2*i+1];
       }
         
-      spread_grid(d, d->fft->data_buf);
+      spread_grid(d, d->fft.data_buf);
     
       STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
         
-      assign_fields_ad(d, d->fft->data_buf, num_charges,
+      assign_fields_ad(d, d->fft.data_buf, num_charges,
                        positions, 1, fields);
 
       STOP(TIMING_FIELDS);
@@ -487,7 +487,7 @@ namespace P3M {
       
     P3M_DEBUG(printf( "  calling fft_perform_forw()...\n"));
     START(TIMING_FORWARD);
-    d->fft->forward(d->rs_grid);
+    d->fft.forward(d->rs_grid);
     STOP(TIMING_FORWARD);
     P3M_DEBUG(printf("  returned from fft_perform_forw().\n"));
       
@@ -515,7 +515,7 @@ namespace P3M {
            && d->require_timings != ESTIMATE_FFT){
           P3M_DEBUG(printf( "  calling fft_perform_back (potentials)...\n"));
           START(TIMING_BACK);
-          d->fft->backward(d->ks_grid);
+          d->fft.backward(d->ks_grid);
           STOP(TIMING_BACK);
           P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
         }
@@ -558,7 +558,7 @@ namespace P3M {
           /* backtransform the grid */
           P3M_DEBUG(printf( "  calling backward (field dim=%d)...\n", dim));
           START(TIMING_BACK);
-          d->fft->backward(d->rs_grid);
+          d->fft.backward(d->rs_grid);
           STOP(TIMING_BACK);
           P3M_DEBUG(printf("  returned from backward.\n"));            
         }
@@ -767,7 +767,7 @@ namespace P3M {
   /* apply the influence function */
   void apply_energy_influence_function(data_struct* d) {
     P3M_DEBUG(printf( "  apply_energy_influence_function() started...\n"));
-    const p3m_int size = d->fft->plan[3].new_size;
+    const p3m_int size = d->fft.plan[3].new_size;
     for (p3m_int i=0; i < size; i++) {
       d->ks_grid[2*i] = d->g_energy[i] * d->rs_grid[2*i]; 
       d->ks_grid[2*i+1] = d->g_energy[i] * d->rs_grid[2*i+1]; 
@@ -778,7 +778,7 @@ namespace P3M {
   /* apply the influence function */
   void apply_force_influence_function(data_struct* d) {
     P3M_DEBUG(printf( "  apply_force_influence_function() started...\n"));
-    const p3m_int size = d->fft->plan[3].new_size;
+    const p3m_int size = d->fft.plan[3].new_size;
     for (p3m_int i=0; i < size; i++) {
       d->ks_grid[2*i] = d->g_force[i] * d->rs_grid[2*i]; 
       d->ks_grid[2*i+1] = d->g_force[i] * d->rs_grid[2*i+1]; 
@@ -877,15 +877,15 @@ namespace P3M {
     
     /* srqt(-1)*k differentiation */
     ind=0;
-    for(j[0]=0; j[0]<d->fft->plan[3].new_grid[0]; j[0]++) {
-      for(j[1]=0; j[1]<d->fft->plan[3].new_grid[1]; j[1]++) {
-        for(j[2]=0; j[2]<d->fft->plan[3].new_grid[2]; j[2]++) {
+    for(j[0]=0; j[0]<d->fft.plan[3].new_grid[0]; j[0]++) {
+      for(j[1]=0; j[1]<d->fft.plan[3].new_grid[1]; j[1]++) {
+        for(j[2]=0; j[2]<d->fft.plan[3].new_grid[2]; j[2]++) {
           /* i*k*(Re+i*Im) = - Im*k + i*Re*k     (i=sqrt(-1)) */
           d->rs_grid[ind] =
-            -2.0*M_PI*(d->ks_grid[ind+1] * d_operator[ j[dim]+d->fft->plan[3].start[dim] ])
+            -2.0*M_PI*(d->ks_grid[ind+1] * d_operator[ j[dim]+d->fft.plan[3].start[dim] ])
             / d->box_l[dim_rs];
           d->rs_grid[ind+1] =
-            2.0*M_PI*d->ks_grid[ind] * d_operator[ j[dim]+d->fft->plan[3].start[dim] ]
+            2.0*M_PI*d->ks_grid[ind] * d_operator[ j[dim]+d->fft.plan[3].start[dim] ]
             / d->box_l[dim_rs];
           ind+=2;
         }
@@ -936,7 +936,7 @@ namespace P3M {
     P3M_DEBUG(printf( "  compute_total_energy() started...\n"));
 
     local_k_space_energy = 0.0;
-    for (p3m_int i=0; i < d->fft->plan[3].new_size; i++)
+    for (p3m_int i=0; i < d->fft.plan[3].new_size; i++)
       /* Use the energy optimized influence function */
       local_k_space_energy += d->g_energy[i] * ( SQR(d->rs_grid[2*i]) + 
                                                  SQR(d->rs_grid[2*i+1]) );
