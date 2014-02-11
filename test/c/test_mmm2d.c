@@ -225,7 +225,7 @@ node_grid[2]);
   if (comm_rank == 0)
     printf("\nTesting tuning routine...\n");
   MPI_Barrier(comm);
-  result = fcs_tune(handle, n_particles, n_particles, positions, charges);
+  result = fcs_tune(handle, n_particles, positions, charges);
   if (result != NULL) {
     fcs_result_print_result(result);
     MPI_Finalize();
@@ -242,7 +242,7 @@ node_grid[2]);
   
   result = fcs_mmm2d_require_total_energy(handle, 1);
   
-  result = fcs_run(handle, n_particles, n_particles, positions, charges, forces,
+  result = fcs_run(handle, n_particles, positions, charges, forces,
 NULL);
   fcs_float total_energy;
   result=fcs_mmm2d_get_total_energy(handle, &total_energy);
@@ -438,7 +438,7 @@ n_particles-2],positions[3*n_particles-1]);
   printf("calculated bessel cutoff: %d\n",vali);
   
   printf("\nTesting running routine...\n");
-  result = fcs_run(handle, n_particles, n_particles, positions, charges, forces,
+  result = fcs_run(handle, n_particles, positions, charges, forces,
 potentials, 0, output);
   assert_fcs(result);
   printf("Potential on particle 1: %e\n", potentials[0]);

@@ -79,6 +79,14 @@ FCSResult fcs_wolf_init(FCS handle)
 
 /*  handle->wolf_param->metallic_boundary_conditions = 1;*/
 
+  handle->destroy = fcs_wolf_destroy;
+  handle->set_parameter = fcs_wolf_set_parameter;
+  handle->print_parameters = fcs_wolf_print_parameters;
+  handle->tune = fcs_wolf_tune;
+  handle->run = fcs_wolf_run;
+  handle->set_compute_virial = fcs_wolf_require_virial;
+  handle->get_virial = fcs_wolf_get_virial;
+
   handle->set_max_particle_move = fcs_wolf_set_max_particle_move;
   handle->set_resort = fcs_wolf_set_resort;
   handle->get_resort = fcs_wolf_get_resort;
@@ -135,7 +143,7 @@ FCSResult fcs_wolf_check(FCS handle)
 }
 
 
-FCSResult fcs_wolf_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges)
+FCSResult fcs_wolf_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges)
 {
   static const char func_name[] = "fcs_wolf_tune";
 
@@ -149,7 +157,7 @@ FCSResult fcs_wolf_tune(FCS handle, fcs_int local_particles, fcs_int local_max_p
 }
 
 
-FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
+FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
   static const char func_name[] = "fcs_wolf_run";
 
@@ -160,6 +168,7 @@ FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 
   const fcs_float *box_base, *box_a, *box_b, *box_c;
   const fcs_int *periodicity;
+  fcs_int max_local_particles;
 
 
   DEBUG_MOP(printf("fcs_wolf_run\n"));
@@ -174,9 +183,12 @@ FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
   box_c = fcs_get_box_c(handle);
   periodicity = fcs_get_periodicity(handle);
 
+  max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
   ifcs_wolf_set_system(&handle->wolf_param->wolf, box_base, box_a, box_b, box_c, periodicity);
 
-  ifcs_wolf_set_particles(&handle->wolf_param->wolf, local_particles, local_max_particles, positions, charges, field, potentials);
+  ifcs_wolf_set_particles(&handle->wolf_param->wolf, local_particles, max_local_particles, positions, charges, field, potentials);
 
   ifcs_wolf_run(&handle->wolf_param->wolf, ctx->comm);
 

@@ -121,7 +121,7 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
   handle->box_c[0] = handle->box_c[1] = handle->box_c[2] = 0.0;
   handle->box_origin[0] = handle->box_origin[1] = handle->box_origin[2] = 0.0;
   handle->periodicity[0] = handle->periodicity[1] = handle->periodicity[2] = 0.0;
-  handle->total_particles = -1;
+  handle->total_particles = handle->max_local_particles -1;
 
 #ifdef FCS_ENABLE_FMM
   handle->fmm_param = NULL;
@@ -146,6 +146,22 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
 #endif
 
   handle->method_context = NULL;
+
+  handle->values_changed = 0;
+
+  handle->destroy = NULL;
+  handle->set_r_cut = NULL;
+  handle->unset_r_cut = NULL;
+  handle->get_r_cut = NULL;
+  handle->set_tolerance = NULL;
+  handle->get_tolerance = NULL;
+  handle->set_parameter = NULL;
+  handle->print_parameters = NULL;
+  handle->tune = NULL;
+  handle->run = NULL;
+  handle->set_compute_virial = NULL;
+  handle->get_compute_virial = NULL;
+  handle->get_virial = NULL;
 
   handle->set_max_particle_move = NULL;
   handle->set_resort = NULL;
@@ -213,87 +229,14 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
  */
 FCSResult fcs_destroy(FCS handle)
 {
-  const char *fnc_name = "fcs_destroy";
   FCSResult result;
 
   if (handle == FCS_NULL) return FCS_RESULT_SUCCESS;
 
-  switch (fcs_get_method(handle))
+  if (handle->destroy)
   {
-#ifdef FCS_ENABLE_DIRECT
-    case FCS_METHOD_DIRECT:
-      result = fcs_direct_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-#ifdef FCS_ENABLE_EWALD
-    case FCS_METHOD_EWALD:
-      result = fcs_ewald_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-#ifdef FCS_ENABLE_FMM
-    case FCS_METHOD_FMM:
-      result = fcs_fmm_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-#ifdef FCS_ENABLE_MEMD
-    case FCS_METHOD_MEMD:
-      result = fcs_memd_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-#ifdef FCS_ENABLE_MMM1D
-    case FCS_METHOD_MMM1D:
-      result = fcs_mmm1d_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-#ifdef FCS_ENABLE_MMM2D
-    case FCS_METHOD_MMM2D:
-      result = fcs_mmm2d_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-#ifdef FCS_ENABLE_PEPC
-    case FCS_METHOD_PEPC:
-      result = fcs_pepc_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    case FCS_METHOD_P2NFFT:
-      result = fcs_p2nfft_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-#ifdef FCS_ENABLE_P3M
-    case FCS_METHOD_P3M:
-      result = fcs_p3m_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-#ifdef FCS_ENABLE_PP3MG
-    case FCS_METHOD_PP3MG:
-      result = fcs_pp3mg_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-#ifdef FCS_ENABLE_VMG
-    case FCS_METHOD_VMG:
-      result = fcs_vmg_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-#ifdef FCS_ENABLE_WOLF
-    case FCS_METHOD_WOLF:
-      result = fcs_wolf_destroy(handle);
-      if (result != FCS_RESULT_SUCCESS) return result;
-      break;
-#endif
-    default:
-      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "unknown method chosen");
+    result = handle->destroy(handle);
+    if (result != FCS_RESULT_SUCCESS) return result;
   }
 
   free(handle);
@@ -371,8 +314,6 @@ FCSResult fcs_set_common(FCS handle, fcs_int near_field_flag, const fcs_float *b
 
   result = fcs_set_total_particles(handle, total_particles);
   if (result != FCS_RESULT_SUCCESS) return result;
-
-  fcs_set_values_changed(handle, 1);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -682,6 +623,40 @@ fcs_int fcs_get_total_particles(FCS handle)
 
 
 /**
+ * function to set the maximum number of particles that can be stored in the specified local particle data arrays
+ */
+FCSResult fcs_set_max_local_particles(FCS handle, fcs_int max_local_particles)
+{
+  const char *fnc_name = "fcs_set_max_local_particles";
+
+  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+
+  handle->max_local_particles = max_local_particles;
+
+  fcs_set_values_changed(handle, 1);
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+/**
+ * return the total number of particles in the system
+ */
+fcs_int fcs_get_max_local_particles(FCS handle)
+{
+  const char *fnc_name = "fcs_get_max_local_particles";
+
+  if (handle == FCS_NULL)
+  {
+    fprintf(stderr, "%s: null handle supplied, returning -1", fnc_name);
+    return -1;
+  }
+
+  return handle->max_local_particles;
+}
+
+
+/**
  * set the method context information
  */
 FCSResult fcs_set_method_context(FCS handle, void *method_context)
@@ -754,45 +729,10 @@ FCSResult fcs_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolera
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
-  switch (fcs_get_method(handle))
-  {
-#ifdef FCS_ENABLE_EWALD
-    case FCS_METHOD_EWALD:
-      if (tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
-      {
-        fcs_ewald_set_tolerance_field(handle, tolerance);
-        return FCS_RESULT_SUCCESS;
-      } else return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "Unsupported tolerance type. EWALD only supports FCS_TOLERANCE_TYPE_FIELD.");
-#endif
-#ifdef FCS_ENABLE_FMM
-    case FCS_METHOD_FMM:
-      if (tolerance_type == FCS_TOLERANCE_TYPE_ENERGY)
-      {
-        fcs_fmm_set_absrel(handle, FCS_FMM_CUSTOM_ABSOLUTE);
-        fcs_fmm_set_tolerance_energy(handle, tolerance);
-        return FCS_RESULT_SUCCESS;
-      } else if (tolerance_type == FCS_TOLERANCE_TYPE_ENERGY_REL)
-      {
-        fcs_fmm_set_absrel(handle, FCS_FMM_CUSTOM_RELATIVE);
-        fcs_fmm_set_tolerance_energy(handle, tolerance);
-        return FCS_RESULT_SUCCESS;
-      } else return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "Unsupported tolerance type. FMM only supports FCS_TOLERANCE_TYPE_ENERGY and FCS_TOLERANCE_TYPE_ENERGY_REL.");
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    case FCS_METHOD_P2NFFT:
-      return fcs_p2nfft_set_tolerance(handle, tolerance_type, tolerance);
-#endif
-#ifdef FCS_ENABLE_P3M
-    case FCS_METHOD_P3M:
-      if (tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
-      {
-        fcs_p3m_set_tolerance_field(handle, tolerance);
-        return FCS_RESULT_SUCCESS;
-      } else return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "Unsupported tolerance type. P3M only supports FCS_TOLERANCE_TYPE_FIELD.");
-#endif
-  }
+  if (handle->set_tolerance == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->set_tolerance(handle, tolerance_type, tolerance);
 }
 
 
@@ -808,26 +748,10 @@ FCSResult fcs_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tole
   *tolerance_type = FCS_TOLERANCE_TYPE_UNDEFINED;
   *tolerance = -1.0; 
 
-  switch (fcs_get_method(handle))
-  {
-#ifdef FCS_ENABLE_EWALD
-    case FCS_METHOD_EWALD:
-      *tolerance_type = FCS_TOLERANCE_TYPE_FIELD;
-      return fcs_ewald_get_tolerance_field(handle, tolerance);
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    case FCS_METHOD_P2NFFT:
-      return fcs_p2nfft_get_tolerance(handle, tolerance_type, tolerance);
-#endif
-#ifdef FCS_ENABLE_P3M
-    case FCS_METHOD_P3M:
-      *tolerance_type = FCS_TOLERANCE_TYPE_FIELD;
-      fcs_p3m_get_tolerance_field(handle, tolerance);
-      return FCS_RESULT_SUCCESS;
-#endif
-  }
+  if (handle->get_tolerance == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Return tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Return tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->get_tolerance(handle, tolerance_type, tolerance);
 }
 
 
@@ -840,19 +764,10 @@ FCSResult fcs_set_r_cut(FCS handle, fcs_float r_cut)
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
-  switch (fcs_get_method(handle))
-  {
-#ifdef FCS_ENABLE_P3M
-    case FCS_METHOD_P3M:
-      return fcs_p3m_set_r_cut(handle, r_cut);
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    case FCS_METHOD_P2NFFT:
-      return fcs_p2nfft_set_r_cut(handle, r_cut);
-#endif
-  }
+  if (handle->set_r_cut == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->set_r_cut(handle, r_cut);
 }
 
 
@@ -865,19 +780,10 @@ FCSResult fcs_unset_r_cut(FCS handle)
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
-  switch (fcs_get_method(handle))
-  {
-#ifdef FCS_ENABLE_P3M
-    case FCS_METHOD_P3M:
-      return fcs_p3m_set_r_cut_tune(handle);
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    case FCS_METHOD_P2NFFT:
-      return fcs_p2nfft_set_r_cut_tune(handle);
-#endif
-  }
+  if (handle->unset_r_cut == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Disabling a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Disabling a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->unset_r_cut(handle);
 }
 
 
@@ -890,19 +796,10 @@ FCSResult fcs_get_r_cut(FCS handle, fcs_float *r_cut)
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
-  switch (fcs_get_method(handle))
-  {
-#ifdef FCS_ENABLE_P3M
-    case FCS_METHOD_P3M:
-      return fcs_p3m_get_r_cut(handle, r_cut);
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    case FCS_METHOD_P2NFFT:
-      return fcs_p2nfft_get_r_cut(handle, r_cut);
-#endif
-  }
+  if (handle->get_r_cut == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->get_r_cut(handle, r_cut);
 }
 
 
@@ -949,6 +846,7 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("periodicity",             set_periodicity,     FCS_PARSE_SEQ(fcs_int, 3));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("near_field_flag",         set_near_field_flag, FCS_PARSE_VAL(fcs_int));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("total_particles",         set_total_particles, FCS_PARSE_VAL(fcs_int));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("r_cut",                   set_r_cut,           FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("require_virial",          set_compute_virial,  FCS_PARSE_VAL(fcs_int));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("",                        set_tolerance,       FCS_PARSE_VAL(fcs_int),                                     FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy",        set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_ENERGY),        FCS_PARSE_VAL(fcs_float));
@@ -957,54 +855,11 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential_rel", set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL_REL), FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field",         set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_FIELD),         FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field_rel",     set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_FIELD_REL),     FCS_PARSE_VAL(fcs_float));
-#ifdef FCS_ENABLE_DIRECT
-    r = fcs_direct_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
-#ifdef FCS_ENABLE_EWALD
-    r = fcs_ewald_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
-#ifdef FCS_ENABLE_FMM
-    r = fcs_fmm_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
-#ifdef FCS_ENABLE_MEMD
-    r = fcs_memd_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
-#ifdef FCS_ENABLE_MMM1D
-    r = fcs_mmm1d_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
-#ifdef FCS_ENABLE_MMM2D
-    r = fcs_mmm2d_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    r = fcs_p2nfft_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
-#ifdef FCS_ENABLE_P3M
-    r = fcs_p3m_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
-#ifdef FCS_ENABLE_PEPC
-    r = fcs_pepc_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
-#ifdef FCS_ENABLE_PP3MG
-    r = fcs_pp3mg_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
-#ifdef FCS_ENABLE_VMG
-    r = fcs_vmg_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
-#ifdef FCS_ENABLE_WOLF
-    r = fcs_wolf_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
-    if (matched) goto next_param;
-#endif
+    if (handle->set_parameter)
+    {
+      r = handle->set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+      if (matched) goto next_param;
+    }
 
     FCS_PARSE_DUMMY_REFERENCE_TO_STATIC_FUNCTIONS(param);
 
@@ -1047,71 +902,11 @@ FCSResult fcs_print_parameters(FCS handle)
   printf("------------------------");
   printf("solver specific data:\n");
 
-  switch (fcs_get_method(handle))
+  if (handle->print_parameters)
   {
-#ifdef FCS_ENABLE_DIRECT
-    case FCS_METHOD_DIRECT:
-      result = fcs_direct_print_parameters(handle);
-      break;
-#endif
-#ifdef FCS_ENABLE_EWALD
-    case FCS_METHOD_EWALD:
-      result = fcs_ewald_print_parameters(handle);
-      break;
-#endif
-#ifdef FCS_ENABLE_FMM
-    case FCS_METHOD_FMM:
-      result = fcs_fmm_print_parameters(handle);
-      break;
-#endif
-#ifdef FCS_ENABLE_MEMD
-    case FCS_METHOD_MEMD:
-      result = fcs_memd_print_parameters(handle);
-      break;
-#endif
-#ifdef FCS_ENABLE_MMM1D
-    case FCS_METHOD_MMM1D:
-      result = fcs_mmm1d_print_parameters(handle);
-      break;
-#endif
-#ifdef FCS_ENABLE_MMM2D
-  case FCS_METHOD_MMM2D:
-      result = fcs_mmm2d_print_parameters(handle);
-      break;
-#endif
-#ifdef FCS_ENABLE_PEPC
-    case FCS_METHOD_PEPC:
-      result = fcs_pepc_print_parameters(handle);
-      break;
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    case FCS_METHOD_P2NFFT:
-      result = fcs_p2nfft_print_parameters(handle);
-      break;
-#endif
-#ifdef FCS_ENABLE_P3M
-    case FCS_METHOD_P3M:
-      result = fcs_p3m_print_parameters(handle);
-      break;
-#endif
-#ifdef FCS_ENABLE_PP3MG
-    case FCS_METHOD_PP3MG:
-      result = fcs_pp3mg_print_parameters(handle);
-      break;
-#endif
-#ifdef FCS_ENABLE_VMG
-    case FCS_METHOD_VMG:
-      result = fcs_vmg_print_parameters(handle);
-      break;
-#endif
-#ifdef FCS_ENABLE_WOLF
-    case FCS_METHOD_WOLF:
-      result = fcs_wolf_print_parameters(handle);
-      break;
-#endif
+    result = handle->print_parameters(handle);
+    if (result != FCS_RESULT_SUCCESS) fcs_result_print_result(result);
   }
-
-  if (result != FCS_RESULT_SUCCESS) fcs_result_print_result(result);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -1120,7 +915,7 @@ FCSResult fcs_print_parameters(FCS handle)
 /**
  * tune method specific parameters depending on the particles
  */
-FCSResult fcs_tune(FCS handle, fcs_int local_particles, fcs_int max_local_particles,
+FCSResult fcs_tune(FCS handle, fcs_int local_particles,
   fcs_float *positions, fcs_float *charges)
 {
   const char *fnc_name = "fcs_tune";
@@ -1129,76 +924,23 @@ FCSResult fcs_tune(FCS handle, fcs_int local_particles, fcs_int max_local_partic
 
   if (local_particles < 0)
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "number of local particles must be non negative");
-  if (max_local_particles < 0)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "maximum number of local particles must be non negative");
-  if (local_particles > max_local_particles)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "maximum number of local particles should be greater or equal to current number of particles");
 
   if (!fcs_init_check(handle) || !fcs_tune_check(handle))
     return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "not all needed data has been inserted into the given handle");
 
-  fcs_set_values_changed(handle,0);
-    
-  switch (fcs_get_method(handle))
-  {
-#ifdef FCS_ENABLE_DIRECT
-    case FCS_METHOD_DIRECT:
-      return fcs_direct_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-#ifdef FCS_ENABLE_EWALD
-    case FCS_METHOD_EWALD:
-      return fcs_ewald_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-#ifdef FCS_ENABLE_FMM
-    case FCS_METHOD_FMM:
-      return fcs_fmm_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-#ifdef FCS_ENABLE_MEMD
-    case FCS_METHOD_MEMD:
-      return fcs_memd_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-#ifdef FCS_ENABLE_MMM1D
-    case FCS_METHOD_MMM1D:
-      return fcs_mmm1d_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-#ifdef FCS_ENABLE_MMM2D
-    case FCS_METHOD_MMM2D:
-      return fcs_mmm2d_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    case FCS_METHOD_P2NFFT:
-      return fcs_p2nfft_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-#ifdef FCS_ENABLE_P3M
-    case FCS_METHOD_P3M:
-      return fcs_p3m_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-#ifdef FCS_ENABLE_PEPC
-    case FCS_METHOD_PEPC:
-      return fcs_pepc_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-#ifdef FCS_ENABLE_PP3MG
-    case FCS_METHOD_PP3MG:
-      return fcs_pp3mg_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-#ifdef FCS_ENABLE_VMG
-    case FCS_METHOD_VMG:
-      return fcs_vmg_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-#ifdef FCS_ENABLE_WOLF
-    case FCS_METHOD_WOLF:
-      return fcs_wolf_tune(handle, local_particles, max_local_particles, positions, charges);
-#endif
-  }
+  fcs_set_values_changed(handle, 0);
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Tuning tune method specific parameters not implemented for solver method '%s'", fcs_get_method_name(handle));
+  if (handle->tune == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Tuning solver method '%s' not implemented", fcs_get_method_name(handle));
+
+  return handle->tune(handle, local_particles, positions, charges);
 }
 
 
 /**
  * run the solver method
  */
-FCSResult fcs_run(FCS handle, fcs_int local_particles, fcs_int max_local_particles,
+FCSResult fcs_run(FCS handle, fcs_int local_particles,
   fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
   const char *fnc_name = "fcs_run";
@@ -1208,73 +950,20 @@ FCSResult fcs_run(FCS handle, fcs_int local_particles, fcs_int max_local_particl
 
   if (local_particles < 0)
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "number of local particles must be non negative");
-  if (max_local_particles < 0)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "maximum number of local particles must be non negative");
-  if (local_particles > max_local_particles)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "maximum number of local particles should be greater or equal to current number of particles");
 
   if (fcs_get_values_changed(handle))
   {
-    result = fcs_tune(handle, local_particles, max_local_particles, positions, charges);
+    result = fcs_tune(handle, local_particles, positions, charges);
     if (result != FCS_RESULT_SUCCESS) return result;
   }
 
   if (!fcs_init_check(handle) || !fcs_run_check(handle))
     return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "not all needed data has been inserted into the given handle");
 
-  switch (fcs_get_method(handle))
-  {
-#ifdef FCS_ENABLE_DIRECT
-    case FCS_METHOD_DIRECT:
-      return fcs_direct_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-#ifdef FCS_ENABLE_EWALD
-    case FCS_METHOD_EWALD:
-      return fcs_ewald_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-#ifdef FCS_ENABLE_FMM
-    case FCS_METHOD_FMM:
-      return fcs_fmm_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-#ifdef FCS_ENABLE_MEMD
-    case FCS_METHOD_MEMD:
-      return fcs_memd_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-#ifdef FCS_ENABLE_MMM1D
-    case FCS_METHOD_MMM1D:
-      return fcs_mmm1d_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-#ifdef FCS_ENABLE_MMM2D
-    case FCS_METHOD_MMM2D:
-      return fcs_mmm2d_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-#ifdef FCS_ENABLE_PEPC
-    case FCS_METHOD_PEPC:
-      return fcs_pepc_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    case FCS_METHOD_P2NFFT:
-      return fcs_p2nfft_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-#ifdef FCS_ENABLE_P3M
-    case FCS_METHOD_P3M:
-      return fcs_p3m_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-#ifdef FCS_ENABLE_PP3MG
-    case FCS_METHOD_PP3MG:
-      return fcs_pp3mg_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-#ifdef FCS_ENABLE_VMG
-    case FCS_METHOD_VMG:
-      return fcs_vmg_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-#ifdef FCS_ENABLE_WOLF
-    case FCS_METHOD_WOLF:
-      return fcs_wolf_run(handle, local_particles, max_local_particles, positions, charges, field, potentials);
-#endif
-  }
+  if (handle->run == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Running solver method '%s' not implemented", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Running solver method '%s' not implemented", fcs_get_method_name(handle));
+  return handle->run(handle, local_particles, positions, charges, field, potentials);
 }
 
 
@@ -1471,55 +1160,10 @@ FCSResult fcs_set_compute_virial(FCS handle, fcs_int compute_virial)
   if (compute_virial != 0 && compute_virial != 1)
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "parameter compute_virial must be 0 or 1");
 
-  switch (fcs_get_method(handle))
-  {
-#ifdef FCS_ENABLE_DIRECT
-    case FCS_METHOD_DIRECT:
-      return fcs_direct_require_virial(handle, compute_virial);
-#endif
-#ifdef FCS_ENABLE_PEPC
-    case FCS_METHOD_PEPC:
-      return fcs_pepc_require_virial(handle, compute_virial);
-#endif
-#ifdef FCS_ENABLE_FMM
-    case FCS_METHOD_FMM:
-      return fcs_fmm_require_virial(handle, compute_virial);
-#endif
-#ifdef FCS_ENABLE_P3M
-    case FCS_METHOD_P3M:
-      return fcs_p3m_require_virial(handle, compute_virial);
-#endif
-#ifdef FCS_ENABLE_MMM1D
-    case FCS_METHOD_MMM1D:
-      return fcs_mmm1d_require_virial(handle, compute_virial);
-#endif
-#ifdef FCS_ENABLE_MMM2D
-    case FCS_METHOD_MMM2D:
-      return fcs_mmm2d_require_virial(handle, compute_virial);
-#endif
-#ifdef FCS_ENABLE_MEMD
-    case FCS_METHOD_MEMD:
-      return fcs_memd_require_virial(handle, compute_virial);
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    case FCS_METHOD_P2NFFT:
-      return fcs_p2nfft_require_virial(handle, compute_virial);
-#endif
-#ifdef FCS_ENABLE_PP3MG
-    case FCS_METHOD_PP3MG:
-      return fcs_pp3mg_require_virial(handle, compute_virial);
-#endif
-#ifdef FCS_ENABLE_VMG
-    case FCS_METHOD_VMG:
-      return fcs_vmg_require_virial(handle, compute_virial);
-#endif
-#ifdef FCS_ENABLE_WOLF
-    case FCS_METHOD_WOLF:
-      return fcs_wolf_require_virial(handle, compute_virial);
-#endif
-  }
+  if (handle->set_compute_virial == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->set_compute_virial(handle, compute_virial);
 }
 
 
@@ -1535,11 +1179,10 @@ FCSResult fcs_get_compute_virial(FCS handle, fcs_int *compute_virial)
   if (compute_virial == NULL)
     return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as argument");
 
-  switch (fcs_get_method(handle))
-  {
-  }
+  if (handle->get_compute_virial == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->get_compute_virial(handle, compute_virial);
 }
 
 
@@ -1555,55 +1198,10 @@ FCSResult fcs_get_virial(FCS handle, fcs_float *virial)
   if (virial == NULL)
     return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as argument");
 
-  switch (fcs_get_method(handle))
-  {
-#ifdef FCS_ENABLE_DIRECT
-    case FCS_METHOD_DIRECT:
-      return fcs_direct_get_virial(handle, virial);
-#endif
-#ifdef FCS_ENABLE_PEPC
-    case FCS_METHOD_PEPC:
-      return fcs_pepc_get_virial(handle, virial);
-#endif
-#ifdef FCS_ENABLE_FMM
-    case FCS_METHOD_FMM:
-      return fcs_fmm_get_virial(handle, virial);
-#endif
-#ifdef FCS_ENABLE_P3M
-    case FCS_METHOD_P3M:
-      return fcs_p3m_get_virial(handle, virial);
-#endif
-#ifdef FCS_ENABLE_MMM1D
-    case FCS_METHOD_MMM1D:
-      return fcs_mmm1d_get_virial(handle, virial);
-#endif
-#ifdef FCS_ENABLE_MMM2D
-    case FCS_METHOD_MMM2D:
-      return fcs_mmm2d_get_virial(handle, virial);
-#endif
-#ifdef FCS_ENABLE_MEMD
-    case FCS_METHOD_MEMD:
-      return fcs_memd_get_virial(handle, virial);
-#endif
-#ifdef FCS_ENABLE_P2NFFT
-    case FCS_METHOD_P2NFFT:
-      return fcs_p2nfft_get_virial(handle, virial);
-#endif
-#ifdef FCS_ENABLE_PP3MG
-    case FCS_METHOD_PP3MG:
-      return fcs_pp3mg_get_virial(handle, virial);
-#endif
-#ifdef FCS_ENABLE_VMG
-    case FCS_METHOD_VMG:
-      return fcs_vmg_get_virial(handle, virial);
-#endif
-#ifdef FCS_ENABLE_WOLF
-    case FCS_METHOD_WOLF:
-      return fcs_wolf_get_virial(handle, virial);
-#endif
-  }
+  if (handle->get_virial == NULL)
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning the computed virial not implemented for solver method '%s'", fcs_get_method_name(handle));
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning the computed virial not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return handle->get_virial(handle, virial);
 }
 
 
@@ -1616,8 +1214,10 @@ FCSResult fcs_set_max_particle_move(FCS handle, fcs_float max_particle_move)
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
-  if (handle->set_max_particle_move == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "max. particle move not supported");
+/*  if (handle->set_max_particle_move == NULL)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "max. particle move not supported");*/
+
+  if (handle->set_max_particle_move == NULL) return FCS_SUCCESS;
 
   return handle->set_max_particle_move(handle, max_particle_move);
 }

@@ -99,14 +99,13 @@ FCSResult fcs_pepc_init(FCS handle);
  * can be entered
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_pepc_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges);
+FCSResult fcs_pepc_tune(FCS handle, fcs_int local_particles, fcs_float *positions,  fcs_float *charges);
 
 /**
  * @brief run method for pepc
  * @param handle the FCS-object into which the method specific parameters
  * can be entered
  * @param local_particles actual number of particles on process
- * @param local_max_particles size of allocated arrays
  * @param positons fcs_float* list of positions of particles in form
  *        (x1,y1,z1,x2,y2,z2,...,xn,yn,zn)
 
@@ -116,7 +115,7 @@ FCSResult fcs_pepc_tune(FCS handle, fcs_int local_particles, fcs_int local_max_p
  * results after the run
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, 
+FCSResult fcs_pepc_run(FCS handle, fcs_int local_particles,
 			      fcs_float *positions, 
 			      fcs_float *charges, fcs_float *field, fcs_float *potentials);
 

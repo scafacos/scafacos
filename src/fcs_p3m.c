@@ -47,6 +47,19 @@ FCSResult fcs_p3m_init(FCS handle)
   result = fcs_p3m_check(handle, fnc_name);
   if (result != NULL) return result;
 
+  handle->destroy = fcs_p3m_destroy;
+  handle->set_r_cut = fcs_p3m_set_r_cut;
+  handle->unset_r_cut = fcs_p3m_set_r_cut_tune;
+  handle->get_r_cut = fcs_p3m_get_r_cut;
+  handle->set_tolerance = fcs_p3m_set_tolerance;
+  handle->get_tolerance = fcs_p3m_get_tolerance;
+  handle->set_parameter = fcs_p3m_set_parameter;
+  handle->print_parameters = fcs_p3m_print_parameters;
+  handle->tune = fcs_p3m_tune;
+  handle->run = fcs_p3m_run;
+  handle->set_compute_virial = fcs_p3m_require_virial;
+  handle->get_virial = fcs_p3m_get_virial;
+
   ifcs_p3m_init(&handle->method_context, handle->communicator);
   
   return NULL;
@@ -54,7 +67,7 @@ FCSResult fcs_p3m_init(FCS handle)
 
 /* internal p3m-specific tuning function */
 FCSResult fcs_p3m_tune(FCS handle, 
-		       fcs_int local_particles, fcs_int local_max_particles, 
+		       fcs_int local_particles,
 		       fcs_float *positions, fcs_float *charges)
 {
   char* fnc_name = "fcs_p3m_tune";
@@ -87,28 +100,32 @@ FCSResult fcs_p3m_tune(FCS handle,
   ifcs_p3m_set_near_field_flag(handle->method_context, 
 				 fcs_get_near_field_flag(handle));
 
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
   /* Effectively, tune initializes the algorithm. */
   result = ifcs_p3m_tune(handle->method_context, 
-                         local_particles, local_max_particles,
+                         local_particles, max_local_particles,
 			 positions, charges);
   return result;
 }
 
 /* internal p3m-specific run function */
 FCSResult fcs_p3m_run(FCS handle, 
-		      fcs_int local_particles, fcs_int local_max_particles, 
+		      fcs_int local_particles,
 		      fcs_float *positions, fcs_float *charges,
 		      fcs_float *fields, fcs_float *potentials)
 {
 //   char* fnc_name = "fcs_p3m_run";
 //   FCSResult result;
 
-  fcs_p3m_tune(handle, local_particles, local_max_particles, positions, charges);
+  fcs_p3m_tune(handle, local_particles, positions, charges);
+
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
 
   ifcs_p3m_run(handle->method_context,
-               local_particles, local_max_particles, 
-               positions, charges, 
-               fields, potentials);
+		 local_particles, max_local_particles, positions, charges, fields, potentials);
 
   return NULL;
 }
@@ -297,6 +314,28 @@ FCSResult fcs_p3m_get_virial(FCS handle, fcs_float *virial) {
   for (i=0; i < 9; i++)
     virial[i] = 0.0;
   return NULL;
+}
+
+FCSResult fcs_p3m_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolerance)
+{
+  const char *fnc_name = "fcs_p3m_set_tolerance";
+
+  if (tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
+  {
+    fcs_p3m_set_tolerance_field(handle, tolerance);
+    return FCS_RESULT_SUCCESS;
+
+  }
+  
+  return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "Unsupported tolerance type. P3M only supports FCS_TOLERANCE_TYPE_FIELD.");
+}
+
+FCSResult fcs_p3m_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance)
+{
+  *tolerance_type = FCS_TOLERANCE_TYPE_FIELD;
+  fcs_p3m_get_tolerance_field(handle, tolerance);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 FCSResult fcs_p3m_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)

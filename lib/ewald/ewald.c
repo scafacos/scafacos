@@ -162,6 +162,14 @@ FCSResult fcs_ewald_init(FCS handle) {
   result = fcs_ewald_check(handle, fnc_name);
   if (result != NULL) return result;
 
+  handle->destroy = fcs_ewald_destroy;
+  handle->set_tolerance = fcs_ewald_set_tolerance;
+  handle->get_tolerance = fcs_ewald_get_tolerance;
+  handle->set_parameter = fcs_ewald_set_parameter;
+  handle->print_parameters = fcs_ewald_print_parameters;
+  handle->tune = fcs_ewald_tune;
+  handle->run = fcs_ewald_run;
+
   /* initialize ewald struct */
   ewald_data_struct *d;
   if (handle->method_context == NULL) {
@@ -385,6 +393,24 @@ FCSResult fcs_ewald_get_tolerance_field(FCS handle, fcs_float* tolerance_field) 
   return NULL;
 }
 
+FCSResult fcs_ewald_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolerance)
+{
+  const char *fnc_name = "fcs_ewald_set_tolerance";
+
+  if (tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
+  {
+    fcs_ewald_set_tolerance_field(handle, tolerance);
+    return FCS_RESULT_SUCCESS;
+
+  } else return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "Unsupported tolerance type. EWALD only supports FCS_TOLERANCE_TYPE_FIELD.");
+}
+
+FCSResult fcs_ewald_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance)
+{
+  *tolerance_type = FCS_TOLERANCE_TYPE_FIELD;
+  return fcs_ewald_get_tolerance_field(handle, tolerance);
+}
+
 FCSResult 
 fcs_ewald_get_components(FCS handle, 
 			 fcs_float** far_fields, 
@@ -505,7 +531,6 @@ ewald_tune_alpha(fcs_int N, fcs_float sum_q2, fcs_float box_l[3],
 
 FCSResult fcs_ewald_tune(FCS handle,
 			 fcs_int num_particles,
-			 fcs_int local_max_particles,
 			 fcs_float *positions, 
 			 fcs_float *charges) {
   const char *fnc_name = "fcs_ewald_tune";
@@ -1018,7 +1043,6 @@ void ewald_compute_rspace(ewald_data_struct* d,
 
 FCSResult fcs_ewald_run(FCS handle,
 			fcs_int num_particles,
-			fcs_int local_max_particles,
 			fcs_float *positions, 
 			fcs_float *charges,
 			fcs_float *fields,
@@ -1029,7 +1053,7 @@ FCSResult fcs_ewald_run(FCS handle,
   ewald_data_struct *d = (ewald_data_struct*)handle->method_context;
 
   /* First run tune */
-  fcs_ewald_tune(handle, num_particles, local_max_particles, positions, charges);
+  fcs_ewald_tune(handle, num_particles, positions, charges);
 
   FCS_INFO(fprintf(stderr, "fcs_ewald_run() started...\n"));
   FCS_INFO(fprintf(stderr,						\
@@ -1077,8 +1101,11 @@ FCSResult fcs_ewald_run(FCS handle,
 				   num_particles*sizeof(fcs_float));
   }
 
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (num_particles > max_local_particles) max_local_particles = num_particles;
+
   /* Compute near field component */
-  ewald_compute_rspace(d, num_particles, local_max_particles, positions, charges,
+  ewald_compute_rspace(d, num_particles, max_local_particles, positions, charges,
 		       fields==NULL ? NULL : d->near_fields, 
 		       potentials==NULL ? NULL : d->near_potentials);
 

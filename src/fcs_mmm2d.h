@@ -36,14 +36,14 @@ FCSResult fcs_mmm2d_init(FCS handle);
  * @brief tuning method
  */
 FCSResult fcs_mmm2d_tune(FCS handle,
-		       fcs_int local_particles, fcs_int local_max_particles,
+		       fcs_int local_particles,
 		       fcs_float *positions,  fcs_float *charges);
 
 /**
  * @brief run method for mmm2d
  */
 FCSResult fcs_mmm2d_run(FCS handle,
-			fcs_int local_particles, fcs_int local_max_particles,
+			fcs_int local_particles,
 			fcs_float *positions,  fcs_float *charges,
 			fcs_float *field, fcs_float *potentials);
 

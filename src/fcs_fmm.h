@@ -103,20 +103,18 @@ FCSResult fcs_fmm_init(FCS handle );
  * @param handle the FCS-object into which the method specific parameters
  * can be entered
  * @param local_particles actual number of particles on process
- * @param local_max_particles size of allocated arrays
  * @param positons fcs_float* list of positions of particles in form
  *        (x1,y1,z1,x2,y2,z2,...,xn,yn,zn)
  * @param charges fcs_float* list of charges
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges);
+FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions,  fcs_float *charges);
 
 /**
  * @brief run method for fmm
  * @param handle the FCS-object into which the method specific parameters
  * can be entered
  * @param local_particles actual number of particles on process
- * @param local_max_particles size of allocated arrays
  * @param positons fcs_float* list of positions of particles in form
  *        (x1,y1,z1,x2,y2,z2,...,xn,yn,zn)
  * @param charges fcs_float* list of charges
@@ -124,7 +122,7 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_int local_max_pa
  * results after the run
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,
                              fcs_float *positions, fcs_float *charges,
                              fcs_float *field, fcs_float *potentials);
 
@@ -166,6 +164,8 @@ FCSResult fcs_fmm_get_virial(FCS handle, fcs_float *virial);
 FCSResult fcs_fmm_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
 FCSResult fcs_fmm_print_parameters(FCS handle);
 
+FCSResult fcs_fmm_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolerance);
+FCSResult fcs_fmm_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance);
 
 FCSResult fcs_fmm_set_max_particle_move(FCS handle, fcs_float max_particle_move);
 FCSResult fcs_fmm_set_resort(FCS handle, fcs_int resort);

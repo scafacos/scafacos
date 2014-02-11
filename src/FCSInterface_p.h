@@ -222,6 +222,21 @@ FCSResult fcs_set_total_particles(FCS handle, fcs_int total_particles);
 fcs_int fcs_get_total_particles(FCS handle);
 
 /**
+ * @brief function to set the maximum number of particles that can be stored in the specified local particle data arrays
+ * @param handle FCS-object representing an FCS solver
+ * @param max_local_particles maximum number of particles that can be stored locally
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_set_max_local_particles(FCS handle, fcs_int max_local_particles);
+
+/**
+ * @brief function to return the maximum number of particles that can be stored in the specified local particle data arrays
+ * @param handle FCS-object representing an FCS solver
+ * @return maximum number of particles that can be stored locally
+ */
+fcs_int fcs_get_max_local_particles(FCS handle);
+
+/**
  * @brief function to set the error tolerance of the FCS solver
  * @param handle FCS-object representing an FCS solver
  * @param tolerance_type constant to select the type of the error tolerance
@@ -288,28 +303,24 @@ FCSResult fcs_print_parameters(FCS handle);
  * @brief function to tune method specific parameters depending on the particles
  * @param handle FCS-object representing an FCS solver
  * @param local_particles local number of particles
- * @param max_local_particles maximum number of local particles that can be
- * stored in the specified particle data arrays
  * @param positions positions of the local particles used for the tuning
  * @param charges charges of the local particles used for the tuning
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_tune(FCS handle, fcs_int local_particles, fcs_int max_local_particles,
+FCSResult fcs_tune(FCS handle, fcs_int local_particles,
   fcs_float *positions, fcs_float *charges);
 
 /**
  * @brief function to run the solver method
  * @param handle FCS-object representing an FCS solver
  * @param local_particles local number of particles
- * @param max_local_particles maximum number of local particles that can be
- * stored in the specified particle data arrays
  * @param positions positions of the local particles
  * @param charges charges of the local particles
  * @param field calculated field values of the local particles
  * @param potentials calculated potential values of the local particles
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_run(FCS handle, fcs_int local_particles, fcs_int max_local_particles,
+FCSResult fcs_run(FCS handle, fcs_int local_particles,
   fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
 
 /**

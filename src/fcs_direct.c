@@ -77,10 +77,18 @@ FCSResult fcs_direct_init(FCS handle)
   fcs_direct_set_cutoff(handle, default_cutoff);
 
   fcs_direct_set_periodic_images(handle, default_periodic_images);
-  
+
   fcs_direct_set_cutoff_with_near(handle, FCS_FALSE);
 
   handle->direct_param->metallic_boundary_conditions = 1;
+
+  handle->destroy = fcs_direct_destroy;
+  handle->set_parameter = fcs_direct_set_parameter;
+  handle->print_parameters = fcs_direct_print_parameters;
+  handle->tune = fcs_direct_tune;
+  handle->run = fcs_direct_run;
+  handle->set_compute_virial = fcs_direct_require_virial;
+  handle->get_virial = fcs_direct_get_virial;
 
   handle->set_max_particle_move = fcs_direct_set_max_particle_move;
   handle->set_resort = fcs_direct_set_resort;
@@ -139,7 +147,7 @@ FCSResult fcs_direct_check(FCS handle)
 }
 
 
-FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges)
+FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges)
 {
   static const char func_name[] = "fcs_direct_tune";
 
@@ -153,7 +161,7 @@ FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_int local_max
 }
 
 
-FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
+FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
   static const char func_name[] = "fcs_direct_run";
 
@@ -165,6 +173,7 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
 
   const fcs_float *box_base, *box_a, *box_b, *box_c;
   const fcs_int *periodicity;
+  fcs_int max_local_particles;
 
 
   DEBUG_MOP(printf("fcs_direct_run\n"));
@@ -179,9 +188,12 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
   box_c = fcs_get_box_c(handle);
   periodicity = fcs_get_periodicity(handle);
 
+  max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
   fcs_directc_set_system(&handle->direct_param->directc, box_base, box_a, box_b, box_c, periodicity);
 
-  fcs_directc_set_particles(&handle->direct_param->directc, local_particles, local_max_particles, positions, charges, field, potentials);
+  fcs_directc_set_particles(&handle->direct_param->directc, local_particles, max_local_particles, positions, charges, field, potentials);
 
   fcs_directc_run(&handle->direct_param->directc, ctx->comm);
 

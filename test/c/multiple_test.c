@@ -314,7 +314,7 @@ int main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Tuning pp3mg... \n");
   result =
-    fcs_tune (handle_pp3mg, local_particles, local_particles, particles, charges);
+    fcs_tune (handle_pp3mg, local_particles, particles, charges);
   if (comm_rank == 0)
     fcs_result_print_result (result);
   fcs_result_destroy (result);
@@ -345,7 +345,7 @@ int main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Tuning memd... \n");
   result =
-    fcs_tune (handle_memd, local_particles, local_particles, particles, charges);
+    fcs_tune (handle_memd, local_particles, particles, charges);
   if (comm_rank == 0)
     fcs_result_print_result (result);
   fcs_result_destroy (result);
@@ -374,7 +374,7 @@ int main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Tuning pepc... \n");
   result =
-    fcs_tune (handle_pepc, local_particles, local_particles, particles, charges);
+    fcs_tune (handle_pepc, local_particles, particles, charges);
   if (comm_rank == 0)
     fcs_result_print_result (result);
   fcs_result_destroy (result);
@@ -403,7 +403,7 @@ int main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Tuning fmm... \n");
   result =
-    fcs_tune (handle_fmm, local_particles, local_particles, particles, charges);
+    fcs_tune (handle_fmm, local_particles, particles, charges);
   if (comm_rank == 0)
     fcs_result_print_result (result);
   fcs_result_destroy (result);
@@ -432,7 +432,7 @@ int main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Tuning p2nfft... \n");
   result =
-    fcs_tune (handle_p2nfft, local_particles, local_particles, particles, charges);
+    fcs_tune (handle_p2nfft, local_particles, particles, charges);
   if (comm_rank == 0)
     fcs_result_print_result (result);
   fcs_result_destroy (result);
@@ -461,7 +461,7 @@ int main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Tuning p3m... \n");
   result =
-    fcs_tune (handle_p3m, local_particles, local_particles, particles, charges);
+    fcs_tune (handle_p3m, local_particles, particles, charges);
   if (comm_rank == 0)
     fcs_result_print_result (result);
   fcs_result_destroy (result);
@@ -492,7 +492,7 @@ int main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Tuning vmg... \n");
   result =
-    fcs_tune (handle_vmg, local_particles, local_particles, particles, charges);
+    fcs_tune (handle_vmg, local_particles, particles, charges);
   if (comm_rank == 0)
     fcs_result_print_result (result);
   fcs_result_destroy (result);
@@ -510,7 +510,7 @@ int main (int argc, char **argv)
             printf ("\n");
           if (comm_rank == 0)
             printf ("Running pp3mg ... \n");
-          result = fcs_run (handle_pp3mg, local_particles, local_particles, particles,
+          result = fcs_run (handle_pp3mg, local_particles, particles,
                             charges, field, potentials);
           break;
 #endif
@@ -520,7 +520,7 @@ int main (int argc, char **argv)
             printf ("\n");
           if (comm_rank == 0)
             printf ("Running fmm ... \n");
-          result = fcs_run (handle_fmm, local_particles, local_particles, particles,
+          result = fcs_run (handle_fmm, local_particles, particles,
                             charges, field, potentials);
           break;
 #endif
@@ -530,7 +530,7 @@ int main (int argc, char **argv)
             printf ("\n");
           if (comm_rank == 0)
             printf ("Running memd ... \n");
-          result = fcs_run (handle_memd, local_particles, local_particles, particles,
+          result = fcs_run (handle_memd, local_particles, particles,
                             charges, field, potentials);
           break;
 #endif
@@ -540,7 +540,7 @@ int main (int argc, char **argv)
             printf ("\n");
           if (comm_rank == 0)
             printf ("Running p2nfft ... \n");
-          result = fcs_run (handle_p2nfft, local_particles, local_particles, particles,
+          result = fcs_run (handle_p2nfft, local_particles, particles,
                             charges, field, potentials);
           break;
 #endif
@@ -550,7 +550,7 @@ int main (int argc, char **argv)
             printf ("\n");
           if (comm_rank == 0)
             printf ("Running p3m ... \n");
-          result = fcs_run (handle_p3m, local_particles, local_particles, particles,
+          result = fcs_run (handle_p3m, local_particles, particles,
                             charges, field, potentials);
           break;
 #endif
@@ -560,7 +560,7 @@ int main (int argc, char **argv)
             printf ("\n");
           if (comm_rank == 0)
             printf ("Running pepc ... \n");
-          result = fcs_run (handle_pepc, local_particles, local_particles, particles,
+          result = fcs_run (handle_pepc, local_particles, particles,
                             charges, field, potentials);
           break;
 #endif
@@ -570,7 +570,7 @@ int main (int argc, char **argv)
             printf ("\n");
           if (comm_rank == 0)
             printf ("Running vmg ... \n");
-          result = fcs_run (handle_vmg, local_particles, local_particles, particles,
+          result = fcs_run (handle_vmg, local_particles, particles,
                             charges, field, potentials);
           break;
 #endif

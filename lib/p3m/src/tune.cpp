@@ -34,7 +34,7 @@ namespace P3M {
   /** Good mesh sizes for fftw 
    */
   static const p3m_int good_gridsize[] = 
-    {0, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
+    {0, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
      36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64,
      66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128,
      130, 132, 140, 144, 150, 154, 156, 160, 162, 168, 176, 180, 182, 192,
@@ -51,7 +51,7 @@ namespace P3M {
 
   /** Steps to do when trying to determine smallest possible grid size. */
   static const p3m_int step_good_gridsize[] =
-    { 0, 16, 27, 45, 59, 73, 79, 84, 91, 95, 99, 102, 104, 105 } ;
+    { 0, 15, 26, 44, 58, 72, 78, 83, 90, 94, 98, 101, 103, 104 } ;
   static const p3m_int num_steps_good_gridsize = 14;
 
   struct tune_params {

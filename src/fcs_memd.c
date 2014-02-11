@@ -51,13 +51,21 @@ FCSResult fcs_memd_init(FCS handle)
     result = fcs_memd_check(handle, fnc_name);
     if (result != NULL) return result;
 
+    handle->destroy = fcs_memd_destroy;
+    handle->set_parameter = fcs_memd_set_parameter;
+    handle->print_parameters = fcs_memd_print_parameters;
+    handle->tune = fcs_memd_tune;
+    handle->run = fcs_memd_run;
+    handle->set_compute_virial = fcs_memd_require_virial;
+    handle->get_virial = fcs_memd_get_virial;
+
     ifcs_memd_init(&handle->method_context, handle->communicator);
     
     return NULL;
 }
 
 
-FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges)
+FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_float *positions,  fcs_float *charges)
 {
     char* fnc_name = "fcs_memd_tune";
     FCSResult result;
@@ -87,14 +95,17 @@ FCSResult fcs_memd_tune(FCS handle, fcs_int local_particles, fcs_int local_max_p
 }
 
 
-FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions,  fcs_float *charges, fcs_float *fields, fcs_float *potentials)
+FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_float *positions,  fcs_float *charges, fcs_float *fields, fcs_float *potentials)
 {
     /* retune if needed */
 /*    if (fcs_memd_needs_retuning(handle->method_context, local_particles, positions, charges))
         fcs_memd_tune(handle, local_particles, local_max_particles, positions, charges);
 */
+    fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+    if (local_particles > max_local_particles) max_local_particles = local_particles;
+
     ifcs_memd_run(handle->method_context,
-            local_particles, local_max_particles, positions, charges, fields, potentials);
+            local_particles, max_local_particles, positions, charges, fields, potentials);
         
     return NULL;
 }

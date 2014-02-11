@@ -101,7 +101,7 @@ FCSResult fcs_pp3mg_destroy(FCS handle);
  * @param charges fcs_float* list of charges
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges);
+FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges);
 
 
 /**
@@ -115,7 +115,7 @@ FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_
  * results after the run
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
+FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
 
 
 /**

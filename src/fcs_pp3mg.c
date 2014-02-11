@@ -54,6 +54,14 @@ FCSResult fcs_pp3mg_init(FCS handle)
 
   DEBUG_MOP(printf("fcs_pp3mg_init\n"));
 
+  handle->destroy = fcs_pp3mg_destroy;
+  handle->set_parameter = fcs_pp3mg_set_parameter;
+  handle->print_parameters = fcs_pp3mg_print_parameters;
+  handle->tune = fcs_pp3mg_tune;
+  handle->run = fcs_pp3mg_run;
+  handle->set_compute_virial = fcs_pp3mg_require_virial;
+  handle->get_virial = fcs_pp3mg_get_virial;
+
   handle->pp3mg_param = malloc(sizeof(*handle->pp3mg_param));
   handle->pp3mg_param->m = -1;
   handle->pp3mg_param->n = -1;
@@ -111,7 +119,7 @@ FCSResult fcs_pp3mg_destroy(FCS handle)
 }
 
 
-FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges)
+FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges)
 {
   MPI_Comm comm;
   fcs_pp3mg_context_t *ctx;
@@ -131,7 +139,10 @@ FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_
   y = MAX(box_a[1],MAX(box_b[1],box_c[1]));
   z = MAX(box_a[2],MAX(box_b[2],box_c[2]));
 
-  result = fcs_pp3mg_set_max_particles(handle, local_max_particles);
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
+  result = fcs_pp3mg_set_max_particles(handle, max_local_particles);
   if (result != NULL) return result;
 
   ctx = fcs_get_method_context(handle);
@@ -157,7 +168,7 @@ FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_int local_max_
 }
 
 
-FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_num_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
+FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
   fcs_pp3mg_context_t *ctx;
 
@@ -181,7 +192,10 @@ FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_num_particles, fcs_int local_m
     fcs_float box_base[3] = { 0, 0, 0 };
     fcs_float lower_bound[3] = { ctx->parameters->x_start, ctx->parameters->y_start, ctx->parameters->z_start };
     fcs_float upper_bound[3] = { ctx->parameters->x_end, ctx->parameters->y_end, ctx->parameters->z_end };
-    
+
+    fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+    if (local_particles > max_local_particles) max_local_particles = local_particles;
+
     fcs_gridsort_t gridsort;
     
     fcs_int sorted_num_particles;
@@ -192,7 +206,7 @@ FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_num_particles, fcs_int local_m
     fcs_gridsort_create(&gridsort);
     fcs_gridsort_set_system(&gridsort, box_base, box_a, box_b, box_c, NULL);
     fcs_gridsort_set_bounds(&gridsort, lower_bound, upper_bound);
-    fcs_gridsort_set_particles(&gridsort, local_num_particles, local_max_particles, positions, charges);
+    fcs_gridsort_set_particles(&gridsort, local_particles, max_local_particles, positions, charges);
     fcs_gridsort_sort_forward(&gridsort, 0.0, ctx->parameters->mpi_comm_cart);
     fcs_gridsort_get_real_particles(&gridsort, &sorted_num_particles, &sorted_positions, &sorted_charges, &sorted_indices);
     

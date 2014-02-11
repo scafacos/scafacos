@@ -39,12 +39,20 @@ FCSResult fcs_mmm1d_init(FCS handle)
   result = fcs_mmm1d_check(handle, fnc_name);
   if (result != NULL) return result;
   
+  handle->destroy = fcs_mmm1d_destroy;
+  handle->set_parameter = fcs_mmm1d_set_parameter;
+  handle->print_parameters = fcs_mmm1d_print_parameters;
+  handle->tune = fcs_mmm1d_tune;
+  handle->run = fcs_mmm1d_run;
+  handle->set_compute_virial = fcs_mmm1d_require_virial;
+  handle->get_virial = fcs_mmm1d_get_virial;
+
   mmm1d_init(&handle->method_context, handle->communicator);
   return NULL;
 }
 
 FCSResult fcs_mmm1d_tune(FCS handle, 
-		       fcs_int local_particles, fcs_int local_max_particles, 
+		       fcs_int local_particles,
 		       fcs_float *positions, fcs_float *charges)
 {
   char* fnc_name = "fcs_mmm1d_tune";
@@ -64,8 +72,8 @@ FCSResult fcs_mmm1d_tune(FCS handle,
   const fcs_float *a = fcs_get_box_a(handle);
   const fcs_float *b = fcs_get_box_b(handle);
   const fcs_float *c = fcs_get_box_c(handle);
-  if (!fcs_is_cubic(a, b, c))
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "mmm1d requires a cubic box.");
+//  if (!fcs_is_cubic(a, b, c))
+//    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "mmm1d requires a cubic box.");
   
   mmm1d_set_box_a(handle->method_context, a[0]);
   mmm1d_set_box_b(handle->method_context, b[1]);
@@ -81,16 +89,20 @@ FCSResult fcs_mmm1d_tune(FCS handle,
 
 /* internal mmm1d-specific run function */
 FCSResult fcs_mmm1d_run(FCS handle, 
-		      fcs_int local_particles, fcs_int local_max_particles, 
+		      fcs_int local_particles,
 		      fcs_float *positions, fcs_float *charges,
 		      fcs_float *fields, fcs_float *potentials)
 {
 //   char* fnc_name = "fcs_mmm1d_run";
 //   FCSResult result;
-  fcs_mmm1d_tune(handle, local_particles, local_max_particles, positions, charges);
+
+  fcs_mmm1d_tune(handle, local_particles, positions, charges);
   
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
   mmm1d_run(handle->method_context,
-	  local_particles, local_max_particles, positions, charges, fields, potentials);
+	  local_particles, max_local_particles, positions, charges, fields, potentials);
   return NULL;
 }
 

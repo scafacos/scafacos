@@ -88,7 +88,7 @@ FCSResult fcs_direct_check(FCS handle);
  * @param charges fcs_float* list of charges
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges);
+FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges);
 
 
 /**
@@ -99,7 +99,7 @@ FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_int local_max
  * @param output FCSOutput* pointer that contains a FCSOutput-object with the results after the run
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+FCSResult fcs_direct_run(FCS handle, fcs_int local_particles,
                          fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
 
 
