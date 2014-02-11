@@ -72,8 +72,8 @@ FCSResult fcs_mmm1d_tune(FCS handle,
   const fcs_float *a = fcs_get_box_a(handle);
   const fcs_float *b = fcs_get_box_b(handle);
   const fcs_float *c = fcs_get_box_c(handle);
-  if (!fcs_is_cubic(a, b, c))
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "mmm1d requires a cubic box.");
+//  if (!fcs_is_cubic(a, b, c))
+//    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "mmm1d requires a cubic box.");
   
   mmm1d_set_box_a(handle->method_context, a[0]);
   mmm1d_set_box_b(handle->method_context, b[1]);
