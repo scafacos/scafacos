@@ -25,8 +25,14 @@
 namespace P3M {
 
 struct Communication {
+	const static int MPI_MASTER = 0;
+
 	Communication(MPI_Comm mpicomm);
 	~Communication();
+
+	bool onMaster() {
+	    return rank == MPI_MASTER;
+	}
 
 	void prepare(p3m_float box_l[3]);
 
@@ -53,5 +59,6 @@ struct Communication {
 	/** Right (top, back) corner of this nodes local box. */
 	p3m_float my_right[3];
 };
+
 }
 #endif

@@ -28,6 +28,11 @@ namespace P3M {
   public:
     static const p3m_int max_cao = 7;
 
+    /** Factory method to create the fitting CAF class. */
+    static CAF* create(p3m_int cao,
+                       p3m_int n_interpol,
+                       bool derivative = false);
+
     /** Computes the \a i'th point of the CAF centered around \a r0 of
         the charge assignment function of order \a cao. */
     static p3m_float compute(p3m_int i, p3m_float r0, p3m_int cao);
@@ -35,11 +40,6 @@ namespace P3M {
     /** Computes the \a i'th point of the CAF centered around \a r0 of
         the charge assignment function of order \a cao. */
     static p3m_float computeDerivative(p3m_int i, p3m_float r0, p3m_int cao);
-
-    /** Factory method to create the fitting CAF class. */
-    static CAF* create(p3m_int cao, 
-                       p3m_int n_interpol,
-                       bool derivative = false);
 
     /** Abstract base class that caches cao values of the CAF. */
     class Cache {

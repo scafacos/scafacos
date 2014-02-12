@@ -16,13 +16,12 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-#include "tune_broadcast.hpp"
 
 #include "utils.hpp"
 #include <cstdio>
 #include <stdexcept>
-#include "error_estimate.hpp"
-#include "timing.hpp"
+#include "ErrorEstimate.hpp"
+#include "Solver.hpp"
 
 namespace P3M {
   /***************************************************/
@@ -54,9 +53,9 @@ namespace P3M {
     switch (command) {
     case CMD_FINISHED:
     case CMD_TIMING:
-    case CMD_COMPUTE_ERROR_ESTIMATE:
       tune_broadcast_params(d);
       return;
+    case CMD_COMPUTE_ERROR_ESTIMATE:
     case CMD_FAILED: 
       return;
     }
@@ -66,7 +65,7 @@ namespace P3M {
   tune_broadcast_slave(data_struct *d, p3m_int num_particles,
                        p3m_float *positions, p3m_float *charges) {
     P3M_DEBUG(printf( "tune_broadcast_slave() started...\n"));
-    if (on_master())
+    if (d->comm.onMaster())
       throw std::logic_error("Internal error: tune_broadcast_slave " 
                              "should not be called on master!");
 
@@ -81,8 +80,7 @@ namespace P3M {
 
       switch (command) {
       case CMD_COMPUTE_ERROR_ESTIMATE:
-        tune_receive_params(d);
-        k_space_error(d);
+        d->errorEstimate->compute_slave();
         break;
       case CMD_TIMING:
         tune_receive_params(d);

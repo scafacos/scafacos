@@ -31,8 +31,8 @@
 #ifdef P3M_ENABLE_DEBUG
 #define ADDITIONAL_CHECKS
 #define P3M_PRINT_TIMINGS
-#define P3M_TRACE(cmd) if (on_master()) cmd
-#define P3M_DEBUG(cmd) if (on_master()) cmd
+#define P3M_TRACE(cmd) if (comm.onMaster()) cmd
+#define P3M_DEBUG(cmd) if (comm.onMaster()) cmd
 #define P3M_TRACE_LOCAL(cmd) cmd
 #define P3M_DEBUG_LOCAL(cmd) cmd
 #else
@@ -43,7 +43,7 @@
 #endif
 
 #ifdef P3M_ENABLE_INFO
-#define P3M_INFO(cmd) if (on_master()) cmd
+#define P3M_INFO(cmd) if (comm.onMaster()) cmd
 #define P3M_INFO_LOCAL(cmd) cmd
 #else
 #define P3M_INFO(cmd)
@@ -71,8 +71,6 @@
 #endif
 
 namespace P3M {
-const int MPI_MASTER = 0;
-
 template<typename T>
 inline void sdelete(T* ptr) {
     if (ptr != 0)
@@ -207,18 +205,6 @@ static inline p3m_int float_is_equal(p3m_float x, p3m_float y) {
  */
 static inline p3m_int float_is_zero(p3m_float x) {
     return (fabs(x) < ROUND_ERROR_PREC);
-}
-
-static inline bool on_master()
-{
-    static int rank = -1;
-    if (rank < 0)
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    return rank == MPI_MASTER;
-}
-
-static inline void errexit() {
-    exit(1);
 }
 }
 

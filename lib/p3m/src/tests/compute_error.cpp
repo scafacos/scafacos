@@ -1,6 +1,6 @@
-#include "p3m.hpp"
+#include "types.hpp"
 #include "Communication.hpp"
-#include "error_estimate.hpp"
+#include "ErrorEstimate.hpp"
 #include <cstdlib>
 #include <cmath>
 
@@ -15,28 +15,24 @@ int main(int argc, char *argv[]) {
   }
   p3m_int grid = atoi(argv[1]);
 
-  data_struct d(MPI_COMM_WORLD);
-  d.box_l[0] = 10.;
-  d.box_l[1] = 10.;
-  d.box_l[2] = 10.;
-  d.comm.prepare(d.box_l);
+  Communication comm(MPI_COMM_WORLD);
+  ErrorEstimate *error = ErrorEstimate::create(comm);
+  p3m_float L[3] = { 10.0, 10.0, 10.0 };
+  p3m_float num_charges = 300.0;
+  p3m_float sum_q2 = 300.0;
 
-  d.sum_qpart = 300.0;
-  d.sum_q2 = 300.0;
-  d.square_sum_q = 0.0;
+  Parameters p;
+  p.cao = 4;
+  p.grid[0] = grid;
+  p.grid[1] = grid;
+  p.grid[2] = grid;
 
-  d.cao = 4;
+  for (p.alpha = 0.1; p.alpha < 10.0; p.alpha += 0.1) {
+	  p3m_float ks_error = error->compute_ks_error(p, num_charges, sum_q2, L);
 
-  d.grid[0] = grid;
-  d.grid[1] = grid;
-  d.grid[2] = grid;
-
-  for (d.alpha = 0.1; d.alpha < 10.0; d.alpha += 0.1) {
-    k_space_error(&d);
-    
-    p3m_float alpha_L = d.alpha*d.box_l[0];
-    p3m_float Q = sqrt(d.ks_error/(d.box_l[0]*d.box_l[0]));
-    printf("%le %le %le %le\n", d.alpha, d.ks_error, alpha_L, Q);
+	  p3m_float alpha_L = p.alpha*L[0];
+	  p3m_float Q = sqrt(ks_error/(L[0]*L[0]));
+	  printf("%le %le %le %le\n", p.alpha, ks_error, alpha_L, Q);
   }
 
   MPI_Finalize();

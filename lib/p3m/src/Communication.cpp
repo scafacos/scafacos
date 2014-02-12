@@ -74,10 +74,10 @@ namespace P3M {
       /* compute node grid */
       MPI_Dims_create(size, 3, node_grid);
 
-      P3M_INFO(printf("    node_grid=%dx%dx%d\n",				\
-                      node_grid[0],					\
-                      node_grid[1],					\
-                      node_grid[2]));
+#ifdef P3M_ENABLE_INFO
+      if (onMaster())
+    	  printf("    node_grid=%dx%dx%d\n", node_grid[0], node_grid[1], node_grid[2]);
+#endif
 
       /* create communicator */
       int periodicity[3] = {1, 1, 1};
@@ -125,5 +125,4 @@ namespace P3M {
 
     P3M_DEBUG(printf("  P3M::Communication::prepare() finished.\n"));
   }
-
 }

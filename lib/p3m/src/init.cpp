@@ -20,13 +20,15 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 #include "utils.hpp"
-#include "p3m.hpp"
+#include "Solver.hpp"
 
 namespace P3M {
 
 	data_struct::data_struct(MPI_Comm mpicomm) :
-		comm(mpicomm), fft(comm) {
+		comm(mpicomm), fft(comm), errorEstimate(NULL) {
 		P3M_DEBUG(printf( "P3M::P3M() started...\n"));
+
+		errorEstimate = ErrorEstimate::create(comm);
 
 		/* Init the P3M parameters */
 		box_l[0] = 1.0;
@@ -115,6 +117,7 @@ namespace P3M {
 	}
 
 	data_struct::~data_struct() {
+		delete errorEstimate;
 		fft.free_data(rs_grid);
 		fft.free_data(ks_grid);
 		sfree(send_grid);

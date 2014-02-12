@@ -17,10 +17,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 #include "utils.hpp"
-#include "p3m.hpp"
-#include "tune_broadcast.hpp"
-#include "timing.hpp"
-#include "prepare.hpp"
+#include "Solver.hpp"
 #include <cstdlib>
 
 namespace P3M {

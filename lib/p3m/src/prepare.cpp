@@ -17,12 +17,11 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 #include "types.hpp"
-#include "prepare.hpp"
+#include "Solver.hpp"
 #include <cstdlib>
 #include <cstdio>
 #include "utils.hpp"
 #include "caf.hpp"
-#include "influence_function.hpp"
 
 namespace P3M {
   /***************************************************/
@@ -54,55 +53,57 @@ namespace P3M {
   /** Prepare the data structures and constants of the P3M algorithm.
       All parameters have to be set. */
   void prepare(data_struct *d) {
-    P3M_DEBUG(printf("  prepare() started... \n"));
+	  Communication &comm = d->comm;
 
-    /* initializes the (inverse) grid constant d->a
+	  P3M_DEBUG(printf("  prepare() started... \n"));
+
+	  /* initializes the (inverse) grid constant d->a
        (d->ai) and the cutoff for charge assignment
        d->cao_cut */ 
-    prepare_a_ai_cao_cut(d);
-    calc_local_ca_grid(d);
-    calc_send_grid(d);
-    P3M_DEBUG(print_local_grid(d->local_grid));
-    P3M_DEBUG(print_send_grid(d->sm));
-    d->send_grid = (p3m_float *) realloc(d->send_grid, sizeof(p3m_float)*d->sm.max);
-    d->recv_grid = (p3m_float *) realloc(d->recv_grid, sizeof(p3m_float)*d->sm.max);
+	  prepare_a_ai_cao_cut(d);
+	  calc_local_ca_grid(d);
+	  calc_send_grid(d);
+	  P3M_DEBUG(print_local_grid(d->local_grid));
+	  P3M_DEBUG(print_send_grid(d->sm));
+	  d->send_grid = (p3m_float *) realloc(d->send_grid, sizeof(p3m_float)*d->sm.max);
+	  d->recv_grid = (p3m_float *) realloc(d->recv_grid, sizeof(p3m_float)*d->sm.max);
 
-    P3M_DEBUG(printf("    Interpolating charge assignment function...\n"));
-    d->caf = P3M::CAF::create(d->cao, d->n_interpol);
-    d->cafx = d->caf->createCache();
-    d->cafy = d->caf->createCache();
-    d->cafz = d->caf->createCache();
+	  P3M_DEBUG(printf("    Interpolating charge assignment function...\n"));
+	  d->caf = P3M::CAF::create(d->cao, d->n_interpol);
+	  d->cafx = d->caf->createCache();
+	  d->cafy = d->caf->createCache();
+	  d->cafz = d->caf->createCache();
 #ifdef P3M_AD
-    d->caf_d = P3M::CAF::create(d->cao, d->n_interpol, true);
-    d->cafx_d = d->caf_d->createCache();
-    d->cafy_d = d->caf_d->createCache();
-    d->cafz_d = d->caf_d->createCache();
+	  d->caf_d = P3M::CAF::create(d->cao, d->n_interpol, true);
+	  d->cafx_d = d->caf_d->createCache();
+	  d->cafy_d = d->caf_d->createCache();
+	  d->cafz_d = d->caf_d->createCache();
 #endif  
 
-    /* position offset for calc. of first gridpoint */
-    d->pos_shift = (p3m_float)((d->cao-1)/2) - (d->cao%2)/2.0;
-    P3M_DEBUG(printf("    pos_shift=" FFLOAT "\n",d->pos_shift)); 
-  
-    /* FFT */
-    P3M_INFO(printf("    Preparing FFTs...\n"));
-    d->fft.prepare(d->local_grid.dim, d->local_grid.margin,
-                    d->grid, d->grid_off,
-                    &d->ks_pnum);
-    d->rs_grid = d->fft.malloc_data();
-    d->ks_grid = d->fft.malloc_data();
-  
-    /* k-space part */
-    calc_differential_operator(d);
-    P3M_INFO(printf("    Calculating influence function...\n"));
+	  /* position offset for calc. of first gridpoint */
+	  d->pos_shift = (p3m_float)((d->cao-1)/2) - (d->cao%2)/2.0;
+	  P3M_DEBUG(printf("    pos_shift=" FFLOAT "\n",d->pos_shift));
+
+	  /* FFT */
+	  P3M_INFO(printf("    Preparing FFTs...\n"));
+	  d->fft.prepare(d->local_grid.dim, d->local_grid.margin,
+			  d->grid, d->grid_off,
+			  &d->ks_pnum);
+	  d->rs_grid = d->fft.malloc_data();
+	  d->ks_grid = d->fft.malloc_data();
+
+	  /* k-space part */
+	  calc_differential_operator(d);
+	  P3M_INFO(printf("    Calculating influence function...\n"));
 #if !defined(P3M_INTERLACE) && defined(P3M_IK)
-    calc_influence_function_ik(d);
+	  calc_influence_function_ik(d);
 #elif defined(P3M_INTERLACE) && defined(P3M_IK)
-    calc_influence_function_iki(d);
+	  calc_influence_function_iki(d);
 #else
-    calc_influence_function_adi(d);
+	  calc_influence_function_adi(d);
 #endif
 
-    P3M_DEBUG(printf("  prepare() finished.\n"));
+	  P3M_DEBUG(printf("  prepare() finished.\n"));
   }
 
   /** Initializes the (inverse) grid constant \ref struct::a (\ref
@@ -111,13 +112,13 @@ namespace P3M {
       once and by \ref scaleby_box_l whenever the \ref box_l
       changed.  */
   void prepare_a_ai_cao_cut(data_struct *d) {
-    P3M_DEBUG(printf("    prepare_a_ai_cao_cut() started... \n"));
-    for (p3m_int i=0; i<3; i++) {
-      d->ai[i]      = (p3m_float)d->grid[i]/d->box_l[i]; 
-      d->a[i]       = 1.0/d->ai[i];
-      d->cao_cut[i] = 0.5*d->a[i]*d->cao;
-    }
-    P3M_DEBUG(printf("    prepare_a_ai_cao_cut() finished. \n"));
+	  P3M_DEBUG(printf("    prepare_a_ai_cao_cut() started... \n"));
+	  for (p3m_int i=0; i<3; i++) {
+		  d->ai[i]      = (p3m_float)d->grid[i]/d->box_l[i];
+		  d->a[i]       = 1.0/d->ai[i];
+		  d->cao_cut[i] = 0.5*d->a[i]*d->cao;
+	  }
+	  P3M_DEBUG(printf("    prepare_a_ai_cao_cut() finished. \n"));
   }
 
   /** Calculate the spacial position of the left down grid point of the

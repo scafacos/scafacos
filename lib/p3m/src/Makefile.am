@@ -24,14 +24,17 @@ libp3m_la_SOURCES = \
 	p3mconfig.hpp \
 	utils.hpp \
 	Communication.hpp Communication.cpp \
+	ErrorEstimate.hpp ErrorEstimate.cpp \
+	ErrorEstimateIK.hpp ErrorEstimateIK.cpp \
+	ErrorEstimateADI.hpp ErrorEstimateADI.cpp \
 	caf.cpp caf.hpp \
 	Parallel3DFFT.cpp Parallel3DFFT.hpp \
-	influence_function.cpp influence_function.hpp \
-	init.cpp init.hpp \
-	prepare.cpp prepare.hpp \
-	timing.cpp timing.hpp \
-	tune.cpp tune.hpp \
-	tune_broadcast.cpp tune_broadcast.hpp \
-	run.cpp run.hpp \
-	types.hpp \
-	error_estimate.cpp error_estimate.hpp
+	Solver.hpp \
+	influence_function.cpp \
+	init.cpp \
+	prepare.cpp \
+	timing.cpp \
+	tune.cpp \
+	tune_broadcast.cpp \
+	run.cpp \
+	types.hpp 

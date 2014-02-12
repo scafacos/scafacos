@@ -19,7 +19,7 @@
 /* Implements the functions that translate between the scafacos
  C-interface and the C++-P3M interface. */
 #include "scafacos.h"
-#include "src/p3m.hpp"
+#include "src/Solver.hpp"
 #include "src/utils.hpp"
 #include <stdexcept>
 
