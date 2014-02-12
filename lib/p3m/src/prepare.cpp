@@ -21,7 +21,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include "utils.hpp"
-#include "caf.hpp"
+#include "CAF.hpp"
 
 namespace P3M {
   /***************************************************/

@@ -27,7 +27,7 @@ libp3m_la_SOURCES = \
 	ErrorEstimate.hpp ErrorEstimate.cpp \
 	ErrorEstimateIK.hpp ErrorEstimateIK.cpp \
 	ErrorEstimateADI.hpp ErrorEstimateADI.cpp \
-	caf.cpp caf.hpp \
+	CAF.cpp CAF.hpp \
 	Parallel3DFFT.cpp Parallel3DFFT.hpp \
 	Solver.hpp \
 	influence_function.cpp \

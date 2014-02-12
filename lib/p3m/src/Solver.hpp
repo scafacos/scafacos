@@ -26,8 +26,7 @@
 #include "Communication.hpp"
 #include "Parallel3DFFT.hpp"
 #include "ErrorEstimate.hpp"
-
-#include "caf.hpp"
+#include "CAF.hpp"
 
 namespace P3M {
 /** Structure that holds all data of the P3M algorithm */
