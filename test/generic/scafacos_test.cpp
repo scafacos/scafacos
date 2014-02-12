@@ -748,19 +748,19 @@ static void run_integration(particles_t *parts, Testcase *testcase)
       char filename_suffix[MAX_FILENAME_LENGTH];
 
       filename_split(filename_noext, filename_suffix, MAX_FILENAME_LENGTH, global_params.outfilename);
-      snprintf(outfilename, MAX_FILENAME_LENGTH, "%s_%08d.%s", filename_noext, r, filename_suffix);
+      snprintf(outfilename, MAX_FILENAME_LENGTH, "%s_%08" FCS_LMOD_INT "d.%s", filename_noext, r, filename_suffix);
 
       // delete existing binary file
       if (global_params.have_binfile) {
         filename_split(filename_noext, filename_suffix, MAX_FILENAME_LENGTH, global_params.binfilename);
-        snprintf(binfilename, MAX_FILENAME_LENGTH, "%s_%08d.%s", filename_noext, r, filename_suffix);
+        snprintf(binfilename, MAX_FILENAME_LENGTH, "%s_%08" FCS_LMOD_INT "d.%s", filename_noext, r, filename_suffix);
         MPI_File_delete(binfilename, MPI_INFO_NULL);
       }
 
       // delete existing portable file
       if (global_params.have_portable_file) {
         filename_split(filename_noext, filename_suffix, MAX_FILENAME_LENGTH, global_params.portable_filename);
-        snprintf(portable_filename, MAX_FILENAME_LENGTH, "%s_%08d.%s", filename_noext, r, filename_suffix);
+        snprintf(portable_filename, MAX_FILENAME_LENGTH, "%s_%08" FCS_LMOD_INT "d.%s", filename_noext, r, filename_suffix);
         MPI_File_delete(portable_filename, MPI_INFO_NULL);
       }  
 
