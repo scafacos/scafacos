@@ -429,7 +429,7 @@ FCSResult ifcs_p2nfft_run(
   /* Finish far field timing */
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Far field computation");
 
-#if FCS_ENABLE_TIMING
+#if FCS_ENABLE_TIMING_PNFFT
   /* Print pnfft timer */
   FCS_P2NFFT_START_TIMING();
   FCS_PNFFT(print_average_timer_adv)(d->pnfft, d->cart_comm_3d);
