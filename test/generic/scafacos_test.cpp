@@ -201,6 +201,8 @@ static void parse_commandline(int argc, char* argv[]) {
   int c;
   char dup0[32], *dup1 = NULL, *dup2 = NULL;
 
+  global_params.conf[0] = '\0';
+
   while ((c = getopt (argc, argv, "o:bpkd:m:c:i:r:sa:t:g:")) != -1) {
     switch (c) {
     case 'o':
@@ -250,7 +252,8 @@ static void parse_commandline(int argc, char* argv[]) {
       break;
 #undef STRCMP_FRONT
     case 'c':
-      strncpy(global_params.conf, optarg, MAX_CONF_LENGTH);
+      if (global_params.conf[0] != '\0') strncat(global_params.conf, ",", MAX_CONF_LENGTH);
+      strncat(global_params.conf, optarg, MAX_CONF_LENGTH);
       break;
     case 'i':
       global_params.iterations = atoi(optarg);
