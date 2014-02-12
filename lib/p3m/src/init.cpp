@@ -24,7 +24,7 @@
 
 namespace P3M {
 
-	data_struct::data_struct(MPI_Comm mpicomm) :
+	Solver::Solver(MPI_Comm mpicomm) :
 		comm(mpicomm), fft(comm), errorEstimate(NULL) {
 		P3M_DEBUG(printf( "P3M::P3M() started...\n"));
 
@@ -116,7 +116,7 @@ namespace P3M {
 		P3M_DEBUG(printf( "P3M::P3M() finished.\n"));
 	}
 
-	data_struct::~data_struct() {
+	Solver::~Solver() {
 		delete errorEstimate;
 		fft.free_data(rs_grid);
 		fft.free_data(ks_grid);

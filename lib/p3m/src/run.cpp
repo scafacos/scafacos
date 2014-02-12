@@ -38,7 +38,7 @@ namespace P3M {
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
 /***************************************************/
 /* charge assignment */
-void assign_charges(data_struct* d,
+void assign_charges(Solver* d,
 		p3m_float *data,
 		p3m_int num_particles,
 		p3m_float *positions,
@@ -46,34 +46,34 @@ void assign_charges(data_struct* d,
 		p3m_int shifted);
 
 /* collect grid from neighbor processes */
-void gather_grid(data_struct* d, p3m_float* rs_grid);
+void gather_grid(Solver* d, p3m_float* rs_grid);
 void add_block(p3m_float *in, p3m_float *out, int start[3], int size[3], int dim[3]);
 /* spread grid to neighbor processors */
-void spread_grid(data_struct* d, p3m_float* rs_grid);
+void spread_grid(Solver* d, p3m_float* rs_grid);
 
 /* apply energy optimized influence function */
-void apply_energy_influence_function(data_struct* d);
+void apply_energy_influence_function(Solver* d);
 /* apply force optimized influence function */
-void apply_force_influence_function(data_struct* d);
+void apply_force_influence_function(Solver* d);
 /* differentiate kspace in direction dim */
-void ik_diff(data_struct* d, int dim);
+void ik_diff(Solver* d, int dim);
 
 /* compute the total energy (in k-space, so no backtransform) */
-p3m_float compute_total_energy(data_struct* d);
+p3m_float compute_total_energy(Solver* d);
 /* assign the potentials to the positions */
 void
-assign_potentials(data_struct* d, p3m_float *data,
+assign_potentials(Solver* d, p3m_float *data,
 		p3m_int num_particles,
 		p3m_float* positions, p3m_float* charges,
 		p3m_int shifted,
 		p3m_float* potentials);
 
-static void collect_print_timings(data_struct *d);
+static void collect_print_timings(Solver *d);
 
 #ifdef P3M_IK
 /* assign the fields to the positions in dimension dim [IK]*/
 void
-assign_fields_ik(data_struct* d,
+assign_fields_ik(Solver* d,
 		p3m_float *data,
 		p3m_int dim,
 		p3m_int num_particles,
@@ -84,7 +84,7 @@ assign_fields_ik(data_struct* d,
 #ifdef P3M_AD
 /* Backinterpolate the forces obtained from k-space to the positions [AD]*/
 void
-assign_fields_ad(data_struct* d,
+assign_fields_ad(Solver* d,
 		p3m_float *data,
 		p3m_int num_real_particles,
 		p3m_float* positions,
@@ -93,7 +93,7 @@ assign_fields_ad(data_struct* d,
 #endif
 
 
-void compute_far(data_struct* d,
+void compute_far(Solver* d,
 		p3m_int num_charges,
 		p3m_float* positions,
 		p3m_float* charges,
@@ -115,7 +115,7 @@ void compute_far(data_struct* d,
 
 /* domain decomposition */
 void
-domain_decompose(data_struct *d, fcs_gridsort_t *gridsort,
+domain_decompose(Solver *d, fcs_gridsort_t *gridsort,
 		p3m_int _num_particles,
 		p3m_float *_positions, p3m_float *_charges,
 		p3m_int *num_real_particles,
@@ -179,7 +179,7 @@ compute_near(const void *param, p3m_float dist, p3m_float *f, p3m_float *p)
 /* callback function for performing a whole loop of near field computations (using compute_near) */
 FCS_NEAR_LOOP_FP(compute_near_loop, compute_near);
 
-void run(data_struct* d,
+void run(Solver* d,
 		p3m_int _num_particles, p3m_float *_positions, p3m_float *_charges,
 		p3m_float *_fields,
 		p3m_float *_potentials) {
@@ -289,7 +289,7 @@ void run(data_struct* d,
 }
 
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
-void compute_far(data_struct* d,
+void compute_far(Solver* d,
 		p3m_int num_charges,
 		p3m_float* positions,
 		p3m_float* charges,
@@ -465,7 +465,7 @@ void compute_far(data_struct* d,
 }
 
 #elif !defined(P3M_INTERLACE) && defined(P3M_IK)
-void compute_far(data_struct* d,
+void compute_far(Solver* d,
 		p3m_int num_charges,
 		p3m_float* positions,
 		p3m_float* charges,
@@ -605,7 +605,7 @@ void compute_far(data_struct* d,
       charge assignment fraction (caf) for x,y,z.
  */
 p3m_int
-get_ca_points(data_struct *d, p3m_float real_pos[3], p3m_int shifted) {
+get_ca_points(Solver *d, p3m_float real_pos[3], p3m_int shifted) {
 	/* linear index of the grid point */
 	p3m_int linind = 0;
 
@@ -672,7 +672,7 @@ get_ca_points(data_struct *d, p3m_float real_pos[3], p3m_int shifted) {
 
 /** Assign the charges to the grid */
 void
-assign_charges(data_struct* d,
+assign_charges(Solver* d,
 		p3m_float *data,
 		p3m_int num_real_particles,
 		p3m_float *positions,
@@ -710,7 +710,7 @@ assign_charges(data_struct* d,
 }
 
 /* Gather information for FFT grid inside the nodes domain (inner local grid) */
-void gather_grid(data_struct* d, p3m_float* rs_grid) {
+void gather_grid(Solver* d, p3m_float* rs_grid) {
 	P3M_DEBUG(printf( "  gather_grid() started...\n"));
 
 	/* direction loop */
@@ -768,7 +768,7 @@ void add_block(p3m_float *in, p3m_float *out, int start[3], int size[3], int dim
 
 
 /* apply the influence function */
-void apply_energy_influence_function(data_struct* d) {
+void apply_energy_influence_function(Solver* d) {
 	P3M_DEBUG(printf( "  apply_energy_influence_function() started...\n"));
 	const p3m_int size = d->fft.plan[3].new_size;
 	for (p3m_int i=0; i < size; i++) {
@@ -779,7 +779,7 @@ void apply_energy_influence_function(data_struct* d) {
 }
 
 /* apply the influence function */
-void apply_force_influence_function(data_struct* d) {
+void apply_force_influence_function(Solver* d) {
 	P3M_DEBUG(printf( "  apply_force_influence_function() started...\n"));
 	const p3m_int size = d->fft.plan[3].new_size;
 	for (p3m_int i=0; i < size; i++) {
@@ -792,7 +792,7 @@ void apply_force_influence_function(data_struct* d) {
 /* Add up the measured timings and collect information from all nodes.
  * Print the timings if requested so.
  */
-static void collect_print_timings(data_struct *d) {
+static void collect_print_timings(Solver *d) {
 	d->timings[TIMING_FAR] += d->timings[TIMING_CA];
 	d->timings[TIMING_FAR] += d->timings[TIMING_GATHER];
 	d->timings[TIMING_FAR] += d->timings[TIMING_FORWARD];
@@ -859,7 +859,7 @@ static void collect_print_timings(data_struct *d) {
 
 }
 
-void ik_diff(data_struct* d, int dim) {
+void ik_diff(Solver* d, int dim) {
 	p3m_int ind;
 	p3m_int j[3];
 	p3m_int* d_operator = NULL;
@@ -899,7 +899,7 @@ void ik_diff(data_struct* d, int dim) {
 	/* store the result in d->rs_grid */
 }
 
-void spread_grid(data_struct* d, p3m_float* rs_grid) {
+void spread_grid(Solver* d, p3m_float* rs_grid) {
 	P3M_DEBUG(printf( "  spread_grid() started...\n"));
 
 	/* direction loop */
@@ -932,7 +932,7 @@ void spread_grid(data_struct* d, p3m_float* rs_grid) {
 
 /** Compute the total energy of the system in kspace. No need to
       backtransform the FFT grid in this case! */
-p3m_float compute_total_energy(data_struct* d) {
+p3m_float compute_total_energy(Solver* d) {
 	p3m_float local_k_space_energy;
 	p3m_float k_space_energy;
 
@@ -966,7 +966,7 @@ p3m_float compute_total_energy(data_struct* d) {
 
 /* Backinterpolate the potentials obtained from k-space to the positions */
 void
-assign_potentials(data_struct* d,
+assign_potentials(Solver* d,
 		p3m_float *data,
 		p3m_int num_real_particles,
 		p3m_float* positions, p3m_float* charges,
@@ -1015,7 +1015,7 @@ assign_potentials(data_struct* d,
 
 /* Backinterpolate the forces obtained from k-space to the positions */
 void
-assign_fields_ik(data_struct* d,
+assign_fields_ik(Solver* d,
 		p3m_float *data,
 		p3m_int dim,
 		p3m_int num_real_particles,
@@ -1061,7 +1061,7 @@ assign_fields_ik(data_struct* d,
 #ifdef P3M_AD
 /* Backinterpolate the forces obtained from k-space to the positions */
 void
-assign_fields_ad(data_struct* d,
+assign_fields_ad(Solver* d,
 		p3m_float *data,
 		p3m_int num_real_particles,
 		p3m_float* positions,

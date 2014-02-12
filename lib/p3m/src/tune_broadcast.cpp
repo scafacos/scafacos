@@ -33,17 +33,17 @@ namespace P3M {
   /***************************************************/
 
   void
-  tune_broadcast_params(data_struct *d);
+  tune_broadcast_params(Solver *d);
 
   void
-  tune_receive_params(data_struct *d);
+  tune_receive_params(Solver *d);
 
 
   /***************************************************/
   /* IMPLEMENTATION */
   /***************************************************/
   void
-  tune_broadcast_command(data_struct *d, p3m_int command) {
+  tune_broadcast_command(Solver *d, p3m_int command) {
     /* First send the command */
     P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %d.\n", \
                            d->comm.rank, command));
@@ -62,7 +62,7 @@ namespace P3M {
   }
 
   void
-  tune_broadcast_slave(data_struct *d, p3m_int num_particles,
+  tune_broadcast_slave(Solver *d, p3m_int num_particles,
                        p3m_float *positions, p3m_float *charges) {
     P3M_DEBUG(printf( "tune_broadcast_slave() started...\n"));
     if (d->comm.onMaster())
@@ -103,7 +103,7 @@ namespace P3M {
   }
 
   void
-  tune_broadcast_params(data_struct *d) {
+  tune_broadcast_params(Solver *d) {
     // broadcast parameters and mark as final
     p3m_int int_buffer[4];
     p3m_float float_buffer[5];
@@ -125,7 +125,7 @@ namespace P3M {
   }
 
   void
-  tune_receive_params(data_struct *d) {
+  tune_receive_params(Solver *d) {
     p3m_int int_buffer[4];
     p3m_float float_buffer[5];
 

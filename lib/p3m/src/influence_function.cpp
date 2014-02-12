@@ -29,25 +29,25 @@ namespace P3M {
   /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
   /***************************************************/
   static void 
-  perform_aliasing_sums_ik(data_struct *d, p3m_int n[3], 
+  perform_aliasing_sums_ik(Solver *d, p3m_int n[3], 
                            p3m_float numerator_force[3], 
                            p3m_float* denominator_force, 
                            p3m_float* aliasing_sum_energy);
 
   static void
-  perform_aliasing_sums_iki(data_struct *d, p3m_int n[3], 
+  perform_aliasing_sums_iki(Solver *d, p3m_int n[3], 
                             p3m_float numerator_force[3], 
                             p3m_float* denominator_force, 
                             p3m_float* aliasing_sum_energy);
 
   static void
-  perform_aliasing_sums_adi(data_struct *d, p3m_int n[3], 
+  perform_aliasing_sums_adi(Solver *d, p3m_int n[3], 
                             p3m_float *numerator_force, 
                             p3m_float* numerator_energy,
                             p3m_float* denominator);
 
   static void 
-  calc_meshift(data_struct *d);
+  calc_meshift(Solver *d);
 
   /***************************************************/
   /* IMPLEMENTATION */
@@ -61,7 +61,7 @@ namespace P3M {
    *  See also: Hockney/Eastwood 8-22 (p275). Note the somewhat
    *  different convention for the prefactors, which is described in
    *  Deserno/Holm. */
-  void calc_influence_function_ik(data_struct *d) {
+  void calc_influence_function_ik(Solver *d) {
     P3M_DEBUG(printf("  calc_influence_function_ik() started...\n"));
     calc_meshift(d);
 
@@ -117,7 +117,7 @@ namespace P3M {
   }
 
   static void
-  perform_aliasing_sums_ik(data_struct *d, p3m_int n[3], 
+  perform_aliasing_sums_ik(Solver *d, p3m_int n[3], 
                            p3m_float numerator_force[3], 
                            p3m_float* numerator_energy,
                            p3m_float* denominator) {
@@ -154,7 +154,7 @@ namespace P3M {
     }
   }
 
-  void calc_influence_function_iki(data_struct *d) {
+  void calc_influence_function_iki(Solver *d) {
     P3M_DEBUG(printf("  calc_influence_function_iki() started...\n"));
     calc_meshift(d);
 
@@ -207,7 +207,7 @@ namespace P3M {
   }
 
   static void
-  perform_aliasing_sums_iki(data_struct *d, p3m_int n[3], 
+  perform_aliasing_sums_iki(Solver *d, p3m_int n[3], 
                             p3m_float numerator_force[3], 
                             p3m_float* numerator_energy,
                             p3m_float* denominator) {
@@ -250,7 +250,7 @@ namespace P3M {
     }
   }
 
-  void calc_influence_function_adi(data_struct *d) {
+  void calc_influence_function_adi(Solver *d) {
     P3M_DEBUG(printf("  calc_influence_function_adi() started...\n"));
     calc_meshift(d);
 
@@ -296,7 +296,7 @@ namespace P3M {
   }
 
   static void
-  perform_aliasing_sums_adi(data_struct *d, p3m_int n[3], 
+  perform_aliasing_sums_adi(Solver *d, p3m_int n[3], 
                             p3m_float *numerator_force, 
                             p3m_float* numerator_energy,
                             p3m_float* denominator) {
@@ -340,7 +340,7 @@ namespace P3M {
   }
 
   /** shifts the grid points by grid/2 */
-  static void calc_meshift(data_struct *d) {
+  static void calc_meshift(Solver *d) {
     int i;
   
     d->meshift_x = (p3m_int *) realloc(d->meshift_x, d->grid[0]*sizeof(p3m_int));

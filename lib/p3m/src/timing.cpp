@@ -21,7 +21,7 @@
 #include <cstdlib>
 
 namespace P3M {
-  void timing(data_struct *d, p3m_int num_particles, 
+  void timing(Solver *d, p3m_int num_particles, 
               p3m_float *positions, p3m_float *charges) {
     if (d->comm.rank == 0)
       tune_broadcast_command(d, CMD_TIMING);

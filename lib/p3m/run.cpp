@@ -34,7 +34,7 @@ extern "C" {
                fcs_float *_potentials) {
     /* Here we assume, that the method is already tuned and that all
        parameters are valid */
-    data_struct *d = (data_struct*)rd;
+    Solver *d = (Solver*)rd;
     
     try {
       run(d, _num_particles, _positions, _charges, _fields, _potentials);

@@ -30,9 +30,9 @@
 
 namespace P3M {
 /** Structure that holds all data of the P3M algorithm */
-struct data_struct {
-	data_struct(MPI_Comm mpicomm);
-	~data_struct();
+struct Solver {
+	Solver(MPI_Comm mpicomm);
+	~Solver();
 
 	Communication comm;
 	Parallel3DFFT fft;
@@ -180,18 +180,18 @@ struct data_struct {
 	p3m_float *recv_grid;
 };
 
-void init(data_struct *d, MPI_Comm communicator);
+void init(Solver *d, MPI_Comm communicator);
 
-void destroy(data_struct *d);
+void destroy(Solver *d);
 
-void prepare(data_struct *d);
+void prepare(Solver *d);
 
 /** Test run the method with the current parameters. Afterwards, the
       timing variables in the data struct are set. */
-void timing(data_struct *d, p3m_int _num_particles,
+void timing(Solver *d, p3m_int _num_particles,
 		p3m_float *_positions, p3m_float *_charges);
 
-void tune(data_struct *d,
+void tune(Solver *d,
 		p3m_int num_particles,
 		p3m_float *positions,
 		p3m_float *charges);
@@ -202,32 +202,32 @@ const int CMD_FINISHED = 0;
 const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
 const int CMD_TIMING = 2;
 
-void tune_broadcast_command(data_struct *d, p3m_int command);
+void tune_broadcast_command(Solver *d, p3m_int command);
 
 void
-tune_broadcast_slave(data_struct *d, p3m_int num_particles,
+tune_broadcast_slave(Solver *d, p3m_int num_particles,
 		p3m_float *positions, p3m_float *charges);
 
-void compute_far(data_struct* d,
+void compute_far(Solver* d,
 		p3m_int num_charges,
 		p3m_float* positions,
 		p3m_float* charges,
 		p3m_float* fields,
 		p3m_float* potentials);
 
-void run(data_struct* d,
+void run(Solver* d,
 		p3m_int _num_particles, p3m_float *_positions, p3m_float *_charges,
 		p3m_float *_fields,
 		p3m_float *_potentials);
 
 void
-calc_influence_function_ik(data_struct *d);
+calc_influence_function_ik(Solver *d);
 
 void
-calc_influence_function_iki(data_struct *d);
+calc_influence_function_iki(Solver *d);
 
 void
-calc_influence_function_adi(data_struct *d);
+calc_influence_function_adi(Solver *d);
 
 }
 

@@ -72,47 +72,47 @@ typedef std::list<tune_params*> tune_params_l;
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
 /***************************************************/
 tune_params*
-tune_far(data_struct *d,
+tune_far(Solver *d,
 		p3m_int num_particles, p3m_float *positions, p3m_float *charges,
 		p3m_float r_cut);
 
 void
-tune_far(data_struct *d,
+tune_far(Solver *d,
 		p3m_int num_particles, p3m_float *positions, p3m_float *charges);
 
 void
-tune_broadcast_master(data_struct *d, p3m_int num_particles,
+tune_broadcast_master(Solver *d, p3m_int num_particles,
 		p3m_float *positions, p3m_float *charges);
 
 tune_params*
-tune_alpha_cao_grid(data_struct *d,
+tune_alpha_cao_grid(Solver *d,
 		p3m_int num_particles, p3m_float *positions, p3m_float *charges,
 		p3m_float r_cut);
 
 tune_params*
-tune_cao_grid(data_struct *d,
+tune_cao_grid(Solver *d,
 		p3m_int num_particles, p3m_float *positions, p3m_float *charges,
 		p3m_float r_cut, p3m_float alpha);
 
 tune_params*
-tune_grid(data_struct *d, p3m_int num_particles,
+tune_grid(Solver *d, p3m_int num_particles,
 		p3m_float *positions, p3m_float *charges,
 		tune_params_l &params_to_try);
 
 tune_params*
-time_params(data_struct *d,
+time_params(Solver *d,
 		p3m_int num_particles, p3m_float *positions, p3m_float *charges,
 		tune_params_l &params_to_try);
 
 void
-count_charges(data_struct *d,
+count_charges(Solver *d,
 		p3m_int num_particles, p3m_float *charges);
 
 /***************************************************/
 /* IMPLEMENTATION */
 /***************************************************/
 void
-tune(data_struct *d, p3m_int num_particles,
+tune(Solver *d, p3m_int num_particles,
 		p3m_float *positions, p3m_float *charges) {
 
 	/* Prepare the communicator before tuning */
@@ -225,7 +225,7 @@ tune(data_struct *d, p3m_int num_particles,
 }
 
 tune_params*
-tune_far(data_struct *d,
+tune_far(Solver *d,
 		p3m_int num_particles, p3m_float *positions, p3m_float *charges,
 		p3m_float r_cut) {
 	/* r_cut is ignored on the slaves */
@@ -305,7 +305,7 @@ tune_far(data_struct *d,
 
 /** Slave variant of tune_far. */
 void
-tune_far(data_struct *d,
+tune_far(Solver *d,
 		p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
 	if (d->comm.onMaster()) throw std::runtime_error("tune_far without r_cut cannot be called on master node.");
 	tune_far(d, num_particles, positions, charges, 0.0);
@@ -314,7 +314,7 @@ tune_far(data_struct *d,
 
 /* Tune alpha */
 tune_params*
-tune_alpha_cao_grid(data_struct *d,
+tune_alpha_cao_grid(Solver *d,
 		p3m_int num_particles, p3m_float *positions, p3m_float *charges,
 		p3m_float r_cut) {
 	Communication &comm = d->comm;
@@ -340,7 +340,7 @@ tune_alpha_cao_grid(data_struct *d,
 
 /* Tune cao */
 tune_params*
-tune_cao_grid(data_struct *d,
+tune_cao_grid(Solver *d,
 		p3m_int num_particles, p3m_float *positions, p3m_float *charges,
 		p3m_float r_cut, p3m_float alpha) {
 	// fixme
@@ -375,7 +375,7 @@ tune_cao_grid(data_struct *d,
 
 /* params should have decreasing cao */
 tune_params*
-tune_grid(data_struct *d, p3m_int num_particles,
+tune_grid(Solver *d, p3m_int num_particles,
 		p3m_float *positions, p3m_float *charges,
 		tune_params_l &params_to_try) {
 	// fixme
@@ -567,7 +567,7 @@ tune_grid(data_struct *d, p3m_int num_particles,
 }
 
 tune_params*
-time_params(data_struct *d,
+time_params(Solver *d,
 		p3m_int num_particles, p3m_float *positions, p3m_float *charges,
 		tune_params_l &params_to_try) {
 	// fixme
@@ -629,7 +629,7 @@ time_params(data_struct *d,
       charges and the squared sum of the charges. Called in parallel at
       the beginning of tuning. */
 void
-count_charges(data_struct *d, p3m_int num_particles, p3m_float *charges) {
+count_charges(Solver *d, p3m_int num_particles, p3m_float *charges) {
 	p3m_float node_sums[3], tot_sums[3];
 
 	for (int i=0; i<3; i++) {

@@ -28,19 +28,19 @@ namespace P3M {
   /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
   /***************************************************/
   void 
-  calc_send_grid(data_struct *d);
+  calc_send_grid(Solver *d);
 
   void 
-  prepare_a_ai_cao_cut(data_struct *d);
+  prepare_a_ai_cao_cut(Solver *d);
 
   void 
-  calc_lm_ld_pos(data_struct *d);
+  calc_lm_ld_pos(Solver *d);
 
   void 
-  calc_local_ca_grid(data_struct *d);
+  calc_local_ca_grid(Solver *d);
 
   void 
-  calc_differential_operator(data_struct *d);
+  calc_differential_operator(Solver *d);
 
 #ifdef P3M_ENABLE_DEBUG
   void print_local_grid(local_grid_t l);
@@ -52,7 +52,7 @@ namespace P3M {
   /***************************************************/
   /** Prepare the data structures and constants of the P3M algorithm.
       All parameters have to be set. */
-  void prepare(data_struct *d) {
+  void prepare(Solver *d) {
 	  Communication &comm = d->comm;
 
 	  P3M_DEBUG(printf("  prepare() started... \n"));
@@ -111,7 +111,7 @@ namespace P3M {
       struct::cao_cut, which has to be done by \ref init_charges
       once and by \ref scaleby_box_l whenever the \ref box_l
       changed.  */
-  void prepare_a_ai_cao_cut(data_struct *d) {
+  void prepare_a_ai_cao_cut(Solver *d) {
 	  P3M_DEBUG(printf("    prepare_a_ai_cao_cut() started... \n"));
 	  for (p3m_int i=0; i<3; i++) {
 		  d->ai[i]      = (p3m_float)d->grid[i]/d->box_l[i];
@@ -125,7 +125,7 @@ namespace P3M {
       local grid, to be stored in \ref local_grid::ld_pos; function
       called by \ref calc_local_ca_grid once and by \ref
       scaleby_box_l whenever the \ref box_l changed. */
-  void calc_lm_ld_pos(data_struct *d) {
+  void calc_lm_ld_pos(Solver *d) {
     p3m_int i; 
     /* spacial position of left bottom grid point */
     for(i=0;i<3;i++) {
@@ -136,7 +136,7 @@ namespace P3M {
 
   /** Calculates properties of the local FFT grid for the 
       charge assignment process. */
-  void calc_local_ca_grid(data_struct *d) {
+  void calc_local_ca_grid(Solver *d) {
     p3m_int i;
     p3m_int ind[3];
     /* total skin size */
@@ -208,7 +208,7 @@ namespace P3M {
   /** Calculates the properties of the send/recv sub-grides of the local
    *  FFT grid.  In order to calculate the recv sub-grides there is a
    *  communication of the margins between neighbouring nodes. */ 
-  void calc_send_grid(data_struct *d) {
+  void calc_send_grid(Solver *d) {
     p3m_int i,j, evenodd;
     p3m_int done[3]={0,0,0};
     MPI_Status status;
@@ -308,7 +308,7 @@ namespace P3M {
   /** Calculates the Fourier transformed differential operator.  
    *  Remark: This is done on the level of n-vectors and not k-vectors,
    *           i.e. the prefactor i*2*PI/L is missing! */
-  void calc_differential_operator(data_struct *d) {
+  void calc_differential_operator(Solver *d) {
     for (p3m_int i=0;i<3;i++) {
       d->d_op[i] = static_cast<p3m_int *>(realloc(d->d_op[i], d->grid[i]*sizeof(p3m_int)));
       d->d_op[i][0] = 0;
