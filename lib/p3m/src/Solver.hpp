@@ -29,10 +29,14 @@
 #include "CAF.hpp"
 
 namespace P3M {
+
 /** Structure that holds all data of the P3M algorithm */
-struct Solver {
+class Solver {
+public:
 	Solver(MPI_Comm mpicomm);
 	~Solver();
+
+	void prepare();
 
 	Communication comm;
 	Parallel3DFFT fft;
@@ -178,13 +182,17 @@ struct Solver {
 	p3m_float *send_grid;
 	/** Field to store grid points to recv */
 	p3m_float *recv_grid;
+
+private:
+	void calc_send_grid();
+	void prepare_a_ai_cao_cut();
+	void calc_lm_ld_pos();
+	void calc_local_ca_grid();
+	void calc_differential_operator();
+	void print_local_grid();
+	void print_send_grid();
 };
 
-void init(Solver *d, MPI_Comm communicator);
-
-void destroy(Solver *d);
-
-void prepare(Solver *d);
 
 /** Test run the method with the current parameters. Afterwards, the
       timing variables in the data struct are set. */

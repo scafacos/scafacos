@@ -19,7 +19,13 @@
 #include "Communication.hpp"
 #include "utils.hpp"
 
+#ifdef P3M_ENABLE_DEBUG
+#undef P3M_DEBUG
+#define P3M_DEBUG(cmd) if (onMaster()) cmd
+#endif
+
 namespace P3M {
+
   /****************************************************/
   /* IMPLEMENTATION */
   /****************************************************/

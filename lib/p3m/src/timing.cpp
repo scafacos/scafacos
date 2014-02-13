@@ -29,7 +29,7 @@ namespace P3M {
     p3m_float *fields = new p3m_float[3*num_particles];
     p3m_float *potentials = new p3m_float[num_particles];
 
-    prepare(d);
+    d->prepare();
 
     /* store require_timings */
     timingEnum require_timings_before = d->require_timings;

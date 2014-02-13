@@ -24,6 +24,11 @@
 #include "utils.hpp"
 #include <stdlib.h>
 
+#ifdef P3M_ENABLE_DEBUG
+#undef P3M_DEBUG
+#define P3M_DEBUG(cmd) if (d->comm.onMaster()) { cmd; }
+#endif
+
 namespace P3M {
   /***************************************************/
   /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */

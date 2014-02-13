@@ -31,9 +31,9 @@
 #ifdef P3M_ENABLE_DEBUG
 #define ADDITIONAL_CHECKS
 #define P3M_PRINT_TIMINGS
-#define P3M_TRACE(cmd) if (comm.onMaster()) cmd
-#define P3M_DEBUG(cmd) if (comm.onMaster()) cmd
-#define P3M_TRACE_LOCAL(cmd) cmd
+#define P3M_TRACE(cmd) P3M_DEBUG(cmd)
+#define P3M_DEBUG(cmd) if (comm.onMaster()) { cmd; }
+#define P3M_TRACE_LOCAL(cmd) P3M_DEBUG_LOCAL(cmd)
 #define P3M_DEBUG_LOCAL(cmd) cmd
 #else
 #define P3M_TRACE(cmd)
@@ -43,7 +43,7 @@
 #endif
 
 #ifdef P3M_ENABLE_INFO
-#define P3M_INFO(cmd) if (comm.onMaster()) cmd
+#define P3M_INFO(cmd) if (comm.onMaster()) { cmd; }
 #define P3M_INFO_LOCAL(cmd) cmd
 #else
 #define P3M_INFO(cmd)
@@ -109,8 +109,7 @@ static inline int get_linear_index(int a, int b, int c, int adim[3])
  * @param c       z position (return value)
  * @param adim    dimensions of the underlying grid
  */
-static inline void get_grid_pos(int i, int *a, int *b, int *c, int adim[3])
-        {
+static inline void get_grid_pos(int i, int *a, int *b, int *c, int adim[3]) {
     *a = i % adim[0];
     i /= adim[0];
     *b = i % adim[1];

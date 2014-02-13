@@ -30,26 +30,27 @@ p3m_float ErrorEstimateIK::compute_ks_error(Parameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	bool full_estimate = false;
 	// use the full estimate if alpha*h is larger than the threshold in any dimension
-	for (int i = 0; i < 3 && !full_estimate; i++) {
-		p3m_float alpha_h = p.alpha * box_l[i] / p.grid[i];
-		full_estimate = alpha_h > FULL_ESTIMATE_ALPHA_H_THRESHOLD;
+	for (int i = 0; i < 3; i++) {
+	    p3m_float alpha_h = p.alpha * box_l[i] / p.grid[i];
+	    full_estimate = alpha_h > FULL_ESTIMATE_ALPHA_H_THRESHOLD;
+	    if (full_estimate) {
+	        P3M_DEBUG(printf("        alpha*h[%d]=" FFLOAT " > "        \
+	                FFLOAT " => full estimate\n", i, alpha_h,   \
+	                FULL_ESTIMATE_ALPHA_H_THRESHOLD));
+	        break;
+	    }
 	}
 
 #ifdef P3M_ENABLE_DEBUG
-	if (comm.onMaster())
-		if (full_estimate)
-			printf("        alpha*h[%d]=" FFLOAT " > "
-					FFLOAT " => full estimate\n", i, alpha_h,
-					FULL_ESTIMATE_ALPHA_H_THRESHOLD);
-		else
-			printf("        alpha*h < " FFLOAT " => approximation\n",
-					FULL_ESTIMATE_ALPHA_H_THRESHOLD);
+	if (!full_estimate)
+	    printf("        alpha*h < " FFLOAT " => approximation\n",
+	            FULL_ESTIMATE_ALPHA_H_THRESHOLD);
 #endif
 
 	if (full_estimate)
-		return compute_ks_error_full(p, num_charges, sum_q2, box_l);
+	    return compute_ks_error_full(p, num_charges, sum_q2, box_l);
 	else
-		return compute_ks_error_approx(p, num_charges, sum_q2, box_l);
+	    return compute_ks_error_approx(p, num_charges, sum_q2, box_l);
 }
 
 p3m_float ErrorEstimateIK::compute_ks_error_approx(Parameters& p, p3m_int num_charges,

@@ -34,6 +34,12 @@
 #include "common/gridsort/gridsort.h"
 
 namespace P3M {
+
+#ifdef P3M_ENABLE_DEBUG
+#undef P3M_DEBUG
+#define P3M_DEBUG(cmd) if (d->comm.onMaster()) { cmd; }
+#endif
+
 /***************************************************/
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
 /***************************************************/

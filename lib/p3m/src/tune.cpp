@@ -25,6 +25,11 @@
 #include <stdexcept>
 #include <list>
 
+#ifdef P3M_ENABLE_DEBUG
+#undef P3M_DEBUG
+#define P3M_DEBUG(cmd) if (d->comm.onMaster()) { cmd; }
+#endif
+
 namespace P3M {
 /***************************************************/
 /* TYPES AND CONSTANTS */
@@ -79,10 +84,6 @@ tune_far(Solver *d,
 void
 tune_far(Solver *d,
 		p3m_int num_particles, p3m_float *positions, p3m_float *charges);
-
-void
-tune_broadcast_master(Solver *d, p3m_int num_particles,
-		p3m_float *positions, p3m_float *charges);
 
 tune_params*
 tune_alpha_cao_grid(Solver *d,
@@ -296,7 +297,7 @@ tune_far(Solver *d,
 	P3M_INFO(printf( "  Tuning was successful.\n"));
 
 	/* At the end of retuning, prepare the method */
-	prepare(d);
+	d->prepare();
 
 	P3M_INFO(printf( "tune_far() finished.\n"));
 
