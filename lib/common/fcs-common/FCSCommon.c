@@ -132,8 +132,8 @@ void fcs_wrap_positions(fcs_int nparticles, fcs_float *positions, const fcs_floa
   for (i = 0; i < nparticles; ++i)
   {
     x[0] = positions[3 * i + 0] - offset[0];
-    x[1] = positions[3 * i + 1] - offset[0];
-    x[2] = positions[3 * i + 2] - offset[0];
+    x[1] = positions[3 * i + 1] - offset[1];
+    x[2] = positions[3 * i + 2] - offset[2];
 
     y[0] = periodicity[0]?fcs_floor(ibox[0] * x[0] + ibox[3] * x[1] + ibox[6] * x[2]):0;
     y[1] = periodicity[1]?fcs_floor(ibox[1] * x[0] + ibox[4] * x[1] + ibox[7] * x[2]):0;
