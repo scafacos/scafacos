@@ -55,11 +55,16 @@ static void convolution(
 
 
 static fcs_int box_not_large_enough(
-    fcs_int npart, fcs_float *pos, fcs_float *ibox, fcs_int *periodicity
+    fcs_int npart, const fcs_float *pos_with_offset, const fcs_float *box_base, const fcs_float *ibox, const fcs_int *periodicity
     )
 {
+  fcs_float pos[3];
   for(fcs_int j=0; j<npart; j++)
   {
+    pos[0] = pos_with_offset[3*j + 0] - box_base[0];
+    pos[1] = pos_with_offset[3*j + 1] - box_base[1];
+    pos[2] = pos_with_offset[3*j + 2] - box_base[2];
+
     if( (periodicity[0] == 0) && (XYZ2TRI(0, pos, ibox) < 0.0) ) return 1;
     if( (periodicity[0] == 0) && (XYZ2TRI(0, pos, ibox) > 1.0) ) return 1;
 
@@ -68,8 +73,6 @@ static fcs_int box_not_large_enough(
 
     if( (periodicity[2] == 0) && (XYZ2TRI(2, pos, ibox) < 0.0) ) return 1;
     if( (periodicity[2] == 0) && (XYZ2TRI(2, pos, ibox) > 1.0) ) return 1;
-
-    pos += 3;
   }
 
   return 0;
@@ -102,7 +105,7 @@ FCSResult ifcs_p2nfft_run(
 
   /* handle particles, that left the box [0,L] */
   /* for non-periodic boundary conditions: user must increase the box */
-  if(box_not_large_enough(local_num_particles, positions, d->box_inv, d->periodicity))
+  if(box_not_large_enough(local_num_particles, positions, d->box_base, d->box_inv, d->periodicity))
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box.");
 
   /* TODO: implement additional scaling of particles to ensure x \in [0,L)
@@ -297,7 +300,11 @@ FCSResult ifcs_p2nfft_run(
   /* Set NFFT nodes within [-0.5,0.5]^3 */
   for (fcs_int j = 0; j < sorted_num_particles; ++j)
   {
-    fcs_float *pos = &sorted_positions[3*j];
+    fcs_float pos[3];
+
+    pos[0] = sorted_positions[3*j + 0] - d->box_base[0];
+    pos[1] = sorted_positions[3*j + 1] - d->box_base[1];
+    pos[2] = sorted_positions[3*j + 2] - d->box_base[2];
 
     x[3 * j + 0] = ( XYZ2TRI(0, pos, d->box_inv) - 0.5 ) / d->box_expand[0];
     x[3 * j + 1] = ( XYZ2TRI(1, pos, d->box_inv) - 0.5 ) / d->box_expand[1];
