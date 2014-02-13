@@ -157,8 +157,8 @@ static void fcs_determine_position_extents(fcs_int nparticles, fcs_float *positi
   for (i = 0; i < nparticles; ++i)
   {
     x[0] = positions[3 * i + 0] - offset[0];
-    x[1] = positions[3 * i + 1] - offset[0];
-    x[2] = positions[3 * i + 2] - offset[0];
+    x[1] = positions[3 * i + 1] - offset[1];
+    x[2] = positions[3 * i + 2] - offset[2];
 
     y[0] = ibox[0] * x[0] + ibox[3] * x[1] + ibox[6] * x[2];
     y[1] = ibox[1] * x[0] + ibox[4] * x[1] + ibox[7] * x[2];
