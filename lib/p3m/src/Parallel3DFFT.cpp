@@ -67,10 +67,6 @@ static void
 pack_block_permute2(p3m_float *in, p3m_float *out, int start[3], int size[3],
 		int dim[3], int element);
 
-static void
-print_global_grid(Communication &comm, Parallel3DFFT::forward_plan plan,
-		p3m_float *data, p3m_int element, p3m_int num);
-
 /***************************************************/
 /* IMPLEMENTATION */
 /***************************************************/
@@ -1014,7 +1010,7 @@ void Parallel3DFFT::unpack_block(p3m_float *in, p3m_float *out,
  * \param num      element index to print.
  */
 
-static void print_global_grid(Communication &comm,
+void Parallel3DFFT::print_global_grid(Communication &comm,
 		Parallel3DFFT::forward_plan plan, p3m_float *data, p3m_int element,
 		p3m_int num) {
 	p3m_int st[3], en[3], si[3];

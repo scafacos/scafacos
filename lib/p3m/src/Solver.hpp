@@ -160,10 +160,6 @@ public:
 
 	/** position shift for calc. of first assignment grid point. */
 	p3m_float pos_shift;
-	/** helper variable for calculation of aliasing sums */
-	p3m_int *meshift_x;
-	p3m_int *meshift_y;
-	p3m_int *meshift_z;
 
 	/** Spatial differential operator in k-space. We use an i*k differentiation. */
 	p3m_int *d_op[3];
@@ -184,6 +180,7 @@ public:
 	p3m_float *recv_grid;
 
 private:
+	// submethods of prepare()
 	void calc_send_grid();
 	void prepare_a_ai_cao_cut();
 	void calc_lm_ld_pos();
@@ -191,6 +188,25 @@ private:
 	void calc_differential_operator();
 	void print_local_grid();
 	void print_send_grid();
+
+    void computeInfluenceFunctionIK();
+    void computeInfluenceFunctionADI();
+    void computeInfluenceFunctionIKI();
+    void performAliasingSumsIK(
+            p3m_int nmx0, p3m_int nmy0, p3m_int nmz0,
+            p3m_float numerator_force[3],
+            p3m_float &numerator_energy,
+            p3m_float &denominator);
+    void performAliasingSumsADI(
+            p3m_int nmx0, p3m_int nmy0, p3m_int nmz0,
+            p3m_float &numerator_force,
+            p3m_float &numerator_energy, p3m_float denominator[4]);
+    void performAliasingSumsIKI(
+            p3m_int nmx0, p3m_int nmy0, p3m_int nmz0,
+            p3m_float numerator_force[3],
+            p3m_float &numerator_energy,
+            p3m_float denominator[2]);
+    p3m_int *computeGridShift(int dir, p3m_int size);
 };
 
 

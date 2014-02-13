@@ -217,6 +217,10 @@ private:
 	void forward_grid_comm(forward_plan plan, p3m_float *in, p3m_float *out);
 	void backward_grid_comm(forward_plan plan_f, backward_plan plan_b,
 			p3m_float *in, p3m_float *out);
+
+	void print_global_grid(Communication &comm,
+	        Parallel3DFFT::forward_plan plan, p3m_float *data, p3m_int element,
+	        p3m_int num);
 };
 }
 #endif

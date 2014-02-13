@@ -96,9 +96,6 @@ Solver::Solver(MPI_Comm mpicomm) :
     cafz_d = NULL;
 
     pos_shift = 0.0;
-    meshift_x = NULL;
-    meshift_y = NULL;
-    meshift_z = NULL;
 
     d_op[0] = NULL;
     d_op[1] = NULL;
@@ -129,8 +126,8 @@ Solver::~Solver() {
     delete cafx_d;
     delete cafy_d;
     delete cafz_d;
-    sfree(g_energy);
-    sfree(g_force);
+    if (g_force != NULL) delete g_force;
+    if (g_energy != NULL) delete g_energy;
     for (p3m_int i=0; i<3; i++)
         sfree(d_op[i]);
 }
@@ -146,8 +143,6 @@ void print_send_grid(send_grid_t sm);
 /** Prepare the data structures and constants of the P3M algorithm.
      All parameters have to be set. */
 void Solver::prepare() {
-    Communication &comm = comm;
-
     P3M_DEBUG(printf("  P3M::Solver::prepare() started... \n"));
 
     /* initializes the (inverse) grid constant a
@@ -168,9 +163,9 @@ void Solver::prepare() {
     cafz = caf->createCache();
 #ifdef P3M_AD
     caf_d = P3M::CAF::create(cao, n_interpol, true);
-    cafx_d = caf_createCache();
-    cafy_d = caf_createCache();
-    cafz_d = caf_createCache();
+    cafx_d = caf_d->createCache();
+    cafy_d = caf_d->createCache();
+    cafz_d = caf_d->createCache();
 #endif
 
     /* position offset for calc. of first gridpoint */
@@ -187,11 +182,11 @@ void Solver::prepare() {
     this->calc_differential_operator();
     P3M_INFO(printf("    Calculating influence function...\n"));
 #if !defined(P3M_INTERLACE) && defined(P3M_IK)
-    calc_influence_function_ik(this);
+    computeInfluenceFunctionIK();
 #elif defined(P3M_INTERLACE) && defined(P3M_IK)
-    calc_influence_function_iki(this);
+    computeInfluenceFunctionIKI();
 #else
-    calc_influence_function_adi(this);
+    computeInfluenceFunctionADI();
 #endif
 
     P3M_DEBUG(printf("  P3m::Solver::prepare() finished.\n"));
@@ -446,4 +441,337 @@ void Solver::print_send_grid() {
     }
 }
 
+/** Calculates the optimal influence function of Hockney and Eastwood
+ * for force calculations and energy calculations.
+ *
+ *  Each node calculates only the values for its domain in k-space
+ *  (see fft.plan[3].grid and fft.plan[3].start).
+ *
+ *  See also: Hockney/Eastwood 8-22 (p275). Note the somewhat
+ *  different convention for the prefactors, which is described in
+ *  Deserno/Holm. */
+void Solver::computeInfluenceFunctionIK() {
+    P3M_DEBUG(printf("  Solver::computeInfluenceFunctionIK() started...\n"));
+
+    int size = 1;
+    int end[3];
+    int *new_grid = fft.plan[3].new_grid;;
+    int *start = fft.plan[3].start;
+    for (p3m_int i=0;i<3;i++) {
+        size *= new_grid[i];
+        end[i] = fft.plan[3].start[i] + new_grid[i];
+    }
+
+    if (g_force != NULL) delete g_force;
+    if (g_energy != NULL) delete g_energy;
+    g_force = new p3m_float[size];
+    g_energy = new p3m_float[size];
+
+    p3m_int *gridshift_x = this->computeGridShift(RX, grid[0]);
+    p3m_int *gridshift_y = this->computeGridShift(RY, grid[1]);
+    p3m_int *gridshift_z = this->computeGridShift(RZ, grid[2]);
+
+    int n[3];
+    for (n[0]=start[0]; n[0]<end[0]; n[0]++) {
+        for (n[1]=start[1]; n[1]<end[1]; n[1]++) {
+            for (n[2]=start[2]; n[2]<end[2]; n[2]++) {
+                const p3m_int ind = (n[2]-start[2]) + new_grid[2] *
+                        ((n[1]-start[1]) + new_grid[1]*(n[0]-start[0]));
+                if ((n[KX]%(grid[RX]/2)==0) &&
+                        (n[KY]%(grid[RY]/2)==0) &&
+                        (n[KZ]%(grid[RZ]/2)==0) ) {
+                    g_force[ind] = 0.0;
+                    g_energy[ind] = 0.0;
+                } else {
+                    p3m_float numerator_force[3];
+                    p3m_float numerator_energy;
+                    p3m_float denominator;
+                    this->performAliasingSumsIK(
+                            gridshift_x[n[KX]],
+                            gridshift_y[n[KY]],
+                            gridshift_z[n[KZ]],
+                            numerator_force,
+                            numerator_energy,
+                            denominator);
+
+                    const p3m_float fak1 =
+                            d_op[RX][n[KX]]*numerator_force[RX]/box_l[RX] +
+                            d_op[RY][n[KY]]*numerator_force[RY]/box_l[RY] +
+                            d_op[RZ][n[KZ]]*numerator_force[RZ]/box_l[RZ];
+                    const p3m_float fak2 =
+                            SQR(d_op[RX][n[KX]]/box_l[RX]) +
+                            SQR(d_op[RY][n[KY]]/box_l[RY]) +
+                            SQR(d_op[RZ][n[KZ]]/box_l[RZ]);
+                    const p3m_float fak3 = fak1/(fak2 * SQR(denominator));
+                    g_force[ind] = M_2_PI*fak3;
+                    g_energy[ind] = 0.5 * g_force[ind];
+                    /* g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator); */
+                    /* if (fabs(g_energy[ind]) > 1.e-5) */
+                    /*   printf("%d: %15.10e\n", ind, g_energy[ind]/g_force[ind]); */
+                }
+            }
+        }
+    }
+
+    delete gridshift_x;
+    delete gridshift_y;
+    delete gridshift_z;
+    P3M_DEBUG(printf("  Solver::computeInfluenceFunctionIK() finished.\n"));
 }
+
+void Solver::performAliasingSumsIK(
+        p3m_int nmx0, p3m_int nmy0, p3m_int nmz0,
+        p3m_float numerator_force[3],
+        p3m_float &numerator_energy,
+        p3m_float &denominator) {
+    denominator = 0.0;
+    numerator_energy = 0.0;
+    for (p3m_int i = 0; i < 3; i++)
+        numerator_force[i] = 0.0;
+
+    p3m_float prefactor = SQR(M_PI/alpha);
+
+    for (p3m_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
+        const p3m_int nmx = nmx0 + grid[RX]*mx;
+        const p3m_float sx  = pow(sinc(nmx/(p3m_float)grid[RX]),2.0*cao);
+        for (p3m_int my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
+            const p3m_int nmy = nmy0 + grid[RY]*my;
+            const p3m_float sy  = sx*pow(sinc(nmy/(p3m_float)grid[RY]),2.0*cao);
+            for (p3m_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
+                const p3m_int nmz = nmz0 + grid[RZ]*mz;
+                const p3m_float sz  = sy*pow(sinc(nmz/(p3m_float)grid[RZ]),2.0*cao);
+                const p3m_float nm2 =
+                        SQR(nmx/box_l[RX]) +
+                        SQR(nmy/box_l[RY]) +
+                        SQR(nmz/box_l[RZ]);
+                const p3m_float prefactor2 = sz*exp(-prefactor*nm2)/nm2;
+
+                numerator_energy += prefactor2;
+                numerator_force[RX] += prefactor2*nmx/box_l[RX];
+                numerator_force[RY] += prefactor2*nmy/box_l[RY];
+                numerator_force[RZ] += prefactor2*nmz/box_l[RZ];
+
+                denominator  += sz;
+            }
+        }
+    }
+}
+
+void Solver::computeInfluenceFunctionADI() {
+   P3M_DEBUG(printf("  Solver::computeInfluenceFunctionADI() started...\n"));
+   int size = 1;
+   int end[3];
+   int *new_grid = fft.plan[3].new_grid;;
+   int *start = fft.plan[3].start;
+   for (p3m_int i=0;i<3;i++) {
+     size *= new_grid[i];
+     end[i] = fft.plan[3].start[i] + new_grid[i];
+   }
+
+   if (g_force != NULL) delete g_force;
+   if (g_energy != NULL) delete g_energy;
+   g_force = new p3m_float[size];
+   g_energy = new p3m_float[size];
+
+   p3m_int *gridshift_x = this->computeGridShift(RX, grid[0]);
+   p3m_int *gridshift_y = this->computeGridShift(RY, grid[1]);
+   p3m_int *gridshift_z = this->computeGridShift(RZ, grid[2]);
+
+   int n[3];
+   for (n[0]=start[0]; n[0]<end[0]; n[0]++) {
+     for (n[1]=start[1]; n[1]<end[1]; n[1]++) {
+       for (n[2]=start[2]; n[2]<end[2]; n[2]++) {
+         p3m_int ind = (n[2]-start[2]) + new_grid[2] *
+           ((n[1]-start[1]) + new_grid[1]*(n[0]-start[0]));
+         if ((n[KX]%(grid[RX]/2)==0) &&
+             (n[KY]%(grid[RY]/2)==0) &&
+             (n[KZ]%(grid[RZ]/2)==0) ) {
+           g_force[ind] = 0.0;
+           g_energy[ind] = 0.0;
+         } else {
+           p3m_float numerator_force;
+           p3m_float numerator_energy;
+           p3m_float denominator[4];
+           this->performAliasingSumsADI(
+                   gridshift_x[n[KX]],
+                   gridshift_y[n[KY]],
+                   gridshift_z[n[KZ]],
+                   numerator_force, numerator_energy,
+                   denominator);
+
+           g_force[ind] = numerator_force /
+             (0.5 * M_PI * (denominator[0] * denominator[1] + denominator[2] * denominator[3] )) ;
+           g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator[0]);
+           /* g_energy[ind] = 0.5 * g_force[ind]; */
+         }
+       }
+     }
+   }
+   P3M_DEBUG(printf("  Solver::computeInfluenceFunctionADI() finished.\n"));
+ }
+
+void Solver::performAliasingSumsADI(
+        p3m_int nmx0, p3m_int nmy0, p3m_int nmz0,
+        p3m_float &numerator_force,
+        p3m_float &numerator_energy, p3m_float denominator[4]) {
+   denominator[0] = denominator[1] = denominator[2] = denominator[3] = 0.0;
+   numerator_energy = 0.0;
+   numerator_force = 0.0;
+
+   p3m_float prefactor = SQR(M_PI/alpha);
+
+   for (p3m_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
+     const p3m_int nmx = nmx0 + grid[RX]*mx;
+     const p3m_float sx  = pow(sinc(nmx/(p3m_float)grid[RX]), 2.0*cao);
+     for (p3m_int my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
+       const p3m_int nmy = nmy0 + grid[RY]*my;
+       const p3m_float sy  = sx*pow(sinc(nmy/(p3m_float)grid[RY]), 2.0*cao);
+       for (p3m_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
+         const p3m_int nmz = nmz0 + grid[RZ]*mz;
+         const p3m_float sz  = sy*pow(sinc(nmz/(p3m_float)grid[RZ]), 2.0*cao);
+         const p3m_float nm2 =
+           SQR(nmx/box_l[RX]) +
+           SQR(nmy/box_l[RY]) +
+           SQR(nmz/box_l[RZ]);
+         const p3m_float prefactor2 = sz*exp(-prefactor*nm2);
+
+         numerator_energy += prefactor2/nm2;
+         numerator_force  += prefactor2;
+
+         denominator[0] += sz;
+         denominator[1] += sz * nm2;
+
+         if(((mx+my+mz) % 2) == 0) {
+           denominator[2] += sz;
+           denominator[3] += sz * nm2;
+         } else {
+           denominator[2] -= sz;
+           denominator[3] -= sz * nm2;
+         }
+       }
+     }
+   }
+ }
+
+void Solver::computeInfluenceFunctionIKI() {
+  P3M_DEBUG(printf("  Solver::computeInfluenceFunctionIKI() started...\n"));
+  int size = 1;
+  int end[3];
+  int *new_grid = fft.plan[3].new_grid;;
+  int *start = fft.plan[3].start;
+  for (p3m_int i=0;i<3;i++) {
+    size *= new_grid[i];
+    end[i] = fft.plan[3].start[i] + new_grid[i];
+  }
+
+  if (g_force != NULL) delete g_force;
+  if (g_energy != NULL) delete g_energy;
+  g_force = new p3m_float[size];
+  g_energy = new p3m_float[size];
+
+  p3m_int *gridshift_x = this->computeGridShift(RX, grid[0]);
+  p3m_int *gridshift_y = this->computeGridShift(RY, grid[1]);
+  p3m_int *gridshift_z = this->computeGridShift(RZ, grid[2]);
+
+  int n[3];
+  for (n[0]=start[0]; n[0]<end[0]; n[0]++) {
+    for (n[1]=start[1]; n[1]<end[1]; n[1]++) {
+      for (n[2]=start[2]; n[2]<end[2]; n[2]++) {
+        p3m_int ind = (n[2]-start[2]) + new_grid[2] *
+          ((n[1]-start[1]) + new_grid[1]*(n[0]-start[0]));
+        if ((n[KX]%(grid[RX]/2)==0) &&
+            (n[KY]%(grid[RY]/2)==0) &&
+            (n[KZ]%(grid[RZ]/2)==0) ) {
+          g_force[ind] = 0.0;
+          g_energy[ind] = 0.0;
+        } else {
+          p3m_float numerator_force[3];
+          p3m_float numerator_energy;
+          p3m_float denominator[2];
+          this->performAliasingSumsIKI(
+                  gridshift_x[n[KX]],
+                  gridshift_y[n[KY]],
+                  gridshift_z[n[KZ]],
+                  numerator_force, numerator_energy,
+                  denominator);
+
+          p3m_float fak1 =
+            d_op[RX][n[KX]]*numerator_force[RX]/box_l[RX] +
+            d_op[RY][n[KY]]*numerator_force[RY]/box_l[RY] +
+            d_op[RZ][n[KZ]]*numerator_force[RZ]/box_l[RZ];
+          p3m_float fak2 =
+            SQR(d_op[RX][n[KX]]/box_l[RX]) +
+            SQR(d_op[RY][n[KY]]/box_l[RY]) +
+            SQR(d_op[RZ][n[KZ]]/box_l[RZ]);
+          p3m_float fak3 = fak1/(fak2 * 0.5 * (SQR(denominator[0]) + SQR(denominator[1])) );
+          g_force[ind] = M_2_PI*fak3;
+          g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator[0]);
+        }
+      }
+    }
+  }
+  P3M_DEBUG(printf("  Solver::computeInfluenceFunctionIKI() finished.\n"));
+}
+
+void Solver::performAliasingSumsIKI(
+        p3m_int nmx0, p3m_int nmy0, p3m_int nmz0,
+        p3m_float numerator_force[3],
+        p3m_float &numerator_energy,
+        p3m_float denominator[2]) {
+    denominator[0] = denominator[1] = 0.0;
+    numerator_energy = 0.0;
+    for (p3m_int i = 0; i < 3; i++)
+        numerator_force[i] = 0.0;
+
+    const p3m_float prefactor = SQR(M_PI/alpha);
+
+    for (p3m_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
+        const p3m_int nmx = nmx0 + grid[RX]*mx;
+        const p3m_float sx  = pow(sinc(nmx/(p3m_float)grid[RX]),2.0*cao);
+        for (p3m_int my = -P3M_BRILLOUIN; my <= P3M_BRILLOUIN; my++) {
+            const p3m_int nmy = nmy0 + grid[RY]*my;
+            const p3m_float sy  = sx*pow(sinc(nmy/(p3m_float)grid[RY]),2.0*cao);
+            for (p3m_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
+                const p3m_int nmz = nmz0 + grid[RZ]*mz;
+                const p3m_float sz  = sy*pow(sinc(nmz/(p3m_float)grid[RZ]),2.0*cao);
+                const p3m_float nm2 =
+                        SQR(nmx/box_l[RX]) +
+                        SQR(nmy/box_l[RY]) +
+                        SQR(nmz/box_l[RZ]);
+                const p3m_float prefactor2 = sz*exp(-prefactor*nm2)/nm2;
+
+                numerator_energy += prefactor2;
+                numerator_force[RX] += prefactor2*nmx/box_l[RX];
+                numerator_force[RY] += prefactor2*nmy/box_l[RY];
+                numerator_force[RZ] += prefactor2*nmz/box_l[RZ];
+
+                denominator[0]  += sz;
+
+                if(((mx+my+mz) % 2) == 0)
+                    denominator[1] += sz;
+                else
+                    denominator[1] -= sz;
+
+            }
+        }
+    }
+}
+
+
+/** shifts the grid points by grid/2 */
+p3m_int *Solver::computeGridShift(int dir, int size) {
+    p3m_int *gridshift = new p3m_int[size];
+    gridshift[0] = 0;
+
+    for (int i=1; i<=grid[dir]/2; i++) {
+        gridshift[i] = i;
+        gridshift[grid[dir] - i] = -i;
+    }
+
+    return gridshift;
+}
+
+
+}
+
+
