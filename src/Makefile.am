@@ -23,6 +23,8 @@ libfcs_la_SOURCES = \
   FCSResult.h \
   FCSResult.c
 
+libfcs_la_SOURCES += fcs_common.h fcs_common.c
+
 if ENABLE_DIRECT
 libfcs_la_SOURCES += \
   fcs_direct.h \
