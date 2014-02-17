@@ -26,18 +26,18 @@ extern "C" {
 
   FCSResult 
   ifcs_p3m_run(void* rd,
-               fcs_int _num_particles,
+               fcs_int num_particles,
                fcs_int _max_num_particles,
-               fcs_float *_positions, 
-               fcs_float *_charges,
-               fcs_float *_fields,
-               fcs_float *_potentials) {
+               fcs_float *positions,
+               fcs_float *charges,
+               fcs_float *fields,
+               fcs_float *potentials) {
     /* Here we assume, that the method is already tuned and that all
        parameters are valid */
-    Solver *d = (Solver*)rd;
+    Solver *d = reinterpret_cast<Solver*>(rd);
     
     try {
-      run(d, _num_particles, _positions, _charges, _fields, _potentials);
+      d->run(num_particles, positions, charges, fields, potentials);
     } catch (std::exception &e) {
       return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, "ifcs_p3m_run", e.what());
     }

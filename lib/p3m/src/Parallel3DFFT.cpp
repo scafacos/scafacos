@@ -973,33 +973,51 @@ static void pack_block_permute2(p3m_float *in, p3m_float *out, p3m_int start[3],
 
 }
 
+//fixme: unpack_block and add_block are the same! Unify.
 void Parallel3DFFT::unpack_block(p3m_float *in, p3m_float *out,
 		p3m_int start[3], p3m_int size[3], p3m_int dim[3], p3m_int element) {
-	/* mid and slow changing indices */
-	p3m_int m, s;
-	/* linear index of in grid, linear index of out grid */
-	p3m_int li_in = 0, li_out;
+
 	/* copy size */
-	p3m_int copy_size;
-	/* offset for indizes in input grid */
-	p3m_int m_in_offset;
-	/* offsets for indizes in output grid */
-	p3m_int m_out_offset, s_out_offset;
+	p3m_int copy_size = element * (size[2] * sizeof(p3m_float));
+    /* offsets for indices in output grid */
+	p3m_int m_out_offset = element * dim[2];
+	p3m_int s_out_offset = element * (dim[2] * (dim[1] - size[1]));
+    /* offset for indices in input grid */
+	p3m_int m_in_offset = element * size[2];
 
-	copy_size = element * (size[2] * sizeof(p3m_float));
-	m_out_offset = element * dim[2];
-	s_out_offset = element * (dim[2] * (dim[1] - size[1]));
-	m_in_offset = element * size[2];
-	li_out = element * (start[2] + dim[2] * (start[1] + dim[1] * start[0]));
+    /* linear index of in grid, linear index of out grid */
+    p3m_int li_in = 0;
+	p3m_int li_out = element * (start[2] + dim[2] * (start[1] + dim[1] * start[0]));
 
-	for (s = 0; s < size[0]; s++) {
-		for (m = 0; m < size[1]; m++) {
+	for (int s = 0; s < size[0]; s++) {
+		for (int m = 0; m < size[1]; m++) {
 			memcpy(&(out[li_out]), &(in[li_in]), copy_size);
 			li_in += m_in_offset;
 			li_out += m_out_offset;
 		}
 		li_out += s_out_offset;
 	}
+}
+
+void Parallel3DFFT::add_block(p3m_float *in, p3m_float *out,
+        int start[3], int size[3], int dim[3]) {
+
+    /* linear index of in grid, linear index of out grid */
+    p3m_int li_in=0;
+    p3m_int li_out = start[2] + ( dim[2]*( start[1] + (dim[1]*start[0]) ) );
+    /* offsets for indices in output grid */
+    p3m_int m_out_offset  = dim[2] - size[2];
+    p3m_int s_out_offset  = (dim[2] * (dim[1] - size[1]));
+
+    for(int s=0 ;s<size[0]; s++) {
+        for(int m=0; m<size[1]; m++) {
+            for(int f=0; f<size[2]; f++) {
+                out[li_out++] += in[li_in++];
+            }
+            li_out += m_out_offset;
+        }
+        li_out += s_out_offset;
+    }
 }
 
 /** Debug function to print global fft grid.

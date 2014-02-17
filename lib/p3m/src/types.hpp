@@ -51,11 +51,11 @@ enum timingEnum {
 /* COMPILE TIME SWITCHES */
 /* Differentiation method */
 /** ik-Differentiation */
-#define P3M_IK
+//#define P3M_IK
 /** analytical differentiation */
-//#define P3M_AD
+#define P3M_AD
 /** Whether to use interlaced version of P3M algorithm. */
-//#define P3M_INTERLACE
+#define P3M_INTERLACE
 /* Sanity checks */
 #if defined(P3M_AD) && defined(P3M_IK)
 #error Cannot use P3M_AD and P3M_IK at the same time

@@ -210,8 +210,13 @@ public:
 	 *  \param element size of a grid element (e.g. 1 for Real, 2 for Complex).
 	 */
 	static void
-	unpack_block(p3m_float *in, p3m_float *out, p3m_int start[3],
-			p3m_int size[3], p3m_int dim[3], p3m_int element);
+	unpack_block(p3m_float *in, p3m_float *out,
+	        p3m_int start[3], p3m_int size[3], p3m_int dim[3],
+	        p3m_int element);
+
+	static void
+	add_block(p3m_float *in, p3m_float *out,
+	        int start[3], int size[3], int dim[3]);
 
 private:
 	void forward_grid_comm(forward_plan plan, p3m_float *in, p3m_float *out);

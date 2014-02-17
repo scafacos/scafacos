@@ -108,6 +108,8 @@ Solver::Solver(MPI_Comm mpicomm) :
     send_grid = NULL;
     recv_grid = NULL;
 
+    rs_grid = NULL;
+    ks_grid = NULL;
 
     P3M_DEBUG(printf( "P3M::P3M() finished.\n"));
 }

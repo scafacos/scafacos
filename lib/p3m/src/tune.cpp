@@ -360,7 +360,7 @@ tune_cao_grid(Solver *d,
 			tune_params *p = new tune_params;
 			p->cao = cao;
 			p->alpha = alpha;
-			params_to_try.push_back(p);
+            params_to_try.push_back(p);
 			P3M_INFO(printf(FINT " ", cao));
 		}
 		P3M_INFO(printf("}\n"));
@@ -368,6 +368,7 @@ tune_cao_grid(Solver *d,
 		tune_params *p = new tune_params;
 		p->cao = d->cao;
 		p->alpha = alpha;
+        params_to_try.push_back(p);
 		P3M_INFO(printf( "    cao=" FINT " (fixed)\n", d->cao));
 	}
 
@@ -519,6 +520,8 @@ tune_grid(Solver *d, p3m_int num_particles,
 
 	} else {
 		// !tune_grid
+
+
 
 		for (tune_params_l::iterator p = params_to_try.begin();
 				p != params_to_try.end(); ++p) {

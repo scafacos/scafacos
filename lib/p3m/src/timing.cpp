@@ -35,7 +35,7 @@ namespace P3M {
     timingEnum require_timings_before = d->require_timings;
     if(d->require_timings == NONE || d->require_timings == FULL)
       d->require_timings = ESTIMATE_ALL;
-    run(d, num_particles, positions, charges, fields, potentials);
+    d->run(num_particles, positions, charges, fields, potentials);
     /* Afterwards, d->timings is set */
     /* restore require_timings */
     d->require_timings = require_timings_before;
