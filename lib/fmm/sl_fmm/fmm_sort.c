@@ -44,8 +44,8 @@
 
 /*#define SL_OUTPUT_TO_FILE*/
 
-int SL_FMM_CONFIG_VAR(fmm_front_aX);
-INTEGER_C SL_FMM_CONFIG_VAR(fmm_front_key_mask);
+int SL_FMM_CONFIG_VAR(fmm_front_aX) = 0;
+INTEGER_C SL_FMM_CONFIG_VAR(fmm_front_key_mask) = 0;
 
 
 #ifdef FMM_SORT_RADIX_1BIT
