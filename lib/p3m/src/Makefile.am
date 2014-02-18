@@ -29,7 +29,7 @@ libp3m_la_SOURCES = \
 	ErrorEstimateADI.hpp ErrorEstimateADI.cpp \
 	CAF.cpp CAF.hpp \
 	Parallel3DFFT.cpp Parallel3DFFT.hpp \
-	Solver.cpp SolverRun.cpp Solver.hpp \
+	Solver.cpp Solver.hpp \
 	timing.cpp \
 	tune.cpp \
 	tune_broadcast.cpp \
