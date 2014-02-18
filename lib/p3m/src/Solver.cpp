@@ -309,7 +309,6 @@ void Solver::calc_local_ca_grid() {
  *  FFT grid.  In order to calculate the recv sub-grides there is a
  *  communication of the margins between neighbouring nodes. */
 void Solver::calc_send_grid() {
-    p3m_int evenodd;
     p3m_int done[3]={0,0,0};
 
     P3M_DEBUG(printf("    P3M::Solver::calc_send_grid() started... \n"));
@@ -338,45 +337,21 @@ void Solver::calc_send_grid() {
         if (sm.s_size[i]>sm.max) sm.max=sm.s_size[i];
     }
 
-    // fixme
     /* communication */
     for (int i=0; i<6; i++) {
         int j = ((i%2==0) ? i+1 : i-1);
         if (comm.node_neighbors[i] != comm.rank) {
+            P3M_DEBUG(printf("      %d: sending local_grid.margin to %d, receiving from %d\n", \
+                    comm.rank, comm.node_neighbors[i], comm.node_neighbors[j]));
             /* two step communication: first all even positions than all odd */
-            for (evenodd=0; evenodd<2; evenodd++) {
-                if ((comm.node_pos[i/2]+evenodd)%2 == 0) {
-                    P3M_DEBUG(printf("      %d: sending local_grid.margin to %d\n", \
-                            comm.rank, comm.node_neighbors[i]));
-                    MPI_Send(&(local_grid.margin[i]), 1, P3M_MPI_INT,
-                            comm.node_neighbors[i], 0, comm.mpicomm);
-                } else {
-                    P3M_DEBUG(printf("      %d: receiving local_grid.margin from %d\n", \
-                            comm.rank, comm.node_neighbors[j]));
-                    MPI_Recv(&(local_grid.r_margin[j]), 1, P3M_MPI_INT,
-                            comm.node_neighbors[j], 0, comm.mpicomm, MPI_STATUS_IGNORE);
-                }
-            }
+            MPI_Sendrecv(&(local_grid.margin[i]), 1, P3M_MPI_INT,
+                    comm.node_neighbors[i], 0,
+                    &(local_grid.r_margin[j]), 1, P3M_MPI_INT,
+                    comm.node_neighbors[j], 0, comm.mpicomm, MPI_STATUS_IGNORE);
         } else {
             local_grid.r_margin[j] = local_grid.margin[i];
         }
     }
-
-    /* /\* communication *\/ */
-    /* for (i = 0; i < 3; i++) { */
-    /*   /\* upshift *\/ */
-    /*   MPI_Sendrecv(&(local_grid.margin[2*i]), 1, P3M_MPI_INT, */
-    /*       comm.node_neighbors[2*i+1], 0, */
-    /*       &(local_grid.r_margin[2*i]), 1, P3M_MPI_INT, */
-    /*       comm.node_neighbors[2*i], 0, */
-    /*       comm.mpicomm, &status); */
-    /*   /\* downshift *\/ */
-    /*   MPI_Sendrecv(&(local_grid.margin[2*i+1]), 1, P3M_MPI_INT, */
-    /*       comm.node_neighbors[2*i], 0, */
-    /*       &(local_grid.r_margin[2*i+1]), 1, P3M_MPI_INT, */
-    /*       comm.node_neighbors[2*i+1], 0, */
-    /*       comm.mpicomm, &status); */
-    /* } */
 
     /* recv grids */
     for (int i=0; i<3; i++)
