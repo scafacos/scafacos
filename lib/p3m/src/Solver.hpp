@@ -313,22 +313,24 @@ private:
     tune_params* time_params(p3m_int num_particles, p3m_float *positions,
             p3m_float *charges, tune_params_l &params_to_try);
 
-
     void count_charges(p3m_int num_particles, p3m_float *charges);
+
+    /* Events during tuning */
+    static const int CMD_FAILED = -1;
+    static const int CMD_FINISHED = 0;
+    static const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
+    static const int CMD_TIMING = 2;
+
+    void tune_broadcast_params();
+    void tune_receive_params();
+
+    void tune_broadcast_command(p3m_int command);
+
+    void tune_broadcast_slave(p3m_int num_particles,
+            p3m_float *positions, p3m_float *charges);
 
 };
 
-/* Events during tuning */
-const int CMD_FAILED = -1;
-const int CMD_FINISHED = 0;
-const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
-const int CMD_TIMING = 2;
-
-void tune_broadcast_command(Solver *d, p3m_int command);
-
-void
-tune_broadcast_slave(Solver *d, p3m_int num_particles,
-        p3m_float *positions, p3m_float *charges);
 
 }
 

@@ -1925,7 +1925,7 @@ Solver::tune_far(p3m_int num_particles, p3m_float *positions, p3m_float *charges
     tune_params *final_params = NULL;
 
     if (!comm.onMaster()) {
-        tune_broadcast_slave(this, num_particles, positions, charges);
+        this->tune_broadcast_slave(num_particles, positions, charges);
     } else {
 
         /* check whether the input parameters are sane */
@@ -1957,10 +1957,10 @@ Solver::tune_far(p3m_int num_particles, p3m_float *positions, p3m_float *charges
             grid[1] = final_params->grid[1];
             grid[2] = final_params->grid[2];
             cao = final_params->cao;
-            tune_broadcast_command(this, CMD_FINISHED);
+            this->tune_broadcast_command(CMD_FINISHED);
         } catch (...) {
             P3M_INFO(printf( "  Tuning failed.\n"));
-            tune_broadcast_command(this, CMD_FAILED);
+            this->tune_broadcast_command(CMD_FAILED);
             P3M_INFO(printf( "P3M::Solver::tune_far() finished.\n"));
             throw;
         }
@@ -2078,7 +2078,7 @@ Solver::tune_grid_(p3m_int num_particles,
                 p2.cao = (*p)->cao;
                 p2.alpha = (*p)->alpha;
                 p2.r_cut = r_cut;
-                tune_broadcast_command(this, CMD_COMPUTE_ERROR_ESTIMATE);
+                this->tune_broadcast_command(CMD_COMPUTE_ERROR_ESTIMATE);
                 errorEstimate->compute_master(p2, sum_qpart, sum_q2, box_l, error, rs_error, ks_error);
                 (*p)->grid[0] = grid1d;
                 (*p)->grid[1] = grid1d;
@@ -2115,7 +2115,7 @@ Solver::tune_grid_(p3m_int num_particles,
                 p2.cao = (*p)->cao;
                 p2.alpha = (*p)->alpha;
                 p2.r_cut = r_cut;
-                tune_broadcast_command(this, CMD_COMPUTE_ERROR_ESTIMATE);
+                this->tune_broadcast_command(CMD_COMPUTE_ERROR_ESTIMATE);
                 errorEstimate->compute_master(p2, sum_qpart, sum_q2, box_l, error, rs_error, ks_error);
                 (*p)->grid[0] = grid1d;
                 (*p)->grid[1] = grid1d;
@@ -2201,7 +2201,7 @@ Solver::tune_grid_(p3m_int num_particles,
                     "grid=" F3INT " (fixed)\n",                \
                     p2.r_cut, p2.cao,                          \
                     p2.grid[0], p2.grid[1], p2.grid[2]));
-            tune_broadcast_command(this, CMD_COMPUTE_ERROR_ESTIMATE);
+            this->tune_broadcast_command(CMD_COMPUTE_ERROR_ESTIMATE);
             errorEstimate->compute_master(p2, sum_qpart, sum_q2, box_l, error, rs_error, ks_error);
 
             if (error < tolerance_field) {
@@ -2290,7 +2290,7 @@ Solver::time_params(
 void Solver::timing(p3m_int num_particles,
         p3m_float *positions, p3m_float *charges) {
     if (comm.rank == 0)
-        tune_broadcast_command(this, CMD_TIMING);
+        this->tune_broadcast_command(CMD_TIMING);
 
     p3m_float *fields = new p3m_float[3*num_particles];
     p3m_float *potentials = new p3m_float[num_particles];
@@ -2341,6 +2341,103 @@ void Solver::count_charges(p3m_int num_particles, p3m_float *charges) {
             sum_qpart, sum_q2, sqrt(square_sum_q)));
 }
 
+void Solver::tune_broadcast_params() {
+    // broadcast parameters and mark as final
+    p3m_int int_buffer[4];
+    p3m_float float_buffer[5];
+
+    // pack int data
+    int_buffer[0] = grid[0];
+    int_buffer[1] = grid[1];
+    int_buffer[2] = grid[2];
+    int_buffer[3] = cao;
+    MPI_Bcast(int_buffer, 4, P3M_MPI_INT, 0, comm.mpicomm);
+
+    // pack float data
+    float_buffer[0] = alpha;
+    float_buffer[1] = r_cut;
+    float_buffer[2] = error;
+    float_buffer[3] = rs_error;
+    float_buffer[4] = ks_error;
+    MPI_Bcast(float_buffer, 5, P3M_MPI_FLOAT, 0, comm.mpicomm);
 }
 
+void Solver::tune_receive_params()
+{
+    p3m_int int_buffer[4];
+    p3m_float float_buffer[5];
 
+    MPI_Bcast(int_buffer, 4, P3M_MPI_INT, 0, comm.mpicomm);
+    grid[0] = int_buffer[0];
+    grid[1] = int_buffer[1];
+    grid[2] = int_buffer[2];
+    cao = int_buffer[3];
+
+    // unpack float data
+    MPI_Bcast(float_buffer, 5, P3M_MPI_FLOAT, 0,  comm.mpicomm);
+    alpha = float_buffer[0];
+    r_cut = float_buffer[1];
+    error = float_buffer[2];
+    rs_error = float_buffer[3];
+    ks_error = float_buffer[4];
+}
+
+void Solver::tune_broadcast_command(p3m_int command){
+    /* First send the command */
+    P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %d.\n", \
+            comm.rank, command));
+    MPI_Bcast(&command, 1, P3M_MPI_INT, 0, comm.mpicomm);
+
+    /* Now send the parameters, depending on the command */
+    switch (command) {
+    case CMD_FINISHED:
+    case CMD_TIMING:
+        this->tune_broadcast_params();
+        return;
+    case CMD_COMPUTE_ERROR_ESTIMATE:
+    case CMD_FAILED:
+        return;
+    }
+}
+
+void Solver::tune_broadcast_slave(p3m_int num_particles, p3m_float* positions,
+        p3m_float* charges) {
+    P3M_DEBUG(printf( "P3M::Solver::tune_broadcast_slave() started...\n"));
+    if (comm.onMaster())
+        throw std::logic_error("Internal error: tune_broadcast_slave "
+                "should not be called on master!");
+
+    for (;;) {
+        /* Receive the command */
+        p3m_int command;
+        P3M_DEBUG_LOCAL(printf("      %2d: Waiting to receive command.\n", \
+                comm.rank));
+        MPI_Bcast(&command, 1, P3M_MPI_INT, 0, comm.mpicomm);
+        P3M_DEBUG_LOCAL(printf("      %2d: Received command %d.\n", \
+                comm.rank, command));
+
+        switch (command) {
+        case CMD_COMPUTE_ERROR_ESTIMATE:
+            errorEstimate->compute_slave();
+            break;
+        case CMD_TIMING:
+            this->tune_receive_params();
+            timing(num_particles, positions, charges);
+            break;
+        case CMD_FINISHED:
+            this->tune_receive_params();
+            return;
+        case CMD_FAILED: {
+            char msg[255];
+            sprintf(msg,
+                    "Cannot achieve required accuracy (p3m_tolerance_field=" FFLOATE \
+                    ") for given parameters.",
+                    tolerance_field);
+            throw std::logic_error(msg);
+        }
+        }
+    }
+    P3M_DEBUG(printf( "P3M::Solver::tune_broadcast_slave() finished.\n"));
+}
+
+}
