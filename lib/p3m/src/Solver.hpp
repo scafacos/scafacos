@@ -46,6 +46,10 @@ public:
     void run(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
             p3m_float *fields, p3m_float *potentials);
 
+    /** Test run the method with the current parameters. Afterwards, the
+     timing variables in the data struct are set. */
+    void timing(p3m_int num_particles, p3m_float *positions, p3m_float *charges);
+
     Communication comm;
     Parallel3DFFT fft;
     ErrorEstimate *errorEstimate;
@@ -93,7 +97,7 @@ public:
      * FLAGS TO TURN ON/OFF COMPUTATION OF DIFFERENT COMPONENTS
      ****************************************************/
     /** Whether or not the total energy is to be computed. */
-    p3m_int require_total_energy;
+    bool require_total_energy;
     /** The total energy. */
     p3m_float total_energy;
     /** Whether and how timings are to be taken.
@@ -309,14 +313,10 @@ private:
     tune_params* time_params(p3m_int num_particles, p3m_float *positions,
             p3m_float *charges, tune_params_l &params_to_try);
 
+
     void count_charges(p3m_int num_particles, p3m_float *charges);
 
 };
-
-/** Test run the method with the current parameters. Afterwards, the
- timing variables in the data struct are set. */
-void timing(Solver *d, p3m_int _num_particles,
-        p3m_float *_positions, p3m_float *_charges);
 
 /* Events during tuning */
 const int CMD_FAILED = -1;

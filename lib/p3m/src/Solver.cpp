@@ -59,15 +59,16 @@ Solver::Solver(MPI_Comm mpicomm) :
     cao = 0;
 
     /* Everything needs to be retuned at the beginning */
-    needs_retune = 1;
-    tune_r_cut = 1;
-    tune_alpha = 1;
-    tune_grid = 1;
-    tune_cao = 1;
+    needs_retune = true;
+    tune_r_cut = true;
+    tune_alpha = true;
+    tune_grid = true;
+    tune_cao = true;
 
     /* Which components to compute? */
-    require_total_energy = 0;
+    require_total_energy = false;
     total_energy = 0.0;
+    near_field_flag = false;
 
 #ifdef P3M_PRINT_TIMINGS
     require_timings = FULL;
@@ -2253,7 +2254,7 @@ Solver::time_params(
         grid[2] = p.grid[2];
         cao = p.cao;
 
-        timing(this, num_particles, positions, charges);
+        this->timing(num_particles, positions, charges);
         p.timing = timings[TIMING];
         p.timing_near = timings[TIMING_NEAR];
         p.timing_far = timings[TIMING_FAR];
@@ -2284,6 +2285,29 @@ Solver::time_params(
     }
 
     return best_params;
+}
+
+void Solver::timing(p3m_int num_particles,
+        p3m_float *positions, p3m_float *charges) {
+    if (comm.rank == 0)
+        tune_broadcast_command(this, CMD_TIMING);
+
+    p3m_float *fields = new p3m_float[3*num_particles];
+    p3m_float *potentials = new p3m_float[num_particles];
+
+    this->prepare();
+
+    /* store require_timings */
+    timingEnum require_timings_before = require_timings;
+    if(require_timings == NONE || require_timings == FULL)
+        require_timings = ESTIMATE_ALL;
+    this->run(num_particles, positions, charges, fields, potentials);
+    /* Afterwards, d->timings is set */
+    /* restore require_timings */
+    require_timings = require_timings_before;
+
+    delete[] fields;
+    delete[] potentials;
 }
 
 /** Calculate number of charged particles, the sum of the squared

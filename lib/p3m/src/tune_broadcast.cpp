@@ -89,7 +89,7 @@ tune_broadcast_slave(Solver *d, p3m_int num_particles,
             break;
         case CMD_TIMING:
             tune_receive_params(d);
-            timing(d, num_particles, positions, charges);
+            d->timing(num_particles, positions, charges);
             break;
         case CMD_FINISHED:
             tune_receive_params(d);
