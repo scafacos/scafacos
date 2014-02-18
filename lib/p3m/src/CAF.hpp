@@ -26,7 +26,7 @@ namespace P3M {
 /** The CAF. */
 class CAF {
 public:
-    static const p3m_int max_cao = 7;
+    static const p3m_int MAX_CAO = 7;
 
     /** Factory method to create the fitting CAF class. */
     static CAF* create(p3m_int cao,

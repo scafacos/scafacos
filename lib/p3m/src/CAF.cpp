@@ -230,7 +230,7 @@ void CAF::DerivativeCache::update(p3m_float r0) {
 }
 
 CAF::CAF(p3m_int _cao, bool _derivative) : cao(_cao), derivative(_derivative) {
-	if (cao > max_cao || cao < 1) {
+	if (cao > MAX_CAO || cao < 1) {
 		std::ostringstream s;
 		s << "Charge assignment order " << cao << " unknown.";
 		throw std::logic_error(s.str());

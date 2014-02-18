@@ -279,39 +279,28 @@ private:
             p3m_int shifted, p3m_float* fields);
 
     // submethods of tune()
-    struct tune_params {
-        /** charge assignment order ([0,P3M_MAX_CAO]). */
-        p3m_int cao;
-        /** number of grid points per coordinate direction (>0). */
-        p3m_int grid[3];
-        /** Ewald splitting parameter */
-        p3m_float alpha;
-
+    struct TuneParameters {
+        Parameters p;
         /** Errors */
         p3m_float rs_error, ks_error, error;
         /** Timings */
         p3m_float timing, timing_near, timing_far;
     };
-    typedef std::list<tune_params*> tune_params_l;
+    typedef std::list<TuneParameters*> TuneParametersList;
 
-    tune_params* tune_far(p3m_int num_particles, p3m_float *positions,
+    TuneParameters* tune_far(p3m_int num_particles, p3m_float *positions,
             p3m_float *charges, p3m_float r_cut);
 
     /** Slave variant of tune_far. */
     void tune_far(p3m_int num_particles,
             p3m_float *positions, p3m_float *charges);
 
-    tune_params* tune_alpha_cao_grid(p3m_int num_particles,
-            p3m_float *positions, p3m_float *charges, p3m_float r_cut);
+    void tune_alpha_cao_grid(TuneParametersList &params_to_try);
+    void tune_cao_grid(TuneParametersList &params_to_try);
+    void tune_grid_(TuneParametersList &params_to_try);
 
-    tune_params* tune_cao_grid(p3m_int num_particles, p3m_float *positions,
-            p3m_float *charges, p3m_float r_cut, p3m_float alpha);
-
-    tune_params* tune_grid_(p3m_int num_particles, p3m_float *positions,
-            p3m_float *charges, tune_params_l &params_to_try);
-
-    tune_params* time_params(p3m_int num_particles, p3m_float *positions,
-            p3m_float *charges, tune_params_l &params_to_try);
+    TuneParameters* time_params(p3m_int num_particles, p3m_float *positions,
+            p3m_float *charges, TuneParametersList &params_to_try);
 
     void count_charges(p3m_int num_particles, p3m_float *charges);
 
@@ -321,10 +310,11 @@ private:
     static const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
     static const int CMD_TIMING = 2;
 
-    void tune_broadcast_params();
+    void tune_broadcast_params(Parameters &p);
     void tune_receive_params();
 
     void tune_broadcast_command(p3m_int command);
+    void tune_broadcast_command(p3m_int command, Parameters &p);
 
     void tune_broadcast_slave(p3m_int num_particles,
             p3m_float *positions, p3m_float *charges);

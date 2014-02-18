@@ -25,13 +25,13 @@ namespace P3M {
 /** Estimate the errors in the IK differentiated P3M Algorithm */
 class ErrorEstimateIK : public ErrorEstimate {
 public:
-	ErrorEstimateIK(Communication &comm) : ErrorEstimate(comm) {}
+    ErrorEstimateIK(Communication &comm) : ErrorEstimate(comm) {}
 
 	virtual p3m_float compute_ks_error(Parameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
 protected:
-	/** Calculate the analytical approximation for the k-space part of the
+    /** Calculate the analytical approximation for the k-space part of the
 	 error (Eq. 38 in Deserno, Holm; JCP 109,18; 1998). */
 	p3m_float compute_ks_error_approx(Parameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);

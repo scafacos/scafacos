@@ -1,4 +1,5 @@
 /*
+ Copyright (C) 2014 Olaf Lenz
  Copyright (C) 2010,2011 The ESPResSo project
  Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010
  Max-Planck-Institute for Polymer Research, Theory Group
@@ -29,9 +30,6 @@
 namespace P3M {
 /* Base class of the P3M error estimates. */
 class ErrorEstimate {
-protected:
-	Communication &comm;
-
 public:
 	static ErrorEstimate *create(Communication &comm);
 
@@ -40,7 +38,7 @@ public:
 		CantGetRequiredAccuracy();
 	};
 
-	ErrorEstimate(Communication &comm) :comm(comm) {}
+    ErrorEstimate(Communication &comm) : comm(comm) {}
 	virtual ~ErrorEstimate() {}
 
 	/** Determines a value for alpha that achieves the required_accuracy in
@@ -88,6 +86,9 @@ public:
      */
     virtual p3m_float compute_ks_error(Parameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) = 0;
+
+	protected:
+	    Communication &comm;
 
 };
 }
