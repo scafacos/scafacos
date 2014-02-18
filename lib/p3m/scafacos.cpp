@@ -222,9 +222,9 @@ FCSResult ifcs_p3m_get_timings(void *rd, double *timing,
 		return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name,
 				"Trying to get timings, but timings were not requested.");
 
-	*timing = d->timings[TIMING];
-	*timing_near_field = d->timings[TIMING_NEAR];
-	*timing_far_field = d->timings[TIMING_FAR];
+	*timing = d->timings[P3M::Solver::TIMING];
+	*timing_near_field = d->timings[P3M::Solver::TIMING_NEAR];
+	*timing_far_field = d->timings[P3M::Solver::TIMING_FAR];
 
 	return NULL;
 }
@@ -237,7 +237,7 @@ fcs_float *charges) {
 	Solver *d = static_cast<Solver *>(rd);
 
 	try {
-		tune(d, num_particles, positions, charges);
+		d->tune(num_particles, positions, charges);
 	} catch (std::exception &e) {
 		return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, "ifcs_p3m_init",
 				e.what());

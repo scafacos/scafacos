@@ -31,6 +31,5 @@ libp3m_la_SOURCES = \
 	Parallel3DFFT.cpp Parallel3DFFT.hpp \
 	Solver.cpp Solver.hpp \
 	timing.cpp \
-	tune.cpp \
 	tune_broadcast.cpp \
 	types.hpp 

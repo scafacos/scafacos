@@ -28,6 +28,8 @@
 #include "ErrorEstimate.hpp"
 #include "CAF.hpp"
 #include "common/gridsort/gridsort.h"
+#include <list>
+
 
 namespace P3M {
 
@@ -39,8 +41,10 @@ public:
 
     void prepare();
 
-    void run(p3m_int _num_charges, p3m_float *_positions, p3m_float *_charges,
-            p3m_float *_fields, p3m_float *_potentials);
+    void tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges);
+
+    void run(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
+            p3m_float *fields, p3m_float *potentials);
 
     Communication comm;
     Parallel3DFFT fft;
@@ -97,20 +101,21 @@ public:
      * 1: partial timing to estimate without results
      * 2: full means all timings and correct results*/
     timingEnum require_timings;
-    #define TIMING 0
-#define TIMING_NEAR 1
-#define TIMING_FAR 2
-#define TIMING_CA 3
-#define TIMING_GATHER 4
-#define TIMING_FORWARD 5
-#define TIMING_BACK 6
-#define TIMING_INFLUENCE 7
-#define TIMING_SPREAD 8
-#define TIMING_POTENTIALS 9
-#define TIMING_FIELDS 10
-#define TIMING_DECOMP 11
-#define TIMING_COMP 12
-#define NUM_TIMINGS 13
+
+    static const int TIMING = 0;
+    static const int TIMING_NEAR = 1;
+    static const int TIMING_FAR = 2;
+    static const int TIMING_CA = 3;
+    static const int TIMING_GATHER = 4;
+    static const int TIMING_FORWARD = 5;
+    static const int TIMING_BACK = 6;
+    static const int TIMING_INFLUENCE = 7;
+    static const int TIMING_SPREAD = 8;
+    static const int TIMING_POTENTIALS = 9;
+    static const int TIMING_FIELDS = 10;
+    static const int TIMING_DECOMP = 11;
+    static const int TIMING_COMP = 12;
+    static const int NUM_TIMINGS = 13;
     double timings[NUM_TIMINGS];
 
     /****************************************************
@@ -269,17 +274,49 @@ private:
             p3m_int num_real_particles, p3m_float* positions,
             p3m_int shifted, p3m_float* fields);
 
+    // submethods of tune()
+    struct tune_params {
+        /** charge assignment order ([0,P3M_MAX_CAO]). */
+        p3m_int cao;
+        /** number of grid points per coordinate direction (>0). */
+        p3m_int grid[3];
+        /** Ewald splitting parameter */
+        p3m_float alpha;
+
+        /** Errors */
+        p3m_float rs_error, ks_error, error;
+        /** Timings */
+        p3m_float timing, timing_near, timing_far;
+    };
+    typedef std::list<tune_params*> tune_params_l;
+
+    tune_params* tune_far(p3m_int num_particles, p3m_float *positions,
+            p3m_float *charges, p3m_float r_cut);
+
+    /** Slave variant of tune_far. */
+    void tune_far(p3m_int num_particles,
+            p3m_float *positions, p3m_float *charges);
+
+    tune_params* tune_alpha_cao_grid(p3m_int num_particles,
+            p3m_float *positions, p3m_float *charges, p3m_float r_cut);
+
+    tune_params* tune_cao_grid(p3m_int num_particles, p3m_float *positions,
+            p3m_float *charges, p3m_float r_cut, p3m_float alpha);
+
+    tune_params* tune_grid_(p3m_int num_particles, p3m_float *positions,
+            p3m_float *charges, tune_params_l &params_to_try);
+
+    tune_params* time_params(p3m_int num_particles, p3m_float *positions,
+            p3m_float *charges, tune_params_l &params_to_try);
+
+    void count_charges(p3m_int num_particles, p3m_float *charges);
+
 };
 
 /** Test run the method with the current parameters. Afterwards, the
  timing variables in the data struct are set. */
 void timing(Solver *d, p3m_int _num_particles,
         p3m_float *_positions, p3m_float *_charges);
-
-void tune(Solver *d,
-        p3m_int num_particles,
-        p3m_float *positions,
-        p3m_float *charges);
 
 /* Events during tuning */
 const int CMD_FAILED = -1;
