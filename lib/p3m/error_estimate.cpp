@@ -85,7 +85,7 @@ ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d) {
   fcs_float grid_i[3] = 
     {1.0/d->grid[0], 1.0/d->grid[1], 1.0/d->grid[2]};
   /* @todo Handle non-cubic case? */
-  fcs_float alpha_L_i = 1./(d->alpha*d->box_l[0]);
+  fcs_float alpha_L_i = 1./(std::min(d->alpha*d->box_l[0], std::min(d->box_l[1], d->box_l[2])));
 
   // Distribute indices onto parallel tasks
   fcs_int num_ix = d->grid[0]*d->grid[1]*d->grid[2];
@@ -162,11 +162,13 @@ ifcs_p3m_k_space_error(ifcs_p3m_data_struct *d) {
              d->comm.mpicomm);
 #ifdef P3M_INTERLACE
 #ifdef P3M_AD
+  //TODO this error calculation is probably wrong for triclinic
   fcs_float ks_error = 
     2.0*d->sum_q2*sqrt( he_q / (fcs_float)d->sum_qpart ) 
     / (d->box_l[0] * d->box_l[0]);
 #endif
-#else
+#else //IK follows
+  //TODO check this formula: why 2, why sqrt of volume?
   fcs_float ks_error = 2.0*d->sum_q2*sqrt
     ( he_q / (fcs_float)d->sum_qpart / (d->box_l[0]*d->box_l[1]*d->box_l[2]) );
 #endif
@@ -303,6 +305,8 @@ ifcs_p3m_k_space_error_approx(ifcs_p3m_data_struct *d) {
   /* grid spacing */
   /* TODO: non-cubic case*/
   fcs_float h = d->box_l[0]/d->grid[0];
+  //TODO: what is needed here? minimal h, maximal h, ... ?
+   // fcs_float h = 
   fcs_float ha = h*d->alpha;
 
   /* compute the sum in eq. 38 */
@@ -421,6 +425,6 @@ ifcs_p3m_determine_good_alpha(ifcs_p3m_data_struct *d) {
     d->alpha = sqrt(log(FCS_SQRT2*max_rs_err/d->tolerance_field)) / d->r_cut;
   } else {
     /* if the error is small enough even for alpha=0 */
-    d->alpha = 0.1 * d->box_l[0];
+    d->alpha = 0.1 * std::min(d->box_l[0],std::min(d->box_l[1],d->box_l[2]));
   }
 }

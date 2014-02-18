@@ -355,16 +355,16 @@ ifcs_p3m_tune_cao_grid(ifcs_p3m_data_struct *d,
                        fcs_float *positions, fcs_float *charges,
                        tune_params **params) {
 #ifdef P3M_AD
-  const fcs_int cao_min = 2;
+  const fcs_int cao_min = 3;
 #else
   const fcs_int cao_min = 1;
 #endif
 
   if (d->tune_cao) {
     for (tune_params *p = *params; p != NULL; p = p->next_params) {
-      p->cao = P3M_MAX_CAO;
+      p->cao = P3M::CAF::max_cao;
       P3M_INFO(printf("    Testing cao={ "));
-      for (fcs_int cao = P3M_MAX_CAO-1; cao >= cao_min; cao--) {
+      for (fcs_int cao = P3M::CAF::max_cao-1; cao >= cao_min; cao--) {
         // Insert new param set
         tune_params *pnew = static_cast<tune_params*>(malloc(sizeof(tune_params)));
         pnew->r_cut = p->r_cut;
@@ -542,7 +542,8 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
       ifcs_p3m_compute_error_estimate(d);
       if (d->error < d->tolerance_field) {
         // error is small enough for this parameter set, so keep it
-        P3M_INFO(printf("    error is small enough, keeping params\n"));
+        P3M_INFO(printf("    error (%le) < tolerance (%le), keeping params\n", \
+                        d->error, d->tolerance_field));
         (*p)->grid[0] = d->grid[0];
         (*p)->grid[1] = d->grid[1];
         (*p)->grid[2] = d->grid[2];
@@ -551,7 +552,8 @@ ifcs_p3m_tune_grid(ifcs_p3m_data_struct *d,
         p = &((*p)->next_params);
       } else {
         // otherwise remove this parameter set
-        P3M_INFO(printf("    error too large, removing params\n"));
+        P3M_INFO(printf("    error (%le) > tolerance (%le), removing params\n", \
+                        d->error, d->tolerance_field));
         tune_params *ptmp = *p;
         // change pointer to next param set
         *p = (*p)->next_params;

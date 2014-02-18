@@ -1,4 +1,4 @@
-/*
+ /*
   Copyright (C) 2013 Olaf Lenz, Florian Weik
   Copyright (C) 2011,2012 Olaf Lenz
   Copyright (C) 2010,2011 The ESPResSo project
@@ -33,6 +33,7 @@
 #include "fcs_p3m_p.h"
 #include "common/gridsort/gridsort.h"
 #include "common/near/near.h"
+#include <cassert>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <stdlib.h>
@@ -62,12 +63,6 @@ static void ifcs_p3m_assign_charges(ifcs_p3m_data_struct* d,
 				    fcs_float *positions, 
 				    fcs_float *charges,
 				    fcs_int shifted);
-static void ifcs_p3m_assign_single_charge(ifcs_p3m_data_struct *d,
-					  fcs_float *data,
-					  fcs_int charge_id,
-					  fcs_float real_pos[3],
-					  fcs_float q,
-					  fcs_int shifted);
 
 /* collect grid from neighbor processes */
 static void ifcs_p3m_gather_grid(ifcs_p3m_data_struct* d, fcs_float* rs_grid);
@@ -92,6 +87,12 @@ ifcs_p3m_assign_potentials(ifcs_p3m_data_struct* d, fcs_float *data,
                            fcs_int shifted,
                            fcs_float* potentials);
 
+/* sum and collect timing information.*/
+static void collect_print_timings(ifcs_p3m_data_struct *d);
+static fcs_int triclinic_check(fcs_float* tricl, fcs_int number);
+
+static fcs_float * position_store(fcs_float positions, fcs_int number);
+
 #ifdef P3M_IK
 /* assign the fields to the positions in dimension dim [IK]*/
 static void 
@@ -113,6 +114,205 @@ ifcs_p3m_assign_fields_ad(ifcs_p3m_data_struct* d,
 			  fcs_int shifted,
 			  fcs_float* fields);
 #endif
+//todo: move methods somewhere else (bottom, utils, triclinic-utils,...)
+/*add up the measured timings and collect information from all procs.*/
+static void collect_print_timings(ifcs_p3m_data_struct *d) {
+    d->timings[TIMING_FAR] += d->timings[TIMING_CA];
+    d->timings[TIMING_FAR] += d->timings[TIMING_GATHER];
+    d->timings[TIMING_FAR] += d->timings[TIMING_FORWARD];
+    d->timings[TIMING_FAR] += d->timings[TIMING_BACK];
+    d->timings[TIMING_FAR] += d->timings[TIMING_INFLUENCE];
+    d->timings[TIMING_FAR] += d->timings[TIMING_SPREAD];
+    d->timings[TIMING_FAR] += d->timings[TIMING_POTENTIALS];
+    d->timings[TIMING_FAR] += d->timings[TIMING_FIELDS];
+
+    d->timings[TIMING] += d->timings[TIMING_DECOMP];
+    d->timings[TIMING] += d->timings[TIMING_FAR];
+    d->timings[TIMING] += d->timings[TIMING_NEAR];
+    d->timings[TIMING] += d->timings[TIMING_COMP];
+
+    if (on_root())
+        MPI_Reduce(MPI_IN_PLACE, d->timings,
+            NUM_TIMINGS, MPI_DOUBLE, MPI_MAX,
+            0, d->comm.mpicomm);
+    else
+        MPI_Reduce(d->timings, 0,
+            NUM_TIMINGS, MPI_DOUBLE, MPI_MAX,
+            0, d->comm.mpicomm);
+
+#ifdef P3M_PRINT_TIMINGS
+    printf("  P3M TIMINGS:\n");
+    printf("    total=%le (%lf)\n", d->timings[TIMING], 1.0);
+    printf("      far=%le (%lf)\n", d->timings[TIMING_FAR],
+            d->timings[TIMING_FAR] / d->timings[TIMING]);
+    printf("     near=%le (%lf)\n", d->timings[TIMING_NEAR],
+            d->timings[TIMING_NEAR] / d->timings[TIMING]);
+    printf("       ca=%le (%lf)\n", d->timings[TIMING_CA],
+            d->timings[TIMING_CA] / d->timings[TIMING]);
+    printf("      pot=%le (%lf)\n", d->timings[TIMING_POTENTIALS],
+            d->timings[TIMING_POTENTIALS] / d->timings[TIMING]);
+    printf("   fields=%le (%lf)\n", d->timings[TIMING_FIELDS],
+            d->timings[TIMING_FIELDS] / d->timings[TIMING]);
+    printf("   gather=%le (%lf)\n", d->timings[TIMING_GATHER],
+            d->timings[TIMING_GATHER] / d->timings[TIMING]);
+    printf("   spread=%le (%lf)\n", d->timings[TIMING_SPREAD],
+            d->timings[TIMING_SPREAD] / d->timings[TIMING]);
+    printf("  forward=%le (%lf)\n", d->timings[TIMING_FORWARD],
+            d->timings[TIMING_FORWARD] / d->timings[TIMING]);
+    printf("     back=%le (%lf)\n", d->timings[TIMING_BACK],
+            d->timings[TIMING_BACK] / d->timings[TIMING]);
+    printf("   decomp=%le (%lf)\n", d->timings[TIMING_DECOMP],
+            d->timings[TIMING_DECOMP] / d->timings[TIMING]);
+    printf("     comp=%le (%lf)\n", d->timings[TIMING_COMP],
+            d->timings[TIMING_COMP] / d->timings[TIMING]);
+#endif
+
+}
+//todo: method description
+//todo: does not work with [][] (arbitrary dimensions).
+static void print_matrix(fcs_float  matrix[][3],fcs_int dimhor, fcs_int dimver){
+    fcs_int counterhor, counterver;
+    printf("printmatrix\n");
+    for(counterhor=0;counterhor<dimhor;counterhor++){
+        for(counterver=0;counterver<dimver;counterver++){
+            printf("%f ", matrix[counterhor][counterver]);
+        }printf("\n");
+    }
+}
+//todo: method description
+static fcs_float* to_triclinic(ifcs_p3m_data_struct *d, fcs_float *vectors, fcs_int number){
+    if(d->cosy_flag==triclinic){
+        printf("to_triclinic detected triclinic flag! \n");
+        if(triclinic_check(vectors, number)==0)
+        return vectors;
+        else
+            printf("but the vector cannot be triclinic. trying to convert!\n");
+    }
+    
+    fcs_float* tricl;
+    tricl=static_cast<fcs_float*>(malloc(3*number*sizeof(fcs_float)));
+ //   print_matrix(d->box_matrix,3,3);
+  int i;
+  for (i = 0; i < number; i++) {
+        printf("to_tricl input vectors: %f %f %f \n", i, vectors[3 * i], vectors[3 * i + 1], vectors[3 * i + 2]);
+    }
+        for (i = 0; i < number; i++) {
+            tricl[3 * i] = 1 / d->box_matrix[0][0] * vectors[3 * i] - d->box_matrix[1][0] / (d->box_matrix[0][0] * d->box_matrix[1][1]) * vectors[3 * i + 1] + (d->box_matrix[1][0]*d->box_matrix[2][1]-d->box_matrix[1][1]*d->box_matrix[2][0])/(d->box_matrix[0][0]*d->box_matrix[1][1]*d->box_matrix[2][2])*vectors[3 * i + 2];
+            tricl[3 * i + 1] = 1 / d->box_matrix[1][1] * vectors[3 * i + 1] - d->box_matrix[2][1] / (d->box_matrix[1][1] * d->box_matrix[2][2]) * vectors[3 * i + 2];
+            tricl[3 * i + 2] = 1 / d->box_matrix[2][2] * vectors[3 * i + 2];
+        }
+    
+  //todo: move this to the calling method
+   // d->box_l[0]=d->box_l[1]=d->box_l[2]=1.0;
+
+#ifdef ADDITIONAL_CHECKS
+  if(triclinic_check(tricl, number)==1)MPI_Abort(MPI_COMM_WORLD,1);
+#endif
+  //todo: remove printing as soon as all works
+    printf("to_tricl: vectors are now in triclinic coordinates: \n");
+
+
+    for (i = 0; i < number; i++) {
+        printf("tricl: %f %f %f \n", i, tricl[3 * i], tricl[3 * i + 1], tricl[3 * i + 2]);
+    }
+    d->cosy_flag=triclinic;
+    return tricl;
+}
+/*checks if the given vector tricl can be triclinic. simply checks whether all positions are below 1 and above 0.
+ * 
+ * @param tricl fcs_float pointer to an array with 3*number floats where 3 in a row are the position of one particle
+ * 
+ * @param number the number of particles, i.e. 1/3 of the number fcs_floats in tricl
+ * 
+ * @return 1 if the positions cannot be triclinic, 0 if the positions might be triclinic
+ *
+ */
+static fcs_int triclinic_check(fcs_float* tricl, fcs_int number) {
+    fcs_int i;
+    fcs_int res = 0;
+    for (i = 0; i < number; i++) {
+        if (tricl[3 * i] > 1 || tricl[3 * i] < 0 || tricl[3 * i + 1] > 1 || tricl[3 * i + 1] < 0 || tricl[3 * i + 2] > 1 || tricl[3 * i + 2] < 0) {
+            printf("ERROR: this cannot be a triclinic position: particle %d, coordinate: %f %f %f \n", i, tricl[3 * i], tricl[3 * i + 1], tricl[3 * i + 2]);
+            res = 1;
+        }
+    }
+    return res;
+}
+/* convert the given triclinic vectors to cartesian vectors. This method is not
+ * usable for the force conversion!
+ * 
+ * @param d the datastruct that contains system information like the box matrix.
+ * 
+ * @param vectors a pointer to a fcs_float array containing vectors where indexes
+ * 3*n , 3*n+1 and 3*n+2 (n is an integer) belong to the same vector and are
+ * sorted according to the box vector order
+ * 
+ * @param number the number of vectors contained in vectors. i.e. vectors
+ * contains 3*number fcs_floats.
+ * 
+ * @return a pointer to a fcs_float array containing the cartesian vectors.
+ */
+static fcs_float* to_cartesian(ifcs_p3m_data_struct *d,fcs_float* vectors, fcs_int number){
+    if(d->cosy_flag==cartesian) return vectors;
+    fcs_int counter;
+    fcs_float* cart = static_cast<fcs_float*>(malloc(3*number*sizeof(fcs_float)));
+    for(counter=0;counter<number; counter++){
+        cart[3*counter]=vectors[3*counter]*d->box_matrix[0][0]+vectors[3*counter+1]*d->box_matrix[1][0]+vectors[3*counter+2]*d->box_matrix[2][0];
+        cart[3*counter+1]=vectors[3*counter+1]*d->box_matrix[1][1]+vectors[3*counter+2]*d->box_matrix[2][1];
+        cart[3*counter+2]=vectors[3*counter+2]*d->box_matrix[2][2];
+    }
+    d->cosy_flag=cartesian;
+    return cart;
+}
+
+static void print_vector(fcs_float* vector, fcs_int number){
+    fcs_int cnt;
+    for(cnt=0; cnt<number; cnt++){
+        printf("vector %d : %f %f %f\n",cnt,vector[3*cnt],vector[3*cnt+1],vector[3*cnt+2]);
+    }
+}
+static void print_array(fcs_float* array, fcs_int number){
+    fcs_int cnt;
+    for(cnt=0; cnt<number; cnt++){
+        printf("array[%d] = %f, ",cnt,array[cnt]);
+    }
+    printf("\n");
+}
+static fcs_float* cartesian_field(ifcs_p3m_data_struct *d, fcs_float* triclinic_field, fcs_int number) {
+    fcs_float* cart = static_cast<fcs_float*> (malloc(3 * number * sizeof (fcs_float)));
+    
+    fcs_int part_no;
+    
+    // the next lines do: //UEBERPRUEFUNG NOETIG!!!!!
+//      for (part_no = 0; part_no < number; part_no++){
+//          
+//          cart[3*part_no]=2*triclinic_field[3*part_no+2]+2*triclinic_field[3*part_no+1]+4*triclinic_field[3*part_no];
+//          cart[3*part_no+1]=2*triclinic_field[3*part_no+2]+2*triclinic_field[3*part_no+1];
+//          cart[3*part_no+2]=2*triclinic_field[3*part_no+2];
+//          
+//      }
+//    
+    //the next lines do F = M^-1^T F where M transforms from tric to cart
+
+    
+    for (part_no = 0; part_no < number; part_no++) {
+        cart[3 * part_no + 2] = (d->box_matrix[1][0] * d->box_matrix[2][1] - d->box_matrix[1][1] * d->box_matrix[2][0]) / (d->box_matrix[0][0] * d->box_matrix[1][1] * d->box_matrix[2][2]) * triclinic_field[3 * part_no]-(d->box_matrix[2][1]) / (d->box_matrix[1][1] * d->box_matrix[2][2]) * triclinic_field[3 * part_no + 1] + 1 / d->box_matrix[2][2] * triclinic_field[3 * part_no + 2];
+        cart[3 * part_no + 1] = -(d->box_matrix[1][0]) / (d->box_matrix[0][0] * d->box_matrix[1][1]) * triclinic_field[3 * part_no] + 1 / d->box_matrix[1][1] * triclinic_field[3 * part_no + 1];
+        cart[3 * part_no] = 1 / (d->box_matrix[0][0]) * triclinic_field[3 * part_no];
+    }
+
+    
+    //the following lines do: F=CT F where CT transforms from cart to tric.
+//    for (part_no = 0; part_no < number; part_no++) {
+//        cart[3 * part_no ] = 1 / d->box_matrix[0][0] * triclinic_field[3 * part_no] - d->box_matrix[1][0] / (d->box_matrix[0][0] * d->box_matrix[1][1]) * triclinic_field[3 * part_no + 1]+((d->box_matrix[1][0] * d->box_matrix[2][1])-(d->box_matrix[1][1] * d->box_matrix[2][0])) / (d->box_matrix[0][0] * d->box_matrix[1][1] * d->box_matrix[2][2]) * triclinic_field[3 * part_no + 2];
+//        cart[3 * part_no + 1] = 1 / d->box_matrix[1][1] * triclinic_field[3 * part_no + 1]-(d->box_matrix[2][1]) / (d->box_matrix[1][1] * d->box_matrix[2][2]) * triclinic_field[3 * part_no + 2];
+//        cart[3 * part_no + 2] = 1 / d->box_matrix[2][2] * triclinic_field[3 * part_no + 2];
+//    }
+    
+    printf("field transformed\n");
+    return cart;
+}
+
 
 /* callback function for near field computations */
 static inline void 
@@ -152,7 +352,15 @@ void ifcs_p3m_run(void* rd,
      parameters are valid */
   P3M_INFO(printf( "ifcs_p3m_run() started...\n"));
   ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*)rd;
-
+  
+  _positions=to_triclinic(d,_positions, _num_particles);
+    if(triclinic_check(_positions, _num_particles)==1){
+        //ugly way of getting the right cosy
+     while(triclinic_check(_positions, _num_particles)==1){   
+         d->cosy_flag==cartesian;
+         _positions=to_triclinic(d,_positions, _num_particles);
+     }
+    }
   /* reset all timers */
   if (d->require_timings) {
     for (int i = 0; i < NUM_TIMINGS; i++)
@@ -180,7 +388,8 @@ void ifcs_p3m_run(void* rd,
   fcs_float *charges, *ghost_charges;
   fcs_gridsort_index_t *indices, *ghost_indices;
   fcs_gridsort_t gridsort;
-
+//  printf("positions triclinic before decompose\n");
+//  print_vector(_positions, _num_particles);
   START(TIMING_DECOMP)
   ifcs_p3m_domain_decompose(d, &gridsort, 
                             _num_particles, _max_num_particles, _positions, _charges,
@@ -188,15 +397,23 @@ void ifcs_p3m_run(void* rd,
                             &positions, &charges, &indices,
                             &num_ghost_particles,
                             &ghost_positions, &ghost_charges, &ghost_indices);
-
+//  printf("positions after decompose:\n");
+//  print_vector(positions,num_real_particles);
   /* allocate local fields and potentials */
   fcs_float *fields = NULL; 
   fcs_float *potentials = NULL; 
-  if (_fields != NULL)
-    fields = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*3*num_real_particles));
-  if (_potentials != NULL || d->require_total_energy)
-    potentials = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*num_real_particles));
+  fcs_float *nearfields = NULL; 
+  fcs_float *nearpotentials = NULL; 
   
+  if (_fields != NULL){
+    fields = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*3*num_real_particles));
+    nearfields = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*3*num_real_particles));
+  }
+  if (_potentials != NULL || d->require_total_energy){
+    potentials = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*num_real_particles));
+    nearpotentials = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*num_real_particles));
+  }
+ 
   STOPSTART(TIMING_DECOMP, TIMING_CA);
 
   /* charge assignment */
@@ -222,10 +439,12 @@ void ifcs_p3m_run(void* rd,
   /* gather the ca grid */
   ifcs_p3m_gather_grid(d, d->fft.data_buf);
   /* now d->rs_grid should contain the local ca grid */
-
+  
   // Complexify
-  for (fcs_int i = d->local_grid.size-1; i >= 0; i--)
+  for (fcs_int i = d->local_grid.size-1; i >= 0; i--){    
     d->rs_grid[2*i+1] = d->fft.data_buf[i];
+//     printf("rsgrid %f at i=%d\n",d->rs_grid[2*i+1],i);
+  }
   STOP(TIMING_GATHER);
 
   /* forward transform */
@@ -244,7 +463,10 @@ void ifcs_p3m_run(void* rd,
     ifcs_p3m_apply_energy_influence_function(d);
     /* result is in d->ks_grid */
     STOP(TIMING_INFLUENCE)
-
+            
+//for (fcs_int i = d->local_grid.size-1; i >= 0; i--){    
+//     printf("ksgrid %f at i=%d\n",d->ks_grid[2*i+1],i);
+//  }
     /* compute total energy, but not potentials */
     if (d->require_total_energy && potentials == NULL) {
       START(TIMING_POTENTIALS)
@@ -287,11 +509,11 @@ void ifcs_p3m_run(void* rd,
       ifcs_p3m_assign_potentials(d, d->fft.data_buf,
                                  num_real_particles, positions,
                                  charges, 1, potentials);
-
+//printf("potentials far:\n");print_array(potentials, num_real_particles);
       STOP(TIMING_POTENTIALS)
     }
   }
-
+  
   /********************************************/
   /* FIELD COMPUTATION */
   /********************************************/
@@ -336,45 +558,77 @@ void ifcs_p3m_run(void* rd,
 
     ifcs_p3m_assign_fields_ad(d, d->fft.data_buf, num_real_particles, 
                               positions, 1, fields);
-
+//printf("field in tricl now.\n");
+//    print_vector(fields, num_real_particles);
+//    fields=cartesian_field(d,fields, num_real_particles);
+    printf("field in cart after long range:\n");
+    print_vector(fields, num_real_particles);  
+    
     STOP(TIMING_FIELDS)
   } 
 
   if (d->near_field_flag) {
-    /* start near timer */
-    START(TIMING_NEAR)
-
+  /* start near timer */
+    START(TIMING_NEAR)  
+            
+            positions = to_cartesian(d, positions, num_real_particles);
+            printf("pos cart start of short range:\n");
+            print_vector(positions, num_real_particles);
+        
     /* compute near field */
     fcs_near_t near;
     fcs_float alpha = d->alpha;
-  
+
     fcs_near_create(&near);
     /*  fcs_near_set_field_potential(&near, ifcs_p3m_compute_near);*/
     fcs_near_set_loop(&near, ifcs_p3m_compute_near_loop);
 
     fcs_float box_base[3] = {0.0, 0.0, 0.0 };
-    fcs_float box_a[3] = {d->box_l[0], 0.0, 0.0 };
-    fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
-    fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
-    fcs_near_set_system(&near, box_base, box_a, box_b, box_c, NULL);
-
+//    fcs_float box_a[3] = {d->box_l[0], 0.0, 0.0 };
+//    fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
+//    fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
+    
+    fcs_near_set_system(&near, box_base, d->box_matrix[0], d->box_matrix[1], d->box_matrix[2], NULL);
+    
     fcs_near_set_particles(&near, num_real_particles, num_real_particles,
                            positions, charges, indices,
                            (_fields != NULL) ? fields : NULL, 
                            (_potentials != NULL) ? potentials : NULL);
-
+//     fcs_near_set_particles(&near, num_real_particles, num_real_particles,
+//                           positions, charges, indices,
+//                           (_fields != NULL) ? nearfields : NULL, 
+//                           (_potentials != NULL) ? nearpotentials : NULL);
     fcs_near_set_ghosts(&near, num_ghost_particles,
                         ghost_positions, ghost_charges, ghost_indices);
-
+//printf("pos cart after set ghosts:\n");
+//            print_vector(positions, num_real_particles);
     P3M_DEBUG(printf( "  calling fcs_near_compute()...\n"));
     fcs_near_compute(&near, d->r_cut, &alpha, d->comm.mpicomm);
     P3M_DEBUG(printf( "  returning from fcs_near_compute().\n"));
- 
+    
+//    P3M_DEBUG(printf("pos after compute near (cart):\n");print_vector(positions,num_real_particles);
+//    printf("nearfield after compute near (cart):\n");print_vector(nearfields,num_real_particles);
+//    printf("nearpots: \n"); print_array(nearpotentials, num_real_particles);)
     fcs_near_destroy(&near);
-
+//    printf("long range fields after compute near: \n");print_vector(fields, num_real_particles);
+//    printf("positions after compute near: \n");print_vector(positions, num_real_particles);
     STOP(TIMING_NEAR)
-  }
-
+  }//end of near field
+  
+       
+          positions=to_triclinic(d,positions, num_real_particles);
+          printf("positions triclinic after near: \n"); print_vector(positions, num_real_particles);
+          
+//     fcs_int another_counter;
+//for(another_counter =0 ; another_counter<<num_real_particles; another_counter++){
+//    potentials[another_counter]+=nearpotentials[another_counter];
+//    fields[3*another_counter]+=nearfields[3*another_counter];
+//    fields[3*another_counter+1]+=nearfields[3*another_counter+1];
+//    fields[3*another_counter+2]+=nearfields[3*another_counter+2];
+//}
+          
+          
+          
   START(TIMING_COMP)
   /* sort particles back */
   P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
@@ -383,40 +637,22 @@ void ifcs_p3m_run(void* rd,
                              _fields, _potentials, 1,
                              d->comm.mpicomm);
   P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
-  
+  printf("positions triclinic after sort back: \n"); print_vector(positions, num_real_particles);
   fcs_gridsort_free(&gridsort);
   fcs_gridsort_destroy(&gridsort);
 
   if (fields != NULL) free(fields);
   if (potentials != NULL) free(potentials);
-
+//  if (nearfields != NULL) free(nearfields);
+//  if (nearpotentials != NULL) free(nearpotentials);
+  
   STOP(TIMING_COMP)
 
   /* collect timings from the different nodes */
-  if (d->require_timings) {
-    d->timings[TIMING_FAR] += d->timings[TIMING_CA];
-    d->timings[TIMING_FAR] += d->timings[TIMING_GATHER];
-    d->timings[TIMING_FAR] += d->timings[TIMING_FORWARD];
-    d->timings[TIMING_FAR] += d->timings[TIMING_BACK];
-    d->timings[TIMING_FAR] += d->timings[TIMING_INFLUENCE];
-    d->timings[TIMING_FAR] += d->timings[TIMING_SPREAD];
-    d->timings[TIMING_FAR] += d->timings[TIMING_POTENTIALS];
-    d->timings[TIMING_FAR] += d->timings[TIMING_FIELDS];
-
-    d->timings[TIMING] += d->timings[TIMING_DECOMP];
-    d->timings[TIMING] += d->timings[TIMING_FAR];
-    d->timings[TIMING] += d->timings[TIMING_NEAR];
-    d->timings[TIMING] += d->timings[TIMING_COMP];
-
-    if (on_root())
-      MPI_Reduce(MPI_IN_PLACE, d->timings,
-                 NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
-                 0, d->comm.mpicomm);
-    else
-      MPI_Reduce(d->timings, 0,
-                 NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
-                 0, d->comm.mpicomm);
-  }
+  if (d->require_timings) 
+        collect_print_timings(d);
+_positions=to_triclinic(d,positions, num_real_particles);
+printf("_positions reset to triclinic:\n"); print_vector(_positions, num_real_particles);
 
   P3M_INFO(printf( "ifcs_p3m_run() finished.\n"));
 }
@@ -474,9 +710,9 @@ void ifcs_p3m_run(void* rd,
   fcs_float *fields = NULL; 
   fcs_float *potentials = NULL; 
   if (_fields != NULL)
-    fields = malloc(sizeof(fcs_float)*3*num_real_particles);
+    fields = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*3*num_real_particles));
   if (_potentials != NULL || d->require_total_energy)
-    potentials = malloc(sizeof(fcs_float)*num_real_particles);
+    potentials = static_cast<fcs_float*>(malloc(sizeof(fcs_float)*num_real_particles));
   
   STOPSTART(TIMING_DECOMP, TIMING_CA);
 
@@ -567,6 +803,15 @@ void ifcs_p3m_run(void* rd,
       STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
       ifcs_p3m_assign_fields_ik(d, d->rs_grid, dim, num_real_particles, 
                                 positions, 0, fields);
+      //TODO: transform back for triclinic needs to be put here.
+      //
+//      int part_no;
+//      for (part_no = 0; part_no <  num_real_particles; part_no++){
+//          fields[3*part_no]=d->box_matrix[2][0]*fields[3*part_no+2]+d->box_matrix[1][0]*fields[3*part_no+1]+d->box_matrix[0][0]*fields[3*part_no];
+//          fields[3*part_no+1]=d->box_matrix[2][1]*fields[3*part_no+2]+d->box_matrix[1][1]*fields[3*part_no+1];
+//          fields[3*part_no+2]=d->box_matrix[2][2]*fields[3*part_no+2];
+//          
+//      }
       STOP(TIMING_FIELDS);
     }
   }  
@@ -627,57 +872,9 @@ void ifcs_p3m_run(void* rd,
   STOP(TIMING_COMP)
 
   /* collect timings from the different nodes */
-  if (d->require_timings) {
-    d->timings[TIMING_FAR] += d->timings[TIMING_CA];
-    d->timings[TIMING_FAR] += d->timings[TIMING_GATHER];
-    d->timings[TIMING_FAR] += d->timings[TIMING_FORWARD];
-    d->timings[TIMING_FAR] += d->timings[TIMING_BACK];
-    d->timings[TIMING_FAR] += d->timings[TIMING_INFLUENCE];
-    d->timings[TIMING_FAR] += d->timings[TIMING_SPREAD];
-    d->timings[TIMING_FAR] += d->timings[TIMING_POTENTIALS];
-    d->timings[TIMING_FAR] += d->timings[TIMING_FIELDS];
-
-    d->timings[TIMING] += d->timings[TIMING_DECOMP];
-    d->timings[TIMING] += d->timings[TIMING_FAR];
-    d->timings[TIMING] += d->timings[TIMING_NEAR];
-    d->timings[TIMING] += d->timings[TIMING_COMP];
-
-    if (on_root())
-      MPI_Reduce(MPI_IN_PLACE, d->timings,
-                 NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
-                 0, d->comm.mpicomm);
-    else
-      MPI_Reduce(d->timings, 0,
-                 NUM_TIMINGS, MPI_DOUBLE, MPI_MAX, 
-                 0, d->comm.mpicomm);
-
-#ifdef P3M_PRINT_TIMINGS
-    printf("  P3M TIMINGS:\n");
-    printf("    total=%le (%lf)\n", d->timings[TIMING], 1.0);
-    printf("      far=%le (%lf)\n", d->timings[TIMING_FAR], 
-      d->timings[TIMING_FAR]/d->timings[TIMING]);
-    printf("     near=%le (%lf)\n", d->timings[TIMING_NEAR], 
-      d->timings[TIMING_NEAR]/d->timings[TIMING]);
-    printf("       ca=%le (%lf)\n", d->timings[TIMING_CA], 
-      d->timings[TIMING_CA]/d->timings[TIMING]);
-    printf("      pot=%le (%lf)\n", d->timings[TIMING_POTENTIALS], 
-      d->timings[TIMING_POTENTIALS]/d->timings[TIMING]);
-    printf("   fields=%le (%lf)\n", d->timings[TIMING_FIELDS], 
-      d->timings[TIMING_FIELDS]/d->timings[TIMING]);
-    printf("   gather=%le (%lf)\n", d->timings[TIMING_GATHER], 
-      d->timings[TIMING_GATHER]/d->timings[TIMING]);
-    printf("   spread=%le (%lf)\n", d->timings[TIMING_SPREAD], 
-      d->timings[TIMING_SPREAD]/d->timings[TIMING]);
-    printf("  forward=%le (%lf)\n", d->timings[TIMING_FORWARD], 
-      d->timings[TIMING_FORWARD]/d->timings[TIMING]);
-    printf("     back=%le (%lf)\n", d->timings[TIMING_BACK], 
-      d->timings[TIMING_BACK]/d->timings[TIMING]);
-    printf("   decomp=%le (%lf)\n", d->timings[TIMING_DECOMP], 
-      d->timings[TIMING_DECOMP]/d->timings[TIMING]);
-    printf("     comp=%le (%lf)\n", d->timings[TIMING_COMP], 
-      d->timings[TIMING_COMP]/d->timings[TIMING]);
-#endif
-  }
+  if (d->require_timings) 
+      collect_print_timings(d);
+  
 
   P3M_INFO(printf( "ifcs_p3m_run() finished.\n"));
 }
@@ -701,10 +898,11 @@ ifcs_p3m_domain_decompose(ifcs_p3m_data_struct *d, fcs_gridsort_t *gridsort,
   fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
   fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
   fcs_int num_particles;
-
+  printf("box lenghts: ");print_vector(d->box_l,3);//111
+  printf("positions in decompose:\n");print_vector(_positions, _num_particles);///triclinics
   fcs_gridsort_create(gridsort);
-  
   fcs_gridsort_set_system(gridsort, box_base, box_a, box_b, box_c, NULL);
+  //fcs_gridsort_set_system(gridsort, box_base, d->box_matrix[0], d->box_matrix[1], d->box_matrix[2], NULL);
   fcs_gridsort_set_particles(gridsort, _num_particles, _max_num_particles, _positions, _charges);
 
   P3M_DEBUG(printf( "  calling fcs_gridsort_sort_forward()...\n"));
@@ -741,50 +939,24 @@ ifcs_p3m_domain_decompose(ifcs_p3m_data_struct *d, fcs_gridsort_t *gridsort,
 
 /***************************************************/
 /* CHARGE ASSIGNMENT */
-/** Assign the charges to the grid */
-static void 
-ifcs_p3m_assign_charges(ifcs_p3m_data_struct* d,
-			fcs_float *data,
-			fcs_int num_real_particles,
-			fcs_float *positions, 
-			fcs_float *charges,
-			fcs_int shifted) {
-
-  P3M_DEBUG(printf( "  ifcs_p3m_assign_charges() started...\n"));
-  /* init local charge grid */
-  for (fcs_int i=0; i<d->local_grid.size; i++) data[i] = 0.0;
-
-  /* now assign the charges */
-  for (fcs_int pid=0; pid < num_real_particles; pid++)
-    ifcs_p3m_assign_single_charge(d, data, pid, &positions[pid*3], 
-                                  charges[pid], shifted);
-
-  P3M_DEBUG(printf( "  ifcs_p3m_assign_charges() finished...\n"));
-}
-
 /** Compute the data of the charge assignment grid points.
 
     The function returns the linear index of the top left grid point
     in the charge assignment grid that corresponds to real_pos. When
     "shifted" is set, it uses the shifted position for interlacing.
-    After the call, "caf_ptr" contain pointers into fcs_float arrays
-    that contain the value of the charge assignment fraction (caf) for
-    x,y,z.
+    After the call, caf_cache contains a cache of the values of the
+    charge assignment fraction (caf) for x,y,z.
  */
 static fcs_int 
 ifcs_get_ca_points(ifcs_p3m_data_struct *d, 
                    fcs_float real_pos[3], 
-                   fcs_int shifted, 
-                   fcs_float *caf_ptr[6]) {
-  const fcs_int cao = d->cao;
-  const fcs_int interpol = d->n_interpol;
-
+                   fcs_int shifted) {
   /* linear index of the grid point */
   fcs_int linind = 0;
 
   for (fcs_int dim=0; dim<3; dim++) {
     /* position in normalized coordinates in [0,1] */
-    fcs_float pos    = (real_pos[dim] - d->local_grid.ld_pos[dim]) * d->ai[dim];
+    fcs_float pos = (real_pos[dim] - d->local_grid.ld_pos[dim]) * d->ai[dim];
     /* shift position to the corner of the charge assignment area */
     pos -= d->pos_shift;
     /* if using the interlaced grid, shift it more */
@@ -806,30 +978,22 @@ ifcs_get_ca_points(ifcs_p3m_data_struct *d,
 #endif
     /* linear index of grid point */
     linind = grid_ind + linind*d->local_grid.dim[dim];
+    /* normalized distance to grid point */
+    fcs_float dist = (pos-grid_ind)-0.5;
 
-    if (interpol > 0) {
-      /* index of nearest point in the interpolation grid */
-      fcs_int intind = (fcs_int) ((pos-grid_ind) * (2*d->n_interpol + 1));
-      /* generate pointer into interpolation grids */
-      caf_ptr[dim] = &d->int_caf[intind*cao];
-#ifdef P3M_AD
-      caf_ptr[3+dim] = &d->int_caf_d[intind*cao];
-#endif
-    } else {
-      /* distance between position and nearest grid point */
-      fcs_float dist = (pos-grid_ind)-0.5;
-      /* pointer to the interpolation grid, which is now used to
-         store the precomputed values of caf. */
-      caf_ptr[dim] = &d->int_caf[dim*cao];
-      /* fill array */
-      for (fcs_int i = 0; i < cao; i++)
-        caf_ptr[dim][i] = ifcs_p3m_caf(i, dist, cao);
-#ifdef P3M_AD
-      caf_ptr[3+dim] = &d->int_caf_d[dim*cao];
-      for (fcs_int i = 0; i < cao; i++)
-        caf_ptr[3+dim][i] = ifcs_p3m_caf_d(i, dist, cao);
-#endif
+    switch (dim) {
+    case 0: d->cafx->update(dist); break;
+    case 1: d->cafy->update(dist); break;
+    case 2: d->cafz->update(dist); break;
     }
+      
+#ifdef P3M_AD
+    switch (dim) {
+    case 0: d->cafx_d->update(dist); break;
+    case 1: d->cafy_d->update(dist); break;
+    case 2: d->cafz_d->update(dist); break;
+    }
+#endif
 
 #ifdef ADDITIONAL_CHECKS
     if (real_pos[dim] < d->comm.my_left[dim] 
@@ -851,40 +1015,43 @@ ifcs_get_ca_points(ifcs_p3m_data_struct *d,
   return linind;
 }
 
-/** Assign a single charge to the grid. If pid <=0, the charge
-    fractions are not stored. This can be used to add virtual charges
-    to the system, where no field is computed. This can be used for e.g. ELC or ICC*. */
+/** Assign the charges to the grid */
 static void 
-ifcs_p3m_assign_single_charge(ifcs_p3m_data_struct *d,
-			      fcs_float *data,
-			      fcs_int pid,
-			      fcs_float real_pos[3],
-			      fcs_float q,
-			      fcs_int shifted) {
-  const fcs_int cao = d->cao;
+ifcs_p3m_assign_charges(ifcs_p3m_data_struct* d,
+			fcs_float *data,
+			fcs_int num_real_particles,
+			fcs_float *positions, 
+			fcs_float *charges,
+			fcs_int shifted) {
+  P3M_DEBUG(printf( "  ifcs_p3m_assign_charges() started...\n"));
+
   const fcs_int q2off = d->local_grid.q_2_off;
   const fcs_int q21off = d->local_grid.q_21_off;
-  
-  fcs_float *caf_begin[6];
-  fcs_int linind_grid = 
-    ifcs_get_ca_points(d, real_pos, shifted, caf_begin);
-  fcs_float *caf_end[3]  = { caf_begin[0]+cao,
-                             caf_begin[1]+cao,
-                             caf_begin[2]+cao };
 
-  /* Loop over all ca grid points nearby and compute charge assignment fraction */
-  for (fcs_float *caf_x = caf_begin[0]; caf_x != caf_end[0]; caf_x++) {
-    for (fcs_float *caf_y = caf_begin[1]; caf_y != caf_end[1]; caf_y++) {
-      fcs_float caf_xy = *caf_x * *caf_y;
-      for (fcs_float *caf_z = caf_begin[2]; caf_z != caf_end[2]; caf_z++) {
-        /* add it to the grid */
-        data[linind_grid] += q * caf_xy * *caf_z;
-        linind_grid++;
+  /* init local charge grid */
+  for (fcs_int i=0; i<d->local_grid.size; i++) data[i] = 0.0;
+
+  /* now assign the charges */
+  for (fcs_int pid=0; pid < num_real_particles; pid++) {
+    const fcs_float q = charges[pid];
+    fcs_int linind_grid = ifcs_get_ca_points(d, &positions[pid*3], shifted);
+
+    /* Loop over all ca grid points nearby and compute charge assignment fraction */
+    for (fcs_float *caf_x = d->cafx->begin(); caf_x < d->cafx->end(); caf_x++) {
+      for (fcs_float *caf_y = d->cafy->begin(); caf_y < d->cafy->end(); caf_y++) {
+        fcs_float caf_xy = *caf_x * *caf_y;
+        for (fcs_float *caf_z = d->cafz->begin(); caf_z < d->cafz->end(); caf_z++) {
+          /* add it to the grid */
+          data[linind_grid] += q * caf_xy * *caf_z;
+          linind_grid++;
+        }
+        linind_grid += q2off;
       }
-      linind_grid += q2off;
+      linind_grid += q21off;
     }
-    linind_grid += q21off;
-  } 
+  }
+
+  P3M_DEBUG(printf( "  ifcs_p3m_assign_charges() finished...\n"));
 }
 
 /* Gather information for FFT grid inside the nodes domain (inner local grid) */
@@ -1112,7 +1279,6 @@ ifcs_p3m_assign_potentials(ifcs_p3m_data_struct* d,
                            fcs_float* positions, fcs_float* charges, 
                            fcs_int shifted,
                            fcs_float* potentials) {
-  const fcs_int cao = d->cao;
   const fcs_int q2off = d->local_grid.q_2_off;
   const fcs_int q21off = d->local_grid.q_21_off;
   const fcs_float prefactor = 1.0 / (d->box_l[0] * d->box_l[1] * d->box_l[2]);
@@ -1121,26 +1287,21 @@ ifcs_p3m_assign_potentials(ifcs_p3m_data_struct* d,
   /* Loop over all particles */
   for (fcs_int pid=0; pid < num_real_particles; pid++) {
     fcs_float potential = 0.0;
-
-    fcs_float *caf_begin[6];
     fcs_int linind_grid = 
-      ifcs_get_ca_points(d, &positions[pid*3], shifted, caf_begin);
-    fcs_float *caf_end[3]  = { caf_begin[0]+cao,
-                               caf_begin[1]+cao,
-                               caf_begin[2]+cao };
-    
+      ifcs_get_ca_points(d, &positions[pid*3], shifted);
+
     /* Loop over all ca grid points nearby and compute charge assignment fraction */
-    for (fcs_float *caf_x = caf_begin[0]; caf_x != caf_end[0]; caf_x++) {
-      for (fcs_float *caf_y = caf_begin[1]; caf_y != caf_end[1]; caf_y++) {
+    for (fcs_float *caf_x = d->cafx->begin(); caf_x < d->cafx->end(); caf_x++) {
+      for (fcs_float *caf_y = d->cafy->begin(); caf_y < d->cafy->end(); caf_y++) {
         fcs_float caf_xy = *caf_x * *caf_y;
-        for (fcs_float *caf_z = caf_begin[2]; caf_z != caf_end[2]; caf_z++) {
+        for (fcs_float *caf_z = d->cafz->begin(); caf_z < d->cafz->end(); caf_z++) {
           potential += *caf_z * caf_xy * data[linind_grid];
           linind_grid++;
         }
         linind_grid += q2off;
       }
       linind_grid += q21off;
-    } 
+    }
 
     potential *= prefactor;
     /* self energy correction */
@@ -1168,7 +1329,6 @@ ifcs_p3m_assign_fields_ik(ifcs_p3m_data_struct* d,
                           fcs_float* positions,
                           fcs_int shifted,
                           fcs_float* fields) {
-  const fcs_int cao = d->cao;
   const fcs_int q2off = d->local_grid.q_2_off;
   const fcs_int q21off = d->local_grid.q_21_off;
   const fcs_float prefactor = 1.0 / (2.0 * d->box_l[0] * d->box_l[1] * d->box_l[2]);
@@ -1178,26 +1338,21 @@ ifcs_p3m_assign_fields_ik(ifcs_p3m_data_struct* d,
   /* Loop over all particles */
   for (fcs_int pid=0; pid < num_real_particles; pid++) {
     fcs_float field = 0.0;
-    
-    fcs_float *caf_begin[6];
     fcs_int linind_grid = 
-      ifcs_get_ca_points(d, &positions[3*pid], shifted, caf_begin);
-    fcs_float *caf_end[3]  = { caf_begin[0]+cao,
-                               caf_begin[1]+cao,
-                               caf_begin[2]+cao };
-    
+      ifcs_get_ca_points(d, &positions[3*pid], shifted);
+
     /* loop over the local grid, compute the field */
-    for (fcs_float *caf_x = caf_begin[0]; caf_x != caf_end[0]; caf_x++) {
-      for (fcs_float *caf_y = caf_begin[1]; caf_y != caf_end[1]; caf_y++) {
+    for (fcs_float *caf_x = d->cafx->begin(); caf_x < d->cafx->end(); caf_x++) {
+      for (fcs_float *caf_y = d->cafy->begin(); caf_y < d->cafy->end(); caf_y++) {
         fcs_float caf_xy = *caf_x * *caf_y;
-        for (fcs_float *caf_z = caf_begin[2]; caf_z != caf_end[2]; caf_z++) {
+        for (fcs_float *caf_z = d->cafz->begin(); caf_z < d->cafz->end(); caf_z++) {
           field -= *caf_z * caf_xy * data[linind_grid];
           linind_grid++;
         }
         linind_grid += q2off;
       }
       linind_grid += q21off;
-    } 
+    }
 
     field *= prefactor;
 
@@ -1219,7 +1374,6 @@ ifcs_p3m_assign_fields_ad(ifcs_p3m_data_struct* d,
 			  fcs_float* positions,
                           fcs_int shifted,
 			  fcs_float* fields) {
-  const fcs_int cao = d->cao;
   const fcs_int q2off = d->local_grid.q_2_off;
   const fcs_int q21off = d->local_grid.q_21_off;
   const fcs_float prefactor = 1.0 / (d->box_l[0] * d->box_l[1] * d->box_l[2]);
@@ -1231,26 +1385,20 @@ ifcs_p3m_assign_fields_ad(ifcs_p3m_data_struct* d,
       (fcs_float)d->grid[1], 
       (fcs_float)d->grid[2] };
 
-  fcs_float field[3] = { 0.0, 0.0, 0.0 };
 
   P3M_DEBUG(printf( "  ifcs_p3m_assign_fields() [AD] started...\n"));
   /* Loop over all particles */
-  for (fcs_int pid=0; pid < num_real_particles; pid++) {
-    field[0] = field[1] = field[2] = 0.0;
-
-    fcs_float *caf_begin[6];
+  for (fcs_int pid = 0; pid < num_real_particles; pid++) {
+    fcs_float field[3] = { 0.0, 0.0, 0.0 };
     fcs_int linind_grid = 
-      ifcs_get_ca_points(d, &positions[pid*3], shifted, caf_begin);
-    fcs_float *caf_end[3]  = { caf_begin[0]+cao,
-                               caf_begin[1]+cao,
-                               caf_begin[2]+cao };
+      ifcs_get_ca_points(d, &positions[pid*3], shifted);
 
-    fcs_float *caf_x_d = caf_begin[3];
-    for (fcs_float *caf_x = caf_begin[0]; caf_x != caf_end[0]; caf_x++) {
-      fcs_float *caf_y_d = caf_begin[4];
-      for (fcs_float *caf_y = caf_begin[1]; caf_y != caf_end[1]; caf_y++) {
-        fcs_float *caf_z_d = caf_begin[5];
-        for (fcs_float *caf_z = caf_begin[2]; caf_z != caf_end[2]; caf_z++) {
+    fcs_float *caf_x_d = d->cafx_d->begin();
+    for (fcs_float *caf_x = d->cafx->begin(); caf_x < d->cafx->end(); caf_x++) {
+      fcs_float *caf_y_d = d->cafy_d->begin();
+      for (fcs_float *caf_y = d->cafy->begin(); caf_y < d->cafy->end(); caf_y++) {
+        fcs_float *caf_z_d = d->cafz_d->begin();
+        for (fcs_float *caf_z = d->cafz->begin(); caf_z < d->cafz->end(); caf_z++) {
           field[0] -= *caf_x_d * *caf_y * *caf_z * l_x_inv 
             * data[linind_grid] * grid[0];
           field[1] -= *caf_x * *caf_y_d * *caf_z * l_y_inv 

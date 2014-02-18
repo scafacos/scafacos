@@ -47,24 +47,88 @@ void ifcs_p3m_set_box_c(void *rd, fcs_float c) {
     d->box_l[2] = c;
 }
 
+void ifcs_p3m_triclinic(void* rd, fcs_float* positions, fcs_int number) {
+    ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
+    if (d->cosy_flag == triclinic) return;
+    int i;
+    for (i = 0; i < number; i++) {
+        printf("input positions: %f %f %f \n", i, positions[3 * i], positions[3 * i + 1], positions[3 * i + 2]);
+    }
 
+    for (i = 0; i < number; i++) {
+        positions[3 * i] = 1 / d->box_matrix[0][0] * positions[3 * i] - d->box_matrix[1][0] / (d->box_matrix[0][0] * d->box_matrix[1][1]) * positions[3 * i + 1] + (d->box_matrix[1][0] * d->box_matrix[2][1] - d->box_matrix[1][1] * d->box_matrix[2][0]) / (d->box_matrix[0][0] * d->box_matrix[1][1] * d->box_matrix[2][2]) * positions[3 * i + 2];
+        positions[3 * i + 1] = 1 / d->box_matrix[1][1] * positions[3 * i + 1] - d->box_matrix[2][1] / (d->box_matrix[1][1] * d->box_matrix[2][2]) * positions[3 * i + 2];
+        positions[3 * i + 2] = 1 / d->box_matrix[2][2] * positions[3 * i + 2];
+    }
+
+
+
+#ifdef ADDITIONAL_CHECKS
+    for (i = 0; i < number; i++) {
+        if (positions[3 * i] > 1 || positions[3 * i] < 0 || positions[3 * i + 1] > 1 || positions[3 * i + 1] < 0 || positions[3 * i + 2] > 1 || positions[3 * i + 2] < 0) {
+            printf("ERROR: this cannot be a positionsinic position: particle %d, coordinate: %f %f %f \n", i, positions[3 * i], positions[3 * i + 1], positions[3 * i + 2]);
+            //todo: error handling
+        }
+    }
+#endif
+    //todo: remove printing as soon as all works
+    printf("positions are now in positionsinic coordinates(parameters ln 74): \n");
+
+
+    for (i = 0; i < number; i++) {
+        printf("positions: %f %f %f \n", i, positions[3 * i], positions[3 * i + 1], positions[3 * i + 2]);
+
+    }
+    d->cosy_flag = triclinic;
+}
 
 void ifcs_p3m_set_box_geometry(void *rd, fcs_float *a, fcs_float *b, fcs_float *c) {
     ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
-   //todo need retune ?
- 
-        int i ;
-        for(i=0;i<3;i++){
-        d->box_vector_a[i]=a[i];
-        d->box_vector_b[i]=b[i];
-        d->box_vector_c[i]=c[i];
- 
-        }
+
+    int i = 0;
+
+    //  d->volume = 0.0;
+
+    for (i = 0; i < 3; i++) {
+        d->box_vector_a[i] = d->box_matrix[0][i] = a[i];
+        d->box_vector_b[i] = d->box_matrix[1][i] = b[i];
+        d->box_vector_c[i] = d->box_matrix[2][i] = c[i];
+
+    }
+
+    //    for (i = 0; i < 3; i++) {
+    //
+    //
+    //        d->volume += d->box_matrix[0][i]*(d->box_matrix[1][(1 + i) % 3]\
+//        * d->box_matrix[2][(2 + i) % 3] - d->box_matrix[1][(2 + i) % 3]\
+//        * d->box_matrix[2][(1 + i) % 3]);
+    //
+    //    }
+    if (d->triclinic_flag) {
+        printf("\n TRICLINIC BOX DETECTED \n\n");
+        //    d->box_l[0] = sqrt(d->box_vector_a[0] * d->box_vector_a[0] + d->box_vector_a[1] * d->box_vector_a[1] + d->box_vector_a[2] * d->box_vector_a[2]);
+        //    d->box_l[1] = sqrt(d->box_vector_b[0] * d->box_vector_b[0] + d->box_vector_b[1] * d->box_vector_b[1] + d->box_vector_b[2] * d->box_vector_b[2]);
+        //    d->box_l[2] = sqrt(d->box_vector_c[0] * d->box_vector_c[0] + d->box_vector_c[1] * d->box_vector_c[1] + d->box_vector_c[2] * d->box_vector_c[2]);
+
+
+        // d->cosy_flag=triclinic;
+        //	d->box_l[0] = 1;
+        //        d->box_l[1] = 1;
+        //        d->box_l[2] = 1;
+    }
+    //  printf("volume = %f  boxl = %f  %f  %f  \n",d->volume, d->box_l[0],d->box_l[1],d->box_l[2]);
+    //printf("boxvector a %f %f %f \n", d->box_vector_a[0],d->box_vector_a[1],d->box_vector_a[2]);
+
 }
 
-void ifcs_p3m_set_triclinic_flag(void *rd){
+fcs_int ifcs_p3m_check_triclinic_box(fcs_float *a, fcs_float *b) {
+    if (a[1] == 0 && a[2] == 0 && b[2] == 0) return 1;
+    return 0;
+}
+
+void ifcs_p3m_set_triclinic_flag(void *rd) {
     ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
-    d->triclinic_flag=1;
+    d->triclinic_flag = 1;
 }
 
 void ifcs_p3m_set_r_cut(void *rd, fcs_float r_cut) {

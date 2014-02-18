@@ -33,6 +33,12 @@ void ifcs_p3m_set_box_a(void *rd, fcs_float a);
 void ifcs_p3m_set_box_b(void *rd, fcs_float b);
 void ifcs_p3m_set_box_c(void *rd, fcs_float c);
 
+void ifcs_p3m_set_triclinic_flag(void *rd);
+void ifcs_p3m_triclinic(void *rd, fcs_float* positions,fcs_int number);
+void ifcs_p3m_set_box_geometry(void *rd, fcs_float *a, fcs_float *b, fcs_float *c);
+void ifcs_p3m_triclinic(void* rd, fcs_float* positions, fcs_int num_loc_part);
+fcs_int ifcs_p3m_check_triclinic_box(fcs_float *a, fcs_float *b);
+
 void ifcs_p3m_set_r_cut(void *rd, fcs_float alpha);
 void ifcs_p3m_set_r_cut_tune(void *rd);
 void ifcs_p3m_get_r_cut(void *rd, fcs_float *r_cut);

@@ -27,6 +27,9 @@
 /***************************************************/
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
 /***************************************************/
+static void
+ifcs_p3m_calc_kvector(ifcs_p3m_data_struct *d, fcs_int n[3], fcs_float *Vkn_2pi);
+
 static void 
 ifcs_p3m_perform_aliasing_sums_ik(ifcs_p3m_data_struct *d, fcs_int n[3], 
                                   fcs_float numerator_force[3], 
@@ -113,6 +116,27 @@ void ifcs_p3m_calc_influence_function_ik(ifcs_p3m_data_struct *d) {
     }
   }
   P3M_DEBUG(printf("  ifcs_p3m_calc_influence_function_ik() finished.\n"));
+}
+
+static void
+ifcs_p3m_calc_kvector(ifcs_p3m_data_struct *d, fcs_int n[3], fcs_float *Vkn_2pi) {
+    int i;
+   
+// for the AD influence function only k_(n+Nm) is needed)
+    for (i = 0; i < 3; i++) {
+        int j = (i + 1) % 3;
+        int k = (i + 2) % 3;
+	
+        Vkn_2pi[i] = (n[i]*(d->box_matrix[j][j] * d->box_matrix[k][k]\
+        - d->box_matrix[j][k] * d->box_matrix[k][j]) + n[j]\
+        *(d->box_matrix[k][j] * d->box_matrix[i][k] - d->box_matrix[k][k]\
+        * d->box_matrix[i][j]) + n[k]*(d->box_matrix[i][j]\
+        * d->box_matrix[j][k] - d->box_matrix[i][k] * d->box_matrix[j][j]));
+
+    }    	
+//                printf("Vkn %f\n",Vkn_2pi[0]);
+//                printf("Vkn %f\n",Vkn_2pi[1]);
+//                printf("Vkn %f\n",Vkn_2pi[2]);
 }
 
 static void
@@ -286,6 +310,8 @@ void ifcs_p3m_calc_influence_function_adi(ifcs_p3m_data_struct *d) {
 	  d->g_force[ind] = numerator_force / 
 	    (0.5 * FCS_PI * (denominator[0] * denominator[1] + denominator[2] * denominator[3] )) ;
           d->g_energy[ind] = FCS_1_PI*numerator_energy/SQR(denominator[0]);
+//          printf("genergy = %f\n",d->g_energy[ind]);
+//          printf("gforce = %f\n",d->g_force[ind]);
 	  /* d->g_energy[ind] = 0.5 * d->g_force[ind]; */
 	}
       }
@@ -313,11 +339,37 @@ ifcs_p3m_perform_aliasing_sums_adi(ifcs_p3m_data_struct *d, fcs_int n[3],
       const fcs_float sy  = sx*pow(sinc(nmy/(fcs_float)d->grid[RY]),2.0*d->cao);
       for (fcs_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
 	const fcs_int nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
-	const fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
-	const fcs_float nm2 = 
-	  SQR(nmx/d->box_l[RX]) + 
-	  SQR(nmy/d->box_l[RY]) + 
-	  SQR(nmz/d->box_l[RZ]);
+       const fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
+        
+        
+        fcs_float* Vkn_2pi;
+        Vkn_2pi = static_cast<fcs_float *>(malloc(3 * sizeof (fcs_float)));
+        fcs_int nmN[3] = {d->meshift_x[n[KX]]+d->grid[RX]*mx,
+        d->meshift_y[n[KY]]+d->grid[RY]*my,
+        d->meshift_z[n[KZ]]+d->grid[RZ]*mz};
+        
+        ifcs_p3m_calc_kvector(d,nmN ,Vkn_2pi);
+      
+       //printf("%f",Vkn_2pi[2]);
+	//const 
+                fcs_float nm2;// = 
+	//  SQR(nmx/d->box_l[RX]) + 
+	 // SQR(nmy/d->box_l[RY]) + 
+	 // SQR(nmz/d->box_l[RZ]);
+                fcs_float volume = d->box_matrix[0][0]*(d->box_matrix[1][1]*d->box_matrix[2][2]-d->box_matrix[1][2]*d->box_matrix[2][1])+d->box_matrix[0][1]*(d->box_matrix[1][2]*d->box_matrix[2][0]-d->box_matrix[1][0]*d->box_matrix[2][2])+d->box_matrix[0][2]*(d->box_matrix[1][0]*d->box_matrix[2][1]-d->box_matrix[1][1]*d->box_matrix[2][0]);
+        
+        //triclinic case:
+                //todo: check whether a prefactor like 2 Pi is missing.
+        nm2= 1/SQR(volume)*(SQR(Vkn_2pi[0])+SQR(Vkn_2pi[1])+SQR(Vkn_2pi[2]));
+        
+//        sz=pow(sinc(Vkn_2pi[2]/2.0*d->box_l[2]/d->grid[RZ]),2.0*d->cao);
+//        printf("sz1: %f\n", sz);
+//        sz*=pow(sinc(Vkn_2pi[1]/2.0*d->box_l[1]/d->grid[RY]),2.0*d->cao);
+//        printf("sz2: %f\n", sz);
+//        sz*=pow(sinc(Vkn_2pi[0]/2.0*d->box_l[0]/d->grid[RX]),2.0*d->cao);
+//        printf("sz3: %f\n", sz);
+     //printf("sz3: %f\n", sz);
+        //TODO change sx,sy,sz? //does U stay the way it is?//sx, sy and sz can not be calculated before since the k vectors are now dependent on all mx,my and mz.
 	const fcs_float prefactor2 = sz*exp(-prefactor*nm2);
 
 	*numerator_energy += prefactor2/nm2;

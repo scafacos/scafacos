@@ -20,7 +20,7 @@
 
 #ifndef __NEAR_H__
 #define __NEAR_H__
-
+#define FCS_ENABLE_INFO_NEAR
 
 #ifdef __cplusplus
 extern "C" {
