@@ -295,8 +295,8 @@ private:
     void tune_far(p3m_int num_particles,
             p3m_float *positions, p3m_float *charges);
 
-    void tune_alpha_cao_grid(TuneParametersList &params_to_try);
-    void tune_cao_grid(TuneParametersList &params_to_try);
+    void tune_alpha_(TuneParametersList &params_to_try);
+    void tune_cao_(TuneParametersList &params_to_try);
     void tune_grid_(TuneParametersList &params_to_try);
 
     TuneParameters* time_params(p3m_int num_particles, p3m_float *positions,

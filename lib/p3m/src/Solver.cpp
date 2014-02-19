@@ -1935,7 +1935,11 @@ Solver::tune_far(p3m_int num_particles, p3m_float *positions, p3m_float *charges
             p->p.grid[2] = grid[2];
             TuneParametersList params_to_try;
             params_to_try.push_back(p);
-            this->tune_alpha_cao_grid(params_to_try);
+            this->tune_alpha_(params_to_try);
+            this->tune_cao_(params_to_try);
+            this->tune_grid_(params_to_try);
+            if (params_to_try.size() == 0)
+                throw std::logic_error("No parameter set left to time.");
             final_params =
                     this->time_params(num_particles, positions, charges,
                             params_to_try);
@@ -1970,7 +1974,7 @@ Solver::tune_far(p3m_int num_particles, p3m_float *positions, p3m_float *charges
 
 /* Tune alpha */
 void
-Solver::tune_alpha_cao_grid(TuneParametersList &params_to_try) {
+Solver::tune_alpha_(TuneParametersList &params_to_try) {
     if (tune_alpha) {
         // compute the alpha for all params to try
         for (TuneParametersList::iterator p = params_to_try.begin();
@@ -1982,13 +1986,11 @@ Solver::tune_alpha_cao_grid(TuneParametersList &params_to_try) {
     } else {
         P3M_INFO(printf("    alpha=" FFLOAT " (fixed)\n", params_to_try.front()->p.alpha));
     }
-
-    this->tune_cao_grid(params_to_try);
 }
 
 /* Tune cao */
 void
-Solver::tune_cao_grid(TuneParametersList &params_to_try) {
+Solver::tune_cao_(TuneParametersList &params_to_try) {
 #ifdef P3M_AD
     const p3m_int min_cao = 2;
 #else
@@ -2012,8 +2014,6 @@ Solver::tune_cao_grid(TuneParametersList &params_to_try) {
     } else {
         P3M_INFO(printf( "    cao=" FINT " (fixed)\n", params_to_try.front()->p.cao));
     }
-
-    this->tune_grid_(params_to_try);
 }
 
 /* params should have decreasing cao */
@@ -2082,6 +2082,7 @@ Solver::tune_grid_(TuneParametersList &params_to_try) {
 
             // store the new grid size and alpha
             if (min_grid1d > grid1d) min_grid1d = grid1d;
+            (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
             P3M_INFO(printf( "      => grid=" F3INT ", "                      \
                     "error=" FFLOATE "\n",                           \
                     (*p)->p.grid[0], (*p)->p.grid[1], (*p)->p.grid[2],     \
@@ -2125,10 +2126,7 @@ Solver::tune_grid_(TuneParametersList &params_to_try) {
         for (TuneParametersList::iterator p = params_to_try.begin();
                 p != params_to_try.end(); ++p) {
             // test whether accuracy can be achieved with given parameters
-            P3M_INFO(printf("    r_cut=" FFLOAT ", "                   \
-                    "cao=" FINT ", "                           \
-                    "grid=" F3INT " (fixed)\n",                \
-                    (*p)->p.r_cut, (*p)->p.cao,                          \
+            P3M_INFO(printf("    grid=" F3INT " (fixed)\n",                \
                     (*p)->p.grid[0], (*p)->p.grid[1], (*p)->p.grid[2]));
             this->tune_broadcast_command(CMD_COMPUTE_ERROR_ESTIMATE);
             errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l,
