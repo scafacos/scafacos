@@ -25,7 +25,7 @@
 
 namespace P3M {
 
-p3m_float ErrorEstimateADI::compute_ks_error(Parameters& p, p3m_int num_charges,
+p3m_float ErrorEstimateADI::computeKSError(Parameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	/* #ifdef P3M_ENABLE_DEBUG */
 	/*   printf(  */
@@ -71,7 +71,7 @@ p3m_float ErrorEstimateADI::compute_ks_error(Parameters& p, p3m_int num_charges,
 			p3m_float alias1, alias2, alias3, alias4, alias5, alias6;
 			p3m_float D;
 
-			k_space_error_sum2
+			KSErrorSum2
 			(nx,ny,nz, p.grid,grid_i, p.cao,alpha_L_i,
 					&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
 
@@ -90,7 +90,7 @@ p3m_float ErrorEstimateADI::compute_ks_error(Parameters& p, p3m_int num_charges,
 }
 
 /** aliasing sum used by \ref k_space_error. */
-void ErrorEstimateADI::k_space_error_sum2(p3m_int nx, p3m_int ny, p3m_int nz,
+void ErrorEstimateADI::KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz,
 		p3m_int grid[3], p3m_float grid_i[3], p3m_int cao, p3m_float alpha_L_i,
 		p3m_float *alias1, p3m_float *alias2, p3m_float *alias3,
 		p3m_float *alias4, p3m_float *alias5, p3m_float *alias6) {

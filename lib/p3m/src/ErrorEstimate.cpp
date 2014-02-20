@@ -39,11 +39,11 @@ ErrorEstimate::create(Communication &comm) {
 ErrorEstimate::CantGetRequiredAccuracy::CantGetRequiredAccuracy() :
 	std::logic_error("Cannot achieve the required accuracy.") {}
 
-void ErrorEstimate::compute_alpha(p3m_float required_accuracy, Parameters& p,
+void ErrorEstimate::computeAlpha(p3m_float required_accuracy, Parameters& p,
 		p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) {
 	/* Get the real space error for alpha=0 */
 	p.alpha = 0.0;
-	p3m_float max_rs_error = compute_rs_error(p, num_charges, sum_q2, box_l);
+	p3m_float max_rs_error = computeRSError(p, num_charges, sum_q2, box_l);
 
 	/* We know how the real space error behaves, so we can compute the
 	 alpha where the real space error is half of the wanted
@@ -59,8 +59,8 @@ void ErrorEstimate::compute_alpha(p3m_float required_accuracy, Parameters& p,
 void ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3],
 		p3m_float &error, p3m_float &rs_error, p3m_float &ks_error) {
-	rs_error = compute_rs_error(p, num_charges, sum_q2, box_l);
-	ks_error = compute_ks_error(p, num_charges, sum_q2, box_l);
+	rs_error = computeRSError(p, num_charges, sum_q2, box_l);
+	ks_error = computeKSError(p, num_charges, sum_q2, box_l);
 	error = sqrt(SQR(rs_error) + SQR(ks_error));
 
 #ifdef P3M_ENABLE_DEBUG
@@ -77,15 +77,15 @@ p3m_float ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
 	return error;
 }
 
-p3m_float ErrorEstimate::compute_master(Parameters &p,
+p3m_float ErrorEstimate::computeMaster(Parameters &p,
         p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) {
     p3m_float ks_error, rs_error, error;
-    this->compute_master(p, num_charges, sum_q2, box_l, error, rs_error, ks_error);
+    this->computeMaster(p, num_charges, sum_q2, box_l, error, rs_error, ks_error);
     return error;
 }
 
 void
-ErrorEstimate::compute_master(Parameters &p,
+ErrorEstimate::computeMaster(Parameters &p,
         p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
         p3m_float &error, p3m_float &rs_error, p3m_float &ks_error) {
     if (!comm.onMaster())
@@ -117,7 +117,7 @@ ErrorEstimate::compute_master(Parameters &p,
     this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error);
 }
 
-void ErrorEstimate::compute_slave() {
+void ErrorEstimate::computeSlave() {
     if (comm.onMaster())
         throw std::logic_error("Do not call ErrorEstimate::compute_slave() on master.");
     // receive parameters
@@ -150,7 +150,7 @@ void ErrorEstimate::compute_slave() {
     this->compute(p, num_charges, sum_q2, box_l);
 }
 
-p3m_float ErrorEstimate::compute_rs_error(Parameters& p, p3m_int num_charges,
+p3m_float ErrorEstimate::computeRSError(Parameters& p, p3m_int num_charges,
         p3m_float sum_q2, p3m_float box_l[3]) {
     return (2.0 * sum_q2 * exp(-SQR(p.r_cut * p.alpha)))
             / (sqrt(num_charges * p.r_cut * box_l[0] * box_l[1] * box_l[2]));

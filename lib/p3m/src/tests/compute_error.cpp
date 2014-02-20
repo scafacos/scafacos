@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   p.grid[2] = grid;
 
   for (p.alpha = 0.1; p.alpha < 10.0; p.alpha += 0.1) {
-	  p3m_float ks_error = error->compute_ks_error(p, num_charges, sum_q2, L);
+	  p3m_float ks_error = error->computeKSError(p, num_charges, sum_q2, L);
 
 	  p3m_float alpha_L = p.alpha*L[0];
 	  p3m_float Q = sqrt(ks_error/(L[0]*L[0]));

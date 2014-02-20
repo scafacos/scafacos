@@ -1740,9 +1740,9 @@ Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
 
     if (!comm.onMaster()) {
         int howoften;
-        P3M_DEBUG_LOCAL(printf("  %d: How often to run tune_far?\n", comm.rank));
+        P3M_DEBUG_LOCAL(printf("  %d: How often to run tuneFar?\n", comm.rank));
         MPI_Bcast(&howoften, 1, MPI_INT, Communication::MPI_MASTER, comm.mpicomm);
-        P3M_DEBUG_LOCAL(printf("  %d: Running tune_far %d times.\n", comm.rank, howoften));
+        P3M_DEBUG_LOCAL(printf("  %d: Running tuneFar %d times.\n", comm.rank, howoften));
         for (; howoften > 0; howoften--)
             this->tuneFar(num_particles, positions, charges);
 
@@ -1841,31 +1841,15 @@ Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
 /** Slave variant of tune_far. */
 void
 Solver::tuneFar(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
-    if (comm.onMaster()) throw std::runtime_error("tuneFar without r_cut cannot be called on master node.");
+    if (comm.onMaster())
+        throw std::runtime_error(
+                "tuneFar without r_cut cannot be called on master node.");
     this->tuneFar(num_particles, positions, charges, 0.0);
 }
 
 Solver::TuneParameters*
 Solver::tuneFar(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
         p3m_float _r_cut) {
-    /* r_cut is ignored on the slaves */
-    /* Distinguish between two types of parameters:
-       Input params:
-     * box length
-     * #charges
-     * cutoff
-     * skin (only if comm is cartesian)
-     * error (default=1e-4)
-     * component flags
-
-       Performance related params:
-     * caf interpolation
-
-       Tuned params:
-     * alpha
-     * cao
-     * grid
-     */
     P3M_INFO(printf( "P3M::Solver::tuneFar() started...\n"));
 
     TuneParameters *final_params = NULL;
@@ -1920,7 +1904,7 @@ Solver::tuneFar(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
         } catch (...) {
             P3M_INFO(printf( "  Tuning failed.\n"));
             this->tuneBroadcastCommand(CMD_FAILED);
-            P3M_INFO(printf( "P3M::Solver::tune_far() finished.\n"));
+            P3M_INFO(printf( "P3M::Solver::tuneFar() finished.\n"));
             throw;
         }
     }
@@ -1943,7 +1927,7 @@ Solver::tuneAlpha(TuneParametersList &params_to_try) {
         // compute the alpha for all params to try
         for (TuneParametersList::iterator p = params_to_try.begin();
                 p != params_to_try.end(); ++p) {
-            errorEstimate->compute_alpha(tolerance_field,
+            errorEstimate->computeAlpha(tolerance_field,
                     (*p)->p, sum_qpart, sum_q2, box_l);
             P3M_INFO(printf("    => alpha=" FFLOAT "\n", (*p)->p.alpha));
         }
@@ -2006,7 +1990,7 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
                 (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      rough grid=" FINT "\n", grid1d));
                 this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
-                errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error);
+                errorEstimate->computeMaster((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error);
                 P3M_DEBUG(printf("        => error=" FFLOATE "\n", (*p)->error));
             } while ((*p)->error > tolerance_field);
 
@@ -2030,7 +2014,7 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
                 (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      fine grid=" FINT "\n", grid1d));
                 this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
-                errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error);
+                errorEstimate->computeMaster((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error);
                 P3M_DEBUG(printf("          => error=" FFLOATE "\n", (*p)->error));
                 if ((*p)->error < tolerance_field) {
                     // parameters achieve error
@@ -2093,7 +2077,7 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
             P3M_INFO(printf("    grid=" F3INT " (fixed)\n",                \
                     (*p)->p.grid[0], (*p)->p.grid[1], (*p)->p.grid[2]));
             this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
-            errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l,
+            errorEstimate->computeMaster((*p)->p, sum_qpart, sum_q2, box_l,
                     (*p)->error, (*p)->rs_error, (*p)->ks_error);
 
             if ((*p)->error < tolerance_field) {
@@ -2333,7 +2317,7 @@ void Solver::tuneBroadcastSlave(p3m_int num_particles, p3m_float* positions,
 
         switch (command) {
         case CMD_COMPUTE_ERROR_ESTIMATE:
-            errorEstimate->compute_slave();
+            errorEstimate->computeSlave();
             break;
         case CMD_TIMING:
             this->tuneReceiveParams();

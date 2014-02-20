@@ -27,13 +27,13 @@ class ErrorEstimateIK : public ErrorEstimate {
 public:
     ErrorEstimateIK(Communication &comm) : ErrorEstimate(comm) {}
 
-	virtual p3m_float compute_ks_error(Parameters &p,
+	virtual p3m_float computeKSError(Parameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
 protected:
     /** Calculate the analytical approximation for the k-space part of the
 	 error (Eq. 38 in Deserno, Holm; JCP 109,18; 1998). */
-	p3m_float compute_ks_error_approx(Parameters &p,
+	p3m_float computeKSErrorApprox(Parameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
 	/** Calculates the reciprocal space contribution to the rms error in the
@@ -41,14 +41,14 @@ protected:
 	 (Eqn. 8.23) (for a system of N randomly distributed particles in a
 	 cubic box).
 	 */
-	p3m_float compute_ks_error_full(Parameters &p,
+	p3m_float computeKSErrorFull(Parameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
 	p3m_float
-	k_space_error_sum1(p3m_int n, p3m_float grid_i, p3m_int cao);
+	KSErrorSum1(p3m_int n, p3m_float grid_i, p3m_int cao);
 
 	void
-	k_space_error_sum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
+	KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
 			p3m_float grid_i[3], p3m_int cao, p3m_float alpha_L_i,
 			p3m_float *alias1, p3m_float *alias2);
 

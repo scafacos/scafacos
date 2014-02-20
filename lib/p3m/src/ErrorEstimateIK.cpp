@@ -26,7 +26,7 @@
 namespace P3M {
 static const p3m_float FULL_ESTIMATE_ALPHA_H_THRESHOLD = 0.5;
 
-p3m_float ErrorEstimateIK::compute_ks_error(Parameters& p, p3m_int num_charges,
+p3m_float ErrorEstimateIK::computeKSError(Parameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	bool full_estimate = false;
 	// use the full estimate if alpha*h is larger than the threshold in any dimension
@@ -48,12 +48,12 @@ p3m_float ErrorEstimateIK::compute_ks_error(Parameters& p, p3m_int num_charges,
 #endif
 
 	if (full_estimate)
-	    return compute_ks_error_full(p, num_charges, sum_q2, box_l);
+	    return computeKSErrorFull(p, num_charges, sum_q2, box_l);
 	else
-	    return compute_ks_error_approx(p, num_charges, sum_q2, box_l);
+	    return computeKSErrorApprox(p, num_charges, sum_q2, box_l);
 }
 
-p3m_float ErrorEstimateIK::compute_ks_error_approx(Parameters& p, p3m_int num_charges,
+p3m_float ErrorEstimateIK::computeKSErrorApprox(Parameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 
 	p3m_float h = box_l[0] / p.grid[0];
@@ -110,7 +110,7 @@ p3m_float ErrorEstimateIK::compute_ks_error_approx(Parameters& p, p3m_int num_ch
  (Eqn. 8.23) (for a system of N randomly distributed particles in a
  cubic box).
  */
-p3m_float ErrorEstimateIK::compute_ks_error_full(Parameters& p, p3m_int num_charges,
+p3m_float ErrorEstimateIK::computeKSErrorFull(Parameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	/* #ifdef P3M_ENABLE_DEBUG */
 	/*   printf(  */
@@ -158,19 +158,19 @@ p3m_float ErrorEstimateIK::compute_ks_error_full(Parameters& p, p3m_int num_char
 		if (ny != old_ny) {
 			if (nx != old_nx) {
 				old_nx = nx;
-				ctan_x = k_space_error_sum1(nx, grid_i[0], p.cao);
+				ctan_x = KSErrorSum1(nx, grid_i[0], p.cao);
 			}
 			old_ny = ny;
-			ctan_y = k_space_error_sum1(ny, grid_i[1], p.cao);
+			ctan_y = KSErrorSum1(ny, grid_i[1], p.cao);
 		}
 
 		if (nx != 0 || ny != 0 || nz != 0) {
 			p3m_float n2 = nx * nx + ny * ny + nz * nz;
 			p3m_float cs = ctan_x * ctan_y
-					* k_space_error_sum1(nz, grid_i[2], p.cao);
+					* KSErrorSum1(nz, grid_i[2], p.cao);
 			p3m_float alias1, alias2;
 			// TODO: sum2_ad for IKI?
-			k_space_error_sum2(nx, ny, nz, p.grid, grid_i, p.cao, alpha_L_i,
+			KSErrorSum2(nx, ny, nz, p.grid, grid_i, p.cao, alpha_L_i,
 					&alias1, &alias2);
 			p3m_float d = alias1 - SQR(alias2 / cs) / n2;
 			/* at high precisions, d can become negative due to extinction;
@@ -195,7 +195,7 @@ p3m_float ErrorEstimateIK::compute_ks_error_full(Parameters& p, p3m_int num_char
  the spline interpolation) can be written as an even trigonometric
  polynomial. The results are tabulated here (The employed formula
  is Eqn. 7.66 in the book of Hockney and Eastwood). */
-p3m_float ErrorEstimateIK::k_space_error_sum1(p3m_int n, p3m_float grid_i, p3m_int cao) {
+p3m_float ErrorEstimateIK::KSErrorSum1(p3m_int n, p3m_float grid_i, p3m_int cao) {
 	p3m_float c, res = 0.0;
 	c = SQR(cos(M_PI * grid_i * (p3m_float) n));
 
@@ -264,7 +264,7 @@ p3m_float ErrorEstimateIK::k_space_error_sum1(p3m_int n, p3m_float grid_i, p3m_i
 
 /** aliasing sum used by \ref k_space_error. */
 void
-ErrorEstimateIK::k_space_error_sum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
+ErrorEstimateIK::KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
 		p3m_float grid_i[3], p3m_int cao, p3m_float alpha_L_i,
 		p3m_float *alias1, p3m_float *alias2) {
 	p3m_float prefactor = SQR(M_PI * alpha_L_i);
