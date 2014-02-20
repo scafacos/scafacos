@@ -194,13 +194,11 @@ public:
 
 private:
     // submethods of prepare()
-    void calc_send_grid();
-    void prepare_a_ai_cao_cut();
-    void calc_lm_ld_pos();
-    void calc_local_ca_grid();
-    void calc_differential_operator();
-    void print_local_grid();
-    void print_send_grid();
+    void prepareSendGrid();
+    void prepareLocalCAGrid();
+    void prepareDifferentialOperator();
+    void printLocalGrid();
+    void printSendGrid();
 
     void computeInfluenceFunctionIK();
     void computeInfluenceFunctionADI();
@@ -224,7 +222,7 @@ private:
     // submethods of run()
     /* domain decomposition */
     void
-    domain_decompose(fcs_gridsort_t *gridsort,
+    decompose(fcs_gridsort_t *gridsort,
             p3m_int _num_particles,
             p3m_float *_positions, p3m_float *_charges,
             p3m_int *num_real_particles,
@@ -234,47 +232,46 @@ private:
             p3m_float **ghost_positions, p3m_float **ghost_charges,
             fcs_gridsort_index_t **ghost_indices);
 
-    void compute_far_adi(p3m_int num_charges, p3m_float* positions, p3m_float* charges,
+    void computeFarADI(p3m_int num_charges, p3m_float* positions, p3m_float* charges,
             p3m_float* fields, p3m_float* potentials);
-    void compute_far_ik(p3m_int num_charges, p3m_float* positions, p3m_float* charges,
+    void computeFarIK(p3m_int num_charges, p3m_float* positions, p3m_float* charges,
             p3m_float* fields, p3m_float* potentials);
 
     /* charge assignment */
-    p3m_int get_ca_points(p3m_float real_pos[3], p3m_int shifted);
-    void assign_charges(p3m_float *data,
+    p3m_int getCAPoints(p3m_float real_pos[3], p3m_int shifted);
+    void assignCharges(p3m_float *data,
             p3m_int num_charges, p3m_float *positions, p3m_float *charges, p3m_int shifted);
 
     /* collect grid from neighbor processes */
-    void gather_grid(p3m_float* rs_grid);
+    void gatherGrid(p3m_float* rs_grid);
     /* spread grid to neighbor processors */
-    void spread_grid(p3m_float* rs_grid);
+    void spreadGrid(p3m_float* rs_grid);
 
-    /* apply energy optimized influence function */
-    void apply_energy_influence_function();
-    /* apply force optimized influence function */
-    void apply_force_influence_function();
-    /* differentiate kspace in direction dim */
-    void ik_diff(int dim);
+    /* apply influence function g to the array in, yielding out */
+    void applyInfluenceFunction(p3m_float *in, p3m_float *out, p3m_float *g);
+
+    /* differentiate in in direction dim, yielding out*/
+    void differentiateIK(int dim, p3m_float* in, p3m_float* out);
 
     /* compute the total energy (in k-space, so no backtransform) */
-    p3m_float compute_total_energy();
+    p3m_float computeTotalEnergy();
     /* assign the potentials to the positions */
     void
-    assign_potentials(p3m_float *data,
+    assignPotentials(p3m_float *data,
             p3m_int num_particles, p3m_float* positions, p3m_float* charges,
             p3m_int shifted, p3m_float* potentials);
 
-    void collect_print_timings();
+    void collectPrintTimings();
 
     /* Assign the fields to the positions in dimension dim [IK] */
     void
-    assign_fields_ik(p3m_float *data,
+    assignFieldsIK(p3m_float *data,
             p3m_int dim, p3m_int num_particles, p3m_float* positions,
             p3m_int shifted, p3m_float* fields);
 
     /* Backinterpolate the forces obtained from k-space to the positions [AD]*/
     void
-    assign_fields_ad(p3m_float *data,
+    assignFieldsAD(p3m_float *data,
             p3m_int num_real_particles, p3m_float* positions,
             p3m_int shifted, p3m_float* fields);
 
@@ -288,21 +285,21 @@ private:
     };
     typedef std::list<TuneParameters*> TuneParametersList;
 
-    TuneParameters* tune_far(p3m_int num_particles, p3m_float *positions,
+    TuneParameters* tuneFar(p3m_int num_particles, p3m_float *positions,
             p3m_float *charges, p3m_float r_cut);
 
     /** Slave variant of tune_far. */
-    void tune_far(p3m_int num_particles,
+    void tuneFar(p3m_int num_particles,
             p3m_float *positions, p3m_float *charges);
 
-    void tune_alpha_(TuneParametersList &params_to_try);
-    void tune_cao_(TuneParametersList &params_to_try);
-    void tune_grid_(TuneParametersList &params_to_try);
+    void tuneAlpha(TuneParametersList &params_to_try);
+    void tuneCAO(TuneParametersList &params_to_try);
+    void tuneGrid(TuneParametersList &params_to_try);
 
-    TuneParameters* time_params(p3m_int num_particles, p3m_float *positions,
+    TuneParameters* timeParams(p3m_int num_particles, p3m_float *positions,
             p3m_float *charges, TuneParametersList &params_to_try);
 
-    void count_charges(p3m_int num_particles, p3m_float *charges);
+    void countCharges(p3m_int num_particles, p3m_float *charges);
 
     /* Events during tuning */
     static const int CMD_FAILED = -1;
@@ -310,13 +307,13 @@ private:
     static const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
     static const int CMD_TIMING = 2;
 
-    void tune_broadcast_params(Parameters &p);
-    void tune_receive_params();
+    void tuneBroadcastParams(Parameters &p);
+    void tuneReceiveParams();
 
-    void tune_broadcast_command(p3m_int command);
-    void tune_broadcast_command(p3m_int command, Parameters &p);
+    void tuneBroadcastCommand(p3m_int command);
+    void tuneBroadcastCommand(p3m_int command, Parameters &p);
 
-    void tune_broadcast_slave(p3m_int num_particles,
+    void tuneBroadcastSlave(p3m_int num_particles,
             p3m_float *positions, p3m_float *charges);
 
 };

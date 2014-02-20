@@ -38,7 +38,7 @@ namespace P3M {
 
 Solver::Solver(MPI_Comm mpicomm) :
                     comm(mpicomm), fft(comm), errorEstimate(NULL) {
-    P3M_DEBUG(printf( "P3M::P3M() started...\n"));
+    P3M_DEBUG(printf( "P3M::Solver() started...\n"));
 
     errorEstimate = ErrorEstimate::create(comm);
 
@@ -125,7 +125,7 @@ Solver::Solver(MPI_Comm mpicomm) :
     rs_grid = NULL;
     ks_grid = NULL;
 
-    P3M_DEBUG(printf( "P3M::P3M() finished.\n"));
+    P3M_DEBUG(printf( "P3M::Solver() finished.\n"));
 }
 
 Solver::~Solver() {
@@ -152,8 +152,8 @@ Solver::~Solver() {
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
 /***************************************************/
 #ifdef P3M_ENABLE_DEBUG
-void print_local_grid(local_grid_t l);
-void print_send_grid(send_grid_t sm);
+void printLocalGrid(local_grid_t l);
+void printSendGrid(send_grid_t sm);
 #endif
 
 /** Prepare the data structures and constants of the P3M algorithm.
@@ -161,14 +161,17 @@ void print_send_grid(send_grid_t sm);
 void Solver::prepare() {
     P3M_DEBUG(printf("  P3M::Solver::prepare() started... \n"));
 
-    /* initializes the (inverse) grid constant a
-          (ai) and the cutoff for charge assignment
-          cao_cut */
-    this->prepare_a_ai_cao_cut();
-    this->calc_local_ca_grid();
-    this->calc_send_grid();
-    P3M_DEBUG(this->print_local_grid());
-    P3M_DEBUG(this->print_send_grid());
+    /* Initializes the (inverse) grid constant ai and the cutoff for charge
+     * assignment cao_cut. */
+    for (p3m_int i=0; i<3; i++) {
+        ai[i]      = grid[i]/box_l[i];
+        a[i]       = 1.0/ai[i];
+        cao_cut[i] = 0.5*a[i]*cao;
+    }
+    this->prepareLocalCAGrid();
+    P3M_DEBUG(this->printLocalGrid());
+    this->prepareSendGrid();
+    P3M_DEBUG(this->printSendGrid());
     send_grid = (p3m_float *) realloc(send_grid, sizeof(p3m_float)*sm.max);
     recv_grid = (p3m_float *) realloc(recv_grid, sizeof(p3m_float)*sm.max);
 
@@ -195,7 +198,20 @@ void Solver::prepare() {
     ks_grid = fft.malloc_data();
 
     /* k-space part */
-    this->calc_differential_operator();
+    /* Calculates the Fourier transformed differential operator.
+     *  Remark: This is done on the level of n-vectors and not k-vectors,
+     *           i.e. the prefactor i*2*PI/L is missing! */
+    for (int i = 0; i < 3; i++) {
+        d_op[i] = static_cast<p3m_int *>(realloc(d_op[i], grid[i]*sizeof(p3m_int)));
+        d_op[i][0] = 0;
+        d_op[i][grid[i]/2] = 0;
+
+        for (p3m_int j = 1; j < grid[i]/2; j++) {
+            d_op[i][j] = j;
+            d_op[i][grid[i] - j] = -j;
+        }
+    }
+
     P3M_INFO(printf("    Calculating influence function...\n"));
 #if !defined(P3M_INTERLACE) && defined(P3M_IK)
     computeInfluenceFunctionIK();
@@ -208,54 +224,28 @@ void Solver::prepare() {
     P3M_DEBUG(printf("  P3m::Solver::prepare() finished.\n"));
 }
 
-/** Initializes the (inverse) grid constant \ref a (\ref
-         ai) and the cutoff for charge assignment \ref
-         cao_cut, which has to be done by \ref init_charges
-         once and by \ref scaleby_box_l whenever the \ref box_l
-         changed.  */
-void Solver::prepare_a_ai_cao_cut() {
-    P3M_DEBUG(printf("    Solver::prepare_a_ai_cao_cut() started... \n"));
-    for (p3m_int i=0; i<3; i++) {
-        ai[i]      = (p3m_float)grid[i]/box_l[i];
-        a[i]       = 1.0/ai[i];
-        cao_cut[i] = 0.5*a[i]*cao;
-    }
-    P3M_DEBUG(printf("    Solver::prepare_a_ai_cao_cut() finished. \n"));
-}
-
-/** Calculate the spacial position of the left down grid point of the
-         local grid, to be stored in \ref local_grid::ld_pos; function
-         called by \ref calc_local_ca_grid once and by \ref
-         scaleby_box_l whenever the \ref box_l changed. */
-void Solver::calc_lm_ld_pos() {
-    /* spacial position of left bottom grid point */
-    for (int i=0;i<3;i++) {
-        local_grid.ld_pos[i] =
-                (local_grid.ld_ind[i]+ grid_off[i])*a[i];
-    }
-}
 
 /** Calculates properties of the local FFT grid for the
          charge assignment process. */
-void Solver::calc_local_ca_grid() {
+void Solver::prepareLocalCAGrid() {
     p3m_int ind[3];
     /* total skin size */
     p3m_float full_skin[3];
 
-    P3M_DEBUG(printf("    calc_local_ca_grid() started... \n"));
     for (int i=0;i<3;i++)
         full_skin[i]= cao_cut[i]+skin+additional_grid[i];
 
-    /* inner left down grid point (global index) */
+    /* inner bottom left grid point (global index) */
     for (int i=0;i<3;i++)
         local_grid.in_ld[i] =
                 (p3m_int)ceil(comm.my_left[i]*ai[i]-grid_off[i]);
-    /* inner up right grid point (global index) */
+
+    /* inner upper right grid point (global index) */
     for (int i=0;i<3;i++)
         local_grid.in_ur[i] =
                 (p3m_int)floor(comm.my_right[i]*ai[i]-grid_off[i]);
 
-    /* correct roundof errors at boundary */
+    /* correct for roundoff errors at boundary */
     for (int i=0;i<3;i++) {
         if (float_is_zero((comm.my_right[i] * ai[i] - grid_off[i])
                 - local_grid.in_ur[i]))
@@ -264,28 +254,38 @@ void Solver::calc_local_ca_grid() {
                 - local_grid.in_ld[i]))
             local_grid.in_ld[i]--;
     }
+
     /* inner grid dimensions */
     for (int i=0; i<3; i++)
         local_grid.inner[i] = local_grid.in_ur[i] - local_grid.in_ld[i] + 1;
-    /* index of left down grid point in global grid */
-    for (int i=0; i<3; i++)
-        local_grid.ld_ind[i] =
-                (p3m_int)ceil((comm.my_left[i]-full_skin[i])*ai[i]-grid_off[i]);
-    /* spatial position of left down grid point */
-    this->calc_lm_ld_pos();
 
-    /* left down margin */
+    /* index of the bottom left grid point. */
+    for (int i=0; i<3; i++)
+        local_grid.ld_ind[i] = static_cast<p3m_int>(
+                ceil((comm.my_left[i]-full_skin[i])*ai[i]-grid_off[i])
+        );
+
+    /* spatial position of the bottom left grid point. */
+    for (int i=0;i<3;i++)
+        local_grid.ld_pos[i] =
+                (local_grid.ld_ind[i]+ grid_off[i])*a[i];
+
+    /* bottom left margin */
     for (int i=0;i<3;i++)
         local_grid.margin[i*2] = local_grid.in_ld[i]-local_grid.ld_ind[i];
-    /* up right grid point */
+
+    /* upper right grid point */
     for (int i=0;i<3;i++)
         ind[i] = (p3m_int)floor((comm.my_right[i]+full_skin[i])*ai[i]-grid_off[i]);
-    /* correct roundof errors at up right boundary */
+
+    /* correct roundoff errors at upper right boundary */
     for (int i=0;i<3;i++)
         if (((comm.my_right[i]+full_skin[i])*ai[i]-grid_off[i])-ind[i]==0)
             ind[i]--;
-    /* up right margin */
-    for (int i=0;i<3;i++) local_grid.margin[(i*2)+1] = ind[i] - local_grid.in_ur[i];
+
+    /* upper right margin */
+    for (int i=0;i<3;i++)
+        local_grid.margin[(i*2)+1] = ind[i] - local_grid.in_ur[i];
 
     /* grid dimension */
     local_grid.size=1;
@@ -293,25 +293,23 @@ void Solver::calc_local_ca_grid() {
         local_grid.dim[i] = ind[i] - local_grid.ld_ind[i] + 1;
         local_grid.size *= local_grid.dim[i];
     }
+
     /* reduce inner grid indices from global to local */
-    for (int i=0;i<3;i++)
+    for (int i=0;i<3;i++) {
         local_grid.in_ld[i] = local_grid.margin[i*2];
-    for (int i=0;i<3;i++)
         local_grid.in_ur[i] = local_grid.margin[i*2]+local_grid.inner[i];
+    }
 
     local_grid.q_2_off  = local_grid.dim[2] - cao;
     local_grid.q_21_off = local_grid.dim[2] * (local_grid.dim[1] - cao);
-
-    P3M_DEBUG(printf("    calc_local_ca_grid() finished. \n"));
 }
 
 /** Calculates the properties of the send/recv sub-grides of the local
  *  FFT grid.  In order to calculate the recv sub-grides there is a
  *  communication of the margins between neighbouring nodes. */
-void Solver::calc_send_grid() {
+void Solver::prepareSendGrid() {
     p3m_int done[3]={0,0,0};
 
-    P3M_DEBUG(printf("    P3M::Solver::calc_send_grid() started... \n"));
     /* send grids */
     for (int i=0; i<3; i++) {
         for (int j=0; j<3; j++) {
@@ -376,27 +374,10 @@ void Solver::calc_send_grid() {
         }
         if (sm.r_size[i]>sm.max) sm.max=sm.r_size[i];
     }
-    P3M_DEBUG(printf("    P3M::Solver::calc_send_grid() finished. \n"));
-}
-
-/** Calculates the Fourier transformed differential operator.
- *  Remark: This is done on the level of n-vectors and not k-vectors,
- *           i.e. the prefactor i*2*PI/L is missing! */
-void Solver::calc_differential_operator() {
-    for (int i = 0; i < 3; i++) {
-        d_op[i] = static_cast<p3m_int *>(realloc(d_op[i], grid[i]*sizeof(p3m_int)));
-        d_op[i][0] = 0;
-        d_op[i][grid[i]/2] = 0;
-
-        for (p3m_int j = 1; j < grid[i]/2; j++) {
-            d_op[i][j] = j;
-            d_op[i][grid[i] - j] = -j;
-        }
-    }
 }
 
 /** Debug function printing p3m structures */
-void Solver::print_local_grid() {
+void Solver::printLocalGrid() {
     printf( "    local_grid:\n");
     printf( "      dim=" F3INT ", size=" FINT "\n",
             local_grid.dim[0], local_grid.dim[1], local_grid.dim[2], local_grid.size);
@@ -417,7 +398,7 @@ void Solver::print_local_grid() {
 }
 
 /** Debug function printing p3m structures */
-void Solver::print_send_grid() {
+void Solver::printSendGrid() {
     printf( "    send_grid:\n");
     printf( "      max=%d\n",sm.max);
     for (int i=0;i<6;i++) {
@@ -835,7 +816,7 @@ void Solver::run(
     fcs_gridsort_t gridsort;
 
     START(TIMING_DECOMP);
-    this->domain_decompose(&gridsort,
+    this->decompose(&gridsort,
             _num_particles, _positions, _charges,
             &num_real_particles,
             &positions, &charges, &indices,
@@ -853,9 +834,9 @@ void Solver::run(
     STOP(TIMING_DECOMP);
 
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
-    this->compute_far_adi(num_real_particles, positions, charges, fields, potentials);
+    this->computeFarADI(num_real_particles, positions, charges, fields, potentials);
 #else
-    this->compute_far_ik(num_real_particles, positions, charges, fields, potentials);
+    this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
 #endif
 
     if (near_field_flag) {
@@ -911,7 +892,7 @@ void Solver::run(
     P3M_INFO(printf( "P3M::Solver::run() finished.\n"));
 }
 
-void Solver::compute_far_adi(
+void Solver::computeFarADI(
         p3m_int num_charges, p3m_float* positions, p3m_float* charges,
         p3m_float* fields, p3m_float* potentials) {
     P3M_INFO(printf( "P3M::Solver::compute_far_adi() started...\n"));
@@ -919,10 +900,10 @@ void Solver::compute_far_adi(
     START(TIMING_CA);
 
     /* charge assignment */
-    this->assign_charges(fft.data_buf, num_charges, positions, charges, 0);
+    this->assignCharges(fft.data_buf, num_charges, positions, charges, 0);
     STOPSTART(TIMING_CA, TIMING_GATHER);
     /* gather the ca grid */
-    this->gather_grid(fft.data_buf);
+    this->gatherGrid(fft.data_buf);
 
     // Complexify
     for (p3m_int i = local_grid.size-1; i >= 0; i--)
@@ -932,12 +913,12 @@ void Solver::compute_far_adi(
 
     // Second (shifted) run
     /* charge assignment */
-    this->assign_charges(fft.data_buf, num_charges, positions, charges, 1);
+    this->assignCharges(fft.data_buf, num_charges, positions, charges, 1);
 
     STOPSTART(TIMING_CA, TIMING_GATHER);
 
     /* gather the ca grid */
-    this->gather_grid(fft.data_buf);
+    this->gatherGrid(fft.data_buf);
     /* now rs_grid should contain the local ca grid */
 
     // Complexify
@@ -958,14 +939,14 @@ void Solver::compute_far_adi(
     if (require_total_energy || potentials != NULL) {
         /* apply energy optimized influence function */
         START(TIMING_INFLUENCE);
-        this->apply_energy_influence_function();
+        this->applyInfluenceFunction(rs_grid, ks_grid, g_energy);
         /* result is in ks_grid */
         STOP(TIMING_INFLUENCE);
 
         /* compute total energy, but not potentials */
         if (require_total_energy && potentials == NULL) {
             START(TIMING_POTENTIALS);
-            total_energy = this->compute_total_energy();
+            total_energy = this->computeTotalEnergy();
             STOP(TIMING_POTENTIALS);
         }
 
@@ -986,11 +967,11 @@ void Solver::compute_far_adi(
                 fft.data_buf[i] = ks_grid[2*i];
             }
 
-            this->spread_grid(fft.data_buf);
+            this->spreadGrid(fft.data_buf);
 
             STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
 
-            this->assign_potentials(fft.data_buf,
+            this->assignPotentials(fft.data_buf,
                     num_charges, positions,
                     charges, 0, potentials);
 
@@ -1000,11 +981,11 @@ void Solver::compute_far_adi(
             for (p3m_int i=0; i<local_grid.size; i++) {
                 fft.data_buf[i] = ks_grid[2*i+1];
             }
-            this->spread_grid(fft.data_buf);
+            this->spreadGrid(fft.data_buf);
 
             STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
 
-            this->assign_potentials(fft.data_buf,
+            this->assignPotentials(fft.data_buf,
                     num_charges, positions,
                     charges, 1, potentials);
 
@@ -1018,7 +999,7 @@ void Solver::compute_far_adi(
     if (fields != NULL) {
         /* apply force optimized influence function */
         START(TIMING_INFLUENCE);
-        this->apply_force_influence_function();
+        this->applyInfluenceFunction(rs_grid, ks_grid, g_force);
         STOP(TIMING_INFLUENCE);
 
         /* backtransform the grid */
@@ -1038,11 +1019,11 @@ void Solver::compute_far_adi(
             fft.data_buf[i] = ks_grid[2*i];
         }
 
-        this->spread_grid(fft.data_buf);
+        this->spreadGrid(fft.data_buf);
 
         STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
 
-        this->assign_fields_ad(fft.data_buf, num_charges, positions, 0, fields);
+        this->assignFieldsAD(fft.data_buf, num_charges, positions, 0, fields);
 
         STOPSTART(TIMING_FIELDS, TIMING_SPREAD);
 
@@ -1052,11 +1033,11 @@ void Solver::compute_far_adi(
             fft.data_buf[i] = ks_grid[2*i+1];
         }
 
-        this->spread_grid(fft.data_buf);
+        this->spreadGrid(fft.data_buf);
 
         STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
 
-        this->assign_fields_ad(fft.data_buf, num_charges, positions, 1, fields);
+        this->assignFieldsAD(fft.data_buf, num_charges, positions, 1, fields);
 
         STOP(TIMING_FIELDS);
     }
@@ -1072,12 +1053,12 @@ void Solver::compute_far_adi(
     }
 
     /* collect timings from the different nodes */
-    if (require_timings!=NONE) this->collect_print_timings();
+    if (require_timings!=NONE) this->collectPrintTimings();
 
     P3M_INFO(printf( "P3M::Solver::compute_far_adi() finished.\n"));
 }
 
-void Solver::compute_far_ik(
+void Solver::computeFarIK(
         p3m_int num_charges, p3m_float* positions, p3m_float* charges,
         p3m_float* fields, p3m_float* potentials) {
     P3M_INFO(printf( "P3M::Solver::compute_far_ik() started...\n"));
@@ -1085,10 +1066,10 @@ void Solver::compute_far_ik(
     START(TIMING_CA);
 
     /* charge assignment */
-    this->assign_charges(rs_grid, num_charges, positions, charges, 0);
+    this->assignCharges(rs_grid, num_charges, positions, charges, 0);
     STOPSTART(TIMING_CA, TIMING_GATHER);
     /* gather the ca grid */
-    this->gather_grid(rs_grid);
+    this->gatherGrid(rs_grid);
     /* now rs_grid should contain the local ca grid */
     STOP(TIMING_GATHER);
 
@@ -1106,14 +1087,14 @@ void Solver::compute_far_ik(
     if (require_total_energy || potentials != NULL) {
         /* apply energy optimized influence function */
         START(TIMING_INFLUENCE);
-        this->apply_energy_influence_function();
+        this->applyInfluenceFunction(rs_grid, ks_grid, g_energy);
         /* result is in ks_grid */
         STOP(TIMING_INFLUENCE);
 
         /* compute total energy, but not potentials */
         if (require_total_energy && potentials == NULL) {
             START(TIMING_POTENTIALS);
-            total_energy = this->compute_total_energy();
+            total_energy = this->computeTotalEnergy();
             STOP(TIMING_POTENTIALS);
         }
 
@@ -1130,12 +1111,12 @@ void Solver::compute_far_ik(
             }
             /* redistribute energy grid */
             START(TIMING_SPREAD);
-            this->spread_grid(ks_grid);
+            this->spreadGrid(ks_grid);
 
             STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
 
             /* compute potentials */
-            this->assign_potentials(ks_grid,
+            this->assignPotentials(ks_grid,
                     num_charges, positions, charges, 0, potentials);
 
             STOP(TIMING_POTENTIALS);
@@ -1148,7 +1129,7 @@ void Solver::compute_far_ik(
     if (fields != NULL) {
         /* apply force optimized influence function */
         START(TIMING_INFLUENCE);
-        this->apply_force_influence_function();
+        this->applyInfluenceFunction(rs_grid, ks_grid, g_force);
         STOP(TIMING_INFLUENCE);
 
         /* result is in ks_grid */
@@ -1156,7 +1137,7 @@ void Solver::compute_far_ik(
             /* differentiate in direction dim */
             /* result is stored in rs_grid */
             START(TIMING_FIELDS);
-            this->ik_diff(dim);
+            this->differentiateIK(dim, ks_grid, rs_grid);
             STOP(TIMING_FIELDS);
 
             if (require_timings != ESTIMATE_ALL
@@ -1172,9 +1153,9 @@ void Solver::compute_far_ik(
 
             /* redistribute force grid */
             START(TIMING_SPREAD);
-            this->spread_grid(rs_grid);
+            this->spreadGrid(rs_grid);
             STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
-            this->assign_fields_ik(rs_grid, dim, num_charges, positions, 0, fields);
+            this->assignFieldsIK(rs_grid, dim, num_charges, positions, 0, fields);
             STOP(TIMING_FIELDS);
         }
     }
@@ -1188,7 +1169,7 @@ void Solver::compute_far_ik(
     }
 
     /* collect timings from the different nodes */
-    if (require_timings != NONE) this->collect_print_timings();
+    if (require_timings != NONE) this->collectPrintTimings();
 
     P3M_INFO(printf( "P3M::Solver::compute_far_ik() finished.\n"));
 }
@@ -1198,7 +1179,7 @@ void Solver::compute_far_ik(
 /* RUN COMPONENTS */
 
 /* domain decomposition */
-void Solver::domain_decompose(fcs_gridsort_t *gridsort,
+void Solver::decompose(fcs_gridsort_t *gridsort,
         p3m_int _num_particles,
         p3m_float *_positions, p3m_float *_charges,
         p3m_int *num_real_particles,
@@ -1261,7 +1242,7 @@ void Solver::domain_decompose(fcs_gridsort_t *gridsort,
       charge assignment fraction (caf) for x,y,z.
  */
 p3m_int
-Solver::get_ca_points(p3m_float real_pos[3], p3m_int shifted) {
+Solver::getCAPoints(p3m_float real_pos[3], p3m_int shifted) {
     /* linear index of the grid point */
     p3m_int linind = 0;
 
@@ -1327,7 +1308,7 @@ Solver::get_ca_points(p3m_float real_pos[3], p3m_int shifted) {
 }
 
 /** Assign the charges to the grid */
-void Solver::assign_charges(p3m_float *data,
+void Solver::assignCharges(p3m_float *data,
         p3m_int num_real_particles, p3m_float *positions, p3m_float *charges,
         p3m_int shifted) {
     P3M_DEBUG(printf( "  P3M::Solver::assign_charges() started...\n"));
@@ -1341,7 +1322,7 @@ void Solver::assign_charges(p3m_float *data,
     /* now assign the charges */
     for (p3m_int pid=0; pid < num_real_particles; pid++) {
         const p3m_float q = charges[pid];
-        p3m_int linind_grid = this->get_ca_points(&positions[pid*3], shifted);
+        p3m_int linind_grid = this->getCAPoints(&positions[pid*3], shifted);
 
         /* Loop over all ca grid points nearby and compute charge assignment fraction */
         for (p3m_float *caf_x = cafx->begin(); caf_x < cafx->end(); caf_x++) {
@@ -1362,7 +1343,7 @@ void Solver::assign_charges(p3m_float *data,
 }
 
 /* Gather information for FFT grid inside the nodes domain (inner local grid) */
-void Solver::gather_grid(p3m_float* rs_grid) {
+void Solver::gatherGrid(p3m_float* rs_grid) {
     P3M_DEBUG(printf( "  P3M::Solver::gather_grid() started...\n"));
 
     /* direction loop */
@@ -1396,7 +1377,7 @@ void Solver::gather_grid(p3m_float* rs_grid) {
     P3M_DEBUG(printf( "  P3M::Solver::gather_grid() finished.\n"));
 }
 
-void Solver::spread_grid(p3m_float* rs_grid) {
+void Solver::spreadGrid(p3m_float* rs_grid) {
     P3M_DEBUG(printf( "  P3M::Solver::spread_grid() started...\n"));
 
     /* direction loop */
@@ -1426,33 +1407,19 @@ void Solver::spread_grid(p3m_float* rs_grid) {
     P3M_DEBUG(printf( "  P3M::Solver::spread_grid() finished.\n"));
 }
 
-
 /* apply the influence function */
-void Solver::apply_energy_influence_function() {
-    P3M_DEBUG(printf( "  apply_energy_influence_function() started...\n"));
+void Solver::applyInfluenceFunction(p3m_float *in, p3m_float *out, p3m_float *g) {
     const p3m_int size = fft.plan[3].new_size;
     for (p3m_int i=0; i < size; i++) {
-        ks_grid[2*i] = g_energy[i] * rs_grid[2*i];
-        ks_grid[2*i+1] = g_energy[i] * rs_grid[2*i+1];
+        out[2*i] = g[i] * in[2*i];
+        out[2*i+1] = g[i] * in[2*i+1];
     }
-    P3M_DEBUG(printf( "  apply_energy_influence_function() finished.\n"));
-}
-
-/* apply the influence function */
-void Solver::apply_force_influence_function() {
-    P3M_DEBUG(printf( "  apply_force_influence_function() started...\n"));
-    const p3m_int size = fft.plan[3].new_size;
-    for (p3m_int i=0; i < size; i++) {
-        ks_grid[2*i] = g_force[i] * rs_grid[2*i];
-        ks_grid[2*i+1] = g_force[i] * rs_grid[2*i+1];
-    }
-    P3M_DEBUG(printf( "  apply_force_influence_function() finished.\n"));
 }
 
 /* Add up the measured timings and collect information from all nodes.
  * Print the timings if requested so.
  */
-void Solver::collect_print_timings() {
+void Solver::collectPrintTimings() {
     timings[TIMING_FAR] += timings[TIMING_CA];
     timings[TIMING_FAR] += timings[TIMING_GATHER];
     timings[TIMING_FAR] += timings[TIMING_FORWARD];
@@ -1519,11 +1486,10 @@ void Solver::collect_print_timings() {
 
 }
 
-void Solver::ik_diff(int dim) {
+void Solver::differentiateIK(int dim, p3m_float* in, p3m_float* out) {
     /* direction in k space: */
     p3m_int dim_rs = (dim+ks_pnum)%3;
 
-    P3M_DEBUG(printf( "  P3M::Solver::ik_diff() started...\n"));
     p3m_int* d_operator = NULL;
     switch (dim) {
     case KX:
@@ -1543,25 +1509,23 @@ void Solver::ik_diff(int dim) {
         for (j[1]=0; j[1]<fft.plan[3].new_grid[1]; j[1]++) {
             for (j[2]=0; j[2]<fft.plan[3].new_grid[2]; j[2]++) {
                 /* i*k*(Re+i*Im) = - Im*k + i*Re*k     (i=sqrt(-1)) */
-                rs_grid[ind] =
-                        -2.0*M_PI*(ks_grid[ind+1] * d_operator[ j[dim]+fft.plan[3].start[dim] ])
+                out[ind] =
+                        -2.0*M_PI*(in[ind+1] * d_operator[ j[dim]+fft.plan[3].start[dim] ])
                         / box_l[dim_rs];
-                rs_grid[ind+1] =
-                        2.0*M_PI*ks_grid[ind] * d_operator[ j[dim]+fft.plan[3].start[dim] ]
+                out[ind+1] =
+                        2.0*M_PI*in[ind] * d_operator[ j[dim]+fft.plan[3].start[dim] ]
                                                                / box_l[dim_rs];
                 ind+=2;
             }
         }
     }
 
-    P3M_DEBUG(printf( "  P3M::Solver::ik_diff() finished.\n"));
     /* store the result in rs_grid */
 }
 
-
 /** Compute the total energy of the system in kspace. No need to
       backtransform the FFT grid in this case! */
-p3m_float Solver::compute_total_energy() {
+p3m_float Solver::computeTotalEnergy() {
     p3m_float local_k_space_energy;
     p3m_float k_space_energy;
 
@@ -1595,7 +1559,7 @@ p3m_float Solver::compute_total_energy() {
 
 /* Backinterpolate the potentials obtained from k-space to the positions */
 void
-Solver::assign_potentials(p3m_float *data,
+Solver::assignPotentials(p3m_float *data,
         p3m_int num_real_particles, p3m_float* positions, p3m_float* charges,
         p3m_int shifted, p3m_float* potentials) {
     const p3m_int q2off = local_grid.q_2_off;
@@ -1607,7 +1571,7 @@ Solver::assign_potentials(p3m_float *data,
     for (p3m_int pid=0; pid < num_real_particles; pid++) {
         p3m_float potential = 0.0;
         p3m_int linind_grid =
-                this->get_ca_points(&positions[pid*3], shifted);
+                this->getCAPoints(&positions[pid*3], shifted);
 
         /* Loop over all ca grid points nearby and compute charge assignment fraction */
         for (p3m_float *caf_x = cafx->begin(); caf_x < cafx->end(); caf_x++) {
@@ -1641,7 +1605,7 @@ Solver::assign_potentials(p3m_float *data,
 
 /* Backinterpolate the forces obtained from k-space to the positions */
 void
-Solver::assign_fields_ik(p3m_float *data, p3m_int dim,
+Solver::assignFieldsIK(p3m_float *data, p3m_int dim,
         p3m_int num_real_particles, p3m_float* positions,
         p3m_int shifted, p3m_float* fields) {
     const p3m_int q2off = local_grid.q_2_off;
@@ -1654,7 +1618,7 @@ Solver::assign_fields_ik(p3m_float *data, p3m_int dim,
     for (p3m_int pid=0; pid < num_real_particles; pid++) {
         p3m_float field = 0.0;
         p3m_int linind_grid =
-                this->get_ca_points(&positions[3*pid], shifted);
+                this->getCAPoints(&positions[3*pid], shifted);
 
         /* loop over the local grid, compute the field */
         for (p3m_float *caf_x = cafx->begin(); caf_x < cafx->end(); caf_x++) {
@@ -1682,7 +1646,7 @@ Solver::assign_fields_ik(p3m_float *data, p3m_int dim,
 
 /* Backinterpolate the forces obtained from k-space to the positions */
 void
-Solver::assign_fields_ad(p3m_float *data,
+Solver::assignFieldsAD(p3m_float *data,
         p3m_int num_real_particles, p3m_float* positions,
         p3m_int shifted, p3m_float* fields) {
     const p3m_int q2off = local_grid.q_2_off;
@@ -1697,7 +1661,7 @@ Solver::assign_fields_ad(p3m_float *data,
     for (p3m_int pid = 0; pid < num_real_particles; pid++) {
         p3m_float field[3] = { 0.0, 0.0, 0.0 };
         p3m_int linind_grid =
-                this->get_ca_points(&positions[pid*3], shifted);
+                this->getCAPoints(&positions[pid*3], shifted);
 
         p3m_float *caf_x_d = cafx_d->begin();
         for (p3m_float *caf_x = cafx->begin(); caf_x < cafx->end(); caf_x++) {
@@ -1772,7 +1736,7 @@ Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
 
     /* Count the charges */
     p3m_float sum_q2_before = sum_q2;
-    this->count_charges(num_particles, charges);
+    this->countCharges(num_particles, charges);
 
     if (!comm.onMaster()) {
         int howoften;
@@ -1780,7 +1744,7 @@ Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
         MPI_Bcast(&howoften, 1, MPI_INT, Communication::MPI_MASTER, comm.mpicomm);
         P3M_DEBUG_LOCAL(printf("  %d: Running tune_far %d times.\n", comm.rank, howoften));
         for (; howoften > 0; howoften--)
-            this->tune_far(num_particles, positions, charges);
+            this->tuneFar(num_particles, positions, charges);
 
         needs_retune = false;
         return;
@@ -1813,7 +1777,7 @@ Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
         P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", r_cut));
         int howoften = 1;
         MPI_Bcast(&howoften, 1, MPI_INT, Communication::MPI_MASTER, comm.mpicomm);
-        this->tune_far(num_particles, positions, charges, r_cut);
+        this->tuneFar(num_particles, positions, charges, r_cut);
     } else {
         int howoften = 2;
         MPI_Bcast(&howoften, 1, MPI_INT, Communication::MPI_MASTER, comm.mpicomm);
@@ -1840,7 +1804,7 @@ Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
 
         // @todo get near timing
         TuneParameters *p =
-                this->tune_far(num_particles, positions, charges, r_cut);
+                this->tuneFar(num_particles, positions, charges, r_cut);
 
         /* SECOND ESTIMATE */
         /* use the fact that we know that timing_near scales like r_cut**3
@@ -1861,7 +1825,7 @@ Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
 
         // @todo get near timing
         // second far tuning
-        p = this->tune_far(num_particles, positions, charges, r_cut);
+        p = this->tuneFar(num_particles, positions, charges, r_cut);
 
         rel_timing_diff =
                 fabs(p->timing_near - p->timing_far) /
@@ -1876,13 +1840,13 @@ Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
 
 /** Slave variant of tune_far. */
 void
-Solver::tune_far(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
-    if (comm.onMaster()) throw std::runtime_error("tune_far without r_cut cannot be called on master node.");
-    this->tune_far(num_particles, positions, charges, 0.0);
+Solver::tuneFar(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
+    if (comm.onMaster()) throw std::runtime_error("tuneFar without r_cut cannot be called on master node.");
+    this->tuneFar(num_particles, positions, charges, 0.0);
 }
 
 Solver::TuneParameters*
-Solver::tune_far(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
+Solver::tuneFar(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
         p3m_float _r_cut) {
     /* r_cut is ignored on the slaves */
     /* Distinguish between two types of parameters:
@@ -1902,12 +1866,12 @@ Solver::tune_far(p3m_int num_particles, p3m_float *positions, p3m_float *charges
      * cao
      * grid
      */
-    P3M_INFO(printf( "P3M::Solver::tune_far() started...\n"));
+    P3M_INFO(printf( "P3M::Solver::tuneFar() started...\n"));
 
     TuneParameters *final_params = NULL;
 
     if (!comm.onMaster()) {
-        this->tune_broadcast_slave(num_particles, positions, charges);
+        this->tuneBroadcastSlave(num_particles, positions, charges);
     } else {
 
         /* check whether the input parameters are sane */
@@ -1935,13 +1899,13 @@ Solver::tune_far(p3m_int num_particles, p3m_float *positions, p3m_float *charges
             p->p.grid[2] = grid[2];
             TuneParametersList params_to_try;
             params_to_try.push_back(p);
-            this->tune_alpha_(params_to_try);
-            this->tune_cao_(params_to_try);
-            this->tune_grid_(params_to_try);
+            this->tuneAlpha(params_to_try);
+            this->tuneCAO(params_to_try);
+            this->tuneGrid(params_to_try);
             if (params_to_try.size() == 0)
                 throw std::logic_error("No parameter set left to time.");
             final_params =
-                    this->time_params(num_particles, positions, charges,
+                    this->timeParams(num_particles, positions, charges,
                             params_to_try);
 
             // @todo: move to tune function
@@ -1952,10 +1916,10 @@ Solver::tune_far(p3m_int num_particles, p3m_float *positions, p3m_float *charges
             grid[1] = final_params->p.grid[1];
             grid[2] = final_params->p.grid[2];
             cao = final_params->p.cao;
-            this->tune_broadcast_command(CMD_FINISHED, final_params->p);
+            this->tuneBroadcastCommand(CMD_FINISHED, final_params->p);
         } catch (...) {
             P3M_INFO(printf( "  Tuning failed.\n"));
-            this->tune_broadcast_command(CMD_FAILED);
+            this->tuneBroadcastCommand(CMD_FAILED);
             P3M_INFO(printf( "P3M::Solver::tune_far() finished.\n"));
             throw;
         }
@@ -1966,7 +1930,7 @@ Solver::tune_far(p3m_int num_particles, p3m_float *positions, p3m_float *charges
     /* At the end of retuning, prepare the method */
     this->prepare();
 
-    P3M_INFO(printf( "P3M::Solver::tune_far() finished.\n"));
+    P3M_INFO(printf( "P3M::Solver::tuneFar() finished.\n"));
 
     return final_params;
 }
@@ -1974,7 +1938,7 @@ Solver::tune_far(p3m_int num_particles, p3m_float *positions, p3m_float *charges
 
 /* Tune alpha */
 void
-Solver::tune_alpha_(TuneParametersList &params_to_try) {
+Solver::tuneAlpha(TuneParametersList &params_to_try) {
     if (tune_alpha) {
         // compute the alpha for all params to try
         for (TuneParametersList::iterator p = params_to_try.begin();
@@ -1990,7 +1954,7 @@ Solver::tune_alpha_(TuneParametersList &params_to_try) {
 
 /* Tune cao */
 void
-Solver::tune_cao_(TuneParametersList &params_to_try) {
+Solver::tuneCAO(TuneParametersList &params_to_try) {
 #ifdef P3M_AD
     const p3m_int min_cao = 2;
 #else
@@ -2018,7 +1982,7 @@ Solver::tune_cao_(TuneParametersList &params_to_try) {
 
 /* params should have decreasing cao */
 void
-Solver::tune_grid_(TuneParametersList &params_to_try) {
+Solver::tuneGrid(TuneParametersList &params_to_try) {
     if (tune_grid) {
         p3m_int step_ix = 0;
         // store the minimal grid size seen so far
@@ -2041,7 +2005,7 @@ Solver::tune_grid_(TuneParametersList &params_to_try) {
                 p3m_int grid1d = good_gridsize[upper_ix];
                 (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      rough grid=" FINT "\n", grid1d));
-                this->tune_broadcast_command(CMD_COMPUTE_ERROR_ESTIMATE);
+                this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
                 errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error);
                 P3M_DEBUG(printf("        => error=" FFLOATE "\n", (*p)->error));
             } while ((*p)->error > tolerance_field);
@@ -2065,7 +2029,7 @@ Solver::tune_grid_(TuneParametersList &params_to_try) {
                 p3m_int grid1d = good_gridsize[test_ix];
                 (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      fine grid=" FINT "\n", grid1d));
-                this->tune_broadcast_command(CMD_COMPUTE_ERROR_ESTIMATE);
+                this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
                 errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error);
                 P3M_DEBUG(printf("          => error=" FFLOATE "\n", (*p)->error));
                 if ((*p)->error < tolerance_field) {
@@ -2128,7 +2092,7 @@ Solver::tune_grid_(TuneParametersList &params_to_try) {
             // test whether accuracy can be achieved with given parameters
             P3M_INFO(printf("    grid=" F3INT " (fixed)\n",                \
                     (*p)->p.grid[0], (*p)->p.grid[1], (*p)->p.grid[2]));
-            this->tune_broadcast_command(CMD_COMPUTE_ERROR_ESTIMATE);
+            this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
             errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l,
                     (*p)->error, (*p)->rs_error, (*p)->ks_error);
 
@@ -2151,7 +2115,7 @@ Solver::tune_grid_(TuneParametersList &params_to_try) {
 }
 
 Solver::TuneParameters*
-Solver::time_params(
+Solver::timeParams(
         p3m_int num_particles, p3m_float *positions, p3m_float *charges,
         TuneParametersList &params_to_try) {
     /* Now time the different parameter sets */
@@ -2227,7 +2191,7 @@ void Solver::timing(p3m_int num_particles,
         p.grid[0] = grid[0];
         p.grid[1] = grid[1];
         p.grid[2] = grid[2];
-        this->tune_broadcast_command(CMD_TIMING, p);
+        this->tuneBroadcastCommand(CMD_TIMING, p);
 
     }
 
@@ -2252,7 +2216,7 @@ void Solver::timing(p3m_int num_particles,
 /** Calculate number of charged particles, the sum of the squared
       charges and the squared sum of the charges. Called in parallel at
       the beginning of tuning. */
-void Solver::count_charges(p3m_int num_particles, p3m_float *charges) {
+void Solver::countCharges(p3m_int num_particles, p3m_float *charges) {
     p3m_float node_sums[3], tot_sums[3];
 
     for (int i=0; i<3; i++) {
@@ -2273,14 +2237,14 @@ void Solver::count_charges(p3m_int num_particles, p3m_float *charges) {
     sum_q2       = tot_sums[1];
     square_sum_q = SQR(tot_sums[2]);
 
-    P3M_DEBUG(printf("  count_charges(): "          \
+    P3M_DEBUG(printf("  countCharges(): "          \
             "num_charged_particles=" FINT ", "                   \
             "sum_squared_charges=" FFLOAT ", "                   \
             "sum_charges=" FFLOAT "\n",                          \
             sum_qpart, sum_q2, sqrt(square_sum_q)));
 }
 
-void Solver::tune_broadcast_params(Parameters &p) {
+void Solver::tuneBroadcastParams(Parameters &p) {
     // broadcast parameters and mark as final
     p3m_int int_buffer[4];
     p3m_float float_buffer[2];
@@ -2298,7 +2262,7 @@ void Solver::tune_broadcast_params(Parameters &p) {
     MPI_Bcast(float_buffer, 2, P3M_MPI_FLOAT, 0, comm.mpicomm);
 }
 
-void Solver::tune_receive_params()
+void Solver::tuneReceiveParams()
 {
     p3m_int int_buffer[4];
     p3m_float float_buffer[2];
@@ -2315,7 +2279,7 @@ void Solver::tune_receive_params()
     r_cut = float_buffer[1];
 }
 
-void Solver::tune_broadcast_command(p3m_int command){
+void Solver::tuneBroadcastCommand(p3m_int command){
     /* Send the command */
     P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %d.\n", \
             comm.rank, command));
@@ -2325,14 +2289,14 @@ void Solver::tune_broadcast_command(p3m_int command){
     switch (command) {
     case CMD_FINISHED:
     case CMD_TIMING:
-        throw std::logic_error("Internal Error: Bad call to tune_broadcast_command()");
+        throw std::logic_error("Internal Error: Bad call to tuneBroadcastCommand()");
     case CMD_COMPUTE_ERROR_ESTIMATE:
     case CMD_FAILED:
         return;
     }
 }
 
-void Solver::tune_broadcast_command(p3m_int command, Parameters &p){
+void Solver::tuneBroadcastCommand(p3m_int command, Parameters &p){
     /* Send the command */
     P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %d.\n", \
             comm.rank, command));
@@ -2342,20 +2306,20 @@ void Solver::tune_broadcast_command(p3m_int command, Parameters &p){
     switch (command) {
     case CMD_FINISHED:
     case CMD_TIMING:
-        this->tune_broadcast_params(p);
+        this->tuneBroadcastParams(p);
         return;
     case CMD_COMPUTE_ERROR_ESTIMATE:
     case CMD_FAILED:
-        throw std::logic_error("Internal Error: Bad call to tune_broadcast_command()");
+        throw std::logic_error("Internal Error: Bad call to tuneBroadcastCommand()");
         return;
     }
 }
 
-void Solver::tune_broadcast_slave(p3m_int num_particles, p3m_float* positions,
+void Solver::tuneBroadcastSlave(p3m_int num_particles, p3m_float* positions,
         p3m_float* charges) {
-    P3M_DEBUG(printf( "P3M::Solver::tune_broadcast_slave() started...\n"));
+    P3M_DEBUG(printf( "P3M::Solver::tuneBroadcastSlave() started...\n"));
     if (comm.onMaster())
-        throw std::logic_error("Internal error: tune_broadcast_slave "
+        throw std::logic_error("Internal error: tuneBroadcastSlave "
                 "should not be called on master!");
 
     for (;;) {
@@ -2372,11 +2336,11 @@ void Solver::tune_broadcast_slave(p3m_int num_particles, p3m_float* positions,
             errorEstimate->compute_slave();
             break;
         case CMD_TIMING:
-            this->tune_receive_params();
+            this->tuneReceiveParams();
             timing(num_particles, positions, charges);
             break;
         case CMD_FINISHED:
-            this->tune_receive_params();
+            this->tuneReceiveParams();
             return;
         case CMD_FAILED: {
             char msg[255];
@@ -2388,7 +2352,7 @@ void Solver::tune_broadcast_slave(p3m_int num_particles, p3m_float* positions,
         }
         }
     }
-    P3M_DEBUG(printf( "P3M::Solver::tune_broadcast_slave() finished.\n"));
+    P3M_DEBUG(printf( "P3M::Solver::tuneBroadcastSlave() finished.\n"));
 }
 
 }
