@@ -91,8 +91,6 @@ FCSResult fcs_p3m_tune(FCS handle,
 
     ifcs_p3m_set_box_geometry(handle->method_context, a, b, c);
     
- //  if (!fcs_is_orthogonal(a, b, c)) ifcs_p3m_triclinic(handle->method_context,positions, local_particles);
-    
     ifcs_p3m_set_near_field_flag(handle->method_context,
             fcs_get_near_field_flag(handle));
 

@@ -87,37 +87,17 @@ void ifcs_p3m_set_box_geometry(void *rd, fcs_float *a, fcs_float *b, fcs_float *
 
     int i = 0;
 
-    //  d->volume = 0.0;
-
     for (i = 0; i < 3; i++) {
         d->box_vector_a[i] = d->box_matrix[0][i] = a[i];
         d->box_vector_b[i] = d->box_matrix[1][i] = b[i];
         d->box_vector_c[i] = d->box_matrix[2][i] = c[i];
-
     }
+    
+    d->volume = d->box_vector_a[0]*d->box_vector_b[1]*d->box_vector_c[2];
 
-    //    for (i = 0; i < 3; i++) {
-    //
-    //
-    //        d->volume += d->box_matrix[0][i]*(d->box_matrix[1][(1 + i) % 3]\
-//        * d->box_matrix[2][(2 + i) % 3] - d->box_matrix[1][(2 + i) % 3]\
-//        * d->box_matrix[2][(1 + i) % 3]);
-    //
-    //    }
     if (d->triclinic_flag) {
-        printf("\n TRICLINIC BOX DETECTED \n\n");
-        //    d->box_l[0] = sqrt(d->box_vector_a[0] * d->box_vector_a[0] + d->box_vector_a[1] * d->box_vector_a[1] + d->box_vector_a[2] * d->box_vector_a[2]);
-        //    d->box_l[1] = sqrt(d->box_vector_b[0] * d->box_vector_b[0] + d->box_vector_b[1] * d->box_vector_b[1] + d->box_vector_b[2] * d->box_vector_b[2]);
-        //    d->box_l[2] = sqrt(d->box_vector_c[0] * d->box_vector_c[0] + d->box_vector_c[1] * d->box_vector_c[1] + d->box_vector_c[2] * d->box_vector_c[2]);
-
-
-        // d->cosy_flag=triclinic;
-        //	d->box_l[0] = 1;
-        //        d->box_l[1] = 1;
-        //        d->box_l[2] = 1;
+        printf(" TRICLINIC BOX DETECTED\n");
     }
-    //  printf("volume = %f  boxl = %f  %f  %f  \n",d->volume, d->box_l[0],d->box_l[1],d->box_l[2]);
-    //printf("boxvector a %f %f %f \n", d->box_vector_a[0],d->box_vector_a[1],d->box_vector_a[2]);
 
 }
 
@@ -129,6 +109,7 @@ fcs_int ifcs_p3m_check_triclinic_box(fcs_float *a, fcs_float *b) {
 void ifcs_p3m_set_triclinic_flag(void *rd) {
     ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*) rd;
     d->triclinic_flag = 1;
+    printf("triclinic flag set to %d \n", d->triclinic_flag);
 }
 
 void ifcs_p3m_set_r_cut(void *rd, fcs_float r_cut) {

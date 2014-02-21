@@ -356,24 +356,15 @@ ifcs_p3m_perform_aliasing_sums_adi(ifcs_p3m_data_struct *d, fcs_int n[3],
 	//  SQR(nmx/d->box_l[RX]) + 
 	 // SQR(nmy/d->box_l[RY]) + 
 	 // SQR(nmz/d->box_l[RZ]);
-                fcs_float volume = d->box_matrix[0][0]*(d->box_matrix[1][1]*d->box_matrix[2][2]-d->box_matrix[1][2]*d->box_matrix[2][1])+d->box_matrix[0][1]*(d->box_matrix[1][2]*d->box_matrix[2][0]-d->box_matrix[1][0]*d->box_matrix[2][2])+d->box_matrix[0][2]*(d->box_matrix[1][0]*d->box_matrix[2][1]-d->box_matrix[1][1]*d->box_matrix[2][0]);
         
         //triclinic case:
                 //todo: check whether a prefactor like 2 Pi is missing.
-        nm2= 1/SQR(volume)*(SQR(Vkn_2pi[0])+SQR(Vkn_2pi[1])+SQR(Vkn_2pi[2]));
+        nm2= 1/SQR(d->volume)*(SQR(Vkn_2pi[0])+SQR(Vkn_2pi[1])+SQR(Vkn_2pi[2]));
         
-//        sz=pow(sinc(Vkn_2pi[2]/2.0*d->box_l[2]/d->grid[RZ]),2.0*d->cao);
-//        printf("sz1: %f\n", sz);
-//        sz*=pow(sinc(Vkn_2pi[1]/2.0*d->box_l[1]/d->grid[RY]),2.0*d->cao);
-//        printf("sz2: %f\n", sz);
-//        sz*=pow(sinc(Vkn_2pi[0]/2.0*d->box_l[0]/d->grid[RX]),2.0*d->cao);
-//        printf("sz3: %f\n", sz);
-     //printf("sz3: %f\n", sz);
-        //TODO change sx,sy,sz? //does U stay the way it is?//sx, sy and sz can not be calculated before since the k vectors are now dependent on all mx,my and mz.
 	const fcs_float prefactor2 = sz*exp(-prefactor*nm2);
 
-	*numerator_energy += prefactor2/nm2;
-	*numerator_force  += prefactor2;
+	*numerator_energy += prefactor2/nm2/d->volume;
+	*numerator_force  += prefactor2/d->volume;
 
 	denominator[0] += sz;
 	denominator[1] += sz * nm2;
