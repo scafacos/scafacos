@@ -125,9 +125,6 @@ public:
     /****************************************************
      * DERIVED PARAMETERS
      ****************************************************/
-    /** The errors of the method according to the error formula. */
-    p3m_float error, ks_error, rs_error;
-
     /** offset of the first grid point (lower left corner) from the
      coordinate origin ([0,1[). */
     p3m_float grid_off[3];
@@ -276,44 +273,36 @@ private:
             p3m_int shifted, p3m_float* fields);
 
     // submethods of tune()
-    struct TuneParameters {
-        Parameters p;
-        /** Errors */
-        p3m_float rs_error, ks_error, error;
-        /** Timings */
-        p3m_float timing, timing_near, timing_far;
-    };
-    typedef std::list<TuneParameters*> TuneParametersList;
 
-    TuneParameters* tuneFar(p3m_int num_particles, p3m_float *positions,
-            p3m_float *charges, p3m_float r_cut);
+    typedef std::list<TuneParameters> TuneParameterList;
 
+    /* Get a list of parameters that achieve the required tolerance.
+     * Does NOT time. */
+    TuneParameterList tuneFar(Parameters p);
     /** Slave variant of tune_far. */
-    void tuneFar(p3m_int num_particles,
-            p3m_float *positions, p3m_float *charges);
+    void tuneFarSlave();
 
-    void tuneAlpha(TuneParametersList &params_to_try);
-    void tuneCAO(TuneParametersList &params_to_try);
-    void tuneGrid(TuneParametersList &params_to_try);
+    void tuneAlpha(TuneParameterList &params_to_try);
+    void tuneCAO(TuneParameterList &params_to_try);
+    void tuneGrid(TuneParameterList &params_to_try);
 
-    TuneParameters* timeParams(p3m_int num_particles, p3m_float *positions,
-            p3m_float *charges, TuneParametersList &params_to_try);
+    TuneParameters timeParams(p3m_int num_particles, p3m_float *positions,
+            p3m_float *charges, TuneParameterList &params_to_try);
 
     void countCharges(p3m_int num_particles, p3m_float *charges);
 
-    /* Events during tuning */
-    static const int CMD_FAILED = -1;
-    static const int CMD_FINISHED = 0;
-    static const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
-    static const int CMD_TIMING = 2;
+    // tuning master functions
+    void tuneBroadcastSendParams(TuneParameters p);
+    void tuneBroadcastFail();
+    void tuneBroadcastTiming(TuneParameters p, p3m_int num_particles,
+            p3m_float *positions, p3m_float *charges);
+    void tuneBroadcastFinish(TuneParameters p);
+    void tuneBroadcastNoTune();
+    TuneParameterList tuneBroadcastTuneFar(TuneParameters p);
 
-    void tuneBroadcastParams(Parameters &p);
-    void tuneReceiveParams();
-
-    void tuneBroadcastCommand(p3m_int command);
-    void tuneBroadcastCommand(p3m_int command, Parameters &p);
-
-    void tuneBroadcastSlave(p3m_int num_particles,
+    // tuning slave functions
+    void tuneBroadcastReceiveParams();
+    void tuneLoopSlave(p3m_int num_particles,
             p3m_float *positions, p3m_float *charges);
 
 };

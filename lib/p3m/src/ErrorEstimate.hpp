@@ -49,45 +49,38 @@ public:
      * can achieve the required accuracy.
      */
     virtual void
-    computeAlpha(p3m_float required_accuracy, Parameters &p,
+    computeAlpha(p3m_float required_accuracy, TuneParameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
     /** Master variant of the error computation. It first broadcasts the
      * parameters to all tasks, then runs compute. */
-    virtual p3m_float computeMaster(Parameters &p,
+    virtual void
+    computeMaster(TuneParameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
-    virtual void
-    computeMaster(Parameters &p,
-            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
-            p3m_float &error, p3m_float &rs_error, p3m_float &ks_error);
-    /** Slave variant of the error computation. It first receives the
-     * parameters, then runs compute. */
-    virtual void computeSlave();
+    /* Call this on the master to end the slave loop. */
+    void endLoop();
+
+    /** Slave variant of the error computation. It runs compute until
+     * finishedMaster is called. */
+    virtual void loopSlave();
 
     /** Computes the error estimate. When called in parallel, the result is
      * undefined on the slaves. */
     virtual void
-    compute(Parameters &p,
-            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
-            p3m_float &error, p3m_float &rs_error, p3m_float &ks_error);
-
-    /** Computes the error estimate. When called in parallel, the result is
-     * undefined on the slaves. */
-    virtual p3m_float
-    compute(Parameters &p,
+    compute(TuneParameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
     /** Calculates the real space contribution to the rms error in the
      * force (as described by Kolafa and Perram). When called in parallel, the
      * result is undefined on the slaves.
      */
-    virtual p3m_float computeRSError(Parameters &p,
+    virtual void computeRSError(TuneParameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
     /** Calculates the reciprocal space contribution to the rms error in the
      * force. When called in parallel, the result is undefined on the slaves. */
-    virtual p3m_float computeKSError(Parameters &p,
+    virtual void computeKSError(TuneParameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) = 0;
 
 protected:

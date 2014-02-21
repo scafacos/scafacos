@@ -26,7 +26,7 @@
 namespace P3M {
 static const p3m_float FULL_ESTIMATE_ALPHA_H_THRESHOLD = 0.5;
 
-p3m_float ErrorEstimateIK::computeKSError(Parameters& p, p3m_int num_charges,
+void ErrorEstimateIK::computeKSError(TuneParameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	bool full_estimate = false;
 	// use the full estimate if alpha*h is larger than the threshold in any dimension
@@ -42,19 +42,19 @@ p3m_float ErrorEstimateIK::computeKSError(Parameters& p, p3m_int num_charges,
 	}
 
 #ifdef P3M_ENABLE_DEBUG
-	if (!full_estimate)
+	if (comm.onMaster() && !full_estimate)
 	    printf("        alpha*h < " FFLOAT " => approximation\n",
 	            FULL_ESTIMATE_ALPHA_H_THRESHOLD);
 #endif
 
 	if (full_estimate)
-	    return computeKSErrorFull(p, num_charges, sum_q2, box_l);
+	    computeKSErrorFull(p, num_charges, sum_q2, box_l);
 	else
-	    return computeKSErrorApprox(p, num_charges, sum_q2, box_l);
+	    computeKSErrorApprox(p, num_charges, sum_q2, box_l);
 }
 
-p3m_float ErrorEstimateIK::computeKSErrorApprox(Parameters& p, p3m_int num_charges,
-		p3m_float sum_q2, p3m_float box_l[3]) {
+void ErrorEstimateIK::computeKSErrorApprox(TuneParameters& p,
+        p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) {
 
 	p3m_float h = box_l[0] / p.grid[0];
 	p3m_float ha = h * p.alpha;
@@ -96,13 +96,14 @@ p3m_float ErrorEstimateIK::computeKSErrorApprox(Parameters& p, p3m_int num_charg
 		+ 3617. / 35512320. * pow(ha, 2) + 1. / 345600.;
 		break;
 	default:
-		throw std::logic_error("INTERNAL_ERROR: k_space_error_approx: "
+		throw std::logic_error("Internal Error: k_space_error_approx: "
 				"Charge assignment order should not occur!\n");
 	};
 
-	return sum_q2 / (box_l[0] * box_l[0])
-					* pow(h * p.alpha, p.cao)
-					* sqrt(p.alpha * box_l[0] / num_charges * sqrt(2.0 * M_PI) * sum);
+	p.ks_error =
+	        sum_q2 / (box_l[0] * box_l[0])
+	        * pow(h * p.alpha, p.cao)
+	        * sqrt(p.alpha * box_l[0] / num_charges * sqrt(2.0 * M_PI) * sum);
 }
 
 /** Calculates the reciprocal space contribution to the rms error in the
@@ -110,7 +111,7 @@ p3m_float ErrorEstimateIK::computeKSErrorApprox(Parameters& p, p3m_int num_charg
  (Eqn. 8.23) (for a system of N randomly distributed particles in a
  cubic box).
  */
-p3m_float ErrorEstimateIK::computeKSErrorFull(Parameters& p, p3m_int num_charges,
+void ErrorEstimateIK::computeKSErrorFull(TuneParameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	/* #ifdef P3M_ENABLE_DEBUG */
 	/*   printf(  */
@@ -182,10 +183,8 @@ p3m_float ErrorEstimateIK::computeKSErrorFull(Parameters& p, p3m_int num_charges
 	p3m_float he_q;
 	MPI_Reduce(&local_he_q, &he_q, 1, P3M_MPI_FLOAT, MPI_SUM, 0, comm.mpicomm);
 
-	p3m_float ks_error = 2.0 * sum_q2 *
-			sqrt(he_q / (num_charges * box_l[0] * box_l[1] * box_l[2]));
-
-	return ks_error;
+	p.ks_error = 2.0 * sum_q2 *
+	        sqrt(he_q / (num_charges * box_l[0] * box_l[1] * box_l[2]));
 }
 
 /** One of the aliasing sums used by \ref p3m_fftcommon_k_space_error.
@@ -256,7 +255,7 @@ p3m_float ErrorEstimateIK::KSErrorSum1(p3m_int n, p3m_float grid_i, p3m_int cao)
 		break;
 	}
 	default:
-		throw std::logic_error("INTERNAL_ERROR: This value for the interpolation order should not occur!");
+		throw std::logic_error("Internal Error: This value for the interpolation order should not occur!");
 	}
 
 	return res;

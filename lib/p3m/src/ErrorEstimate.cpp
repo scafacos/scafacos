@@ -39,11 +39,12 @@ ErrorEstimate::create(Communication &comm) {
 ErrorEstimate::CantGetRequiredAccuracy::CantGetRequiredAccuracy() :
 	std::logic_error("Cannot achieve the required accuracy.") {}
 
-void ErrorEstimate::computeAlpha(p3m_float required_accuracy, Parameters& p,
+void ErrorEstimate::computeAlpha(p3m_float required_accuracy, TuneParameters& p,
 		p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) {
 	/* Get the real space error for alpha=0 */
 	p.alpha = 0.0;
-	p3m_float max_rs_error = computeRSError(p, num_charges, sum_q2, box_l);
+	computeRSError(p, num_charges, sum_q2, box_l);
+	p3m_float max_rs_error = p.rs_error;
 
 	/* We know how the real space error behaves, so we can compute the
 	 alpha where the real space error is half of the wanted
@@ -56,40 +57,30 @@ void ErrorEstimate::computeAlpha(p3m_float required_accuracy, Parameters& p,
 	}
 }
 
-void ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
-		p3m_float sum_q2, p3m_float box_l[3],
-		p3m_float &error, p3m_float &rs_error, p3m_float &ks_error) {
-	rs_error = computeRSError(p, num_charges, sum_q2, box_l);
-	ks_error = computeKSError(p, num_charges, sum_q2, box_l);
-	error = sqrt(SQR(rs_error) + SQR(ks_error));
+void ErrorEstimate::compute(TuneParameters& p, p3m_int num_charges,
+		p3m_float sum_q2, p3m_float box_l[3]) {
+    if (comm.onMaster()) {
+        computeRSError(p, num_charges, sum_q2, box_l);
+        computeKSError(p, num_charges, sum_q2, box_l);
+        p.error = sqrt(SQR(p.rs_error) + SQR(p.ks_error));
 
 #ifdef P3M_ENABLE_DEBUG
-	if (comm.onMaster())
-		printf("        error estimate: rs_err=" FFLOATE ", "
-		"ks_err=" FFLOATE ", err=" FFLOATE "\n", rs_error, ks_error, error);
+        printf("        error estimate: rs_err=" FFLOATE ", "
+                "ks_err=" FFLOATE ", err=" FFLOATE "\n", p.rs_error, p.ks_error, p.error);
 #endif
-}
-
-p3m_float ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
-		p3m_float sum_q2, p3m_float box_l[3]) {
-	p3m_float ks_error, rs_error, error;
-	this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error);
-	return error;
-}
-
-p3m_float ErrorEstimate::computeMaster(Parameters &p,
-        p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) {
-    p3m_float ks_error, rs_error, error;
-    this->computeMaster(p, num_charges, sum_q2, box_l, error, rs_error, ks_error);
-    return error;
+    } else
+        computeKSError(p, num_charges, sum_q2, box_l);
 }
 
 void
-ErrorEstimate::computeMaster(Parameters &p,
-        p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
-        p3m_float &error, p3m_float &rs_error, p3m_float &ks_error) {
+ErrorEstimate::computeMaster(TuneParameters &p,
+        p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) {
     if (!comm.onMaster())
-        throw std::logic_error("Do not call ErrorEstimate::compute_master() on slave.");
+        throw std::logic_error("Do not call ErrorEstimate::computeMaster() on slave.");
+
+    bool finished = false;
+    MPI_Bcast(&finished, 1, MPI_C_BOOL,
+            Communication::MPI_MASTER, comm.mpicomm);
 
     // broadcast parameters
     p3m_int int_buffer[5];
@@ -114,45 +105,68 @@ ErrorEstimate::computeMaster(Parameters &p,
             Communication::MPI_MASTER, comm.mpicomm);
 
     // run master job
-    this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error);
-}
-
-void ErrorEstimate::computeSlave() {
-    if (comm.onMaster())
-        throw std::logic_error("Do not call ErrorEstimate::compute_slave() on master.");
-    // receive parameters
-    p3m_int int_buffer[5];
-    p3m_float float_buffer[5];
-
-    Parameters p;
-    p3m_float box_l[3];
-    p3m_int num_charges;
-    p3m_float sum_q2;
-
-    MPI_Bcast(int_buffer, 5, P3M_MPI_INT,
-            Communication::MPI_MASTER, comm.mpicomm);
-    p.cao = int_buffer[0];
-    p.grid[0] = int_buffer[1];
-    p.grid[1] = int_buffer[2];
-    p.grid[2] = int_buffer[3];
-    num_charges = int_buffer[4];
-
-    // unpack float data
-    MPI_Bcast(float_buffer, 5, P3M_MPI_FLOAT,
-            Communication::MPI_MASTER, comm.mpicomm);
-    p.alpha = float_buffer[0];
-    sum_q2 = float_buffer[1];
-    box_l[0] = float_buffer[2];
-    box_l[1] = float_buffer[3];
-    box_l[2] = float_buffer[4];
-
-    // run slave job
     this->compute(p, num_charges, sum_q2, box_l);
 }
 
-p3m_float ErrorEstimate::computeRSError(Parameters& p, p3m_int num_charges,
+void
+ErrorEstimate::endLoop() {
+    if (!comm.onMaster())
+        throw std::logic_error("Do not call ErrorEstimate::endLoop() on slave.");
+    bool finished = true;
+    MPI_Bcast(&finished, 1, MPI_C_BOOL, Communication::MPI_MASTER, comm.mpicomm);
+}
+
+void ErrorEstimate::loopSlave() {
+    if (comm.onMaster())
+        throw std::logic_error("Do not call ErrorEstimate::loopSlave() on master.");
+
+    bool finished;
+    while (true) {
+        P3M_DEBUG_LOCAL(printf( \
+                "      %2d: ErrorEstimate::loopSlave() waiting.\n", \
+                comm.rank));
+        // check whether to continue in slave loop
+        MPI_Bcast(&finished, 1, MPI_C_BOOL,
+                Communication::MPI_MASTER, comm.mpicomm);
+        P3M_DEBUG_LOCAL(\
+                printf("      %2d: ErrorEstimate::loopSlave() got %s.\n", \
+                comm.rank, (finished ? "FINISH":"ERROR ESTIMATE")));
+        if (finished) break;
+
+        // receive parameters
+        p3m_int int_buffer[5];
+        p3m_float float_buffer[5];
+
+        TuneParameters p;
+        p3m_float box_l[3];
+        p3m_int num_charges;
+        p3m_float sum_q2;
+        MPI_Bcast(int_buffer, 5, P3M_MPI_INT,
+                Communication::MPI_MASTER, comm.mpicomm);
+
+        p.cao = int_buffer[0];
+        p.grid[0] = int_buffer[1];
+        p.grid[1] = int_buffer[2];
+        p.grid[2] = int_buffer[3];
+        num_charges = int_buffer[4];
+
+        // unpack float data
+        MPI_Bcast(float_buffer, 5, P3M_MPI_FLOAT,
+                Communication::MPI_MASTER, comm.mpicomm);
+        p.alpha = float_buffer[0];
+        sum_q2 = float_buffer[1];
+        box_l[0] = float_buffer[2];
+        box_l[1] = float_buffer[3];
+        box_l[2] = float_buffer[4];
+
+        // run slave job
+        this->compute(p, num_charges, sum_q2, box_l);
+    }
+}
+
+void ErrorEstimate::computeRSError(TuneParameters& p, p3m_int num_charges,
         p3m_float sum_q2, p3m_float box_l[3]) {
-    return (2.0 * sum_q2 * exp(-SQR(p.r_cut * p.alpha)))
+    p.rs_error = (2.0 * sum_q2 * exp(-SQR(p.r_cut * p.alpha)))
             / (sqrt(num_charges * p.r_cut * box_l[0] * box_l[1] * box_l[2]));
 }
 

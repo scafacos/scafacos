@@ -165,5 +165,50 @@ struct Parameters {
 	p3m_int cao;
 };
 
+struct TuneParameters {
+    TuneParameters() {
+        r_cut = alpha = -1.0;
+        cao = grid[0] = grid[1] = grid[2] = -1;
+        error = ks_error = rs_error = -1.0;
+        timing = timing_near = timing_far = -1.0;
+    }
+
+    TuneParameters(Parameters &p) {
+        r_cut = p.r_cut;
+        alpha = p.alpha;
+        cao = p.cao;
+        grid[0] = p.grid[0];
+        grid[1] = p.grid[1];
+        grid[2] = p.grid[2];
+        error = ks_error = rs_error = -1.0;
+        timing = timing_near = timing_far = -1.0;
+    }
+
+    operator Parameters() {
+        Parameters p;
+        p.r_cut = r_cut;
+        p.alpha = alpha;
+        p.cao = cao;
+        p.grid[0] = grid[0];
+        p.grid[1] = grid[1];
+        p.grid[2] = grid[2];
+        return p;
+    }
+
+    /** cutoff radius */
+    p3m_float r_cut;
+    /** Ewald splitting parameter */
+    p3m_float alpha;
+    /** number of grid points per coordinate direction (>0). */
+    p3m_int grid[3];
+    /** charge assignment order ([0,P3M_MAX_CAO]). */
+    p3m_int cao;
+
+    /** Errors */
+    p3m_float rs_error, ks_error, error;
+    /** Timings */
+    p3m_float timing, timing_near, timing_far;
+};
+
 }
 #endif

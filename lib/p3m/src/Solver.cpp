@@ -788,7 +788,7 @@ void Solver::run(
     P3M_INFO(printf( "P3M::Solver::run() started...\n"));
     P3M_DEBUG(printf("  type of timing: %d\n", require_timings));
     /* reset all timers */
-    if (require_timings!=NONE) {
+    if (require_timings != NONE) {
         for (int i = 0; i < NUM_TIMINGS; i++)
             timings[i] = 0.0;
     }
@@ -1739,241 +1739,225 @@ Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
     this->countCharges(num_particles, charges);
 
     if (!comm.onMaster()) {
-        int howoften;
-        P3M_DEBUG_LOCAL(printf("  %d: How often to run tuneFar?\n", comm.rank));
-        MPI_Bcast(&howoften, 1, MPI_INT, Communication::MPI_MASTER, comm.mpicomm);
-        P3M_DEBUG_LOCAL(printf("  %d: Running tuneFar %d times.\n", comm.rank, howoften));
-        for (; howoften > 0; howoften--)
-            this->tuneFar(num_particles, positions, charges);
-
-        needs_retune = false;
-        return;
-    }
-
-    /* Retune if the number of charges has changed */
-    if (!(float_is_equal(sum_q2_before, sum_q2))) {
-        P3M_INFO(printf( "  Number of charges changed, retuning is needed.\n"));
-        needs_retune = true;
-    }
-
-    /* Do not retune if there are no charges */
-    if (float_is_zero(sum_q2)) {
-        P3M_INFO(printf( "  No charges in the system.\n"));
-        needs_retune = false;
-    }
-
-    /* Exit if retuning is unnecessary */
-    if (!needs_retune) {
-        P3M_INFO(printf( "  Retuning is not required.\n"));
-        int howoften = 0;
-        MPI_Bcast(&howoften, 1, MPI_INT, Communication::MPI_MASTER, comm.mpicomm);
-        P3M_INFO(printf( "tune() finished.\n"));
-        return;
-    }
-
-    P3M_INFO(printf( "  Retuning is required.\n"));
-
-    if (!tune_r_cut) {
-        P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", r_cut));
-        int howoften = 1;
-        MPI_Bcast(&howoften, 1, MPI_INT, Communication::MPI_MASTER, comm.mpicomm);
-        this->tuneFar(num_particles, positions, charges, r_cut);
+        this->tuneLoopSlave(num_particles, positions, charges);
     } else {
-        int howoften = 2;
-        MPI_Bcast(&howoften, 1, MPI_INT, Communication::MPI_MASTER, comm.mpicomm);
+        /* Retune if the number of charges has changed */
+        if (!(float_is_equal(sum_q2_before, sum_q2))) {
+            P3M_INFO(printf( "  Number of charges changed, retuning is required.\n"));
+            needs_retune = true;
+        }
 
-        /* compute the average distance between two charges  */
-        p3m_float avg_dist =
-                pow((box_l[0]*box_l[1]*box_l[2])
-                        / sum_qpart, 0.33333);
+        /* Do not retune if there are no charges */
+        if (float_is_zero(sum_q2)) {
+            P3M_INFO(printf( "  No charges in the system.\n"));
+            needs_retune = false;
+        }
 
-        /* FIRST ESTIMATE */
-        /* set the initial r_cut to 3 times the average distance between
-         charges */
-        p3m_float r_cut = 3.0 * avg_dist;
+        /* Exit if retuning is unnecessary */
+        if (!needs_retune) {
+            P3M_INFO(printf( "  Retuning is not required.\n"));
+            P3M_INFO(printf("    Finished tuning.\n"));
+            tuneBroadcastNoTune();
+            return;
+        }
 
-        /* tune r_cut to half the box length */
-        if (0.5*box_l[1]-skin < r_cut)
-            r_cut = 0.5*box_l[0] - skin;
-        if (0.5*box_l[1]-skin < r_cut)
-            r_cut = 0.5*box_l[1] - skin;
-        if (0.5*box_l[2]-skin < r_cut)
-            r_cut = 0.5*box_l[2] - skin;
+        P3M_INFO(printf( "  Retuning is required.\n"));
 
-        P3M_INFO(printf( "    r_cut=" FFLOAT " (first estimate)\n", r_cut));
+        if (!tune_r_cut) {
+            P3M_INFO(printf( "    r_cut=" FFLOAT " (fixed)\n", r_cut));
 
-        // @todo get near timing
-        TuneParameters *p =
-                this->tuneFar(num_particles, positions, charges, r_cut);
+            TuneParameters p;
+            p.cao = cao;
+            p.alpha = alpha;
+            p.grid[0] = grid[0];
+            p.grid[1] = grid[1];
+            p.grid[2] = grid[2];
+            p.r_cut = r_cut;
+            TuneParameterList params_to_try =
+                    this->tuneBroadcastTuneFar(p);
+            TuneParameters best =
+                    this->timeParams(num_particles, positions, charges,
+                            params_to_try);
+            this->tuneBroadcastFinish(best);
+        } else {
+            TuneParameters p;
+            p.cao = cao;
+            p.alpha = alpha;
+            p.grid[0] = grid[0];
+            p.grid[1] = grid[1];
+            p.grid[2] = grid[2];
 
-        /* SECOND ESTIMATE */
-        /* use the fact that we know that timing_near scales like r_cut**3
-         and timing_far like r_cut**(-3) to get the second estimate */
+            /* compute the average distance between two charges  */
+            p3m_float avg_dist =
+                    pow((box_l[0]*box_l[1]*box_l[2])
+                            / sum_qpart, 0.33333);
 
-        p3m_float rel_timing_diff =
-                fabs(p->timing_near - p->timing_far) /
-                (p->timing_near + p->timing_far);
-        P3M_INFO(printf( "    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
+            /* FIRST ESTIMATE */
+            /* set the initial r_cut to 3 times the average distance
+             * between charges */
+            p.r_cut = 3.0 * avg_dist;
 
-        p3m_float rcut3 = pow(r_cut, 3);
-        p3m_float c_near = p->timing_near/rcut3;
-        p3m_float c_far = p->timing_far*rcut3;
-        p3m_float rcut_new = pow(c_far/c_near, 1./6.);
+            /* tune r_cut to half the box length */
+            if (0.5*box_l[1]-skin < p.r_cut)
+                p.r_cut = 0.5*box_l[0] - skin;
+            if (0.5*box_l[1]-skin < p.r_cut)
+                p.r_cut = 0.5*box_l[1] - skin;
+            if (0.5*box_l[2]-skin < p.r_cut)
+                p.r_cut = 0.5*box_l[2] - skin;
 
-        r_cut = rcut_new;
-        P3M_INFO(printf( "    r_cut=" FFLOAT " (second estimate)\n", r_cut));
+            P3M_INFO(printf( "    r_cut=" FFLOAT
+                    " (first estimate)\n", p.r_cut));
 
-        // @todo get near timing
-        // second far tuning
-        p = this->tuneFar(num_particles, positions, charges, r_cut);
+            TuneParameterList params_to_try1 =
+                    this->tuneBroadcastTuneFar(p);
+            TuneParameters best1 =
+                    this->timeParams(num_particles, positions, charges,
+                            params_to_try1);
 
-        rel_timing_diff =
-                fabs(p->timing_near - p->timing_far) /
-                (p->timing_near + p->timing_far);
-        P3M_INFO(printf("    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
-        P3M_INFO(printf("    Finished tuning.\n"));
+            /* SECOND ESTIMATE */
+            /* use the fact that we know that timing_near scales like
+             * r_cut**3 and timing_far like r_cut**(-3) to get the second
+             * estimate */
+
+            p3m_float rel_timing_diff =
+                    fabs(best1.timing_near - best1.timing_far) /
+                    (best1.timing_near + best1.timing_far);
+            P3M_INFO(printf( "    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
+
+            p3m_float rcut3 = pow(best1.r_cut, 3);
+            p3m_float c_near = best1.timing_near/rcut3;
+            p3m_float c_far = best1.timing_far*rcut3;
+            p.r_cut = pow(c_far/c_near, 1./6.);
+
+            P3M_INFO(printf( "    r_cut=" FFLOAT " (second estimate)\n", \
+                    p.r_cut));
+
+            TuneParameterList params_to_try2 =
+                    this->tuneBroadcastTuneFar(p);
+            TuneParameters best2 =
+                    this->timeParams(num_particles, positions, charges,
+                            params_to_try2);
+
+            rel_timing_diff =
+                    fabs(best2.timing_near - best2.timing_far) /
+                    (best2.timing_near + best2.timing_far);
+            P3M_INFO(printf("    rel_timing_diff=" FFLOAT "\n", rel_timing_diff));
+            P3M_INFO(printf("    Finished tuning.\n"));
+
+            this->tuneBroadcastFinish(best2);
+        }
     }
-
-    /* mark that the method was retuned */
-    needs_retune = false;
 }
 
-/** Slave variant of tune_far. */
+/** Slave variant of tuneFar. */
 void
-Solver::tuneFar(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
+Solver::tuneFarSlave() {
     if (comm.onMaster())
-        throw std::runtime_error(
-                "tuneFar without r_cut cannot be called on master node.");
-    this->tuneFar(num_particles, positions, charges, 0.0);
+        throw std::logic_error("tuneFarSlave cannot be called on master.");
+    /* wait for calls to error estimate until finished */
+    errorEstimate->loopSlave();
 }
 
-Solver::TuneParameters*
-Solver::tuneFar(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
-        p3m_float _r_cut) {
+Solver::TuneParameterList
+Solver::tuneFar(Parameters p) {
     P3M_INFO(printf( "P3M::Solver::tuneFar() started...\n"));
 
-    TuneParameters *final_params = NULL;
+    if (!comm.onMaster())
+        throw std::logic_error("Internal error: Do not call tuneFar() on slave!");
 
-    if (!comm.onMaster()) {
-        this->tuneBroadcastSlave(num_particles, positions, charges);
-    } else {
-
+    TuneParameterList params;
+    try {
         /* check whether the input parameters are sane */
-        if (_r_cut < 0.0)
+        if (p.r_cut < 0.0)
             throw std::domain_error("r_cut is negative!");
 
-        if (float_is_zero(_r_cut))
+        if (float_is_zero(p.r_cut))
             throw std::domain_error("r_cut is too small!");
 
         /* check whether cutoff is larger than half a box length */
-        if ((_r_cut > 0.5*box_l[0]) ||
-                (_r_cut > 0.5*box_l[1]) ||
-                (_r_cut > 0.5*box_l[2]))
-            throw std::domain_error("r_cut is larger than half a system box length.");
+        if ((p.r_cut > 0.5 * box_l[0]) ||
+                (p.r_cut > 0.5 * box_l[1]) ||
+                (p.r_cut > 0.5 * box_l[2]))
+            throw std::domain_error(
+                    "r_cut is larger than half a system box length.");
 
         /* check whether cutoff is larger than domain size */
 
-        try {
-            TuneParameters *p = new TuneParameters();
-            p->p.r_cut = _r_cut;
-            p->p.alpha = alpha;
-            p->p.cao = cao;
-            p->p.grid[0] = grid[0];
-            p->p.grid[1] = grid[1];
-            p->p.grid[2] = grid[2];
-            TuneParametersList params_to_try;
-            params_to_try.push_back(p);
-            this->tuneAlpha(params_to_try);
-            this->tuneCAO(params_to_try);
-            this->tuneGrid(params_to_try);
-            if (params_to_try.size() == 0)
-                throw std::logic_error("No parameter set left to time.");
-            final_params =
-                    this->timeParams(num_particles, positions, charges,
-                            params_to_try);
-
-            // @todo: move to tune function
-            /* Set and broadcast the final parameters. */
-            this->r_cut = final_params->p.r_cut;
-            alpha = final_params->p.alpha;
-            grid[0] = final_params->p.grid[0];
-            grid[1] = final_params->p.grid[1];
-            grid[2] = final_params->p.grid[2];
-            cao = final_params->p.cao;
-            this->tuneBroadcastCommand(CMD_FINISHED, final_params->p);
-        } catch (...) {
-            P3M_INFO(printf( "  Tuning failed.\n"));
-            this->tuneBroadcastCommand(CMD_FAILED);
-            P3M_INFO(printf( "P3M::Solver::tuneFar() finished.\n"));
-            throw;
-        }
+        params.push_back(TuneParameters(p));
+        this->tuneAlpha(params);
+        this->tuneCAO(params);
+        this->tuneGrid(params);
+        errorEstimate->endLoop();
+    } catch (...) {
+        P3M_INFO(printf("  Tuning failed.\n"));
+        errorEstimate->endLoop();
+        this->tuneBroadcastFail();
+        P3M_INFO(printf("P3M::Solver::tuneFar() finished.\n"));
+        throw;
     }
 
     P3M_INFO(printf( "  Tuning was successful.\n"));
 
-    /* At the end of retuning, prepare the method */
-    this->prepare();
-
     P3M_INFO(printf( "P3M::Solver::tuneFar() finished.\n"));
 
-    return final_params;
+    return params;
 }
 
 
 /* Tune alpha */
 void
-Solver::tuneAlpha(TuneParametersList &params_to_try) {
+Solver::tuneAlpha(TuneParameterList &params_to_try) {
     if (tune_alpha) {
         // compute the alpha for all params to try
-        for (TuneParametersList::iterator p = params_to_try.begin();
-                p != params_to_try.end(); ++p) {
+        for (TuneParameterList::iterator pit = params_to_try.begin();
+                pit != params_to_try.end(); ++pit) {
             errorEstimate->computeAlpha(tolerance_field,
-                    (*p)->p, sum_qpart, sum_q2, box_l);
-            P3M_INFO(printf("    => alpha=" FFLOAT "\n", (*p)->p.alpha));
+                    *pit, sum_qpart, sum_q2, box_l);
+            P3M_INFO(printf("    => alpha=" FFLOAT "\n", pit->alpha));
         }
-    } else {
-        P3M_INFO(printf("    alpha=" FFLOAT " (fixed)\n", params_to_try.front()->p.alpha));
-    }
+    } else
+        P3M_INFO(printf("    alpha=" FFLOAT " (fixed)\n", \
+                params_to_try.front().alpha));
+
 }
 
 /* Tune cao */
 void
-Solver::tuneCAO(TuneParametersList &params_to_try) {
-#ifdef P3M_AD
-    const p3m_int min_cao = 2;
-#else
-    const p3m_int min_cao = 1;
-#endif
-
+Solver::tuneCAO(TuneParameterList &params_to_try) {
     if (tune_cao) {
+#ifdef P3M_AD
+        const p3m_int min_cao = 2;
+#else
+        const p3m_int min_cao = 1;
+#endif
         P3M_INFO(printf("    Testing cao={ "));
-        for (TuneParametersList::iterator p = params_to_try.begin();
-                p != params_to_try.end(); ++p) {
-            (*p)->p.cao = min_cao;
+        for (TuneParameterList::iterator pit = params_to_try.begin();
+                pit != params_to_try.end(); ++pit) {
             for (p3m_int cao = CAF::MAX_CAO; cao > min_cao; cao--) {
-                TuneParameters *tp_new = new TuneParameters();
-                tp_new->p = (*p)->p;
-                tp_new->p.cao = cao;
-                params_to_try.insert(p, tp_new);
+                TuneParameters p = *pit;
+                p.cao = cao;
+                params_to_try.insert(pit, p);
                 P3M_INFO(printf(FINT " ", cao));
             }
+            pit->cao = min_cao;
         }
         P3M_INFO(printf(FINT " }\n", min_cao));
     } else {
-        P3M_INFO(printf( "    cao=" FINT " (fixed)\n", params_to_try.front()->p.cao));
+        P3M_INFO(printf( "    cao=" FINT " (fixed)\n", \
+                params_to_try.front().cao));
     }
 }
 
 /* params should have decreasing cao */
 void
-Solver::tuneGrid(TuneParametersList &params_to_try) {
+Solver::tuneGrid(TuneParameterList &params_to_try) {
     if (tune_grid) {
         p3m_int step_ix = 0;
         // store the minimal grid size seen so far
         p3m_int min_grid1d = good_gridsize[step_good_gridsize[num_steps_good_gridsize-1]];
 
-        for (TuneParametersList::iterator p = params_to_try.begin();
-                p != params_to_try.end(); ++p) {
+        for (TuneParameterList::iterator pit = params_to_try.begin();
+                pit != params_to_try.end(); ++pit) {
             // Find smallest possible grid for this set of parameters
             // Test whether accuracy can be achieved with given parameters
             p3m_int upper_ix;
@@ -1981,27 +1965,24 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
             P3M_INFO(printf("    Trying to find grid for r_cut=" FFLOAT ", " \
                     "alpha=" FFLOAT ", "                          \
                     "cao=" FINT "\n",                             \
-                    (*p)->p.r_cut, (*p)->p.alpha, (*p)->p.cao));
+                    pit->r_cut, pit->alpha, pit->cao));
             do {
                 step_ix++;
                 if (step_ix >= num_steps_good_gridsize) break;
                 upper_ix = step_good_gridsize[step_ix];
                 p3m_int grid1d = good_gridsize[upper_ix];
-                (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
+                pit->grid[0] = pit->grid[1] = pit->grid[2] = grid1d;
                 P3M_DEBUG(printf("      rough grid=" FINT "\n", grid1d));
-                this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
-                errorEstimate->computeMaster((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error);
-                P3M_DEBUG(printf("        => error=" FFLOATE "\n", (*p)->error));
-            } while ((*p)->error > tolerance_field);
+                errorEstimate->computeMaster(*pit, sum_qpart, sum_q2, box_l);
+                P3M_DEBUG(printf("        => error=" FFLOATE "\n", pit->error));
+            } while (pit->error > tolerance_field);
 
             // reached largest possible grid, remove the rest of the parameter sets
             if (step_ix >= num_steps_good_gridsize) {
                 P3M_INFO(printf("    Too large grid size, skipping rest of parameter sets.\n"));
-                for (TuneParametersList::iterator pit = params_to_try.end();
-                        pit != p; --pit) {
-                    delete[] *pit;
-                    params_to_try.erase(pit);
-                }
+                TuneParameterList::iterator next = pit;
+                ++next;
+                params_to_try.erase(next, params_to_try.end());
                 break;
             }
 
@@ -2011,12 +1992,11 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
             while (lower_ix+1 < upper_ix) {
                 p3m_int test_ix = (lower_ix+upper_ix)/2;
                 p3m_int grid1d = good_gridsize[test_ix];
-                (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
+                pit->grid[0] = pit->grid[1] = pit->grid[2] = grid1d;
                 P3M_DEBUG(printf("      fine grid=" FINT "\n", grid1d));
-                this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
-                errorEstimate->computeMaster((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error);
-                P3M_DEBUG(printf("          => error=" FFLOATE "\n", (*p)->error));
-                if ((*p)->error < tolerance_field) {
+                errorEstimate->computeMaster(*pit, sum_qpart, sum_q2, box_l);
+                P3M_DEBUG(printf("          => error=" FFLOATE "\n", pit->error));
+                if (pit->error < tolerance_field) {
                     // parameters achieve error
                     upper_ix = test_ix;
                 } else {
@@ -2030,11 +2010,11 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
 
             // store the new grid size and alpha
             if (min_grid1d > grid1d) min_grid1d = grid1d;
-            (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
+            pit->grid[0] = pit->grid[1] = pit->grid[2] = grid1d;
             P3M_INFO(printf( "      => grid=" F3INT ", "                      \
                     "error=" FFLOATE "\n",                           \
-                    (*p)->p.grid[0], (*p)->p.grid[1], (*p)->p.grid[2],     \
-                    (*p)->error));
+                    pit->grid[0], pit->grid[1], pit->grid[2],     \
+                    pit->error));
 
             // decrease step_ix so that the same step_ix is tested for the
             // next param set
@@ -2045,97 +2025,75 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
             if (min_grid1d + P3M_MAX_GRID_DIFF < grid1d) {
                 P3M_INFO(printf("      grid too large => removing data set\n"));
                 // remove the rest of the params
-                for (TuneParametersList::iterator pit = p;
-                        pit != params_to_try.end(); ++pit) {
-                    delete[] *pit;
-                    *pit = NULL;
-                }
+                TuneParameterList::iterator next = pit;
+                ++next;
+                params_to_try.erase(next, params_to_try.end());
                 break;
             }
 
-            if (p != params_to_try.begin()) {
-                TuneParametersList::iterator prev = p;
+            if (pit != params_to_try.begin()) {
+                TuneParameterList::iterator prev = pit;
                 prev--;
-                if ((*prev)->p.grid[0] >= (*p)->p.grid[0]) {
+                if (prev->grid[0] >= pit->grid[0]) {
                     P3M_INFO(printf("      better than previous => removing previous data set.\n"));
-                    delete[] *prev;
-                    *prev = NULL;
                     params_to_try.erase(prev);
                 }
             }
         }
-
-        // remove empty param sets
-        params_to_try.remove(NULL);
-
-
     } else {
         // !tune_grid
-        for (TuneParametersList::iterator p = params_to_try.begin();
-                p != params_to_try.end(); ++p) {
+        for (TuneParameterList::iterator pit = params_to_try.begin();
+                pit != params_to_try.end(); ++pit) {
             // test whether accuracy can be achieved with given parameters
             P3M_INFO(printf("    grid=" F3INT " (fixed)\n",                \
-                    (*p)->p.grid[0], (*p)->p.grid[1], (*p)->p.grid[2]));
-            this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
-            errorEstimate->computeMaster((*p)->p, sum_qpart, sum_q2, box_l,
-                    (*p)->error, (*p)->rs_error, (*p)->ks_error);
+                    pit->grid[0], pit->grid[1], pit->grid[2]));
+            errorEstimate->computeMaster(*pit, sum_qpart, sum_q2, box_l);
 
-            if ((*p)->error < tolerance_field) {
+            if (pit->error < tolerance_field) {
                 // error is small enough for this parameter set, so keep it
                 P3M_INFO(printf("    error (%le) < tolerance (%le), keeping params\n", \
-                        (*p)->error, tolerance_field));
+                        pit->error, tolerance_field));
             } else {
                 // otherwise remove this parameter set
                 P3M_INFO(printf("    error (%le) > tolerance (%le), removing params\n", \
-                        (*p)->error, tolerance_field));
-                delete[] *p;
-                *p = NULL;
+                        pit->error, tolerance_field));
+                params_to_try.erase(pit);
             }
         }
-
-        // really remove the removed param sets
-        params_to_try.remove(NULL);
     }
 }
 
-Solver::TuneParameters*
+TuneParameters
 Solver::timeParams(
         p3m_int num_particles, p3m_float *positions, p3m_float *charges,
-        TuneParametersList &params_to_try) {
+        TuneParameterList &params_to_try) {
+
+    if (params_to_try.empty())
+        throw std::logic_error("No parameter set left to time.");
+
     /* Now time the different parameter sets */
-    TuneParameters *best_params = NULL;
+    TuneParameters best_params;
     double best_timing = 1.e100;
 
 #ifdef P3M_ENABLE_INFO
     printf("Timing %ld param sets...\n", params_to_try.size());
-    for (TuneParametersList::iterator p = params_to_try.begin();
-            p != params_to_try.end();
-            p++) {
+    for (TuneParameterList::iterator pit = params_to_try.begin();
+            pit != params_to_try.end();
+            ++pit) {
         printf( "  r_cut=" FFLOAT ", "
                 "alpha=" FFLOAT ", "
                 "grid=" F3INT ", "
                 "cao=" FINT "\n",
-                (*p)->p.r_cut, (*p)->p.alpha, (*p)->p.grid[0],
-                (*p)->p.grid[1], (*p)->p.grid[2], (*p)->p.cao);
+                pit->r_cut, pit->alpha,
+                pit->grid[0], pit->grid[1], pit->grid[2],
+                pit->cao);
     }
 #endif
 
-    for (TuneParametersList::iterator it = params_to_try.begin();
-            it != params_to_try.end();
-            it++) {
-        TuneParameters &p = **it;
-        /* use the parameters */
-        alpha = p.p.alpha;
-        grid[0] = p.p.grid[0];
-        grid[1] = p.p.grid[1];
-        grid[2] = p.p.grid[2];
-        cao = p.p.cao;
-        r_cut = p.p.r_cut;
-
-        this->timing(num_particles, positions, charges);
-        p.timing = timings[TIMING];
-        p.timing_near = timings[TIMING_NEAR];
-        p.timing_far = timings[TIMING_FAR];
+    for (TuneParameterList::iterator pit = params_to_try.begin();
+            pit != params_to_try.end();
+            ++pit) {
+        this->tuneBroadcastTiming(*pit, num_particles, positions, charges);
         P3M_INFO(printf( "  Timing r_cut=" FFLOAT ", "                  \
                 "alpha=" FFLOAT ", "                           \
                 "grid=" F3INT ", "                             \
@@ -2144,40 +2102,22 @@ Solver::timeParams(
                 "(" FFLOAT " near, " FFLOAT " far)\n",         \
                 r_cut, alpha,                            \
                 grid[0], grid[1], grid[2],            \
-                cao, p.timing,                \
-                p.timing_near, p.timing_far));
+                cao, pit->timing,                \
+                pit->timing_near, pit->timing_far));
 
-        if (p.timing < best_timing) {
-            best_timing = p.timing;
-            best_params = &p;
+        if (pit->timing < best_timing) {
+            best_timing = pit->timing;
+            best_params = *pit;
         }
-    }
-
-    if (best_params == NULL)
-        throw std::runtime_error("Internal error: Tuning could not get a best timing.");
-
-    for (TuneParametersList::iterator p = params_to_try.begin();
-            p != params_to_try.end(); ++p) {
-        if (*p != best_params)
-            delete[] *p;
     }
 
     return best_params;
 }
 
+
+
 void Solver::timing(p3m_int num_particles,
         p3m_float *positions, p3m_float *charges) {
-    if (comm.rank == 0) {
-        Parameters p;
-        p.cao = cao;
-        p.alpha = alpha;
-        p.r_cut = r_cut;
-        p.grid[0] = grid[0];
-        p.grid[1] = grid[1];
-        p.grid[2] = grid[2];
-        this->tuneBroadcastCommand(CMD_TIMING, p);
-
-    }
 
     p3m_float *fields = new p3m_float[3*num_particles];
     p3m_float *potentials = new p3m_float[num_particles];
@@ -2228,8 +2168,26 @@ void Solver::countCharges(p3m_int num_particles, p3m_float *charges) {
             sum_qpart, sum_q2, sqrt(square_sum_q)));
 }
 
-void Solver::tuneBroadcastParams(Parameters &p) {
-    // broadcast parameters and mark as final
+
+/* Events during tuning */
+static const int CMD_FINISHED = 0;
+static const int CMD_FAILED = 1;
+static const int CMD_NO_TUNE = 2;
+static const int CMD_TUNE_FAR = 3;
+static const int CMD_TIMING = 4;
+static const char* CMD_NAMES[5] =
+{ "FINISHED", "FAILED", "NO_TUNE", "TUNE_FAR", "TIMING" };
+
+
+static void tuneBroadcastCommand(Communication &comm, p3m_int command) {
+    /* Send the command */
+    P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %s.\n", \
+            comm.rank, CMD_NAMES[command]));
+    MPI_Bcast(&command, 1, P3M_MPI_INT, 0, comm.mpicomm);
+}
+
+void Solver::tuneBroadcastSendParams(TuneParameters p) {
+    // broadcast the parameters
     p3m_int int_buffer[4];
     p3m_float float_buffer[2];
 
@@ -2244,10 +2202,17 @@ void Solver::tuneBroadcastParams(Parameters &p) {
     float_buffer[0] = p.alpha;
     float_buffer[1] = p.r_cut;
     MPI_Bcast(float_buffer, 2, P3M_MPI_FLOAT, 0, comm.mpicomm);
+
+    r_cut = p.r_cut;
+    alpha = p.alpha;
+    grid[0] = p.grid[0];
+    grid[1] = p.grid[1];
+    grid[2] = p.grid[2];
+    cao = p.cao;
 }
 
-void Solver::tuneReceiveParams()
-{
+void Solver::tuneBroadcastReceiveParams() {
+    // receive parameters
     p3m_int int_buffer[4];
     p3m_float float_buffer[2];
 
@@ -2263,80 +2228,96 @@ void Solver::tuneReceiveParams()
     r_cut = float_buffer[1];
 }
 
-void Solver::tuneBroadcastCommand(p3m_int command){
-    /* Send the command */
-    P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %d.\n", \
-            comm.rank, command));
-    MPI_Bcast(&command, 1, P3M_MPI_INT, 0, comm.mpicomm);
 
-    /* Now send the parameters, depending on the command */
-    switch (command) {
-    case CMD_FINISHED:
-    case CMD_TIMING:
-        throw std::logic_error("Internal Error: Bad call to tuneBroadcastCommand()");
-    case CMD_COMPUTE_ERROR_ESTIMATE:
-    case CMD_FAILED:
-        return;
-    }
+void Solver::tuneBroadcastFail() {
+    tuneBroadcastCommand(comm, CMD_FAILED);
+    needs_retune = true;
 }
 
-void Solver::tuneBroadcastCommand(p3m_int command, Parameters &p){
-    /* Send the command */
-    P3M_DEBUG_LOCAL(printf("       %2d: Broadcasting command %d.\n", \
-            comm.rank, command));
-    MPI_Bcast(&command, 1, P3M_MPI_INT, 0, comm.mpicomm);
-
-    /* Now send the parameters, depending on the command */
-    switch (command) {
-    case CMD_FINISHED:
-    case CMD_TIMING:
-        this->tuneBroadcastParams(p);
-        return;
-    case CMD_COMPUTE_ERROR_ESTIMATE:
-    case CMD_FAILED:
-        throw std::logic_error("Internal Error: Bad call to tuneBroadcastCommand()");
-        return;
-    }
+void Solver::tuneBroadcastFinish(TuneParameters p) {
+    tuneBroadcastCommand(comm, CMD_FINISHED);
+    this->tuneBroadcastSendParams(p);
+    needs_retune = false;
+    this->prepare();
 }
 
-void Solver::tuneBroadcastSlave(p3m_int num_particles, p3m_float* positions,
+void Solver::tuneBroadcastNoTune() {
+    tuneBroadcastCommand(comm, CMD_NO_TUNE);
+    needs_retune = false;
+}
+
+Solver::TuneParameterList
+Solver::tuneBroadcastTuneFar(TuneParameters p) {
+    tuneBroadcastCommand(comm, CMD_TUNE_FAR);
+    return this->tuneFar(p);
+}
+
+void Solver::tuneBroadcastTiming(TuneParameters p, p3m_int num_particles,
+        p3m_float *positions, p3m_float *charges) {
+    tuneBroadcastCommand(comm, CMD_TIMING);
+    this->tuneBroadcastSendParams(p);
+    this->timing(num_particles, positions, charges);
+
+    p.timing = timings[TIMING];
+    p.timing_far = timings[TIMING_FAR];
+    p.timing_near = timings[TIMING_NEAR];
+}
+
+
+void Solver::tuneLoopSlave(p3m_int num_particles, p3m_float* positions,
         p3m_float* charges) {
-    P3M_DEBUG(printf( "P3M::Solver::tuneBroadcastSlave() started...\n"));
+    P3M_DEBUG_LOCAL(printf( "      %2d: P3M::Solver::tuneLoopSlave() " \
+            "started...\n", comm.rank));
     if (comm.onMaster())
-        throw std::logic_error("Internal error: tuneBroadcastSlave "
+        throw std::logic_error("Internal error: tuneLoopSlave "
                 "should not be called on master!");
 
     for (;;) {
         /* Receive the command */
         p3m_int command;
-        P3M_DEBUG_LOCAL(printf("      %2d: Waiting to receive command.\n", \
+        P3M_DEBUG_LOCAL(printf("      %2d: Solver::tuneLoopSlave(): " \
+                "Waiting to receive command.\n", \
                 comm.rank));
         MPI_Bcast(&command, 1, P3M_MPI_INT, 0, comm.mpicomm);
-        P3M_DEBUG_LOCAL(printf("      %2d: Received command %d.\n", \
-                comm.rank, command));
+        P3M_DEBUG_LOCAL(printf("      %2d: Solver::tuneLoopSlave(): " \
+                "Received command %s.\n", \
+                comm.rank, CMD_NAMES[command]));
 
         switch (command) {
-        case CMD_COMPUTE_ERROR_ESTIMATE:
-            errorEstimate->computeSlave();
+        case CMD_TUNE_FAR:
+            this->tuneFarSlave();
             break;
         case CMD_TIMING:
-            this->tuneReceiveParams();
-            timing(num_particles, positions, charges);
+            this->tuneBroadcastReceiveParams();
+            this->timing(num_particles, positions, charges);
             break;
         case CMD_FINISHED:
-            this->tuneReceiveParams();
-            return;
+            this->tuneBroadcastReceiveParams();
+            P3M_DEBUG_LOCAL(printf( "P3M::Solver::tuneLoopSlave() " \
+                    "finished.\n"));
+            this->prepare();
+            needs_retune = false;
+            break;
+        case CMD_NO_TUNE:
+            P3M_DEBUG_LOCAL(printf( "P3M::Solver::tuneLoopSlave() " \
+                    "finished.\n"));
+            needs_retune = false;
+            break;
         case CMD_FAILED: {
+            needs_retune = true;
             char msg[255];
             sprintf(msg,
-                    "Cannot achieve required accuracy (p3m_tolerance_field=" FFLOATE \
-                    ") for given parameters.",
+                    "Cannot achieve required accuracy (p3m_tolerance_field="
+                    FFLOATE ") for given parameters.",
                     tolerance_field);
             throw std::logic_error(msg);
         }
         }
+        if (command == CMD_FAILED
+                || command == CMD_FINISHED
+                || command == CMD_NO_TUNE)
+            break;
     }
-    P3M_DEBUG(printf( "P3M::Solver::tuneBroadcastSlave() finished.\n"));
 }
 
 }

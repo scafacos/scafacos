@@ -27,13 +27,13 @@ class ErrorEstimateIK : public ErrorEstimate {
 public:
     ErrorEstimateIK(Communication &comm) : ErrorEstimate(comm) {}
 
-	virtual p3m_float computeKSError(Parameters &p,
+	virtual void computeKSError(TuneParameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
 protected:
     /** Calculate the analytical approximation for the k-space part of the
 	 error (Eq. 38 in Deserno, Holm; JCP 109,18; 1998). */
-	p3m_float computeKSErrorApprox(Parameters &p,
+	void computeKSErrorApprox(TuneParameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
 	/** Calculates the reciprocal space contribution to the rms error in the
@@ -41,7 +41,7 @@ protected:
 	 (Eqn. 8.23) (for a system of N randomly distributed particles in a
 	 cubic box).
 	 */
-	p3m_float computeKSErrorFull(Parameters &p,
+	void computeKSErrorFull(TuneParameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
 	p3m_float

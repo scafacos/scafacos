@@ -71,8 +71,7 @@ p3m_float ErrorEstimateADI::computeKSError(Parameters& p, p3m_int num_charges,
 			p3m_float alias1, alias2, alias3, alias4, alias5, alias6;
 			p3m_float D;
 
-			KSErrorSum2
-			(nx,ny,nz, p.grid,grid_i, p.cao,alpha_L_i,
+			KSErrorSum2(nx,ny,nz, p.grid,grid_i, p.cao,alpha_L_i,
 					&alias1,&alias2,&alias3,&alias4,&alias5,&alias6);
 
 			D = alias1 - SQR(alias2) / (0.5*(alias3*alias4 + alias5*alias6));
