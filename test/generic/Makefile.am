@@ -46,13 +46,13 @@ EXTRA_DIST = \
 	systems/xml2xyz.py \
 	systems/xml2vtf.py \
 	systems/xml2vtk.py \
-	scafacos_test_all.sh \
-	tune_alpha_2dp.py \
-	tune_alpha_3dp.py \
-	tune_alpha_cloud_wall_3dp.py \
-	opt_alpha_cloud_wall_2dp.py \
-	opt_alpha_cloud_wall_3dp.py \
-	compute_nonperiodic_references.sh \
+	scripts/scafacos_test_all.sh \
+	scripts/tune_alpha_2dp.py \
+	scripts/tune_alpha_3dp.py \
+	scripts/tune_alpha_cloud_wall_3dp.py \
+	scripts/opt_alpha_cloud_wall_2dp.py \
+	scripts/opt_alpha_cloud_wall_3dp.py \
+	scripts/compute_nonperiodic_references.sh \
 	rapidxml/manual.html \
 	rapidxml/license.txt
 

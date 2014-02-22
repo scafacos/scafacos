@@ -728,11 +728,6 @@ AC_CONFIG_FILES([
   test/fortran/Makefile
 ])
 
-AC_CONFIG_LINKS([test/generic/scafacos_test_all.sh:test/generic/scafacos_test_all.sh])
-AC_CONFIG_LINKS([test/generic/compute_nonperiodic_references.sh:test/generic/compute_nonperiodic_references.sh])
-AC_CONFIG_LINKS([test/generic/opt_alpha_cloud_wall_2dp.py:test/generic/opt_alpha_cloud_wall_2dp.py])
-AC_CONFIG_LINKS([test/generic/opt_alpha_cloud_wall_3dp.py:test/generic/opt_alpha_cloud_wall_3dp.py])
-
 # Create helper script for portable MPI job startup.
 AC_CONFIG_FILES([test/defs])
 
