@@ -41,6 +41,10 @@
 using namespace std;
 
 
+MPI_Comm communicator;
+int comm_rank, comm_size;
+
+
 static void usage(char** argv, int argc, int c) {
   cout << "Call: " << argv[0];
   for (int i = 1; i < argc; ++i)
@@ -62,6 +66,8 @@ static void usage(char** argv, int argc, int c) {
        << "               dimension), default value DUP=1 is equivalent to no duplication" << endl;
   cout << "    -m MODE    use decomposition mode MODE=atomistic|all_on_master|random|domain" << endl
        << "               (overrides file settings)" << endl;
+  cout << "    -C CART    use Cartesian communicator, CART has to be a grid size Xx[Yx[Z]]" << endl
+       << "               where X, Y, and Z is either greater 0 or 0 for automatic selection" << endl;
   cout << "    -c CONF    use CONF for setting additional method configuration parameters" << endl;
   cout << "    -i ITER    perform ITER number of runs with each configuration" << endl;
   cout << "    -r RES     compute results only for RES of the given particles, RES can be" << endl
@@ -80,7 +86,7 @@ static void usage(char** argv, int argc, int c) {
        << "               independently (default is minimum size A=0 and additional size" << endl
        << "               A=+0.1, i.e. no minimum size and 10% additional size)" << endl;
   cout << "    -t S       perform integration with S time steps (run METHOD S+1 times)" << endl;
-  cout << "    -g CONF    use CONF as integration configuration string"   << endl;
+  cout << "    -g CONF    use CONF as integration configuration string" << endl;
   cout << "  METHOD:";
 #ifdef FCS_ENABLE_DIRECT
   cout << " direct";
@@ -125,10 +131,6 @@ static void usage(char** argv, int argc, int c) {
   exit(2);
 }
 
-// MPI parameters
-MPI_Comm communicator;
-int comm_rank, comm_size;
-
 // current configuration
 Configuration *current_config;
 
@@ -147,7 +149,10 @@ static struct {
 
   // Which method
   char method[MAX_METHOD_LENGTH];
-  
+
+  // Cartesian communicator
+  int cart_comm, cart_dims[3];
+
   // Configuration string
   char conf[MAX_CONF_LENGTH];
   
@@ -167,10 +172,7 @@ static struct {
   fcs_int integrate, time_steps;
   char integration_conf[MAX_CONF_LENGTH];
 
-} global_params = { "", false, false, false, "", "", "", false, {1, 1, 1}, -1, true, false, "none", "", 1, -1.0, false, 0, -0.1, 0, 0, "" };
-
-// FCS Handle
-FCS fcs;
+} global_params = { "", false, false, false, "", "", "", false, {1, 1, 1}, -1, true, false, "none", 0, { 0, 0, 0 }, "", 1, -1.0, false, 0, -0.1, 0, 0, "" };
 
 static bool check_result(FCSResult result, bool force_abort = false) {
   if (result) {
@@ -178,7 +180,7 @@ static bool check_result(FCSResult result, bool force_abort = false) {
     fcs_result_print_result(result);
     fcs_result_destroy(result);
     if (force_abort || global_params.abort_on_error)
-      MPI_Abort(communicator, 1);
+      MPI_Abort(MPI_COMM_WORLD, 1);
     else
       cout << "WARNING: Continuing after error!" << endl;
     return false;
@@ -203,7 +205,7 @@ static void parse_commandline(int argc, char* argv[]) {
 
   global_params.conf[0] = '\0';
 
-  while ((c = getopt (argc, argv, "o:bpkd:m:c:i:r:sa:t:g:")) != -1) {
+  while ((c = getopt (argc, argv, "o:bpkd:m:C:c:i:r:sa:t:g:")) != -1) {
     switch (c) {
     case 'o':
       strncpy(global_params.outfilename, optarg, MAX_FILENAME_LENGTH);
@@ -251,6 +253,29 @@ static void parse_commandline(int argc, char* argv[]) {
         cout << "WARNING: ignoring unknown decomposition mode '" << optarg << "'" << endl;
       break;
 #undef STRCMP_FRONT
+    case 'C':
+      strncpy(dup0, optarg, sizeof(dup0));
+      if ((dup1 = strchr(dup0, 'x')))
+      {
+        *dup1 = 0; ++dup1;
+        if ((dup2 = strchr(dup1, 'x')))
+        {
+          *dup2 = 0; ++dup2;
+        }
+      }
+      global_params.cart_comm = 1;
+      global_params.cart_dims[0] = (strlen(dup0) > 0)?atoi(dup0):0;
+      if (dup1)
+      {
+        ++global_params.cart_comm;
+        global_params.cart_dims[1] = (strlen(dup1) > 0)?atoi(dup1):0;
+        if (dup2)
+        {
+          ++global_params.cart_comm;
+          global_params.cart_dims[2] = (strlen(dup2) > 0)?atoi(dup2):0;
+        }
+      }
+      break;
     case 'c':
       if (global_params.conf[0] != '\0') strncat(global_params.conf, ",", MAX_CONF_LENGTH);
       strncat(global_params.conf, optarg, MAX_CONF_LENGTH);
@@ -445,7 +470,7 @@ static void print_particles(fcs_int nparticles, fcs_float *positions, fcs_float 
 }
 #endif
 
-static void run_method(particles_t *parts)
+static void run_method(FCS fcs, particles_t *parts)
 {
 #ifdef BACKUP_POSITIONS
   fcs_float *original_positions;
@@ -600,7 +625,7 @@ static void no_method() {
   current_config->have_result_values[1] = 0;  // no field results
 }
 
-static void run_integration(particles_t *parts, Testcase *testcase)
+static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
 {
   integration_t integ;
 
@@ -831,9 +856,10 @@ static void run_integration(particles_t *parts, Testcase *testcase)
 #endif
 }
 
-int main(int argc, char* argv[]) {
-  // The testcase
+int main(int argc, char* argv[])
+{
   Testcase *testcase = 0;
+
 #if FCS_ENABLE_PEPC
   int mpi_thread_requested = MPI_THREAD_MULTIPLE;
   int mpi_thread_provided;
@@ -869,12 +895,24 @@ int main(int argc, char* argv[]) {
   global_params.abort_on_error = false;
 
   broadcast_global_parameters();
-  
+
+  MASTER(
+    if (global_params.cart_comm > 0)
+    {
+      cout << "Trying to use " << global_params.cart_comm << "d Cartesian communicators of size " << global_params.cart_dims[0];
+      if (global_params.cart_comm > 1) cout << "x" << global_params.cart_dims[1];
+      if (global_params.cart_comm > 2) cout << "x" << global_params.cart_dims[2];
+      cout << "!" << endl;
+    }
+  );
+
   if (global_params.have_outfile && global_params.resort)
   {
     MASTER(cout << "Disabling resort support (-s) when output file should be written!" << endl);
     global_params.resort = false;
   }
+
+  MASTER(cout << "Particle array allocation: minalloc: " << global_params.minalloc << ", overalloc: " << global_params.overalloc << endl);
 
   testcase = new Testcase();
 
@@ -888,41 +926,19 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  testcase->broadcast_config(MASTER_RANK, communicator);
-
-  MASTER(cout << "Particle array allocation: minalloc: " << global_params.minalloc << ", overalloc: " << global_params.overalloc << endl);
-
-  FCSResult result;
-
-  if (global_params.have_method) {
-    MASTER(cout << "Initializing FCS, method " << global_params.method << "..." << endl);
-    result = fcs_init(&fcs, global_params.method, communicator);
-    check_result(result, true);
-
+  if (global_params.have_method)
+  {
     testcase->error_field = 1.0;
     testcase->error_potential = 1.0;
     testcase->reference_method = global_params.method;
-
-  } else {
-    MASTER(cout << "No method chosen!" << endl);
-    fcs = FCS_NULL;
   }
 
-  MASTER(cout << "Setting method configuration parameters..." << endl);
-  MASTER(cout << "  Config parameters:" << endl);
+  testcase->broadcast_config(MASTER_RANK, communicator);
+
+  MASTER(cout << "Config parameters:" << endl);
   const char *xml_method_conf = testcase->get_method_config();
-  MASTER(cout << "    XML file: " << xml_method_conf << endl);
-  if (strlen(xml_method_conf) > 0)
-  {
-    result = fcs_set_parameters(fcs, xml_method_conf, FCS_TRUE);
-    check_result(result, (fcs_result_get_return_code(result) != FCS_ERROR_WRONG_ARGUMENT));
-  }
-  MASTER(cout << "    Command line: " << global_params.conf << endl);
-  if (strlen(global_params.conf) > 0)
-  {
-    result = fcs_set_parameters(fcs, global_params.conf, FCS_FALSE);
-    check_result(result, true);
-  }
+  MASTER(cout << "  XML file: " << xml_method_conf << endl);
+  MASTER(cout << "  Command line: " << global_params.conf << endl);
 
   fcs_int config_count = 0;
 
@@ -956,17 +972,65 @@ int main(int argc, char* argv[]) {
 
     MASTER(cout << "Processing configuration " << config_count << "..." << endl);
 
+    FCS fcs = FCS_NULL;
+    FCSResult result;
+    MPI_Comm fcs_comm = communicator;
+
+    if (global_params.cart_comm > 0)
+    {
+      int dims[3], periods[3];
+
+      dims[0] = global_params.cart_dims[0];
+      dims[1] = global_params.cart_dims[1];
+      dims[2] = global_params.cart_dims[2];
+
+      MPI_Dims_create(comm_size, global_params.cart_comm, dims);
+
+      periods[0] = current_config->params.periodicity[0];
+      periods[1] = current_config->params.periodicity[1];
+      periods[2] = current_config->params.periodicity[2];
+
+      MASTER(
+        cout << "  Creating " << global_params.cart_comm << "d Cartesian communicator of size " << dims[0];
+        if (global_params.cart_comm > 1) cout << "x" << dims[1];
+        if (global_params.cart_comm > 2) cout << "x" << dims[2];
+        cout << " with periodicity (" << periods[0] << "," << periods[1] << "," << periods[2] << ")" << endl;
+      );
+
+      MPI_Cart_create(communicator, global_params.cart_comm, dims, periods, 0, &fcs_comm);
+    }
+
+    if (global_params.have_method)
+    {
+      MASTER(cout << "  Initializing FCS, method " << global_params.method << "..." << endl);
+      result = fcs_init(&fcs, global_params.method, fcs_comm);
+      check_result(result, true);
+
+    } else MASTER(cout << " No method chosen!" << endl);
+
+    MASTER(cout << "  Setting method configuration parameters..." << endl);
+    if (strlen(xml_method_conf) > 0)
+    {
+      result = fcs_set_parameters(fcs, xml_method_conf, FCS_TRUE);
+      check_result(result, (fcs_result_get_return_code(result) != FCS_ERROR_WRONG_ARGUMENT));
+    }
+    if (strlen(global_params.conf) > 0)
+    {
+      result = fcs_set_parameters(fcs, global_params.conf, FCS_FALSE);
+      check_result(result, true);
+    }
+
     // Distribute particles
     current_config->decompose_particles(global_params.resort?global_params.minalloc:0, global_params.resort?global_params.overalloc:0);
 
     particles_t parts;
     prepare_particles(&parts);
 
-    if (global_params.integrate) run_integration(&parts, testcase);
+    if (global_params.integrate) run_integration(fcs, &parts, testcase);
     else
     {
       // Run method or do nothing
-      if (global_params.have_method) run_method(&parts);
+      if (global_params.have_method) run_method(fcs, &parts);
       else no_method();
     }
 
@@ -991,15 +1055,18 @@ int main(int argc, char* argv[]) {
     // Free particles
     current_config->free_decomp_particles();
 
+    if (global_params.have_method)
+    {
+      MASTER(cout << "Destroying FCS ..." << endl);
+      result = fcs_destroy(fcs);
+      check_result(result, true);
+    }
+
+    if (fcs_comm != communicator) MPI_Comm_free(&fcs_comm);
+
     // proceed to the next configuration
     config++;
     config_count++;
-  }
-
-  if (global_params.have_method) {
-    MASTER(cout << "Destroying FCS ..." << endl);
-    result = fcs_destroy(fcs);
-    check_result(result, true);
   }
 
   if (global_params.have_outfile) {
