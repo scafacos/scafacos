@@ -901,8 +901,8 @@ ifcs_p3m_domain_decompose(ifcs_p3m_data_struct *d, fcs_gridsort_t *gridsort,
   printf("box lenghts: ");print_vector(d->box_l,3);//111
   printf("positions in decompose:\n");print_vector(_positions, _num_particles);///triclinics
   fcs_gridsort_create(gridsort);
-  fcs_gridsort_set_system(gridsort, box_base, box_a, box_b, box_c, NULL);
-  //fcs_gridsort_set_system(gridsort, box_base, d->box_matrix[0], d->box_matrix[1], d->box_matrix[2], NULL);
+  //fcs_gridsort_set_system(gridsort, box_base, box_a, box_b, box_c, NULL);
+  fcs_gridsort_set_system(gridsort, box_base, d->box_matrix[0], d->box_matrix[1], d->box_matrix[2], NULL);
   fcs_gridsort_set_particles(gridsort, _num_particles, _max_num_particles, _positions, _charges);
 
   P3M_DEBUG(printf( "  calling fcs_gridsort_sort_forward()...\n"));
