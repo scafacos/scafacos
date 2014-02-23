@@ -1,5 +1,6 @@
  /*
-  Copyright (C) 2013 Olaf Lenz, Florian Weik
+  Copyright (C) 2014 Olaf Lenz, Gabriel Sichardt
+  Copyright (C) 2013 Olaf Lenz, Florian Weik, Gabriel Sichardt
   Copyright (C) 2011,2012 Olaf Lenz
   Copyright (C) 2010,2011 The ESPResSo project
   Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010 
@@ -38,7 +39,7 @@
 #include <sys/resource.h>
 #include <stdlib.h>
 #include <stdio.h>
-
+#include "prepare.hpp"
 
 /***************************************************/
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
@@ -340,6 +341,15 @@ FCS_NEAR_LOOP_FP(ifcs_p3m_compute_near_loop, ifcs_p3m_compute_near);
     d->timings[ID2] += -MPI_Wtime();                              \
   }                                                               \
 
+void ifcs_p3m_circumvent_tuning(void* rd){
+ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*)rd;
+d->alpha = 1.494582;
+d->cao = 7;
+d->grid[0]=46; d->grid[1]=32; d->grid[2]=40;
+d->r_cut=2.828427;
+ifcs_p3m_prepare(d,5);
+}
+
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
 void ifcs_p3m_run(void* rd,
 		  fcs_int _num_particles,
@@ -352,13 +362,13 @@ void ifcs_p3m_run(void* rd,
      parameters are valid */
   P3M_INFO(printf( "ifcs_p3m_run() started...\n"));
   ifcs_p3m_data_struct *d = (ifcs_p3m_data_struct*)rd;
-  
-  _positions=to_triclinic(d,_positions, _num_particles);
-    if(triclinic_check(_positions, _num_particles)==1){
+  fcs_float* _positions_triclinic = static_cast<fcs_float*>(malloc(3*_num_particles*sizeof(fcs_float)));
+  _positions_triclinic=to_triclinic(d,_positions, _num_particles);
+    if(triclinic_check(_positions_triclinic, _num_particles)==1){
         //ugly way of getting the right cosy
-     while(triclinic_check(_positions, _num_particles)==1){   
+     while(triclinic_check(_positions_triclinic, _num_particles)==1){   
          d->cosy_flag==cartesian;
-         _positions=to_triclinic(d,_positions, _num_particles);
+         _positions_triclinic=to_triclinic(d,_positions_triclinic, _num_particles);
      }
     }
   /* reset all timers */
@@ -388,11 +398,11 @@ void ifcs_p3m_run(void* rd,
   fcs_float *charges, *ghost_charges;
   fcs_gridsort_index_t *indices, *ghost_indices;
   fcs_gridsort_t gridsort;
-//  printf("positions triclinic before decompose\n");
-//  print_vector(_positions, _num_particles);
+  printf("positions triclinic before decompose\n");
+  print_vector(_positions_triclinic, _num_particles);
   START(TIMING_DECOMP)
   ifcs_p3m_domain_decompose(d, &gridsort, 
-                            _num_particles, _max_num_particles, _positions, _charges,
+                            _num_particles, _max_num_particles, _positions_triclinic, _charges,
                             &num_real_particles,
                             &positions, &charges, &indices,
                             &num_ghost_particles,
@@ -566,14 +576,49 @@ void ifcs_p3m_run(void* rd,
     
     STOP(TIMING_FIELDS)
   } 
+          
+  START(TIMING_COMP)
+  /* sort particles back */
+  P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
+  fcs_gridsort_sort_backward(&gridsort,
+                             fields, potentials,
+                             _fields, _potentials, 1,
+                             d->comm.mpicomm);
+  P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
+  printf("positions triclinic after sort back (far): \n"); print_vector(positions, num_real_particles);
+   printf("_fields after sort back (far): \n"); print_vector(_fields, num_real_particles); 
+  fcs_gridsort_free(&gridsort);
+  fcs_gridsort_destroy(&gridsort);
 
+  if (fields != NULL) free(fields);
+  if (potentials != NULL) free(potentials);
+  
+  
+  STOP(TIMING_COMP)
+              fcs_float* _fields_near = static_cast<fcs_float*>(malloc(3*num_real_particles*sizeof(fcs_float)));
+    fcs_float* _potentials_near = static_cast<fcs_float*>(malloc(num_real_particles*sizeof(fcs_float)));
   if (d->near_field_flag) {
+      d->cosy_flag=cartesian;
+        fcs_int num_real_particles_near;
+  fcs_int num_ghost_particles_near;
+  fcs_float *positions_near, *ghost_positions_near;
+  fcs_float *charges_near, *ghost_charges_near;
+  fcs_gridsort_index_t *indices_near, *ghost_indices_near;
+  fcs_gridsort_t gridsort_near;
+      
+       ifcs_p3m_domain_decompose(d, &gridsort_near, 
+                            _num_particles, _max_num_particles, _positions, _charges,
+                            &num_real_particles_near,
+                            &positions_near, &charges_near, &indices_near,
+                            &num_ghost_particles_near,
+                            &ghost_positions_near, &ghost_charges_near, &ghost_indices_near);
+      
+      
   /* start near timer */
     START(TIMING_NEAR)  
             
-            positions = to_cartesian(d, positions, num_real_particles);
-            printf("pos cart start of short range:\n");
-            print_vector(positions, num_real_particles);
+            printf("pos after decomp start of short range:\n");
+            print_vector(positions_near, num_real_particles);
         
     /* compute near field */
     fcs_near_t near;
@@ -590,70 +635,67 @@ void ifcs_p3m_run(void* rd,
     
     fcs_near_set_system(&near, box_base, d->box_matrix[0], d->box_matrix[1], d->box_matrix[2], NULL);
     
-    fcs_near_set_particles(&near, num_real_particles, num_real_particles,
-                           positions, charges, indices,
-                           (_fields != NULL) ? fields : NULL, 
-                           (_potentials != NULL) ? potentials : NULL);
-//     fcs_near_set_particles(&near, num_real_particles, num_real_particles,
+//    fcs_near_set_particles(&near, num_real_particles, num_real_particles,
 //                           positions, charges, indices,
-//                           (_fields != NULL) ? nearfields : NULL, 
-//                           (_potentials != NULL) ? nearpotentials : NULL);
-    fcs_near_set_ghosts(&near, num_ghost_particles,
-                        ghost_positions, ghost_charges, ghost_indices);
-//printf("pos cart after set ghosts:\n");
-//            print_vector(positions, num_real_particles);
+//                           (_fields != NULL) ? fields : NULL, 
+//                           (_potentials != NULL) ? potentials : NULL);
+     fcs_near_set_particles(&near, num_real_particles, num_real_particles,
+                           positions_near, charges_near, indices_near,
+                           (_fields != NULL) ? nearfields : NULL, 
+                           (_potentials != NULL) ? nearpotentials : NULL);
+    fcs_near_set_ghosts(&near, num_ghost_particles_near,
+                        ghost_positions_near, ghost_charges_near, ghost_indices_near);
+    printf("ghost number near: %d \n", num_ghost_particles_near);
     P3M_DEBUG(printf( "  calling fcs_near_compute()...\n"));
     fcs_near_compute(&near, d->r_cut, &alpha, d->comm.mpicomm);
     P3M_DEBUG(printf( "  returning from fcs_near_compute().\n"));
     
 //    P3M_DEBUG(printf("pos after compute near (cart):\n");print_vector(positions,num_real_particles);
-//    printf("nearfield after compute near (cart):\n");print_vector(nearfields,num_real_particles);
+    printf("nearfield after compute near (cart):\n");print_vector(nearfields,num_real_particles);
 //    printf("nearpots: \n"); print_array(nearpotentials, num_real_particles);)
     fcs_near_destroy(&near);
 //    printf("long range fields after compute near: \n");print_vector(fields, num_real_particles);
 //    printf("positions after compute near: \n");print_vector(positions, num_real_particles);
     STOP(TIMING_NEAR)
-  }//end of near field
-  
-       
-          positions=to_triclinic(d,positions, num_real_particles);
-          printf("positions triclinic after near: \n"); print_vector(positions, num_real_particles);
-          
-//     fcs_int another_counter;
-//for(another_counter =0 ; another_counter<<num_real_particles; another_counter++){
-//    potentials[another_counter]+=nearpotentials[another_counter];
-//    fields[3*another_counter]+=nearfields[3*another_counter];
-//    fields[3*another_counter+1]+=nearfields[3*another_counter+1];
-//    fields[3*another_counter+2]+=nearfields[3*another_counter+2];
-//}
-          
-          
-          
-  START(TIMING_COMP)
+            
+                     START(TIMING_COMP)
   /* sort particles back */
   P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
-  fcs_gridsort_sort_backward(&gridsort,
-                             fields, potentials,
-                             _fields, _potentials, 1,
+    fcs_float* _fields_near = static_cast<fcs_float*>(malloc(3*num_real_particles*sizeof(fcs_float)));
+    fcs_float* _potentials_near = static_cast<fcs_float*>(malloc(num_real_particles*sizeof(fcs_float)));
+  fcs_gridsort_sort_backward(&gridsort_near,
+                             nearfields, nearpotentials,
+                             _fields_near, _potentials_near, 1,
                              d->comm.mpicomm);
   P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
-  printf("positions triclinic after sort back: \n"); print_vector(positions, num_real_particles);
+  printf("positions cart after sort back near: \n"); print_vector(positions, num_real_particles);
+  printf("fields cart after sort back near: \n"); print_vector(_fields_near, num_real_particles);
   fcs_gridsort_free(&gridsort);
   fcs_gridsort_destroy(&gridsort);
 
-  if (fields != NULL) free(fields);
-  if (potentials != NULL) free(potentials);
-//  if (nearfields != NULL) free(nearfields);
-//  if (nearpotentials != NULL) free(nearpotentials);
   
-  STOP(TIMING_COMP)
+  
+  STOP(TIMING_COMP)  
 
+if (nearfields != NULL) free(nearfields);
+  if (nearpotentials != NULL) free(nearpotentials);
+            
+            
+  }//end of near field
+          
+     fcs_int another_counter;
+for(another_counter =0 ; another_counter<<num_real_particles; another_counter++){
+    potentials[another_counter]+=nearpotentials[another_counter];
+    fields[3*another_counter]+=nearfields[3*another_counter];
+    fields[3*another_counter+1]+=nearfields[3*another_counter+1];
+    fields[3*another_counter+2]+=nearfields[3*another_counter+2];
+}
+          
+ 
   /* collect timings from the different nodes */
   if (d->require_timings) 
         collect_print_timings(d);
-_positions=to_triclinic(d,positions, num_real_particles);
-printf("_positions reset to triclinic:\n"); print_vector(_positions, num_real_particles);
-
+  d->cosy_flag==cartesian;
   P3M_INFO(printf( "ifcs_p3m_run() finished.\n"));
 }
 
@@ -893,16 +935,26 @@ ifcs_p3m_domain_decompose(ifcs_p3m_data_struct *d, fcs_gridsort_t *gridsort,
                           fcs_float **ghost_positions, fcs_float **ghost_charges,
                           fcs_gridsort_index_t **ghost_indices
                           ) {
-  fcs_float box_base[3] = {0.0, 0.0, 0.0 };
-  fcs_float box_a[3] = {d->box_l[0], 0.0, 0.0 };
-  fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
-  fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
+  fcs_float box_base[3] = {0.0, 0.0, 0.0};
+    //  fcs_float box_a[3] = {d->box_l[0], 0.0, 0.0 };
+    //  fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
+    //  fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
+    fcs_float box_a[3] = {1.0, 0.0, 0.0};
+    fcs_float box_b[3] = {0.0, 1.0, 0.0};
+    fcs_float box_c[3] = {0.0, 0.0, 1.0 };
   fcs_int num_particles;
-  printf("box lenghts: ");print_vector(d->box_l,3);//111
+  
   printf("positions in decompose:\n");print_vector(_positions, _num_particles);///triclinics
   fcs_gridsort_create(gridsort);
-  //fcs_gridsort_set_system(gridsort, box_base, box_a, box_b, box_c, NULL);
+  
+  if(d->cosy_flag==triclinic){
+      printf("triclinic decomposition. 100 010 001\n");
+      fcs_gridsort_set_system(gridsort, box_base, box_a, box_b, box_c, NULL);
+  }
+  else{
+      printf("cartesian decomposition.400 220 222\n");
   fcs_gridsort_set_system(gridsort, box_base, d->box_matrix[0], d->box_matrix[1], d->box_matrix[2], NULL);
+  }
   fcs_gridsort_set_particles(gridsort, _num_particles, _max_num_particles, _positions, _charges);
 
   P3M_DEBUG(printf( "  calling fcs_gridsort_sort_forward()...\n"));

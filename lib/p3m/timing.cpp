@@ -38,7 +38,9 @@ ifcs_p3m_timing
   /* store require_timings */
   fcs_int require_timings_before = d->require_timings;
   d->require_timings = 2;
+  printf("d");
   ifcs_p3m_prepare(d, _max_num_particles);
+  printf("\e[1;31m Timing-run \e[0m \n");
   ifcs_p3m_run(d, _num_particles, _max_num_particles,
                _positions, _charges,
                fields, potentials);

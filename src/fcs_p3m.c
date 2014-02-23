@@ -108,7 +108,8 @@ FCSResult fcs_p3m_run(FCS handle,
         fcs_float *fields, fcs_float *potentials) {
 
   fcs_p3m_tune(handle, local_particles, local_max_particles, positions, charges);
-
+  ifcs_p3m_circumvent_tuning(handle->method_context);
+  
   ifcs_p3m_run(handle->method_context,
                local_particles, local_max_particles, 
                positions, charges, 
