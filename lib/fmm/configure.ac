@@ -26,7 +26,7 @@ AX_PROG_CC_MPI(,,AC_MSG_FAILURE([The FMM solver requires an MPI C compiler.]))
 AM_PROG_CC_C_O
 
 # Get the Preprocessor.
-AC_PROG_CPP
+ACX_PROG_FCCPP
 
 # Get the Fortran MPI compiler.
 AX_PROG_FC_MPI(,,AC_MSG_FAILURE([The FMM solver requires an MPI Fortran compiler.]))

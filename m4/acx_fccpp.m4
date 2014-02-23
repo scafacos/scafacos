@@ -19,8 +19,8 @@ if test -z "$FCCPP"; then
   AC_CACHE_VAL([ac_cv_prog_FCCPP],
     [# gfortran needs -cpp.
      # gfortran -cpp -E keeps // comments if passed a .f or .f90 file.
-     # Also try -traditional-cpp, for white-space preservartion.
-     for FCCPP in "cpp -traditional-cpp -C -P" "cpp -C -P" cpp \
+     # Don't try -traditional-cpp, breaks var args
+     for FCCPP in "cpp -C -P" cpp \
                   "/lib/cpp -C -P" /lib/cpp \
 		  "$FC -cpp -E" "$FC -E" "$CPP -C -P" "$CPP"
      do
