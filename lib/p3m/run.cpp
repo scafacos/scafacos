@@ -283,8 +283,15 @@ static fcs_float* cartesian_field(ifcs_p3m_data_struct *d, fcs_float* triclinic_
     fcs_float* cart = static_cast<fcs_float*> (malloc(3 * number * sizeof (fcs_float)));
     
     fcs_int part_no;
-    
-    // the next lines do: //UEBERPRUEFUNG NOETIG!!!!!
+    // the following lines do: F=(T->C)^T F
+//      for (part_no = 0; part_no < number; part_no++){
+//          
+//          cart[3*part_no]=4*triclinic_field[3*part_no];
+//          cart[3*part_no+1]=2*triclinic_field[3*part_no+2]+2*triclinic_field[3*part_no+1];
+//          cart[3*part_no+2]=2*triclinic_field[3*part_no+2]+2*triclinic_field[3*part_no+1]+2*triclinic_field[3*part_no];
+//          
+//      }
+    // the following lines do: F=(T->C)F
 //      for (part_no = 0; part_no < number; part_no++){
 //          
 //          cart[3*part_no]=2*triclinic_field[3*part_no+2]+2*triclinic_field[3*part_no+1]+4*triclinic_field[3*part_no];
@@ -293,17 +300,17 @@ static fcs_float* cartesian_field(ifcs_p3m_data_struct *d, fcs_float* triclinic_
 //          
 //      }
 //    
-    //the next lines do F = M^-1^T F where M transforms from tric to cart
+    //the following lines do F = (T->C)^-1^T F where M transforms from tric to cart
 
     
     for (part_no = 0; part_no < number; part_no++) {
-        cart[3 * part_no + 2] = (d->box_matrix[1][0] * d->box_matrix[2][1] - d->box_matrix[1][1] * d->box_matrix[2][0]) / (d->box_matrix[0][0] * d->box_matrix[1][1] * d->box_matrix[2][2]) * triclinic_field[3 * part_no]-(d->box_matrix[2][1]) / (d->box_matrix[1][1] * d->box_matrix[2][2]) * triclinic_field[3 * part_no + 1] + 1 / d->box_matrix[2][2] * triclinic_field[3 * part_no + 2];
-        cart[3 * part_no + 1] = -(d->box_matrix[1][0]) / (d->box_matrix[0][0] * d->box_matrix[1][1]) * triclinic_field[3 * part_no] + 1 / d->box_matrix[1][1] * triclinic_field[3 * part_no + 1];
-        cart[3 * part_no] = 1 / (d->box_matrix[0][0]) * triclinic_field[3 * part_no];
+        cart[3 * part_no + 2] = (d->box_matrix[1][0] * d->box_matrix[2][1] - d->box_matrix[1][1] * d->box_matrix[2][0]) / (d->box_matrix[0][0] * d->box_matrix[1][1] * d->box_matrix[2][2]) * triclinic_field[3 * part_no]-(d->box_matrix[2][1]) / (d->box_matrix[1][1] * d->box_matrix[2][2]) * triclinic_field[3 * part_no + 1] + 1 / d->box_matrix[2][2] * triclinic_field[3 * part_no + 2];//correct
+        cart[3 * part_no + 1] = -(d->box_matrix[1][0]) / (d->box_matrix[0][0] * d->box_matrix[1][1]) * triclinic_field[3 * part_no] + 1 / d->box_matrix[1][1] * triclinic_field[3 * part_no + 1];//correct
+        cart[3 * part_no] = 1 / (d->box_matrix[0][0]) * triclinic_field[3 * part_no];//correct
     }
 
     
-    //the following lines do: F=CT F where CT transforms from cart to tric.
+    //the following lines do: F=(T->C)^-1 F 
 //    for (part_no = 0; part_no < number; part_no++) {
 //        cart[3 * part_no ] = 1 / d->box_matrix[0][0] * triclinic_field[3 * part_no] - d->box_matrix[1][0] / (d->box_matrix[0][0] * d->box_matrix[1][1]) * triclinic_field[3 * part_no + 1]+((d->box_matrix[1][0] * d->box_matrix[2][1])-(d->box_matrix[1][1] * d->box_matrix[2][0])) / (d->box_matrix[0][0] * d->box_matrix[1][1] * d->box_matrix[2][2]) * triclinic_field[3 * part_no + 2];
 //        cart[3 * part_no + 1] = 1 / d->box_matrix[1][1] * triclinic_field[3 * part_no + 1]-(d->box_matrix[2][1]) / (d->box_matrix[1][1] * d->box_matrix[2][2]) * triclinic_field[3 * part_no + 2];
@@ -347,6 +354,7 @@ d->alpha = 1.494582;
 d->cao = 7;
 d->grid[0]=46; d->grid[1]=32; d->grid[2]=40;
 d->r_cut=2.828427;
+d->box_l[0]=d->box_l[1]=d->box_l[2]=1.0;
 ifcs_p3m_prepare(d,5);
 }
 
@@ -376,7 +384,7 @@ void ifcs_p3m_run(void* rd,
     for (int i = 0; i < NUM_TIMINGS; i++)
       d->timings[i] = 0.0;
   }
-
+  d->box_l[0]=d->box_l[1]=d->box_l[2]=1.0;
   P3M_INFO(printf("    system parameters: box_l=" F3FLOAT "\n", \
                   d->box_l[0], d->box_l[1], d->box_l[2]));
   P3M_INFO(printf(                                                      \
@@ -407,8 +415,8 @@ void ifcs_p3m_run(void* rd,
                             &positions, &charges, &indices,
                             &num_ghost_particles,
                             &ghost_positions, &ghost_charges, &ghost_indices);
-//  printf("positions after decompose:\n");
-//  print_vector(positions,num_real_particles);
+  printf("positions after decompose (long):\n");
+  print_vector(positions,num_real_particles);
   /* allocate local fields and potentials */
   fcs_float *fields = NULL; 
   fcs_float *potentials = NULL; 
@@ -568,9 +576,8 @@ void ifcs_p3m_run(void* rd,
 
     ifcs_p3m_assign_fields_ad(d, d->fft.data_buf, num_real_particles, 
                               positions, 1, fields);
-//printf("field in tricl now.\n");
-//    print_vector(fields, num_real_particles);
-//    fields=cartesian_field(d,fields, num_real_particles);
+printf("\e[1;31m field in tricl now.\n");    print_vector(fields, num_real_particles);
+    fields=cartesian_field(d,fields, num_real_particles);
     printf("field in cart after long range:\n");
     print_vector(fields, num_real_particles);  
     
@@ -585,8 +592,8 @@ void ifcs_p3m_run(void* rd,
                              _fields, _potentials, 1,
                              d->comm.mpicomm);
   P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
-  printf("positions triclinic after sort back (far): \n"); print_vector(positions, num_real_particles);
-   printf("_fields after sort back (far): \n"); print_vector(_fields, num_real_particles); 
+//  printf("positions triclinic after sort back (far): \n"); print_vector(positions, num_real_particles);
+   printf(" _fields after sort back (far): \e[0m \n"); print_vector(_fields, num_real_particles); 
   fcs_gridsort_free(&gridsort);
   fcs_gridsort_destroy(&gridsort);
 
@@ -595,31 +602,36 @@ void ifcs_p3m_run(void* rd,
   
   
   STOP(TIMING_COMP)
-              fcs_float* _fields_near = static_cast<fcs_float*>(malloc(3*num_real_particles*sizeof(fcs_float)));
+
+    fcs_float* _fields_near = static_cast<fcs_float*> (malloc(3 * num_real_particles * sizeof (fcs_float)));
     fcs_float* _potentials_near = static_cast<fcs_float*>(malloc(num_real_particles*sizeof(fcs_float)));
+    
+    d->box_l[0]=d->box_matrix[0][0];d->box_l[1]=d->box_matrix[1][1];d->box_l[2]=d->box_matrix[2][2];
   if (d->near_field_flag) {
-      d->cosy_flag=cartesian;
+
+        d->cosy_flag = cartesian;
+
         fcs_int num_real_particles_near;
-  fcs_int num_ghost_particles_near;
-  fcs_float *positions_near, *ghost_positions_near;
-  fcs_float *charges_near, *ghost_charges_near;
-  fcs_gridsort_index_t *indices_near, *ghost_indices_near;
-  fcs_gridsort_t gridsort_near;
-      
-       ifcs_p3m_domain_decompose(d, &gridsort_near, 
-                            _num_particles, _max_num_particles, _positions, _charges,
-                            &num_real_particles_near,
-                            &positions_near, &charges_near, &indices_near,
-                            &num_ghost_particles_near,
-                            &ghost_positions_near, &ghost_charges_near, &ghost_indices_near);
-      
-      
+        fcs_int num_ghost_particles_near;
+        fcs_float *positions_near, *ghost_positions_near;
+        fcs_float *charges_near, *ghost_charges_near;
+        fcs_gridsort_index_t *indices_near, *ghost_indices_near;
+        fcs_gridsort_t gridsort_near;
+
+        ifcs_p3m_domain_decompose(d, &gridsort_near,
+                _num_particles, _max_num_particles, _positions, _charges,
+                &num_real_particles_near,
+                &positions_near, &charges_near, &indices_near,
+                &num_ghost_particles_near,
+                &ghost_positions_near, &ghost_charges_near, &ghost_indices_near);
+
+        
   /* start near timer */
     START(TIMING_NEAR)  
             
-            printf("pos after decomp start of short range:\n");
-            print_vector(positions_near, num_real_particles);
-        
+//            printf("pos after decomp start of short range:\n");
+//            print_vector(positions_near, num_real_particles);
+//        
     /* compute near field */
     fcs_near_t near;
     fcs_float alpha = d->alpha;
@@ -668,10 +680,19 @@ void ifcs_p3m_run(void* rd,
                              _fields_near, _potentials_near, 1,
                              d->comm.mpicomm);
   P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
-  printf("positions cart after sort back near: \n"); print_vector(positions, num_real_particles);
+  printf("positions cart after sort back near: \n"); print_vector(positions_near, num_real_particles);
   printf("fields cart after sort back near: \n"); print_vector(_fields_near, num_real_particles);
-  fcs_gridsort_free(&gridsort);
-  fcs_gridsort_destroy(&gridsort);
+        
+     fcs_int another_counter;
+      
+  for (another_counter = 0; another_counter < num_real_particles; another_counter++) {
+        _potentials[another_counter] += _potentials_near[another_counter];
+        _fields[3 * another_counter] += _fields_near[3 * another_counter];
+        _fields[3 * another_counter + 1] += _fields_near[3 * another_counter + 1];
+        _fields[3 * another_counter + 2] += _fields_near[3 * another_counter + 2];
+    }
+  fcs_gridsort_free(&gridsort_near);
+  fcs_gridsort_destroy(&gridsort_near);
 
   
   
@@ -682,14 +703,11 @@ if (nearfields != NULL) free(nearfields);
             
             
   }//end of near field
-          
-     fcs_int another_counter;
-for(another_counter =0 ; another_counter<<num_real_particles; another_counter++){
-    potentials[another_counter]+=nearpotentials[another_counter];
-    fields[3*another_counter]+=nearfields[3*another_counter];
-    fields[3*another_counter+1]+=nearfields[3*another_counter+1];
-    fields[3*another_counter+2]+=nearfields[3*another_counter+2];
-}
+    
+      // printf("positions after all: \n"); print_vector(positions_near, num_real_particles);
+  printf("_fields cart after all: \n"); print_vector(_fields, num_real_particles);
+     
+  
           
  
   /* collect timings from the different nodes */

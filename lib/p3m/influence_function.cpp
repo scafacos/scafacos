@@ -339,7 +339,7 @@ ifcs_p3m_perform_aliasing_sums_adi(ifcs_p3m_data_struct *d, fcs_int n[3],
       const fcs_float sy  = sx*pow(sinc(nmy/(fcs_float)d->grid[RY]),2.0*d->cao);
       for (fcs_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
 	const fcs_int nmz = d->meshift_z[n[KZ]] + d->grid[RZ]*mz;
-       const fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
+       fcs_float sz  = sy*pow(sinc(nmz/(fcs_float)d->grid[RZ]),2.0*d->cao);
         
         
         fcs_float* Vkn_2pi;
@@ -353,18 +353,18 @@ ifcs_p3m_perform_aliasing_sums_adi(ifcs_p3m_data_struct *d, fcs_int n[3],
        //printf("%f",Vkn_2pi[2]);
 	//const 
                 fcs_float nm2;// = 
-	//  SQR(nmx/d->box_l[RX]) + 
-	 // SQR(nmy/d->box_l[RY]) + 
-	 // SQR(nmz/d->box_l[RZ]);
-        
+//	  SQR(nmx/d->box_l[RX]) + 
+//	SQR(nmy/d->box_l[RY]) + 
+//	  SQR(nmz/d->box_l[RZ]);
+//        
         //triclinic case:
-                //todo: check whether a prefactor like 2 Pi is missing.
+                //prefactors of nm2 are correct.
         nm2= 1/SQR(d->volume)*(SQR(Vkn_2pi[0])+SQR(Vkn_2pi[1])+SQR(Vkn_2pi[2]));
-        
-	const fcs_float prefactor2 = sz*exp(-prefactor*nm2);
-
-	*numerator_energy += prefactor2/nm2/d->volume;
-	*numerator_force  += prefactor2/d->volume;
+     //   sz=pow(sinc(Vkn_2pi[2]/(fcs_float)d->grid[RZ]/d->volume),2.0*d->cao)*pow(sinc(Vkn_2pi[1]/(fcs_float)d->grid[RY]/d->volume),2.0*d->cao)*pow(sinc(Vkn_2pi[0]/(fcs_float)d->grid[RX]/d->volume),2.0*d->cao);
+	const fcs_float prefactor2 = sz*exp(-prefactor*nm2)/d->volume;
+// 
+	*numerator_energy += prefactor2/nm2;
+	*numerator_force  += prefactor2;
 
 	denominator[0] += sz;
 	denominator[1] += sz * nm2;
