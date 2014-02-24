@@ -24,9 +24,8 @@ if test -z "$FCCPP"; then
                   "/lib/cpp -C -P" /lib/cpp \
 		  "$FC -cpp -E" "$FC -E" "$CPP -C -P" "$CPP"
      do
-       _AC_PROG_FCPREPROC_WORKS_IFELSE([break])
+       _AC_PROG_FCPREPROC_WORKS_IFELSE([ac_cv_prog_FCCPP=$FCCPP; break])
      done
-     ac_cv_prog_FCCPP=$FCCPP
     ])
   FCCPP=$ac_cv_prog_FCCPP
 fi
@@ -34,8 +33,15 @@ AC_MSG_RESULT([$FCCPP])
 AC_SUBST([FCCPP])dnl
 # Default FCCPPFLAGS to CPPFLAGS.
 : ${FCCPPFLAGS=$CPPFLAGS}
+if test -z "$FCCPP"; then
+   AC_MSG_FAILURE([
+  No viable Fortran preprocessor found, please set FCCPP environment variable. The
+  Fortran preprocessor has to support variadic macros and put these on a single line.
+  A gcc-compatible C preprocessor works, the clang preprocessor doesn't.])
+fi
 _AC_PROG_FCPREPROC_WORKS_IFELSE([],
-          [AC_MSG_FAILURE([Fortran preprocessor "$FCCPP" fails sanity check])])
+          [AC_MSG_FAILURE([Fortran preprocessor "$FCCPP" fails sanity check. For a gcc-like cpp,
+you may have to add flags "-C -P".])])
 AC_LANG_POP([Fortran])dnl
 ])
 
@@ -43,7 +49,10 @@ AC_LANG_POP([Fortran])dnl
 # -----------------------------------------------------
 # Helper macro to find out whether Fortran preprocessing works ok.
 AC_DEFUN([_AC_PROG_FCPREPROC_WORKS_IFELSE],
-[ac_cpp_SAVE=$ac_cpp
+[
+# for checking the variadic macro output
+AC_REQUIRE([AC_PROG_EGREP])
+ac_cpp_SAVE=$ac_cpp
 ac_cpp='$FCCPP $FCCPPFLAGS'
 : >conftest.h
 for ac_[]_AC_LANG_ABBREV[]_preproc_warn_flag in '' yes
@@ -57,6 +66,25 @@ do
 		     keep//this]])],
                      [fc_grep='grep keep//this conftest.i >/dev/null'
 		      if AC_TRY_EVAL([fc_grep])
+		      then
+			ac_preproc_pass=:
+		      else
+			continue
+		      fi],
+                     [# Broken: fails on valid input.
+continue])
+
+  # pepc and fmm require variadic macros to be crammed into a single line,
+  # regardless of how they were formatted. gcc does this for now, clang
+  # doesn't. Better check...
+  _AC_FCPREPROC_IFELSE([AC_LANG_SOURCE([[
+@%:@ include "conftest.h"
+/* intentional indentation, clang also doesn't like spaces before define */
+ #define varargs(...) __VA_ARGS__
+ varargs(this_is,
+         on_one_line)]])],
+                     [fc_egrep='$EGREP this_is.*on_one_line conftest.i >/dev/null'
+		      if AC_TRY_EVAL([fc_egrep])
 		      then
 			ac_preproc_pass=:
 		      else

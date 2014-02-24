@@ -25,12 +25,12 @@ AX_PROG_CC_MPI(,,AC_MSG_FAILURE([The FMM solver requires an MPI C compiler.]))
 # Find out whether the C compiler accepts '-c -o'. (What's this good for?)
 AM_PROG_CC_C_O
 
-# Get the Preprocessor.
-ACX_PROG_FCCPP
-
 # Get the Fortran MPI compiler.
 AX_PROG_FC_MPI(,,AC_MSG_FAILURE([The FMM solver requires an MPI Fortran compiler.]))
 AC_SUBST([F77], ['$(FC)'])
+
+# Get the Preprocessor. FC variable should be set
+ACX_PROG_FCCPP
 
 # Check whether gfortran >= 4.6 is used and add option --fno-whole-file
 $FC --version >conftest.log 2>&1
