@@ -25,7 +25,7 @@
 
 namespace P3M {
 
-p3m_float ErrorEstimateADI::computeKSError(Parameters& p, p3m_int num_charges,
+void ErrorEstimateADI::computeKSError(TuneParameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	/* #ifdef P3M_ENABLE_DEBUG */
 	/*   printf(  */
@@ -84,7 +84,7 @@ p3m_float ErrorEstimateADI::computeKSError(Parameters& p, p3m_int num_charges,
 	MPI_Reduce(&local_he_q, &he_q, 1, P3M_MPI_FLOAT, MPI_SUM, 0,
 			comm.mpicomm);
 
-	return 2.0 * sum_q2 *
+	p.ks_error = 2.0 * sum_q2 *
 			sqrt(he_q / num_charges) / (box_l[0] * box_l[1]);
 }
 

@@ -145,10 +145,12 @@ public:
 
     /** local grid. */
     local_grid_t local_grid;
-    /** real space grid (local) for CA/FFT.*/
+    /** real space grid (local) for CA/FFT. */
     p3m_float *rs_grid;
-    /** k space grid (local) for k space calculation and FFT.*/
+    /** k space grid (local) for k space calculation and FFT. */
     p3m_float *ks_grid;
+    /** additional grid for buffering. */
+    p3m_float *buffer;
 
     /** number of charged particles */
     p3m_int sum_qpart;

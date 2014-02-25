@@ -124,6 +124,7 @@ Solver::Solver(MPI_Comm mpicomm) :
 
     rs_grid = NULL;
     ks_grid = NULL;
+    buffer = NULL;
 
     P3M_DEBUG(printf( "P3M::Solver() finished.\n"));
 }
@@ -132,6 +133,7 @@ Solver::~Solver() {
     delete errorEstimate;
     fft.free_data(rs_grid);
     fft.free_data(ks_grid);
+    fft.free_data(buffer);
     sfree(send_grid);
     sfree(recv_grid);
     delete caf;
@@ -196,6 +198,7 @@ void Solver::prepare() {
     fft.prepare(local_grid.dim, local_grid.margin, grid, grid_off, &ks_pnum);
     rs_grid = fft.malloc_data();
     ks_grid = fft.malloc_data();
+    buffer = fft.malloc_data();
 
     /* k-space part */
     /* Calculates the Fourier transformed differential operator.
@@ -427,11 +430,12 @@ void Solver::computeInfluenceFunctionIK() {
 
     int size = 1;
     int end[3];
-    int *new_grid = fft.plan[3].new_grid;;
-    int *start = fft.plan[3].start;
+    const p3m_int *extent;
+    const p3m_int *offset;
+    fft.getKSExtent(offset, extent);
     for (p3m_int i=0;i<3;i++) {
-        size *= new_grid[i];
-        end[i] = fft.plan[3].start[i] + new_grid[i];
+        size *= extent[i];
+        end[i] = offset[i] + extent[i];
     }
 
     if (g_force != NULL) delete g_force;
@@ -444,11 +448,11 @@ void Solver::computeInfluenceFunctionIK() {
     p3m_int *gridshift_z = this->computeGridShift(RZ, grid[2]);
 
     int n[3];
-    for (n[0]=start[0]; n[0]<end[0]; n[0]++) {
-        for (n[1]=start[1]; n[1]<end[1]; n[1]++) {
-            for (n[2]=start[2]; n[2]<end[2]; n[2]++) {
-                const p3m_int ind = (n[2]-start[2]) + new_grid[2] *
-                        ((n[1]-start[1]) + new_grid[1]*(n[0]-start[0]));
+    for (n[0]=offset[0]; n[0]<end[0]; n[0]++) {
+        for (n[1]=offset[1]; n[1]<end[1]; n[1]++) {
+            for (n[2]=offset[2]; n[2]<end[2]; n[2]++) {
+                const p3m_int ind = (n[2]-offset[2]) + extent[2] *
+                        ((n[1]-offset[1]) + extent[1]*(n[0]-offset[0]));
                 if ((n[KX]%(grid[RX]/2)==0) &&
                         (n[KY]%(grid[RY]/2)==0) &&
                         (n[KZ]%(grid[RZ]/2)==0) ) {
@@ -532,12 +536,12 @@ void Solver::performAliasingSumsIK(
 void Solver::computeInfluenceFunctionADI() {
    P3M_DEBUG(printf("  Solver::computeInfluenceFunctionADI() started...\n"));
    int size = 1;
-   int end[3];
-   int *new_grid = fft.plan[3].new_grid;;
-   int *start = fft.plan[3].start;
+   p3m_int end[3];
+   const p3m_int *start, *extent;
+   fft.getKSExtent(start, extent);
    for (p3m_int i=0;i<3;i++) {
-     size *= new_grid[i];
-     end[i] = fft.plan[3].start[i] + new_grid[i];
+     size *= extent[i];
+     end[i] = start[i] + extent[i];
    }
 
    if (g_force != NULL) delete g_force;
@@ -553,8 +557,8 @@ void Solver::computeInfluenceFunctionADI() {
    for (n[0]=start[0]; n[0]<end[0]; n[0]++) {
      for (n[1]=start[1]; n[1]<end[1]; n[1]++) {
        for (n[2]=start[2]; n[2]<end[2]; n[2]++) {
-         p3m_int ind = (n[2]-start[2]) + new_grid[2] *
-           ((n[1]-start[1]) + new_grid[1]*(n[0]-start[0]));
+         p3m_int ind = (n[2]-start[2]) + extent[2] *
+           ((n[1]-start[1]) + extent[1]*(n[0]-start[0]));
          if ((n[KX]%(grid[RX]/2)==0) &&
              (n[KY]%(grid[RY]/2)==0) &&
              (n[KZ]%(grid[RZ]/2)==0) ) {
@@ -628,12 +632,12 @@ void Solver::performAliasingSumsADI(
 void Solver::computeInfluenceFunctionIKI() {
   P3M_DEBUG(printf("  Solver::computeInfluenceFunctionIKI() started...\n"));
   int size = 1;
-  int end[3];
-  int *new_grid = fft.plan[3].new_grid;;
-  int *start = fft.plan[3].start;
+  p3m_int end[3];
+  const p3m_int *start, *extent;
+  fft.getKSExtent(start, extent);
   for (p3m_int i=0;i<3;i++) {
-    size *= new_grid[i];
-    end[i] = fft.plan[3].start[i] + new_grid[i];
+    size *= extent[i];
+    end[i] = start[i] + extent[i];
   }
 
   if (g_force != NULL) delete g_force;
@@ -649,8 +653,8 @@ void Solver::computeInfluenceFunctionIKI() {
   for (n[0]=start[0]; n[0]<end[0]; n[0]++) {
     for (n[1]=start[1]; n[1]<end[1]; n[1]++) {
       for (n[2]=start[2]; n[2]<end[2]; n[2]++) {
-        p3m_int ind = (n[2]-start[2]) + new_grid[2] *
-          ((n[1]-start[1]) + new_grid[1]*(n[0]-start[0]));
+        p3m_int ind = (n[2]-start[2]) + extent[2] *
+          ((n[1]-start[1]) + extent[1]*(n[0]-start[0]));
         if ((n[KX]%(grid[RX]/2)==0) &&
             (n[KY]%(grid[RY]/2)==0) &&
             (n[KZ]%(grid[RZ]/2)==0) ) {
@@ -900,36 +904,36 @@ void Solver::computeFarADI(
     START(TIMING_CA);
 
     /* charge assignment */
-    this->assignCharges(fft.data_buf, num_charges, positions, charges, 0);
+    this->assignCharges(buffer, num_charges, positions, charges, 0);
     STOPSTART(TIMING_CA, TIMING_GATHER);
     /* gather the ca grid */
-    this->gatherGrid(fft.data_buf);
+    this->gatherGrid(buffer);
 
     // Complexify
     for (p3m_int i = local_grid.size-1; i >= 0; i--)
-        rs_grid[2*i] = fft.data_buf[i];
+        rs_grid[2*i] = buffer[i];
 
     STOPSTART(TIMING_GATHER, TIMING_CA);
 
     // Second (shifted) run
     /* charge assignment */
-    this->assignCharges(fft.data_buf, num_charges, positions, charges, 1);
+    this->assignCharges(buffer, num_charges, positions, charges, 1);
 
     STOPSTART(TIMING_CA, TIMING_GATHER);
 
     /* gather the ca grid */
-    this->gatherGrid(fft.data_buf);
+    this->gatherGrid(buffer);
     /* now rs_grid should contain the local ca grid */
 
     // Complexify
     for (p3m_int i = local_grid.size-1; i >= 0; i--)
-        rs_grid[2*i+1] = fft.data_buf[i];
+        rs_grid[2*i+1] = buffer[i];
     STOP(TIMING_GATHER);
 
     /* forward transform */
     P3M_DEBUG(printf("  calling fft_perform_forw()...\n"));
     START(TIMING_FORWARD);
-    fft.forward(rs_grid);
+    fft.forward(rs_grid, buffer);
     STOP(TIMING_FORWARD);
     P3M_DEBUG(printf("  returned from fft_perform_forw().\n"));
 
@@ -957,21 +961,21 @@ void Solver::computeFarADI(
                     && require_timings != ESTIMATE_FFT ){
                 P3M_DEBUG(printf( "  calling fft_perform_back (potentials)...\n"));
                 START(TIMING_BACK);
-                fft.backward(ks_grid);
+                fft.backward(ks_grid, buffer);
                 STOP(TIMING_BACK);
                 P3M_DEBUG(printf( "  returned from fft_perform_back.\n"));
             }
             /** First (unshifted) run */
             START(TIMING_SPREAD)
             for (p3m_int i=0; i<local_grid.size; i++) {
-                fft.data_buf[i] = ks_grid[2*i];
+                buffer[i] = ks_grid[2*i];
             }
 
-            this->spreadGrid(fft.data_buf);
+            this->spreadGrid(buffer);
 
             STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
 
-            this->assignPotentials(fft.data_buf,
+            this->assignPotentials(buffer,
                     num_charges, positions,
                     charges, 0, potentials);
 
@@ -979,13 +983,13 @@ void Solver::computeFarADI(
 
             /** Second (shifted) run */
             for (p3m_int i=0; i<local_grid.size; i++) {
-                fft.data_buf[i] = ks_grid[2*i+1];
+                buffer[i] = ks_grid[2*i+1];
             }
-            this->spreadGrid(fft.data_buf);
+            this->spreadGrid(buffer);
 
             STOPSTART(TIMING_SPREAD, TIMING_POTENTIALS);
 
-            this->assignPotentials(fft.data_buf,
+            this->assignPotentials(buffer,
                     num_charges, positions,
                     charges, 1, potentials);
 
@@ -1007,7 +1011,7 @@ void Solver::computeFarADI(
                 && require_timings != ESTIMATE_FFT){
             P3M_DEBUG(printf("  calling fft_perform_back...\n"));
             START(TIMING_BACK);
-            fft.backward(ks_grid);
+            fft.backward(ks_grid, buffer);
             STOP(TIMING_BACK);
             P3M_DEBUG(printf("  returned from fft_perform_back.\n"));
         }
@@ -1016,28 +1020,28 @@ void Solver::computeFarADI(
         /* First (unshifted) run */
         P3M_INFO(printf("  computing unshifted grid\n"));
         for (p3m_int i=0; i<local_grid.size; i++) {
-            fft.data_buf[i] = ks_grid[2*i];
+            buffer[i] = ks_grid[2*i];
         }
 
-        this->spreadGrid(fft.data_buf);
+        this->spreadGrid(buffer);
 
         STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
 
-        this->assignFieldsAD(fft.data_buf, num_charges, positions, 0, fields);
+        this->assignFieldsAD(buffer, num_charges, positions, 0, fields);
 
         STOPSTART(TIMING_FIELDS, TIMING_SPREAD);
 
         /* Second (shifted) run */
         P3M_INFO(printf("  computing shifted grid\n"));
         for (p3m_int i=0; i<local_grid.size; i++) {
-            fft.data_buf[i] = ks_grid[2*i+1];
+            buffer[i] = ks_grid[2*i+1];
         }
 
-        this->spreadGrid(fft.data_buf);
+        this->spreadGrid(buffer);
 
         STOPSTART(TIMING_SPREAD, TIMING_FIELDS);
 
-        this->assignFieldsAD(fft.data_buf, num_charges, positions, 1, fields);
+        this->assignFieldsAD(buffer, num_charges, positions, 1, fields);
 
         STOP(TIMING_FIELDS);
     }
@@ -1077,7 +1081,7 @@ void Solver::computeFarIK(
 
     P3M_DEBUG(printf( "  calling fft.forward()...\n"));
     START(TIMING_FORWARD);
-    fft.forward(rs_grid);
+    fft.forward(rs_grid, buffer);
     STOP(TIMING_FORWARD);
     P3M_DEBUG(printf("  returned from fft.forward().\n"));
 
@@ -1105,7 +1109,7 @@ void Solver::computeFarIK(
                     && require_timings != ESTIMATE_FFT){
                 P3M_DEBUG(printf( "  calling fft.backward (potentials)...\n"));
                 START(TIMING_BACK);
-                fft.backward(ks_grid);
+                fft.backward(ks_grid, buffer);
                 STOP(TIMING_BACK);
                 P3M_DEBUG(printf( "  returned from fft.backward.\n"));
             }
@@ -1146,7 +1150,7 @@ void Solver::computeFarIK(
                 /* backtransform the grid */
                 P3M_DEBUG(printf( "  calling fft.backward (field dim=%d)...\n", dim));
                 START(TIMING_BACK);
-                fft.backward(rs_grid);
+                fft.backward(rs_grid, buffer);
                 STOP(TIMING_BACK);
                 P3M_DEBUG(printf("  returned from fft.backward.\n"));
             }
@@ -1409,7 +1413,7 @@ void Solver::spreadGrid(p3m_float* rs_grid) {
 
 /* apply the influence function */
 void Solver::applyInfluenceFunction(p3m_float *in, p3m_float *out, p3m_float *g) {
-    const p3m_int size = fft.plan[3].new_size;
+    const p3m_int size = fft.getKSSize();
     for (p3m_int i=0; i < size; i++) {
         out[2*i] = g[i] * in[2*i];
         out[2*i+1] = g[i] * in[2*i+1];
@@ -1505,17 +1509,21 @@ void Solver::differentiateIK(int dim, p3m_float* in, p3m_float* out) {
     /* srqt(-1)*k differentiation */
     p3m_int ind=0;
     p3m_int j[3];
-    for (j[0]=0; j[0]<fft.plan[3].new_grid[0]; j[0]++) {
-        for (j[1]=0; j[1]<fft.plan[3].new_grid[1]; j[1]++) {
-            for (j[2]=0; j[2]<fft.plan[3].new_grid[2]; j[2]++) {
+    const p3m_int *size, *start;
+    fft.getKSExtent(start, size);
+    for (j[0]=0; j[0] < size[0]; j[0]++) {
+        for (j[1]=0; j[1] < size[1]; j[1]++) {
+            for (j[2]=0; j[2]< size[2]; j[2]++) {
                 /* i*k*(Re+i*Im) = - Im*k + i*Re*k     (i=sqrt(-1)) */
                 out[ind] =
-                        -2.0*M_PI*(in[ind+1] * d_operator[ j[dim]+fft.plan[3].start[dim] ])
-                        / box_l[dim_rs];
+                        -2.0*M_PI*in[ind+1] *
+                        d_operator[ j[dim] + start[dim] ] /
+                        box_l[dim_rs];
                 out[ind+1] =
-                        2.0*M_PI*in[ind] * d_operator[ j[dim]+fft.plan[3].start[dim] ]
-                                                               / box_l[dim_rs];
-                ind+=2;
+                        2.0*M_PI*in[ind] *
+                        d_operator[ j[dim] + start[dim] ] /
+                        box_l[dim_rs];
+                ind += 2;
             }
         }
     }
@@ -1526,18 +1534,17 @@ void Solver::differentiateIK(int dim, p3m_float* in, p3m_float* out) {
 /** Compute the total energy of the system in kspace. No need to
       backtransform the FFT grid in this case! */
 p3m_float Solver::computeTotalEnergy() {
-    p3m_float local_k_space_energy;
-    p3m_float k_space_energy;
+    p3m_float k_space_energy = 0.0;
 
-    P3M_DEBUG(printf( "  P3M::Solver::compute_total_energy() started...\n"));
+    P3M_DEBUG(printf( "  P3M::Solver::computeTotalEnergy() started...\n"));
 
-    local_k_space_energy = 0.0;
-    for (p3m_int i=0; i < fft.plan[3].new_size; i++)
+    p3m_int size = fft.getKSSize();
+    for (p3m_int i=0; i < size; i++)
         /* Use the energy optimized influence function */
-        local_k_space_energy += g_energy[i] * ( SQR(rs_grid[2*i]) +
+        k_space_energy += g_energy[i] * ( SQR(rs_grid[2*i]) +
                 SQR(rs_grid[2*i+1]) );
 
-    MPI_Reduce(&local_k_space_energy, &k_space_energy, 1, P3M_MPI_FLOAT,
+    MPI_Reduce(MPI_IN_PLACE, &k_space_energy, 1, P3M_MPI_FLOAT,
             MPI_SUM, 0, comm.mpicomm);
     p3m_float prefactor = 1.0 / (2.0 * box_l[0] * box_l[1] * box_l[2]);
     k_space_energy *= prefactor;
@@ -1553,7 +1560,7 @@ p3m_float Solver::computeTotalEnergy() {
     /* net charge correction */
     k_space_energy -= square_sum_q * M_PI * prefactor / SQR(alpha);
 
-    P3M_DEBUG(printf( "  P3M::Solver::compute_total_energy() finished.\n"));
+    P3M_DEBUG(printf( "  P3M::Solver::computeTotalEnergy() finished.\n"));
     return k_space_energy;
 }
 

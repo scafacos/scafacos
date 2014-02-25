@@ -27,7 +27,7 @@ class ErrorEstimateADI : public ErrorEstimate {
 public:
     ErrorEstimateADI(Communication &comm) : ErrorEstimate(comm) {}
 
-	virtual p3m_float computeKSError(Parameters &p,
+	virtual void computeKSError(TuneParameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
 protected:
