@@ -296,7 +296,7 @@ private:
     // tuning master functions
     void tuneBroadcastSendParams(TuneParameters p);
     void tuneBroadcastFail();
-    void tuneBroadcastTiming(TuneParameters p, p3m_int num_particles,
+    void tuneBroadcastTiming(TuneParameters &p, p3m_int num_particles,
             p3m_float *positions, p3m_float *charges);
     void tuneBroadcastFinish(TuneParameters p);
     void tuneBroadcastNoTune();

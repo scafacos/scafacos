@@ -1969,20 +1969,24 @@ Solver::tuneGrid(TuneParameterList &params_to_try) {
             // Test whether accuracy can be achieved with given parameters
             p3m_int upper_ix;
             // test this step
-            P3M_INFO(printf("    Trying to find grid for r_cut=" FFLOAT ", " \
+            P3M_DEBUG(printf("    Trying to find grid for r_cut=" FFLOAT ", " \
                     "alpha=" FFLOAT ", "                          \
                     "cao=" FINT "\n",                             \
                     pit->r_cut, pit->alpha, pit->cao));
+
+            TuneParameters p = *pit;
+
             do {
                 step_ix++;
                 if (step_ix >= num_steps_good_gridsize) break;
                 upper_ix = step_good_gridsize[step_ix];
                 p3m_int grid1d = good_gridsize[upper_ix];
-                pit->grid[0] = pit->grid[1] = pit->grid[2] = grid1d;
+                p.grid[0] = p.grid[1] = p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      rough grid=" FINT "\n", grid1d));
-                errorEstimate->computeMaster(*pit, sum_qpart, sum_q2, box_l);
-                P3M_DEBUG(printf("        => error=" FFLOATE "\n", pit->error));
-            } while (pit->error > tolerance_field);
+                errorEstimate->computeMaster(p, sum_qpart, sum_q2, box_l);
+            } while (p.error > tolerance_field);
+            // store the (working) rough grid param set
+            *pit = p;
 
             // reached largest possible grid, remove the rest of the parameter sets
             if (step_ix >= num_steps_good_gridsize) {
@@ -1999,27 +2003,27 @@ Solver::tuneGrid(TuneParameterList &params_to_try) {
             while (lower_ix+1 < upper_ix) {
                 p3m_int test_ix = (lower_ix+upper_ix)/2;
                 p3m_int grid1d = good_gridsize[test_ix];
-                pit->grid[0] = pit->grid[1] = pit->grid[2] = grid1d;
+                p.grid[0] = p.grid[1] = p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      fine grid=" FINT "\n", grid1d));
-                errorEstimate->computeMaster(*pit, sum_qpart, sum_q2, box_l);
-                P3M_DEBUG(printf("          => error=" FFLOATE "\n", pit->error));
-                if (pit->error < tolerance_field) {
+                errorEstimate->computeMaster(p, sum_qpart, sum_q2, box_l);
+                if (p.error < tolerance_field) {
                     // parameters achieve error
                     upper_ix = test_ix;
+                    // save the current param set
+                    *pit = p;
                 } else {
                     // parameters do not achieve error
                     lower_ix = test_ix;
                 }
             }
 
-            // now the right size is at upper_ix
-            p3m_int grid1d = good_gridsize[upper_ix];
-
-            // store the new grid size and alpha
-            if (min_grid1d > grid1d) min_grid1d = grid1d;
-            pit->grid[0] = pit->grid[1] = pit->grid[2] = grid1d;
-            P3M_INFO(printf( "      => grid=" F3INT ", "                      \
+            P3M_INFO(printf( "      => " \
+                    "r_cut=" FFLOAT ", " \
+                    "alpha=" FFLOAT ", "                          \
+                    "cao=" FINT "\n"                             \
+                    "grid=" F3INT ", "                      \
                     "error=" FFLOATE "\n",                           \
+                    pit->r_cut, pit->alpha, pit->cao, \
                     pit->grid[0], pit->grid[1], pit->grid[2],     \
                     pit->error));
 
@@ -2027,9 +2031,11 @@ Solver::tuneGrid(TuneParameterList &params_to_try) {
             // next param set
             step_ix--;
 
-            // compare grid size to previous data set
+            // compare grid size to previous minimal grid size
             // if it is larger than any previous size + P3M_MAX_GRID_DIFF, skip it
-            if (min_grid1d + P3M_MAX_GRID_DIFF < grid1d) {
+            if (min_grid1d > pit->grid[0]) {
+                min_grid1d = pit->grid[0];
+            } else if (min_grid1d + P3M_MAX_GRID_DIFF < pit->grid[0]) {
                 P3M_INFO(printf("      grid too large => removing data set\n"));
                 // remove the rest of the params
                 TuneParameterList::iterator next = pit;
@@ -2259,7 +2265,7 @@ Solver::tuneBroadcastTuneFar(TuneParameters p) {
     return this->tuneFar(p);
 }
 
-void Solver::tuneBroadcastTiming(TuneParameters p, p3m_int num_particles,
+void Solver::tuneBroadcastTiming(TuneParameters &p, p3m_int num_particles,
         p3m_float *positions, p3m_float *charges) {
     tuneBroadcastCommand(comm, CMD_TIMING);
     this->tuneBroadcastSendParams(p);
