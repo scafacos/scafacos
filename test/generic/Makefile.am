@@ -46,13 +46,13 @@ EXTRA_DIST = \
 	systems/xml2xyz.py \
 	systems/xml2vtf.py \
 	systems/xml2vtk.py \
-	scafacos_test_all.sh \
-	tune_alpha_2dp.py \
-	tune_alpha_3dp.py \
-	tune_alpha_cloud_wall_3dp.py \
-	opt_alpha_cloud_wall_2dp.py \
-	opt_alpha_cloud_wall_3dp.py \
-	compute_nonperiodic_references.sh \
+	scripts/scafacos_test_all.sh \
+	scripts/tune_alpha_2dp.py \
+	scripts/tune_alpha_3dp.py \
+	scripts/tune_alpha_cloud_wall_3dp.py \
+	scripts/opt_alpha_cloud_wall_2dp.py \
+	scripts/opt_alpha_cloud_wall_3dp.py \
+	scripts/compute_nonperiodic_references.sh \
 	rapidxml/manual.html \
 	rapidxml/license.txt
 
@@ -66,20 +66,21 @@ EXTRA_DIST += \
 	systems/nonperiodic/cloud_wall_8100.xml.gz \
 	systems/nonperiodic/silica_melt_12960.xml.gz
 
+SYMLINK_SUBDIRS=systems scripts hammersley_generator
+
 # Generate symbolic link to systems subdir
 all-local: make-data-symlink
 make-data-symlink:
-	-@if test "$(srcdir)" != . && test ! -r systems; then \
-	  ln -s "$(srcdir)/systems" .; \
-	fi
-	-@if test "$(srcdir)" != . && test ! -r hammersley_generator; then \
-	  ln -s "$(srcdir)/hammersley_generator" .; \
-	fi
+	-@for s in $(SYMLINK_SUBDIRS) ; do \
+	  if test "$(srcdir)" != . && test ! -r $${s}; then \
+	    ln -s "$(srcdir)/$${s}" .; \
+	  fi \
+	done
 
 distclean-local: clean-data-symlink
 clean-data-symlink:
 	-@if test "$(srcdir)" != .; then \
-	  rm -f systems hammersley_generator; \
+	  rm -f $(SYMLINK_SUBDIRS) ; \
 	fi
 
 .PHONY: make-data-symlink clean-data-symlink

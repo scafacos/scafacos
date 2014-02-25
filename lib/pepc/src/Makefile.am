@@ -69,7 +69,7 @@ PP_FILES_PP.lo = $(addsuffix .$(PP_SUFFIX).lo,$(basename $(PP_FILES)))
 %.$(PP_SUFFIX).f90: %.f90 $(ALL_INCLUDE_HEADER) 
 	@echo "Building file '$@'" 
 	cat $(ALL_INCLUDE_HEADER) $< | \
-	cpp -P -C $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES) | \
+	$(CPP) -P -C $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES) - | \
 	sed '/\/\*\(.*\)\*\//{s,,!\1,p;d;};/\/\*/,/\*\//{s,/\*,,; s,\*/,,; s,^,!,p; d;}' > $@
 
 #%.o: %.f90
@@ -111,7 +111,7 @@ $(eval include $(builddir)/module.deps)
 tree_stats.pp.o: module_walk_communicator.pp.o
 
 $(builddir)/module.deps: $(pepc_raw_f90_sources) $(ALL_INCLUDE_HEADER)
-	SRCDIR="$(srcdir)" PRE_INCLUDE="$(ALL_INCLUDE_HEADER)" CPP="cpp $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES)" OBJEXT="$(PP_SUFFIX).$(LTOBJEXT)" MODEXT="$(FC_MODEXT)" \
+	SRCDIR="$(srcdir)" PRE_INCLUDE="$(ALL_INCLUDE_HEADER)" CPP="$(CPP) $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES)" OBJEXT="$(PP_SUFFIX).$(LTOBJEXT)" MODEXT="$(FC_MODEXT)" \
 	$(SHELL) $(top_srcdir)/build-aux/fortran-depcomp $^ > $@
 #	@echo "uname -a: `uname -a`"
 #	$(MAKE) -v

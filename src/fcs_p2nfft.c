@@ -211,7 +211,7 @@ FCSResult fcs_p2nfft_tune(
         "Nonperiodic dims require box vector that are orthognonal to all box vectors of periodic dims.");
 
   if(periodic_dims(periodicity) == 1)
-    if(!nonperiodic_box_lengths_are_equal(a[0], b[1], c[2], periodicity))
+    if(!nonperiodic_box_lengths_are_equal(fcs_norm(a), fcs_norm(b), fcs_norm(c), periodicity))
       return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
           "The p2nfft method currently depends on equal nonperiodic box lengths with 1d-periodic boundary conditions.");
 
