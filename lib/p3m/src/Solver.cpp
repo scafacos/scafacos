@@ -2055,8 +2055,8 @@ Solver::tuneGrid(TuneParameterList &params_to_try) {
         }
     } else {
         // !tune_grid
-        for (TuneParameterList::iterator pit = params_to_try.begin();
-                pit != params_to_try.end(); ++pit) {
+        TuneParameterList::iterator pit = params_to_try.begin();
+        while (pit != params_to_try.end()) {
             // test whether accuracy can be achieved with given parameters
             P3M_INFO(printf("    grid=" F3INT " (fixed)\n",                \
                     pit->grid[0], pit->grid[1], pit->grid[2]));
@@ -2066,11 +2066,14 @@ Solver::tuneGrid(TuneParameterList &params_to_try) {
                 // error is small enough for this parameter set, so keep it
                 P3M_INFO(printf("    error (%le) < tolerance (%le), keeping params\n", \
                         pit->error, tolerance_field));
+                ++pit;
             } else {
                 // otherwise remove this parameter set
                 P3M_INFO(printf("    error (%le) > tolerance (%le), removing params\n", \
                         pit->error, tolerance_field));
-                params_to_try.erase(pit);
+                TuneParameterList::iterator badpit = pit;
+                ++pit;
+                params_to_try.erase(badpit);
             }
         }
     }
