@@ -63,7 +63,7 @@ FCSResult ifcs_p2nfft_set_ ## METHOD ## NAME(                                   
 {                                                                               \
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;                    \
   if( rd==NULL )                                                                \
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer."); \
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer."); \
   d->needs_retune |= correct_flag(FLAG, set_ ## NAME,                           \
       &d->METHOD ## flags);                                                     \
   return NULL;                                                                  \
@@ -74,7 +74,7 @@ FCSResult ifcs_p2nfft_get_ ## METHOD ## NAME(                                   
 {                                                                               \
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;                    \
   if( rd==NULL )                                                                \
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer."); \
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer."); \
   *get_ ## NAME =  (d->METHOD ## flags & FLAG) ? 1 : 0;                         \
   return NULL;                                                                  \
 }
@@ -92,7 +92,7 @@ FCSResult ifcs_p2nfft_set_tolerance(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if(tolerance_type != d->tolerance_type)
     d->needs_retune = 1;
@@ -109,7 +109,7 @@ FCSResult ifcs_p2nfft_set_tolerance_tune(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->needs_retune = 1;
   d->tolerance_type = FCS_TOLERANCE_TYPE_UNDEFINED;
@@ -124,7 +124,7 @@ FCSResult ifcs_p2nfft_get_tolerance(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *tolerance_type = d->tolerance_type;
   *tolerance      = d->tolerance;
@@ -138,7 +138,7 @@ FCSResult ifcs_p2nfft_set_r_cut(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if (!fcs_float_is_equal(r_cut, d->r_cut))
     d->needs_retune = 1;
@@ -154,7 +154,7 @@ FCSResult ifcs_p2nfft_set_r_cut_tune(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->needs_retune = 1;
   d->tune_r_cut = 1;
@@ -168,7 +168,7 @@ FCSResult ifcs_p2nfft_get_r_cut(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *r_cut = d->r_cut;
   return NULL;
@@ -181,10 +181,10 @@ FCSResult ifcs_p2nfft_set_epsI(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if( epsI >= 0.5 )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Near field cutoff 'epsI' does not hold epsI < 0.5");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Near field cutoff 'epsI' does not hold epsI < 0.5");
 
   if (!fcs_float_is_equal(epsI, d->epsI))
     d->needs_retune = 1;
@@ -199,7 +199,7 @@ FCSResult ifcs_p2nfft_set_epsI_tune(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->needs_retune = 1;
   d->tune_epsI = 1;
@@ -213,7 +213,7 @@ FCSResult ifcs_p2nfft_get_epsI(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *epsI = d->epsI;
   return NULL;
@@ -227,10 +227,10 @@ FCSResult ifcs_p2nfft_set_epsB(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if( epsB >= 0.5 )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Far field border 'epsB' does not hold epsB < 0.5");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Far field border 'epsB' does not hold epsB < 0.5");
 
   if (!fcs_float_is_equal(epsB, d->epsB))
     d->needs_retune = 1;
@@ -245,7 +245,7 @@ FCSResult ifcs_p2nfft_set_epsB_tune(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->needs_retune = 1;
   d->tune_epsB = 1;
@@ -259,7 +259,7 @@ FCSResult ifcs_p2nfft_get_epsB(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *epsB = d->epsB;
   return NULL;
@@ -273,7 +273,7 @@ FCSResult ifcs_p2nfft_set_c(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if (!fcs_float_is_equal(c, d->c))
     d->needs_retune = 1;
@@ -288,7 +288,7 @@ FCSResult ifcs_p2nfft_set_c_tune(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->needs_retune = 1;
   d->tune_c = 1;
@@ -302,7 +302,7 @@ FCSResult ifcs_p2nfft_get_c(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *c = d->c;
   return NULL;
@@ -316,7 +316,7 @@ FCSResult ifcs_p2nfft_set_alpha(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if (!fcs_float_is_equal(alpha, d->alpha))
     d->needs_retune = 1;
@@ -331,7 +331,7 @@ FCSResult ifcs_p2nfft_set_alpha_tune(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->needs_retune = 1;
   d->tune_alpha = 1;
@@ -344,7 +344,7 @@ FCSResult ifcs_p2nfft_get_alpha(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *alpha = d->alpha;
   return NULL;
@@ -387,10 +387,10 @@ FCSResult ifcs_p2nfft_set_interpolation_order(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if( intpol_order > 3 )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Interpolation order not yet supported.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Interpolation order not yet supported.");
 
   /* any negative value turns off interpolation */
   if( intpol_order < 0 ){
@@ -411,7 +411,7 @@ FCSResult ifcs_p2nfft_get_interpolation_order(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *intpol_order = d->interpolation_order;
   return NULL;
@@ -424,10 +424,10 @@ FCSResult ifcs_p2nfft_set_reg_near(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if( (reg != FCS_P2NFFT_REG_NEAR_DEFAULT) && (reg != FCS_P2NFFT_REG_NEAR_CG) && (reg != FCS_P2NFFT_REG_NEAR_T2P) )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
   
   if(reg != d->reg_near)
     d->needs_retune = 1;
@@ -449,7 +449,7 @@ FCSResult ifcs_p2nfft_set_reg_near_by_name(
   else if (strcmp(reg_name,"t2p") == 0)
     reg_flag = FCS_P2NFFT_REG_NEAR_T2P;
   else /* unknown regularization */
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
 
   return ifcs_p2nfft_set_reg_near(rd, fnc_name, reg_flag);
 }
@@ -460,7 +460,7 @@ FCSResult ifcs_p2nfft_get_reg_near(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *reg = d->reg_near;
   return NULL;
@@ -473,7 +473,7 @@ FCSResult ifcs_p2nfft_set_reg_far(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if( (reg != FCS_P2NFFT_REG_FAR_DEFAULT)
       && (reg != FCS_P2NFFT_REG_FAR_RAD_CG)
@@ -484,7 +484,7 @@ FCSResult ifcs_p2nfft_set_reg_far(
       && (reg != FCS_P2NFFT_REG_FAR_REC_T2P_EC)
       && (reg != FCS_P2NFFT_REG_FAR_REC_T2P_IC)   
     )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown far field regularization.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown far field regularization.");
   
   if(reg != d->reg_far)
     d->needs_retune = 1;
@@ -516,7 +516,7 @@ FCSResult ifcs_p2nfft_set_reg_far_by_name(
   else if (strcmp(reg_name,"rec_t2p_ic") == 0)
     reg_flag = FCS_P2NFFT_REG_FAR_REC_T2P_IC;
   else /* unknown regularization */
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
 
   return ifcs_p2nfft_set_reg_far(rd, fnc_name, reg_flag);
 }
@@ -527,7 +527,7 @@ FCSResult ifcs_p2nfft_get_reg_far(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *reg = d->reg_far;
   return NULL;
@@ -540,7 +540,7 @@ FCSResult ifcs_p2nfft_set_p(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if (!fcs_float_is_equal(p, d->p))
     d->needs_retune = 1;
@@ -555,7 +555,7 @@ FCSResult ifcs_p2nfft_set_p_tune(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->needs_retune = 1;
   d->tune_p = 1;
@@ -568,7 +568,7 @@ FCSResult ifcs_p2nfft_get_p(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *p = d->p;
   return NULL;
@@ -581,7 +581,7 @@ FCSResult ifcs_p2nfft_require_virial(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if(flag){
     if(d->virial == NULL)
@@ -601,12 +601,12 @@ FCSResult ifcs_p2nfft_get_virial(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if(!virial)
-    return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"Supplied virial pointer must not be a null pointer."); 
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"Supplied virial pointer must not be a null pointer."); 
   if(!d->virial)
-    return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"Virial computation is not activated. Use fcs_require_virial to do so."); 
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"Virial computation is not activated. Use fcs_require_virial to do so."); 
 
   if(d->virial != NULL){
     for (fcs_int t=0; t < 9; t++)
@@ -621,7 +621,7 @@ FCSResult ifcs_p2nfft_virial_is_active(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *is_active = d->virial != NULL;
   return NULL;
@@ -643,7 +643,7 @@ FCSResult ifcs_p2nfft_set_pnfft_N(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->N[0] = N0; d->N[1] = N1; d->N[2] = N2;
   d->needs_retune = 1; 
@@ -657,7 +657,7 @@ FCSResult ifcs_p2nfft_set_pnfft_N_tune(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->needs_retune = 1; 
   d->tune_N = 1;
@@ -671,7 +671,7 @@ FCSResult ifcs_p2nfft_get_pnfft_N(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *N0 = d->N[0]; *N1 = d->N[1]; *N2 = d->N[2]; 
   return NULL;
@@ -684,7 +684,7 @@ FCSResult ifcs_p2nfft_set_pnfft_n(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->n[0] = n0; d->n[1] = n1; d->n[2] = n2;
   d->needs_retune = 1; 
@@ -698,7 +698,7 @@ FCSResult ifcs_p2nfft_set_pnfft_n_tune(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->needs_retune = 1; 
   d->tune_n = 1;
@@ -712,7 +712,7 @@ FCSResult ifcs_p2nfft_get_pnfft_n(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *n0 = d->n[0]; *n1 = d->n[1]; *n2 = d->n[2]; 
   return NULL;
@@ -725,10 +725,10 @@ FCSResult ifcs_p2nfft_set_pnfft_window(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if((window < 0) || (4 < window) )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown window function.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown window function.");
 
   if ( window != d->pnfft_window )
     d->needs_retune = 1;
@@ -754,7 +754,7 @@ FCSResult ifcs_p2nfft_set_pnfft_window_by_name(
   else if (strcmp(window_name,"bessel_i0") == 0)
     window = 4;
   else /* unknown window */
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown window function.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown window function.");
 
   return ifcs_p2nfft_set_pnfft_window(rd, fnc_name, window);
 }
@@ -765,7 +765,7 @@ FCSResult ifcs_p2nfft_get_pnfft_window(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *window = d->pnfft_window;
   return NULL;
@@ -778,7 +778,7 @@ FCSResult ifcs_p2nfft_set_pnfft_m(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if (!fcs_float_is_equal(m, d->m))
     d->needs_retune = 1;
@@ -793,7 +793,7 @@ FCSResult ifcs_p2nfft_set_pnfft_m_tune(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->needs_retune = 1;
   d->tune_m = 1;
@@ -806,7 +806,7 @@ FCSResult ifcs_p2nfft_get_pnfft_m(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *m = d->m;
   return NULL;
@@ -819,10 +819,10 @@ FCSResult ifcs_p2nfft_set_pnfft_interpolation_order(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if( intpol_order > 3 )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Interpolation order not yet supported.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Interpolation order not yet supported.");
 
   /* any negative value turns off interpolation */
   if( intpol_order < 0 ){
@@ -843,7 +843,7 @@ FCSResult ifcs_p2nfft_get_pnfft_interpolation_order(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *intpol_order = d->pnfft_interpolation_order;
   return NULL;
@@ -874,10 +874,10 @@ FCSResult ifcs_p2nfft_set_pfft_patience(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   if( (patience < 0) || (3 < patience) )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Patience not supported.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Patience not supported.");
 
   if(d->pfft_patience != patience)
     d->needs_retune = 1;
@@ -892,7 +892,7 @@ FCSResult ifcs_p2nfft_get_pfft_patience(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *patience = d->pfft_patience;
   return NULL;
@@ -913,7 +913,7 @@ FCSResult ifcs_p2nfft_set_pfft_patience_by_name(
   else if (strcmp(patience_name,"exhaustive") == 0)
     patience = 3;
   else /* unknown patience */
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Unknown patience function.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown patience function.");
 
   return ifcs_p2nfft_set_pfft_patience(rd, fnc_name, patience);
 }

@@ -37,8 +37,6 @@
 
 #define PNFFT_SORT_RADIX 1
 
-
-
 /* Begin: This part is based on ifftw3.h */
 #include <stdlib.h>             /* size_t */
 #include <stdarg.h>             /* va_list */
@@ -263,7 +261,7 @@ void PNX(rmtimer)(
 /* ndft-parallel.c */
 void PNX(rmplan)(
     PNX(plan) ths);
-void PNX(local_size_internal)(
+INT PNX(local_size_internal)(
     const INT *N, const INT *n, const INT *no,
     MPI_Comm comm_cart_2d, unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,

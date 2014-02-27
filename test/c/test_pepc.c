@@ -30,7 +30,7 @@
 void assert_fcs(FCSResult r)
 {
   if(r) {
-    fcsResult_printResult(r);
+    fcs_result_print_result(r);
     MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
     exit(-1);
   }
@@ -122,13 +122,16 @@ int main(int argc, char* argv[])
 			      offset, periodic, n_total);
   assert_fcs(fcs_result);
 
+  fcs_result = fcs_set_max_local_particles(fcs_handle, n_local_max);
+  assert_fcs(fcs_result);
+
   fcs_result = fcs_pepc_setup(fcs_handle, epsilon, theta);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_tune(fcs_handle, n_local, n_local_max, x, q);
+  fcs_result = fcs_tune(fcs_handle, n_local, x, q);
   assert_fcs(fcs_result);
 
-  fcs_result = fcs_run(fcs_handle, n_local, n_local_max, x, q, f, p);
+  fcs_result = fcs_run(fcs_handle, n_local, x, q, f, p);
   assert_fcs(fcs_result);
 
   e_local = 0.0;

@@ -29,7 +29,7 @@
 void assert_fcs(FCSResult r)
 {
   if (r) {
-    fcsResult_printResult(r);
+    fcs_result_print_result(r);
     MPI_Finalize();
     exit(-1);
   }
@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
 #endif
 
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Abort(comm, 1);
   }
 
@@ -167,9 +167,9 @@ int main(int argc, char **argv) {
   if (comm_rank == 0)
     fprintf(stderr, "Tuning p3m to accuracy %" FCS_LMOD_FLOAT "e...\n", p3m_tolerance_field);
   MPI_Barrier(comm);
-  result = fcs_tune(handle, n_particles, n_particles, positions, charges);
+  result = fcs_tune(handle, n_particles, positions, charges);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Abort(comm, 1);
   }
   if (comm_rank == 0)
@@ -187,10 +187,10 @@ int main(int argc, char **argv) {
   /* fcs_p3m_set_grid_ptr(handle, grid); */
 
   /* fcs_float virial[9]; */
-  /* result = fcs_require_virial(handle, 1); */
+  /* result = fcs_set_compute_virial(handle, 1); */
 
   result = fcs_p3m_require_total_energy(handle, 1);
-  result = fcs_run(handle, n_particles, n_particles, 
+  result = fcs_run(handle, n_particles,
 		   positions, charges, fields, potentials);
   assert_fcs(result);
   result = fcs_p3m_get_total_energy(handle, &total_energy);

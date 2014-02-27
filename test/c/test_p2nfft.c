@@ -29,7 +29,7 @@
 static void assert_fcs(FCSResult r)
 {
   if (r) {
-    fcsResult_printResult(r);
+    fcs_result_print_result(r);
     MPI_Finalize();
     exit(-1);
   }
@@ -143,17 +143,17 @@ int main(int argc, char **argv)
 
   if(!comm_rank)
     printf("Tuning p2nfft to tolerance %" FCS_LMOD_FLOAT "e...\n", tolerance);
-  result = fcs_tune(handle, local_particles, n_particles, local_positions, local_charges);
+  result = fcs_tune(handle, local_particles, local_positions, local_charges);
   assert_fcs(result);
 
   /* activate virial computation */
-  result = fcs_require_virial(handle, 1);
+  result = fcs_set_compute_virial(handle, 1);
   assert_fcs(result);
 
   /* Far field computation */
   if(!comm_rank)
     printf("Running p2nfft (computing far fields and potentials)...\n");
-  result = fcs_run(handle, local_particles, n_particles,
+  result = fcs_run(handle, local_particles,
       local_positions, local_charges, far_fields, far_potentials);
   assert_fcs(result);
 

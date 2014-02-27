@@ -102,10 +102,10 @@ and use \fcs:
   compiler.
 \item[Fortran 2003 compiler] \index{Fortran 2003} The Fortran code of
   some methods (\eg FMM) does require a Fortran 2003 compiler.
-\item[FFTW] \index{FFTW} Some solver methods (\eg P$^3$M and P2NFFT)
+\item[FFTW] \index{FFTW} Some solver methods (\eg \pthreem and \ptwonfft)
   need the FFTW library version 3.3.0 or later
   \footnote{\url{http://www.fftw.org/}} for Fourier transforms.  For
-  P2NFFT, the MPI interface of FFTW3 has to be available. You do
+  \ptwonfft, the MPI interface of FFTW3 has to be available. You do
   not only need the library itself, but also the header files.
   Depending on the operating system, these may come in separate
   development packages (\eg \texttt{fftw3-dev}).
@@ -122,16 +122,16 @@ and use \fcs:
       \begin{tabular}{|l||*{10}{c|}}
         \hline
         &
-        \rotatebox{90}{\textbf{FMM}} &
-        \rotatebox{90}{\textbf{MEMD}} &
-        \rotatebox{90}{\textbf{MMM*D}} &
-        \rotatebox{90}{\textbf{P2NFFT}} &
-        \rotatebox{90}{\textbf{P3M}} &
-        \rotatebox{90}{\textbf{PEPC}} &
-        \rotatebox{90}{\textbf{PP3MG}} &
-        \rotatebox{90}{\textbf{VMG}} &
-        \rotatebox{90}{\textbf{Direct}} &
-        \rotatebox{90}{\textbf{Ewald}}
+        \rotatebox{90}{\textbf{\fmm}} &
+        \rotatebox{90}{\textbf{\memd}} &
+        \rotatebox{90}{\textbf{\mmmxd}} &
+        \rotatebox{90}{\textbf{\ptwonfft}} &
+        \rotatebox{90}{\textbf{\pthreem}} &
+        \rotatebox{90}{\textbf{\pepc}} &
+        \rotatebox{90}{\textbf{\ppthreemg}} &
+        \rotatebox{90}{\textbf{\vmg}} &
+        \rotatebox{90}{\textbf{\direct}} &
+        \rotatebox{90}{\textbf{\ewald}}
         \\
         \hline
         \hline
@@ -141,7 +141,7 @@ and use \fcs:
         \hspace{2em}\textbf{non-cubic, cuboid} &
         -- & -- &   & + & + & +\footnote{untested}                 & +        & ? & + & + \\
         \hspace{2em}\textbf{non-cubic, non-cuboid} &
-        ? & ? &   & -- & ? & +\footnote{untested}                   & ?        & ? & ? & ? \\
+        ? & ? &   & + & ? & +\footnote{untested}                   & ?        & ? & ? & ? \\
         \hspace{2em}\textbf{Virials} &
         ? & -- &   & ?\footnote{diagonal approximation} & ? & --\footnote{implementation planned}   & (scalar) & ? & ? & -- \\
         \hline
@@ -155,7 +155,7 @@ and use \fcs:
         \hline
 
         \textbf{Partially periodic} &
-        + & -- & + & --\footnote{work in progress} & -- & +\footnote{untested}                & --        & ? & + & -- \\
+        + & -- & + & + & -- & +\footnote{untested}                & --        & ? & + & -- \\
         \hline
 
         \textbf{Tunable accuracy} &

@@ -88,7 +88,7 @@ FCSResult fcs_wolf_check(FCS handle);
  * @param charges fcs_float* list of charges
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_wolf_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges);
+FCSResult fcs_wolf_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges);
 
 
 /**
@@ -99,7 +99,7 @@ FCSResult fcs_wolf_tune(FCS handle, fcs_int local_particles, fcs_int local_max_p
  * @param output FCSOutput* pointer that contains a FCSOutput-object with the results after the run
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles,
                          fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
 
 
@@ -121,6 +121,10 @@ FCSResult fcs_wolf_require_virial(FCS handle, fcs_int compute_virial);
  * @return FCSResult-object containing the return state
  */
 FCSResult fcs_wolf_get_virial(FCS handle, fcs_float *virial);
+
+
+FCSResult fcs_wolf_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+FCSResult fcs_wolf_print_parameters(FCS handle);
 
 
 FCSResult fcs_wolf_set_max_particle_move(FCS handle, fcs_float max_particle_move);

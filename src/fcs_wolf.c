@@ -42,9 +42,9 @@
 
 #define WOLF_HANDLE_CHECK(_h_, _f_) do { \
   if ((_h_) == FCS_NULL) \
-    return fcsResult_create(FCS_NULL_ARGUMENT, (_f_), "null pointer supplied as handle"); \
-  if ((_h_)->method != FCS_WOLF) \
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, (_f_), "handle does not represent method \"wolf\""); \
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, (_f_), "null pointer supplied as handle"); \
+  if ((_h_)->method != FCS_METHOD_WOLF) \
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, (_f_), "handle does not represent method \"wolf\""); \
 } while (0)
 
 
@@ -61,6 +61,8 @@ FCSResult fcs_wolf_init(FCS handle)
 
   WOLF_HANDLE_CHECK(handle, func_name);
 
+  handle->wolf_param = malloc(sizeof(*handle->wolf_param));
+
   ctx = malloc(sizeof(fcs_wolf_context_t));
 
   ctx->comm = fcs_get_communicator(handle);
@@ -76,6 +78,14 @@ FCSResult fcs_wolf_init(FCS handle)
   fcs_wolf_set_alpha(handle, default_alpha);
 
 /*  handle->wolf_param->metallic_boundary_conditions = 1;*/
+
+  handle->destroy = fcs_wolf_destroy;
+  handle->set_parameter = fcs_wolf_set_parameter;
+  handle->print_parameters = fcs_wolf_print_parameters;
+  handle->tune = fcs_wolf_tune;
+  handle->run = fcs_wolf_run;
+  handle->set_compute_virial = fcs_wolf_require_virial;
+  handle->get_virial = fcs_wolf_get_virial;
 
   handle->set_max_particle_move = fcs_wolf_set_max_particle_move;
   handle->set_resort = fcs_wolf_set_resort;
@@ -111,6 +121,8 @@ FCSResult fcs_wolf_destroy(FCS handle)
 
   fcs_set_method_context(handle, NULL);
 
+  free(handle->wolf_param);
+
   DEBUG_MOP(printf("fcs_wolf_destroy: done\n"));
 
   return FCS_RESULT_SUCCESS;
@@ -131,7 +143,7 @@ FCSResult fcs_wolf_check(FCS handle)
 }
 
 
-FCSResult fcs_wolf_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges)
+FCSResult fcs_wolf_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges)
 {
   static const char func_name[] = "fcs_wolf_tune";
 
@@ -145,7 +157,7 @@ FCSResult fcs_wolf_tune(FCS handle, fcs_int local_particles, fcs_int local_max_p
 }
 
 
-FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
+FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
   static const char func_name[] = "fcs_wolf_run";
 
@@ -154,8 +166,9 @@ FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 /*  fcs_int i;
   fcs_float field_correction[3];*/
 
-  fcs_float *box_base, *box_a, *box_b, *box_c;
-  fcs_int *periodicity;
+  const fcs_float *box_base, *box_a, *box_b, *box_c;
+  const fcs_int *periodicity;
+  fcs_int max_local_particles;
 
 
   DEBUG_MOP(printf("fcs_wolf_run\n"));
@@ -164,15 +177,18 @@ FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_int local_max_pa
 
   ctx = fcs_get_method_context(handle);
 
-  box_base = fcs_get_offset(handle);
+  box_base = fcs_get_box_origin(handle);
   box_a = fcs_get_box_a(handle);
   box_b = fcs_get_box_b(handle);
   box_c = fcs_get_box_c(handle);
   periodicity = fcs_get_periodicity(handle);
 
+  max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
   ifcs_wolf_set_system(&handle->wolf_param->wolf, box_base, box_a, box_b, box_c, periodicity);
 
-  ifcs_wolf_set_particles(&handle->wolf_param->wolf, local_particles, local_max_particles, positions, charges, field, potentials);
+  ifcs_wolf_set_particles(&handle->wolf_param->wolf, local_particles, max_local_particles, positions, charges, field, potentials);
 
   ifcs_wolf_run(&handle->wolf_param->wolf, ctx->comm);
 
@@ -214,6 +230,44 @@ FCSResult fcs_wolf_get_virial(FCS handle, fcs_float *virial)
 
   for (i = 0; i < 9; ++i) virial[i] = handle->wolf_param->wolf.virial[i];*/
 
+  return FCS_RESULT_SUCCESS;
+}
+
+
+FCSResult fcs_wolf_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_wolf_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("wolf_cutoff", wolf_set_cutoff, FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("wolf_alpha", wolf_set_alpha, FCS_PARSE_VAL(fcs_float));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+FCSResult fcs_wolf_print_parameters(FCS handle)
+{
+  fcs_float cutoff, alpha;
+
+  fcs_wolf_get_cutoff(handle, &cutoff);
+  fcs_wolf_get_alpha(handle, &alpha);
+
+  printf("wolf cutoff: %" FCS_LMOD_FLOAT "f\n", cutoff);
+  printf("wolf alpha: %" FCS_LMOD_FLOAT "f\n", alpha);
+  
   return FCS_RESULT_SUCCESS;
 }
 
@@ -357,5 +411,5 @@ void fcs_wolf_setup_f(void *handle, fcs_float cutoff, fcs_float alpha, fcs_int *
   if (result == FCS_RESULT_SUCCESS)
     *return_value = 0;
   else
-    *return_value = fcsResult_getReturnCode(result);
+    *return_value = fcs_result_get_return_code(result);
 }

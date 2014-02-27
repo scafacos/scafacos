@@ -57,31 +57,31 @@ fcs_int fcs_is_power_of_two(fcs_int x)
 }
 
 
-fcs_float fcs_norm(fcs_float *x)
+fcs_float fcs_norm(const fcs_float *x)
 {
   return fcs_sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
 }
 
 
-fcs_int fcs_two_are_orthogonal(fcs_float *a, fcs_float *b)
+fcs_int fcs_two_are_orthogonal(const fcs_float *a, const fcs_float *b)
 {
   return fcs_float_is_zero(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
 }
 
 
-fcs_int fcs_three_are_orthogonal(fcs_float *a, fcs_float *b, fcs_float *c)
+fcs_int fcs_three_are_orthogonal(const fcs_float *a, const fcs_float *b, const fcs_float *c)
 {
   return (fcs_two_are_orthogonal(a, b) && fcs_two_are_orthogonal(b, c) && fcs_two_are_orthogonal(c, a));
 }
 
 
-fcs_int fcs_is_orthogonal(fcs_float *a, fcs_float *b, fcs_float *c)
+fcs_int fcs_is_orthogonal(const fcs_float *a, const fcs_float *b, const fcs_float *c)
 {
   return fcs_three_are_orthogonal(a, b, c);
 }
 
 
-fcs_int fcs_is_cubic(fcs_float *a, fcs_float *b, fcs_float *c)
+fcs_int fcs_is_cubic(const fcs_float *a, const fcs_float *b, const fcs_float *c)
 {
   return fcs_is_orthogonal(a,b,c) && 
     fcs_float_is_equal(fcs_norm(a), fcs_norm(b)) && 
@@ -89,7 +89,7 @@ fcs_int fcs_is_cubic(fcs_float *a, fcs_float *b, fcs_float *c)
 }
 
 
-fcs_int fcs_uses_principal_axes(fcs_float *a, fcs_float *b, fcs_float *c)
+fcs_int fcs_uses_principal_axes(const fcs_float *a, const fcs_float *b, const fcs_float *c)
 {
   return
     !fcs_float_is_zero(a[0]) &&  fcs_float_is_zero(a[1]) &&  fcs_float_is_zero(a[2]) &&
@@ -98,7 +98,7 @@ fcs_int fcs_uses_principal_axes(fcs_float *a, fcs_float *b, fcs_float *c)
 }
 
 
-static void invert_3x3(fcs_float *v0, fcs_float *v1, fcs_float *v2, fcs_float *iv)
+static void invert_3x3(const fcs_float *v0, const fcs_float *v1, const fcs_float *v2, fcs_float *iv)
 {
   fcs_float det;
 
@@ -119,7 +119,7 @@ static void invert_3x3(fcs_float *v0, fcs_float *v1, fcs_float *v2, fcs_float *i
 }
 
 
-void fcs_wrap_positions(fcs_int nparticles, fcs_float *positions, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_float *offset, fcs_int *periodicity)
+void fcs_wrap_positions(fcs_int nparticles, fcs_float *positions, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_float *offset, const fcs_int *periodicity)
 {
   fcs_int i;
   fcs_float ibox[9], x[3], y[3];

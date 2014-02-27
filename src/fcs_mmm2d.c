@@ -31,7 +31,7 @@
 static FCSResult fcs_mmm2d_check(FCS handle, const char* fnc_name);
 
 /* initialization function for basic mmm2d parameters */
-FCSResult fcs_mmm2d_init(FCS handle, MPI_Comm communicator)
+FCSResult fcs_mmm2d_init(FCS handle)
 {
   char* fnc_name = "fcs_mmm2d_init";
   FCSResult result;
@@ -39,15 +39,23 @@ FCSResult fcs_mmm2d_init(FCS handle, MPI_Comm communicator)
   result = fcs_mmm2d_check(handle, fnc_name);
   if (result != NULL) return result;
   
+  handle->destroy = fcs_mmm2d_destroy;
+  handle->set_parameter = fcs_mmm2d_set_parameter;
+  handle->print_parameters = fcs_mmm2d_print_parameters;
+  handle->tune = fcs_mmm2d_tune;
+  handle->run = fcs_mmm2d_run;
+  handle->set_compute_virial = fcs_mmm2d_require_virial;
+  handle->get_virial = fcs_mmm2d_get_virial;
+
   ///* @TODO: check here for unidimensional mpi grid (1,1,n)*/
   
-  mmm2d_init(&handle->method_context, communicator);
+  mmm2d_init(&handle->method_context, handle->communicator);
   return NULL;
 }
 
 /* internal p3m-specific tuning function */
 FCSResult fcs_mmm2d_tune(FCS handle,
-		       fcs_int local_particles, fcs_int local_max_particles,
+		       fcs_int local_particles,
 		       fcs_float *positions, fcs_float *charges)
 {
   char* fnc_name = "fcs_mmm2d_tune";
@@ -57,25 +65,25 @@ FCSResult fcs_mmm2d_tune(FCS handle,
   if (result != NULL) return result;
   
   /* Check box periodicity */
-  fcs_int *periodicity = fcs_get_periodicity(handle);
+  const fcs_int *periodicity = fcs_get_periodicity(handle);
   if (periodicity[0] != 1 ||
       periodicity[1] != 1 ||
       periodicity[2] != 0)
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "mmm2d requires x and y-axis periodic boundaries.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "mmm2d requires x and y-axis periodic boundaries.");
   
   /* Check box shape */
   ///@TODO: check for rectangular box geometry (any fcs adequate method?)
-  fcs_float *a = fcs_get_box_a(handle);
-  fcs_float *b = fcs_get_box_b(handle);
-  fcs_float *c = fcs_get_box_c(handle);
+  const fcs_float *a = fcs_get_box_a(handle);
+  const fcs_float *b = fcs_get_box_b(handle);
+  const fcs_float *c = fcs_get_box_c(handle);
   
   /*
   if (!fcs_is_orthogonal(a, b, c))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, 
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, 
           "p3m requires the box to be orthorhombic.");
 
   if (!fcs_uses_principal_axes(a, b, c))
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, 
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, 
           "p3m requires the box vectors to be parallel to the principal axes.");
   */
   
@@ -93,16 +101,19 @@ FCSResult fcs_mmm2d_tune(FCS handle,
 
 /* internal mmm2d-specific run function */
 FCSResult fcs_mmm2d_run(FCS handle, 
-		      fcs_int local_particles, fcs_int local_max_particles, 
+		      fcs_int local_particles,
 		      fcs_float *positions, fcs_float *charges,
 		      fcs_float *fields, fcs_float *potentials)
 {
 //   char* fnc_name = "fcs_mmm2d_run";
 //   FCSResult result;
   
-  fcs_mmm2d_tune(handle, local_particles, local_max_particles, positions, charges);
+  fcs_mmm2d_tune(handle, local_particles, positions, charges);
   
-  mmm2d_run(handle->method_context, local_particles, local_max_particles, positions, charges, fields, potentials);
+  fcs_int max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
+  mmm2d_run(handle->method_context, local_particles, max_local_particles, positions, charges, fields, potentials);
   
   return NULL;
 }
@@ -117,10 +128,10 @@ FCSResult fcs_mmm2d_destroy(FCS handle)
 /* method to check if mmm2d parameters are entered into FCS */
 FCSResult fcs_mmm2d_check(FCS handle, const char* fnc_name) {
   if (handle == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
 
-  if (fcs_get_method(handle) != FCS_MMM2D)
-    return fcsResult_create(FCS_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"mmm2d\".");
+  if (fcs_get_method(handle) != FCS_METHOD_MMM2D)
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"mmm2d\".");
   
   return NULL;
 }
@@ -196,7 +207,7 @@ FCSResult fcs_mmm2d_set_layers_per_node(FCS handle, fcs_int n_layers) {
   MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
   if (n_layers > comm_size) {
     printf("The number of layers, %d, can not be higher than the number of available processes, %d\n", n_layers, comm_size);
-    return fcsResult_create(FCS_WRONG_ARGUMENT,fnc_name, "The number of layers can not be higher than the number of available processes");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,fnc_name, "The number of layers can not be higher than the number of available processes");
   }
   */
   mmm2d_set_layers_per_node(handle->method_context, n_layers);
@@ -252,10 +263,58 @@ FCSResult fcs_mmm2d_get_virial(FCS handle, fcs_float *virial) {
   FCSResult result = fcs_mmm2d_check(handle, fnc_name);
   if (result != NULL) return result;
   if (virial == NULL)
-    return fcsResult_create(FCS_NULL_ARGUMENT,fnc_name,"null pointer supplied for virial");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for virial");
 
   fcs_int i;
   for (i=0; i < 9; i++)
     virial[i] = 0.0;
   return NULL;
+}
+
+FCSResult fcs_mmm2d_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_mmm2d_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm2d_maxPWerror",           mmm2d_set_maxPWerror,           FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm2d_far_cutoff",           mmm2d_set_far_cutoff,           FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("mmm2d_dielectric_contrasts", mmm2d_set_dielectric_contrasts, FCS_PARSE_VAL(fcs_float), FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm2d_layers_per_node",      mmm2d_set_layers_per_node,      FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("mmm2d_skin",                 mmm2d_set_skin,                 FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("",                           mmm2d_require_total_energy,     FCS_PARSE_VAL(fcs_int));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+FCSResult fcs_mmm2d_print_parameters(FCS handle)
+{
+  fcs_float contrasts_min, contrasts_max;
+  fcs_float PWerror;
+  fcs_float cutoff;
+  fcs_int layers;
+  fcs_float skin;
+  fcs_mmm2d_get_dielectric_contrasts(handle, &contrasts_min, &contrasts_max);
+  fcs_mmm2d_get_far_cutoff(handle, &cutoff);
+  fcs_mmm2d_get_layers_per_node(handle, &layers);
+  fcs_mmm2d_get_maxPWerror(handle, &PWerror);
+  fcs_mmm2d_get_skin(handle, &skin);
+  printf("mmm2d dielectric contrasts: %e %e\n", contrasts_min, contrasts_max);
+  printf("mmm2d far cutoff: %e\n", cutoff);
+  printf("mmm2d layer per node: %" FCS_LMOD_INT "d\n", layers);
+  printf("mmm2d maximum PWerror: %e\n", PWerror);
+  printf("mmm2d skin: %e\n", skin);
+
+  return FCS_RESULT_SUCCESS;
 }

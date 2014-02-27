@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012,2013 Michael Hofmann
+  Copyright (C) 2011, 2012, 2013 Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -31,8 +31,13 @@
 /**
  * @file fcs_wolf_p.h
  * @brief file containing the method specific interface functions
- * for the wolf solver (public version)
- * @author Michael Hofmann, Rene Halver
+ * of the wolf solver (public version)
+ * @author Michael Hofmann
+ */
+
+
+/**
+ * @brief data structure with parameters of the wolf solver
  */
 typedef struct fcs_wolf_parameters_t *fcs_wolf_parameters;
 
@@ -40,7 +45,7 @@ typedef struct fcs_wolf_parameters_t *fcs_wolf_parameters;
 /**
  * @brief function to set the cutoff radius
  * @param handle FCS-object
- * @param fcs_float cutoff radius
+ * @param cutoff cutoff radius
  * @return FCSResult-object containing the return state
  */
 FCSResult fcs_wolf_set_cutoff(FCS handle, fcs_float cutoff);
@@ -49,7 +54,7 @@ FCSResult fcs_wolf_set_cutoff(FCS handle, fcs_float cutoff);
 /**
  * @brief function to get the current cutoff radius
  * @param handle FCS-object
- * @param *fcs_float current cutoff radius
+ * @param cutoff current cutoff radius
  * @return FCSResult-object containing the return state
  */
 FCSResult fcs_wolf_get_cutoff(FCS handle, fcs_float *cutoff);
@@ -58,7 +63,7 @@ FCSResult fcs_wolf_get_cutoff(FCS handle, fcs_float *cutoff);
 /**
  * @brief function to set the ewald splitting parameter alpha
  * @param handle FCS-object
- * @param fcs_float parameter alpha
+ * @param alpha ewald splitting parameter alpha
  * @return FCSResult-object containing the return state
  */
 FCSResult fcs_wolf_set_alpha(FCS handle, fcs_float alpha);
@@ -67,28 +72,29 @@ FCSResult fcs_wolf_set_alpha(FCS handle, fcs_float alpha);
 /**
  * @brief function to get the current ewald splitting parameter alpha
  * @param handle FCS-object
- * @param *fcs_float alpha current parameter alpha
+ * @param alpha current ewald splitting parameter alpha
  * @return FCSResult-object containing the return state
  */
 FCSResult fcs_wolf_get_alpha(FCS handle, fcs_float *alpha);
 
 
 /**
- * @brief combined setter for all wolf solver parameters
+ * @brief function to set all solver parameters
  * @param handle FCS-object
- * @param fcs_float cutoff radius (see fcs_wolf_set_cutoff)
- * @param fcs_float alpha radius (see fcs_wolf_set_alpha)
- * @return FCSResult-object containing th return state
- **/
+ * @param cutoff cutoff radius (see ::fcs_wolf_set_cutoff)
+ * @param alpha ewald splitting parameter alpha (see ::fcs_wolf_set_alpha)
+ * @return FCSResult-object containing the return state
+ */
 FCSResult fcs_wolf_setup(FCS handle, fcs_float cutoff, fcs_float alpha);
 
 
 /**
- * @brief combined setter for all wolf solver parameters (FORTRAN WRAPPER)
- * @param handle void* to be casted into FCS so that the data is stored into it
- * @param cutoff fcs_float the chosen cutoff (see fcs_wolf_set_cutoff)
- * @param return_value fcs_int* return value for FORTRAN interface
- **/
+ * @brief function to set all solver parameters (Fortran wrapper)
+ * @param handle FCS-object
+ * @param cutoff cutoff radius (see ::fcs_wolf_set_cutoff)
+ * @param alpha ewald splitting parameter alpha (see ::fcs_wolf_set_alpha)
+ * @param return_value return state
+ */
 void fcs_wolf_setup_f(void *handle, fcs_float cutoff, fcs_float alpha, fcs_int *return_value);
 
 

@@ -13,7 +13,7 @@
 void assert_fcs(FCSResult r)
 {
   if (r) {
-    fcsResult_printResult(r);
+    fcs_result_print_result(r);
     MPI_Finalize();
     exit(-1);
   }
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
   result = fcs_set_common(handle, 1, box_a, box_b, box_c, 
            offset, periodicity, total_particles);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Finalize();
     exit(1);
   }
@@ -132,9 +132,9 @@ int main(int argc, char **argv)
   if (comm_rank == 0) printf("new maxPWerror: %f\n",val);
   
   if (comm_rank == 0) printf("\nTesting tuning routine...\n");
-  result = fcs_tune(handle, n_particles, n_particles, positions, charges);
+  result = fcs_tune(handle, n_particles, positions, charges);
   if (result != NULL) {
-    fcsResult_printResult(result);
+    fcs_result_print_result(result);
     MPI_Finalize();
     exit(1);
   }
@@ -143,7 +143,7 @@ int main(int argc, char **argv)
   //printf("calculated bessel cutoff: %d\n",vali);
   
   if (comm_rank == 0) printf("\nTesting running routine...\n");
-  result = fcs_run(handle, n_particles, n_particles, positions, charges, forces, potentials);
+  result = fcs_run(handle, n_particles, positions, charges, forces, potentials);
   assert_fcs(result);
   MPI_Barrier(comm);
   if (comm_rank == 0) {

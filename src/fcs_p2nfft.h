@@ -56,7 +56,7 @@ void fcs_p2nfft_compute_near(
  * information needed by p2nfft is set (no plausibility check!)
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_p2nfft_check(FCS handle);
+FCSResult fcs_p2nfft_check(FCS handle);
 
 /**
  * @brief initialization routine for the basic parameters needed by p2nfft
@@ -64,7 +64,7 @@ extern FCSResult fcs_p2nfft_check(FCS handle);
  * can be entered
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_p2nfft_init(FCS handle);
+FCSResult fcs_p2nfft_init(FCS handle);
 
 /**
  * @brief tuning method for setting/calculating last parameters, for which positions,
@@ -74,14 +74,13 @@ extern FCSResult fcs_p2nfft_init(FCS handle);
  * @param handle the FCS-object into which the method specific parameters
  * can be entered
  * @param local_particles actual number of particles on process
- * @param local_max_particles size of allocated arrays
  * @param positons fcs_float* list of positions of particles in form
  *        (x1,y1,z1,x2,y2,z2,...,xn,yn,zn)
  * @param charges fcs_float* list of charges
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_p2nfft_tune(
-    FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+FCSResult fcs_p2nfft_tune(
+    FCS handle, fcs_int local_particles,
     fcs_float *positions,  fcs_float *charges);
 
 /**
@@ -89,7 +88,6 @@ extern FCSResult fcs_p2nfft_tune(
  * @param handle the FCS-object into which the method specific parameters
  * can be entered
  * @param local_particles actual number of particles on process
- * @param local_max_particles size of allocated arrays
  * @param positons fcs_float* list of positions of particles in form
  *        (x1,y1,z1,x2,y2,z2,...,xn,yn,zn)
 
@@ -98,8 +96,8 @@ extern FCSResult fcs_p2nfft_tune(
  * results after the run
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_p2nfft_run(
-    FCS handle, fcs_int local_particles, fcs_int local_max_particles,
+FCSResult fcs_p2nfft_run(
+    FCS handle, fcs_int local_particles,
     fcs_float *positions,  fcs_float *charges,
     fcs_float *field, fcs_float *potentials);
 
@@ -112,7 +110,7 @@ extern FCSResult fcs_p2nfft_run(
  * @param r distance for which the potential
  * @return fcs_float containing the potential value for the given distance (without charges, s. above)
  */
-extern FCSResult fcs_p2nfft_near_field_potential (
+FCSResult fcs_p2nfft_near_field_potential (
     FCS handle, fcs_float);
 
 /**
@@ -120,7 +118,7 @@ extern FCSResult fcs_p2nfft_near_field_potential (
  * @param handle the FCS-object, which contains the parameters
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_p2nfft_destroy(FCS handle);
+FCSResult fcs_p2nfft_destroy(FCS handle);
 
 /**
  * @brief function to activate computation of the virial 
@@ -129,7 +127,7 @@ extern FCSResult fcs_p2nfft_destroy(FCS handle);
  * to fcs_run().
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_p2nfft_require_virial(FCS handle, fcs_int flag);
+FCSResult fcs_p2nfft_require_virial(FCS handle, fcs_int flag);
 
 /**
  * @brief function to fetch the virial
@@ -137,7 +135,10 @@ extern FCSResult fcs_p2nfft_require_virial(FCS handle, fcs_int flag);
  * @param virial pointer to the array where the virial is returned.
  * @return FCSResult-object containing the return state
  */
-extern FCSResult fcs_p2nfft_get_virial(FCS handle, fcs_float *virial);
+FCSResult fcs_p2nfft_get_virial(FCS handle, fcs_float *virial);
+
+FCSResult fcs_p2nfft_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+FCSResult fcs_p2nfft_print_parameters(FCS handle);
 
 
 FCSResult fcs_p2nfft_set_max_particle_move(FCS handle, fcs_float max_particle_move);

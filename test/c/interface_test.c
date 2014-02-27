@@ -83,8 +83,8 @@ main (int argc, char **argv)
 #endif
 #if FCS_ENABLE_FMM
   /*
-  fcs_int FMM_absrel = FCS_FMM_CUSTOM_RELATIVE;
-  fcs_int FMM_dipole_correction = FCS_FMM_STANDARD_DIPOLE_CORRECTION;
+  fcs_int FMM_absrel = FCS_METHOD_FMM_CUSTOM_RELATIVE;
+  fcs_int FMM_dipole_correction = FCS_METHOD_FMM_STANDARD_DIPOLE_CORRECTION;
   fcs_float FMM_deltaE = 1e-6;
   */
   char FMM_parameters[] = "fmm_absrel,2,fmm_dipole_correction,0,fmm_tolerance_energy,1e-6,fmm_internal_tuning,0ll";
@@ -282,8 +282,8 @@ main (int argc, char **argv)
     printf ("Initializing %s method...\n", method);
   result = fcs_init (&handle, method, communicator);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 
   MPI_Barrier(communicator);
 
@@ -315,21 +315,21 @@ main (int argc, char **argv)
   /*result =
     fcs_set_common (handle, near_field_flag, box_a, box_b, box_c, offset,
 		    periodicity, number_of_particles);*/
-  result = fcs_parser(handle, common_parameters, FCS_FALSE);
+  result = fcs_set_parameters(handle, common_parameters, FCS_FALSE);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   result = fcs_set_total_particles(handle, number_of_particles);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
   
   MPI_Barrier(communicator);         
   
   switch (fcs_get_method (handle))
     {
 #if FCS_ENABLE_DIRECT
-    case FCS_DIRECT:
+    case FCS_METHOD_DIRECT:
       if (comm_rank == 0)
     printf ("\n");
       if (comm_rank == 0)
@@ -337,14 +337,14 @@ main (int argc, char **argv)
       result = /*
     fcs_FMM_setup (handle, FMM_absrel, FMM_deltaE, FMM_dipole_correction);
               */
-              fcs_parser( handle, DIRECT_parameters, FCS_FALSE);
+              fcs_set_parameters( handle, DIRECT_parameters, FCS_FALSE);
       if (comm_rank == 0)
-    fcsResult_printResult (result);
-      fcsResult_destroy (result);
+    fcs_result_print_result (result);
+      fcs_result_destroy (result);
       break;
 #endif
 #if FCS_ENABLE_EWALD
-    case FCS_EWALD:
+    case FCS_METHOD_EWALD:
       if (comm_rank == 0)
     printf ("\n");
       if (comm_rank == 0)
@@ -352,14 +352,14 @@ main (int argc, char **argv)
       result = /*
     fcs_FMM_setup (handle, FMM_absrel, FMM_deltaE, FMM_dipole_correction);
               */
-              fcs_parser( handle, EWALD_parameters, FCS_FALSE);
+              fcs_set_parameters( handle, EWALD_parameters, FCS_FALSE);
       if (comm_rank == 0)
-    fcsResult_printResult (result);
-      fcsResult_destroy (result);
+    fcs_result_print_result (result);
+      fcs_result_destroy (result);
       break;
 #endif
 #if FCS_ENABLE_FMM
-    case FCS_FMM:
+    case FCS_METHOD_FMM:
       if (comm_rank == 0)
     printf ("\n");
       if (comm_rank == 0)
@@ -367,14 +367,14 @@ main (int argc, char **argv)
       result = /*
     fcs_FMM_setup (handle, FMM_absrel, FMM_deltaE, FMM_dipole_correction);
               */
-              fcs_parser( handle, FMM_parameters, FCS_FALSE);
+              fcs_set_parameters( handle, FMM_parameters, FCS_FALSE);
       if (comm_rank == 0)
-    fcsResult_printResult (result);
-      fcsResult_destroy (result);
+    fcs_result_print_result (result);
+      fcs_result_destroy (result);
       break;
 #endif
 #if FCS_ENABLE_MMM1D
-    case FCS_MMM1D:
+    case FCS_METHOD_MMM1D:
       if (comm_rank == 0)
     printf ("\n");
       if (comm_rank == 0)
@@ -382,14 +382,14 @@ main (int argc, char **argv)
       result = /*
     fcs_FMM_setup (handle, FMM_absrel, FMM_deltaE, FMM_dipole_correction);
               */
-              fcs_parser( handle, MMM1D_parameters, FCS_FALSE);
+              fcs_set_parameters( handle, MMM1D_parameters, FCS_FALSE);
       if (comm_rank == 0)
-    fcsResult_printResult (result);
-      fcsResult_destroy (result);
+    fcs_result_print_result (result);
+      fcs_result_destroy (result);
       break;
 #endif
 #if FCS_ENABLE_MMM2D
-    case FCS_MMM2D:
+    case FCS_METHOD_MMM2D:
       if (comm_rank == 0)
     printf ("\n");
       if (comm_rank == 0)
@@ -397,14 +397,14 @@ main (int argc, char **argv)
       result = /*
     fcs_FMM_setup (handle, FMM_absrel, FMM_deltaE, FMM_dipole_correction);
               */
-              fcs_parser( handle, MMM2D_parameters, FCS_FALSE);
+              fcs_set_parameters( handle, MMM2D_parameters, FCS_FALSE);
       if (comm_rank == 0)
-    fcsResult_printResult (result);
-      fcsResult_destroy (result);
+    fcs_result_print_result (result);
+      fcs_result_destroy (result);
       break;
 #endif
 #if FCS_ENABLE_PEPC
-    case FCS_PEPC:
+    case FCS_METHOD_PEPC:
       if (comm_rank == 0)
 	printf ("\n");
       if (comm_rank == 0)
@@ -412,14 +412,14 @@ main (int argc, char **argv)
       result = /*
 	fcs_PEPC_setup (handle, PEPC_epsilon, PEPC_theta, PEPC_debuglevel);
                */
-               fcs_parser(handle, PEPC_parameters, FCS_FALSE);
+               fcs_set_parameters(handle, PEPC_parameters, FCS_FALSE);
       if (comm_rank == 0)
-	fcsResult_printResult (result);
-      fcsResult_destroy (result);
+	fcs_result_print_result (result);
+      fcs_result_destroy (result);
       break;
 #endif
 #if FCS_ENABLE_PP3MG
-    case FCS_PP3MG:
+    case FCS_METHOD_PP3MG:
       if (comm_rank == 0)
     printf ("\n");
       if (comm_rank == 0)
@@ -430,14 +430,14 @@ main (int argc, char **argv)
              PP3MG_max_iterations, PP3MG_max_particles,
              PP3MG_periodic, PP3MG_pol_degree, PP3MG_err_bound);
              */
-             fcs_parser (handle, PP3MG_parameters, FCS_FALSE);
+             fcs_set_parameters (handle, PP3MG_parameters, FCS_FALSE);
       if (comm_rank == 0)
-    fcsResult_printResult (result);
-      fcsResult_destroy (result);
+    fcs_result_print_result (result);
+      fcs_result_destroy (result);
       break;
 #endif
 #if FCS_ENABLE_P2NFFT
-    case FCS_P2NFFT:
+    case FCS_METHOD_P2NFFT:
       if (comm_rank == 0)
     printf ("\n");
       if (comm_rank == 0)
@@ -445,14 +445,14 @@ main (int argc, char **argv)
       result = /*
     fcs_FMM_setup (handle, FMM_absrel, FMM_deltaE, FMM_dipole_correction);
               */
-              fcs_parser( handle, P2NFFT_parameters, FCS_FALSE);
+              fcs_set_parameters( handle, P2NFFT_parameters, FCS_FALSE);
       if (comm_rank == 0)
-    fcsResult_printResult (result);
-      fcsResult_destroy (result);
+    fcs_result_print_result (result);
+      fcs_result_destroy (result);
       break;
 #endif
 #if FCS_ENABLE_P3M
-    case FCS_P3M:
+    case FCS_METHOD_P3M:
       if (comm_rank == 0)
     printf ("\n");
       if (comm_rank == 0)
@@ -460,14 +460,14 @@ main (int argc, char **argv)
       result = /*
     fcs_FMM_setup (handle, FMM_absrel, FMM_deltaE, FMM_dipole_correction);
               */
-              fcs_parser( handle, P3M_parameters, FCS_FALSE);
+              fcs_set_parameters( handle, P3M_parameters, FCS_FALSE);
       if (comm_rank == 0)
-    fcsResult_printResult (result);
-      fcsResult_destroy (result);
+    fcs_result_print_result (result);
+      fcs_result_destroy (result);
       break;
 #endif
 #if FCS_ENABLE_VMG
-    case FCS_VMG:
+    case FCS_METHOD_VMG:
       if (comm_rank == 0)
     printf ("\n");
       if (comm_rank == 0)
@@ -475,10 +475,10 @@ main (int argc, char **argv)
       result = /*
     fcs_FMM_setup (handle, FMM_absrel, FMM_deltaE, FMM_dipole_correction);
               */
-              fcs_parser( handle, VMG_parameters, FCS_FALSE);
+              fcs_set_parameters( handle, VMG_parameters, FCS_FALSE);
       if (comm_rank == 0)
-    fcsResult_printResult (result);
-      fcsResult_destroy (result);
+    fcs_result_print_result (result);
+      fcs_result_destroy (result);
       break;
 #endif
 
@@ -494,7 +494,7 @@ main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Parameters... \n");
   if (comm_rank == 0)
-    fcs_printHandle (handle);
+    fcs_print_parameters (handle);
 
   MPI_Barrier(communicator);         
   
@@ -503,10 +503,10 @@ main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Tuning... \n");
   result =
-    fcs_tune (handle, local_particles, local_particles, particles, charges);
+    fcs_tune (handle, local_particles, particles, charges);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 
   MPI_Barrier(communicator);         
   
@@ -518,9 +518,9 @@ main (int argc, char **argv)
     {
       /*if(comm_rank == 0) printf("\n"); */
       /*if(comm_rank == 0) printf("Run %d... \n", i+1); */
-      result = fcs_run (handle, local_particles, local_particles, particles,
+      result = fcs_run (handle, local_particles, particles,
 			charges, field, potentials);
-      /*if(comm_rank == 0) fcsResult_printResult(result);
+      /*if(comm_rank == 0) fcs_result_print_result(result);
          if(comm_rank == 0) printf("\n");
          if(comm_rank == 0) printf("Moving particles: %d... \n", i+1); */
 /*      
@@ -591,10 +591,10 @@ main (int argc, char **argv)
   if (comm_rank == 0)
     printf ("Parameters... \n");
   if (comm_rank == 0)
-    fcs_printHandle (handle);
+    fcs_print_parameters (handle);
   if (comm_rank == 0)
-    fcsResult_printResult (result);
-  fcsResult_destroy (result);
+    fcs_result_print_result (result);
+  fcs_result_destroy (result);
 
   free (box_a);
   free (box_b);

@@ -30,20 +30,20 @@
 /**
  * @brief initialization routine
  */
-FCSResult fcs_mmm1d_init(FCS handle, MPI_Comm communicator);
+FCSResult fcs_mmm1d_init(FCS handle);
 
 /**
  * @brief tuning method
  */
 FCSResult fcs_mmm1d_tune(FCS handle,
-		       fcs_int local_particles, fcs_int local_max_particles,
+		       fcs_int local_particles,
 		       fcs_float *positions,  fcs_float *charges);
 
 /**
  * @brief run method for mmm1d
  */
 FCSResult fcs_mmm1d_run(FCS handle,
-			fcs_int local_particles, fcs_int local_max_particles,
+			fcs_int local_particles,
 			fcs_float *positions,  fcs_float *charges,
 			fcs_float *field, fcs_float *potentials);
 
@@ -54,5 +54,8 @@ FCSResult fcs_mmm1d_destroy(FCS handle);
 
 FCSResult fcs_mmm1d_require_virial(FCS handle, fcs_int flag);
 FCSResult fcs_mmm1d_get_virial(FCS handle, fcs_float *virial);
+
+FCSResult fcs_mmm1d_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
+FCSResult fcs_mmm1d_print_parameters(FCS handle);
 
 #endif

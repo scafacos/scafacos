@@ -23,7 +23,7 @@
 #define ASSERT_FCS(_r_) \
   do { \
     if(_r_) { \
-      fcsResult_printResult(_r_); MPI_Finalize(); exit(-1); \
+      fcs_result_print_result(_r_); MPI_Finalize(); exit(-1); \
     } \
   } while (0)
 
@@ -238,7 +238,7 @@ int main(int argc, char **argv)
   fcs_result = fcs_set_common(fcs_handle, 1, box_a, box_b, box_c, box_base, periodicity, ntotal);
   ASSERT_FCS(fcs_result);
 
-  fcs_result = fcs_require_virial(fcs_handle, 1);
+  fcs_result = fcs_set_compute_virial(fcs_handle, 1);
   ASSERT_FCS(fcs_result);
 
   fcs_result = fcs_set_periodicity(fcs_handle, periodicity);
@@ -246,12 +246,15 @@ int main(int argc, char **argv)
 
   for (i = 0; i < nlocal; ++i) p[i] = f[i * 3 + 0] = f[i * 3 + 1] = f[i * 3 + 2] = 0;
 
-  fcs_result = fcs_tune(fcs_handle, nlocal, nlocal_max, xyz, q);
+  fcs_result = fcs_set_max_local_particles(fcs_handle, nlocal_max);
+  ASSERT_FCS(fcs_result);
+
+  fcs_result = fcs_tune(fcs_handle, nlocal, xyz, q);
   ASSERT_FCS(fcs_result);
 
   MPI_Barrier(comm);
   t = MPI_Wtime();
-  fcs_result = fcs_run(fcs_handle, nlocal, nlocal_max, xyz, q, f, p);
+  fcs_result = fcs_run(fcs_handle, nlocal, xyz, q, f, p);
   ASSERT_FCS(fcs_result);
   MPI_Barrier(comm);
   t = MPI_Wtime() - t;

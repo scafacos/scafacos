@@ -40,7 +40,7 @@ int test_solver(const char *method, MPI_Comm sub_comm)
   result = fcs_init(&fcs, method, sub_comm);
   if (result != FCS_RESULT_SUCCESS)
   {
-    if (fcsResult_getReturnCode(result) == FCS_WRONG_ARGUMENT)
+    if (fcs_result_get_return_code(result) == FCS_ERROR_WRONG_ARGUMENT)
     {
       printf("%d: solver method '%s' not available!\n", rank, method);
       return 10;
@@ -52,7 +52,7 @@ int test_solver(const char *method, MPI_Comm sub_comm)
   result = fcs_set_common(fcs, 1, box_a, box_b, box_c, offset, periodicity, local_nparticles * sub_size);
   if (result != FCS_RESULT_SUCCESS) { printf("%d: fcs_set_common failed!\n", rank); return 12; }
 
-  result = fcs_run(fcs, local_nparticles, local_nparticles, positions, charges, field, potentials);
+  result = fcs_run(fcs, local_nparticles, positions, charges, field, potentials);
   if (result != FCS_RESULT_SUCCESS) { printf("%d: fcs_run failed!\n", rank); return 13; }
 
   result = fcs_destroy(fcs);

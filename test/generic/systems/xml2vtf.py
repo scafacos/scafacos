@@ -11,7 +11,12 @@ import xml.dom.minidom
 
 for filename in sys.argv[1:]:
     # open file
-    file = gzip.open(filename, 'rb')
+    try:
+        file = gzip.open(filename)
+        file.read(1)
+        file.seek(0)
+    except:
+        file = open(filename, 'r')
 
     basename = filename
     if basename.endswith('.gz'):
@@ -37,14 +42,17 @@ for filename in sys.argv[1:]:
     aid = 0
     for particle in configuration.getElementsByTagName("particle"):
         q = float(particle.attributes['q'].value)
-        potential = float(particle.attributes['potential'].value)
         if q < 0.001: 
             name = "N"
         elif q > 0.001:
             name = "O"
         else:
             name = "C"
-        vtffile.write("atom {} name {} q {} b {} radius 0.1\n".format(aid, name, q, potential))
+        if particle.attributes.has_key('potential'):
+            potential = float(particle.attributes['potential'].value)
+            vtffile.write("atom {} name {} q {} b {} radius 0.1\n".format(aid, name, q, potential))
+        else:
+            vtffile.write("atom {} name {} q {} radius 0.1\n".format(aid, name, q))
         aid = aid + 1
 
     # Output timesteps

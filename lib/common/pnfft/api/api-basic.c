@@ -396,7 +396,7 @@ void PNX(init_f_hat_3d)(
     local_Nt_start[t] = local_N_start[(t + shift) % 3];
   }
 
-  PX(init_input_c2c_3d)(N, local_Nt, local_Nt_start,
+  PX(init_input_complex_3d)(N, local_Nt, local_Nt_start,
       data);
 }
 

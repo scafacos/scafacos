@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011-2012 Rene Halver
+  Copyright (C) 2011, 2012, 2013 Lidia Westphal, Rene Halver, Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -18,29 +18,35 @@
 */
 
 
+/**
+ * @file FCSResult.h
+ * @brief internal interface definitions for the FCSResult-object that is used
+ * for handling the return state of the ScaFaCoS library functions
+ * @author Lidia Westphal, Rene Halver, Michael Hofmann
+ */
 
-#ifndef FCS_RESULT_INCLUDED
-#define FCS_RESULT_INCLUDED
+
+#ifndef _FCSRESULT_H
+#define _FCSRESULT_H
 
 #include "FCSResult_p.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
- * @file FCSResult.h
- * @brief FCSResult-object is used for the error handling in the
- * ScaFaCos-Library.
- * @author Lidia Westphal, Rene Halver
+ * @brief function to create an FCSResult-object for storing the return state
+ * @param code return code to associate with the return state
+ * @param function name of a function to associate with the return state
+ * @param message description message to associate with the return state
+ * @return FCSResult-object containing the return state
  */
+FCSResult fcs_result_create(fcs_int code, const char *function, const char *message, ...);
 
-/*
- * FCSResult structure
-
-
- */
-typedef struct FCSResult_t {
-	fcs_int code;
-	char *origin;
-	char *message;
-} FCSResult_t;
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

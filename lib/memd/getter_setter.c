@@ -64,7 +64,7 @@ FCSResult fcs_memd_set_permittivity(void* rawdata, fcs_float epsilon)
     memd_struct* memd = (memd_struct*) rawdata;
     
     if ( ( memd->parameters.temperature > 0.0 ) && ( memd->parameters.bjerrum > 0.0 ) ){
-        return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "You can only set 2 of the parameters bjerrum, temperature and epsilon.");
+        return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "You can only set 2 of the parameters bjerrum, temperature and epsilon.");
     }
     else if ( memd->parameters.temperature > 0.0 ) {
         memd->parameters.permittivity = epsilon;
@@ -88,7 +88,7 @@ FCSResult fcs_memd_set_temperature(void* rawdata, fcs_float temperature)
     memd_struct* memd = (memd_struct*) rawdata;
     
     if ( ( memd->parameters.permittivity > 0.0 ) && ( memd->parameters.bjerrum > 0.0 ) ){
-        return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "You can only set 2 of the parameters bjerrum, temperature and epsilon.");
+        return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "You can only set 2 of the parameters bjerrum, temperature and epsilon.");
     }
     else if ( memd->parameters.permittivity > 0.0 ) {
         memd->parameters.temperature = temperature;
@@ -112,7 +112,7 @@ FCSResult fcs_memd_set_bjerrum_length(void* rawdata, fcs_float bjerrum)
     memd_struct* memd = (memd_struct*) rawdata;
     
     if ( ( memd->parameters.permittivity > 0.0 ) && ( memd->parameters.temperature > 0.0 ) ){
-        return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+        return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name,
                                 "You can only set 2 of the parameters bjerrum, temperature and epsilon.");
     }
     else if ( memd->parameters.permittivity > 0.0 ) {
@@ -156,7 +156,7 @@ FCSResult fcs_memd_set_box_size(void* rawdata, fcs_float length_x, fcs_float len
 
     /* Set boxlength parameter in memd struct */
     if ( ( ! fcs_float_is_equal(length_x, length_y) ) || ( ! fcs_float_is_equal(length_y, length_z) ) ) {
-        return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name,
+        return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name,
                                 "Only cubic boxes are allowed at this stage.");
     }
     else {

@@ -32,6 +32,10 @@
   MPI_Comm *gdbg_comms_pm;
 #endif
 
+static void twiddle_input(
+    PX(plan) ths);
+static void twiddle_output(
+    PX(plan) ths);
 
 static void execute_transposed(
     int rnk_pm, outrafo_plan *trafos, gtransp_plan *remaps,
@@ -102,18 +106,18 @@ static void vector_index(
   }
 }
 
-void PX(init_input_c2c_3d)(
+void PX(init_input_complex_3d)(
     const INT *n, const INT *local_n, const INT *local_start,
     C *data
     )
 {
   int rnk_n=3;
 
-  PX(init_input_c2c)(rnk_n, n, local_n, local_start,
+  PX(init_input_complex)(rnk_n, n, local_n, local_start,
       data);
 }
 
-void PX(init_input_c2c)(
+void PX(init_input_complex)(
     int rnk_n, const INT *n, const INT *local_n, const INT *local_start,
     C *data
     )
@@ -142,58 +146,18 @@ void PX(init_input_c2c)(
   free(kvec_loc); free(kvec_glob);
 }
 
-
-void PX(init_input_r2c_3d)(
+void PX(init_input_real_3d)(
     const INT *n, const INT *local_n, const INT *local_start,
     R *data
     )
 {
   int rnk_n=3;
 
-  PX(init_input_r2c)(rnk_n, n, local_n, local_start,
+  PX(init_input_real)(rnk_n, n, local_n, local_start,
       data);
 }
 
-
-void PX(init_input_r2c)(
-    int rnk_n, const INT *n, const INT *local_n, const INT *local_start,
-    R *data
-    )
-{
-  /* take care of padding in last dimension */ 
-  INT m, ln_tot;
-  INT *kvec_loc, *kvec_glob;
-
-  kvec_loc  = PX(malloc_INT)(rnk_n);
-  kvec_glob = PX(malloc_INT)(rnk_n);
- 
-  ln_tot = PX(prod_INT)(rnk_n, local_n);
-  for(INT k=0; k<ln_tot; k++){
-    vector_index(rnk_n, k, local_n, kvec_loc);
-    PX(vadd_INT)(rnk_n, kvec_loc, local_start, kvec_glob);
-  
-    if(kvec_glob[rnk_n-1] < n[rnk_n-1]){
-      m = plain_index(rnk_n, kvec_glob, n);
-      data[k] = DATA_INIT(2*m);
-    } else 
-      data[k] = 0;
-  }
-
-  free(kvec_loc); free(kvec_glob);
-}
-
-void PX(init_input_r2r_3d)(
-    const INT *n, const INT *local_n, const INT *local_start,
-    R *data
-    )
-{
-  int rnk_n=3;
-
-  PX(init_input_r2r)(rnk_n, n, local_n, local_start,
-      data);
-}
-
-void PX(init_input_r2r)(
+void PX(init_input_real)(
     int rnk_n, const INT *n, const INT *local_n, const INT *local_start,
     R *data
     )
@@ -220,18 +184,18 @@ void PX(init_input_r2r)(
 
 /* Check results after one forward and backward FFT.
  * Only works for intial data layout */
-R PX(check_output_c2c_3d)(
+R PX(check_output_complex_3d)(
     const INT *n, const INT *local_n, const INT *local_start,
     const C *data, MPI_Comm comm
     )
 {
   int rnk_n = 3; 
 
-  return PX(check_output_c2c)(rnk_n, n, local_n, local_start,
+  return PX(check_output_complex)(rnk_n, n, local_n, local_start,
       data, comm);
 }
 
-R PX(check_output_c2c)(
+R PX(check_output_complex)(
     int rnk_n, const INT *n, const INT *local_n, const INT *local_start,
     const C *data, MPI_Comm comm
     )
@@ -263,66 +227,19 @@ R PX(check_output_c2c)(
   MPI_Allreduce(&maxerr, &globmaxerr, 1, PFFT_MPI_REAL_TYPE, MPI_MAX, comm);
   return globmaxerr;
 }
-   
-R PX(check_output_c2r_3d)(
+
+R PX(check_output_real_3d)(
     const INT *n, const INT *local_n, const INT *local_start,
     const R *data, MPI_Comm comm
     )
 {
   int rnk_n = 3; 
 
-  return PX(check_output_c2r)(rnk_n, n, local_n, local_start,
+  return PX(check_output_real)(rnk_n, n, local_n, local_start,
       data, comm);
 }
 
-
-R PX(check_output_c2r)(
-    int rnk_n, const INT *n, const INT *local_n, const INT *local_start,
-    const R *data, MPI_Comm comm
-    )
-{ 
-  /* take care of padding in last dimension */ 
-  INT m, ln_tot;
-  INT *kvec_loc, *kvec_glob;
-  R re, err, maxerr, globmaxerr;
-
-  err = maxerr = 0;
-  
-  kvec_loc  = PX(malloc_INT)(rnk_n);
-  kvec_glob = PX(malloc_INT)(rnk_n);
- 
-  ln_tot = PX(prod_INT)(rnk_n, local_n);
-  for(INT k=0; k<ln_tot; k++){
-    vector_index(rnk_n, k, local_n, kvec_loc);
-    PX(vadd_INT)(rnk_n, kvec_loc, local_start, kvec_glob);
-    
-    if(kvec_glob[rnk_n-1] < n[rnk_n-1]){
-      m = plain_index(rnk_n, kvec_glob, n);
-      re = data[ k ] - DATA_INIT(2*m);
-      err = pfft_sqrt(re*re);
-      if( err > maxerr )
-        maxerr = err;
-    } 
-  }
-
-  free(kvec_loc); free(kvec_glob);
-
-  MPI_Allreduce(&maxerr, &globmaxerr, 1, PFFT_MPI_REAL_TYPE, MPI_MAX, comm);
-  return globmaxerr;
-}
-
-R PX(check_output_r2r_3d)(
-    const INT *n, const INT *local_n, const INT *local_start,
-    const R *data, MPI_Comm comm
-    )
-{
-  int rnk_n = 3; 
-
-  return PX(check_output_r2r)(rnk_n, n, local_n, local_start,
-      data, comm);
-}
-
-R PX(check_output_r2r)(
+R PX(check_output_real)(
     int rnk_n, const INT *n, const INT *local_n, const INT *local_start,
     const R *data, MPI_Comm comm
     )
@@ -769,6 +686,12 @@ void PX(execute)(
 
   ths->timer->whole -= MPI_Wtime();
 
+  /* twiddle inputs in order to get outputs shifted by n/2 */
+  ths->timer->itwiddle -= MPI_Wtime(); 
+  if(ths->pfft_flags & PFFT_SHIFTED_OUT)
+    twiddle_input(ths);
+  ths->timer->itwiddle += MPI_Wtime(); 
+
   ths->timer->remap_3dto2d[0] -= MPI_Wtime(); 
   PX(execute_remap_3dto2d)(ths->remap_3dto2d[0]);
   ths->timer->remap_3dto2d[0] += MPI_Wtime(); 
@@ -783,8 +706,127 @@ void PX(execute)(
   PX(execute_remap_3dto2d)(ths->remap_3dto2d[1]);
   ths->timer->remap_3dto2d[1] += MPI_Wtime(); 
 
+  /* twiddle outputs in order to get inputs shifted by n/2 */
+  ths->timer->otwiddle -= MPI_Wtime(); 
+  if(ths->pfft_flags & PFFT_SHIFTED_IN)
+    twiddle_output(ths);
+  ths->timer->otwiddle += MPI_Wtime(); 
+
   ths->timer->iter++;
   ths->timer->whole += MPI_Wtime();
+}
+
+
+static int* malloc_and_transpose_int(
+    int rnk_n, int rnk_pm, int transp,
+    int *n
+    )
+{
+  int *nt = PX(malloc_int)(rnk_n);
+
+  for(int t=0; t<rnk_pm; t++)
+    nt[t] = transp ? n[t+1] : n[t];
+  
+  nt[rnk_pm] = transp ? n[0] : n[rnk_pm];
+
+  for(int t=rnk_pm+1; t<rnk_n; t++)
+    nt[t] = n[t];
+
+  return nt;
+} 
+
+static INT* malloc_and_transpose_INT(
+    int rnk_n, int rnk_pm, int transp,
+    INT *n
+    )
+{
+  INT *nt = PX(malloc_INT)(rnk_n);
+
+  for(int t=0; t<rnk_pm; t++)
+    nt[t] = transp ? n[t+1] : n[t];
+  
+  nt[rnk_pm] = transp ? n[0] : n[rnk_pm];
+
+  for(int t=rnk_pm+1; t<rnk_n; t++)
+    nt[t] = n[t];
+
+  return nt;
+} 
+
+/* twiddle inputs in order to get outputs shifted by n/2 */
+static void twiddle_input(
+    PX(plan) ths
+    )
+{
+  if(ths->itwiddle_in == NULL)
+    return;
+
+  INT howmany = ths->howmany, l;
+  R factor;
+  INT *n = malloc_and_transpose_INT(ths->rnk_n, ths->rnk_pm, ths->transp_flag & PFFT_TRANSPOSED_IN, ths->n);
+  INT *local_ni = malloc_and_transpose_INT(ths->rnk_n, ths->rnk_pm, ths->transp_flag & PFFT_TRANSPOSED_IN, ths->local_ni);
+  INT *local_ni_start = malloc_and_transpose_INT(ths->rnk_n, ths->rnk_pm, ths->transp_flag & PFFT_TRANSPOSED_IN, ths->local_ni_start);
+  int *skip_trafos = malloc_and_transpose_int(ths->rnk_n, ths->rnk_pm, ths->transp_flag & PFFT_TRANSPOSED_IN, ths->skip_trafos);
+
+  if( (ths->trafo_flag & PFFTI_TRAFO_C2C) || (ths->trafo_flag & PFFTI_TRAFO_C2R ) )
+    howmany *= 2;
+  
+  INT local_n_total = PX(prod_INT)(ths->rnk_n, local_ni);
+
+  for(INT k=0; k<local_n_total; k++){
+    l = k;
+    factor = 1.0;
+    for(int t=ths->rnk_n-1; t>=0; t--){
+      INT kt = l%local_ni[t];
+      if(!skip_trafos[t])
+        factor *= (kt + local_ni_start[t] + n[t]/2) % 2 ? -1.0 : 1.0;
+      l /= local_ni[t];
+    }
+
+    for(INT h=0; h<howmany; h++)
+      ths->itwiddle_out[howmany*k+h] = ths->itwiddle_in[howmany*k+h] * factor;
+//     fprintf(stderr, "pfft: api-basic: in[%2td] = %.2e + I* %.2e\n", k, ths->in[howmany*k], ths->in[howmany*k+1]);
+  }
+
+  free(n); free(local_ni); free(local_ni_start); free(skip_trafos);
+}
+
+
+/* twiddle outputs in order to get inputs shifted by n/2 */
+static void twiddle_output(
+    PX(plan) ths
+    )
+{
+  if(ths->otwiddle_in == NULL)
+    return;
+
+  INT howmany = ths->howmany, l;
+  R factor;
+  INT *local_no = malloc_and_transpose_INT(ths->rnk_n, ths->rnk_pm, ths->transp_flag & PFFT_TRANSPOSED_OUT, ths->local_no);
+  INT *local_no_start = malloc_and_transpose_INT(ths->rnk_n, ths->rnk_pm, ths->transp_flag & PFFT_TRANSPOSED_OUT, ths->local_no_start);
+  int *skip_trafos = malloc_and_transpose_int(ths->rnk_n, ths->rnk_pm, ths->transp_flag & PFFT_TRANSPOSED_OUT, ths->skip_trafos);
+  
+  if( (ths->trafo_flag & PFFTI_TRAFO_C2C) || (ths->trafo_flag & PFFTI_TRAFO_R2C ) )
+    howmany *= 2;
+
+  INT local_n_total = PX(prod_INT)(ths->rnk_n, local_no);
+
+  for(INT k=0; k<local_n_total; k++){
+    l = k;
+    factor = 1.0;
+    for(int t=ths->rnk_n-1; t>=0; t--){
+      INT kt = l%local_no[t];
+      if(!skip_trafos[t])
+        factor *= (kt + local_no_start[t]) % 2 ? -1.0 : 1.0;
+      l /= local_no[t];
+    }
+
+    for(INT h=0; h<howmany; h++)
+      ths->otwiddle_out[howmany*k+h] = ths->otwiddle_in[howmany*k+h] * factor;
+//     fprintf(stderr, "pfft: api-basic: out[%2td] = %.2e + I* %.2e\n", k, ths->out[howmany*k], ths->out[howmany*k+1]);
+  }
+
+  free(local_no); free(local_no_start); free(skip_trafos);
 }
 
 

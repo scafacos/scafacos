@@ -51,7 +51,7 @@ typedef struct _ifcs_wolf_t
 
 void ifcs_wolf_create(ifcs_wolf_t *wolf);
 void ifcs_wolf_destroy(ifcs_wolf_t *wolf);
-void ifcs_wolf_set_system(ifcs_wolf_t *wolf, fcs_float *box_base, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_int *periodicity);
+void ifcs_wolf_set_system(ifcs_wolf_t *wolf, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity);
 void ifcs_wolf_set_particles(ifcs_wolf_t *wolf, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
 void ifcs_wolf_set_cutoff(ifcs_wolf_t *wolf, fcs_float cutoff);
 void ifcs_wolf_get_cutoff(ifcs_wolf_t *wolf, fcs_float *cutoff);

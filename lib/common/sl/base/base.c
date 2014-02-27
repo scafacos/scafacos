@@ -5566,7 +5566,7 @@ slint_t sort_insert_bmask_kernel(elements_t *s, elements_t *sx, slkey_pure_t bma
 #endif
 
 
-static slint_t sort_insert_kernel(elements_t *s, elements_t *sx) /* sl_func sort_insert_kernel */
+slint_t sort_insert_kernel(elements_t *s, elements_t *sx) /* sl_proto_intern, sl_func sort_insert_kernel */
 {
   slint_t i, j;
 
@@ -6198,14 +6198,11 @@ static void rs_rec_ip(elements_t *s, elements_t *sx, slint_t rhigh, slint_t rlow
     {
       xi.size = c[i];
 
-#if defined(SR_IP_INSERTSORT)
+#ifdef SR_IP_INSERTSORT
       if (xi.size > SL_DEFCON(sr.ip_threshold)) rs_rec_ip(&xi, sx, rhigh, rlow, rwidth);
       else
       {
-        if (xi.size > 1)
-# ifdef SR_IP_INSERTSORT
-          sort_insert_bmask_kernel(&xi, sx, bit_mask);
-# endif
+        if (xi.size > 1) sort_insert_bmask_kernel(&xi, sx, bit_mask);
       }
 #else
       if (xi.size > 1) rs_rec_ip(&xi, sx, rhigh, rlow, rwidth);
@@ -7235,35 +7232,66 @@ static void _split_generic_rearrange_ip(elements_t *s, elements_t *x, split_gene
 }
 
 
+static void tproc_setup(split_generic_t *sg, int **procs, elements_t *m)
+{
+  slint_t tprocs_max;
+  slint_t alloc_mods;
+
+
+  tprocs_max = 0;
+  alloc_mods = 0;
+
+  if (sg->type == 1)
+  {
+    /* nothing */
+
+  } else if (sg->type == 2)
+  {
+    alloc_mods = 1;
+
+  } else if (sg->type == 3)
+  {
+    tprocs_max = sg->max_tprocs;
+
+  } else if (sg->type == 4)
+  {
+    tprocs_max = sg->max_tprocs;
+    alloc_mods = 1;
+  }
+
+  if (procs)
+  {
+    if (tprocs_max) *procs = z_alloca(sg->max_tprocs, sizeof(int));
+    else *procs = NULL;
+  }
+
+  if (m)
+  {
+    if (alloc_mods) elements_alloc(m, z_max(1, sg->max_tprocs), SLCM_ALL);
+    else elem_null(m);
+  }
+}
+
+
+static void tproc_release(int **procs, elements_t *m)
+{
+  if (procs && *procs) z_freea(*procs);
+
+  if (m) elements_free(m);
+}
+
+
 slint_t split_generic_db(elements_t *s, elements_t *d, split_generic_t *sg, void *sg_data, slint_t n) /* sl_proto, sl_func split_generic_db */
 {
   slint_t i;
-
-  int *procs = NULL;
   int *countsdispls;
+  int *procs = NULL;
+  elements_t m;
 
-  slint_t tprocs_max;
-  elements_t _m, *m;
-  
   
   countsdispls = z_alloc(n, sizeof(int));
 
-  tprocs_max = 0;
-
-  if (sg->type == 3) tprocs_max = sg->tprocs(s, -1, sg_data, NULL);
-  else if (sg->type == 4) tprocs_max = sg->tprocs_mod(s, -1, sg_data, NULL, NULL);
-
-  m = &_m;
-
-  if (tprocs_max < 0)
-  {
-    tprocs_max *= -1;
-    m = NULL;
-  }
-
-  if (tprocs_max) procs = z_alloca(tprocs_max, sizeof(int));
-
-  if (sg->type == 2 || sg->type == 4) elements_alloc(&_m, z_max(1, tprocs_max), SLCM_ALL);
+  tproc_setup(sg, &procs, &m);
 
   if (sg->reset) sg->reset(sg_data);
 
@@ -7273,11 +7301,9 @@ slint_t split_generic_db(elements_t *s, elements_t *d, split_generic_t *sg, void
 
   counts2displs(n, countsdispls, NULL);
 
-  _split_generic_rearrange_db(s, d, sg, sg_data, countsdispls, procs, m);
+  _split_generic_rearrange_db(s, d, sg, sg_data, countsdispls, procs, &m);
 
-  if (tprocs_max) z_freea(procs);
-
-  if (sg->type == 2 || sg->type == 4) elements_free(&_m);
+  tproc_release(&procs, &m);
 
   z_free(countsdispls);
 
@@ -7288,33 +7314,15 @@ slint_t split_generic_db(elements_t *s, elements_t *d, split_generic_t *sg, void
 slint_t split_generic_ip(elements_t *s, elements_t *d, split_generic_t *sg, void *sg_data, slint_t n) /* sl_proto, sl_func split_generic_ip */
 {
   slint_t i;
-
-  int *procs = NULL;
   int *counts, *displs;
-
-  slint_t tprocs_max;
-  elements_t _m, *m;
+  int *procs = NULL;
+  elements_t m;
   
   
   counts = z_alloc(2 * n, sizeof(int));
   displs = counts + n;
 
-  tprocs_max = 0;
-
-  if (sg->type == 3) tprocs_max = sg->tprocs(s, -1, sg_data, NULL);
-  else if (sg->type == 4) tprocs_max = sg->tprocs_mod(s, -1, sg_data, NULL, NULL);
-
-  m = &_m;
-
-  if (tprocs_max < 0)
-  {
-    tprocs_max *= -1;
-    m = NULL;
-  }
-
-  if (tprocs_max) procs = z_alloca(tprocs_max, sizeof(int));
-
-  if (sg->type == 2 || sg->type == 4) elements_alloc(&_m, z_max(1, tprocs_max), SLCM_ALL);
+  tproc_setup(sg, &procs, &m);
 
   if (sg->reset) sg->reset(sg_data);
 
@@ -7324,11 +7332,9 @@ slint_t split_generic_ip(elements_t *s, elements_t *d, split_generic_t *sg, void
 
   counts2displs(n, counts, displs);
 
-  _split_generic_rearrange_ip(s, d, sg, sg_data, counts, displs, n, procs, m);
+  _split_generic_rearrange_ip(s, d, sg, sg_data, counts, displs, n, procs, &m);
 
-  if (tprocs_max) z_freea(procs);
-
-  if (sg->type == 2 || sg->type == 4) elements_free(&_m);
+  tproc_release(&procs, &m);
 
   z_free(counts);
 
@@ -7342,17 +7348,8 @@ slint_t split_generic_count_db(elements_t *s, split_generic_t *sg, void *sg_data
 
   int *procs = NULL;
 
-  slint_t tprocs_max;
-  
-  
-  tprocs_max = 0;
 
-  if (sg->type == 3) tprocs_max = sg->tprocs(s, -1, sg_data, NULL);
-  else if (sg->type == 4) tprocs_max = sg->tprocs_mod(s, -1, sg_data, NULL, NULL);
-
-  if (tprocs_max < 0) tprocs_max *= -1;
-
-  if (tprocs_max) procs = z_alloca(tprocs_max, sizeof(int));
+  tproc_setup(sg, &procs, NULL);
 
   if (sg->reset) sg->reset(sg_data);
 
@@ -7360,7 +7357,7 @@ slint_t split_generic_count_db(elements_t *s, split_generic_t *sg, void *sg_data
 
   _split_generic_count_db(s, sg, sg_data, counts, procs);
 
-  if (tprocs_max) z_freea(procs);
+  tproc_release(&procs, NULL);
 
   return 0;
 }
@@ -7372,17 +7369,8 @@ slint_t split_generic_count_ip(elements_t *s, split_generic_t *sg, void *sg_data
 
   int *procs = NULL;
 
-  slint_t tprocs_max;
-  
-  
-  tprocs_max = 0;
 
-  if (sg->type == 3) tprocs_max = sg->tprocs(s, -1, sg_data, NULL);
-  else if (sg->type == 4) tprocs_max = sg->tprocs_mod(s, -1, sg_data, NULL, NULL);
-
-  if (tprocs_max < 0) tprocs_max *= -1;
-
-  if (tprocs_max) procs = z_alloca(tprocs_max, sizeof(int));
+  tproc_setup(sg, &procs, NULL);
 
   if (sg->reset) sg->reset(sg_data);
 
@@ -7390,7 +7378,7 @@ slint_t split_generic_count_ip(elements_t *s, split_generic_t *sg, void *sg_data
 
   _split_generic_count_ip(s, sg, sg_data, counts, procs);
 
-  if (tprocs_max) z_freea(procs);
+  tproc_release(&procs, NULL);
 
   return 0;
 }
@@ -7399,37 +7387,18 @@ slint_t split_generic_count_ip(elements_t *s, split_generic_t *sg, void *sg_data
 slint_t split_generic_rearrange_db(elements_t *s, elements_t *d, split_generic_t *sg, void *sg_data, int *counts, slint_t n) /* sl_proto, sl_func split_generic_rearrange_db */
 {
   int *procs = NULL;
-
-  slint_t tprocs_max;
-  elements_t _m, *m;
+  elements_t m;
   
   
-  tprocs_max = 0;
-
-  if (sg->type == 3) tprocs_max = sg->tprocs(s, -1, sg_data, NULL);
-  else if (sg->type == 4) tprocs_max = sg->tprocs_mod(s, -1, sg_data, NULL, NULL);
-
-  m = &_m;
-
-  if (tprocs_max < 0)
-  {
-    tprocs_max *= -1;
-    m = NULL;
-  }
-
-  if (tprocs_max) procs = z_alloca(tprocs_max, sizeof(int));
-
-  if (sg->type == 2 || sg->type == 4) elements_alloc(&_m, z_max(1, tprocs_max), SLCM_ALL);
+  tproc_setup(sg, &procs, &m);
 
   if (sg->reset) sg->reset(sg_data);
 
   counts2displs(n, counts, NULL);
 
-  _split_generic_rearrange_db(s, d, sg, sg_data, counts, procs, m);
+  _split_generic_rearrange_db(s, d, sg, sg_data, counts, procs, &m);
 
-  if (tprocs_max) z_freea(procs);
-
-  if (sg->type == 2 || sg->type == 4) elements_free(&_m);
+  tproc_release(&procs, &m);
 
   return 0;
 }
@@ -7438,35 +7407,16 @@ slint_t split_generic_rearrange_db(elements_t *s, elements_t *d, split_generic_t
 slint_t split_generic_rearrange_ip(elements_t *s, elements_t *d, split_generic_t *sg, void *sg_data, int *counts, int *displs, slint_t n) /* sl_proto, sl_func split_generic_rearrange_ip */
 {
   int *procs = NULL;
-
-  slint_t tprocs_max;
-  elements_t _m, *m;
+  elements_t m;
   
   
-  tprocs_max = 0;
-
-  if (sg->type == 3) tprocs_max = sg->tprocs(s, -1, sg_data, NULL);
-  else if (sg->type == 4) tprocs_max = sg->tprocs_mod(s, -1, sg_data, NULL, NULL);
-
-  m = &_m;
-
-  if (tprocs_max < 0)
-  {
-    tprocs_max *= -1;
-    m = NULL;
-  }
-
-  if (tprocs_max) procs = z_alloca(tprocs_max, sizeof(int));
-
-  if (sg->type == 2 || sg->type == 4) elements_alloc(&_m, z_max(1, tprocs_max), SLCM_ALL);
+  tproc_setup(sg, &procs, &m);
 
   if (sg->reset) sg->reset(sg_data);
 
-  _split_generic_rearrange_ip(s, d, sg, sg_data, counts, displs, n, procs, m);
+  _split_generic_rearrange_ip(s, d, sg, sg_data, counts, displs, n, procs, &m);
 
-  if (tprocs_max) z_freea(procs);
-
-  if (sg->type == 2 || sg->type == 4) elements_free(&_m);
+  tproc_release(&procs, &m);
 
   return 0;
 }

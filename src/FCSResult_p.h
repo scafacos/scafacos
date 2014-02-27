@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011-2012 Rene Halver
+  Copyright (C) 2011, 2012, 2013 Lidia Westphal, Rene Halver, Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -18,79 +18,82 @@
 */
 
 
+/**
+ * @file FCSResult_p.h
+ * @brief public interface definitions for the FCSResult-object that is used
+ * for handling the return state of the ScaFaCoS library functions
+ * @author Lidia Westphal, Rene Halver, Michael Hofmann
+ */
 
-#ifndef FCS_RESULT_P_INCLUDED
-#define FCS_RESULT_P_INCLUDED
+
+#ifndef _FCSRESULT_P_H
+#define _FCSRESULT_P_H
 
 #include "FCSDefinitions.h"
-
-
-/**
- * @file FCSResult.h
- * @brief FCSResult-object is used for the error handling in the
- * ScaFaCos-Library.
- * @author Lidia Westphal, Rene Halver
- */
-
-/**
- * @brief a handle for the FCSResult-object which should be used instead of the
- * data structure itself
- */
-typedef struct FCSResult_t *FCSResult;
-
-#define FCS_RESULT_SUCCESS  NULL
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
-* @brief initializes an FCSResult object
-* @param code is the return code
-* @param where is the name of the function the error object was made in
-* @param message is the error message
-* @return pointer to the FCSResult-object
-*/
-FCSResult fcsResult_create(fcs_int code, const char *origin, const char *message, ...);
 
 /**
-* @brief destroys an FCSResult object
-* @param err is the pointer to the FCSResult object to destroy
-* @return 0 if successful, otherwise -1
-*/
-fcs_int fcsResult_destroy(FCSResult err);
-
-/**
- * @brief returns error code
- * @param err is the pointer to the FCSResult object
- * @return fcs_int as an return code
+ * @brief FCSResult-object that is used for handling the return state of the
+ * ScaFaCoS library functions
  */
-fcs_int fcsResult_getReturnCode(FCSResult err);
+typedef struct FCSResult_t *FCSResult;
+
+#define FCS_RESULT_SUCCESS  NULL
+
+#define FCS_RESULT_MAX_FUNCTION_LENGTH   64
+#define FCS_RESULT_MAX_MESSAGE_LENGTH   512
 
 /**
- * @brief returns an error message
- * @param err is the pointer to the FCSResult object
- * @return a string containing the corresonding error message
+ * @brief function to destroy an FCSResult-object
+ * @param result FCSResult-object containing the return state
  */
-const char *fcsResult_getErrorMessage(FCSResult err);
+void fcs_result_destroy(FCSResult result);
 
 /**
- * @brief returns a source name of the error (function name)
- * @param err is the pointer to the FCSResult object
- * @return a string containing the name of the function where
- * the error occured
+ * @brief function to return the return code associated with an return state
+ * @param result FCSResult-object containing the return state
+ * @return return code associated with the return state
  */
-const char *fcsResult_getErrorSource(FCSResult err);
+fcs_int fcs_result_get_return_code(FCSResult result);
 
 /**
- * @brief prints return code, message and source to stdout
- * @param err is the pofcs_inter to the FCSResult object
+ * @brief function to return the function name associated with an return state
+ * @param result FCSResult-object containing the return state
+ * @return function name associated with the return state
  */
-void fcsResult_printResult(FCSResult err);
+const char *fcs_result_get_function(FCSResult result);
+
+/**
+ * @brief function to return the description message associated with an return state
+ * @param result FCSResult-object containing the return state
+ * @return description message associated with the return state
+ */
+const char *fcs_result_get_message(FCSResult result);
+
+/**
+ * @brief function to print the return state to stdout
+ * @param result FCSResult-object containing the return state
+ */
+void fcs_result_print_result(FCSResult result);
+
+
+#ifdef FCS_ENABLE_DEPRECATED
+#define fcsResult_destroy          fcs_result_destroy
+#define fcsResult_getReturnCode    fcs_result_get_return_code
+#define fcsResult_getErrorMessage  fcs_result_get_message
+#define fcsResult_getErrorSource   fcs_result_get_function
+#define fcsResult_printResult      fcs_result_print_result
+#endif
+
 
 #ifdef __cplusplus
 }
 #endif
+
 
 #endif

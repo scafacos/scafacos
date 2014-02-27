@@ -49,7 +49,7 @@ FCSResult mmm1d_tune(void* rd,
   /* Require charge neutrality */
   mmm1d_check_system_charges(d, num_particles, charges);
   if (!fcs_float_is_zero(d->total_charge)) {
-    return fcsResult_create(FCS_LOGICAL_ERROR, fnc_name, "MMM1D requires a zero net charge.");
+    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "MMM1D requires a zero net charge.");
   }
   
   /* Exit if retuning is unnecessary */

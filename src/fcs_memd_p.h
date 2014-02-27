@@ -37,16 +37,14 @@ typedef struct fcs_memd_parameters_t *fcs_memd_parameters;
 /**
  * @brief Function to set all memd parameters with a single call
  *
-
-
  * @param handle FCS-object that contains the parameters
- * @param max_level The maximum level of the algorithm, i.e. n_gridpoints = 2^max_level.
- * @param periodic Periodicity.
- * @param spline_degree The degree of the interpolating B-Splines.
- * @param max_iterations The maximum number of multigrid iterations.
- * @param smoothing_steps Number of pre/postsmoothing steps on each level.
- * @param gamma Cycle-number.
- * @param precision Desired precision.
+ * @param box_size
+ * @param timestep
+ * @param local_number_of_particles
+ * @param mesh_size
+ * @param lightspeed
+ * @param temperature
+ * @param permittivity
  *
  * @return FCSResult-object containing the return value.
  */
@@ -60,14 +58,6 @@ FCSResult fcs_memd_setup(FCS handle,
                          fcs_float permittivity
                          );
 
-/**
- * @brief Set the periodicity for memd.
- *
- * @param handle FCS-object that contains the parameter
- * @param periodic Periodicity
- *
- * @return FCSResult-object containing the return state
- */
 FCSResult fcs_fcs_memd_set_box_size(FCS handle, fcs_float length_x, fcs_float length_y, fcs_float length_z);
 FCSResult fcs_fcs_memd_set_time_step(FCS handle, fcs_float timestep);
 FCSResult fcs_fcs_memd_set_total_number_of_particles(FCS handle, fcs_int number_of_particles);

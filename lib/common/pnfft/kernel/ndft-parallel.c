@@ -193,12 +193,6 @@ static void precompute_psi(
     int compute_grad_ad,
     R* pre_psi, R* pre_dpsi);
 
-static void fftshift_N_half(
-    const INT *N, const INT *n,
-    const INT *local_no, const INT *local_no_start,
-    int sign,
-    C *g);
-
 /* TODO: This function calculates the number of minimum samples of the 2-point-Taylor regularized
  * kernel function 1/x to reach a certain relative error 'eps'. Our windows are likely to be nicer,
  * so this is a good starting point. Think about the optimal number for every window. */
@@ -384,7 +378,7 @@ static void local_size_B(
   }
 }
 
-void PNX(local_size_internal)(
+INT PNX(local_size_internal)(
     const INT *N, const INT *n, const INT *no,
     MPI_Comm comm_cart, unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,
@@ -394,19 +388,9 @@ void PNX(local_size_internal)(
   INT howmany = 1;
   unsigned pfft_flags = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
 
-  PX(local_size_many_dft)(3, n, N, no, howmany,
-      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags,
+  return PX(local_size_many_dft)(3, n, N, no, howmany,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT,
       local_N, local_N_start, local_no, local_no_start);
-
-  /* map input index set from 0:N/2-1 to -N/2:N/2-1 */
-//   if(pnfft_flags & PNFFT_SHIFTED_F_HAT)
-    for(int t=0; t<3; t++)
-      local_N_start[t] -= N[t]/2;
-
-  /* map output index set from 0:no/2-1 to -no/2:no/2-1 */
-//   if(pnfft_flags & PNFFT_SHIFTED_X)
-    for(int t=0; t<3; t++)
-      local_no_start[t] -= no[t]/2;
 }
 
 
@@ -425,7 +409,6 @@ PNX(plan) PNX(init_internal)(
   INT howmany = 1;
   INT alloc_local_data_in, alloc_local_gc;
   INT gcells_below[3], gcells_above[3];
-  INT local_no[3], local_no_start[3];
   INT local_ngc[3], local_gc_start[3];
   PNX(plan) ths;
 
@@ -542,19 +525,13 @@ PNX(plan) PNX(init_internal)(
   get_size_gcells(m, ths->cutoff, pnfft_flags,
       gcells_below, gcells_above);
 
-  pfft_flags = (ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
-  alloc_local_data_in = PX(local_size_many_dft)(3, n, N, no, howmany,
-      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags,
-      ths->local_N, ths->local_N_start, local_no, local_no_start);
+  alloc_local_data_in = PNX(local_size_internal)(N, n, no, comm_cart, ths->pnfft_flags,
+      ths->local_N, ths->local_N_start, ths->local_no, ths->local_no_start);
 
-  alloc_local_gc = PX(local_size_many_gc)(3, local_no, local_no_start,
+  alloc_local_gc = PX(local_size_many_gc)(3, ths->local_no, ths->local_no_start,
       alloc_local_data_in, howmany, gcells_below, gcells_above,
       local_ngc, local_gc_start);
 
-  /* update offsets such that they run from -N/2,...,N/2-1 */
-  PNX(local_size_internal)(N, n, no, comm_cart, ths->pnfft_flags,
-      ths->local_N, ths->local_N_start, ths->local_no, ths->local_no_start);
-  
   ths->local_N_total  = PNX(prod_INT)(d, ths->local_N);
   ths->local_no_total = PNX(prod_INT)(d, ths->local_no);
 
@@ -577,14 +554,14 @@ PNX(plan) PNX(init_internal)(
     ths->g1_buffer = NULL;
 
   /* plan PFFT */
-  pfft_flags = pfft_opt_flags;
+  pfft_flags = pfft_opt_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT;
   if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT)
     pfft_flags |= PFFT_TRANSPOSED_IN;
   ths->pfft_forw = PX(plan_many_dft)(3, n, N, no, howmany,
       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, ths->g1, ths->g2, comm_cart,
       PFFT_FORWARD, pfft_flags);
   
-  pfft_flags = pfft_opt_flags;
+  pfft_flags = pfft_opt_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT;
   if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT) 
     pfft_flags |= PFFT_TRANSPOSED_OUT;
   ths->pfft_back = PX(plan_many_dft)(3, n, no, N, howmany,
@@ -1003,77 +980,6 @@ void PNX(adjoint_F)(
   MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
   if(!myrank) fprintf(stderr, "PNFFT^H: Sum of Fourier coefficients after FFT: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
 #endif
-}
-
-
-/* make use of tensor structure, precompute exp(...) for inner loops */
-static void fftshift_N_half(
-    const INT *N, const INT *n,
-    const INT *local_no, const INT *local_no_start,
-    int sign,
-    C *g
-    )
-{
-  INT l0, l1, l2, m=0;
-
-//   double timer = -MPI_Wtime();
-
-  /* plain loop:
-   * requires n^3 evaluations of exp(), 3*n^3 multiplications */
-//   for(l0=local_no_start[0]; l0<local_no[0]+local_no_start[0]; l0++)
-//     for(l1=local_no_start[1]; l1<local_no[1]+local_no_start[1]; l1++)
-//       for(l2=local_no_start[2]; l2<local_no[2]+local_no_start[2]; l2++, m++)
-//         g[m] *= pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( N[0]*l0/((R)n[0]) + N[1]*l1/((R) n[1]) + N[2]*l2/((R) n[2]) ));
- 
-  /* precompute exp():
-   * requires 3*n evaluations of exp(), 3*n^3 multiplications, 3*n complex numbers in memory */
-//   C *exp0, *exp1, *exp2;
-//   exp0 = (C*) malloc(sizeof(C)*local_no[0]);
-//   exp1 = (C*) malloc(sizeof(C)*local_no[1]);
-//   exp2 = (C*) malloc(sizeof(C)*local_no[2]);
-//   
-//   for(l0=local_no_start[0], m=0; l0<local_no[0]+local_no_start[0]; l0++, m++)
-//     exp0[m] = pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( N[0]*l0/((R)n[0]) ));
-//   for(l1=local_no_start[1], m=0; l1<local_no[1]+local_no_start[1]; l1++, m++)
-//     exp1[m] = pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( N[1]*l1/((R)n[1]) ));
-//    for(l2=local_no_start[2], m=0; l2<local_no[2]+local_no_start[2]; l2++, m++)
-//     exp2[m] = pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( N[2]*l2/((R)n[2]) ));
-// 
-//   m=0;
-//   for(l0=0; l0<local_no[0]; l0++)
-//     for(l1=0; l1<local_no[1]; l1++)
-//       for(l2=0; l2<local_no[2]; l2++, m++)
-//         g[m] *= exp0[l0] * exp1[l1] * exp2[l2];
-// 
-//   free(exp0); free(exp1); free(exp2);
-
-  /* precompute exp() and premultiply:
-   * requires 3*n evaluations of exp(), 2*n^3 multiplications, 2*n complex numbers in memory */
-  C exp0, exp01, *pre_exp1, *pre_exp2;
-
-  pre_exp1 = (C*) malloc(sizeof(C)*local_no[1]);
-  pre_exp2 = (C*) malloc(sizeof(C)*local_no[2]);
-
-  for(l1=local_no_start[1], m=0; l1<local_no[1]+local_no_start[1]; l1++, m++)
-    pre_exp1[m] = pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( N[1]*l1/((R)n[1]) ));
-  for(l2=local_no_start[2], m=0; l2<local_no[2]+local_no_start[2]; l2++, m++)
-    pre_exp2[m] = pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( N[2]*l2/((R)n[2]) ));
-
-  m=0;
-  for(l0=local_no_start[0]; l0<local_no[0]+local_no_start[0]; l0++){
-    exp0 = pnfft_cexp(-sign * PNFFT_PI * _Complex_I * ( N[0]*l0/((R)n[0]) ));
-    for(l1=0; l1<local_no[1]; l1++){
-      exp01 = exp0 * pre_exp1[l1];
-      for(l2=0; l2<local_no[2]; l2++, m++){
-        g[m] *= exp01 * pre_exp2[l2];
-      }
-    }
-  }
-
-  free(pre_exp1); free(pre_exp2);
-  
-//   timer += MPI_Wtime();
-//   printf("!!! time for fftshift_N_half: %e\n", timer);
 }
 
 
@@ -1822,9 +1728,6 @@ void PNX(trafo_B_grad_ik)(
 
   /* perform fftshift */
   ths->timer_trafo[PNFFT_TIMER_SHIFT_INPUT] -= MPI_Wtime();
-//   if(ths->pnfft_flags & PNFFT_SHIFTED_IN)
-    fftshift_N_half(ths->N, ths->n, local_no, local_no_start, PFFT_FORWARD,
-        ths->g2);
   ths->timer_trafo[PNFFT_TIMER_SHIFT_INPUT] += MPI_Wtime();
 
   get_size_gcells(ths->m, ths->cutoff, ths->pnfft_flags,
@@ -1931,9 +1834,6 @@ void PNX(trafo_B_grad_ad)(
 
   /* perform fftshift */
   ths->timer_trafo[PNFFT_TIMER_SHIFT_INPUT] -= MPI_Wtime();
-//   if(ths->pnfft_flags & PNFFT_SHIFTED_IN)
-    fftshift_N_half(ths->N, ths->n, local_no, local_no_start, PFFT_FORWARD,
-        ths->g2);
   ths->timer_trafo[PNFFT_TIMER_SHIFT_INPUT] += MPI_Wtime();
 
   get_size_gcells(ths->m, ths->cutoff, ths->pnfft_flags,
@@ -2321,8 +2221,6 @@ void PNX(adjoint_B)(
   /* perform fftshift */
   ths->timer_adj[PNFFT_TIMER_SHIFT_INPUT] -= MPI_Wtime();
 //   if(ths->pnfft_flags & PNFFT_SHIFTED_IN)
-    fftshift_N_half(ths->N, ths->n, local_no, local_no_start, PFFT_BACKWARD,
-        ths->g2);
   ths->timer_adj[PNFFT_TIMER_SHIFT_INPUT] += MPI_Wtime();
 
 #if PNFFT_ENABLE_DEBUG

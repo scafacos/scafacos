@@ -175,8 +175,8 @@ FCS fcs;
 static bool check_result(FCSResult result, bool force_abort = false) {
   if (result) {
     cout << "ERROR: Caught error on task " << comm_rank << "!" << endl;
-    fcsResult_printResult(result);
-    fcsResult_destroy(result);
+    fcs_result_print_result(result);
+    fcs_result_destroy(result);
     if (force_abort || global_params.abort_on_error)
       MPI_Abort(communicator, 1);
     else
@@ -460,7 +460,7 @@ static void run_method(particles_t *parts)
   MASTER(cout << "  Setting basic parameters..." << endl);
   MASTER(cout << "    Total number of particles: " << parts->total_nparticles + parts->total_in_nparticles << " (" << parts->total_in_nparticles << " input-only particles)" << endl);
   result = fcs_set_common(fcs, (fcs_get_near_field_flag(fcs) == 0)?0:1,
-    current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity, 
+    current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.box_origin, current_config->params.periodicity, 
     parts->total_nparticles);
   if (!check_result(result)) return;
 
@@ -484,7 +484,7 @@ static void run_method(particles_t *parts)
   if (!check_result(result)) return;
 
 #ifdef FCS_ENABLE_DIRECT
-  if (fcs_get_method(fcs) == FCS_DIRECT) fcs_direct_set_in_particles(fcs, parts->in_nparticles, parts->in_positions, parts->in_charges);
+  if (fcs_get_method(fcs) == FCS_METHOD_DIRECT) fcs_direct_set_in_particles(fcs, parts->in_nparticles, parts->in_positions, parts->in_charges);
 #endif
 
   /* create copies of the original positions and charges, as fcs_tune and fcs_run may modify them */
@@ -497,11 +497,13 @@ static void run_method(particles_t *parts)
   memcpy(original_charges, parts->charges, parts->nparticles * sizeof(fcs_float));
 #endif
 
+  fcs_set_max_local_particles(fcs, parts->max_nparticles);
+
   // Tune and time method
   MASTER(cout << "  Tuning method..." << endl);
   MPI_Barrier(communicator);
   t = MPI_Wtime();
-  result = fcs_tune(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges);
+  result = fcs_tune(fcs, parts->nparticles, parts->positions, parts->charges);
   if (!check_result(result)) return;
   MPI_Barrier(communicator);
   t = MPI_Wtime() - t;
@@ -530,7 +532,7 @@ static void run_method(particles_t *parts)
 
     MPI_Barrier(communicator);
     t = MPI_Wtime();
-    result = fcs_run(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+    result = fcs_run(fcs, parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
     if (!check_result(result)) return;
     MPI_Barrier(communicator);
     t = MPI_Wtime() - t;
@@ -624,7 +626,7 @@ static void run_integration(particles_t *parts, Testcase *testcase)
   /* setup integration parameters */
   integ_setup(&integ, global_params.time_steps, global_params.resort, global_params.integration_conf);
 
-  integ_system_setup(&integ, current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity);
+  integ_system_setup(&integ, current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.box_origin, current_config->params.periodicity);
 
   MASTER(
     integ_print_settings(&integ, "    ");
@@ -637,7 +639,7 @@ static void run_integration(particles_t *parts, Testcase *testcase)
   {
     /* init method */
     result = fcs_set_common(fcs, (fcs_get_near_field_flag(fcs) == 0)?0:1,
-      current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.offset, current_config->params.periodicity, parts->total_nparticles);
+      current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.box_origin, current_config->params.periodicity, parts->total_nparticles);
     if (!check_result(result)) return;
 
     if (fcs_set_resort(fcs, resort) != FCS_RESULT_SUCCESS) resort = 0;
@@ -663,11 +665,13 @@ static void run_integration(particles_t *parts, Testcase *testcase)
 
     if (fcs != FCS_NULL)
     {
+      fcs_set_max_local_particles(fcs, parts->max_nparticles);
+
       /* tune method */
       MASTER(cout << "    Tune method..." << endl);
       MPI_Barrier(communicator);
       t = MPI_Wtime();
-      result = fcs_tune(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges);
+      result = fcs_tune(fcs, parts->nparticles, parts->positions, parts->charges);
       MPI_Barrier(communicator);
       t = MPI_Wtime() - t;
       if (!check_result(result)) return;
@@ -683,7 +687,7 @@ static void run_integration(particles_t *parts, Testcase *testcase)
       MASTER(cout << "    Run method..." << endl);
       MPI_Barrier(communicator);
       t = MPI_Wtime();
-      result = fcs_run(fcs, parts->nparticles, parts->max_nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+      result = fcs_run(fcs, parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
       MPI_Barrier(communicator);
       t = MPI_Wtime() - t;
       if (!check_result(result)) return;
@@ -744,19 +748,19 @@ static void run_integration(particles_t *parts, Testcase *testcase)
       char filename_suffix[MAX_FILENAME_LENGTH];
 
       filename_split(filename_noext, filename_suffix, MAX_FILENAME_LENGTH, global_params.outfilename);
-      snprintf(outfilename, MAX_FILENAME_LENGTH, "%s_%08d.%s", filename_noext, r, filename_suffix);
+      snprintf(outfilename, MAX_FILENAME_LENGTH, "%s_%08" FCS_LMOD_INT "d.%s", filename_noext, r, filename_suffix);
 
       // delete existing binary file
       if (global_params.have_binfile) {
         filename_split(filename_noext, filename_suffix, MAX_FILENAME_LENGTH, global_params.binfilename);
-        snprintf(binfilename, MAX_FILENAME_LENGTH, "%s_%08d.%s", filename_noext, r, filename_suffix);
+        snprintf(binfilename, MAX_FILENAME_LENGTH, "%s_%08" FCS_LMOD_INT "d.%s", filename_noext, r, filename_suffix);
         MPI_File_delete(binfilename, MPI_INFO_NULL);
       }
 
       // delete existing portable file
       if (global_params.have_portable_file) {
         filename_split(filename_noext, filename_suffix, MAX_FILENAME_LENGTH, global_params.portable_filename);
-        snprintf(portable_filename, MAX_FILENAME_LENGTH, "%s_%08d.%s", filename_noext, r, filename_suffix);
+        snprintf(portable_filename, MAX_FILENAME_LENGTH, "%s_%08" FCS_LMOD_INT "d.%s", filename_noext, r, filename_suffix);
         MPI_File_delete(portable_filename, MPI_INFO_NULL);
       }  
 
@@ -796,7 +800,7 @@ static void run_integration(particles_t *parts, Testcase *testcase)
       else
       {
         MASTER(cout << " (failed because not supported!)" << endl);
-        fcsResult_destroy(result);
+        fcs_result_destroy(result);
       }
     }
 
@@ -804,7 +808,7 @@ static void run_integration(particles_t *parts, Testcase *testcase)
     fcs_set_box_a(fcs, integ.box_a);
     fcs_set_box_b(fcs, integ.box_b);
     fcs_set_box_c(fcs, integ.box_c);
-    fcs_set_offset(fcs, integ.offset);
+    fcs_set_box_origin(fcs, integ.box_origin);
   }
 
   current_config->have_reference_values[0] = 0;
@@ -907,13 +911,13 @@ int main(int argc, char* argv[]) {
   MASTER(cout << "    XML file: " << xml_method_conf << endl);
   if (strlen(xml_method_conf) > 0)
   {
-    result = fcs_parser(fcs, xml_method_conf, FCS_TRUE);
-    check_result(result, (fcsResult_getReturnCode(result) != FCS_WRONG_ARGUMENT));
+    result = fcs_set_parameters(fcs, xml_method_conf, FCS_TRUE);
+    check_result(result, (fcs_result_get_return_code(result) != FCS_ERROR_WRONG_ARGUMENT));
   }
   MASTER(cout << "    Command line: " << global_params.conf << endl);
   if (strlen(global_params.conf) > 0)
   {
-    result = fcs_parser(fcs, global_params.conf, FCS_FALSE);
+    result = fcs_set_parameters(fcs, global_params.conf, FCS_FALSE);
     check_result(result, true);
   }
 

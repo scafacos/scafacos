@@ -42,9 +42,9 @@
 
 #define DIRECT_HANDLE_CHECK(_h_, _f_) do { \
   if ((_h_) == FCS_NULL) \
-    return fcsResult_create(FCS_NULL_ARGUMENT, (_f_), "null pointer supplied as handle"); \
-  if ((_h_)->method != FCS_DIRECT) \
-    return fcsResult_create(FCS_INCOMPATIBLE_METHOD, (_f_), "handle does not represent method \"direct\""); \
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, (_f_), "null pointer supplied as handle"); \
+  if ((_h_)->method != FCS_METHOD_DIRECT) \
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, (_f_), "handle does not represent method \"direct\""); \
 } while (0)
 
 
@@ -61,6 +61,8 @@ FCSResult fcs_direct_init(FCS handle)
 
   DIRECT_HANDLE_CHECK(handle, func_name);
 
+  handle->direct_param = malloc(sizeof(*handle->direct_param));
+
   ctx = malloc(sizeof(fcs_direct_context_t));
 
   ctx->comm = fcs_get_communicator(handle);
@@ -75,10 +77,18 @@ FCSResult fcs_direct_init(FCS handle)
   fcs_direct_set_cutoff(handle, default_cutoff);
 
   fcs_direct_set_periodic_images(handle, default_periodic_images);
-  
+
   fcs_direct_set_cutoff_with_near(handle, FCS_FALSE);
 
   handle->direct_param->metallic_boundary_conditions = 1;
+
+  handle->destroy = fcs_direct_destroy;
+  handle->set_parameter = fcs_direct_set_parameter;
+  handle->print_parameters = fcs_direct_print_parameters;
+  handle->tune = fcs_direct_tune;
+  handle->run = fcs_direct_run;
+  handle->set_compute_virial = fcs_direct_require_virial;
+  handle->get_virial = fcs_direct_get_virial;
 
   handle->set_max_particle_move = fcs_direct_set_max_particle_move;
   handle->set_resort = fcs_direct_set_resort;
@@ -114,6 +124,9 @@ FCSResult fcs_direct_destroy(FCS handle)
 
   fcs_set_method_context(handle, NULL);
 
+  free(handle->direct_param);
+  handle->direct_param = NULL;
+
   DEBUG_MOP(printf("fcs_direct_destroy: done\n"));
 
   return FCS_RESULT_SUCCESS;
@@ -134,7 +147,7 @@ FCSResult fcs_direct_check(FCS handle)
 }
 
 
-FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges)
+FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges)
 {
   static const char func_name[] = "fcs_direct_tune";
 
@@ -148,7 +161,7 @@ FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_int local_max
 }
 
 
-FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
+FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
   static const char func_name[] = "fcs_direct_run";
 
@@ -158,8 +171,9 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
 
   fcs_float field_correction[3];
 
-  fcs_float *box_base, *box_a, *box_b, *box_c;
-  fcs_int *periodicity;
+  const fcs_float *box_base, *box_a, *box_b, *box_c;
+  const fcs_int *periodicity;
+  fcs_int max_local_particles;
 
 
   DEBUG_MOP(printf("fcs_direct_run\n"));
@@ -168,15 +182,18 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
 
   ctx = fcs_get_method_context(handle);
 
-  box_base = fcs_get_offset(handle);
+  box_base = fcs_get_box_origin(handle);
   box_a = fcs_get_box_a(handle);
   box_b = fcs_get_box_b(handle);
   box_c = fcs_get_box_c(handle);
   periodicity = fcs_get_periodicity(handle);
 
+  max_local_particles = fcs_get_max_local_particles(handle);
+  if (local_particles > max_local_particles) max_local_particles = local_particles;
+
   fcs_directc_set_system(&handle->direct_param->directc, box_base, box_a, box_b, box_c, periodicity);
 
-  fcs_directc_set_particles(&handle->direct_param->directc, local_particles, local_max_particles, positions, charges, field, potentials);
+  fcs_directc_set_particles(&handle->direct_param->directc, local_particles, max_local_particles, positions, charges, field, potentials);
 
   fcs_directc_run(&handle->direct_param->directc, ctx->comm);
 
@@ -193,6 +210,55 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_int local_max_
   }
 
   DEBUG_MOP(printf("fcs_direct_run: done\n"));
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+FCSResult fcs_direct_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
+{
+  const char *fnc_name = "fcs_direct_set_parameter";
+
+  char *param = *current;
+  char *cur = *next;
+
+  *matched = 0;
+
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_periodic_images",  direct_set_periodic_images,  FCS_PARSE_SEQ(fcs_int, 3));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_cutoff",           direct_set_cutoff,           FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_cutoff_with_near", direct_set_cutoff_with_near, FCS_PARSE_VAL(fcs_int));
+
+  return FCS_RESULT_SUCCESS;
+
+next_param:
+  *current = param;
+  *next = cur;
+
+  *matched = 1;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+FCSResult fcs_direct_print_parameters(FCS handle)
+{
+  fcs_float cutoff;
+  fcs_int images[3];
+  FCSResult result;
+
+  result = fcs_direct_get_cutoff(handle, &cutoff);
+  if (result != FCS_RESULT_SUCCESS)
+  {
+    printf("direct cutoff: FAILED!");
+    fcs_result_print_result(result);
+  } else printf("direct cutoff: %" FCS_LMOD_FLOAT "e\n", cutoff);
+
+  result = fcs_direct_get_periodic_images(handle, images);
+  if (result != FCS_RESULT_SUCCESS)
+  {
+    printf("direct cutoff: FAILED!");
+    fcs_result_print_result(result);
+  } else printf("direct periodic images: %5" FCS_LMOD_INT "d %5" FCS_LMOD_INT "d %5" FCS_LMOD_INT "d\n", images[0], images[1], images[2]);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -396,5 +462,5 @@ void fcs_direct_setup_f(void *handle, fcs_float cutoff, fcs_int *return_value)
   if (result == FCS_RESULT_SUCCESS)
     *return_value = 0;
   else
-    *return_value = fcsResult_getReturnCode(result);
+    *return_value = fcs_result_get_return_code(result);
 }

@@ -48,6 +48,8 @@
 
 
 /* zmpi_atasp.c */
+#define ZMPI_Alltoall_specific_type  ZMPI_VAR(ZMPI_Alltoall_specific_type)
+#define ZMPI_Neighbor_alltoall_specific_type  ZMPI_VAR(ZMPI_Neighbor_alltoall_specific_type)
 #define ZMPI_Tproc_create_tproc  ZMPI_FUNC(ZMPI_Tproc_create_tproc)
 #define ZMPI_Tproc_create_tproc_mod  ZMPI_FUNC(ZMPI_Tproc_create_tproc_mod)
 #define ZMPI_Tproc_create_tprocs  ZMPI_FUNC(ZMPI_Tproc_create_tprocs)

@@ -115,7 +115,7 @@ void ifcs_wolf_destroy(ifcs_wolf_t *wolf)
 }
 
 
-void ifcs_wolf_set_system(ifcs_wolf_t *wolf, fcs_float *box_base, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_int *periodicity)
+void ifcs_wolf_set_system(ifcs_wolf_t *wolf, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity)
 {
   fcs_int i;
 
