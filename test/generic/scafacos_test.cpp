@@ -532,6 +532,7 @@ static void run_method(FCS fcs, particles_t *parts)
   MPI_Barrier(communicator);
   t = MPI_Wtime();
   result = fcs_tune(fcs, parts->nparticles, parts->positions, parts->charges);
+  fcs_print_parameters(fcs);
   if (!check_result(result)) return;
   MPI_Barrier(communicator);
   t = MPI_Wtime() - t;
