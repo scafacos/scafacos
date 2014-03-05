@@ -17,8 +17,6 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 
-
-
 #ifndef _FCS_P3M_P_H
 #define _FCS_P3M_P_H
 
@@ -180,7 +178,7 @@ fcs_p3m_compute_near_field(fcs_p3m_near_parameters_t params, fcs_float dist) {
  * the cutoff range. Values outside of this range might result in
  * undefined behavior.
  */
-static inline void
+  static inline void
 fcs_p3m_compute_near(fcs_p3m_near_parameters_t params, fcs_float dist, 
 		     fcs_float *potential, fcs_float *field) {
   fcs_float alpha = params;
@@ -239,6 +237,11 @@ FCSResult fcs_p3m_set_tolerance_field(FCS handle, fcs_float tolerance_field);
 void fcs_p3m_set_tolerance_field_f(void *handle, fcs_float tolerance_field, fcs_int *return_value);
 FCSResult fcs_p3m_set_tolerance_field_tune(FCS handle);
 FCSResult fcs_p3m_get_tolerance_field(FCS handle, fcs_float *tolerance_field);
+
+  /*
+FCSResult fcs_p3m_set_variant(FCS handle, fcs_int variant);
+FCSResult fcs_p3m_get_variant(FCS handle, fcs_int *variant);
+  */
 
 #ifdef __cplusplus
 }

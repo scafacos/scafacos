@@ -26,11 +26,14 @@
  */
 
 
-#ifndef FCS_RESULT_INCLUDED
-#define FCS_RESULT_INCLUDED
+#ifndef _FCSRESULT_H
+#define _FCSRESULT_H
 
 #include "FCSResult_p.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief function to create an FCSResult-object for storing the return state
@@ -40,6 +43,10 @@
  * @return FCSResult-object containing the return state
  */
 FCSResult fcs_result_create(fcs_int code, const char *function, const char *message, ...);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

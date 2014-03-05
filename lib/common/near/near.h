@@ -31,7 +31,6 @@ extern "C" {
 
 #include "common/gridsort/gridsort.h"
 
-
 typedef fcs_float (*fcs_near_field_f)(const void *param, fcs_float dist);
 typedef fcs_float (*fcs_near_potential_f)(const void *param, fcs_float dist);
 typedef void (*fcs_near_field_potential_f)(const void *param, fcs_float dist, fcs_float *f, fcs_float *p);

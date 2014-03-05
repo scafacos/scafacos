@@ -1,4 +1,4 @@
-# Copyright (C) 2011 The ScaFaCoS project
+# Copyright (C) 2011,2014 The ScaFaCoS project
 #  
 # This file is part of ScaFaCoS.
 #  
@@ -34,6 +34,8 @@ AC_CONFIG_AUX_DIR([build-aux])
 
 # Initialize Automake; require 1.9.6 or newer, do not enforce GNU rules, create pax/posix tarfiles in make dist to support longer filenames in doxgen stuff.
 AM_INIT_AUTOMAKE([1.9.6 -Wall -Wno-override foreign tar-pax subdir-objects])
+# silent rules, backwards compatiblity
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Print an error if a (custom) AX_ or ACX_ macro appears in the ouput
 m4_pattern_forbid([^A[C]?X_])
@@ -688,10 +690,11 @@ if test "x$use_fcs_mmm2d" = xyes ; then
   AX_FCS_PACKAGE_ADD([mmm2d_LIBS_A],[lib/mmm2d/libfcs_mmm2d.la])
 fi
 if test "x$use_fcs_p3m" = xyes ; then
-  AC_CONFIG_FILES([lib/p3m/Makefile])
+  AC_CONFIG_FILES([lib/p3m/Makefile lib/p3m/src/Makefile lib/p3m/src/tests/Makefile])
   AX_FCS_PACKAGE_ADD([p3m_LIBS],[-lfcs_p3m])
   AX_FCS_PACKAGE_ADD([p3m_LIBS_A],[lib/p3m/libfcs_p3m.la])
   AX_FCS_PACKAGE_ADD([fftw3_USE],[yes])
+  AX_FCS_PACKAGE_ADD([CXXLIBS_USE],[yes])
 fi
 if test "x$use_fcs_ewald" = xyes ; then
   AC_CONFIG_FILES([lib/ewald/Makefile])

@@ -26,8 +26,8 @@
  */
 
 
-#ifndef FCS_RESULT_P_INCLUDED
-#define FCS_RESULT_P_INCLUDED
+#ifndef _FCSRESULT_P_H
+#define _FCSRESULT_P_H
 
 #include "FCSDefinitions.h"
 

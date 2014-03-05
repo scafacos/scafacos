@@ -1,4 +1,4 @@
-# Copyright (C) 2012,2013,2014 Olaf Lenz
+# Copyright (C) 2014 Olaf Lenz
 #
 # This file is part of ScaFaCoS.
 #
@@ -15,17 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-SUBDIRS = src .
+DUMMY:=$(eval include $(top_builddir)/package/scafacos-fcs.mk)
 
-if ENABLE_SINGLE_LIB
-noinst_LTLIBRARIES = libfcs_p3m.la
-else
-lib_LTLIBRARIES = libfcs_p3m.la
-endif
-
-libfcs_p3m_la_CPPFLAGS = -I$(top_srcdir)/src -I $(top_srcdir)/lib $(fftw3_CPPFLAGS)
-libfcs_p3m_la_SOURCES = \
-	scafacos.h \
-	scafacos.cpp run.cpp
-libfcs_p3m_la_LIBADD = src/libp3m.la
-
+check_PROGRAMS = compute_error
+compute_error_SOURCES = compute_error.cpp
+compute_error_LDADD = ../libp3m.la 
+compute_error_CPPFLAGS = -I $(top_srcdir)/src -I $(srcdir)/.. $(fftw3_CPPFLAGS)

@@ -15,17 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-SUBDIRS = src .
+SUBDIRS = . tests
 
-if ENABLE_SINGLE_LIB
-noinst_LTLIBRARIES = libfcs_p3m.la
-else
-lib_LTLIBRARIES = libfcs_p3m.la
-endif
-
-libfcs_p3m_la_CPPFLAGS = -I$(top_srcdir)/src -I $(top_srcdir)/lib $(fftw3_CPPFLAGS)
-libfcs_p3m_la_SOURCES = \
-	scafacos.h \
-	scafacos.cpp run.cpp
-libfcs_p3m_la_LIBADD = src/libp3m.la
-
+noinst_LTLIBRARIES = libp3m.la
+libp3m_la_CPPFLAGS = $(fftw3_CPPFLAGS) -I $(top_srcdir)/src \
+	-I $(top_srcdir)/lib -I $(top_srcdir)/lib/common/fcs-common
+libp3m_la_SOURCES = \
+	p3mconfig.hpp \
+	utils.hpp \
+	Communication.hpp Communication.cpp \
+	ErrorEstimate.hpp ErrorEstimate.cpp \
+	ErrorEstimateIK.hpp ErrorEstimateIK.cpp \
+	ErrorEstimateADI.hpp ErrorEstimateADI.cpp \
+	CAF.cpp CAF.hpp \
+	Parallel3DFFT.cpp Parallel3DFFT.hpp \
+	Solver.cpp Solver.hpp \
+	types.hpp 
