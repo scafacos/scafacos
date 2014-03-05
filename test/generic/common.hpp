@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012 Olaf Lenz, Michael Hofmann
+  Copyright (C) 2011,2012,2013,2014 Olaf Lenz, Michael Hofmann
   
   This file is part of ScaFaCoS.
   

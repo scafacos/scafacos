@@ -555,7 +555,8 @@ static void run_method(FCS fcs, particles_t *parts)
 
 #ifdef PRINT_PARTICLES
     MASTER(cout << "Particles before fcs_run: " << parts->nparticles << endl);
-    print_particles(parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+    print_particles(parts->nparticles, parts->positions, parts->charges,
+            parts->field, parts->potentials);
 #endif
 
     MPI_Barrier(communicator);
@@ -568,7 +569,8 @@ static void run_method(FCS fcs, particles_t *parts)
 
 #ifdef PRINT_PARTICLES
     MASTER(cout << "Particles after fcs_run: " << parts->nparticles << endl);
-    print_particles(parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+    print_particles(parts->nparticles, parts->positions, parts->charges,
+            parts->field, parts->potentials);
 #endif
 
     run_time_sum += t;
@@ -595,8 +597,10 @@ static void run_method(FCS fcs, particles_t *parts)
     MASTER(cout << "    Resorting reference potential and field values..." << endl);
 
     t = MPI_Wtime();
-    if (parts->reference_potentials != NULL) fcs_resort_floats(fcs, parts->reference_potentials, NULL, 1);
-    if (parts->reference_field != NULL) fcs_resort_floats(fcs, parts->reference_field, NULL, 3);
+    if (parts->reference_potentials != NULL)
+        fcs_resort_floats(fcs, parts->reference_potentials, NULL, 1);
+    if (parts->reference_field != NULL)
+        fcs_resort_floats(fcs, parts->reference_field, NULL, 3);
     t = MPI_Wtime() - t;
 
     MASTER(printf("     = %f second(s)\n", t));
@@ -1027,8 +1031,7 @@ int main(int argc, char* argv[])
     prepare_particles(&parts);
 
     if (global_params.integrate) run_integration(fcs, &parts, testcase);
-    else
-    {
+    else {
       // Run method or do nothing
       if (global_params.have_method) run_method(fcs, &parts);
       else no_method();
