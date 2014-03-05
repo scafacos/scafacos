@@ -29,13 +29,12 @@ addrarithm_files = addrarithm/diffcpointers.c \
 addrarithm/cptrsize.c \
 addrarithm/ptroffset.c
 
-libfmm_la_SOURCES = \
+fortran_sources = \
 fmmkinds.f \
 fmmkinds.h \
 mp_constants.f90 \
 memalloc.f90 \
 fmmwigner.f \
-dummy_malloc.c \
 memalloc.f90 \
 mp_wrapper.f90 \
 mp_wrapper.h \
@@ -56,6 +55,9 @@ cfmm_tune.f \
 fmm_cbindings.f90 \
 fmm_cbindings.h \
 fmm.h
+
+libfmm_la_SOURCES = $(fortran_sources) \
+dummy_malloc.c
 
 libfmm_la_SOURCES += $(addrarithm_files)
 
@@ -105,8 +107,8 @@ endif
 # Use generated module dependency rules.
 $(eval -include $(builddir)/module.deps)
 
-$(builddir)/module.deps: $(libfmm_la_SOURCES) fmm.h ../fconfig.h
-	SRCDIR="$(srcdir)" CPP="$(CPP) -I$(builddir) -I$(srcdir) -I$(top_builddir) $(FCCPPFLAGS)" OBJEXT="$(LTOBJEXT)" MODEXT="$(FC_MODEXT)" \
+$(builddir)/module.deps: $(fortran_sources) fmm.h ../fconfig.h
+	SRCDIR="$(srcdir)" FCCPP="$(FCCPP) -I$(builddir) -I$(srcdir) -I$(top_builddir) $(FCCPPFLAGS)" CPP="$(CPP)" OBJEXT="$(LTOBJEXT)" MODEXT="$(FC_MODEXT)" \
 	$(SHELL) $(top_srcdir)/build-aux/fortran-depcomp $^ > $@
 
 DISTCLEANFILES = module.deps
