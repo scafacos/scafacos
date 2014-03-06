@@ -170,7 +170,7 @@ void Solver::prepare() {
     /* Initializes the (inverse) grid constant ai and the cutoff for charge
      * assignment cao_cut. */
     for (p3m_int i=0; i<3; i++) {
-        ai[i]      = grid[i]/box_l[i];
+        ai[i]      = grid[i]/(triclinic?1.0:box_l[i]);
         a[i]       = 1.0/ai[i];
         cao_cut[i] = 0.5*a[i]*cao;
     }
@@ -854,8 +854,9 @@ void Solver::run(
     fcs_gridsort_t gridsort;
 
     START(TIMING_DECOMP);
+    //triclinic?_positions_triclinic:
     this->decompose(&gridsort,
-            _num_particles, triclinic?_positions_triclinic:_positions, _charges,
+            _num_particles, _positions, _charges,
             &num_real_particles,
             &positions, &charges, &indices,
             &num_ghost_particles,
@@ -872,32 +873,41 @@ void Solver::run(
 //        printf("position %d after decomp long range: %f %f %f\n",indices[i],positions[3*i],positions[3*i+1],positions[3*i+2]);
 //    }
     STOP(TIMING_DECOMP);
+    
 
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
-    this->computeFarADI(num_real_particles, positions, charges, fields, potentials);
+    if(!triclinic){ //orthorhombic
+this->computeFarADI(num_real_particles, positions, charges, fields, potentials);
+}
+    else{//triclinic
+        p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
+    this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
+    this->computeFarADI(num_real_particles, positions_triclinic, charges, fields, potentials);
+}
+    
 #else
     this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
 #endif
 
-    START(TIMING_COMP);
-    /* sort particles back */
-    P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
-    fcs_gridsort_sort_backward(&gridsort,
-            fields, potentials,
-            _fields, _potentials, 1,
-            comm.mpicomm);
-    P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
-
-    fcs_gridsort_free(&gridsort);
-    fcs_gridsort_destroy(&gridsort);
-
-    sdelete(fields);
-    sdelete(potentials);
-
-    STOP(TIMING_COMP);
-//    for(p3m_int i;i<std::min(_num_particles,10);i++){
-//        printf("field %d after long range: %f %f %f\n",i,_fields[3*i],fields[3*i+1],fields[3*i+2]);
-//    }
+//    START(TIMING_COMP);
+//    /* sort particles back */
+//    P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
+//    fcs_gridsort_sort_backward(&gridsort,
+//            fields, potentials,
+//            _fields, _potentials, 1,
+//            comm.mpicomm);
+//    P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
+//
+//    fcs_gridsort_free(&gridsort);
+//    fcs_gridsort_destroy(&gridsort);
+//
+//    sdelete(fields);
+//    sdelete(potentials);
+//
+//    STOP(TIMING_COMP);
+    for(p3m_int i;i<std::min(num_real_particles,10);i++){
+        printf("field %d after long range: %f %f %f\n",i,fields[3*i],fields[3*i+1],fields[3*i+2]);
+    }
     if(triclinic){
         for(p3m_int i=0;i<3;i++) box_l[i] = box_matrix[i][i];
     }
@@ -906,39 +916,59 @@ void Solver::run(
         /* start near timer */
         START(TIMING_NEAR);
         
-             /* decompose system */
-        p3m_int num_real_particles;
-        p3m_int num_ghost_particles;
-        p3m_float *positions, *ghost_positions;
-        p3m_float *charges, *ghost_charges;
-        fcs_gridsort_index_t *indices, *ghost_indices;
-        fcs_gridsort_t gridsort_near;
-
-        START(TIMING_DECOMP);
+//        for(p3m_int i=0; i <num_real_particles; i++){
+//            positions[3*i]=positions[3*i]*box_matrix[0][0]+positions[3*i+1]*box_matrix[1][0]+positions[3*i+2]*box_matrix[2][0];
+//            positions[3*i+1]=positions[3*i+1]*box_matrix[1][1]+positions[3*i+2]*box_matrix[2][1];
+//            positions[3*i+2]=positions[3*i+2]*box_matrix[2][2];
+//            printf("near positions %d : %f %f %f \n", i , positions[3*i],positions[3*i+1],positions[3*i+2]);
+//        }
         
-        //todo change this flag stuff
-        bool triclinic_old=triclinic;
-        triclinic=false;
-        this->decompose(&gridsort_near,
-                _num_particles, _positions, _charges,
-                &num_real_particles,
-                &positions, &charges, &indices,
-                &num_ghost_particles,
-                &ghost_positions, &ghost_charges, &ghost_indices);
-        triclinic=triclinic_old;
-        /* allocate local fields and potentials */
-        p3m_float *fields_near, *potentials_near,*_fields_near,*_potentials_near;
-        if (_fields != NULL)
-            fields_near = new p3m_float[3 * num_real_particles];
-        if (_potentials != NULL || require_total_energy)
-            potentials_near = new p3m_float[num_real_particles];
- _potentials_near = new p3m_float[num_real_particles]; _fields_near = new p3m_float[3*num_real_particles];       
-
-        STOP(TIMING_DECOMP);
+//        for(p3m_int i=0; i <num_real_particles; i++){
+//            positions[3*i]=positions[3*i]*box_matrix[0][0]+positions[3*i+1]*box_matrix[1][0]+positions[3*i+2]*box_matrix[2][0];
+//            positions[3*i+1]=positions[3*i+1]*box_matrix[1][1]+positions[3*i+2]*box_matrix[2][1];
+//            positions[3*i+2]=positions[3*i+2]*box_matrix[2][2];
+//            printf("near positions %d : %f %f %f \n", i , positions[3*i],positions[3*i+1],positions[3*i+2]);
+//        }
         
+        
+//             /* decompose system */
+//        p3m_int num_real_particles;
+//        p3m_int num_ghost_particles;
+//        p3m_float *positions, *ghost_positions;
+//        p3m_float *charges, *ghost_charges;
+//        fcs_gridsort_index_t *indices, *ghost_indices;
+//        fcs_gridsort_t gridsort_near;
+//
+//        START(TIMING_DECOMP);
+//        
+//        //todo change this flag stuff
+//        bool triclinic_old=triclinic;
+//        triclinic=false;
+//        this->decompose(&gridsort_near,
+//                _num_particles, _positions, _charges,
+//                &num_real_particles,
+//                &positions, &charges, &indices,
+//                &num_ghost_particles,
+//                &ghost_positions, &ghost_charges, &ghost_indices);
+//        triclinic=triclinic_old;
+//        /* allocate local fields and potentials */
+//        p3m_float *fields_near, *potentials_near,*_fields_near,*_potentials_near;
+//        if (_fields != NULL)
+//            fields_near = new p3m_float[3 * num_real_particles];
+//        if (_potentials != NULL || require_total_energy)
+//            potentials_near = new p3m_float[num_real_particles];
+// _potentials_near = new p3m_float[num_real_particles]; _fields_near = new p3m_float[3*num_real_particles];       
+//
+//        STOP(TIMING_DECOMP);
+//        
         /* compute near field */
         fcs_near_t near;
 
+        //todo: zweite decomp noetig um in near cart und in far tricl zu haben!!!
+        
+        
+        
+        
         fcs_near_create(&near);
         /*  fcs_near_set_field_potential(&near, compute_near);*/
         fcs_near_set_loop(&near, compute_near_loop);
@@ -951,8 +981,8 @@ void Solver::run(
         
         fcs_near_set_particles(&near, num_real_particles, num_real_particles,
                 positions, charges, indices,
-                (_fields != NULL) ? fields_near : NULL,
-                (_potentials != NULL) ? potentials_near : NULL);
+                (_fields != NULL) ? fields : NULL,
+                (_potentials != NULL) ? potentials : NULL);
 
         fcs_near_set_ghosts(&near, num_ghost_particles,
                 ghost_positions, ghost_charges, ghost_indices);
@@ -963,39 +993,39 @@ void Solver::run(
             
         fcs_near_destroy(&near);
         
-        START(TIMING_COMP);
-    /* sort particles back */
-    P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
-    fcs_gridsort_sort_backward(&gridsort_near,
-            fields_near, potentials_near,
-            _fields_near, _potentials_near, 1,
-            comm.mpicomm);
-    P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
-    
+      
     /* add near range to long range potentials and fields*/
-//        for(p3m_int i;i<std::min(_num_particles,10);i++){
-//        printf("field %d after short range: %f %f %f\n",i,_fields_near[3*i],fields_near[3*i+1],fields_near[3*i+2]);
-//    }
-    
-    for(p3m_int j = 0; j < num_real_particles; j++) {
-                _fields[3 * j] += _fields_near[3 * j];
-                _fields[3 * j + 1] += _fields_near[3 * j + 1];
-                _fields[3 * j + 2] += _fields_near[3 * j + 2];
-                _potentials[j] += _potentials_near[j];
-            }
+        for(p3m_int i=0;i<std::min(_num_particles,10);i++){
+        printf("field %d after short range: %f %f %f\n",i,fields[3*i],fields[3*i+1],fields[3*i+2]);
+    }
+//    
+//    for(p3m_int j = 0; j < num_real_particles; j++) {
+//                _fields[3 * j] += _fields_near[3 * j];
+//                _fields[3 * j + 1] += _fields_near[3 * j + 1];
+//                _fields[3 * j + 2] += _fields_near[3 * j + 2];
+//                _potentials[j] += _potentials_near[j];
+//            }
             
-    fcs_gridsort_free(&gridsort_near);
-    fcs_gridsort_destroy(&gridsort_near);
-    
-    sdelete(fields_near);
-    sdelete(potentials_near);
-    sdelete(_fields_near);
-    sdelete(_potentials_near);
-    STOP(TIMING_COMP);
+//    fcs_gridsort_free(&gridsort_near);
+//    fcs_gridsort_destroy(&gridsort_near);
+//    
+//    sdelete(fields_near);
+//    sdelete(potentials_near);
+//    sdelete(_fields_near);
+//    sdelete(_potentials_near);
+   
 
         STOP(TIMING_NEAR);
     }
-
+  START(TIMING_COMP);
+    /* sort particles back */
+    P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
+    fcs_gridsort_sort_backward(&gridsort,
+            fields, potentials,
+            _fields, _potentials, 1,
+            comm.mpicomm);
+    P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
+     STOP(TIMING_COMP);
     P3M_INFO(printf( "P3M::Solver::run() finished.\n"));
 }
 
@@ -1326,17 +1356,16 @@ void Solver::decompose(fcs_gridsort_t *gridsort,
     p3m_int num_particles;
 
     fcs_gridsort_create(gridsort);
-//todo: use different condition to enable seperate domain decomposition for near and far.
-    if(triclinic) {
-            p3m_float box_a[3] = {box_l[0], 0.0, 0.0};
-            p3m_float box_b[3] = {0.0, box_l[1], 0.0};
-            p3m_float box_c[3] = {0.0, 0.0, box_l[2]};
-            fcs_gridsort_set_system(gridsort, box_base,
-                    box_a, box_b, box_c, NULL);
-        } else {
+//    if(triclinic) {
+//            p3m_float box_a[3] = {box_l[0], 0.0, 0.0};
+//            p3m_float box_b[3] = {0.0, box_l[1], 0.0};
+//            p3m_float box_c[3] = {0.0, 0.0, box_l[2]};
+//            fcs_gridsort_set_system(gridsort, box_base,
+//                    box_a, box_b, box_c, NULL);
+//        } else {
             fcs_gridsort_set_system(gridsort, box_base,
                     box_matrix[0], box_matrix[1], box_matrix[2], NULL);         
-        }
+//        }
     
             fcs_gridsort_set_particles(gridsort, _num_particles, _num_particles,
             _positions, _charges);
