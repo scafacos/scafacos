@@ -2,7 +2,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # Install pkg-config file in correct location.
-pkgconfigdir = $(libdir)/pkg-config
+pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = scafacos-fcs.pc
 
 if ENABLE_SINGLE_LIB
