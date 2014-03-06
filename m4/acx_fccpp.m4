@@ -22,7 +22,7 @@ if test -z "$FCCPP"; then
      # Don't try -traditional-cpp, breaks var args
      for FCCPP in "cpp -C -P" cpp \
                   "/lib/cpp -C -P" /lib/cpp \
-		  "$FC -cpp -E" "$FC -E" "$CPP -C -P" "$CPP"
+		  "$FC -cpp -E" "$FC -E" "$CPP -C -P" "$CPP" "$CPP -x c -C -P"
      do
        _AC_PROG_FCPREPROC_WORKS_IFELSE([ac_cv_prog_FCCPP=$FCCPP; break])
      done
