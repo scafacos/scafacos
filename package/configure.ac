@@ -1,8 +1,8 @@
 AC_PREREQ([2.59])
-AC_INIT([ScaFaCoS FCS], [0.1], [scafacos-dvlp@fz-juelich.de], [scafacos-fcs],
-  [http://www2.fz-juelich.de/jsc/scafacos/])
+AC_INIT([ScaFaCoS], [0.9], [scafacos-dvlp@fz-juelich.de], [scafacos],
+  [http://www.scafacos.de])
 m4_ifndef([AC_PACKAGE_URL],
-	  [AC_SUBST([PACKAGE_URL], [http://www.fz-juelich.de/jsc/scafacos/])])
+	  [AC_SUBST([PACKAGE_URL], [http://www.scafacos.de])])
 
 AC_MSG_NOTICE([****************************************************************])
 AC_MSG_NOTICE([*      Configuring ScaFaCos package                            *])
@@ -185,8 +185,8 @@ AC_SUBST([SCAFACOS_MK_DEPS])
 AC_SUBST([SCAFACOS_MK_LIBS_A])
 
 AC_CONFIG_FILES([Makefile])
-AC_CONFIG_FILES([scafacos-fcs.pc])
-AC_CONFIG_FILES([scafacos-fcs.mk])
+AC_CONFIG_FILES([scafacos.pc])
+AC_CONFIG_FILES([scafacos.mk])
 
 AC_OUTPUT
 
