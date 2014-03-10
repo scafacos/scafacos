@@ -52,7 +52,7 @@ typedef fcs_int p3m_int;
 #endif
 
 #ifdef FCS_USE_COMMON_FFTW
-#define fftw_plan fcs_fftw_plan;
+#define fftw_plan fcs_fftw_plan
 #else
 #define fftw_plan FFTW_MANGLE(plan)
 #endif
