@@ -64,14 +64,14 @@ void ifcs_p3m_set_near_field_flag(void *rd, fcs_int flag) {
 
 FCSResult ifcs_p3m_set_triclinic_flag(void *rd) {
         P3M_DEBUG_LOCAL(printf("P3M triclinic: triclinic box detected.\n"));
-#if defined(P3M_INTERLACE) && defined(P3M_AD)
+//#if defined(P3M_INTERLACE) && defined(P3M_AD)
         Solver *d = static_cast<Solver *> (rd);
         d->triclinic = true;
         return FCS_RESULT_SUCCESS;
-#else
-        return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name,
-                "p3m triclinic is only implemented with interlaced AD so far.");
-#endif
+//#else
+//        return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name,
+//                "p3m triclinic is only implemented with interlaced AD so far.");
+//#endif
 }
 
 void ifcs_p3m_set_box_a(void* rd, fcs_float a) {
@@ -99,12 +99,12 @@ void ifcs_p3m_set_box_geometry(void *rd, const fcs_float *a, const fcs_float *b,
     Solver *d = static_cast<Solver *>(rd);
 
     for (p3m_int i = 0; i < 3; i++) {
-        d->box_matrix[0][i] = a[i];
-        d->box_matrix[1][i] = b[i];
-        d->box_matrix[2][i] = c[i];
+        d->box_vectors[0][i] = a[i];
+        d->box_vectors[1][i] = b[i];
+        d->box_vectors[2][i] = c[i];
     }
     
-    d->volume = d->box_matrix[0][0]*d->box_matrix[1][1]*d->box_matrix[2][2];
+    d->volume = d->box_vectors[0][0]*d->box_vectors[1][1]*d->box_vectors[2][2];
 }
 
 void ifcs_p3m_set_r_cut(void *rd, fcs_float r_cut) {

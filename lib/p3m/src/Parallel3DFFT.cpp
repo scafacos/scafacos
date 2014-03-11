@@ -544,10 +544,10 @@ void Parallel3DFFT::backward(p3m_float *data) {
 #ifdef ADDITIONAL_CHECKS
 	for (i = 0; i < plan[1].new_size; i++)
 		if (data[2 * i + 1] > 1e-5) {
-			printf("    %d: Complex value is not zero (i=%d,data=%g)!!!\n",
+			printf("    %d: Imaginary value is not zero (i=%d,data=%g)!!!\n",
 					comm.rank, i, data[2 * i + 1]);
-			if (i > 100)
-				exit(-1);
+			//if (i > 100)
+			//	exit(-1);
 		}
 #endif
 #else

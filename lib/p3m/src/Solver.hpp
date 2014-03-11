@@ -61,8 +61,8 @@ public:
     p3m_float box_l[3];
     /* Skin */
     p3m_float skin;
-    /* matrix containing the box vectors */
-    p3m_float box_matrix[3][3];
+    /* the complete box vectors */
+    p3m_float box_vectors[3][3];
     /* Volume of the box */
     p3m_float volume;
     /****************************************************

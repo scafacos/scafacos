@@ -123,11 +123,14 @@ FCSResult ifcs_p2nfft_run(
   fcs_gridsort_create(&gridsort);
   
   fcs_gridsort_set_system(&gridsort, d->box_base, d->ebox_a, d->ebox_b, d->ebox_c, d->periodicity);
-
+  printf("ebox: \n%f %f %f\n%f %f %f\n%f %f %f\n",d->ebox_a[0],d->ebox_b[0],d->ebox_c[0],d->ebox_a[1],d->ebox_b[1],d->ebox_c[1],d->ebox_a[2],d->ebox_b[2],d->ebox_c[2]);
   fcs_gridsort_set_bounds(&gridsort, d->lower_border, d->upper_border);
 
   fcs_gridsort_set_particles(&gridsort, local_num_particles, max_local_num_particles, positions, charges);
-
+  fcs_int i;      
+  for(i=0; i <local_num_particles; i++){
+            printf("positions %d : %f %f %f \n", i , positions[3*i],positions[3*i+1],positions[3*i+2]);
+        }
   fcs_gridsort_set_max_particle_move(&gridsort, d->max_particle_move);
 
   fcs_gridsort_set_cache(&gridsort, &d->gridsort_cache);
@@ -203,7 +206,7 @@ FCSResult ifcs_p2nfft_run(
 
     // fcs_int *periodicity = NULL; /* sorter uses periodicity of the communicator */
     fcs_near_set_system(&near, d->box_base, d->box_a, d->box_b, d->box_c, d->periodicity);
-  
+    printf("nearbox: \n%f %f %f\n%f %f %f\n%f %f %f\n",d->box_a[0],d->box_b[0],d->box_c[0],d->box_a[1],d->box_b[1],d->box_c[1],d->box_a[2],d->box_b[2],d->box_c[2]);
     fcs_near_set_particles(&near, sorted_num_particles, sorted_num_particles, sorted_positions, sorted_charges, sorted_indices,
         (compute_field)?sorted_field:NULL, (compute_potentials)?sorted_potentials:NULL);
   
@@ -395,11 +398,16 @@ FCSResult ifcs_p2nfft_run(
     
   /* Perform NFFT */
   FCS_PNFFT(trafo)(d->pnfft);
-
+    printf("near fields:\n");
+for (fcs_int j = 0; j < sorted_num_particles; ++j){
+    sorted_potentials[j] += creal(f[j]);
+    printf("part %d: %f %f %f\n", j , sorted_field[3*j],sorted_field[3*j+1],sorted_field[3*j+2]);
+  }
   /* Copy the results to the output vector and rescale with L^{-T} */
+  printf("far fields:\n");
   for (fcs_int j = 0; j < sorted_num_particles; ++j){
     sorted_potentials[j] += creal(f[j]);
-
+    printf("part %d: %f %f %f\n", j , -fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 0) ),-fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 1) ), -fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 2) ));
     sorted_field[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 0) );
     sorted_field[3 * j + 1] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 1) );
     sorted_field[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 2) );
