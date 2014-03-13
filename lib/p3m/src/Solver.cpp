@@ -166,7 +166,7 @@ void printSendGrid(send_grid_t sm);
      All parameters have to be set. */
 void Solver::prepare() {
     P3M_DEBUG(printf("  P3M::Solver::prepare() started... \n"));
-
+    comm.prepare(box_l);
     /* Initializes the (inverse) grid constant ai and the cutoff for charge
      * assignment cao_cut. */
     for (p3m_int i=0; i<3; i++) {
@@ -204,6 +204,7 @@ void Solver::prepare() {
     ks_grid = fft.malloc_data();
 
     /* k-space part */
+#if defined(P3M_IK) 
     /* Calculates the Fourier transformed differential operator.
      *  Remark: This is done on the level of n-vectors and not k-vectors,
      *           i.e. the prefactor i*2*PI/L is missing! */
@@ -217,6 +218,7 @@ void Solver::prepare() {
             d_op[i][grid[i] - j] = -j;
         }
     }
+#endif    
 
     P3M_INFO(printf("    Calculating influence function...\n"));
 #if !defined(P3M_INTERLACE) && defined(P3M_IK)
@@ -491,7 +493,7 @@ void Solver::computeInfluenceFunctionIK() {
                                 +SQR(d_op[RX][n[KX]]*(box_vectors[1][0]*box_vectors[2][1]-box_vectors[1][1]*box_vectors[2][0])+d_op[RY][n[KY]]*(box_vectors[2][0]*box_vectors[0][1]-box_vectors[2][1]*box_vectors[0][0])+d_op[RZ][n[KZ]]*(box_vectors[0][0]*box_vectors[1][1]-box_vectors[0][1]*box_vectors[1][0])));
                         fak2*=1/SQR(volume);
                         }
-                    const p3m_float fak3 = fak1/(fak2 * SQR(denominator)); //   /(triclinic?volume:1.0) Teilen durch volume ist schon in alising sums
+                    const p3m_float fak3 = fak1/(fak2 * SQR(denominator)); //   /(triclinic?volume:1.0) Teilen durch volume ist schon in aliasing sums
                     g_force[ind] = M_2_PI*fak3;
                     g_energy[ind] = 0.5 * g_force[ind];
                     /* g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator); */
@@ -644,31 +646,32 @@ void Solver::performAliasingSumsADI(
          const p3m_int nmz = nmz0 + grid[RZ]*mz;
          const p3m_float sz  = sy*pow(sinc(nmz/(p3m_float)grid[RZ]), 2.0*cao);
          
-         p3m_float nm2=0.0;
-         if (triclinic) {
-             p3m_int i;
-             const p3m_int nNm[3] = {nmx, nmy, nmz};
-             
-             for (i = 0; i < 3; i++) {
-             int j = (i + 1) % 3;
-             int k = (i + 2) % 3;
-
-             nm2 += SQR((nNm[i]*(box_vectors[j][j] * box_vectors[k][k]\
-             - box_vectors[j][k] * box_vectors[k][j]) + nNm[j]\
-             *(box_vectors[k][j] * box_vectors[i][k] - box_vectors[k][k]\
-             * box_vectors[i][j]) + nNm[k]*(box_vectors[i][j]\
-             * box_vectors[j][k] - box_vectors[i][k] * box_vectors[j][j])));
-
-             }
-             nm2 *= 1 / SQR(volume);
-         } else {
+         p3m_float nm2 = 0.0;
+         if (!triclinic) {
              nm2 =
                      SQR(nmx / box_l[RX]) +
                      SQR(nmy / box_l[RY]) +
                      SQR(nmz / box_l[RZ]);
-                }
-         const p3m_float prefactor2 = sz*exp(-prefactor*nm2)
-         /(triclinic?volume:1.0);
+         } else {
+             p3m_int i;
+             const p3m_int nNm[3] = {nmx, nmy, nmz};
+
+             for (i = 0; i < 3; i++) {
+                 int j = (i + 1) % 3;
+                 int k = (i + 2) % 3;
+
+                 nm2 += SQR((nNm[i]*(box_vectors[j][j] * box_vectors[k][k]\
+                 - box_vectors[j][k] * box_vectors[k][j]) + nNm[j]\
+                 *(box_vectors[k][j] * box_vectors[i][k] - box_vectors[k][k]\
+                 * box_vectors[i][j]) + nNm[k]*(box_vectors[i][j]\
+                 * box_vectors[j][k] - box_vectors[i][k] * box_vectors[j][j])));
+            }
+             
+            nm2 *= 1 / SQR(volume);
+
+        }
+        const p3m_float prefactor2 = sz * exp(-prefactor * nm2)
+                / (triclinic ? volume:1.0);
 
          numerator_energy += prefactor2/nm2;
          numerator_force  += prefactor2;
@@ -856,19 +859,9 @@ void Solver::run(
             timings[i] = 0.0;
     }
 
-        p3m_float *_positions_triclinic = new p3m_float[3 * _num_particles];
-        if (triclinic) { //get triclinic positions for long range calculations
+        if (triclinic) {
             box_l[0] = box_l[1] = box_l[2] = 1.0;
-//            alpha=1.287684;cao=6;grid[0]=24; grid[1]=16; grid[2]=20;
-//r_cut=2.828427;
-       
-            /*for case with 20 particles */
-//                     alpha=1.405948;cao=6;grid[0]=46; grid[1]=32; grid[2]=40;
-//r_cut=2.784955;   
-//           alpha=1.175982;cao=6;grid[0]=24; grid[1]=16; grid[2]=20; 
-            this->calculateTriclinicPositions(_positions, _positions_triclinic,
-                    _num_particles);
-          //  this->prepare();
+            this->prepare();
         }
     
     P3M_INFO(printf("    "
@@ -885,7 +878,6 @@ void Solver::run(
     P3M_DEBUG_LOCAL(printf("    %d: num_particles=%d\n",    \
             comm.rank, _num_particles));
 
-
     /* decompose system */
     p3m_int num_real_particles;
     p3m_int num_ghost_particles;
@@ -895,7 +887,7 @@ void Solver::run(
     fcs_gridsort_t gridsort;
 
     START(TIMING_DECOMP);
-    //triclinic?_positions_triclinic:
+    
     this->decompose(&gridsort,
             _num_particles, _positions, _charges,
             &num_real_particles,
@@ -938,22 +930,6 @@ this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
     //this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
 #endif
 
-//    START(TIMING_COMP);
-//    /* sort particles back */
-//    P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
-//    fcs_gridsort_sort_backward(&gridsort,
-//            fields, potentials,
-//            _fields, _potentials, 1,
-//            comm.mpicomm);
-//    P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
-//
-//    fcs_gridsort_free(&gridsort);
-//    fcs_gridsort_destroy(&gridsort);
-//
-//    sdelete(fields);
-//    sdelete(potentials);
-//
-//    STOP(TIMING_COMP);
     for(p3m_int i;i<std::min(num_real_particles,20);i++){
         printf("field %d after long range: %f %f %f\n",i,fields[3*i],fields[3*i+1],fields[3*i+2]);
     }
@@ -965,52 +941,10 @@ this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
         /* start near timer */
         START(TIMING_NEAR);
         
-//        for(p3m_int i=0; i <num_real_particles; i++){
-//            positions[3*i]=positions[3*i]*box_matrix[0][0]+positions[3*i+1]*box_matrix[1][0]+positions[3*i+2]*box_matrix[2][0];
-//            positions[3*i+1]=positions[3*i+1]*box_matrix[1][1]+positions[3*i+2]*box_matrix[2][1];
-//            positions[3*i+2]=positions[3*i+2]*box_matrix[2][2];
-//            printf("near positions %d : %f %f %f \n", i , positions[3*i],positions[3*i+1],positions[3*i+2]);
-//        }
-        
-
-        
-//             /* decompose system */
-//        p3m_int num_real_particles;
-//        p3m_int num_ghost_particles;
-//        p3m_float *positions, *ghost_positions;
-//        p3m_float *charges, *ghost_charges;
-//        fcs_gridsort_index_t *indices, *ghost_indices;
-//        fcs_gridsort_t gridsort_near;
-//
-//        START(TIMING_DECOMP);
-//        
-//        //todo change this flag stuff
-//        bool triclinic_old=triclinic;
-//        triclinic=false;
-//        this->decompose(&gridsort_near,
-//                _num_particles, _positions, _charges,
-//                &num_real_particles,
-//                &positions, &charges, &indices,
-//                &num_ghost_particles,
-//                &ghost_positions, &ghost_charges, &ghost_indices);
-//        triclinic=triclinic_old;
-//        /* allocate local fields and potentials */
-        p3m_float *fields_near, *potentials_near,*_fields_near,*_potentials_near;
-        if (_fields != NULL)
-            fields_near = new p3m_float[3 * num_real_particles];
-        if (_potentials != NULL || require_total_energy)
-            potentials_near = new p3m_float[num_real_particles];
- _potentials_near = new p3m_float[num_real_particles]; _fields_near = new p3m_float[3*num_real_particles];       
-//
-//        STOP(TIMING_DECOMP);
-//        
+  
         /* compute near field */
         fcs_near_t near;
 
-        
-        
-        
-        
         fcs_near_create(&near);
         /*  fcs_near_set_field_potential(&near, compute_near);*/
         fcs_near_set_loop(&near, compute_near_loop);
@@ -1031,29 +965,7 @@ this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
         P3M_DEBUG(printf( "  returning from fcs_near_compute().\n"));
             
         fcs_near_destroy(&near);
-        
-      
-    /* add near range to long range potentials and fields*/
-        for(p3m_int i=0;i<std::min(_num_particles,20);i++){
-        printf("field %d after short range: %f %f %f\n",i,fields_near[3*i],fields_near[3*i+1],fields_near[3*i+2]);
-    }
-//    
-//    for(p3m_int j = 0; j < num_real_particles; j++) {
-//                _fields[3 * j] += _fields_near[3 * j];
-//                _fields[3 * j + 1] += _fields_near[3 * j + 1];
-//                _fields[3 * j + 2] += _fields_near[3 * j + 2];
-//                _potentials[j] += _potentials_near[j];
-//            }
-            
-//    fcs_gridsort_free(&gridsort_near);
-//    fcs_gridsort_destroy(&gridsort_near);
-//    
-    sdelete(fields_near);
-    sdelete(potentials_near);
-//    sdelete(_fields_near);
-//    sdelete(_potentials_near);
-   
-
+ 
         STOP(TIMING_NEAR);
     }
 
@@ -1373,9 +1285,9 @@ void Solver::computeFarIK(
                     * positions[3 * i + 2];
             triclinic_positions[3 * i + 2] = 1 / box_vectors[2][2]
                     * positions[3 * i + 2];
-            P3M_DEBUG_LOCAL(printf("triclinic position %d: %f %f %f \n", i,
-                    triclinic_positions[3*i],triclinic_positions[3*i+1],
-                    triclinic_positions[3*i+2]));
+//            P3M_DEBUG_LOCAL(printf("triclinic position %d: %f %f %f \n", i,
+//                    triclinic_positions[3*i],triclinic_positions[3*i+1],
+//                    triclinic_positions[3*i+2]));
         }
     }
 
@@ -1931,7 +1843,7 @@ Solver::cartesianizeFields(p3m_float *fields, p3m_int num_particles){
             -(box_vectors[2][1]) / (box_vectors[1][1] * box_vectors[2][2]) 
             * fields[3 * part_no + 1]
             + 1 / box_vectors[2][2] * fields[3 * part_no + 2];
-        
+   //todo: -boxbx oder boxby?     
         fields[3 * part_no + 1] =
             -(box_vectors[1][0]) / (box_vectors[0][0] * box_vectors[1][1])
             * fields[3 * part_no]
@@ -1974,7 +1886,7 @@ Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
     /* Prepare the communicator before tuning */
 //    p3m_float l[3]={4.0,2.0,2.0};
 //    comm.prepare(l);
-    comm.prepare(box_l);
+
 
     /* Count the charges */
     p3m_float sum_q2_before = sum_q2;
