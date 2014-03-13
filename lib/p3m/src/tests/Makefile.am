@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-DUMMY:=$(eval include $(top_builddir)/package/scafacos-fcs.mk)
+DUMMY:=$(eval include $(top_builddir)/package/scafacos.mk)
 
 check_PROGRAMS = compute_error
 compute_error_SOURCES = compute_error.cpp

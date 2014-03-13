@@ -1,7 +1,7 @@
 
-# Get linker flags from scafacos-fcs.mk. (The assignment and evaluation is
-# required to force Automake to include 'scafacos-fcs.mk' early enough.)
-DUMMY:=$(eval include $(top_builddir)/package/scafacos-fcs.mk)
+# Get linker flags from scafacos.mk. (The assignment and evaluation is
+# required to force Automake to include 'scafacos.mk' early enough.)
+DUMMY:=$(eval include $(top_builddir)/package/scafacos.mk)
 
 # Preprocessor flags.
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/lib -I$(top_srcdir)/lib/common/fcs-common

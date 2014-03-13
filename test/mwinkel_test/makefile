@@ -2,8 +2,8 @@
 
 all: scafacos_verify scafacos_verify_f
 
-FCSLIB = $(shell pkg-config --libs scafacos-fcs)
-FCSINC = $(shell pkg-config --cflags scafacos-fcs)
+FCSLIB = $(shell pkg-config --libs scafacos)
+FCSINC = $(shell pkg-config --cflags scafacos)
 
 
 %.o: %.c

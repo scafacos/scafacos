@@ -103,8 +103,8 @@ of the code with ScaFaCoS included. Figure \ref{fig:pkg-usage} shows how pkg-con
 \begin{figure}[htb]
 \begin{lstlisting}[language=bash, breaklines, prebreak={\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}}} ]
 export PKG_CONFIG_PATH=<ScaFaCoS install path>/lib/pkg-config:${PKG_CONFIG_PATH}
-FCSLIB=$(shell pkg-config --libs scafacos-fcs)
-FCSINC=$(shell pkg-config --cflags scafacos-fcs)
+FCSLIB=$(shell pkg-config --libs scafacos)
+FCSINC=$(shell pkg-config --cflags scafacos)
 gcc -o <application name> [other options] ${FCSLIB} ${FCSINC} <source(s)>
 \end{lstlisting}
 \caption{exemplary usage of pkg-config to get the necessary information for compilation}
