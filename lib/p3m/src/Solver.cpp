@@ -879,6 +879,7 @@ void Solver::run(
     P3M_DEBUG_LOCAL(printf("    %d: num_particles=%d\n",    \
             comm.rank, _num_particles));
 
+
     /* decompose system */
     p3m_int num_real_particles;
     p3m_int num_ghost_particles;
@@ -888,14 +889,13 @@ void Solver::run(
     fcs_gridsort_t gridsort;
 
     START(TIMING_DECOMP);
-    
     this->decompose(&gridsort,
             _num_particles, _positions, _charges,
             &num_real_particles,
             &positions, &charges, &indices,
             &num_ghost_particles,
             &ghost_positions, &ghost_charges, &ghost_indices);
-    
+
     /* allocate local fields and potentials */
     p3m_float *fields = NULL;
     p3m_float *potentials = NULL;
@@ -903,8 +903,8 @@ void Solver::run(
         fields = new p3m_float[3*num_real_particles];
     if (_potentials != NULL || require_total_energy)
         potentials = new p3m_float[num_real_particles];
+
     STOP(TIMING_DECOMP);
-    
 
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
     if(!triclinic){ //orthorhombic
@@ -938,8 +938,7 @@ this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
     if (near_field_flag) {
         /* start near timer */
         START(TIMING_NEAR);
-        
-  
+
         /* compute near field */
         fcs_near_t near;
 
@@ -953,7 +952,7 @@ this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
         fcs_near_set_particles(&near, num_real_particles, num_real_particles,
                 positions, charges, indices,
                 (_fields != NULL) ? fields : NULL,
-                (_potentials != NULL) ? potentials : NULL);
+                        (_potentials != NULL) ? potentials : NULL);
 
         fcs_near_set_ghosts(&near, num_ghost_particles,
                 ghost_positions, ghost_charges, ghost_indices);
@@ -961,9 +960,9 @@ this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
         P3M_DEBUG(printf( "  calling fcs_near_compute()...\n"));
         fcs_near_compute(&near, r_cut, &alpha, comm.mpicomm);
         P3M_DEBUG(printf( "  returning from fcs_near_compute().\n"));
-            
+
         fcs_near_destroy(&near);
- 
+
         STOP(TIMING_NEAR);
     }
 
@@ -975,7 +974,18 @@ this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
             _fields, _potentials, 1,
             comm.mpicomm);
     P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
-     STOP(TIMING_COMP);
+
+    fcs_gridsort_free(&gridsort);
+    fcs_gridsort_destroy(&gridsort);
+
+    sdelete(fields);
+    sdelete(potentials);
+
+    STOP(TIMING_COMP);
+
+    /* collect timings from the different nodes */
+    if (require_timings != NONE) this->collectPrintTimings();
+
     P3M_INFO(printf( "P3M::Solver::run() finished.\n"));
 }
 
@@ -1141,9 +1151,6 @@ void Solver::computeFarADI(
             timings[TIMING_BACK] = timings[TIMING_FORWARD];
     }
 
-    /* collect timings from the different nodes */
-    if (require_timings!=NONE) this->collectPrintTimings();
-
     P3M_INFO(printf( "P3M::Solver::compute_far_adi() finished.\n"));
 }
 
@@ -1257,9 +1264,6 @@ void Solver::computeFarIK(
             timings[TIMING_BACK] = 3 * timings[TIMING_FORWARD];
     }
 
-    /* collect timings from the different nodes */
-    if (require_timings != NONE) this->collectPrintTimings();
-
     P3M_INFO(printf( "P3M::Solver::compute_far_ik() finished.\n"));
 }
 
@@ -1312,7 +1316,7 @@ void Solver::decompose(fcs_gridsort_t *gridsort,
     
             fcs_gridsort_set_particles(gridsort, _num_particles, _num_particles,
             _positions, _charges);
-       
+
     P3M_DEBUG(printf( "  calling fcs_gridsort_sort_forward()...\n"));
     /* @todo: Set skin to r_cut only, when near field is wanted! */
     fcs_gridsort_sort_forward(gridsort,
@@ -1594,7 +1598,6 @@ void Solver::collectPrintTimings() {
         printf("     comp=%le (%lf)\n", timings[TIMING_COMP],
                 timings[TIMING_COMP]/timings[TIMING]);
     }
-    
 #endif
 
 }
@@ -1875,9 +1878,6 @@ static const p3m_int num_steps_good_gridsize = 14;
 void
 Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
     /* Prepare the communicator before tuning */
-//    p3m_float l[3]={4.0,2.0,2.0};
-//    comm.prepare(l);
-
 
     /* Count the charges */
     p3m_float sum_q2_before = sum_q2;
@@ -2025,12 +2025,12 @@ Solver::tuneFar(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
 
         if (float_is_zero(_r_cut))
             throw std::domain_error("r_cut is too small!");
-//        printf("boxlengths ... %f %f %f \n", box_l[0],box_l[1],box_l[2]);
-//        /* check whether cutoff is larger than half a box length */
-//        if ((_r_cut > 0.5*box_l[0]) ||
-//                (_r_cut > 0.5*box_l[1]) ||
-//                (_r_cut > 0.5*box_l[2]))
-//            throw std::domain_error("r_cut is larger than half a system box length.");
+
+        /* check whether cutoff is larger than half a box length */
+        if ((_r_cut > 0.5*box_l[0]) ||
+                (_r_cut > 0.5*box_l[1]) ||
+                (_r_cut > 0.5*box_l[2]))
+            throw std::domain_error("r_cut is larger than half a system box length.");
 
         /* check whether cutoff is larger than domain size */
 
