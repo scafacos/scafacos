@@ -474,8 +474,8 @@ void Solver::computeInfluenceFunctionIK() {
                             numerator_energy,
                             denominator);
 
-                    p3m_float fak1; //  k scalar numerator force (besides 2 pi)
-                    p3m_float fak2; //  k squared (besides 2 pi)
+                    p3m_float fak1; //  k scalar numerator force (besides prefactors)
+                    p3m_float fak2; //  k squared (besides prefactors)
                     if (!triclinic) {
                         fak1 =  d_op[RX][n[KX]] * numerator_force[RX] / box_l[RX] +
                                 d_op[RY][n[KY]] * numerator_force[RY] / box_l[RY] +
@@ -484,16 +484,16 @@ void Solver::computeInfluenceFunctionIK() {
                                 SQR(d_op[RY][n[KY]] / box_l[RY]) +
                                 SQR(d_op[RZ][n[KZ]] / box_l[RZ]);
                         } else{
-                        fak1=numerator_force[RX]*(d_op[RX][n[KX]]*(box_vectors[1][1]*box_vectors[2][2]-box_vectors[1][2]*box_vectors[2][1])+d_op[RY][n[KY]]*(box_vectors[2][1]*box_vectors[0][2]-box_vectors[2][2]*box_vectors[0][1])+d_op[RZ][n[KZ]]*(box_vectors[0][1]*box_vectors[1][2]-box_vectors[0][2]*box_vectors[1][1]))
-                                +numerator_force[RY]*(d_op[RX][n[KX]]*(box_vectors[1][2]*box_vectors[2][0]-box_vectors[1][0]*box_vectors[2][2])+d_op[RY][n[KY]]*(box_vectors[2][2]*box_vectors[0][0]-box_vectors[2][0]*box_vectors[0][2])+d_op[RZ][n[KZ]]*(box_vectors[0][2]*box_vectors[1][0]-box_vectors[0][0]*box_vectors[1][2]))
-                                +numerator_force[RZ]*(d_op[RX][n[KX]]*(box_vectors[1][0]*box_vectors[2][1]-box_vectors[1][1]*box_vectors[2][0])+d_op[RY][n[KY]]*(box_vectors[2][0]*box_vectors[0][1]-box_vectors[2][1]*box_vectors[0][0])+d_op[RZ][n[KZ]]*(box_vectors[0][0]*box_vectors[1][1]-box_vectors[0][1]*box_vectors[1][0]));
+                        fak1=numerator_force[RX]*(d_op[RX][n[KX]]*(box_vectors[1][1]*box_vectors[2][2]))
+                                +numerator_force[RY]*(d_op[RX][n[KX]]*(-box_vectors[1][0]*box_vectors[2][2])+d_op[RY][n[KY]]*(box_vectors[2][2]*box_vectors[0][0]))
+                                +numerator_force[RZ]*(d_op[RX][n[KX]]*(box_vectors[1][0]*box_vectors[2][1]-box_vectors[1][1]*box_vectors[2][0])-d_op[RY][n[KY]]*box_vectors[2][1]*box_vectors[0][0]+d_op[RZ][n[KZ]]*(box_vectors[0][0]*box_vectors[1][1]));//correct k
                         fak1*=1/volume;
-                        fak2 = (SQR(d_op[RX][n[KX]]*(box_vectors[1][1]*box_vectors[2][2]-box_vectors[1][2]*box_vectors[2][1])+d_op[RY][n[KY]]*(box_vectors[2][1]*box_vectors[0][2]-box_vectors[2][2]*box_vectors[0][1])+d_op[RZ][n[KZ]]*(box_vectors[0][1]*box_vectors[1][2]-box_vectors[0][2]*box_vectors[1][1]))
-                                +SQR(d_op[RX][n[KX]]*(box_vectors[1][2]*box_vectors[2][0]-box_vectors[1][0]*box_vectors[2][2])+d_op[RY][n[KY]]*(box_vectors[2][2]*box_vectors[0][0]-box_vectors[2][0]*box_vectors[0][2])+d_op[RZ][n[KZ]]*(box_vectors[0][2]*box_vectors[1][0]-box_vectors[0][0]*box_vectors[1][2]))
-                                +SQR(d_op[RX][n[KX]]*(box_vectors[1][0]*box_vectors[2][1]-box_vectors[1][1]*box_vectors[2][0])+d_op[RY][n[KY]]*(box_vectors[2][0]*box_vectors[0][1]-box_vectors[2][1]*box_vectors[0][0])+d_op[RZ][n[KZ]]*(box_vectors[0][0]*box_vectors[1][1]-box_vectors[0][1]*box_vectors[1][0])));
+                        fak2 = SQR(d_op[RX][n[KX]]*(box_vectors[1][1]*box_vectors[2][2]))
+                                +SQR(d_op[RX][n[KX]]*(box_vectors[1][0]*box_vectors[2][2])+d_op[RY][n[KY]]*(box_vectors[2][2]*box_vectors[0][0]))
+                                +SQR(d_op[RX][n[KX]]*(box_vectors[1][0]*box_vectors[2][1]-box_vectors[1][1]*box_vectors[2][0])-d_op[RY][n[KY]]*box_vectors[2][1]*box_vectors[0][0]+d_op[RZ][n[KZ]]*(box_vectors[0][0]*box_vectors[1][1]));//correct k
                         fak2*=1/SQR(volume);
                         }
-                    const p3m_float fak3 = fak1/(fak2 * SQR(denominator)); //   /(triclinic?volume:1.0) Teilen durch volume ist schon in aliasing sums
+                    const p3m_float fak3 = fak1/(fak2 * SQR(denominator));
                     g_force[ind] = M_2_PI*fak3;
                     g_energy[ind] = 0.5 * g_force[ind];
                     /* g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator); */
@@ -531,30 +531,31 @@ void Solver::performAliasingSumsIK(
             for (p3m_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
                 const p3m_int nmz = nmz0 + grid[RZ]*mz;
                 const p3m_float sz  = sy*pow(sinc(nmz/(p3m_float)grid[RZ]),2.0*cao);
-                //const 
-                p3m_float nm2 = 0.0;
-         if (triclinic) {
-             p3m_int i;
-             const p3m_int nNm[3] = {nmx, nmy, nmz};
-             
-             for (i = 0; i < 3; i++) {
-             int j = (i + 1) % 3;
-             int k = (i + 2) % 3;
 
-             nm2 += SQR((nNm[i]*(box_vectors[j][j] * box_vectors[k][k]\
+                p3m_float nm2 = 0.0;
+         if (!triclinic) {
+            nm2 =
+                    SQR(nmx / box_l[RX]) +
+                    SQR(nmy / box_l[RY]) +
+                    SQR(nmz / box_l[RZ]);
+
+            } else {
+                p3m_int i;
+                const p3m_int nNm[3] = {nmx, nmy, nmz};
+
+            for (i = 0; i < 3; i++) {
+                int j = (i + 1) % 3;
+                int k = (i + 2) % 3;
+
+            nm2 += SQR((nNm[i]*(box_vectors[j][j] * box_vectors[k][k]\
              - box_vectors[j][k] * box_vectors[k][j]) + nNm[j]\
              *(box_vectors[k][j] * box_vectors[i][k] - box_vectors[k][k]\
              * box_vectors[i][j]) + nNm[k]*(box_vectors[i][j]\
              * box_vectors[j][k] - box_vectors[i][k] * box_vectors[j][j])));
 
-             }
-             nm2 *= 1 / SQR(volume);
-         } else {
-             nm2 =
-                     SQR(nmx / box_l[RX]) +
-                     SQR(nmy / box_l[RY]) +
-                     SQR(nmz / box_l[RZ]);
-                }
+                        }
+                        nm2 *= 1 / SQR(volume);
+                    }
                 const p3m_float prefactor2 = sz*exp(-prefactor*nm2)/nm2/(triclinic?volume:1.0);
 
                 numerator_energy += prefactor2;
@@ -563,9 +564,9 @@ void Solver::performAliasingSumsIK(
                 numerator_force[RY] += prefactor2*nmy/box_l[RY];
                 numerator_force[RZ] += prefactor2*nmz/box_l[RZ];
                 }else{
-                numerator_force[RX] += prefactor2*(nmx*(box_vectors[1][1]*box_vectors[2][2]-box_vectors[1][2]*box_vectors[2][1])+nmy*(box_vectors[2][1]*box_vectors[0][2]-box_vectors[2][2]*box_vectors[0][1])+nmz*(box_vectors[0][1]*box_vectors[1][2]-box_vectors[0][2]*box_vectors[1][1]));
-                numerator_force[RY] += prefactor2*(nmx*(box_vectors[1][2]*box_vectors[2][0]-box_vectors[1][0]*box_vectors[2][2])+nmy*(box_vectors[2][2]*box_vectors[0][0]-box_vectors[2][0]*box_vectors[0][2])+nmz*(box_vectors[0][2]*box_vectors[1][0]-box_vectors[0][0]*box_vectors[1][2]));
-                numerator_force[RZ] += prefactor2*(nmx*(box_vectors[1][0]*box_vectors[2][1]-box_vectors[1][1]*box_vectors[2][0])+nmy*(box_vectors[2][0]*box_vectors[0][1]-box_vectors[2][1]*box_vectors[0][0])+nmz*(box_vectors[0][0]*box_vectors[1][1]-box_vectors[0][1]*box_vectors[1][0]));
+                numerator_force[RX] += prefactor2*(nmx*(box_vectors[1][1]*box_vectors[2][2]))/volume;
+                numerator_force[RY] += prefactor2*(nmx*(-box_vectors[1][0]*box_vectors[2][2])+nmy*(box_vectors[2][2]*box_vectors[0][0]))/volume;
+                numerator_force[RZ] += prefactor2*(nmx*(box_vectors[1][0]*box_vectors[2][1]-box_vectors[1][1]*box_vectors[2][0])+nmy*(-box_vectors[2][1]*box_vectors[0][0])+nmz*(box_vectors[0][0]*box_vectors[1][1]))/volume;//correct k
                 }
                 denominator  += sz;
             }
@@ -902,9 +903,6 @@ void Solver::run(
         fields = new p3m_float[3*num_real_particles];
     if (_potentials != NULL || require_total_energy)
         potentials = new p3m_float[num_real_particles];
-//for(p3m_int i;i<std::min(_num_particles,10);i++){
-//        printf("position %d after decomp long range: %f %f %f\n",indices[i],positions[3*i],positions[3*i+1],positions[3*i+2]);
-//    }
     STOP(TIMING_DECOMP);
     
 
@@ -927,7 +925,7 @@ this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
     this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
     this->computeFarIK(num_real_particles, positions_triclinic, charges, fields, potentials);
     }
-    //this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
+    
 #endif
 
     for(p3m_int i;i<std::min(num_real_particles,20);i++){
@@ -1285,9 +1283,10 @@ void Solver::computeFarIK(
                     * positions[3 * i + 2];
             triclinic_positions[3 * i + 2] = 1 / box_vectors[2][2]
                     * positions[3 * i + 2];
-//            P3M_DEBUG_LOCAL(printf("triclinic position %d: %f %f %f \n", i,
-//                    triclinic_positions[3*i],triclinic_positions[3*i+1],
-//                    triclinic_positions[3*i+2]));
+            
+            P3M_DEBUG_LOCAL(if(i<10)printf("triclinic position %d: %f %f %f \n", i,
+                    triclinic_positions[3*i],triclinic_positions[3*i+1],
+                    triclinic_positions[3*i+2]));
         }
     }
 
@@ -1307,16 +1306,9 @@ void Solver::decompose(fcs_gridsort_t *gridsort,
     p3m_int num_particles;
 
     fcs_gridsort_create(gridsort);
-//    if(triclinic) {
-//            p3m_float box_a[3] = {box_l[0], 0.0, 0.0};
-//            p3m_float box_b[3] = {0.0, box_l[1], 0.0};
-//            p3m_float box_c[3] = {0.0, 0.0, box_l[2]};
-//            fcs_gridsort_set_system(gridsort, box_base,
-//                    box_a, box_b, box_c, NULL);
-//        } else {
+
             fcs_gridsort_set_system(gridsort, box_base,
                     box_vectors[0], box_vectors[1], box_vectors[2], NULL);         
-//        }
     
             fcs_gridsort_set_particles(gridsort, _num_particles, _num_particles,
             _positions, _charges);
@@ -1637,12 +1629,11 @@ void Solver::differentiateIK(int dim, p3m_float* in, p3m_float* out) {
                         out[ind+1] =
                         2.0*M_PI*in[ind] * d_operator[ j[dim]+fft.plan[3].start[dim] ]
                                 / box_l[dim_rs];
-                    } else { //triclinic case
-		      // box_vectors[(dim)%3][(dim)%3]*box_vectors[(dim+1)%3][(dim+1)%3]-box_vectors[(dim+1)%3][(dim)%3]*box_vectors[(dim)%3][(dim+1)%3])
-                        out [ind] = -2.0 * M_PI * in[ind + 1] * (d_operator[ j[dim]+fft.plan[3].start[dim] ]*(box_vectors[dim][dim]*box_vectors[(dim+1)%3][(dim+1)%3]-box_vectors[(dim+1)%3][dim]*box_vectors[dim][(dim+1)%3])+d_operator[ j[(dim+1)%3]+fft.plan[3].start[(dim+1)%3] ]*(box_vectors[(dim+2)%3][(dim+1)%3]*box_vectors[dim][(dim+2)%3]-box_vectors[(dim+2)%3][(dim+2)%3]*box_vectors[dim][(dim+1)%3])+d_operator[ j[(dim+2)%3]+fft.plan[3].start[(dim+2)%3] ]*(box_vectors[dim][(dim+1)%3]*box_vectors[(dim+1)%3][(dim+2)%3]-box_vectors[(dim)%3][(dim+2)%3]*box_vectors[(dim+1)%3][(dim+1)%3]))
+                    } else { //triclinic case //k correct
+                        out [ind] = -2.0 * M_PI * in[ind + 1] * (d_operator[ j[dim]+fft.plan[3].start[dim] ]*(box_vectors[(dim+1)%3][(dim+1)%3]*box_vectors[(dim+2)%3][(dim+2)%3]-box_vectors[(dim+1)%3][(dim+2)%3]*box_vectors[(dim+2)%3][(dim+1)%3])+d_operator[ j[(dim+1)%3]+fft.plan[3].start[(dim+1)%3] ]*(box_vectors[(dim+2)%3][(dim+1)%3]*box_vectors[dim][(dim+2)%3]-box_vectors[(dim+2)%3][(dim+2)%3]*box_vectors[dim][(dim+1)%3])+d_operator[ j[(dim+2)%3]+fft.plan[3].start[(dim+2)%3] ]*(box_vectors[dim][(dim+1)%3]*box_vectors[(dim+1)%3][(dim+2)%3]-box_vectors[dim][(dim+2)%3]*box_vectors[(dim+1)%3][(dim+1)%3]))
                                 /volume;
-                     out[ind+1] =
-                                     2.0*M_PI*in[ind] *          (d_operator[ j[dim]+fft.plan[3].start[dim] ]*(box_vectors[dim][dim]*box_vectors[(dim+1)%3][(dim+1)%3]-box_vectors[(dim+1)%3][dim]*box_vectors[dim][(dim+1)%3])+d_operator[ j[(dim+1)%3]+fft.plan[3].start[(dim+1)%3] ]*(box_vectors[(dim+2)%3][(dim+1)%3]*box_vectors[dim][(dim+2)%3]-box_vectors[(dim+2)%3][(dim+2)%3]*box_vectors[dim][(dim+1)%3])+d_operator[ j[(dim+2)%3]+fft.plan[3].start[(dim+2)%3] ]*(box_vectors[dim][(dim+1)%3]*box_vectors[(dim+1)%3][(dim+2)%3]-box_vectors[(dim)%3][(dim+2)%3]*box_vectors[(dim+1)%3][(dim+1)%3]))
+                     out[ind+1] =//k correct
+                                     2.0*M_PI*in[ind] * (d_operator[ j[dim]+fft.plan[3].start[dim] ]*(box_vectors[(dim+1)%3][(dim+1)%3]*box_vectors[(dim+2)%3][(dim+2)%3]-box_vectors[(dim+1)%3][(dim+2)%3]*box_vectors[(dim+2)%3][(dim+1)%3])+d_operator[ j[(dim+1)%3]+fft.plan[3].start[(dim+1)%3] ]*(box_vectors[(dim+2)%3][(dim+1)%3]*box_vectors[dim][(dim+2)%3]-box_vectors[(dim+2)%3][(dim+2)%3]*box_vectors[dim][(dim+1)%3])+d_operator[ j[(dim+2)%3]+fft.plan[3].start[(dim+2)%3] ]*(box_vectors[dim][(dim+1)%3]*box_vectors[(dim+1)%3][(dim+2)%3]-box_vectors[dim][(dim+2)%3]*box_vectors[(dim+1)%3][(dim+1)%3]))
                                 / volume;
                     }
                     ind += 2;
