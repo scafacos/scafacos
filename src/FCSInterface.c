@@ -866,8 +866,6 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
     result = fcs_common_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
     if (matched) goto next_param;
 
-    FCS_PARSE_DUMMY(param);
-
     if (result == FCS_RESULT_SUCCESS)
       result = fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "interface (parser): error in parameter string at '%s'!", param); 
 

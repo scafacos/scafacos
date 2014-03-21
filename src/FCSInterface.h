@@ -331,8 +331,8 @@ FCS_PARSE_MAKE_TYPE_FUNC(fcs_p_char_t, , "%s")
     _r = fcs_##_param_(handle, _vv0, _vv1, _vv2); \
   FCS_PARSE_IF_PARAM_EXTRO()
 
-#define FCS_PARSE_DUMMY(_str_) \
-  if (FCS_PARSE_PARAM_SELECTED(_str_, "EVEN_IF_IT_MATCHES_IT_DOES_NOTHING")) { \
+#define FCS_PARSE_DUMMY() \
+  if (FCS_PARSE_PARAM_SELECTED("EVEN_IF_IT_MATCHES_IT_DOES_NOTHING", EVEN_IF_IT_MATCHES_IT_DOES_NOTHING)) { \
     parse_fcs_int(NULL, NULL); \
     const_fcs_int(0, NULL); \
     parse_fcs_float(NULL, NULL); \

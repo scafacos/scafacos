@@ -39,7 +39,7 @@ FCSResult fcs_common_set_parameter(FCS handle, fcs_bool continue_on_errors, char
 
   *matched = 0;
 
-  FCS_PARSE_DUMMY(param);
+  FCS_PARSE_DUMMY();
 
   return FCS_RESULT_SUCCESS;
 
