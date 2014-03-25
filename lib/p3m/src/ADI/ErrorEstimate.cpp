@@ -21,11 +21,11 @@
  */
 
 #include "utils.hpp"
-#include "ErrorEstimateADI.hpp"
+#include "ErrorEstimate.hpp"
 
-namespace P3M {
+namespace P3M { namespace ADI {
 
-void ErrorEstimateADI::computeKSError(TuneParameters& p, p3m_int num_charges,
+void ErrorEstimate::computeKSError(TuneParameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	/* #ifdef P3M_ENABLE_DEBUG */
 	/*   printf(  */
@@ -89,7 +89,7 @@ void ErrorEstimateADI::computeKSError(TuneParameters& p, p3m_int num_charges,
 }
 
 /** aliasing sum used by \ref k_space_error. */
-void ErrorEstimateADI::KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz,
+void ErrorEstimate::KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz,
 		p3m_int grid[3], p3m_float grid_i[3], p3m_int cao, p3m_float alpha_L_i,
 		p3m_float *alias1, p3m_float *alias2, p3m_float *alias3,
 		p3m_float *alias4, p3m_float *alias5, p3m_float *alias6) {
@@ -129,8 +129,6 @@ void ErrorEstimateADI::KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz,
 	}
 }
 
-
-}
-
+} }
 
 

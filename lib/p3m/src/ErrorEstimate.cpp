@@ -17,8 +17,8 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "ErrorEstimate.hpp"
-#include "ErrorEstimateIK.hpp"
-#include "ErrorEstimateADI.hpp"
+#include "IK/ErrorEstimate.hpp"
+#include "ADI/ErrorEstimate.hpp"
 #include "utils.hpp"
 #include <math.h>
 #include <stdio.h>
@@ -30,9 +30,9 @@ namespace P3M {
 ErrorEstimate*
 ErrorEstimate::create(Communication &comm) {
 #if defined(P3M_AD) && defined(P3M_INTERLACE)
-	return new ErrorEstimateADI(comm);
+	return new ADI::ErrorEstimate(comm);
 #elif defined(P3M_IK) && !defined(P3M_INTERLACE)
-	return new ErrorEstimateIK(comm);
+	return new IK::ErrorEstimate(comm);
 #endif
 }
 

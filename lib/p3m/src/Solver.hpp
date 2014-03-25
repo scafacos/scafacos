@@ -195,7 +195,6 @@ private:
     // submethods of prepare()
     void prepareSendGrid();
     void prepareLocalCAGrid();
-    void prepareDifferentialOperator();
     void printLocalGrid();
     void printSendGrid();
 
@@ -306,7 +305,6 @@ private:
     void tuneBroadcastReceiveParams();
     void tuneLoopSlave(p3m_int num_particles,
             p3m_float *positions, p3m_float *charges);
-
 };
 
 

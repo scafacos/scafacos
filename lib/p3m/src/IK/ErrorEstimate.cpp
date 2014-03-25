@@ -21,12 +21,13 @@
  */
 
 #include "utils.hpp"
-#include "ErrorEstimateIK.hpp"
+#include "ErrorEstimate.hpp"
 
-namespace P3M {
+namespace P3M { namespace IK {
+
 static const p3m_float FULL_ESTIMATE_ALPHA_H_THRESHOLD = 0.5;
 
-void ErrorEstimateIK::computeKSError(TuneParameters& p, p3m_int num_charges,
+void ErrorEstimate::computeKSError(TuneParameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	bool full_estimate = false;
 	// use the full estimate if alpha*h is larger than the threshold in any dimension
@@ -53,7 +54,7 @@ void ErrorEstimateIK::computeKSError(TuneParameters& p, p3m_int num_charges,
 	    computeKSErrorApprox(p, num_charges, sum_q2, box_l);
 }
 
-void ErrorEstimateIK::computeKSErrorApprox(TuneParameters& p,
+void ErrorEstimate::computeKSErrorApprox(TuneParameters& p,
         p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) {
 
 	p3m_float h = box_l[0] / p.grid[0];
@@ -111,7 +112,7 @@ void ErrorEstimateIK::computeKSErrorApprox(TuneParameters& p,
  (Eqn. 8.23) (for a system of N randomly distributed particles in a
  cubic box).
  */
-void ErrorEstimateIK::computeKSErrorFull(TuneParameters& p, p3m_int num_charges,
+void ErrorEstimate::computeKSErrorFull(TuneParameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	/* #ifdef P3M_ENABLE_DEBUG */
 	/*   printf(  */
@@ -194,7 +195,7 @@ void ErrorEstimateIK::computeKSErrorFull(TuneParameters& p, p3m_int num_charges,
  the spline interpolation) can be written as an even trigonometric
  polynomial. The results are tabulated here (The employed formula
  is Eqn. 7.66 in the book of Hockney and Eastwood). */
-p3m_float ErrorEstimateIK::KSErrorSum1(p3m_int n, p3m_float grid_i, p3m_int cao) {
+p3m_float ErrorEstimate::KSErrorSum1(p3m_int n, p3m_float grid_i, p3m_int cao) {
 	p3m_float c, res = 0.0;
 	c = SQR(cos(M_PI * grid_i * (p3m_float) n));
 
@@ -263,7 +264,7 @@ p3m_float ErrorEstimateIK::KSErrorSum1(p3m_int n, p3m_float grid_i, p3m_int cao)
 
 /** aliasing sum used by \ref k_space_error. */
 void
-ErrorEstimateIK::KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
+ErrorEstimate::KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
 		p3m_float grid_i[3], p3m_int cao, p3m_float alpha_L_i,
 		p3m_float *alias1, p3m_float *alias2) {
 	p3m_float prefactor = SQR(M_PI * alpha_L_i);
@@ -292,8 +293,6 @@ ErrorEstimateIK::KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3]
 	}
 }
 
-
-
-}
+}}
 
 

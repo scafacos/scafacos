@@ -153,10 +153,6 @@ Solver::~Solver() {
 /***************************************************/
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
 /***************************************************/
-#ifdef P3M_ENABLE_DEBUG
-void printLocalGrid(local_grid_t l);
-void printSendGrid(send_grid_t sm);
-#endif
 
 /** Prepare the data structures and constants of the P3M algorithm.
      All parameters have to be set. */
@@ -899,7 +895,7 @@ void Solver::run(
 void Solver::computeFarADI(
         p3m_int num_charges, p3m_float* positions, p3m_float* charges,
         p3m_float* fields, p3m_float* potentials) {
-    P3M_INFO(printf( "P3M::Solver::compute_far_adi() started...\n"));
+    P3M_INFO(printf( "P3M::Solver::computeFarADI() started...\n"));
 
     START(TIMING_CA);
 
@@ -1059,13 +1055,13 @@ void Solver::computeFarADI(
     /* collect timings from the different nodes */
     if (require_timings!=NONE) this->collectPrintTimings();
 
-    P3M_INFO(printf( "P3M::Solver::compute_far_adi() finished.\n"));
+    P3M_INFO(printf( "P3M::Solver::computeFarADI() finished.\n"));
 }
 
 void Solver::computeFarIK(
         p3m_int num_charges, p3m_float* positions, p3m_float* charges,
         p3m_float* fields, p3m_float* potentials) {
-    P3M_INFO(printf( "P3M::Solver::compute_far_ik() started...\n"));
+    P3M_INFO(printf( "P3M::Solver::computeFarIK() started...\n"));
 
     START(TIMING_CA);
 
@@ -1175,7 +1171,7 @@ void Solver::computeFarIK(
     /* collect timings from the different nodes */
     if (require_timings != NONE) this->collectPrintTimings();
 
-    P3M_INFO(printf( "P3M::Solver::compute_far_ik() finished.\n"));
+    P3M_INFO(printf( "P3M::Solver::computeFarIK() finished.\n"));
 }
 
 
@@ -1714,7 +1710,7 @@ Solver::assignFieldsAD(p3m_float *data,
 /***************************************************/
 /** Good mesh sizes for fftw
  */
-static const p3m_int good_gridsize[] = {
+const p3m_int good_gridsize[] = {
         0, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
         36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64,
         66, 70, 72, 78, 80, 84, 88, 90, 96, 98, 100, 104, 108, 110, 112, 120, 126, 128,
@@ -1731,9 +1727,9 @@ static const p3m_int good_gridsize[] = {
         3888};
 
 /** Steps to do when trying to determine smallest possible grid size. */
-static const p3m_int step_good_gridsize[] =
+const p3m_int step_good_gridsize[] =
 { 0, 15, 26, 44, 58, 72, 78, 83, 90, 94, 98, 101, 103, 104 } ;
-static const p3m_int num_steps_good_gridsize = 14;
+const p3m_int num_steps_good_gridsize = 14;
 
 
 void

@@ -25,8 +25,8 @@ libp3m_la_SOURCES = \
 	utils.hpp \
 	Communication.hpp Communication.cpp \
 	ErrorEstimate.hpp ErrorEstimate.cpp \
-	ErrorEstimateIK.hpp ErrorEstimateIK.cpp \
-	ErrorEstimateADI.hpp ErrorEstimateADI.cpp \
+	IK/ErrorEstimate.hpp IK/ErrorEstimate.cpp \
+	ADI/ErrorEstimate.hpp ADI/ErrorEstimate.cpp \
 	CAF.cpp CAF.hpp \
 	Parallel3DFFT.cpp Parallel3DFFT.hpp \
 	Solver.cpp Solver.hpp \
