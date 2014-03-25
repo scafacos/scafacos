@@ -66,7 +66,7 @@ EXTRA_DIST += \
 	systems/nonperiodic/cloud_wall_8100.xml.gz \
 	systems/nonperiodic/silica_melt_12960.xml.gz
 
-SYMLINK_SUBDIRS=systems scripts hammersley_generator
+SYMLINK_SUBDIRS=systems scripts hammersley_generator results
 
 # Generate symbolic link to systems subdir
 all-local: make-data-symlink
