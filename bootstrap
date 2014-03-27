@@ -1,6 +1,6 @@
 #! /bin/sh
-# Setup autotools infrastructure for the SVN tree.
-# This file is not distributed and is only needed for developers.
+# Setup autotools infrastructure 
+# This file is not distributed and is only needed by developers.
 
 for dir in build-aux m4; do
   if test ! -d "$dir" && test ! -f "$dir"; then
@@ -8,7 +8,7 @@ for dir in build-aux m4; do
   fi
 done
 
-autoreconf --verbose --install --force
+autoreconf --verbose --install --force $@
 
 # Fixup a nasty bug present even in fairly new depcomp scripts,
 # that may show up on BlueGene.

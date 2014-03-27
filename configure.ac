@@ -117,7 +117,6 @@ if test "x$fcs_cv_fc_module_ifport" = xyes ; then
    [Define if 'use ifport' is needed for functions like 'rand'.])
 fi
 
-AC_PROG_RANLIB
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
@@ -273,22 +272,26 @@ fi
 # Set up fftw3
 use_fcs_fftw3_common=no
 use_fcs_fftw3_mpi_common=no
+
+AC_ARG_WITH(internal-fftw, AS_HELP_STRING([--with-internal-fftw],
+                   [use the contributed fftw]),, with_internal_fftw=no)
+
 if test "x$use_fcs_fftw3" = xyes -o "x$use_fcs_fftw3_mpi" = xyes ; then
-  # Search for installed FFTW3
-  if test "x$fcs_float" = "xfloat" ; then
-    AX_LIB_FFTW3F_EXT([nobuilt])
-  elif test "x$fcs_float" = "xlong double" ; then
-    AX_LIB_FFTW3L_EXT([nobuilt])
-  else
-    AX_LIB_FFTW3_EXT([nobuilt])
+  # FFTW3 is required
+
+  if test "x$with_internal_fftw" != "xyes"; then
+    # Search for installed FFTW3
+    if test "x$fcs_float" = "xfloat" ; then
+      AX_LIB_FFTW3F_EXT([nobuilt])
+    elif test "x$fcs_float" = "xlong double" ; then
+      AX_LIB_FFTW3L_EXT([nobuilt])
+    else
+      AX_LIB_FFTW3_EXT([nobuilt])
+    fi
   fi
 
-#  echo "use_fcs_fftw3: $use_fcs_fftw3"
-#  echo "ax_lib_fftw3: $ax_lib_fftw3"
-#  echo "use_fcs_fftw3_mpi: $use_fcs_fftw3_mpi"
-#  echo "ax_lib_fftw3_mpi: $ax_lib_fftw3_mpi"
-
   if test "x$use_fcs_fftw3" = xyes -a "x$ax_lib_fftw3" != xyes || test "x$use_fcs_fftw3_mpi" = xyes -a "x$ax_lib_fftw3_mpi" != xyes || test "x$enable_dist" = xyes ; then
+    # No installed FFTW was found, so use internal FFTW
 
     use_fcs_fftw3_common="$use_fcs_fftw3"
     use_fcs_fftw3_mpi_common="$use_fcs_fftw3_mpi"
@@ -852,7 +855,7 @@ AC_MSG_NOTICE([ FCS C types                = $fcs_int / $fcs_float])
 AC_MSG_NOTICE([ FCS Fortan types           = $fcs_integer / $fcs_real])
 AC_MSG_NOTICE([ Fortan interface           = $use_fcs_fortran])
 AC_MSG_NOTICE([])
-AC_FOREACH([method], all_common_methods,
+AC_FOREACH([method], [fftw3_common fftw3_mpi_common pfft pnfft near gridsort resort],
 [
 m=`printf %26s method`
 m="method${m%method}"
