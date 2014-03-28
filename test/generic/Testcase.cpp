@@ -1021,8 +1021,8 @@ void Configuration::free_decomp_particles(bool quiet)
 void Configuration::determine_total_duplication()
 {
   total_duplications[0] = ((params.periodicity[0])?params.periodic_duplications[0]:1);
-  total_duplications[1] = ((params.periodicity[1])?params.periodic_duplications[0]:1);
-  total_duplications[2] = ((params.periodicity[2])?params.periodic_duplications[0]:1);
+  total_duplications[1] = ((params.periodicity[1])?params.periodic_duplications[1]:1);
+  total_duplications[2] = ((params.periodicity[2])?params.periodic_duplications[2]:1);
 
   total_duplications[0] *= input_duplication.params.times[0];
   total_duplications[1] *= input_duplication.params.times[1];
