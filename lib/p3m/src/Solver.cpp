@@ -530,7 +530,7 @@ void Solver::performAliasingSumsIK(
             const p3m_float sy  = sx*pow(sinc(nmy/(p3m_float)grid[RY]),2.0*cao);
             for (p3m_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
                 const p3m_int nmz = nmz0 + grid[RZ]*mz;
-                const p3m_float sz  = sy*pow(sinc(nmz/(p3m_float)grid[RZ]),2.0*cao);
+                const p3m_float U2  = sy*pow(sinc(nmz/(p3m_float)grid[RZ]),2.0*cao);
 
                 p3m_float nm2 = 0.0;
          if (!triclinic) {
@@ -556,10 +556,10 @@ void Solver::performAliasingSumsIK(
                         }
                         nm2 *= 1 / SQR(volume);
                     }
-                const p3m_float prefactor2 = sz*exp(-prefactor*nm2)/nm2/(triclinic?volume:1.0);
+                const p3m_float prefactor2 = U2*exp(-prefactor*nm2)/(nm2)/(triclinic?volume:1.0);
 
                 numerator_energy += prefactor2;
-                if(!triclinic){
+                if(!triclinic){//numerator_force = SUM prefactor2 * k/2pi =SUM U^2 exp(-pi^2/alpha^2 k^2 / 4 pi^2)) / (k^2 / (4 pi^2)) * k/2pi;
                 numerator_force[RX] += prefactor2*nmx/box_l[RX];
                 numerator_force[RY] += prefactor2*nmy/box_l[RY];
                 numerator_force[RZ] += prefactor2*nmz/box_l[RZ];
@@ -568,7 +568,7 @@ void Solver::performAliasingSumsIK(
                 numerator_force[RY] += prefactor2*(nmx*(-box_vectors[1][0]*box_vectors[2][2])+nmy*(box_vectors[2][2]*box_vectors[0][0]))/volume;
                 numerator_force[RZ] += prefactor2*(nmx*(box_vectors[1][0]*box_vectors[2][1]-box_vectors[1][1]*box_vectors[2][0])+nmy*(-box_vectors[2][1]*box_vectors[0][0])+nmz*(box_vectors[0][0]*box_vectors[1][1]))/volume;//correct k
                 }
-                denominator  += sz;
+                denominator  += U2; // denominator = SUM U^2
             }
         }
     }
@@ -645,7 +645,7 @@ void Solver::performAliasingSumsADI(
        const p3m_float sy  = sx*pow(sinc(nmy/(p3m_float)grid[RY]), 2.0*cao);
        for (p3m_int mz = -P3M_BRILLOUIN; mz <= P3M_BRILLOUIN; mz++) {
          const p3m_int nmz = nmz0 + grid[RZ]*mz;
-         const p3m_float sz  = sy*pow(sinc(nmz/(p3m_float)grid[RZ]), 2.0*cao);
+         const p3m_float U2  = sy*pow(sinc(nmz/(p3m_float)grid[RZ]), 2.0*cao);
          
          p3m_float nm2 = 0.0;
          if (!triclinic) {
@@ -671,21 +671,21 @@ void Solver::performAliasingSumsADI(
             nm2 *= 1 / SQR(volume);
 
         }
-        const p3m_float prefactor2 = sz * exp(-prefactor * nm2)
+        const p3m_float prefactor2 = U2 * exp(-prefactor * nm2)
                 / (triclinic ? volume:1.0);
 
          numerator_energy += prefactor2/nm2;
          numerator_force  += prefactor2;
 
-         denominator[0] += sz;
-         denominator[1] += sz * nm2;
+         denominator[0] += U2;
+         denominator[1] += U2 * nm2;
 
          if(((mx+my+mz) % 2) == 0) {
-           denominator[2] += sz;
-           denominator[3] += sz * nm2;
+           denominator[2] += U2;
+           denominator[3] += U2 * nm2;
          } else {
-           denominator[2] -= sz;
-           denominator[3] -= sz * nm2;
+           denominator[2] -= U2;
+           denominator[3] -= U2 * nm2;
          }
        }
      }
@@ -928,9 +928,6 @@ this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
     
 #endif
 
-    for(p3m_int i;i<std::min(num_real_particles,20);i++){
-        printf("field %d after long range: %f %f %f\n",i,fields[3*i],fields[3*i+1],fields[3*i+2]);
-    }
     if(triclinic){
         for(p3m_int i=0;i<3;i++) box_l[i] = box_vectors[i][i];
     }
@@ -1288,7 +1285,7 @@ void Solver::computeFarIK(
             triclinic_positions[3 * i + 2] = 1 / box_vectors[2][2]
                     * positions[3 * i + 2];
             
-            P3M_DEBUG_LOCAL(if(i<10)printf("triclinic position %d: %f %f %f \n", i,
+            P3M_DEBUG_LOCAL(if(i<5)printf("triclinic position %d: %f %f %f \n", i,
                     triclinic_positions[3*i],triclinic_positions[3*i+1],
                     triclinic_positions[3*i+2]));
         }
@@ -1877,7 +1874,6 @@ static const p3m_int num_steps_good_gridsize = 14;
 
 void
 Solver::tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges) {
-    /* Prepare the communicator before tuning */
 
     /* Count the charges */
     p3m_float sum_q2_before = sum_q2;

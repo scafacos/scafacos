@@ -51,11 +51,7 @@ typedef fcs_int p3m_int;
 #define ROUND_ERROR_PREC 1.0e-6
 #endif
 
-#ifdef FCS_USE_COMMON_FFTW
-#define fftw_plan fcs_fftw_plan;
-#else
 #define fftw_plan FFTW_MANGLE(plan)
-#endif
 
 /* Append FFTW prefix to all required FFTW names (the FCS internal FFTW library uses the fcs_fftw namespace) */
 #if defined(FCS_FLOAT_IS_FLOAT)
