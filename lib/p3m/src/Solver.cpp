@@ -908,22 +908,20 @@ void Solver::run(
 
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
     if(!triclinic){ //orthorhombic
-this->computeFarADI(num_real_particles, positions, charges, fields, potentials);
-}
-    else{//triclinic
-        p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
-    this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
-    this->computeFarADI(num_real_particles, positions_triclinic, charges, fields, potentials);
-}
+    this->computeFarADI(num_real_particles, positions, charges, fields, potentials);
+    } else {//triclinic
+      p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
+      this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
+      this->computeFarADI(num_real_particles, positions_triclinic, charges, fields, potentials);
+    }
     
 #else
     if(!triclinic){ //orthorhombic
-this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
-}
-    else{//triclinic
-        p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
-    this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
-    this->computeFarIK(num_real_particles, positions_triclinic, charges, fields, potentials);
+    this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
+    } else {//triclinic
+      p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
+      this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
+      this->computeFarIK(num_real_particles, positions_triclinic, charges, fields, potentials);
     }
     
 #endif

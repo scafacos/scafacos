@@ -88,7 +88,6 @@ FCSResult fcs_p3m_tune(FCS handle,
   if (!fcs_is_orthogonal(a, b, c)){
         if (ifcs_p3m_check_triclinic_box(a[1],a[2],b[2])){
             
-            //todo: optimize this.
             if(ifcs_p3m_set_triclinic_flag(handle->method_context)!=NULL)
            return ifcs_p3m_set_triclinic_flag(handle->method_context);           
         }
@@ -135,7 +134,6 @@ FCSResult fcs_p3m_run(FCS handle,
 
   fcs_int max_local_particles = fcs_get_max_local_particles(handle);
   if (local_particles > max_local_particles) max_local_particles = local_particles;
-//  ifcs_p3m_circumvent_tuning(handle->method_context);
 
   ifcs_p3m_run(handle->method_context,
 		 local_particles, max_local_particles, positions, charges, fields, potentials);
