@@ -70,8 +70,9 @@ int main(int argc, char* argv[])
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
   
-  if (mpi_thread_provided < mpi_thread_requested && comm_rank == 0) {
-    printf("Call to MPI_INIT_THREAD failed. Requested/provided level of multithreading: %d / %d. Aborting test.\n", mpi_thread_requested, mpi_thread_provided);
+  if (mpi_thread_provided < mpi_thread_requested) {
+    if (comm_rank == 0)
+      printf("Call to MPI_INIT_THREAD failed. Requested/provided level of multithreading: %d / %d. Aborting test.\n", mpi_thread_requested, mpi_thread_provided);
   }
   else
   {
