@@ -267,9 +267,9 @@ InterpolatedCAF::InterpolatedCAF(p3m_int cao, p3m_int _n_interpol,
 
 	const p3m_float dInterpol = 0.5 / n_interpol;
 
-	P3M_DEBUG_LOCAL(printf("    InterpolatedCAF: interpolating caf of "       \
-			"order %d with %d points\n",                       \
-			cao,n_interpol));
+	P3M_DEBUG_LOCAL(printf("    InterpolatedCAF: interpolating %s of "        \
+			"order %d with %d points\n",                                      \
+			(derivative ? "derived caf" : "caf"), cao, n_interpol));
 	/* loop over all interpolation points */
 	for (p3m_int i = -n_interpol; i <= n_interpol; i++)
 		/* loop over all cao */

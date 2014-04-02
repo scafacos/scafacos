@@ -36,9 +36,9 @@ struct Communication {
 
 	void prepare(p3m_float box_l[3]);
 
-	/* The MPI communicator to use (cartesian) */
+	/* The MPI communicator to use (Cartesian) */
 	MPI_Comm mpicomm;
-	/* The original MPI communicator to use (possibly not cartesian) */
+	/* The original MPI communicator to use (possibly not Cartesian) */
 	MPI_Comm mpicomm_orig;
 	/* The size of the communicator */
 	p3m_int size;

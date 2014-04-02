@@ -43,10 +43,6 @@ const p3m_float P3M_DEFAULT_TOLERANCE_FIELD = 1.0e-3;
 /* #define ADDITIONAL_CHECKS */
 /* Define to print out timings at the end of run */
 //#define P3M_PRINT_TIMINGS
-/*enumeration to specify the type of timings*/
-enum timingEnum {
-	NONE, ESTIMATE_ALL, ESTIMATE_FFT, ESTIMATE_ASSIGNMENT, FULL
-};
 
 /* COMPILE TIME SWITCHES */
 /* Differentiation method */

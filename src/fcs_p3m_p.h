@@ -178,7 +178,7 @@ fcs_p3m_compute_near_field(fcs_p3m_near_parameters_t params, fcs_float dist) {
  * the cutoff range. Values outside of this range might result in
  * undefined behavior.
  */
-  static inline void
+static inline void
 fcs_p3m_compute_near(fcs_p3m_near_parameters_t params, fcs_float dist, 
 		     fcs_float *potential, fcs_float *field) {
   fcs_float alpha = params;
@@ -212,6 +212,8 @@ fcs_p3m_compute_near(fcs_p3m_near_parameters_t params, fcs_float dist,
 #endif
 
 }
+
+FCSResult fcs_p3m_distribute_parameters();
 
 FCSResult fcs_p3m_set_r_cut(FCS handle, fcs_float r_cut);
 FCSResult fcs_p3m_set_r_cut_tune(FCS handle);
