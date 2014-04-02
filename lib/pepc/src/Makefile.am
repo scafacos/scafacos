@@ -6,7 +6,7 @@
 include $(top_srcdir)/build-aux/fortran-rules.am
 
 AM_FCFLAGS = $(FC_MODINC)../../..
-AM_CPPFLAGS = -DSVNREVISION="\"$(SVNREVISION)\"" -DSL_PEPC_PREFIX=fcs_
+AM_CPPFLAGS = -DSVNREVISION="\"$(SVNREVISION)\"" -DSL_PEPC_PREFIX=fcs_ -DFFLAGS="$(AM_FCFLAGS)" -DCFLAGS=$(AM_CFLAGS)" -DLDFLAGS="$(AM_LDFLAGS)" -DMACH="$(host_alias)" -DCOMPILER="??" -DWALKALGORITHM="walk_pthreads"
 
 LTOBJEXT = lo
 
