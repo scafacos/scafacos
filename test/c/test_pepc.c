@@ -64,15 +64,26 @@ int main(int argc, char* argv[])
   fcs_float theta   = 0.2;
   fcs_float epsilon = 1.23e-6;
 
-
   MPI_Init_thread(&argc, &argv, mpi_thread_requested, &mpi_thread_provided);
   comm = MPI_COMM_WORLD;
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
+
+  fprintf(stderr, "%d: %d/%d\n", comm_rank, mpi_thread_provided,  mpi_thread_requested);
   
+  if (comm_rank == 0) {
+    fprintf(stderr, "----------------\n");
+    fprintf(stderr, "Running pepc test\n");
+    fprintf(stderr, "----------------\n");
+    fprintf(stderr, "Setting up MPI...\n");
+    fprintf(stderr, "  Using %d tasks.\n", comm_size);
+  }
+
   if (mpi_thread_provided < mpi_thread_requested) {
     if (comm_rank == 0)
-      printf("Call to MPI_INIT_THREAD failed. Requested/provided level of multithreading: %d / %d. Aborting test.\n", mpi_thread_requested, mpi_thread_provided);
+      printf("Call to MPI_INIT_THREAD failed.\n"
+             "Requested level %d of multithreading, but only level %d is provided.\n"
+             "Aborting test.\n", mpi_thread_requested, mpi_thread_provided);
   }
   else
   {
@@ -82,7 +93,6 @@ int main(int argc, char* argv[])
     n_local = n_total / comm_size;
     if(comm_rank == comm_size-1) n_local += n_total % comm_size;
     n_local_max = n_total / comm_size + n_total % comm_size;
-
 
     if (comm_rank == 0) {
       printf("*** RUNNING pepc TEST ***\n");

@@ -172,7 +172,10 @@ static struct {
   fcs_int integrate, time_steps;
   char integration_conf[MAX_CONF_LENGTH];
 
-} global_params = { "", false, false, false, "", "", "", false, {1, 1, 1}, -1, true, false, "none", 0, { 0, 0, 0 }, "", 1, -1.0, false, 0, -0.1, 0, 0, "" };
+} global_params = { 
+  "", false, false, false, "", "", "", false, {1, 1, 1}, -1, 
+  true, false, "none", 0, { 0, 0, 0 }, "", 1, -1.0, false, 0, -0.1, 0, 0, ""
+};
 
 static bool check_result(FCSResult result, bool force_abort = false) {
   if (result) {
@@ -881,10 +884,12 @@ int main(int argc, char* argv[])
 
 #if FCS_ENABLE_PEPC
   if (mpi_thread_provided < mpi_thread_requested) {
-    MASTER(printf("Call to MPI_INIT_THREAD failed. Requested/provided level of multithreading: %d / %d. Continuing but expect program crash.\n", mpi_thread_requested, mpi_thread_provided));
+    MASTER(printf("Call to MPI_INIT_THREAD failed.\n" \
+                  "Requested/provided level of multithreading: %d / %d.\n" \
+                  "Continuing but expect program crash.\n", \
+                  mpi_thread_requested, mpi_thread_provided));
   }
 #endif
-
 
   MASTER(cout << "Running generic test with " << comm_size << " processes" << endl);
 
