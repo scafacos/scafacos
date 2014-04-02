@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2014 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -45,7 +45,7 @@ module module_fmm_framework
       !> type of dipole correction, see [J.Chem.Phys. 107, 10131, eq. (19,20)]
       integer, public :: fmm_extrinsic_correction = FMM_EXTRINSIC_CORRECTION_FICTCHARGE
 
-      public fmm_framework_init
+      public fmm_framework_prepare
       public fmm_framework_timestep
       public fmm_sum_lattice_force
       public lattice_vect
@@ -90,12 +90,12 @@ module module_fmm_framework
         !> Module Initialization, should be called on program startup
         !> after setting up all geometric parameters etc.
         !>  - well-separation criterion is automatically set to module_mirror_boxes::mirror_box_layers
-        !>  - module_mirror_boxes::calc_neighbour_boxes() must have been called before calling this routine
+        !>  - module_mirror_boxes::neighbour_boxes_prepare() must have been called before calling this routine
         !>
         !> @param[in] mpi_rank MPI rank of process for controlling debug output
         !> @param[in] mpi_comm MPI communicator to be used
         !>
-        subroutine fmm_framework_init(mpi_rank, mpi_comm)
+        subroutine fmm_framework_prepare(mpi_rank, mpi_comm)
           use module_debug
           use module_mirror_boxes, only : mirror_box_layers
           implicit none
@@ -106,26 +106,22 @@ module module_fmm_framework
           MPI_COMM_fmm = mpi_comm
           ws           = mirror_box_layers
 
-          do_periodic = any(periodicity(1:3))
+          ! anything above has to be done in any case
+          MLattice = 0
 
-           ! anything above has to be done in any case
-          if (do_periodic) then
-            MLattice = 0
-
-            if (use_pretabulated_lattice_coefficients .or. system_is_unit_cube()) then
-              call load_lattice_coefficients(MLattice)
-              if (use_pretabulated_lattice_coefficients) then
-                DEBUG_WARNING('(a)', "Using pretabulated lattice coefficients. These are only valid for 3D-periodic unit-box simulations regions.")
-              endif
-            else
-              call calc_lattice_coefficients(MLattice)
+          if (use_pretabulated_lattice_coefficients .or. system_is_unit_cube()) then
+            call load_lattice_coefficients(MLattice)
+            if (use_pretabulated_lattice_coefficients) then
+              DEBUG_WARNING('(a)', "Using pretabulated lattice coefficients. These are only valid for 3D-periodic unit-box simulations regions.")
             endif
+          else
+            call calc_lattice_coefficients(MLattice)
+          endif
 
-            if ((myrank == 0) .and. dbg(DBG_PERIODIC)) then
-              call WriteTableToFile('MLattice.tab', MLattice, Lmax_taylor)
-            end if
+          if ((myrank == 0) .and. dbg(DBG_PERIODIC)) then
+            call WriteTableToFile('MLattice.tab', MLattice, Lmax_taylor)
           end if
-        end subroutine fmm_framework_init
+        end subroutine fmm_framework_prepare
 
 
         !>
@@ -139,18 +135,16 @@ module module_fmm_framework
           implicit none
           type(t_particle), intent(in) :: particles(:)
 
-          if (do_periodic) then
-            if (.not. check_lattice_boundaries(particles)) then
-              DEBUG_ERROR(*, 'Lattice contribution will be wrong. Aborting.')
-            endif
-            
-            if (      (fmm_extrinsic_correction == FMM_EXTRINSIC_CORRECTION_REDLACK) &
-                 .or. (fmm_extrinsic_correction == FMM_EXTRINSIC_CORRECTION_FICTCHARGE)) then
-              call calc_box_dipole(particles)
-            endif
-            call calc_omega_tilde(particles)
-            call calc_mu_cent(omega_tilde, mu_cent)
+          if (.not. check_lattice_boundaries(particles)) then
+            DEBUG_ERROR(*, 'Lattice contribution will be wrong. Aborting.')
           endif
+          
+          if (      (fmm_extrinsic_correction == FMM_EXTRINSIC_CORRECTION_REDLACK) &
+                .or. (fmm_extrinsic_correction == FMM_EXTRINSIC_CORRECTION_FICTCHARGE)) then
+            call calc_box_dipole(particles)
+          endif
+          call calc_omega_tilde(particles)
+          call calc_mu_cent(omega_tilde, mu_cent)
         end subroutine fmm_framework_timestep
 
 
@@ -803,53 +797,47 @@ module module_fmm_framework
           
           prefact = two*pi/(three*unit_box_volume)
 
-          if (.not. do_periodic) then
-              e_lattice   = 0
-              phi_lattice = 0
-            else
-              ! shift mu_cent to the position of our particle
-              R        = pos - LatticeCenter
-              S        = cartesian_to_spherical(R)
+          ! shift mu_cent to the position of our particle
+          R        = pos - LatticeCenter
+          S        = cartesian_to_spherical(R)
 
-              do l = 0,Lmax_multipole
-                do m = 0,l
-                  O_R(tblinv(l, m, Lmax_multipole)) = OMultipole(l, m, S)
+          do l = 0,Lmax_multipole
+            do m = 0,l
+              O_R(tblinv(l, m, Lmax_multipole)) = OMultipole(l, m, S)
+            end do
+          end do
+
+          mu_shift = L2L(O_R, mu_cent, 1)
+
+          ! E = -grad(Phi)
+          e_lattice(1) = - real(tbl(mu_shift, 1, 1, Lmax_taylor))
+          e_lattice(2) = -aimag(tbl(mu_shift, 1, 1, Lmax_taylor))
+          e_lattice(3) = - real(tbl(mu_shift, 1, 0, Lmax_taylor))                            
+          phi_lattice  =   real(tbl(mu_shift, 0, 0, Lmax_taylor))
+
+          select case (fmm_extrinsic_correction)
+            case (FMM_EXTRINSIC_CORRECTION_NONE)
+              ! nothing to do here
+            case (FMM_EXTRINSIC_CORRECTION_REDLACK)
+              e_lattice   = e_lattice   + two*prefact * box_dipole
+              phi_lattice = phi_lattice - two*prefact * dot_product(R, box_dipole) + prefact * quad_trace
+            case (FMM_EXTRINSIC_CORRECTION_FICTCHARGE)
+              do p=1,nfictcharge
+                ! interact with fictcharge(p)
+                ! we loop over all vbox-vectors, in fact we are only interested in the surface charges since the others cancel anyway, but
+                ! the exception for this is too complicated for now - FIXME: correct this
+                do ibox = 1,num_neighbour_boxes ! sum over all boxes within ws=1
+                  delta = pos - lattice_vect(neighbour_boxes(:,ibox)) - fictcharge(p)%coc
+                  call calc_force_coulomb_3D_direct(fictcharge(p), delta, dot_product(delta, delta), etmp, phitmp)
+                  e_lattice   = e_lattice   + etmp
+                  phi_lattice = phi_lattice + phitmp
                 end do
               end do
-
-              mu_shift = L2L(O_R, mu_cent, 1)
-
-              ! E = -grad(Phi)
-              e_lattice(1) = - real(tbl(mu_shift, 1, 1, Lmax_taylor))
-              e_lattice(2) = -aimag(tbl(mu_shift, 1, 1, Lmax_taylor))
-              e_lattice(3) = - real(tbl(mu_shift, 1, 0, Lmax_taylor))                            
-              phi_lattice  =   real(tbl(mu_shift, 0, 0, Lmax_taylor))
-
-              select case (fmm_extrinsic_correction)
-                case (FMM_EXTRINSIC_CORRECTION_NONE)
-                  ! nothing to do here
-                case (FMM_EXTRINSIC_CORRECTION_REDLACK)
-                  e_lattice   = e_lattice   + two*prefact * box_dipole
-                  phi_lattice = phi_lattice - two*prefact * dot_product(R, box_dipole) + prefact * quad_trace
-                case (FMM_EXTRINSIC_CORRECTION_FICTCHARGE)
-                  do p=1,nfictcharge
-                    ! interact with fictcharge(p)
-                    ! we loop over all vbox-vectors, in fact we are only interested in the surface charges since the others cancel anyway, but
-                    ! the exception for this is too complicated for now - FIXME: correct this
-                    do ibox = 1,num_neighbour_boxes ! sum over all boxes within ws=1
-                      delta = pos - lattice_vect(neighbour_boxes(:,ibox)) - fictcharge(p)%coc
-                      call calc_force_coulomb_3D_direct(fictcharge(p), delta, dot_product(delta, delta), etmp, phitmp)
-                      e_lattice   = e_lattice   + etmp
-                      phi_lattice = phi_lattice + phitmp
-                    end do
-                  end do
-                case (FMM_EXTRINSIC_CORRECTION_MEASUREMENT)
-                  DEBUG_ERROR('("fmm_extrinsic_correction == FMM_EXTRINSIC_CORRECTION_MEASUREMENT currently not supported")')
-                case default
-                  DEBUG_ERROR('("fmm_extrinsic_correction == ", I0, " not supported")', fmm_extrinsic_correction)
-              end select
-
-          end if
+            case (FMM_EXTRINSIC_CORRECTION_MEASUREMENT)
+              DEBUG_ERROR('("fmm_extrinsic_correction == FMM_EXTRINSIC_CORRECTION_MEASUREMENT currently not supported")')
+            case default
+              DEBUG_ERROR('("fmm_extrinsic_correction == ", I0, " not supported")', fmm_extrinsic_correction)
+          end select
         end subroutine fmm_sum_lattice_force
 
 

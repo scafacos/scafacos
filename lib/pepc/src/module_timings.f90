@@ -1,19 +1,19 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
-! 
-! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
+!
+! Copyright (C) 2002-2014 Juelich Supercomputing Centre,
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
-! 
+!
 ! PEPC is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! PEPC is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU Lesser General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with PEPC.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -34,7 +34,7 @@
 !> etc.
 !>
 
-! The following is a diagram of the hierarchy of a subset of the timers 
+! The following is a diagram of the hierarchy of a subset of the timers
 ! provided by this module.
 !
 !
@@ -112,7 +112,7 @@ module module_timings
     integer, parameter :: t_exchange_branches_integrate   =  6
     integer, parameter :: t_restore            =  7
     integer, parameter :: t_walk               =  8
-    integer, parameter :: t_walk_local         =  9
+    integer, parameter :: t_unused9            =  9
     integer, parameter :: t_unused10           = 10
     integer, parameter :: t_deallocate         = 11
     integer, parameter :: t_all                = 12

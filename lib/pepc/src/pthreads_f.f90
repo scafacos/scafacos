@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2014 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -23,8 +23,9 @@ module pthreads_stuff
   implicit none
 
   integer, parameter :: THREAD_TYPE_DEFAULT = 0
-  integer, parameter :: THREAD_TYPE_COMMUNICATOR = 1
-  integer, parameter :: THREAD_TYPE_WORKER = 2
+  integer, parameter :: THREAD_TYPE_MAIN = 1
+  integer, parameter :: THREAD_TYPE_COMMUNICATOR = 2
+  integer, parameter :: THREAD_TYPE_WORKER = 3
 
   type, bind(C) :: t_pthread_with_type
     private
@@ -99,6 +100,16 @@ module pthreads_stuff
       use, intrinsic :: iso_c_binding
       implicit none
     end function
+  end interface
+
+
+  interface
+    subroutine place_thread(thread_type, counter) bind(c, name='place_thread')
+      use, intrinsic :: iso_c_binding
+      implicit none
+      integer(c_int), intent(in), value :: thread_type
+      integer(c_int), intent(in), value :: counter
+    end subroutine
   end interface
 
   contains

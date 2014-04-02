@@ -90,3 +90,9 @@
         end if;
 
 #endif
+
+#ifdef MAC_NEEDS_PARTICLE
+  #define IF_MAC_NEEDS_PARTICLE(param) param,
+#else
+  #define IF_MAC_NEEDS_PARTICLE(param)
+#endif

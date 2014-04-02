@@ -1,19 +1,19 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
-! 
-! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
+!
+! Copyright (C) 2002-2014 Juelich Supercomputing Centre,
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
-! 
+!
 ! PEPC is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! PEPC is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU Lesser General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with PEPC.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -187,7 +187,7 @@ module module_math_tools
 
           integer(kind_key), intent(in) :: a, b
           integer(kind_key) :: bpi
-          
+
           integer(kind_key) :: axorb, mask
           integer(kind_level) :: bpilevel
 
@@ -196,7 +196,7 @@ module module_math_tools
           axorb             = ieor(a,b)
           bpilevel          = level_from_key(axorb)
           mask              = not(2_8**(idim*bpilevel) - 1)
-          bpi               = iand(b,mask) ! extract highgest bits from b (which has to be the larger of both parameters)
+          bpi               = iand(b,mask) ! extract highest bits from b (which has to be the larger of both parameters)
 
         end function bpi
 end module module_math_tools

@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2014 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -245,7 +245,7 @@ module module_spacefilling
           type(t_box), intent(in) :: b
           real*8, intent(in) :: x, y, z
 
-          coord_to_key_lastlevel = veccoord_to_key_lastlevel(b, [x, y, z])
+          coord_to_key_lastlevel = veccoord_to_key_lastlevel(b, (/x, y, z/))
         end function coord_to_key_lastlevel
 
 
@@ -300,7 +300,7 @@ module module_spacefilling
           real*8, intent(in) :: x, y, z
           integer(kind_level), intent(in) :: level
 
-          coord_to_key_level = veccoord_to_key_level(b, [x, y, z], level)
+          coord_to_key_level = veccoord_to_key_level(b, (/x, y, z/), level)
         end function coord_to_key_level
 
 

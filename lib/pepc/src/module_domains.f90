@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2014 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -135,14 +135,8 @@ module module_domains
     real*8, allocatable :: workload(:)
     integer(kind_default), allocatable :: irnkl2(:)
 
-#ifdef SL_PEPC_PREFIX
-# define CONCAT_(_x_, _y_)  _x_##_y_
-# define CONCAT(_x_, _y_)   CONCAT_(_x_, _y_)
-# define sl_pepc_sort_keys  CONCAT(SL_PEPC_PREFIX, sl_pepc_sort_keys)
-#endif
-
     interface
-      subroutine sl_pepc_sort_keys(nin, nmax, keys, workload, balance_weight, max_imbalance, nout, indxl, &
+      subroutine slsort_keys(nin, nmax, keys, workload, balance_weight, max_imbalance, nout, indxl, &
         irnkl, scounts, rcounts, sdispls, rdispls, keys2, irnkl2, size, rank, comm)
         use module_pepc_types
         integer(kind_particle), intent(in) :: nin
@@ -157,7 +151,7 @@ module module_domains
         integer(kind_default), intent(out) :: irnkl2(*)
         integer(kind_pe), intent(in) :: size, rank
         integer(kind_default), intent(in) :: comm
-      end subroutine sl_pepc_sort_keys
+      end subroutine slsort_keys
     end interface
 
     call pepc_status('DOMAIN DECOMPOSITION')
@@ -187,7 +181,7 @@ module module_domains
     local_keys(1:d%npold) = particles(1:d%npold)%key
 
     ! perform index sort on keys
-    call sl_pepc_sort_keys(d%npold, d%nppmax, local_keys, workload, weighted, imba, d%npnew, d%indxl, d%irnkl, &
+    call slsort_keys(d%npold, d%nppmax, local_keys, workload, weighted, imba, d%npnew, d%indxl, d%irnkl, &
       d%islen, d%irlen, d%fposts, d%gposts, temp, irnkl2, d%comm_env%size, d%comm_env%rank , &
       d%comm_env%comm)
 
