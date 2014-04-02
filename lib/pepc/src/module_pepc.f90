@@ -129,12 +129,24 @@ module module_pepc
         write(*,'(a)') "      \/_/    \/___/  \/_/    \/___/   "
         write(*,'(/"Starting PEPC, svn revision [",a,"] with frontend {", a, "} on ", I0, " MPI ranks."/)') &
                        SVNREVISION, frontendname, num_pe
-        write(*,'("====     MACH = ",a)') MACH
-        write(*,'("==== COMPILER = ",a)') COMPILER
-        write(*,'("====   FFLAGS = ",a)') FFLAGS
-        write(*,'("====   CFLAGS = ",a)') CFLAGS
-        write(*,'("====  LDFLAGS = ",a)') LDFLAGS
-        write(*,'("====     WALK = ",a)') WALKALGORITHM
+        #ifdef MACH
+          write(*,'("====     MACH = ",a)') MACH
+        #endif
+        #ifdef COMPILER
+          write(*,'("==== COMPILER = ",a)') COMPILER
+        #endif
+        #ifdef FFLAGS
+          write(*,'("====   FFLAGS = ",a)') FFLAGS
+        #endif
+        #ifdef CFLAGS
+          write(*,'("====   CFLAGS = ",a)') CFLAGS
+        #endif
+        #ifdef LDFLAGS
+          write(*,'("====  LDFLAGS = ",a)') LDFLAGS
+        #endif
+        #ifdef WALKALGORITHM
+          write(*,'("====     WALK = ",a)') WALKALGORITHM
+        #endif
         write(*,'(//)')
       endif
 
