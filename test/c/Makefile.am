@@ -60,10 +60,10 @@ test_vmg_open_DEPENDENCIES = $(SCAFACOS_MK_DEPS)
 test_vmg_open_LDADD = $(TEST_C_LDADD)
 endif
 
-#if ENABLE_PEPC
-#check_PROGRAMS += test_pepc
-#test_pepc_DEPENDENCIES = $(SCAFACOS_MK_DEPS)
-#endif
+if ENABLE_PEPC
+check_PROGRAMS += test_pepc
+test_pepc_DEPENDENCIES = $(SCAFACOS_MK_DEPS)
+endif
 
 #if ENABLE_FMM
 #check_PROGRAMS += test_fmm
