@@ -1,4 +1,3 @@
-
 # Get linker flags from scafacos.mk. (The assignment and evaluation is
 # required to force Automake to include 'scafacos.mk' early enough.)
 DUMMY:=$(eval include $(top_builddir)/package/scafacos.mk)

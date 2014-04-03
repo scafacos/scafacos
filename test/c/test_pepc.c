@@ -69,8 +69,6 @@ int main(int argc, char* argv[])
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
 
-  fprintf(stderr, "%d: %d/%d\n", comm_rank, mpi_thread_provided,  mpi_thread_requested);
-  
   if (comm_rank == 0) {
     fprintf(stderr, "----------------\n");
     fprintf(stderr, "Running pepc test\n");

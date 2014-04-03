@@ -33,7 +33,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
 # Initialize Automake; require 1.9.6 or newer, do not enforce GNU rules, create pax/posix tarfiles in make dist to support longer filenames in doxgen stuff.
-AM_INIT_AUTOMAKE([1.9.6 -Wall -Wno-override foreign tar-pax subdir-objects])
+AM_INIT_AUTOMAKE([1.9.6 -Wall -Wno-override foreign tar-pax subdir-objects parallel-tests])
 # silent rules, backwards compatiblity
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
