@@ -78,13 +78,13 @@ manpage: doxyfile.stamp
 
 if HAVE_DOXYGEN
 doxyfile.stamp: Doxyfile
-	$(DOXYGEN) Doxyfile
-	echo Timestamp > doxyfile.stamp
+	$(DOXYGEN) Doxyfile > doxygen.log 2>&1
+	touch doxyfile.stamp
 
 EXTRA_DIST += html man
 CLEANFILES += doxyfile.stamp
 CLEAN_LOCAL += html man
-    
+
 # I assume, that those should work but dont - that is why we add the two rules below
 #html_DATA = html
 #man_MANS  = man/man3/*
