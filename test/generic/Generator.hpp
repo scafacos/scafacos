@@ -96,14 +96,27 @@ class generator_shape
 };
 
 
-typedef struct _simple_generator_params {
+struct simple_generator_params {
   generator_type::type_t type;
   fcs_int nvalues;
   fcs_float values[6];
 
-  _simple_generator_params():type(generator_type::TYPE_NONE), nvalues(0) { for (fcs_int i = 0; i < (fcs_int) (sizeof(values) / sizeof(values[0])); ++i) values[i] = 0; }
+  simple_generator_params():type(generator_type::TYPE_NONE), nvalues(0) { for (fcs_int i = 0; i < (fcs_int) (sizeof(values) / sizeof(values[0])); ++i) values[i] = 0; }
+};
 
-} simple_generator_params;
+
+struct generator_params {
+  fcs_int nlocal;
+  fcs_int nntotals, ntotals[3];
+  bool mult_ntotals[3];
+
+  generator_type::type_t positions_type;
+  generator_shape::type_t positions_shape;
+
+  simple_generator_params charges, potentials, field;
+
+  bool have_positions, have_charges, have_potentials, have_field;
+};
 
 
 class Generator {
@@ -126,19 +139,7 @@ public:
   void set_box(fcs_float *box_base, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c);
 
 private:
-  struct {
-    fcs_int nlocal;
-    fcs_int nntotals, ntotals[3];
-    bool mult_ntotals[3];
-
-    generator_type::type_t positions_type;
-    generator_shape::type_t positions_shape;
-
-    simple_generator_params charges, potentials, field;
-
-    bool have_positions, have_charges, have_potentials, have_field;
-
-  } params;
+  generator_params params;
 
   fcs_float *box_base, *box_a, *box_b, *box_c;
 
