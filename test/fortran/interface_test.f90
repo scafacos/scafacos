@@ -174,7 +174,7 @@ program test
             write(*,'(a)') "(currently only with similar format as files from test_env/data are supported)"
         end if
         call MPI_FINALIZE(ierr)
-        return
+        stop
     endif
 
     call GET_COMMAND_ARGUMENT(1,method)
