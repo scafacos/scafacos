@@ -111,7 +111,7 @@ $(eval include $(builddir)/module.deps)
 tree_stats.pp.o: module_walk_communicator.pp.o
 
 $(builddir)/module.deps: $(pepc_raw_f90_sources) $(ALL_INCLUDE_HEADER)
-	SRCDIR="$(srcdir)" PRE_INCLUDE="$(ALL_INCLUDE_HEADER)" CPP="$(CPP) $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES)" OBJEXT="$(PP_SUFFIX).$(LTOBJEXT)" MODEXT="$(FC_MODEXT)" \
+	SRCDIR="$(srcdir)" PRE_INCLUDE="$(ALL_INCLUDE_HEADER)" CPP="$(CPP) $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES)" OBJEXT="$(PP_SUFFIX).$(LTOBJEXT)" MODEXT="$(FC_MODEXT)" IGNORE="ifcore" \
 	$(SHELL) $(top_srcdir)/build-aux/fortran-depcomp $^ > $@
 #	@echo "uname -a: `uname -a`"
 #	$(MAKE) -v
