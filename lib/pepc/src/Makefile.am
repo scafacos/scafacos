@@ -57,7 +57,7 @@ liblpepc_la_SOURCES = $(pepc_raw_c_sources)
 
 liblpepc_la_CPPFLAGS = -I$(top_srcdir)/openpa/src
 
-ALL_INCLUDE_HEADER = $(srcdir)/pepc_debug.h 
+ALL_INCLUDE_HEADER = $(top_builddir)/fconfig.h $(srcdir)/pepc_debug.h
 PP_FILES = $(pepc_raw_f90_sources)
 
 PP_SUFFIX = pp
