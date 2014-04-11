@@ -70,7 +70,9 @@ PP_FILES_PP.lo = $(addsuffix .$(PP_SUFFIX).lo,$(basename $(PP_FILES)))
 	@echo "Building file '$@'" 
 	cat $(ALL_INCLUDE_HEADER) $< | \
 	$(FCCPP) -P -C $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES) - | \
-	sed '/\/\*\(.*\)\*\//{s,,!\1,p;d;};/\/\*/,/\*\//{s,/\*,,; s,\*/,,; s,^,!,p; d;}' > $@
+	$(SED) -e '/\/\*/{:l;s,\(.*\)/\*\(.*\)\*/,\1!\2,;t l}' - | \
+	$(SED) -e '/\/\*/,/.*\*\//{s,\(.*\)\*/,!\1,; t e; s,/\*\(.*\),!\1,; t e; s,^,!,; :e;}' - | \
+	$(SED) -e '/\/\*/,/.*\*\//{s,\(.*\)\*/,!\1,; t e; s,/\*\(.*\),!\1,; t e; s,^,!,; :e;}' - > $@
 
 #%.o: %.f90
 #	@echo "target: $@, prerequisites: $^"
