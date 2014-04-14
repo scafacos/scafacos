@@ -108,7 +108,7 @@ endif
 $(eval -include $(builddir)/module.deps)
 
 $(builddir)/module.deps: $(fortran_sources) fmm.h ../fconfig.h
-	SRCDIR="$(srcdir)" FCCPP="$(FCCPP) -I$(builddir) -I$(srcdir) -I$(top_builddir) $(FCCPPFLAGS)" CPP="$(CPP)" OBJEXT="$(LTOBJEXT)" MODEXT="$(FC_MODEXT)" \
+	SRCDIR="$(srcdir)" FCCPP="$(FCCPP) -I$(builddir) -I$(srcdir) -I$(top_builddir) $(FCCPPFLAGS)" OBJEXT="$(LTOBJEXT)" MODEXT="$(FC_MODEXT)" \
 	$(SHELL) $(top_srcdir)/build-aux/fortran-depcomp $^ > $@
 
 DISTCLEANFILES = module.deps

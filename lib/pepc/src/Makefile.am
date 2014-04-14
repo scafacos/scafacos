@@ -57,7 +57,7 @@ liblpepc_la_SOURCES = $(pepc_raw_c_sources)
 
 liblpepc_la_CPPFLAGS = -I$(top_srcdir)/openpa/src
 
-ALL_INCLUDE_HEADER = $(srcdir)/pepc_debug.h 
+ALL_INCLUDE_HEADER = $(top_builddir)/fconfig.h $(srcdir)/pepc_debug.h
 PP_FILES = $(pepc_raw_f90_sources)
 
 PP_SUFFIX = pp
@@ -69,8 +69,10 @@ PP_FILES_PP.lo = $(addsuffix .$(PP_SUFFIX).lo,$(basename $(PP_FILES)))
 %.$(PP_SUFFIX).f90: %.f90 $(ALL_INCLUDE_HEADER) 
 	@echo "Building file '$@'" 
 	cat $(ALL_INCLUDE_HEADER) $< | \
-	$(CPP) -P -C $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES) - | \
-	sed '/\/\*\(.*\)\*\//{s,,!\1,p;d;};/\/\*/,/\*\//{s,/\*,,; s,\*/,,; s,^,!,p; d;}' > $@
+	$(FCCPP) -P -C $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES) - | \
+	$(SED) -e '/\/\*/{:l;s,\(.*\)/\*\(.*\)\*/,\1!\2,;t l}' - | \
+	$(SED) -e '/\/\*/,/.*\*\//{s,\(.*\)\*/,!\1,; t e; s,/\*\(.*\),!\1,; t e; s,^,!,; :e;}' - | \
+	$(SED) -e '/\/\*/,/.*\*\//{s,\(.*\)\*/,!\1,; t e; s,/\*\(.*\),!\1,; t e; s,^,!,; :e;}' - > $@
 
 #%.o: %.f90
 #	@echo "target: $@, prerequisites: $^"
@@ -111,7 +113,7 @@ $(eval include $(builddir)/module.deps)
 tree_stats.pp.o: module_walk_communicator.pp.o
 
 $(builddir)/module.deps: $(pepc_raw_f90_sources) $(ALL_INCLUDE_HEADER)
-	SRCDIR="$(srcdir)" PRE_INCLUDE="$(ALL_INCLUDE_HEADER)" CPP="$(CPP) $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES)" OBJEXT="$(PP_SUFFIX).$(LTOBJEXT)" MODEXT="$(FC_MODEXT)" \
+	SRCDIR="$(srcdir)" PRE_INCLUDE="$(ALL_INCLUDE_HEADER)" FCCPP="$(FCCPP) $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES)" OBJEXT="$(PP_SUFFIX).$(LTOBJEXT)" MODEXT="$(FC_MODEXT)" IGNORE="ifcore" \
 	$(SHELL) $(top_srcdir)/build-aux/fortran-depcomp $^ > $@
 #	@echo "uname -a: `uname -a`"
 #	$(MAKE) -v
