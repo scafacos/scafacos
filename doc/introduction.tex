@@ -139,11 +139,11 @@ and use \fcs:
         \textbf{3D-periodic} &
         + & + & -- & + & + & +                                     & +        & + & + & + \\
         \hspace{2em}\textbf{non-cubic, cuboid} &
-        -- & -- &   & + & + & +\footnote{untested}                 & +        & ? & + & + \\
+        -- & -- &   & + & + & +\footnote{untested\label{untested}}                 & +        & ? & + & + \\
         \hspace{2em}\textbf{non-cubic, non-cuboid} &
-        ? & ? &   & + & ? & +\footnote{untested}                   & ?        & ? & ? & ? \\
+        ? & ? &   & + & ? & +\footref{untested}                   & ?        & ? & ? & ? \\
         \hspace{2em}\textbf{Virials} &
-        ? & -- &   & ?\footnote{diagonal approximation} & ? & --\footnote{implementation planned}   & (scalar) & ? & ? & -- \\
+        ? & -- &   & ?\footnote{diagonal approximation} & ? & --\footnote{implementation planned\label{planned}}   & (scalar) & ? & ? & -- \\
         \hline
 
         \textbf{Nonperiodic} &
@@ -151,11 +151,11 @@ and use \fcs:
         \hspace{2em}\textbf{non-cubic} &
         -- &   &   & + &   & +                                     &          & ? & + &   \\
         \hspace{2em}\textbf{Virials} &
-        + &   &   & + &   & --\footnote{implementation planned}    &          & ? & + &   \\
+        + &   &   & + &   & --\footref{planned}    &          & ? & + &   \\
         \hline
 
         \textbf{Partially periodic} &
-        + & -- & + & + & -- & +\footnote{untested}                & --        & ? & + & -- \\
+        + & -- & + & + & -- & +\footref{untested}                & --        & ? & + & -- \\
         \hline
 
         \textbf{Tunable accuracy} &
