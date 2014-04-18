@@ -29,7 +29,9 @@ check_PROGRAMS += \
 	check_adj check_adj_transposed \
 	check_vs_pfft \
 	pnfft_test \
-	pnfft_test_adv
+	pnfft_test_adv \
+	check_trafo_vs_ndft check_trafo_grad_vs_ndft check_adj_vs_ndft \
+	check_trafo_vs_ndft_transposed_2d
 #endif
 
 EXTRA_DIST = \

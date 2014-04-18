@@ -162,7 +162,7 @@ static void init_input_complex_3d(
       for(ptrdiff_t k2=local_start[2]; k2<local_start[2]+local_n[2]; k2++, m++){
         glob_ind = (k0+n[0]/2)*n[1]*n[2] + (k1+n[1]/2)*n[2] + (k2+n[2]/2);
         data[m] = 1000.0/(2*glob_ind+1) + 1000.0/(2*glob_ind+2)*I;
-        fprintf(stderr, "data[%td] = %f + I * %f\n", m, creal(data[m]), cimag(data[m]));
+//         fprintf(stderr, "data[%td] = %f + I * %f\n", m, creal(data[m]), cimag(data[m]));
       }
 }
 

@@ -5,8 +5,7 @@
 static void perform_pnfft_adj_guru(
     const ptrdiff_t *N, const ptrdiff_t *n, ptrdiff_t local_M,
     int m, const double *x_max, unsigned window_flag,
-    const int *np, MPI_Comm comm,
-    pnfft_complex **f_hat, double *f_hat_sum, ptrdiff_t *local_N_total);
+    const int *np, MPI_Comm comm);
 
 static void init_parameters(
     int argc, char **argv,
@@ -27,9 +26,8 @@ static double random_number_less_than_one(
 int main(int argc, char **argv){
   int np[3], m, window;
   unsigned window_flag;
-  ptrdiff_t N[3], n[3], local_M, local_N_total;
-  double f_hat_sum, x_max[3];
-  pnfft_complex *f_hat1, *f_hat2;
+  ptrdiff_t N[3], n[3], local_M;
+  double x_max[3];
   
   MPI_Init(&argc, &argv);
   pnfft_init();
@@ -79,18 +77,9 @@ int main(int argc, char **argv){
 
 
   /* calculate parallel NFFT */
-  perform_pnfft_adj_guru(N, n, local_M, m,   x_max, window_flag, np, MPI_COMM_WORLD,
-      &f_hat1, &f_hat_sum, &local_N_total);
-
-  /* calculate parallel NFFT with higher accuracy */
-  perform_pnfft_adj_guru(N, n, local_M, m+2, x_max, PNFFT_WINDOW_KAISER_BESSEL, np, MPI_COMM_WORLD,
-      &f_hat2, &f_hat_sum, &local_N_total);
-
-  /* calculate error of PNFFT */
-  compare_f_hat(f_hat1, f_hat2, local_N_total, f_hat_sum, "* Results in", MPI_COMM_WORLD);
+  perform_pnfft_adj_guru(N, n, local_M, m,   x_max, window_flag, np, MPI_COMM_WORLD);
 
   /* free mem and finalize */
-  pnfft_free(f_hat1); pnfft_free(f_hat2);
   pnfft_cleanup();
   MPI_Finalize();
   return 0;
@@ -100,16 +89,16 @@ int main(int argc, char **argv){
 static void perform_pnfft_adj_guru(
     const ptrdiff_t *N, const ptrdiff_t *n, ptrdiff_t local_M,
     int m, const double *x_max, unsigned window_flag,
-    const int *np, MPI_Comm comm,
-    pnfft_complex **f_hat, double *f_hat_sum, ptrdiff_t *local_N_total
+    const int *np, MPI_Comm comm
     )
 {
-  ptrdiff_t local_N[3], local_N_start[3];
+  int myrank;
+  ptrdiff_t local_N[3], local_N_start[3], local_N_total;
   double lower_border[3], upper_border[3];
   double local_sum = 0, time, time_max;
   MPI_Comm comm_cart_3d;
-  pnfft_complex *f;
-  double *x;
+  pnfft_complex *f, *f_hat, *f_hat1;
+  double *x, f_hat_sum;
   pnfft_plan pnfft;
 
   /* create three-dimensional process grid of size np[0] x np[1] x np[2], if possible */
@@ -120,13 +109,15 @@ static void perform_pnfft_adj_guru(
     return;
   }
 
+  MPI_Comm_rank(comm_cart_3d, &myrank);
+
   /* get parameters of data distribution */
-  pnfft_local_size_guru(3, N, n, x_max, m, comm_cart_3d, PNFFT_TRANSPOSED_F_HAT,
+  pnfft_local_size_guru(3, N, n, x_max, m, comm_cart_3d, PNFFT_TRANSPOSED_NONE,
       local_N, local_N_start, lower_border, upper_border);
 
-  *local_N_total = 1;
+  local_N_total = 1;
   for(int t=0; t<3; t++)
-    *local_N_total *= local_N[t];
+    local_N_total *= local_N[t];
 
   /* plan parallel NFFT */
   pnfft = pnfft_init_guru(3, N, n, x_max, local_M, m,
@@ -134,7 +125,7 @@ static void perform_pnfft_adj_guru(
       comm_cart_3d);
 
   /* get data pointers */
-  *f_hat = pnfft_get_f_hat(pnfft);
+  f_hat = pnfft_get_f_hat(pnfft);
   f      = pnfft_get_f(pnfft);
   x      = pnfft_get_x(pnfft);
 
@@ -144,7 +135,7 @@ static void perform_pnfft_adj_guru(
       f);
 
   /* initialize nonequispaced nodes */
-  srand(0);
+  srand(myrank);
   init_random_x(lower_border, upper_border, x_max, local_M,
       x);
 
@@ -159,11 +150,28 @@ static void perform_pnfft_adj_guru(
  
   /* calculate norm of Fourier coefficients for calculation of relative error */ 
   for(ptrdiff_t k=0; k<local_N[0]*local_N[1]*local_N[2]; k++)
-    local_sum += cabs((*f_hat)[k]);
-  MPI_Allreduce(&local_sum, f_hat_sum, 1, MPI_DOUBLE, MPI_SUM, comm_cart_3d);
+    local_sum += cabs(f_hat[k]);
+  MPI_Allreduce(&local_sum, &f_hat_sum, 1, MPI_DOUBLE, MPI_SUM, comm_cart_3d);
 
-  /* free mem and finalize, do not free nfft.f_hat */
-  pnfft_finalize(pnfft, PNFFT_FREE_X | PNFFT_FREE_F);
+  /* store results of NFFT */
+  f_hat1 = pnfft_alloc_complex(local_N_total);
+  for(ptrdiff_t j=0; j<local_M; j++) f_hat1[j] = f_hat[j];
+
+  /* execute parallel NDFT */
+  time = -MPI_Wtime();
+  pnfft_direct_adj(pnfft);
+  time += MPI_Wtime();
+
+  /* print timing */
+  MPI_Reduce(&time, &time_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+  pfft_printf(comm, "pnfft_direct_adj needs %6.2e s\n", time_max);
+
+  /* calculate error of PNFFT */
+  compare_f_hat(f_hat1, f_hat, local_N_total, f_hat_sum, "* Results in", MPI_COMM_WORLD);
+
+  /* free mem and finalize */
+  pnfft_free(f_hat1);
+  pnfft_finalize(pnfft, PNFFT_FREE_X | PNFFT_FREE_F | PNFFT_FREE_F_HAT);
   MPI_Comm_free(&comm_cart_3d);
 }
 

@@ -162,7 +162,7 @@ static void perform_pnfft_adj_guru(
     local_sum += cabs((*f_hat)[k]);
   MPI_Allreduce(&local_sum, f_hat_sum, 1, MPI_DOUBLE, MPI_SUM, comm_cart_3d);
 
-  /* free mem and finalize, do not free nfft.f */
+  /* free mem and finalize, do not free nfft.f_hat */
   pnfft_finalize(pnfft, PNFFT_FREE_X | PNFFT_FREE_F);
   MPI_Comm_free(&comm_cart_3d);
 }
