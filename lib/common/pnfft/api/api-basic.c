@@ -33,7 +33,6 @@ void PNX(cleanup) (void){
   PX(cleanup)();
 }
 
-
 void PNX(local_size_3d)(
     const INT *N, MPI_Comm comm_cart,
     unsigned pnfft_flags,
@@ -120,6 +119,40 @@ static void grad_ik_complex_input(
     PNX(trafo_B_grad_ik)(ths, ths->grad_f, dim, 3);
     ths->timer_trafo[PNFFT_TIMER_MATRIX_B] += MPI_Wtime();
   }
+}
+
+void PNX(direct_trafo)(
+    PNX(plan) ths
+    )
+{
+  if(ths==NULL){
+    PX(fprintf)(MPI_COMM_WORLD, stderr, "!!! Error: Can not execute PNFFT Plan == NULL !!!\n");
+    return;
+  }
+
+  ths->timer_trafo[PNFFT_TIMER_WHOLE] -= MPI_Wtime();
+  
+  PNX(trafo_A)(ths);
+
+  ths->timer_trafo[PNFFT_TIMER_ITER]++;
+  ths->timer_trafo[PNFFT_TIMER_WHOLE] += MPI_Wtime();
+}
+
+void PNX(direct_adj)(
+    PNX(plan) ths
+    )
+{
+  if(ths==NULL){
+    PX(fprintf)(MPI_COMM_WORLD, stderr, "!!! Error: Can not execute PNFFT Plan == NULL !!!\n");
+    return;
+  }
+
+  ths->timer_adj[PNFFT_TIMER_WHOLE] -= MPI_Wtime();
+
+  PNX(adj_A)(ths);
+
+  ths->timer_adj[PNFFT_TIMER_ITER]++;
+  ths->timer_adj[PNFFT_TIMER_WHOLE] += MPI_Wtime();
 }
 
 /* parallel 3dNFFT with different window functions */

@@ -129,6 +129,10 @@
   PNFFT_EXTERN void PNX(finalize)(                                                      \
         PNX(plan) ths, unsigned pnfft_finalize_flags);                                  \
                                                                                         \
+  PNFFT_EXTERN void PNX(direct_trafo)(                                                  \
+      PNX(plan) ths);                                                                   \
+  PNFFT_EXTERN void PNX(direct_adj)(                                                    \
+      PNX(plan) ths);                                                                   \
   PNFFT_EXTERN void PNX(trafo)(                                                         \
       PNX(plan) ths);                                                                   \
   PNFFT_EXTERN void PNX(adj)(                                                           \

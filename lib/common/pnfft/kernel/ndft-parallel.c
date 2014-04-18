@@ -131,9 +131,9 @@ static void sort_nodes_for_better_cache_handle(
 static void project_node_to_grid(
     const INT *n, int m, const R *x,
     R *floor_nx_j, INT *u_j);
-static void get_mpi_cart_dims(
+static void get_mpi_cart_dims_3d(
     MPI_Comm comm_cart,
-    int *dims);
+    int *rnk_pm, int *dims, int *coords);
 static int compare_INT(
     const void* a, const void* b);
 
@@ -316,6 +316,182 @@ static void init_intpol_table_dpsi(
 }
 
 
+static void compute_block_size_and_offset_3d(
+    INT *N, int *coords, MPI_Comm comm_cart,
+    INT *local_N, INT *local_N_start
+    )
+{
+  PX(local_block_3d)(N, coords, comm_cart, local_N, local_N_start);
+  for(int t=0; t<3; t++)
+    local_N_start[t] -= N[t]/2;
+}
+
+static void get_mpi_coords_3d(
+    MPI_Comm comm_cart, int rnk, int *coords_3d
+    )
+{
+  int rnk_pm;
+
+  /* takes care of the case rnk_pm < 3 */  
+  for(int t=0; t<3; t++) coords_3d[t] = 0;
+
+  MPI_Cartdim_get(comm_cart, &rnk_pm);
+  MPI_Cart_coords(comm_cart, rnk, rnk_pm, coords_3d);
+}
+
+void PNX(trafo_A)(
+    PNX(plan) ths
+    )
+{
+  int np_total, myrnk, mycoords[3], r[3];
+  C *buffer;
+  INT local_Nr[3], local_Nr_start[3]; 
+
+  MPI_Comm_size(ths->comm_cart, &np_total);
+  MPI_Comm_rank(ths->comm_cart, &myrnk);
+  get_mpi_coords_3d(ths->comm_cart, myrnk, mycoords);
+
+  memset(ths->f, 0, sizeof(C) * ths->local_M);
+  if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F)
+    memset(ths->grad_f, 0, sizeof(C) * 3*ths->local_M);
+
+  for(int p=0; p<np_total; p++){
+
+//     if(p == myrnk){
+//       for(int t=0; t<3; t++) current_block[t] = ths->local_N[t];
+//       for(int t=0; t<3; t++) current_block
+//     MPI_Bcast(buffer, 2*local_Nr_total, PNFFT_MPI_REAL_TYPE, p, ths->comm_cart);
+
+
+
+
+
+    get_mpi_coords_3d(ths->comm_cart, p, r);
+ 
+    /* compute local_Nr, local_Nr_start of proc. (r0,r1,r2) */
+    TODO: compute_block_size_and_offset_3d(ths->N, r, ths->comm_cart, local_Nr, local_Nr_start);
+
+
+
+
+
+    INT local_Nr_total = PNX(prod_INT)(3, local_Nr);
+
+    /* Avoid errors for empty blocks */
+    if(local_Nr_total == 0) continue;
+
+    buffer = (myrnk == p) ? ths->f_hat : PNX(malloc_C)(local_Nr_total);
+
+    /* broadcast block of Fourier coefficients from p to all procs */
+    MPI_Bcast(buffer, 2*local_Nr_total, PNFFT_MPI_REAL_TYPE, p, ths->comm_cart);
+
+    if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT){
+      if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
+        for(INT j=0; j<ths->local_M; j++){
+          INT m=0;
+          for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++){
+            for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++){
+              for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++, m++){
+                ths->f[j] += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+                ths->grad_f[3*j+0] += -2 * PNFFT_PI * I * k0 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+                ths->grad_f[3*j+1] += -2 * PNFFT_PI * I * k1 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+                ths->grad_f[3*j+2] += -2 * PNFFT_PI * I * k2 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+              }
+            }
+          }
+        }
+      } else {
+        for(INT j=0; j<ths->local_M; j++){
+          INT m=0;
+          for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++)
+            for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++)
+              for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++, m++)
+                ths->f[j] += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[0] + k1*ths->x[1] + k2*ths->x[2]));
+        }
+      }
+    } else {
+      if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
+        for(INT j=0; j<ths->local_M; j++){
+          INT m=0;
+          for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++){
+            for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++){
+              for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++, m++){
+                ths->f[j] += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+                ths->grad_f[3*j+0] += -2 * PNFFT_PI * I * k0 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+                ths->grad_f[3*j+1] += -2 * PNFFT_PI * I * k1 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+                ths->grad_f[3*j+2] += -2 * PNFFT_PI * I * k2 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+              }
+            }
+          }
+        }
+      } else {
+        for(INT j=0; j<ths->local_M; j++){
+          INT m=0;
+          for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++)
+            for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++)
+              for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++, m++)
+                ths->f[j] += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+        }
+      }
+    }
+
+    if(myrnk != p) PNX(free)(buffer);
+  }
+}
+
+
+
+void PNX(adj_A)(
+    PNX(plan) ths
+    )
+{
+  int np_total, myrnk, mycoords[3], r[3];
+  C *buffer;
+  INT local_Nr[3], local_Nr_start[3]; 
+
+  MPI_Comm_size(ths->comm_cart, &np_total);
+  MPI_Comm_rank(ths->comm_cart, &myrnk);
+  get_mpi_coords_3d(ths->comm_cart, myrnk, mycoords);
+
+  for(int p=0; p<np_total; p++){
+    get_mpi_coords_3d(ths->comm_cart, p, r);
+
+    /* compute local_Nr, local_Nr_start of proc. (r0,r1,r2) */
+    compute_block_size_and_offset_3d(ths->N, r, ths->comm_cart, local_Nr, local_Nr_start);
+    INT local_Nr_total = PNX(prod_INT)(3, local_Nr);
+
+    /* Avoid errors for empty blocks */
+    if(local_Nr_total == 0) continue;
+
+    buffer = calloc(local_Nr_total, sizeof(C));
+
+    if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT){
+      for(INT j=0; j<ths->local_M; j++) {
+        INT m=0;
+        for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++)
+          for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++)
+            for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++, m++)
+              buffer[m] += ths->f[j] * pnfft_cexp(+2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+      }
+    } else {  
+      for(INT j=0; j<ths->local_M; j++){
+        INT m=0;
+        for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++)
+          for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++)
+            for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++, m++)
+              buffer[m] += ths->f[j] * pnfft_cexp(+2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+      }
+    }
+
+    /* reduce block of Fourier coefficients from all procs to p */
+    MPI_Reduce(buffer, ths->f_hat, 2*local_Nr_total, PNFFT_MPI_REAL_TYPE, MPI_SUM, p, ths->comm_cart);
+    PNX(free)(buffer);
+  }
+}
+
+
+
+
 /* The local borders of the FFT output imply the box of nodes
  * that can be handled by the current process. If x_max < 0.5,
  * the FFT output size 'no' includes some extra elements at the
@@ -448,7 +624,7 @@ PNX(plan) PNX(init_internal)(
   ths->pfft_opt_flags = pfft_opt_flags;
 
   MPI_Comm_dup(comm_cart, &(ths->comm_cart));
-  get_mpi_cart_dims(comm_cart, ths->np);
+  get_mpi_cart_dims_3d(comm_cart, &ths->rnk_pm, ths->np, ths->coords);
   
   ths->cutoff = 2*m+1;
   ths->N_total = ths->n_total = 1;
@@ -1462,23 +1638,23 @@ static void project_node_to_grid(
   }
 }
 
-static void get_mpi_cart_dims(
+static void get_mpi_cart_dims_3d(
     MPI_Comm comm_cart,
-    int *dims
+    int *rnk_pm, int *dims, int *coords
     )
 {
-  int maxdims, *periods, *coords;
- 
-  MPI_Cartdim_get(comm_cart, &maxdims);
+  int *periods;
 
-  periods = (int*) malloc(sizeof(int) * (size_t) maxdims);
-  coords  = (int*) malloc(sizeof(int) * (size_t) maxdims);
-  MPI_Cart_get(comm_cart, maxdims, dims, periods, coords);
+  /* takes care of the case rnk_pm < 3 */  
+  for(int t=0; t<3; t++) dims[t] = 1;
+  for(int t=0; t<3; t++) coords[t] = 0;
+
+  MPI_Cartdim_get(comm_cart, rnk_pm);
+
+  periods = (int*) malloc(sizeof(int) * (size_t) *rnk_pm);
+  coords  = (int*) malloc(sizeof(int) * (size_t) *rnk_pm);
+  MPI_Cart_get(comm_cart, *rnk_pm, dims, periods, coords);
   free(periods);
-  free(coords);
- 
-  if(maxdims == 2)
-    dims[2] = 1;
 }
 
 /* compact support in real space */

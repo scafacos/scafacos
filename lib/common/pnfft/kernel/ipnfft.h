@@ -195,8 +195,10 @@ struct PNX(plan_s){
   R **intpol_tables_psi;      /**< sampled values of window functions              */
   R **intpol_tables_dpsi;     /**< sampled values of window function derivatives   */
                                                                                      
-  MPI_Comm comm_cart;         /**< Two-dimensional Cartesian communicator          */
+  MPI_Comm comm_cart;         /**< 2d or 3d Cartesian communicator                 */
   int np[3];                  /**< Size of Cartesian communicator                  */
+  int rnk_pm;                 /**< rank of Cartesian communicator                  */
+  int coords[3];              /**< 3d coordinates within Cartesian communicator    */
                                                                                      
   double* timer_trafo;        /**< Saves time measurements during PNFFT            */
   double* timer_adj;          /**< Saves time measurements during adjoint PNFFT    */
