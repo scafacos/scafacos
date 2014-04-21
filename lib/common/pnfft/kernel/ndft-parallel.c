@@ -343,19 +343,22 @@ void PNX(trafo_A)(
     PNX(plan) ths
     )
 {
-  int np_total, myrnk, mycoords[3], r[3];
+  int np_total, myrnk, rnk_pm, r[3];
   C *buffer;
   INT local_Nr[3], local_Nr_start[3]; 
 
+  MPI_Cartdim_get(ths->comm_cart, &rnk_pm);
   MPI_Comm_size(ths->comm_cart, &np_total);
   MPI_Comm_rank(ths->comm_cart, &myrnk);
-  get_mpi_coords_3d(ths->comm_cart, myrnk, mycoords);
+
+  int np_2d[2];
+  PX(procmesh_3dto2d)(ths->pfft_forw, np_2d);
 
   memset(ths->f, 0, sizeof(C) * ths->local_M);
   if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F)
     memset(ths->grad_f, 0, sizeof(C) * 3*ths->local_M);
 
-  for(int p=0; p<np_total; p++){
+  for(int pid=0; pid<np_total; pid++){
 
 //     if(p == myrnk){
 //       for(int t=0; t<3; t++) current_block[t] = ths->local_N[t];
@@ -366,10 +369,17 @@ void PNX(trafo_A)(
 
 
 
-    get_mpi_coords_3d(ths->comm_cart, p, r);
+    get_mpi_coords_3d(ths->comm_cart, pid, r);
+    if(rnk_pm == 3){
+      PX(coords_3dto2d)(ths, r);
+      r[2] = 1;
+    }
+
+
  
     /* compute local_Nr, local_Nr_start of proc. (r0,r1,r2) */
     TODO: compute_block_size_and_offset_3d(ths->N, r, ths->comm_cart, local_Nr, local_Nr_start);
+
 
 
 
