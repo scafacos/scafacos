@@ -113,6 +113,8 @@ static void pnfft_perform_guru(
     return;
   }
 
+  MPI_Comm_rank(comm_cart_3d, &myrank);
+
   pnfft_local_size_guru(3, N, n, x_max, m, comm_cart_3d, PNFFT_TRANSPOSED_NONE,
       local_N, local_N_start, lower_border, upper_border);
 

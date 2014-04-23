@@ -268,11 +268,19 @@ INT PNX(local_size_internal)(
     MPI_Comm comm_cart_2d, unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,
     INT *local_no, INT *local_no_start);
+void PNX(local_block_internal)(
+    const INT *N, const INT *no,
+    MPI_Comm comm_cart, int pid, unsigned pnfft_flags,
+    INT *local_N, INT *local_N_start);
 PNX(plan) PNX(init_internal)(
     int d, const INT *N, const INT *n, const INT *no,
     INT local_M, int m,
     unsigned pnfft_flags, unsigned pfft_opt_flags,
     MPI_Comm comm_cart_2d);
+void PNX(trafo_A)(
+    PNX(plan) ths);
+void PNX(adj_A)(
+    PNX(plan) ths);
 void PNX(trafo_F)(
     PNX(plan) ths);
 void PNX(adjoint_F)(

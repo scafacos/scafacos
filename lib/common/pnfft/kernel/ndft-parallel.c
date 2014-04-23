@@ -316,92 +316,43 @@ static void init_intpol_table_dpsi(
 }
 
 
-static void compute_block_size_and_offset_3d(
-    INT *N, int *coords, MPI_Comm comm_cart,
-    INT *local_N, INT *local_N_start
-    )
-{
-  PX(local_block_3d)(N, coords, comm_cart, local_N, local_N_start);
-  for(int t=0; t<3; t++)
-    local_N_start[t] -= N[t]/2;
-}
-
-static void get_mpi_coords_3d(
-    MPI_Comm comm_cart, int rnk, int *coords_3d
-    )
-{
-  int rnk_pm;
-
-  /* takes care of the case rnk_pm < 3 */  
-  for(int t=0; t<3; t++) coords_3d[t] = 0;
-
-  MPI_Cartdim_get(comm_cart, &rnk_pm);
-  MPI_Cart_coords(comm_cart, rnk, rnk_pm, coords_3d);
-}
-
 void PNX(trafo_A)(
     PNX(plan) ths
     )
 {
-  int np_total, myrnk, rnk_pm, r[3];
+  int np_total, myrnk;
+  INT local_Np[3], local_Np_start[3]; 
   C *buffer;
-  INT local_Nr[3], local_Nr_start[3]; 
 
-  MPI_Cartdim_get(ths->comm_cart, &rnk_pm);
   MPI_Comm_size(ths->comm_cart, &np_total);
   MPI_Comm_rank(ths->comm_cart, &myrnk);
 
-  int np_2d[2];
-  PX(procmesh_3dto2d)(ths->pfft_forw, np_2d);
-
-  memset(ths->f, 0, sizeof(C) * ths->local_M);
+  for(INT j=0; j<ths->local_M; j++) ths->f[j] = 0;
   if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F)
-    memset(ths->grad_f, 0, sizeof(C) * 3*ths->local_M);
+    for(INT j=0; j<3*ths->local_M; j++) ths->grad_f[j] = 0;
 
   for(int pid=0; pid<np_total; pid++){
+    /* compute local_Np, local_Np_start of proc. with rank pid */
+    PNX(local_block_internal)(ths->N, ths->no, ths->comm_cart, pid, ths->pnfft_flags,
+        local_Np, local_Np_start);
 
-//     if(p == myrnk){
-//       for(int t=0; t<3; t++) current_block[t] = ths->local_N[t];
-//       for(int t=0; t<3; t++) current_block
-//     MPI_Bcast(buffer, 2*local_Nr_total, PNFFT_MPI_REAL_TYPE, p, ths->comm_cart);
-
-
-
-
-
-    get_mpi_coords_3d(ths->comm_cart, pid, r);
-    if(rnk_pm == 3){
-      PX(coords_3dto2d)(ths, r);
-      r[2] = 1;
-    }
-
-
- 
-    /* compute local_Nr, local_Nr_start of proc. (r0,r1,r2) */
-    TODO: compute_block_size_and_offset_3d(ths->N, r, ths->comm_cart, local_Nr, local_Nr_start);
-
-
-
-
-
-
-    INT local_Nr_total = PNX(prod_INT)(3, local_Nr);
+    INT local_Np_total = PNX(prod_INT)(3, local_Np);
 
     /* Avoid errors for empty blocks */
-    if(local_Nr_total == 0) continue;
+    if(local_Np_total == 0) continue;
 
-    buffer = (myrnk == p) ? ths->f_hat : PNX(malloc_C)(local_Nr_total);
+    buffer = (myrnk == pid) ? ths->f_hat : PNX(malloc_C)(local_Np_total);
 
     /* broadcast block of Fourier coefficients from p to all procs */
-    MPI_Bcast(buffer, 2*local_Nr_total, PNFFT_MPI_REAL_TYPE, p, ths->comm_cart);
+    MPI_Bcast(buffer, 2*local_Np_total, PNFFT_MPI_REAL_TYPE, pid, ths->comm_cart);
 
     if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT){
       if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
         for(INT j=0; j<ths->local_M; j++){
           INT m=0;
-          for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++){
-            for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++){
-              for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++, m++){
+          for(INT k1 = local_Np_start[1]; k1 < local_Np_start[1] + local_Np[1]; k1++){
+            for(INT k2 = local_Np_start[2]; k2 < local_Np_start[2] + local_Np[2]; k2++){
+              for(INT k0 = local_Np_start[0]; k0 < local_Np_start[0] + local_Np[0]; k0++, m++){
                 ths->f[j] += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
                 ths->grad_f[3*j+0] += -2 * PNFFT_PI * I * k0 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
                 ths->grad_f[3*j+1] += -2 * PNFFT_PI * I * k1 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
@@ -413,19 +364,19 @@ void PNX(trafo_A)(
       } else {
         for(INT j=0; j<ths->local_M; j++){
           INT m=0;
-          for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++)
-            for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++)
-              for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++, m++)
-                ths->f[j] += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[0] + k1*ths->x[1] + k2*ths->x[2]));
+          for(INT k1 = local_Np_start[1]; k1 < local_Np_start[1] + local_Np[1]; k1++)
+            for(INT k2 = local_Np_start[2]; k2 < local_Np_start[2] + local_Np[2]; k2++)
+              for(INT k0 = local_Np_start[0]; k0 < local_Np_start[0] + local_Np[0]; k0++, m++)
+                ths->f[j] += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
         }
       }
     } else {
       if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
         for(INT j=0; j<ths->local_M; j++){
           INT m=0;
-          for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++){
-            for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++){
-              for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++, m++){
+          for(INT k0 = local_Np_start[0]; k0 < local_Np_start[0] + local_Np[0]; k0++){
+            for(INT k1 = local_Np_start[1]; k1 < local_Np_start[1] + local_Np[1]; k1++){
+              for(INT k2 = local_Np_start[2]; k2 < local_Np_start[2] + local_Np[2]; k2++, m++){
                 ths->f[j] += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
                 ths->grad_f[3*j+0] += -2 * PNFFT_PI * I * k0 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
                 ths->grad_f[3*j+1] += -2 * PNFFT_PI * I * k1 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
@@ -437,64 +388,62 @@ void PNX(trafo_A)(
       } else {
         for(INT j=0; j<ths->local_M; j++){
           INT m=0;
-          for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++)
-            for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++)
-              for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++, m++)
+          for(INT k0 = local_Np_start[0]; k0 < local_Np_start[0] + local_Np[0]; k0++)
+            for(INT k1 = local_Np_start[1]; k1 < local_Np_start[1] + local_Np[1]; k1++)
+              for(INT k2 = local_Np_start[2]; k2 < local_Np_start[2] + local_Np[2]; k2++, m++)
                 ths->f[j] += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
         }
       }
     }
 
-    if(myrnk != p) PNX(free)(buffer);
+    if(myrnk != pid) PNX(free)(buffer);
   }
 }
-
-
 
 void PNX(adj_A)(
     PNX(plan) ths
     )
 {
-  int np_total, myrnk, mycoords[3], r[3];
+  int np_total, myrnk;
+  INT local_Np[3], local_Np_start[3]; 
   C *buffer;
-  INT local_Nr[3], local_Nr_start[3]; 
 
   MPI_Comm_size(ths->comm_cart, &np_total);
   MPI_Comm_rank(ths->comm_cart, &myrnk);
-  get_mpi_coords_3d(ths->comm_cart, myrnk, mycoords);
 
-  for(int p=0; p<np_total; p++){
-    get_mpi_coords_3d(ths->comm_cart, p, r);
+  for(int pid=0; pid<np_total; pid++){
+    /* compute local_Np, local_Np_start of proc. with rank pid */
+    PNX(local_block_internal)(ths->N, ths->no, ths->comm_cart, pid, ths->pnfft_flags,
+        local_Np, local_Np_start);
 
-    /* compute local_Nr, local_Nr_start of proc. (r0,r1,r2) */
-    compute_block_size_and_offset_3d(ths->N, r, ths->comm_cart, local_Nr, local_Nr_start);
-    INT local_Nr_total = PNX(prod_INT)(3, local_Nr);
+    INT local_Np_total = PNX(prod_INT)(3, local_Np);
 
     /* Avoid errors for empty blocks */
-    if(local_Nr_total == 0) continue;
+    if(local_Np_total == 0) continue;
 
-    buffer = calloc(local_Nr_total, sizeof(C));
+    buffer = malloc(sizeof(C) * local_Np_total);
+    for(INT k=0; k<local_Np_total; k++) buffer[k] = 0;
 
     if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT){
       for(INT j=0; j<ths->local_M; j++) {
         INT m=0;
-        for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++)
-          for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++)
-            for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++, m++)
+        for(INT k1 = local_Np_start[1]; k1 < local_Np_start[1] + local_Np[1]; k1++)
+          for(INT k2 = local_Np_start[2]; k2 < local_Np_start[2] + local_Np[2]; k2++)
+            for(INT k0 = local_Np_start[0]; k0 < local_Np_start[0] + local_Np[0]; k0++, m++)
               buffer[m] += ths->f[j] * pnfft_cexp(+2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
       }
     } else {  
       for(INT j=0; j<ths->local_M; j++){
         INT m=0;
-        for(INT k0 = local_Nr_start[0]; k0 < local_Nr_start[0] + local_Nr[0]; k0++)
-          for(INT k1 = local_Nr_start[1]; k1 < local_Nr_start[1] + local_Nr[1]; k1++)
-            for(INT k2 = local_Nr_start[2]; k2 < local_Nr_start[2] + local_Nr[2]; k2++, m++)
+        for(INT k0 = local_Np_start[0]; k0 < local_Np_start[0] + local_Np[0]; k0++)
+          for(INT k1 = local_Np_start[1]; k1 < local_Np_start[1] + local_Np[1]; k1++)
+            for(INT k2 = local_Np_start[2]; k2 < local_Np_start[2] + local_Np[2]; k2++, m++)
               buffer[m] += ths->f[j] * pnfft_cexp(+2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
       }
     }
 
     /* reduce block of Fourier coefficients from all procs to p */
-    MPI_Reduce(buffer, ths->f_hat, 2*local_Nr_total, PNFFT_MPI_REAL_TYPE, MPI_SUM, p, ths->comm_cart);
+    MPI_Reduce(buffer, ths->f_hat, 2*local_Np_total, PNFFT_MPI_REAL_TYPE, MPI_SUM, pid, ths->comm_cart);
     PNX(free)(buffer);
   }
 }
@@ -579,6 +528,19 @@ INT PNX(local_size_internal)(
       local_N, local_N_start, local_no, local_no_start);
 }
 
+void PNX(local_block_internal)(
+    const INT *N, const INT *no,
+    MPI_Comm comm_cart, int pid, unsigned pnfft_flags,
+    INT *local_N, INT *local_N_start
+    )
+{
+  unsigned pfft_flags = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
+  INT dummy_lno[3], dummy_los[3];
+
+  PX(local_block_many_dft)(3, N, no,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pid, pfft_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT,
+      local_N, local_N_start, dummy_lno, dummy_los);
+}
 
 
 /* N - size of NFFT
@@ -2326,7 +2288,7 @@ void PNX(adjoint_B)(
       local_ngc);
 
   local_ngc_total = PNX(prod_INT)(3, local_ngc);
-  memset(ths->g2, 0, local_ngc_total * sizeof(C));
+  for(INT k=0; k<local_ngc_total; k++) ths->g2[k] = 0;
 
 #if PNFFT_ENABLE_DEBUG
   int myrank;

@@ -134,11 +134,6 @@ static void pnfft_perform_guru(
   init_random_x(lower_border, upper_border, x_max, local_M,
       x);
 
-  if(myrank==0)
-    x[0] = -0.1;
-  else
-    x[0] = 0.1;
-
   /* execute parallel NFFT */
   time = -MPI_Wtime();
   pnfft_trafo(pnfft);
