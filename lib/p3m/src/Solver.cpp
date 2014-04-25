@@ -2145,7 +2145,7 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
                 (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      rough grid=" FINT "\n", grid1d));
                 this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
-                errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error);
+                errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error, box_vectors);
                 P3M_DEBUG(printf("        => error=" FFLOATE "\n", (*p)->error));
             } while ((*p)->error > tolerance_field);
 
@@ -2169,7 +2169,7 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
                 (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      fine grid=" FINT "\n", grid1d));
                 this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
-                errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error);
+                errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error, box_vectors);
                 P3M_DEBUG(printf("          => error=" FFLOATE "\n", (*p)->error));
                 if ((*p)->error < tolerance_field) {
                     // parameters achieve error
@@ -2233,7 +2233,7 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
                     (*p)->p.grid[0], (*p)->p.grid[1], (*p)->p.grid[2]));
             this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
             errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l,
-                    (*p)->error, (*p)->rs_error, (*p)->ks_error);
+                    (*p)->error, (*p)->rs_error, (*p)->ks_error,box_vectors);
 
             if ((*p)->error < tolerance_field) {
                 // error is small enough for this parameter set, so keep it

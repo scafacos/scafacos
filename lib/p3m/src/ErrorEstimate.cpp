@@ -58,9 +58,12 @@ void ErrorEstimate::compute_alpha(p3m_float required_accuracy, Parameters& p,
 
 void ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3],
-		p3m_float &error, p3m_float &rs_error, p3m_float &ks_error) {
+		p3m_float &error, p3m_float &rs_error, p3m_float &ks_error, p3m_float box_vectors[3][3]) {
 	rs_error = compute_rs_error(p, num_charges, sum_q2, box_l);
-	ks_error = compute_ks_error(p, num_charges, sum_q2, box_l);
+	//ks_error = compute_ks_error(p, num_charges, sum_q2, box_l);
+        //printf("ks error-orig %e\n",ks_error);
+        ks_error = compute_ks_error_triclinic(p, num_charges, sum_q2, box_vectors);
+       // printf("ks error-tric %e\n",ks_error);
 	error = sqrt(SQR(rs_error) + SQR(ks_error));
 
 #ifdef P3M_ENABLE_DEBUG
@@ -71,23 +74,23 @@ void ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
 }
 
 p3m_float ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
-		p3m_float sum_q2, p3m_float box_l[3]) {
+		p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3]) {
 	p3m_float ks_error, rs_error, error;
-	this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error);
+	this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error,box_vectors);
 	return error;
 }
 
 p3m_float ErrorEstimate::compute_master(Parameters &p,
-        p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) {
+        p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3]) {
     p3m_float ks_error, rs_error, error;
-    this->compute_master(p, num_charges, sum_q2, box_l, error, rs_error, ks_error);
+    this->compute_master(p, num_charges, sum_q2, box_l, error, rs_error, ks_error, box_vectors);
     return error;
 }
 
 void
 ErrorEstimate::compute_master(Parameters &p,
         p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
-        p3m_float &error, p3m_float &rs_error, p3m_float &ks_error) {
+        p3m_float &error, p3m_float &rs_error, p3m_float &ks_error, p3m_float box_vectors[3][3]) {
     if (!comm.onMaster())
         throw std::logic_error("Do not call ErrorEstimate::compute_master() on slave.");
 
@@ -110,11 +113,14 @@ ErrorEstimate::compute_master(Parameters &p,
     float_buffer[2] = box_l[0];
     float_buffer[3] = box_l[1];
     float_buffer[4] = box_l[2];
-    MPI_Bcast(float_buffer, 5, P3M_MPI_FLOAT,
+    float_buffer[5] = box_vectors[2][1];
+    float_buffer[6] = box_vectors[2][0];
+    float_buffer[7] = box_vectors[1][0];
+    MPI_Bcast(float_buffer, 8, P3M_MPI_FLOAT,
             Communication::MPI_MASTER, comm.mpicomm);
 
     // run master job
-    this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error);
+    this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error,box_vectors);
 }
 
 void ErrorEstimate::compute_slave() {
@@ -128,6 +134,10 @@ void ErrorEstimate::compute_slave() {
     p3m_float box_l[3];
     p3m_int num_charges;
     p3m_float sum_q2;
+    p3m_float box_vectors[3][3];
+//    box_vectors[0]= new p3m_float[3];
+//    box_vectors[1]= new p3m_float[3];
+//    box_vectors[2]= new p3m_float[3];
 
     MPI_Bcast(int_buffer, 5, P3M_MPI_INT,
             Communication::MPI_MASTER, comm.mpicomm);
@@ -138,16 +148,18 @@ void ErrorEstimate::compute_slave() {
     num_charges = int_buffer[4];
 
     // unpack float data
-    MPI_Bcast(float_buffer, 5, P3M_MPI_FLOAT,
+    MPI_Bcast(float_buffer, 8, P3M_MPI_FLOAT,
             Communication::MPI_MASTER, comm.mpicomm);
     p.alpha = float_buffer[0];
     sum_q2 = float_buffer[1];
     box_l[0] = float_buffer[2];
     box_l[1] = float_buffer[3];
     box_l[2] = float_buffer[4];
-
+    box_vectors[0][0]=float_buffer[2];box_vectors[0][1]=0.0;box_vectors[0][2]=0.0;
+    box_vectors[1][0]=float_buffer[7];box_vectors[1][1]=float_buffer[3];box_vectors[1][2]=0.0;
+    box_vectors[2][0]=float_buffer[6];box_vectors[2][1]=float_buffer[5];box_vectors[2][2]=float_buffer[4];
     // run slave job
-    this->compute(p, num_charges, sum_q2, box_l);
+    this->compute(p, num_charges, sum_q2, box_l,box_vectors);
 }
 
 p3m_float ErrorEstimate::compute_rs_error(Parameters& p, p3m_int num_charges,

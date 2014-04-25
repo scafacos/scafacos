@@ -54,23 +54,23 @@ public:
 	virtual void
 	compute(Parameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
-			p3m_float &error, p3m_float &rs_error, p3m_float &ks_error);
+			p3m_float &error, p3m_float &rs_error, p3m_float &ks_error,p3m_float box_vectors[3][3]);
 
     /** Computes the error estimate. When called in parallel, the result is
      * undefined on the slaves. */
 	virtual p3m_float
 	compute(Parameters &p,
-			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
+			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],p3m_float box_vectors[3][3]);
 
     /** Master variant of the error computation. It first broadcasts the
      * parameters to all tasks, then runs compute. */
     virtual p3m_float compute_master(Parameters &p,
-            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
+            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3]);
 
     virtual void
     compute_master(Parameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
-            p3m_float &error, p3m_float &rs_error, p3m_float &ks_error);
+            p3m_float &error, p3m_float &rs_error, p3m_float &ks_error,p3m_float box_vectors[3][3]);
     /** Slave variant of the error computation. It first receives the
      * parameters, then runs compute. */
     virtual void compute_slave();
@@ -86,7 +86,11 @@ public:
      */
     virtual p3m_float compute_ks_error(Parameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) = 0;
-
+/** Calculates the reciprocal space contribution to the rms error in the
+     force.
+     */
+    virtual p3m_float compute_ks_error_triclinic(Parameters &p,
+            p3m_int num_charges, p3m_float sum_q2, p3m_float box_vectors[3][3]) = 0;
 	protected:
 	    Communication &comm;
 
