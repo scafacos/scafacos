@@ -90,9 +90,6 @@ AX_FCS_PACKAGE_ADD([pp3mg_LIBS],[-lfcs_pp3mg])
 AX_FCS_PACKAGE_ADD([pp3mg_LIBS_A],[libfcs_pp3mg.la])
 ])
 
-# ranlib is needed for creating libraries.
-AC_PROG_RANLIB
-
 # Create output files and headers.
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile pmg/Makefile pp3mg/Makefile])

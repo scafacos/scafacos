@@ -61,8 +61,6 @@ AC_FC_MODULE_FLAG
 # Find out the Fortran module file extension.
 AC_FC_MODULE_EXTENSION
 
-AC_PROG_RANLIB
-
 AC_CHECK_TOOLS([AR], [ar xiar], [false])
 : ${ARFLAGS=r}
 AC_SUBST([ARFLAGS])
