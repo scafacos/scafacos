@@ -125,6 +125,7 @@ typedef struct {
   fcs_float upper_border[3];
   fcs_int tolerance_type;
   fcs_float tolerance;
+  fcs_int verbose_tuning;
   fcs_int needs_retune;
   fcs_int num_nodes;
   fcs_int tune_alpha;
@@ -178,6 +179,7 @@ typedef struct {
   unsigned pnfft_flags;
   fcs_int  pnfft_interpolation_order;
   fcs_int  pnfft_window;
+  fcs_int  pnfft_direct;
   unsigned pfft_flags;
   fcs_int  pfft_patience;
 

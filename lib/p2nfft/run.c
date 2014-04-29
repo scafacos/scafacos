@@ -367,7 +367,10 @@ FCSResult ifcs_p2nfft_run(
   FCS_P2NFFT_START_TIMING();
 
   /* Perform adjoint NFFT */
-  FCS_PNFFT(adj)(d->pnfft);
+  if(!d->pnfft_direct)
+    FCS_PNFFT(adj)(d->pnfft);
+  else
+    FCS_PNFFT(direct_adj)(d->pnfft);
 
   /* Checksum: Output of adjoint NFFT */  
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
@@ -401,7 +404,10 @@ FCSResult ifcs_p2nfft_run(
 #endif
     
   /* Perform NFFT */
-  FCS_PNFFT(trafo)(d->pnfft);
+  if(!d->pnfft_direct)
+    FCS_PNFFT(trafo)(d->pnfft);
+  else
+    FCS_PNFFT(direct_trafo)(d->pnfft);
 
   /* Copy the results to the output vector and rescale with L^{-T} */
   for (fcs_int j = 0; j < sorted_num_particles; ++j){

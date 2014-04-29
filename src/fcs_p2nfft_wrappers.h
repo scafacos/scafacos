@@ -23,6 +23,9 @@
 /************************************************************
  *     Setter and Getter functions for p2nfft parameters
  ************************************************************/
+/* Getters and Setters for verbose tuning of P2NFFT */
+FCS_P2NFFT_SET_GET_WRAPPER_1(verbose_tuning, verbose_tuning, fcs_int, verbose_tuning)
+
 /* setters/getters for tolerance */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_2(tolerance, tolerance, fcs_int, tolerance_type, fcs_float, tolerance_value)
 
@@ -90,6 +93,9 @@ FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(pnfft_m, pnfft_m, fcs_int, m)
 
 /* Getters and Setters for PNFFT window interpolation order */
 FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_interpolation_order, pnfft_interpolation_order, fcs_int, intpol_order)
+
+/* Getters and Setters for direct PNDFT computation flag */
+FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_direct, pnfft_direct, fcs_int, pnfft_direct)
 
 /* Getters and Setters for PNFFT flags */
 FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_pre_phi_hat,     pnfft_pre_phi_hat,     fcs_int, yes_or_no)

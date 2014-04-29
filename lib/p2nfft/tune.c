@@ -51,10 +51,8 @@
 #define At_TIMES_VEC(_A_, _v_, _d_) ( (_v_)[0] * (_A_)[_d_] + (_v_)[1] * (_A_)[_d_ + 3] + (_v_)[2] * (_A_)[_d_ + 6] )
 
 /* FORWARD DECLARATIONS OF STATIC FUNCTIONS */
-#if FCS_ENABLE_INFO 
 static void print_command_line_arguments(
     ifcs_p2nfft_data_struct *d, fcs_int verbose);
-#endif
 static void init_near_interpolation_table_potential_3dp(
     fcs_int num_nodes,
     fcs_float r_cut, fcs_float alpha,
@@ -975,15 +973,15 @@ FCSResult ifcs_p2nfft_tune(
   init_pnfft(&d->pnfft, 3, d->N, d->n, d->x_max, d->m, d->pnfft_flags, d->pnfft_interpolation_order, d->pnfft_window,
       d->pfft_flags, d->pfft_patience, d->cart_comm_pnfft);
 
-#if FCS_ENABLE_INFO 
   /* Print the command line arguments that recreate this plan. */
   if(d->needs_retune){
-    if(!comm_rank) printf("P2NFFT_INFO: CMD ARGS: -c ");
-    print_command_line_arguments(d, 0);
-    if(!comm_rank) printf("P2NFFT_INFO: ALL CMD ARGS: -c ");
-    print_command_line_arguments(d, 1);
+    if(d->verbose_tuning){
+      if(!comm_rank) printf("P2NFFT_INFO: CMD ARGS: -c ");
+      print_command_line_arguments(d, 0);
+      if(!comm_rank) printf("P2NFFT_INFO: ALL CMD ARGS: -c ");
+      print_command_line_arguments(d, 1);
+    }
   }
-#endif
 
   d->needs_retune = 0;
 
@@ -1002,7 +1000,6 @@ FCSResult ifcs_p2nfft_tune(
   return NULL;
 }
 
-#if FCS_ENABLE_INFO 
 /* For verbose == 0 only print the user defined parameters. 
  * For verbose != 0 print also the parameters which where determined by the tuning. */
 static void print_command_line_arguments(
@@ -1100,6 +1097,8 @@ static void print_command_line_arguments(
       printf("pnfft_m,%" FCS_LMOD_INT "d,", d->m);
     if(verbose || d->pnfft_interpolation_order != 3)
       printf("pnfft_intpol_order,%" FCS_LMOD_INT "d,", d->pnfft_interpolation_order);
+    if(verbose || !d->pnfft_direct)
+      printf("pnfft_direct,%" FCS_LMOD_INT "d,", d->pnfft_direct);
     if(verbose || (d->pnfft_flags & PNFFT_PRE_PHI_HAT) )
       printf("pnfft_pre_phi_hat,%d,", (d->pnfft_flags & PNFFT_PRE_PHI_HAT) ? 1 : 0);
     if(verbose || (d->pnfft_flags & PNFFT_FFT_IN_PLACE) )
@@ -1136,7 +1135,6 @@ static void print_command_line_arguments(
     printf("\n");
   }
 }
-#endif
 
 static void init_near_interpolation_table_potential_3dp(
     fcs_int num_nodes,

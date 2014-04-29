@@ -278,6 +278,10 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     This flag disables the check for accuracy and gives the possibility to run \ptwonfft
     with any set of parameters. It is intended for very experienced users that tune all parameters manually.
     Default value is $0$ (abort if tolerance check fails). Any other value disables the tolerance check.
+  \item \verb!p2nfft_verbose_tuning! -
+    Decide if a full list of \ptwonfft parameter settings is printed on stdout or not.
+    Feasible values are $0$ (do not print), or any other integer (print the parameters).
+    The default value is $1$ if \project was configured with the \verb+--enable-fcs-info+ flag, and $0$ otherwise.
 \end{itemize}
 
 \subsection{PNFFT-specific Parameters}
@@ -316,6 +320,9 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     PNFFT uses interpolation tables to speed up the repeated evaluation of the window functions. The integer \verb!pnfft_intpol_order! gives the interpolation order.
     Feasible values are $-1$ (direct evaluation of window function without interpolation), $0$, (constant interpolation), $1$ (linear interpolation), $2$ (quadratic interpolation) and $3$ (cubic interpolation).
     Default value is $3$ (cubic interpolation).
+  \item \verb!pnfft_direct! -
+    Flag to enable plain NDFT instead of the fast approximative NFFT algorithms. 
+    Feasible values are $0$ (use NFFT), or any other integer \verb!pnfft_direct!$\ne0$ (use NDFT). Default value is \verb!pnfft_direct!$=0$ (use NFFT).
   \item \verb!pnfft_pre_phi_hat! -
     Flag to enable precomputed Fourier coefficients for faster computation of the diagonal matrix in the NFFT algorithm.
     Feasible values are $0$ (turn off pre-computation), or any other integer \verb!pnfft_pre_phi_hat!$\ne0$ (enable pre-computation).
