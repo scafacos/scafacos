@@ -50,7 +50,7 @@ Solver::Solver(MPI_Comm mpicomm) :
     box_vectors[0][0] = box_vectors[1][1] = box_vectors[2][2] = 1.0;
     box_vectors[0][1] = box_vectors[0][2] = box_vectors[1][0] = box_vectors[2][0]
             = box_vectors[2][1] = box_vectors[1][2] = 0.0;
-    triclinic = false;
+    isTriclinic = false;
 
     skin = 0.0;
     tolerance_field = P3M_DEFAULT_TOLERANCE_FIELD;
@@ -170,7 +170,7 @@ void Solver::prepare() {
     /* Initializes the (inverse) grid constant ai and the cutoff for charge
      * assignment cao_cut. */
     for (p3m_int i=0; i<3; i++) {
-        ai[i]      = grid[i]/(triclinic?1.0:box_l[i]);
+        ai[i]      = grid[i]/(isTriclinic?1.0:box_l[i]);
         a[i]       = 1.0/ai[i];
         cao_cut[i] = 0.5*a[i]*cao;
     }
@@ -476,7 +476,7 @@ void Solver::computeInfluenceFunctionIK() {
 
                     p3m_float fak1; //  k scalar numerator force (besides prefactors)
                     p3m_float fak2; //  k squared (besides prefactors)
-                    if (!triclinic) {
+                    if (!isTriclinic) {
                         fak1 =  d_op[RX][n[KX]] * numerator_force[RX] / box_l[RX] +
                                 d_op[RY][n[KY]] * numerator_force[RY] / box_l[RY] +
                                 d_op[RZ][n[KZ]] * numerator_force[RZ] / box_l[RZ];
@@ -533,7 +533,7 @@ void Solver::performAliasingSumsIK(
                 const p3m_float U2  = sy*pow(sinc(nmz/(p3m_float)grid[RZ]),2.0*cao);
 
                 p3m_float nm2 = 0.0;
-         if (!triclinic) {
+         if (!isTriclinic) {
             nm2 =
                     SQR(nmx / box_l[RX]) +
                     SQR(nmy / box_l[RY]) +
@@ -556,10 +556,10 @@ void Solver::performAliasingSumsIK(
                         }
                         nm2 *= 1 / SQR(volume);
                     }
-                const p3m_float prefactor2 = U2*exp(-prefactor*nm2)/(nm2)/(triclinic?volume:1.0);
+                const p3m_float prefactor2 = U2*exp(-prefactor*nm2)/(nm2)/(isTriclinic?volume:1.0);
 
                 numerator_energy += prefactor2;
-                if(!triclinic){//numerator_force = SUM prefactor2 * k/2pi =SUM U^2 exp(-pi^2/alpha^2 k^2 / 4 pi^2)) / (k^2 / (4 pi^2)) * k/2pi;
+                if(!isTriclinic){//numerator_force = SUM prefactor2 * k/2pi =SUM U^2 exp(-pi^2/alpha^2 k^2 / 4 pi^2)) / (k^2 / (4 pi^2)) * k/2pi;
                 numerator_force[RX] += prefactor2*nmx/box_l[RX];
                 numerator_force[RY] += prefactor2*nmy/box_l[RY];
                 numerator_force[RZ] += prefactor2*nmz/box_l[RZ];
@@ -648,7 +648,7 @@ void Solver::performAliasingSumsADI(
          const p3m_float U2  = sy*pow(sinc(nmz/(p3m_float)grid[RZ]), 2.0*cao);
          
          p3m_float nm2 = 0.0;
-         if (!triclinic) {
+         if (!isTriclinic) {
              nm2 =
                      SQR(nmx / box_l[RX]) +
                      SQR(nmy / box_l[RY]) +
@@ -672,7 +672,7 @@ void Solver::performAliasingSumsADI(
 
         }
         const p3m_float prefactor2 = U2 * exp(-prefactor * nm2)
-                / (triclinic ? volume:1.0);
+                / (isTriclinic ? volume:1.0);
 
          numerator_energy += prefactor2/nm2;
          numerator_force  += prefactor2;
@@ -860,7 +860,7 @@ void Solver::run(
             timings[i] = 0.0;
     }
 
-        if (triclinic) {
+        if (isTriclinic) {
             box_l[0] = box_l[1] = box_l[2] = 1.0;
             this->prepare();
         }
@@ -907,7 +907,7 @@ void Solver::run(
     STOP(TIMING_DECOMP);
 
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
-    if(!triclinic){ //orthorhombic
+    if(!isTriclinic){ //orthorhombic
     this->computeFarADI(num_real_particles, positions, charges, fields, potentials);
     } else {//triclinic
       p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
@@ -916,7 +916,7 @@ void Solver::run(
     }
     
 #else
-    if(!triclinic){ //orthorhombic
+    if(!isTriclinic){ //orthorhombic
     this->computeFarIK(num_real_particles, positions, charges, fields, potentials);
     } else {//triclinic
       p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
@@ -926,7 +926,7 @@ void Solver::run(
     
 #endif
 
-    if(triclinic){
+    if(isTriclinic){
         for(p3m_int i=0;i<3;i++) box_l[i] = box_vectors[i][i];
     }
     
@@ -1131,7 +1131,7 @@ void Solver::computeFarADI(
 
         this->assignFieldsAD(fft.data_buf, num_charges, positions, 1, fields);
 
-        if(triclinic) this->cartesianizeFields(fields, num_charges);
+        if(isTriclinic) this->cartesianizeFields(fields, num_charges);
                 
         STOP(TIMING_FIELDS);
     }
@@ -1620,7 +1620,7 @@ void Solver::differentiateIK(int dim, p3m_float* in, p3m_float* out) {
         for (j[1]=0; j[1]<fft.plan[3].new_grid[1]; j[1]++) {
             for (j[2]=0; j[2]<fft.plan[3].new_grid[2]; j[2]++) {
                 /* i*k*(Re+i*Im) = - Im*k + i*Re*k     (i=sqrt(-1)) */
-                if (!triclinic) { //orthorhombic case
+                if (!isTriclinic) { //orthorhombic case
                         out[ind] =
                         -2.0*M_PI*(in[ind+1] * d_operator[ j[dim]+fft.plan[3].start[dim] ])
                                 / box_l[dim_rs];
@@ -1683,7 +1683,7 @@ Solver::assignPotentials(p3m_float *data,
         p3m_int shifted, p3m_float* potentials) {
     const p3m_int q2off = local_grid.q_2_off;
     const p3m_int q21off = local_grid.q_21_off;
-    const p3m_float prefactor = 1.0 / (box_l[0] * box_l[1] * box_l[2]);
+    const p3m_float V_inverse = 1.0 / (box_l[0] * box_l[1] * box_l[2]);
 
     P3M_DEBUG(printf( "  P3M::Solver::assign_potentials() started...\n"));
     /* Loop over all particles */
@@ -1705,7 +1705,7 @@ Solver::assignPotentials(p3m_float *data,
             linind_grid += q21off;
         }
 
-        potential *= prefactor;
+        potential *= V_inverse;
         /* self energy correction */
         potential -= charges[pid] * M_2_SQRTPI * alpha;
         /* net charge correction */
@@ -2145,7 +2145,7 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
                 (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      rough grid=" FINT "\n", grid1d));
                 this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
-                errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error, box_vectors);
+                errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error, box_vectors, isTriclinic);
                 P3M_DEBUG(printf("        => error=" FFLOATE "\n", (*p)->error));
             } while ((*p)->error > tolerance_field);
 
@@ -2169,7 +2169,7 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
                 (*p)->p.grid[0] = (*p)->p.grid[1] = (*p)->p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      fine grid=" FINT "\n", grid1d));
                 this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
-                errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error, box_vectors);
+                errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l, (*p)->error, (*p)->rs_error, (*p)->ks_error, box_vectors, isTriclinic);
                 P3M_DEBUG(printf("          => error=" FFLOATE "\n", (*p)->error));
                 if ((*p)->error < tolerance_field) {
                     // parameters achieve error
@@ -2233,7 +2233,7 @@ Solver::tuneGrid(TuneParametersList &params_to_try) {
                     (*p)->p.grid[0], (*p)->p.grid[1], (*p)->p.grid[2]));
             this->tuneBroadcastCommand(CMD_COMPUTE_ERROR_ESTIMATE);
             errorEstimate->compute_master((*p)->p, sum_qpart, sum_q2, box_l,
-                    (*p)->error, (*p)->rs_error, (*p)->ks_error,box_vectors);
+                    (*p)->error, (*p)->rs_error, (*p)->ks_error,box_vectors,isTriclinic);
 
             if ((*p)->error < tolerance_field) {
                 // error is small enough for this parameter set, so keep it

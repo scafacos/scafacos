@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2014 Olaf Lenz
+ Copyright (C) 2014 Olaf Lenz, Gabriel Sichardt
  Copyright (C) 2010,2011 The ESPResSo project
  Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010
  Max-Planck-Institute for Polymer Research, Theory Group
@@ -91,7 +91,7 @@ p3m_float ErrorEstimateADI::compute_ks_error(Parameters& p, p3m_int num_charges,
 
 
 p3m_float ErrorEstimateADI::compute_ks_error_triclinic(Parameters& p, p3m_int num_charges,
-		p3m_float sum_q2, p3m_float  box_vectors[3][3]) {
+		p3m_float sum_q2, p3m_float  box_vectors[3][3], bool isTriclinic) {
     /* #ifdef P3M_ENABLE_DEBUG */
 	/*   prp3m_intf(  */
 	/* 	  "        #%2d: N=%d Q2=%g box_l=(%g, %g, %g) grid=(%d, %d, %d) alpha=%g cao=%d\n",  */
@@ -134,7 +134,7 @@ p3m_float ErrorEstimateADI::compute_ks_error_triclinic(Parameters& p, p3m_int nu
 			p3m_float D;
 
 			k_space_error_sum2_triclinic(nx,ny,nz, p.grid,grid_i, p.cao,p.alpha,
-					&sum_Fref2,&sqrt_nominator,&sum_U2k2,&sum_U2,&alias5,&alias6, box_vectors);
+					&sum_Fref2,&sqrt_nominator,&sum_U2k2,&sum_U2,&alias5,&alias6, box_vectors, isTriclinic);
 
 			D = sum_Fref2 - SQR(sqrt_nominator) / (0.5*(sum_U2*sum_U2k2 + alias5*alias6));
 
@@ -143,9 +143,8 @@ p3m_float ErrorEstimateADI::compute_ks_error_triclinic(Parameters& p, p3m_int nu
 			local_he_q += D;
 		}
 	}
-	p3m_float he_q=local_he_q;
-//	MPI_Reduce(&local_he_q, &he_q, 1, P3M_MPI_FLOAT, MPI_SUM, 0,
-//			comm_mpicomm);
+	MPI_Reduce(&local_he_q, &he_q, 1, P3M_MPI_FLOAT, MPI_SUM, 0,
+			comm_mpicomm);
 
 	return 2.0 * sum_q2 *
 			sqrt(he_q / num_charges)/(box_vectors[0][0]*box_vectors[1][1]*box_vectors[2][2]);
@@ -198,7 +197,7 @@ void ErrorEstimateADI::k_space_error_sum2(p3m_int nx, p3m_int ny, p3m_int nz,
 void ErrorEstimateADI::k_space_error_sum2_triclinic(p3m_int nx, p3m_int ny, p3m_int nz,
 		p3m_int grid[3], p3m_float grid_i[3], p3m_int cao, p3m_float alpha,
 		p3m_float *sum_Fref2, p3m_float *sqrt_nominator, p3m_float *sum_U2k2,
-		p3m_float *sum_U2, p3m_float *alias5, p3m_float *alias6, p3m_float box_vectors[3][3]) {
+		p3m_float *sum_U2, p3m_float *alias5, p3m_float *alias6, p3m_float box_vectors[3][3], bool isTriclinic) {
 	p3m_float pi2_alpha2 = SQR(M_PI / alpha);
 
 	*sum_Fref2 = *sqrt_nominator = *sum_U2k2 = *sum_U2 = *alias5 = *alias6 = 0.0;
@@ -212,12 +211,12 @@ void ErrorEstimateADI::k_space_error_sum2_triclinic(p3m_int nx, p3m_int ny, p3m_
 				p3m_int nmz = nz + mz * grid[2];
 				p3m_float fnmz = grid_i[2] * nmz;
                                 p3m_float k2_4pi2 = 0.0;
-//                                if (!triclinic) {
-//                                    k2_4pi2 =
-//                                            SQR(nmx / box_vectors[RX][RX]) +
-//                                            SQR(nmy / box_vectors[RY][RY]) +
-//                                            SQR(nmz / box_vectors[RZ][RZ]);
-//                                } else {
+                                if (!isTriclinic) {
+                                    k2_4pi2 =
+                                            SQR(nmx / box_vectors[RX][RX]) +
+                                            SQR(nmy / box_vectors[RY][RY]) +
+                                            SQR(nmz / box_vectors[RZ][RZ]);
+                                } else {
                                     p3m_int i;
                                     const p3m_int nNm[3] = {nmx, nmy, nmz};
 
@@ -234,7 +233,7 @@ void ErrorEstimateADI::k_space_error_sum2_triclinic(p3m_int nx, p3m_int ny, p3m_
 
                                     k2_4pi2 *= 1 / SQR(box_vectors[0][0]*box_vectors[1][1]*box_vectors[2][2]);
 
-//                                }
+                                }
                                 
 				p3m_float ex = exp(-pi2_alpha2 * k2_4pi2); // exp(-k_{n+Nm}^2 / (4*alpha^2))
 

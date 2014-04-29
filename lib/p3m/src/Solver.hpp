@@ -75,7 +75,7 @@ public:
     /** whether to compute the near field in the method */
     bool near_field_flag;
     /* whether the box is triclinic */
-    bool triclinic;
+    bool isTriclinic;
 
     /* TUNABLE PARAMETERS */
     /** cutoff radius */
@@ -196,6 +196,9 @@ public:
     p3m_float *send_grid;
     /** Field to store grid points to recv */
     p3m_float *recv_grid;
+    
+    /** potential shift required to make real space potentials continuous */
+    p3m_float potentialOffset;
 
 private:
     // submethods of prepare()

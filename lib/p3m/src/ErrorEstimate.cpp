@@ -1,4 +1,5 @@
 /*
+ Copyright (C) 2014 Olaf Lenz, Gabriel Sichardt
  Copyright (C) 2011,2012,2013 Olaf Lenz
 
  This file is part of ScaFaCoS.
@@ -58,11 +59,11 @@ void ErrorEstimate::compute_alpha(p3m_float required_accuracy, Parameters& p,
 
 void ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3],
-		p3m_float &error, p3m_float &rs_error, p3m_float &ks_error, p3m_float box_vectors[3][3]) {
+		p3m_float &error, p3m_float &rs_error, p3m_float &ks_error, p3m_float box_vectors[3][3], bool isTriclinic) {
 	rs_error = compute_rs_error(p, num_charges, sum_q2, box_l);
 	//ks_error = compute_ks_error(p, num_charges, sum_q2, box_l);
         //printf("ks error-orig %e\n",ks_error);
-        ks_error = compute_ks_error_triclinic(p, num_charges, sum_q2, box_vectors);
+        ks_error = compute_ks_error_triclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
        // printf("ks error-tric %e\n",ks_error);
 	error = sqrt(SQR(rs_error) + SQR(ks_error));
 
@@ -74,28 +75,28 @@ void ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
 }
 
 p3m_float ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
-		p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3]) {
+		p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3], bool isTriclinic) {
 	p3m_float ks_error, rs_error, error;
-	this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error,box_vectors);
+	this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error,box_vectors, isTriclinic);
 	return error;
 }
 
 p3m_float ErrorEstimate::compute_master(Parameters &p,
-        p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3]) {
+        p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3], bool isTriclinic) {
     p3m_float ks_error, rs_error, error;
-    this->compute_master(p, num_charges, sum_q2, box_l, error, rs_error, ks_error, box_vectors);
+    this->compute_master(p, num_charges, sum_q2, box_l, error, rs_error, ks_error, box_vectors, isTriclinic);
     return error;
 }
 
 void
 ErrorEstimate::compute_master(Parameters &p,
         p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
-        p3m_float &error, p3m_float &rs_error, p3m_float &ks_error, p3m_float box_vectors[3][3]) {
+        p3m_float &error, p3m_float &rs_error, p3m_float &ks_error, p3m_float box_vectors[3][3], bool isTriclinic) {
     if (!comm.onMaster())
         throw std::logic_error("Do not call ErrorEstimate::compute_master() on slave.");
 
     // broadcast parameters
-    p3m_int int_buffer[5];
+    p3m_int int_buffer[6];
     p3m_float float_buffer[5];
 
     // pack int data
@@ -104,7 +105,8 @@ ErrorEstimate::compute_master(Parameters &p,
     int_buffer[2] = p.grid[1];
     int_buffer[3] = p.grid[2];
     int_buffer[4] = num_charges;
-    MPI_Bcast(int_buffer, 5, P3M_MPI_INT,
+    int_buffer[5] = isTriclinic?1:0;
+    MPI_Bcast(int_buffer, 6, P3M_MPI_INT,
             Communication::MPI_MASTER, comm.mpicomm);
 
     // pack float data
@@ -118,16 +120,16 @@ ErrorEstimate::compute_master(Parameters &p,
     float_buffer[7] = box_vectors[1][0];
     MPI_Bcast(float_buffer, 8, P3M_MPI_FLOAT,
             Communication::MPI_MASTER, comm.mpicomm);
-
+    
     // run master job
-    this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error,box_vectors);
+    this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error,box_vectors, isTriclinic);
 }
 
 void ErrorEstimate::compute_slave() {
     if (comm.onMaster())
         throw std::logic_error("Do not call ErrorEstimate::compute_slave() on master.");
     // receive parameters
-    p3m_int int_buffer[5];
+    p3m_int int_buffer[6];
     p3m_float float_buffer[5];
 
     Parameters p;
@@ -135,17 +137,17 @@ void ErrorEstimate::compute_slave() {
     p3m_int num_charges;
     p3m_float sum_q2;
     p3m_float box_vectors[3][3];
-//    box_vectors[0]= new p3m_float[3];
-//    box_vectors[1]= new p3m_float[3];
-//    box_vectors[2]= new p3m_float[3];
+    
+    bool isTriclinic;
 
-    MPI_Bcast(int_buffer, 5, P3M_MPI_INT,
+    MPI_Bcast(int_buffer, 6, P3M_MPI_INT,
             Communication::MPI_MASTER, comm.mpicomm);
     p.cao = int_buffer[0];
     p.grid[0] = int_buffer[1];
     p.grid[1] = int_buffer[2];
     p.grid[2] = int_buffer[3];
     num_charges = int_buffer[4];
+    isTriclinic = (int_buffer[5]==1)?true:false;
 
     // unpack float data
     MPI_Bcast(float_buffer, 8, P3M_MPI_FLOAT,
@@ -159,7 +161,7 @@ void ErrorEstimate::compute_slave() {
     box_vectors[1][0]=float_buffer[7];box_vectors[1][1]=float_buffer[3];box_vectors[1][2]=0.0;
     box_vectors[2][0]=float_buffer[6];box_vectors[2][1]=float_buffer[5];box_vectors[2][2]=float_buffer[4];
     // run slave job
-    this->compute(p, num_charges, sum_q2, box_l,box_vectors);
+    this->compute(p, num_charges, sum_q2, box_l,box_vectors, isTriclinic);
 }
 
 p3m_float ErrorEstimate::compute_rs_error(Parameters& p, p3m_int num_charges,

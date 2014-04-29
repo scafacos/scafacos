@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2014 Olaf Lenz
+ Copyright (C) 2014 Olaf Lenz, Gabriel Sichardt
  Copyright (C) 2010,2011 The ESPResSo project
  Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010
  Max-Planck-Institute for Polymer Research, Theory Group
@@ -54,23 +54,23 @@ public:
 	virtual void
 	compute(Parameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
-			p3m_float &error, p3m_float &rs_error, p3m_float &ks_error,p3m_float box_vectors[3][3]);
+			p3m_float &error, p3m_float &rs_error, p3m_float &ks_error,p3m_float box_vectors[3][3], bool isTriclinic);
 
     /** Computes the error estimate. When called in parallel, the result is
      * undefined on the slaves. */
 	virtual p3m_float
 	compute(Parameters &p,
-			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],p3m_float box_vectors[3][3]);
+			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],p3m_float box_vectors[3][3], bool isTriclinic);
 
     /** Master variant of the error computation. It first broadcasts the
      * parameters to all tasks, then runs compute. */
     virtual p3m_float compute_master(Parameters &p,
-            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3]);
+            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3], bool isTriclinic);
 
     virtual void
     compute_master(Parameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
-            p3m_float &error, p3m_float &rs_error, p3m_float &ks_error,p3m_float box_vectors[3][3]);
+            p3m_float &error, p3m_float &rs_error, p3m_float &ks_error,p3m_float box_vectors[3][3], bool isTriclinic);
     /** Slave variant of the error computation. It first receives the
      * parameters, then runs compute. */
     virtual void compute_slave();
@@ -90,7 +90,7 @@ public:
      force.
      */
     virtual p3m_float compute_ks_error_triclinic(Parameters &p,
-            p3m_int num_charges, p3m_float sum_q2, p3m_float box_vectors[3][3]) = 0;
+            p3m_int num_charges, p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic) = 0;
 	protected:
 	    Communication &comm;
 

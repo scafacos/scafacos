@@ -66,9 +66,10 @@ FCSResult ifcs_p3m_set_triclinic_flag(void *rd) {
         P3M_DEBUG_LOCAL(printf("P3M triclinic: triclinic box detected.\n"));
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
         Solver *d = static_cast<Solver *> (rd);
-        d->triclinic = true;
+        d->isTriclinic = true;
         return FCS_RESULT_SUCCESS;
 #else
+        const char* fnc_name = "ifcs_p3m_set_triclinic_flag";
         return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name,
                 "p3m triclinic is only implemented with interlaced AD so far.");
 #endif
