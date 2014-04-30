@@ -193,8 +193,6 @@ static ifcs_p2nfft_data_struct* mkplan_p2nfft(
   /* set PNFFT plan to NULL to avoid senseless references */
   d->pnfft = NULL;
 
-  d->use_ewald = -1;
-
   /* initialize pointer to interpolation table */
   d->interpolation_order = 3;
   d->near_interpolation_num_nodes = 0;

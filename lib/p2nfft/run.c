@@ -194,7 +194,7 @@ FCSResult ifcs_p2nfft_run(
         case 3: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_cub_loop); break;
         default: return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
       } 
-    } else if(d->use_ewald){
+    } else if(d->num_periodic_dims > 0){
       if(d->interpolation_order == -1)
         fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_periodic_erfc_loop);
       else
@@ -221,7 +221,7 @@ FCSResult ifcs_p2nfft_run(
       near_params.one_over_r_cut = d->one_over_r_cut;
 
       fcs_near_compute(&near, d->r_cut, &near_params, d->cart_comm_3d);
-    } else if(d->use_ewald)
+    } else if(d->num_periodic_dims > 0)
       fcs_near_compute(&near, d->r_cut, &(d->alpha), d->cart_comm_3d);
     else
       fcs_near_compute(&near, d->r_cut, rd, d->cart_comm_3d);
@@ -448,10 +448,7 @@ FCSResult ifcs_p2nfft_run(
   fcs_float far_global;
 
   for(fcs_int j = 0; j < sorted_num_particles; ++j)
-    if(d->use_ewald)
-      far_energy += 0.5 * sorted_charges[j] * f[j];
-    else
-      far_energy += 0.5 * sorted_charges[j] * f[j];
+    far_energy += 0.5 * sorted_charges[j] * f[j];
 
   MPI_Reduce(&far_energy, &far_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: far field energy: %" FCS_LMOD_FLOAT "f\n", far_global);
@@ -469,7 +466,7 @@ FCSResult ifcs_p2nfft_run(
 
   /* Calculate virial if needed */
   if(d->virial != NULL){
-    if(d->use_ewald){
+    if(d->num_periodic_dims == 3){
       fcs_float total_energy = 0.0;
       fcs_float total_global;
       for(fcs_int j = 0; j < sorted_num_particles; ++j)
@@ -482,8 +479,8 @@ FCSResult ifcs_p2nfft_run(
       for(fcs_int t=0; t<9; t++)
         d->virial[t] = 0.0;
       d->virial[0] = d->virial[4] = d->virial[8] = total_global/3.0;
-    }
-    else {
+    } 
+    else if(d->num_periodic_dims == 0) {
       fcs_float local_virial[9];
 
       for(fcs_int t=0; t<9; t++)
@@ -496,6 +493,10 @@ FCSResult ifcs_p2nfft_run(
       
       MPI_Allreduce(local_virial, d->virial, 9, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
     }
+    else {
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Virial computation is currently not available for mixed boundary conditions.");
+    }
+
   }
 
   /* Checksum: global sum of self energy */

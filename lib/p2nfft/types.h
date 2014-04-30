@@ -47,16 +47,19 @@ typedef pnfft_complex fcs_pnfft_complex;
 # define FCS_PNFFT(name)  PNFFT_MANGLE_DOUBLE(name)
 # define FCS_PFFT(name)   PFFT_MANGLE_DOUBLE(name)
 # define FCS_P2NFFT_EPS   DBL_EPSILON
+# define FCS_P2NFFT_ALPHA_OPT_PREC 1.0e-10
 #elif defined(FCS_FLOAT_IS_FLOAT)
 typedef pnfftf_complex fcs_pnfft_complex;
 # define FCS_PNFFT(name)  PNFFT_MANGLE_FLOAT(name)
 # define FCS_PFFT(name)   PFFT_MANGLE_FLOAT(name)
 # define FCS_P2NFFT_EPS   FLT_EPSILON
+# define FCS_P2NFFT_ALPHA_OPT_PREC 1.0e-5
 #elif defined(FCS_FLOAT_IS_LONG_DOUBLE)
 typedef pnfftl_complex fcs_pnfft_complex;
 # define FCS_PNFFT(name)  PNFFT_MANGLE_LONG_DOUBLE(name)
 # define FCS_PFFT(name)   PFFT_MANGLE_LONG_DOUBLE(name)
 # define FCS_P2NFFT_EPS   LDBL_EPSILON
+# define FCS_P2NFFT_ALPHA_OPT_PREC 1.0e-15
 #else
 # error "fcs_float is neither double, float nor long double"
 #endif
@@ -109,6 +112,9 @@ typedef ptrdiff_t INT;
 #define FCS_P2NFFT_START_TIMING()
 #define FCS_P2NFFT_FINISH_TIMING(comm, str)
 #endif
+
+
+
 
 typedef struct {
   MPI_Comm cart_comm_pnfft;   /**< @brief Cartesian communicator used as a
@@ -194,7 +200,6 @@ typedef struct {
   fcs_float x_max[3];
   
   /* Near field parameters */
-  fcs_int use_ewald;  /* switch between fully periodic and non-periodic case */
   fcs_float r_cut;    /* near field radius (unscaled) */
   fcs_float one_over_r_cut;    /* inverse near field radius (unscaled) */
   fcs_int num_nonperiodic_dims; /* number of dimensions with nonperiodic boundary conditions */
