@@ -348,19 +348,60 @@ void PNX(trafo_A)(
 
     if(ths->pnfft_flags & PNFFT_TRANSPOSED_F_HAT){
       if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F){
+
+//         INT m=0;
+//         for(INT k1 = local_Np_start[1]; k1 < local_Np_start[1] + local_Np[1]; k1++){
+//           for(INT k2 = local_Np_start[2]; k2 < local_Np_start[2] + local_Np[2]; k2++){
+//             for(INT k0 = local_Np_start[0]; k0 < local_Np_start[0] + local_Np[0]; k0++, m++){
+//               R h = -2 * PNFFT_PI;
+//               C m2pik0b = -2 * PNFFT_PI * I * k0 * buffer[m];
+//               C m2pik1b = -2 * PNFFT_PI * I * k1 * buffer[m];
+//               C m2pik2b = -2 * PNFFT_PI * I * k2 * buffer[m];
+//               for(INT j=0; j<ths->local_M; j++){
+//                 C ex = pnfft_cexp(-2 * PNFFT_PI * I * (k0 * ths->x[3*j+0] + k1 * ths->x[3*j+1] + k2 * ths->x[3*j+2]));
+//                 ths->f[j] += buffer[m] * ex;
+//                 ths->grad_f[3*j+0] += m2pik0b * ex;
+//                 ths->grad_f[3*j+1] += m2pik1b * ex;
+//                 ths->grad_f[3*j+2] += m2pik2b * ex;
+//               }
+//             }
+//           }
+//         }
+
         for(INT j=0; j<ths->local_M; j++){
           INT m=0;
           for(INT k1 = local_Np_start[1]; k1 < local_Np_start[1] + local_Np[1]; k1++){
+
+            R kx1 = k1 * ths->x[3*j+1];
             for(INT k2 = local_Np_start[2]; k2 < local_Np_start[2] + local_Np[2]; k2++){
+              R kx12 = kx1 + k2 * ths->x[3*j+2];
               for(INT k0 = local_Np_start[0]; k0 < local_Np_start[0] + local_Np[0]; k0++, m++){
-                ths->f[j] += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
-                ths->grad_f[3*j+0] += -2 * PNFFT_PI * I * k0 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
-                ths->grad_f[3*j+1] += -2 * PNFFT_PI * I * k1 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
-                ths->grad_f[3*j+2] += -2 * PNFFT_PI * I * k2 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+                R kx = kx12 + k0 * ths->x[3*j];
+                C f += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * kx);
+
+                C grad0 += k0 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+                C grad1 += k1 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+                C grad2 += k2 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
               }
             }
           }
+TODO: multiply with -2*PI*I outside k loop
         }
+
+//         for(INT j=0; j<ths->local_M; j++){
+//           INT m=0;
+//           for(INT k1 = local_Np_start[1]; k1 < local_Np_start[1] + local_Np[1]; k1++){
+//             for(INT k2 = local_Np_start[2]; k2 < local_Np_start[2] + local_Np[2]; k2++){
+//               for(INT k0 = local_Np_start[0]; k0 < local_Np_start[0] + local_Np[0]; k0++, m++){
+//                 ths->f[j] += buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+//                 ths->grad_f[3*j+0] += -2 * PNFFT_PI * I * k0 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+//                 ths->grad_f[3*j+1] += -2 * PNFFT_PI * I * k1 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+//                 ths->grad_f[3*j+2] += -2 * PNFFT_PI * I * k2 * buffer[m] * pnfft_cexp(-2 * PNFFT_PI * I * (k0*ths->x[3*j+0] + k1*ths->x[3*j+1] + k2*ths->x[3*j+2]));
+//               }
+//             }
+//           }
+//         }
+      
       } else {
         for(INT j=0; j<ths->local_M; j++){
           INT m=0;
