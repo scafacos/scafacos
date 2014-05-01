@@ -585,7 +585,7 @@ FCSResult ifcs_p2nfft_tune(
         
         /* tune the grid size N */
         if(d->tune_N){
-          for (i = FCS_P2NFFT_MINGRID; i <= FCS_P2NFFT_MAXGRID; i *= 2) {
+          for (i = FCS_P2NFFT_MINGRID; i <= FCS_P2NFFT_MAXGRID; /* see below */ ) {
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG  || FCS_P2NFFT_DEBUG_TUNING
             if(!comm_rank) printf("P2NFFT_INFO: r_cut = %" FCS_LMOD_FLOAT "f.\n", d->r_cut);
             if(!comm_rank) printf("P2NFFT_INFO: Trying grid size %" FCS_LMOD_INT "d.\n", i);
@@ -606,6 +606,11 @@ FCSResult ifcs_p2nfft_tune(
                 error, rs_error, ks_error, d->tolerance);
 #endif
             if (error < d->tolerance) break;
+
+            if(d->pnfft_direct)
+              i += 2;
+            else
+              i *= 2;
           }
 
           /* Return error, if tuning of N failed. */
