@@ -26,7 +26,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+    
   /** Initialize all structures, parameters and arrays needed for the 
    *  P3M algorithm and set their default values.
    */
@@ -54,6 +54,7 @@ extern "C" {
   void ifcs_p3m_set_alpha(void *rd, fcs_float alpha);
   void ifcs_p3m_set_alpha_tune(void *rd);
   void ifcs_p3m_get_alpha(void *rd, fcs_float *alpha);
+  void ifcs_p3m_get_near_params(void* rd, fcs_float *alpha, fcs_float *offset);
 
   void ifcs_p3m_set_grid(void *rd, fcs_int mesh);
   void ifcs_p3m_set_grid_tune(void *rd);
@@ -69,6 +70,9 @@ extern "C" {
 
   void ifcs_p3m_require_total_energy(void *rd, fcs_int flag);
   FCSResult ifcs_p3m_get_total_energy(void *rd, fcs_float *total_energy);
+  
+  void ifcs_p3m_set_potential_shift(void *rd, fcs_int flag);
+  void ifcs_p3m_get_potential_shift(void *rd, fcs_int *flag);
 
   void ifcs_p3m_require_timings(void *rd, fcs_int flag);
   FCSResult 

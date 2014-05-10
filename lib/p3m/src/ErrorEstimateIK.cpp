@@ -67,11 +67,11 @@ p3m_float ErrorEstimateIK::compute_ks_error_triclinic(Parameters& p, p3m_int num
 //	    }
 //	}
 
-#ifdef P3M_ENABLE_DEBUG
-	if (!full_estimate)
-	    printf("        alpha*h < " FFLOAT " => approximation\n",
-	            FULL_ESTIMATE_ALPHA_H_THRESHOLD);
-#endif
+//#ifdef P3M_ENABLE_DEBUG
+//	if (!full_estimate)
+//	    printf("        alpha*h < " FFLOAT " => approximation\n",
+//	            FULL_ESTIMATE_ALPHA_H_THRESHOLD);
+//#endif
 
 	//if (full_estimate)
 	    return compute_ks_error_full_triclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
@@ -319,57 +319,57 @@ ErrorEstimateIK::k_space_error_sum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int 
 	}
 }
 
-p3m_float ErrorEstimateIK::compute_ks_error_approx_triclinic(Parameters& p, p3m_int num_charges,
-		p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic) {
-
-	p3m_float h = box_vectors[0][0] / p.grid[0];
-	p3m_float ha = h * p.alpha;
-
-	/* compute the sum in eq. 38 */
-	p3m_float sum;
-	switch (p.cao) {
-	case 1:
-		sum = 2. / 3.;
-		break;
-	case 2:
-		sum = 5. / 294. * pow(ha, 2) + 1. / 50.;
-		break;
-	case 3:
-		sum = 21. / 3872. * pow(ha, 4) + 7. / 1440. * pow(ha, 2) + 1. / 588.;
-		break;
-	case 4:
-		sum = 143. / 28800. * pow(ha, 6) + 7601. / 2271360. * pow(ha, 4)
-		+ 3. / 1936. * pow(ha, 2) + 1. / 4320.;
-		break;
-	case 5:
-		sum = 106640677. / 11737571328. * pow(ha, 8)
-		+ 517231. / 106536960. * pow(ha, 6) + 143. / 69120. * pow(ha, 4)
-		+ 7601. / 13628160. * pow(ha, 2) + 1. / 23232.;
-		break;
-	case 6:
-		sum = 326190917. / 11700633600. * pow(ha, 10)
-		+ 733191589. / 59609088000. * pow(ha, 8)
-		+ 9694607. / 2095994880. * pow(ha, 6)
-		+ 47021. / 35512320. * pow(ha, 4) + 13. / 57600. * pow(ha, 2)
-		+ 691. / 68140800.;
-		break;
-	case 7:
-		sum = 4887769399. / 37838389248. * pow(ha, 12)
-		+ 1755948832039. / 36229939200000. * pow(ha, 10)
-		+ 25091609. / 1560084480. * pow(ha, 8)
-		+ 56399353. / 12773376000. * pow(ha, 6)
-		+ 745739. / 838397952. * pow(ha, 4)
-		+ 3617. / 35512320. * pow(ha, 2) + 1. / 345600.;
-		break;
-	default:
-		throw std::logic_error("INTERNAL_ERROR: k_space_error_approx: "
-				"Charge assignment order should not occur!\n");
-	};
-
-	return sum_q2 / (box_vectors[0][0] * box_vectors[0][0])
-					* pow(h * p.alpha, p.cao)
-					* sqrt(p.alpha * box_vectors[0][0] / num_charges * sqrt(2.0 * M_PI) * sum);
-}
+//p3m_float ErrorEstimateIK::compute_ks_error_approx_triclinic(Parameters& p, p3m_int num_charges,
+//		p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic) {
+//
+//	p3m_float h = box_vectors[0][0] / p.grid[0];
+//	p3m_float ha = h * p.alpha;
+//
+//	/* compute the sum in eq. 38 */
+//	p3m_float sum;
+//	switch (p.cao) {
+//	case 1:
+//		sum = 2. / 3.;
+//		break;
+//	case 2:
+//		sum = 5. / 294. * pow(ha, 2) + 1. / 50.;
+//		break;
+//	case 3:
+//		sum = 21. / 3872. * pow(ha, 4) + 7. / 1440. * pow(ha, 2) + 1. / 588.;
+//		break;
+//	case 4:
+//		sum = 143. / 28800. * pow(ha, 6) + 7601. / 2271360. * pow(ha, 4)
+//		+ 3. / 1936. * pow(ha, 2) + 1. / 4320.;
+//		break;
+//	case 5:
+//		sum = 106640677. / 11737571328. * pow(ha, 8)
+//		+ 517231. / 106536960. * pow(ha, 6) + 143. / 69120. * pow(ha, 4)
+//		+ 7601. / 13628160. * pow(ha, 2) + 1. / 23232.;
+//		break;
+//	case 6:
+//		sum = 326190917. / 11700633600. * pow(ha, 10)
+//		+ 733191589. / 59609088000. * pow(ha, 8)
+//		+ 9694607. / 2095994880. * pow(ha, 6)
+//		+ 47021. / 35512320. * pow(ha, 4) + 13. / 57600. * pow(ha, 2)
+//		+ 691. / 68140800.;
+//		break;
+//	case 7:
+//		sum = 4887769399. / 37838389248. * pow(ha, 12)
+//		+ 1755948832039. / 36229939200000. * pow(ha, 10)
+//		+ 25091609. / 1560084480. * pow(ha, 8)
+//		+ 56399353. / 12773376000. * pow(ha, 6)
+//		+ 745739. / 838397952. * pow(ha, 4)
+//		+ 3617. / 35512320. * pow(ha, 2) + 1. / 345600.;
+//		break;
+//	default:
+//		throw std::logic_error("INTERNAL_ERROR: k_space_error_approx: "
+//				"Charge assignment order should not occur!\n");
+//	};
+//
+//	return sum_q2 / (box_vectors[0][0] * box_vectors[0][0])
+//					* pow(h * p.alpha, p.cao)
+//					* sqrt(p.alpha * box_vectors[0][0] / num_charges * sqrt(2.0 * M_PI) * sum);
+//}
 
 /** Calculates the reciprocal space contribution to the rms error in the
  force (as described in the book of Hockney and Eastwood
@@ -433,15 +433,15 @@ p3m_float ErrorEstimateIK::compute_ks_error_full_triclinic(Parameters& p, p3m_in
 		if (nx != 0 || ny != 0 || nz != 0) {
 			p3m_float n2 = nx * nx + ny * ny + nz * nz;
 			p3m_float cs = ctan_x * ctan_y
-					* k_space_error_sum1_triclinic(nz, grid_i[2], p.cao);
-			p3m_float alias1, alias2;
+					* k_space_error_sum1_triclinic(nz, grid_i[2], p.cao); //Prod_a k_space_error_sum1(n_a,1/grid_a, cao)
+			p3m_float sum_Fref2, alias2;
                         
 			k_space_error_sum2_triclinic(nx, ny, nz, p.grid, grid_i, p.cao, p.alpha,
-					&alias1, &alias2);
-			p3m_float d = alias1 - SQR(alias2 / cs) / n2;
+					&sum_Fref2, &alias2, box_vectors, isTriclinic);
+			p3m_float d = sum_Fref2 - SQR(alias2 / cs) / n2;
 			/* at high precisions, d can become negative due to extinction;
 			 also, don't take values that have no significant digits left*/
-			if (d > 0.0 && (fabs(d / alias1) > ROUND_ERROR_PREC))
+			if (d > 0.0 && (fabs(d / sum_Fref2) > ROUND_ERROR_PREC))
 				local_he_q += d;
 		}
 	}
@@ -460,7 +460,7 @@ p3m_float ErrorEstimateIK::compute_ks_error_full_triclinic(Parameters& p, p3m_in
  calculated analytically. The result (which depends on the order of
  the spline interpolation) can be written as an even trigonometric
  polynomial. The results are tabulated here (The employed formula
- is Eqn. 7.66 in the book of Hockney and Eastwood). */
+ is Eqn. 7.66 in the book of Hockney and Eastwood). */ // (-1)^s/s! * d^s/dx^s cot(x) = sum_-inf to inf (x-pi n)^-(s+1)
 p3m_float ErrorEstimateIK::k_space_error_sum1_triclinic(p3m_int n, p3m_float grid_i, p3m_int cao) {
 	p3m_float c, res = 0.0;
 	c = SQR(cos(M_PI * grid_i * (p3m_float) n)); // cos(pi/grid*n)^2
@@ -532,10 +532,10 @@ p3m_float ErrorEstimateIK::k_space_error_sum1_triclinic(p3m_int n, p3m_float gri
 void
 ErrorEstimateIK::k_space_error_sum2_triclinic(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
 		p3m_float grid_i[3], p3m_int cao, p3m_float alpha,
-		p3m_float *alias1, p3m_float *alias2) {
+		p3m_float *sum_Fref2, p3m_float *alias2, p3m_float box_vectors[3][3], bool isTriclinic) {
 	p3m_float prefactor = SQR(M_PI / alpha);
 
-	*alias1 = *alias2 = 0.0;
+	*sum_Fref2 = *alias2 = 0.0;
 	for (p3m_int mx = -P3M_BRILLOUIN; mx <= P3M_BRILLOUIN; mx++) {
 		p3m_float nmx = nx + mx * grid[0];
 		p3m_float fnmx = grid_i[0] * nmx;
@@ -546,14 +546,17 @@ ErrorEstimateIK::k_space_error_sum2_triclinic(p3m_int nx, p3m_int ny, p3m_int nz
 				p3m_float nmz = nz + mz * grid[2];
 				p3m_float fnmz = grid_i[2] * nmz;
 
-				p3m_float nm2 = SQR(nmx) + SQR(nmy) + SQR(nmz);
-				p3m_float ex = exp(-prefactor * nm2); //exp(-pi^2/alpha^2 * nm2) °°changed
+				p3m_float k2_4pi2 =
+                                            SQR(nmx / box_vectors[RX][RX]) +
+                                            SQR(nmy / box_vectors[RY][RY]) +
+                                            SQR(nmz / box_vectors[RZ][RZ]);
+				p3m_float ex = exp(-prefactor * k2_4pi2); //exp(-pi^2/alpha^2 * nm2)
 
 				p3m_float U2 = pow(sinc(fnmx) * sinc(fnmy) * sinc(fnmz),
 						2.0 * cao);
 
-				*alias1 += ex * ex / nm2;
-				*alias2 += U2 * ex * (nx * nmx + ny * nmy + nz * nmz) / nm2;
+				*sum_Fref2 += ex * ex / k2_4pi2;
+				*alias2 += U2 * ex * (nx * nmx + ny * nmy + nz * nmz) / k2_4pi2;
 			}
 		}
 	}

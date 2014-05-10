@@ -1,5 +1,6 @@
 /*
- Copyright (C) 2011,2012,2013,2014 Olaf Lenz
+ Copyright (C) 2013,2014 Olaf Lenz, Gabriel Sichardt
+ Copyright (C) 2011,2012 Olaf Lenz
  Copyright (C) 2010,2011 The ESPResSo project
  Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010
  Max-Planck-Institute for Polymer Research, Theory Group
@@ -51,6 +52,8 @@ Solver::Solver(MPI_Comm mpicomm) :
     box_vectors[0][1] = box_vectors[0][2] = box_vectors[1][0] = box_vectors[2][0]
             = box_vectors[2][1] = box_vectors[1][2] = 0.0;
     isTriclinic = false;
+    
+    shiftGaussians=false;
 
     skin = 0.0;
     tolerance_field = P3M_DEFAULT_TOLERANCE_FIELD;
@@ -130,7 +133,7 @@ Solver::Solver(MPI_Comm mpicomm) :
 
     rs_grid = NULL;
     ks_grid = NULL;
-
+    
     P3M_DEBUG(printf( "P3M::Solver() finished.\n"));
 }
 
@@ -465,14 +468,14 @@ void Solver::computeInfluenceFunctionIK() {
                 } else {
                     p3m_float numerator_force[3];
                     p3m_float numerator_energy;
-                    p3m_float denominator;
+                    p3m_float sumU2;
                     this->performAliasingSumsIK(
                             gridshift_x[n[KX]],
                             gridshift_y[n[KY]],
                             gridshift_z[n[KZ]],
                             numerator_force,
                             numerator_energy,
-                            denominator);
+                            sumU2);
 
                     p3m_float fak1; //  k scalar numerator force (besides prefactors)
                     p3m_float fak2; //  k squared (besides prefactors)
@@ -493,7 +496,7 @@ void Solver::computeInfluenceFunctionIK() {
                                 +SQR(d_op[RX][n[KX]]*(box_vectors[1][0]*box_vectors[2][1]-box_vectors[1][1]*box_vectors[2][0])-d_op[RY][n[KY]]*box_vectors[2][1]*box_vectors[0][0]+d_op[RZ][n[KZ]]*(box_vectors[0][0]*box_vectors[1][1]));//correct k
                         fak2*=1/SQR(volume);
                         }
-                    const p3m_float fak3 = fak1/(fak2 * SQR(denominator));
+                    const p3m_float fak3 = fak1/(fak2 * SQR(sumU2));
                     g_force[ind] = M_2_PI*fak3;
                     g_energy[ind] = 0.5 * g_force[ind];
                     /* g_energy[ind] = M_1_PI*numerator_energy/SQR(denominator); */
@@ -514,8 +517,8 @@ void Solver::performAliasingSumsIK(
         p3m_int nmx0, p3m_int nmy0, p3m_int nmz0,
         p3m_float numerator_force[3],
         p3m_float &numerator_energy,
-        p3m_float &denominator) {
-    denominator = 0.0;
+        p3m_float &sumU2) {
+    sumU2 = 0.0;
     numerator_energy = 0.0;
     for (p3m_int i = 0; i < 3; i++)
         numerator_force[i] = 0.0;
@@ -568,7 +571,7 @@ void Solver::performAliasingSumsIK(
                 numerator_force[RY] += prefactor2*(nmx*(-box_vectors[1][0]*box_vectors[2][2])+nmy*(box_vectors[2][2]*box_vectors[0][0]))/volume;
                 numerator_force[RZ] += prefactor2*(nmx*(box_vectors[1][0]*box_vectors[2][1]-box_vectors[1][1]*box_vectors[2][0])+nmy*(-box_vectors[2][1]*box_vectors[0][0])+nmz*(box_vectors[0][0]*box_vectors[1][1]))/volume;//correct k
                 }
-                denominator  += U2; // denominator = SUM U^2
+                sumU2  += U2; // denominator = SUM U^2
             }
         }
     }
@@ -815,9 +818,10 @@ p3m_int *Solver::computeGridShift(int dir, int size) {
 inline void
 compute_near(const void *param, p3m_float dist, p3m_float *field, p3m_float *potential)
 {
-    const p3m_float alpha = *(static_cast<const p3m_float*>(param));
-    const p3m_float adist = alpha * dist;
-
+const near_params_t params = *(static_cast<const near_params_t*>(param));
+//    const p3m_float alpha = *(static_cast<const p3m_float*>(param));
+    const p3m_float adist = params.alpha * dist;
+    
 #ifdef P3M_USE_ERFC_APPROXIMATION
 
     /* approximate \f$ \exp(d^2) \mathrm{erfc}(d)\f$ by applying a formula from:
@@ -832,15 +836,22 @@ compute_near(const void *param, p3m_float dist, p3m_float *field, p3m_float *pot
                                             t * 1.061405429)))))
                                             / dist;
 
-    *potential = erfc_part_ri;
-    *field = -(erfc_part_ri + 2.0*alpha*0.56418958354775627928034964498*exp(-adist*adist))
+    *potential = erfc_part_ri-params.potentialOffset;
+    //printf("_______near loop offset: %e \n ",params.potentialOffset);
+   // printf("_______near loop alpha: %e \n ",params.alpha);
+    *field = -(erfc_part_ri + 2.0*params.alpha*0.56418958354775627928034964498*exp(-adist*adist))
               / dist;
 
 #else
 
     p3m_float erfc_part_ri = (1.0 - erf(adist)) / dist; /* use erf instead of erfc to fix ICC performance problems */
-    *potential = erfc_part_ri;
-    *field = -(erfc_part_ri + 2.0*alpha*0.56418958354775627928034964498*exp(-adist*adist))
+    *potential = erfc_part_ri-params.potentialOffset;
+        printf("erfc part ri: %f \n",erfc_part_ri);
+#ifdef ADDITIONAL_CHECKS
+        if(*potential<0.0) printf("ERROR: The calculated real space potential contribution is smaller than the potential offset.\n");
+#endif
+        
+    *field = -(erfc_part_ri + 2.0*params.alpha*0.56418958354775627928034964498*exp(-adist*adist))
               / dist;
 #endif
 
@@ -864,7 +875,7 @@ void Solver::run(
             box_l[0] = box_l[1] = box_l[2] = 1.0;
             this->prepare();
         }
-    
+   
     P3M_INFO(printf("    "
             "system parameters: box_l=" F3FLOAT "\n", \
             box_l[0], box_l[1], box_l[2]));
@@ -951,9 +962,15 @@ void Solver::run(
 
         fcs_near_set_ghosts(&near, num_ghost_particles,
                 ghost_positions, ghost_charges, ghost_indices);
-
+        
+        near_params_t params;
+      //  std::cout<<"in Solver run: flag "<<shiftGaussians<<std::endl;
+        params.alpha=alpha; params.potentialOffset=(shiftGaussians?(erfc(alpha*r_cut))/r_cut:0.0);
+      //  std::cout<<"_____erfc(ar) in Solver run: "<<erfc(alpha*r_cut)<<std::endl;
+      //  std::cout<<"_____offset in Solver run: "<<params.potentialOffset<<std::endl;
+         printf("\033[31;1m solver run: off %e \033[0m \n", params.potentialOffset);
         P3M_DEBUG(printf( "  calling fcs_near_compute()...\n"));
-        fcs_near_compute(&near, r_cut, &alpha, comm.mpicomm);
+        fcs_near_compute(&near, r_cut, &params, comm.mpicomm);
         P3M_DEBUG(printf( "  returning from fcs_near_compute().\n"));
 
         fcs_near_destroy(&near);
@@ -1270,6 +1287,8 @@ void Solver::computeFarIK(
             p3m_float *triclinic_positions, p3m_int number) {
 
         for (p3m_int i = 0; i < number; i++) {
+            P3M_DEBUG_LOCAL(if(i<5)printf(" cartesian position %d: %f %f %f \n", i,
+                    positions[3*i],positions[3*i+1],positions[3*i+2]));
             triclinic_positions[3 * i] = 1 / box_vectors[0][0] * positions[3 * i]
                     - box_vectors[1][0] / (box_vectors[0][0] * box_vectors[1][1])
                     * positions[3 * i + 1] + (box_vectors[1][0]
@@ -2021,10 +2040,10 @@ Solver::tuneFar(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
             throw std::domain_error("r_cut is too small!");
 
         /* check whether cutoff is larger than half a box length */
-        if ((_r_cut > 0.5*box_l[0]) ||
-                (_r_cut > 0.5*box_l[1]) ||
-                (_r_cut > 0.5*box_l[2]))
-            throw std::domain_error("r_cut is larger than half a system box length.");
+//        if ((_r_cut > 0.5*box_l[0]) ||
+//                (_r_cut > 0.5*box_l[1]) ||
+//                (_r_cut > 0.5*box_l[2]))
+//            throw std::domain_error("r_cut is larger than half a system box length.");
 
         /* check whether cutoff is larger than domain size */
 

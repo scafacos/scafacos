@@ -146,6 +146,13 @@ void ifcs_p3m_get_alpha(void *rd, fcs_float *alpha) {
 	*alpha = d->alpha;
 }
 
+void ifcs_p3m_get_near_params(void* rd, fcs_float *alpha, fcs_float *offset) {
+  Solver *d = static_cast<Solver *>(rd);
+  *alpha = d->alpha;
+  *offset = d->shiftGaussians?(1-erf(d->r_cut * d->alpha)) / d->r_cut:0.0; //todo: is it better to add the offset as a property of a Solver object?
+  printf("get offset %e", *offset);
+}
+
 void ifcs_p3m_set_grid(void *rd, fcs_int grid) {
 	Solver *d = static_cast<Solver *>(rd);
 	if (!(grid == d->grid[0] && grid == d->grid[1] && grid == d->grid[2]))
@@ -274,5 +281,15 @@ fcs_float *charges) {
 	}
 
 	return FCS_RESULT_SUCCESS;
+}
+
+void ifcs_p3m_set_potential_shift(void* rd, fcs_int flag){
+    Solver *d = static_cast<Solver *>(rd);
+    d->shiftGaussians=(flag!=0);
+}
+
+void ifcs_p3m_get_potential_shift(void* rd, fcs_int *flag){
+    Solver *d = static_cast<Solver *>(rd);
+    *flag = d->shiftGaussians?1:0;
 }
 }

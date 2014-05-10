@@ -105,6 +105,9 @@ const p3m_int P3M_BRILLOUIN = 0;
 /***************************************************/
 /* DATA TYPES */
 /***************************************************/
+    /** structure for near computation parameters: alpha and the potential shift. */
+    typedef struct {p3m_float alpha; p3m_float potentialOffset;} near_params_t;
+    
 /** Structure for local grid parameters. */
 struct local_grid_t {
 	/* local grid characterization. */

@@ -143,8 +143,9 @@ p3m_float ErrorEstimateADI::compute_ks_error_triclinic(Parameters& p, p3m_int nu
 			local_he_q += D;
 		}
 	}
+        p3m_float he_q;
 	MPI_Reduce(&local_he_q, &he_q, 1, P3M_MPI_FLOAT, MPI_SUM, 0,
-			comm_mpicomm);
+			comm.mpicomm);
 
 	return 2.0 * sum_q2 *
 			sqrt(he_q / num_charges)/(box_vectors[0][0]*box_vectors[1][1]*box_vectors[2][2]);

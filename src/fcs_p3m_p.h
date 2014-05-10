@@ -50,7 +50,7 @@ extern "C" {
 /* This struct is defined open so that an MD implementation can use
    the parameters to perform the near field computation in its own
    code. */
-typedef fcs_float fcs_p3m_near_parameters_t;
+typedef struct {fcs_float alpha; fcs_float potentialOffset;} fcs_p3m_near_parameters_t;
 
 /**
  * @brief extracts the parameters required to compute the near-field
@@ -87,7 +87,8 @@ fcs_p3m_get_near_parameters(FCS handle,
 /* This function is defined inline for maximal performance! */
 static inline fcs_float 
 fcs_p3m_compute_near_potential(fcs_p3m_near_parameters_t params, fcs_float dist) {
-  const fcs_float alpha = params;
+  const fcs_float alpha = params.alpha;
+  const fcs_float potentialOffset = params.potentialOffset;  
   fcs_float adist = alpha * dist;
 
 #if FCS_P3M_USE_ERFC_APPROXIMATION
@@ -111,7 +112,7 @@ fcs_p3m_compute_near_potential(fcs_p3m_near_parameters_t params, fcs_float dist)
 
 #endif
 
-  return erfc_part_ri;
+  return erfc_part_ri-potentialOffset;
 
 }
 
@@ -130,7 +131,7 @@ fcs_p3m_compute_near_potential(fcs_p3m_near_parameters_t params, fcs_float dist)
  */
 static inline fcs_float 
 fcs_p3m_compute_near_field(fcs_p3m_near_parameters_t params, fcs_float dist) {
-  const fcs_float alpha = params;
+  const fcs_float alpha = params.alpha;
   fcs_float adist = alpha * dist;
 
 #if FCS_P3M_USE_ERFC_APPROXIMATION
@@ -181,7 +182,8 @@ fcs_p3m_compute_near_field(fcs_p3m_near_parameters_t params, fcs_float dist) {
   static inline void
 fcs_p3m_compute_near(fcs_p3m_near_parameters_t params, fcs_float dist, 
 		     fcs_float *potential, fcs_float *field) {
-  fcs_float alpha = params;
+  const fcs_float alpha = params.alpha;
+  const fcs_float potentialOffset = params.potentialOffset;
   fcs_float adist = alpha * dist;
 
 #if FCS_P3M_USE_ERFC_APPROXIMATION
@@ -198,14 +200,14 @@ fcs_p3m_compute_near(fcs_p3m_near_parameters_t params, fcs_float dist,
 			 t * 1.061405429))))) 
     / dist;
 
-  *potential = erfc_part_ri;
+  *potential = erfc_part_ri-potentialOffset;
   *field = -(erfc_part_ri + 2.0*alpha*0.56418958354775627928034964498*exp(-adist*adist))
     / dist;
   
 #else
 
   fcs_float erfc_part_ri = (1.0 - erf(adist)) / dist; /* use erf instead of erfc to fix ICC performance problems */
-  *potential = erfc_part_ri;
+  *potential = erfc_part_ri-potentialOffset;
   *field = -(erfc_part_ri + 2.0*alpha*0.56418958354775627928034964498*exp(-adist*adist)) 
     / dist;
 
@@ -237,6 +239,9 @@ FCSResult fcs_p3m_set_tolerance_field(FCS handle, fcs_float tolerance_field);
 void fcs_p3m_set_tolerance_field_f(void *handle, fcs_float tolerance_field, fcs_int *return_value);
 FCSResult fcs_p3m_set_tolerance_field_tune(FCS handle);
 FCSResult fcs_p3m_get_tolerance_field(FCS handle, fcs_float *tolerance_field);
+
+FCSResult fcs_p3m_set_potential_shift(FCS handle, fcs_int flag);
+FCSResult fcs_p3m_get_potential_shift(FCS handle, fcs_int *flag);
 
   /*
 FCSResult fcs_p3m_set_variant(FCS handle, fcs_int variant);

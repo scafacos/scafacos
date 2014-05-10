@@ -308,7 +308,14 @@ FCSResult fcs_p3m_get_tolerance_field(FCS handle, fcs_float *tolerance_field) {
 
 FCSResult fcs_p3m_get_near_parameters(FCS handle,
 				      fcs_p3m_near_parameters_t *near_params) {
+/*
   ifcs_p3m_get_alpha(handle->method_context, near_params);
+*/
+    fcs_float *alpha=(fcs_float*)malloc(sizeof(fcs_float));
+    fcs_float *offset=(fcs_float*)malloc(sizeof(fcs_float));
+    ifcs_p3m_get_near_params(handle->method_context, alpha, offset);
+    near_params->alpha=*alpha;
+    near_params->potentialOffset=*offset;
   return NULL;
 }
 
@@ -382,4 +389,14 @@ FCSResult fcs_p3m_print_parameters(FCS handle)
   printf("p3m absolute field tolerance: %" FCS_LMOD_FLOAT "e\n", tolerance);
 
   return FCS_RESULT_SUCCESS;
+}
+
+FCSResult fcs_p3m_set_potential_shift(FCS handle, fcs_int flag){
+    ifcs_p3m_set_potential_shift(handle->method_context, flag);
+    return FCS_RESULT_SUCCESS;
+}
+
+FCSResult fcs_p3m_get_potential_shift(FCS handle, fcs_int *flag){
+    ifcs_p3m_get_potential_shift(handle->method_context, flag);
+    return FCS_RESULT_SUCCESS;
 }
