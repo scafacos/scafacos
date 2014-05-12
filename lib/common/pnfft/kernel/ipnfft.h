@@ -281,7 +281,8 @@ INT PNX(local_size_internal)(
     INT *local_no, INT *local_no_start);
 void PNX(local_block_internal)(
     const INT *N, const INT *no,
-    MPI_Comm comm_cart, int pid, unsigned pnfft_flags,
+    MPI_Comm comm_cart, int pid,
+    unsigned pnfft_flags, unsigned trafo_flag,
     INT *local_N, INT *local_N_start);
 PNX(plan) PNX(init_internal)(
     int d, const INT *N, const INT *n, const INT *no,
