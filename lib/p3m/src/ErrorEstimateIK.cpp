@@ -67,14 +67,16 @@ p3m_float ErrorEstimateIK::compute_ks_error_triclinic(Parameters& p, p3m_int num
 //	    }
 //	}
 
-#ifdef P3M_ENABLE_DEBUG
-	if (!full_estimate)
-	    printf("        alpha*h < " FFLOAT " => approximation\n",
-	            FULL_ESTIMATE_ALPHA_H_THRESHOLD);
-#endif
+//#ifdef P3M_ENABLE_DEBUG
+//	if (!full_estimate)
+//	    printf("        alpha*h < " FFLOAT " => approximation\n",
+//	            FULL_ESTIMATE_ALPHA_H_THRESHOLD);
+//#endif
 
 	//if (full_estimate)
-	    return compute_ks_error_full_triclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
+    fcs_float box_l[3]={box_vectors[0][0],box_vectors[1][1],box_vectors[2][2]};
+    return compute_ks_error_full(p, num_charges, sum_q2, box_l);//todo: remove this and get the triclinic estimate right.
+//	    return compute_ks_error_full_triclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
 	//else
 	//    return compute_ks_error_approx_triclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
 }

@@ -2020,11 +2020,11 @@ Solver::tuneFar(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
         if (float_is_zero(_r_cut))
             throw std::domain_error("r_cut is too small!");
 
-        /* check whether cutoff is larger than half a box length */
-        if ((_r_cut > 0.5*box_l[0]) ||
-                (_r_cut > 0.5*box_l[1]) ||
-                (_r_cut > 0.5*box_l[2]))
-            throw std::domain_error("r_cut is larger than half a system box length.");
+//        /* check whether cutoff is larger than half a box length */
+//        if ((_r_cut > 0.5*box_l[0]) ||
+//                (_r_cut > 0.5*box_l[1]) ||
+//                (_r_cut > 0.5*box_l[2]))
+//            throw std::domain_error("r_cut is larger than half a system box length.");
 
         /* check whether cutoff is larger than domain size */
 
