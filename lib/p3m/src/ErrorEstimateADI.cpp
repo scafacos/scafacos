@@ -143,7 +143,7 @@ p3m_float ErrorEstimateADI::compute_ks_error_triclinic(Parameters& p, p3m_int nu
 			local_he_q += D;
 		}
 	}
-        fcs_float he_q;
+        p3m_float he_q;
 	MPI_Reduce(&local_he_q, &he_q, 1, P3M_MPI_FLOAT, MPI_SUM, 0,
 			comm.mpicomm);
 

@@ -75,8 +75,10 @@ public:
     /** whether to compute the near field in the method */
     bool near_field_flag;
     /* whether the box is triclinic */
-    bool isTriclinic;
-
+    bool isTriclinic; 
+    /** flag that determines if the Gaussian potentials are shifted */
+    bool shiftGaussians;
+    
     /* TUNABLE PARAMETERS */
     /** cutoff radius */
     p3m_float r_cut;
