@@ -98,7 +98,11 @@ MPI_Comm fcs_get_communicator(FCS handle);
  * @param total_particles total number of particles in the system
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_set_common(FCS handle, fcs_int near_field_flag, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_float *box_origin, const fcs_int *periodicity, fcs_int total_particles);
+FCSResult 
+fcs_set_common(FCS handle, fcs_int near_field_flag, 
+               const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, 
+               const fcs_float *box_origin, 
+               const fcs_int *periodicity, fcs_int total_particles);
 
 /**
  * @brief function to set the dimensions of the system
