@@ -47,6 +47,8 @@ cdef extern from "fcs.h":
     const char* fcs_get_method_name(FCS handle)
     FCSResult fcs_set_near_field_flag(FCS handle, fcs_int near_field_flag)
     fcs_int fcs_get_near_field_flag(FCS handle)
+    FCSResult fcs_set_total_particles(FCS handle, fcs_int total_particles)
+    fcs_int fcs_get_total_particles(FCS handle)
 
     # box vectors
     FCSResult fcs_set_box_a(FCS handle, const fcs_float *box_a)
@@ -74,6 +76,13 @@ cdef class scafacos:
         handleResult(fcs_init(&self.handle, method, MPI_COMM_WORLD))
         self.near_field_flag = False
 
+    property total_particles:
+        def __get__(self):
+            return fcs_get_total_particles(self.handle)
+
+        def __set__(self, n):
+            handleResult(fcs_set_total_particles(self.handle, n))
+        
     property method:
         def __get__(self):
             return fcs_get_method_name(self.handle)
@@ -137,6 +146,7 @@ cdef class scafacos:
         
         handleResult(fcs_run(self.handle, N, &positions[0,0], &charges[0],
                              &fields[0,0], &potentials[0]))
+        return fields, potentials
         
     def __del__(self):
         handleResult(fcs_destroy(self.handle))

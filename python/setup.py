@@ -4,7 +4,7 @@
 # * build ScaFaCoS with the configure option "--enable-single-lib --with-pic"
 # * adapt the following paths (builddir might be the same as srcdir)
 srcdir = '/home/olenz/projects/scafacos/src'
-builddir = '/home/olenz/projects/scafacos/obj.lancre/icp'
+builddir = '/home/olenz/projects/scafacos/obj.lancre/p3m-debug'
 
 from distutils.core import setup
 from distutils.extension import Extension

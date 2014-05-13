@@ -97,7 +97,7 @@ ErrorEstimate::compute_master(Parameters &p,
 
     // broadcast parameters
     p3m_int int_buffer[6];
-    p3m_float float_buffer[5];
+    p3m_float float_buffer[8];
 
     // pack int data
     int_buffer[0] = p.cao;
@@ -122,7 +122,7 @@ ErrorEstimate::compute_master(Parameters &p,
             Communication::MPI_MASTER, comm.mpicomm);
     
     // run master job
-    this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error,box_vectors, isTriclinic);
+    this->compute(p, num_charges, sum_q2, box_l, error, rs_error, ks_error, box_vectors, isTriclinic);
 }
 
 void ErrorEstimate::compute_slave() {
@@ -130,7 +130,7 @@ void ErrorEstimate::compute_slave() {
         throw std::logic_error("Do not call ErrorEstimate::compute_slave() on master.");
     // receive parameters
     p3m_int int_buffer[6];
-    p3m_float float_buffer[5];
+    p3m_float float_buffer[8];
 
     Parameters p;
     p3m_float box_l[3];
@@ -157,9 +157,15 @@ void ErrorEstimate::compute_slave() {
     box_l[0] = float_buffer[2];
     box_l[1] = float_buffer[3];
     box_l[2] = float_buffer[4];
-    box_vectors[0][0]=float_buffer[2];box_vectors[0][1]=0.0;box_vectors[0][2]=0.0;
-    box_vectors[1][0]=float_buffer[7];box_vectors[1][1]=float_buffer[3];box_vectors[1][2]=0.0;
-    box_vectors[2][0]=float_buffer[6];box_vectors[2][1]=float_buffer[5];box_vectors[2][2]=float_buffer[4];
+    box_vectors[0][0]=float_buffer[2];
+    box_vectors[0][1]=0.0;
+    box_vectors[0][2]=0.0;
+    box_vectors[1][0]=float_buffer[7];
+    box_vectors[1][1]=float_buffer[3];
+    box_vectors[1][2]=0.0;
+    box_vectors[2][0]=float_buffer[6];
+    box_vectors[2][1]=float_buffer[5];
+    box_vectors[2][2]=float_buffer[4];
     // run slave job
     this->compute(p, num_charges, sum_q2, box_l,box_vectors, isTriclinic);
 }
