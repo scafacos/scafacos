@@ -40,8 +40,9 @@
 #define fftw_destroy_plan  FFTW_MANGLE(destroy_plan)
 #define fftw_execute  FFTW_MANGLE(execute)
 #define fftw_execute_dft  FFTW_MANGLE(execute_dft)
-#define fftw_import_wisdom_from_file  FFTW_MANGLE(import_wisdom_from_file)
-#define fftw_export_wisdom_to_file  FFTW_MANGLE(export_wisdom_to_file)
+#define fftw_import_system_wisdom  FFTW_MANGLE(import_system_wisdom)
+#define fftw_import_wisdom_from_filename  FFTW_MANGLE(import_wisdom_from_filename)
+#define fftw_export_wisdom_to_filename  FFTW_MANGLE(export_wisdom_to_filename)
 
 namespace P3M {
 /***************************************************/
@@ -106,31 +107,38 @@ void Parallel3DFFT::forward_plan::print() {
 }
 
 Parallel3DFFT::Parallel3DFFT(Communication &comm) : comm(comm) {
-	for (int i = 0; i < 4; i++) {
-		plan[i].group = new int[comm.size];
-		plan[i].send_block = NULL;
-		plan[i].send_size = NULL;
-		plan[i].recv_block = NULL;
-		plan[i].recv_size = NULL;
-	}
-
-	is_prepared = false;
-	max_comm_size = 0;
-	max_grid_size = 0;
-	send_buf = NULL;
-	recv_buf = NULL;
+  for (int i = 0; i < 4; i++) {
+    plan[i].group = new int[comm.size];
+    plan[i].send_block = NULL;
+    plan[i].send_size = NULL;
+    plan[i].recv_block = NULL;
+    plan[i].recv_size = NULL;
+  }
+  
+  is_prepared = false;
+  max_comm_size = 0;
+  max_grid_size = 0;
+  send_buf = NULL;
+  recv_buf = NULL;
+  
+  // import fftw wisdom
+  fftw_import_system_wisdom();
+  fftw_import_wisdom_from_filename(P3M_FFTW_WISDOM_FILENAME);
 }
-
+  
 Parallel3DFFT::~Parallel3DFFT() {
-	for (int i = 0; i < 4; i++) {
-		sdelete(plan[i].group);
-		sfree(plan[i].send_block);
-		sfree(plan[i].send_size);
-		sfree(plan[i].recv_block);
-		sfree(plan[i].recv_size);
-	}
-	sfree(send_buf);
-	sfree(recv_buf);
+  // store wisdom
+  fftw_export_wisdom_to_filename(P3M_FFTW_WISDOM_FILENAME);
+
+  for (int i = 0; i < 4; i++) {
+    sdelete(plan[i].group);
+    sfree(plan[i].send_block);
+    sfree(plan[i].send_size);
+    sfree(plan[i].recv_block);
+    sfree(plan[i].recv_size);
+  }
+  sfree(send_buf);
+  sfree(recv_buf);
 }
 
 p3m_float* Parallel3DFFT::malloc_data() {
@@ -379,61 +387,26 @@ void Parallel3DFFT::prepare(p3m_int *local_grid_dim, p3m_int *local_grid_margin,
 	/* @todo: Planning shouldn't write to file. */
 	/* === FFT Routines (Using FFTW / RFFTW package)=== */
 	for (int i = 1; i < 4; i++) {
-		plan[i].dir = FFTW_FORWARD;
-		/* FFT plan creation.
-		 Attention: destroys contents of c_data/data and c_data_buf/data_buf. */
-		int wisdom_status = FFTW_FAILURE;
-		char wisdom_file_name[255];
-		sprintf(wisdom_file_name, "fftw3_1d_wisdom_forw_n%d.file",
-				plan[i].new_grid[2]);
-		FILE* wisdom_file = fopen(wisdom_file_name, "r");
-		if (wisdom_file != NULL) {
-			wisdom_status = fftw_import_wisdom_from_file(wisdom_file);
-			fclose(wisdom_file);
-		}
-		if (is_prepared)
-			fftw_destroy_plan(plan[i].plan);
-		//printf("plan[%d].n_ffts=%d\n",i,plan[i].n_ffts);
-		plan[i].plan =
-		fftw_plan_many_dft(1, &plan[i].new_grid[2], plan[i].n_ffts, c_data_buf,
-				NULL, 1, plan[i].new_grid[2], c_data_buf, NULL, 1,
-				plan[i].new_grid[2], plan[i].dir, FFTW_PATIENT);
-
-		if (wisdom_status == FFTW_FAILURE) {
-			FILE* wisdom_file = fopen(wisdom_file_name, "w");
-			if (wisdom_file != NULL) {
-				fftw_export_wisdom_to_file(wisdom_file);
-				fclose(wisdom_file);
-			}
-		}
+          plan[i].dir = FFTW_FORWARD;
+          if (is_prepared)
+            fftw_destroy_plan(plan[i].plan);
+          //printf("plan[%d].n_ffts=%d\n",i,plan[i].n_ffts);
+          plan[i].plan =
+            fftw_plan_many_dft(1, &plan[i].new_grid[2], plan[i].n_ffts, c_data_buf,
+                               NULL, 1, plan[i].new_grid[2], c_data_buf, NULL, 1,
+                               plan[i].new_grid[2], plan[i].dir, FFTW_PATIENT);
 	}
 
 	/* === The BACK Direction === */
 	/* this is needed because slightly different functions are used */
 	for (int i = 1; i < 4; i++) {
 		back[i].dir = FFTW_BACKWARD;
-		int wisdom_status = FFTW_FAILURE;
-		char wisdom_file_name[255];
-		sprintf(wisdom_file_name, "fftw3_1d_wisdom_back_n%d.file",
-				plan[i].new_grid[2]);
-		FILE* wisdom_file = fopen(wisdom_file_name, "r");
-		if (wisdom_file != NULL) {
-			wisdom_status = fftw_import_wisdom_from_file(wisdom_file);
-			fclose(wisdom_file);
-		}
 		if (is_prepared)
 			fftw_destroy_plan(back[i].plan);
 		back[i].plan =
 		fftw_plan_many_dft(1, &plan[i].new_grid[2], plan[i].n_ffts, c_data_buf,
 				NULL, 1, plan[i].new_grid[2], c_data_buf, NULL, 1,
 				plan[i].new_grid[2], back[i].dir, FFTW_PATIENT);
-		if (wisdom_status == FFTW_FAILURE) {
-			FILE* wisdom_file = fopen(wisdom_file_name, "w");
-			if (wisdom_file != NULL) {
-				fftw_export_wisdom_to_file(wisdom_file);
-				fclose(wisdom_file);
-			}
-		}
 		back[i].pack_function = pack_block_permute1;
 		P3M_DEBUG(printf("      back plan[%d] permute 1 \n", i));
 	}

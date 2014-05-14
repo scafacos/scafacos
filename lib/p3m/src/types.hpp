@@ -73,6 +73,8 @@ const p3m_float P3M_RCUT_PREC = 1.0e-3;
  in P3M and Ewald summation. */
 #define P3M_USE_ERFC_APPROXIMATION 1
 
+static const char* P3M_FFTW_WISDOM_FILENAME = "fftw-wisdom.dat";
+
 /** Number of Brillouin zones taken into account in the calculation of
  the optimal influence function (aliasing sums). */
 #ifdef P3M_INTERLACE
