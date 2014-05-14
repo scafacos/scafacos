@@ -32,6 +32,7 @@ check_PROGRAMS += \
 	pnfft_test \
 	pnfft_test_adv \
 	check_trafo_vs_ndft check_trafo_grad_vs_ndft check_adj_vs_ndft \
+	check_trafo_vs_ndft_c2r check_adj_vs_ndft_c2r \
 	check_trafo_vs_ndft_transposed_2d \
 	simple_test_c2r_c2c_compare_real simple_test_c2r_c2c_compare_complex \
 	simple_test_c2r_c2c_compare_grad simple_test_c2r_c2c_compare_timer
