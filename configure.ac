@@ -715,7 +715,8 @@ AC_CONFIG_FILES([Makefile
   lib/Makefile
   lib/common/fcs-common/Makefile
   src/Makefile
-  src/fortran/Makefile])
+  src/fortran/Makefile
+  python/Makefile])
 
 # Create near-field module files.
 AC_CONFIG_FILES([lib/common/near/Makefile])
