@@ -644,7 +644,7 @@ Solver::tuneGrid(TuneParameterList &params_to_try) {
             P3M_INFO(printf( "      => "                          \
                     "r_cut=" FFLOAT ", "                          \
                     "alpha=" FFLOAT ", "                          \
-                    "cao=" FINT "\n"                              \
+                    "cao=" FINT ", "                              \
                     "grid=" F3INT ", "                            \
                     "error=" FFLOATE "\n",                        \
                     pit->r_cut, pit->alpha, pit->cao,             \
@@ -757,6 +757,14 @@ Solver::timeParams(
 
 void P3M::Solver::setRequireTimings(TimingType type) {
     require_timings = type;
+    if (type == NONE || type == NOTFAR)
+      farSolver->setRequireTimings(FarSolver::NONE);
+    else
+      farSolver->setRequireTimings(FarSolver::FULL);
+}
+
+P3M::Solver::TimingType P3M::Solver::getRequireTimings() {
+  return require_timings;
 }
 
 /** Test run the method with the current parameters.
@@ -767,13 +775,13 @@ const double* Solver::measureTimings(p3m_int num_particles,
     p3m_float *potentials = new p3m_float[num_particles];
 
     /* store require_timings */
-    TimingType require_timings_before = require_timings;
-    if (require_timings_before == NONE)
-        require_timings = FULL;
+    Solver::TimingType require_timings_before = this->getRequireTimings();
+    this->setRequireTimings(FULL);
+
     this->run(num_particles, positions, charges, fields, potentials);
 
     /* restore require_timings */
-    require_timings = require_timings_before;
+    this->setRequireTimings(require_timings_before);
 
     delete fields;
     delete potentials;

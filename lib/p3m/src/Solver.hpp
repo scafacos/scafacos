@@ -33,42 +33,44 @@
 
 namespace P3M {
 
-/** Structure that holds all data of the P3M algorithm */
-class Solver {
-public:
+  /** Structure that holds all data of the P3M algorithm */
+  class Solver {
+  public:
     enum TimingComponent {
-        TOTAL, COMP, DECOMP, NEAR,
-        FAR, CA, GATHER, FORWARD, BACK, INFLUENCE, SPREAD, POTENTIALS, FIELDS
+      TOTAL, COMP, DECOMP, NEAR,
+      FAR, CA, GATHER, FORWARD, BACK, INFLUENCE, SPREAD, POTENTIALS, FIELDS
     };
     static const int NUM_TIMINGS_NOTFAR = 4;
     static const int NUM_TIMINGS = 13;
     enum TimingType {
-        NONE, // do not time anything
-        NOTFAR, // do not time the far field
-        FULL // time everything
+      NONE, // do not time anything
+      NOTFAR, // do not time the far field
+      FULL // time everything
     };
-
+    
     Solver(MPI_Comm mpicomm);
     ~Solver();
-
+    
     void prepare();
-
+    
     void tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges);
-
+    
     void run(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
-            p3m_float *fields, p3m_float *potentials);
-
+             p3m_float *fields, p3m_float *potentials);
+    
     void setRequireTotalEnergy(bool flag = true);
     fcs_float getTotalEnergy();
-
+    
     void setRequireTimings(TimingType type = NONE);
+    TimingType getRequireTimings();
+    
     /** Test run the method with the current parameters.
      * Put the different run times in the TuneParameters. */
     const double* measureTimings(p3m_int num_particles,
-            p3m_float *positions, p3m_float *charges);
+                                 p3m_float *positions, p3m_float *charges);
     /** Fetch the detailed timings. */
     const double* getTimings();
-
+    
     Communication comm;
     ErrorEstimate *errorEstimate;
     FarSolver *farSolver;
