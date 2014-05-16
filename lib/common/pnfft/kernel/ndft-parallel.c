@@ -684,11 +684,6 @@ PNX(plan) PNX(init_internal)(
     pnfft_flags &= (~PNFFT_PRE_FULL_PSI); /* needed for correct pnfft_finalize */
   }
 
-  if((pnfft_flags & PNFFT_TRANSPOSED_F_HAT) && (trafo_flag & PNFFTI_TRAFO_C2R)) {
-    PX(printf)(comm_cart, "!!! Error: transposed input and c2r transform not yet implemented !!!\n");
-    return NULL;
-  }
-
   ths = mkplan();
 
   ths->d = d;
