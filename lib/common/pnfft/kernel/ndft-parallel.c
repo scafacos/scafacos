@@ -414,9 +414,9 @@ void PNX(trafo_A)(
           ths->grad_f[3*j+t1] += 2 * grad_f[2];
           ths->grad_f[3*j+t2] += 2 * grad_f[4];
         } else if (ths->trafo_flag & PNFFTI_TRAFO_C2C) {
-          ((C*)ths->grad_f)[3*j+t0] += grad_f[0];
-          ((C*)ths->grad_f)[3*j+t1] += grad_f[1];
-          ((C*)ths->grad_f)[3*j+t2] += grad_f[2];
+          ((C*)ths->grad_f)[3*j+t0] += ((C*)grad_f)[0];
+          ((C*)ths->grad_f)[3*j+t1] += ((C*)grad_f)[1];
+          ((C*)ths->grad_f)[3*j+t2] += ((C*)grad_f)[2];
         }
 
       } else {
@@ -455,7 +455,7 @@ void PNX(trafo_A)(
     if(myrnk != pid) PNX(free)(buffer);
   }
 
-  C minusTwoPi  = -2.0 * PNFFT_PI;
+  R minusTwoPi  = -2.0 * PNFFT_PI;
   C minusTwoPiI = minusTwoPi * I;
   if(ths->compute_flags & PNFFT_COMPUTE_GRAD_F) {
     if (ths->trafo_flag & PNFFTI_TRAFO_C2R)
