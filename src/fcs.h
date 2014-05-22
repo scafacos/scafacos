@@ -33,8 +33,8 @@
  *
  */
 
-#ifndef FCS_INCLUDED
-#define FCS_INCLUDED
+#ifndef _FCS_H
+#define _FCS_H
 
 #include "fcs_config.h"
 
