@@ -290,7 +290,7 @@ static FCSResult ifcs_p2nfft_check(
  ************************************************************/
 FCSResult fcs_p2nfft_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
-//   const char *fnc_name = "fcs_p2nfft_set_parameter";
+  const char *fnc_name = "fcs_p2nfft_set_parameter";
 
   char *param = *current;
   char *cur = *next;
