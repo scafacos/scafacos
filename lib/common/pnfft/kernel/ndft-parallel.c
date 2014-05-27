@@ -643,6 +643,26 @@ void PNX(local_block_internal)(
   unsigned pfft_flags = (pnfft_flags & PNFFT_TRANSPOSED_F_HAT) ? PFFT_TRANSPOSED_IN : 0;
   INT dummy_lno[3], dummy_los[3];
 
+//  /* For debugging only */
+//   INT local_block[3], local_block_start[3];
+//   PX(local_block_many_dft_c2r)(3, N, no,
+//       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pid, pfft_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT,
+//       local_block, local_block_start, dummy_lno, dummy_los);
+// 
+//   INT local_size[3], local_size_start[3];
+//   PX(local_size_many_dft_c2r)(3, N, N, no, 1,
+//       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pfft_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT,
+//       local_size, local_size_start, dummy_lno, dummy_los);
+// 
+//   int myrnk;
+//   MPI_Comm_rank(comm_cart, &myrnk);
+//   if(myrnk == pid)
+//     for(int t=0; t<3; t++)
+//       fprintf(stderr, "pid = %d, local_block = [%td %td %td], local_block_start = [%td %td %td]\n          local_size = [%td %td %td],  local_size_start = [%td %td %td]\n",
+//           pid,
+//           local_block[0], local_block[1], local_block[2], local_block_start[0], local_block_start[1], local_block_start[2],
+//           local_size[0], local_size[1], local_size[2], local_size_start[0], local_size_start[1], local_size_start[2]);
+
   if (trafo_flag & PNFFTI_TRAFO_C2R) {
     PX(local_block_many_dft_c2r)(3, N, no,
         PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pid, pfft_flags | PFFT_SHIFTED_IN | PFFT_SHIFTED_OUT,
