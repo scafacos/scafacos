@@ -61,10 +61,10 @@ void ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3],
 		p3m_float &error, p3m_float &rs_error, p3m_float &ks_error, p3m_float box_vectors[3][3], bool isTriclinic) {
 	rs_error = compute_rs_error(p, num_charges, sum_q2, box_l);
-	//ks_error = compute_ks_error(p, num_charges, sum_q2, box_l);
+        ks_error = compute_ks_error(p, num_charges, sum_q2, box_l);
         //printf("ks error-orig %e\n",ks_error);
-        ks_error = compute_ks_error_triclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
-       // printf("ks error-tric %e\n",ks_error);
+        //ks_error = compute_ks_error_triclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
+        // printf("ks error-tric %e\n",ks_error);
 	error = sqrt(SQR(rs_error) + SQR(ks_error));
 
 #ifdef P3M_ENABLE_DEBUG

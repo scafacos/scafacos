@@ -467,17 +467,17 @@ void Solver::computeInfluenceFunctionIK() {
                 } else {
                     p3m_float numerator_force[3];
                     p3m_float numerator_energy;
-                    p3m_float sumU2;
+                    p3m_float sumU2;// up to here comparable to AD
                     this->performAliasingSumsIK(
                             gridshift_x[n[KX]],
                             gridshift_y[n[KY]],
                             gridshift_z[n[KZ]],
                             numerator_force,
                             numerator_energy,
-                            sumU2);
+                            sumU2); 
 
-                    p3m_float fak1; //  k scalar numerator force (besides prefactors)
-                    p3m_float fak2; //  k squared (besides prefactors)
+                    p3m_float fak1; //  k scalar numerator force (disregarding prefactors)
+                    p3m_float fak2; //  k squared (disregarding prefactors)
                     if (!isTriclinic) {
                         fak1 =  d_op[RX][n[KX]] * numerator_force[RX] / box_l[RX] +
                                 d_op[RY][n[KY]] * numerator_force[RY] / box_l[RY] +
@@ -1644,6 +1644,7 @@ void Solver::differentiateIK(int dim, p3m_float* in, p3m_float* out) {
                         2.0*M_PI*in[ind] * d_operator[ j[dim]+fft.plan[3].start[dim] ]
                                 / box_l[dim_rs];
                     } else { //triclinic case //k correct
+                    //todo: differentiation wrong: mixing of directions is missing-->completely wrong.
                         out [ind] = -2.0 * M_PI * in[ind + 1] * (d_operator[ j[dim]+fft.plan[3].start[dim] ]*(box_vectors[(dim+1)%3][(dim+1)%3]*box_vectors[(dim+2)%3][(dim+2)%3]-box_vectors[(dim+1)%3][(dim+2)%3]*box_vectors[(dim+2)%3][(dim+1)%3])+d_operator[ j[(dim+1)%3]+fft.plan[3].start[(dim+1)%3] ]*(box_vectors[(dim+2)%3][(dim+1)%3]*box_vectors[dim][(dim+2)%3]-box_vectors[(dim+2)%3][(dim+2)%3]*box_vectors[dim][(dim+1)%3])+d_operator[ j[(dim+2)%3]+fft.plan[3].start[(dim+2)%3] ]*(box_vectors[dim][(dim+1)%3]*box_vectors[(dim+1)%3][(dim+2)%3]-box_vectors[dim][(dim+2)%3]*box_vectors[(dim+1)%3][(dim+1)%3]))
                                 /volume;
                      out[ind+1] =//k correct
