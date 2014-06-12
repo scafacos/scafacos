@@ -43,20 +43,78 @@ static void init_blks_comms_local_size(
 static void split_comms_3dto2d(
     MPI_Comm comm_cart_3d,
     MPI_Comm *icomms, MPI_Comm *mcomms, MPI_Comm *ocomms);
-static void get_local_n_3d(
+static void get_local_blocks_by_comms(
+    const INT *n,
+    const INT *iblks, const MPI_Comm *icomms,
+    const INT *oblks, const MPI_Comm *ocomms,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start);
+static void get_local_n_3d_by_comms(
     const INT *n, const INT *blks, const MPI_Comm *comms,
     INT *local_n);
-static void get_local_start_3d(
+static void get_local_start_3d_by_comms(
     const INT *n, const INT *blks, const MPI_Comm *comms,
     INT *local_start);
+static void get_local_blocks_by_coords(
+    const INT *n,
+    const INT *iblks, const int *icoords,
+    const INT *oblks, const int *ocoords,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start);
+static void get_local_n_3d_by_coords(
+    const INT *n, const INT *blks, const int *coords,
+    INT *local_n);
+static void get_local_start_3d_by_coords(
+    const INT *n, const INT *blks, const int *coords,
+    INT *local_start);
+
 static remap_3dto2d_plan remap_3dto2d_mkplan(
     void);
 
 
+void PX(local_block_remap_3dto2d_transposed)(
+    int rnk_n, const INT *pn, 
+    MPI_Comm comm_cart_3d, int pid, 
+    unsigned transp_flag, unsigned trafo_flag,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start 
+    )
+{
+  int p0, p1, q0, q1, rnk_pm;
+  int icoords[3], ocoords[3];
+  INT iblks[3], mblks[3], oblks[3];
+
+  /* remap only works for 3d data on 3d procmesh */
+  if(rnk_n != 3) return;
+
+  MPI_Cartdim_get(comm_cart_3d, &rnk_pm);
+  if(rnk_pm != 3) return;
+
+  /* Handle r2c input and c2r output like r2r. For complex data we use the C2C flag. */
+  if(trafo_flag & PFFTI_TRAFO_RDFT)
+    trafo_flag = PFFTI_TRAFO_R2R;
+
+  PX(get_procmesh_dims_2d)(comm_cart_3d, &p0, &p1, &q0, &q1);
+  PX(default_block_size_3dto2d)(pn, p0, p1, q0, q1,
+      iblks, mblks, oblks);
+
+  MPI_Cart_coords(comm_cart_3d, pid, 3, icoords);
+  PX(coords_3dto2d)(q0, q1, icoords, ocoords);
+  ocoords[2] = 0;
+
+  /* take care of transposed data ordering */
+  if(transp_flag & PFFT_TRANSPOSED_OUT){
+    get_local_blocks_by_coords(pn, iblks, icoords, oblks, ocoords,
+        local_ni, local_i_start, local_no, local_o_start);
+  } else {
+    get_local_blocks_by_coords(pn, iblks, icoords, oblks, ocoords,
+        local_no, local_o_start, local_ni, local_i_start);
+  }
+} 
 
 
 int PX(local_size_remap_3dto2d_transposed)(
-    int rnk_n, const INT *n, INT howmany, 
+    int rnk_n, const INT *pn, INT howmany, 
     MPI_Comm comm_cart_3d, 
     unsigned transp_flag, unsigned trafo_flag,
     INT *local_ni, INT *local_i_start,
@@ -79,14 +137,12 @@ int PX(local_size_remap_3dto2d_transposed)(
   if(rnk_pm != 3)
     return 0;
 
-  PX(get_procmesh_dims_2d)(comm_cart_3d, &p0, &p1, &q0, &q1);
-
-  /* Handle r2c input and c2r output like r2r. */
-  /* At the moment, PFFT supports 3d distributed 3d arrays only in real space. */
+  /* Handle r2c input and c2r output like r2r. For complex data we use the C2C flag. */
   if(trafo_flag & PFFTI_TRAFO_RDFT)
     trafo_flag = PFFTI_TRAFO_R2R;
 
-  init_blks_comms_local_size(n, comm_cart_3d,
+  PX(get_procmesh_dims_2d)(comm_cart_3d, &p0, &p1, &q0, &q1);
+  init_blks_comms_local_size(pn, comm_cart_3d,
       iblk, mblk, oblk, icomms, mcomms, ocomms,
       local_ni, local_nm, local_no);
 
@@ -134,15 +190,11 @@ int PX(local_size_remap_3dto2d_transposed)(
 
   /* take care of transposed data ordering */
   if(transp_flag & PFFT_TRANSPOSED_OUT){
-    get_local_n_3d(n, iblk, icomms, local_ni);
-    get_local_start_3d(n, iblk, icomms, local_i_start);
-    get_local_n_3d(n, oblk, ocomms, local_no);
-    get_local_start_3d(n, oblk, ocomms, local_o_start);
+    get_local_blocks_by_comms(pn, iblk, icomms, oblk, ocomms,
+        local_ni, local_i_start, local_no, local_o_start);
   } else {
-    get_local_n_3d(n, iblk, icomms, local_no);
-    get_local_start_3d(n, iblk, icomms, local_o_start);
-    get_local_n_3d(n, oblk, ocomms, local_ni);
-    get_local_start_3d(n, oblk, ocomms, local_i_start);
+    get_local_blocks_by_comms(pn, iblk, icomms, oblk, ocomms,
+        local_no, local_o_start, local_ni, local_i_start);
   }
 
   /* free communicators */
@@ -158,13 +210,13 @@ int PX(local_size_remap_3dto2d_transposed)(
 
 /* ouput is written to 'in', also for outofplace */
 remap_3dto2d_plan PX(plan_remap_3dto2d_transposed)(
-    int rnk_n, const INT *n, INT howmany, 
+    int rnk_n, const INT *pn, INT howmany, 
     MPI_Comm comm_cart_3d, R *in_user, R *out_user, 
     unsigned transp_flag, unsigned trafo_flag,
     unsigned opt_flag, unsigned io_flag, unsigned fftw_flags 
     )
 {
-  int rnk_pm;
+  int p0, p1, rnk_pm;
   INT nb, nt, N0, N1, h0, h1, hm, blk0, blk1;
   INT local_ni[3], local_nm[3], local_no[3];
   INT iblk[3], mblk[3], oblk[3];
@@ -183,12 +235,12 @@ remap_3dto2d_plan PX(plan_remap_3dto2d_transposed)(
 
   ths = remap_3dto2d_mkplan();
 
-  /* Handle r2c input and c2r output like r2r. */
-  /* At the moment, PFFT supports 3d distributed 3d arrays only in real space. */
+  /* Handle r2c input and c2r output like r2r. For complex data we use the C2C flag. */
   if(trafo_flag & PFFTI_TRAFO_RDFT)
     trafo_flag = PFFTI_TRAFO_R2R;
 
-  init_blks_comms_local_size(n, comm_cart_3d,
+  PX(get_procmesh_dims_2d)(comm_cart_3d, &p0, &p1, &ths->q0, &ths->q1);
+  init_blks_comms_local_size(pn, comm_cart_3d,
       iblk, mblk, oblk, icomms, mcomms, ocomms,
       local_ni, local_nm, local_no);
 
@@ -295,16 +347,29 @@ static void init_blks_comms_local_size(
       iblk, mblk, oblk);
   split_comms_3dto2d(comm_cart_3d,
     icomms, mcomms, ocomms);
-  get_local_n_3d(n, iblk, icomms,
+  get_local_n_3d_by_comms(n, iblk, icomms,
       local_ni);
-  get_local_n_3d(n, mblk, mcomms,
+  get_local_n_3d_by_comms(n, mblk, mcomms,
       local_nm);
-  get_local_n_3d(n, oblk, ocomms,
+  get_local_n_3d_by_comms(n, oblk, ocomms,
       local_no);
 }
 
+static void get_local_blocks_by_comms(
+    const INT *n,
+    const INT *iblks, const MPI_Comm *icomms,
+    const INT *oblks, const MPI_Comm *ocomms,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  get_local_n_3d_by_comms(n, iblks, icomms, local_ni);
+  get_local_start_3d_by_comms(n, iblks, icomms, local_i_start);
+  get_local_n_3d_by_comms(n, oblks, ocomms, local_no);
+  get_local_start_3d_by_comms(n, oblks, ocomms, local_o_start);
+}
 
-static void get_local_n_3d(
+static void get_local_n_3d_by_comms(
     const INT *n, const INT *blks, const MPI_Comm *comms,
     INT *local_n
     )
@@ -317,7 +382,7 @@ static void get_local_n_3d(
   }
 }
 
-static void get_local_start_3d(
+static void get_local_start_3d_by_comms(
     const INT *n, const INT *blks, const MPI_Comm *comms,
     INT *local_start
     )
@@ -330,6 +395,37 @@ static void get_local_start_3d(
   }
 }
 
+static void get_local_blocks_by_coords(
+    const INT *n,
+    const INT *iblks, const int *icoords,
+    const INT *oblks, const int *ocoords,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  get_local_n_3d_by_coords(n, iblks, icoords, local_ni);
+  get_local_start_3d_by_coords(n, iblks, icoords, local_i_start);
+  get_local_n_3d_by_coords(n, oblks, ocoords, local_no);
+  get_local_start_3d_by_coords(n, oblks, ocoords, local_o_start);
+}
+
+static void get_local_n_3d_by_coords(
+    const INT *n, const INT *blks, const int *coords,
+    INT *local_n
+    )
+{
+  for(int t=0; t<3; t++)
+    local_n[t] = PX(local_block_size)(n[t], blks[t], coords[t]);
+}
+
+static void get_local_start_3d_by_coords(
+    const INT *n, const INT *blks, const int *coords,
+    INT *local_start
+    )
+{
+  for(int t=0; t<3; t++)
+    local_start[t] = PX(local_block_offset)(n[t], blks[t], coords[t]);
+}
 
 
 

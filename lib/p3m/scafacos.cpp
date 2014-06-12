@@ -215,37 +215,29 @@ void ifcs_p3m_get_tolerance_field(void *rd, fcs_float* tolerance_field) {
 
 void ifcs_p3m_require_total_energy(void *rd, fcs_int flag) {
 	Solver *d = static_cast<Solver *>(rd);
-	d->require_total_energy = flag;
+	d->setRequireTotalEnergy(flag);
 }
 
 FCSResult ifcs_p3m_get_total_energy(void *rd, fcs_float *total_energy) {
 	const char* fnc_name = "ifcs_p3m_get_total_energy";
 	Solver *d = static_cast<Solver *>(rd);
-	if (d->require_total_energy) {
-		*total_energy = d->total_energy;
+	try {
+	    *total_energy = d->getTotalEnergy();
 		return FCS_RESULT_SUCCESS;
-	} else
-		return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name,
-				"Trying to get total energy, but computation was not requested.");
+	} catch (std::logic_error &e) {
+	    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name,
+	            "Trying to get total energy, but computation was not requested.");
+	}
 }
 
 void ifcs_p3m_require_timings(void *rd, fcs_int flag) {
 	Solver *d = static_cast<Solver *>(rd);
 	switch (flag) {
 	case 0:
-		d->require_timings = NONE;
+		d->setRequireTimings(P3M::Solver::NONE);
 		break;
 	case 1:
-		d->require_timings = ESTIMATE_ALL;
-		break;
-	case 2:
-		d->require_timings = ESTIMATE_FFT;
-		break;
-	case 3:
-		d->require_timings = ESTIMATE_ASSIGNMENT;
-		break;
-	case 4:
-		d->require_timings = FULL;
+		d->setRequireTimings(P3M::Solver::FULL);
 		break;
 	}
 }
@@ -255,13 +247,15 @@ FCSResult ifcs_p3m_get_timings(void *rd, double *timing,
 	const char* fnc_name = "ifcs_p3m_get_timings";
 	Solver *d = static_cast<Solver *>(rd);
 
-	if (d->require_timings == NONE)
+	try {
+	    const double* timings = d->getTimings();
+	    *timing = timings[P3M::Solver::TOTAL];
+	    *timing_near_field = timings[P3M::Solver::NEAR];
+	    *timing_far_field = timings[P3M::Solver::FAR];
+	} catch (...) {
 		return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name,
 				"Trying to get timings, but timings were not requested.");
-
-	*timing = d->timings[P3M::Solver::TIMING];
-	*timing_near_field = d->timings[P3M::Solver::TIMING_NEAR];
-	*timing_far_field = d->timings[P3M::Solver::TIMING_FAR];
+	}
 
 	return NULL;
 }

@@ -165,6 +165,14 @@ int main (int argc, char **argv)
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
+  if (my_rank == 0) {
+    fprintf(stderr, "----------------\n");
+    fprintf(stderr, "Running pp3mg test\n");
+    fprintf(stderr, "----------------\n");
+    fprintf(stderr, "Setting up MPI...\n");
+    fprintf(stderr, "  Using %d tasks.\n", mpi_size);
+  }
+
   if(argc == 1) {
     printf("No config file was specified!\n");
     MPI_Finalize();

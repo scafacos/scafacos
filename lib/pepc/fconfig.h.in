@@ -27,6 +27,12 @@
 ! Define to the kind of fcs_integer.
 #undef fcs_integer_kind
 
+! Define to the ISO C kind of fcs_real.
+#undef fcs_real_kind_isoc
+
+! Define to the ISO C kind of fcs_integer.
+#undef fcs_integer_kind_isoc
+
 ! Define if info output is enabled.
 #undef FCS_ENABLE_INFO
 

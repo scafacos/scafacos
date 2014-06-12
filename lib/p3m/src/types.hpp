@@ -43,10 +43,6 @@ const p3m_float P3M_DEFAULT_TOLERANCE_FIELD = 1.0e-3;
 /* #define ADDITIONAL_CHECKS */
 /* Define to print out timings at the end of run */
 //#define P3M_PRINT_TIMINGS
-/*enumeration to specify the type of timings*/
-enum timingEnum {
-	NONE, ESTIMATE_ALL, ESTIMATE_FFT, ESTIMATE_ASSIGNMENT, FULL
-};
 
 /* COMPILE TIME SWITCHES */
 /* Differentiation method */
@@ -76,6 +72,8 @@ const p3m_float P3M_RCUT_PREC = 1.0e-3;
  AS_erfc_part() for \f$\exp(d^2) erfc(d)\f$, or the C function erfc
  in P3M and Ewald summation. */
 #define P3M_USE_ERFC_APPROXIMATION 1
+
+static const char* P3M_FFTW_WISDOM_FILENAME = "fftw-wisdom.dat";
 
 /** Number of Brillouin zones taken into account in the calculation of
  the optimal influence function (aliasing sums). */
@@ -167,6 +165,51 @@ struct Parameters {
 	p3m_int grid[3];
 	/** charge assignment order ([0,P3M_MAX_CAO]). */
 	p3m_int cao;
+};
+
+struct TuneParameters {
+    TuneParameters() {
+        r_cut = alpha = -1.0;
+        cao = grid[0] = grid[1] = grid[2] = -1;
+        error = ks_error = rs_error = -1.0;
+        timing = timing_near = timing_far = -1.0;
+    }
+
+    TuneParameters(Parameters &p) {
+        r_cut = p.r_cut;
+        alpha = p.alpha;
+        cao = p.cao;
+        grid[0] = p.grid[0];
+        grid[1] = p.grid[1];
+        grid[2] = p.grid[2];
+        error = ks_error = rs_error = -1.0;
+        timing = timing_near = timing_far = -1.0;
+    }
+
+    operator Parameters() {
+        Parameters p;
+        p.r_cut = r_cut;
+        p.alpha = alpha;
+        p.cao = cao;
+        p.grid[0] = grid[0];
+        p.grid[1] = grid[1];
+        p.grid[2] = grid[2];
+        return p;
+    }
+
+    /** cutoff radius */
+    p3m_float r_cut;
+    /** Ewald splitting parameter */
+    p3m_float alpha;
+    /** number of grid points per coordinate direction (>0). */
+    p3m_int grid[3];
+    /** charge assignment order ([0,P3M_MAX_CAO]). */
+    p3m_int cao;
+
+    /** Errors */
+    p3m_float rs_error, ks_error, error;
+    /** Timings */
+    p3m_float timing, timing_near, timing_far;
 };
 
 }

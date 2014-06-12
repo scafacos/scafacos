@@ -4,7 +4,7 @@
 ###################################################
 
 # Traverse these subdirectories, the current one first (for config.h).
-SUBDIRS = . lib src package test
+SUBDIRS = . lib src package test python
 
 if ENABLE_DOC
 SUBDIRS += doc

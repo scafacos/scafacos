@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2014 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -135,11 +135,11 @@ module module_domains
     real*8, allocatable :: workload(:)
     integer(kind_default), allocatable :: irnkl2(:)
 
-#ifdef SL_PEPC_PREFIX
-# define CONCAT_(_x_, _y_)  _x_##_y_
-# define CONCAT(_x_, _y_)   CONCAT_(_x_, _y_)
-# define sl_pepc_sort_keys  CONCAT(SL_PEPC_PREFIX, sl_pepc_sort_keys)
-#endif
+    #ifdef SL_PEPC_PREFIX
+    # define CONCAT_(_x_, _y_)  _x_##_y_
+    # define CONCAT(_x_, _y_)   CONCAT_(_x_, _y_)
+    # define sl_pepc_sort_keys  CONCAT(SL_PEPC_PREFIX, sl_pepc_sort_keys)
+    #endif
 
     interface
       subroutine sl_pepc_sort_keys(nin, nmax, keys, workload, balance_weight, max_imbalance, nout, indxl, &

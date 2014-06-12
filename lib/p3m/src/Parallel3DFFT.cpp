@@ -40,8 +40,9 @@
 #define fftw_destroy_plan  FFTW_MANGLE(destroy_plan)
 #define fftw_execute  FFTW_MANGLE(execute)
 #define fftw_execute_dft  FFTW_MANGLE(execute_dft)
-#define fftw_import_wisdom_from_file  FFTW_MANGLE(import_wisdom_from_file)
-#define fftw_export_wisdom_to_file  FFTW_MANGLE(export_wisdom_to_file)
+#define fftw_import_system_wisdom  FFTW_MANGLE(import_system_wisdom)
+#define fftw_import_wisdom_from_filename  FFTW_MANGLE(import_wisdom_from_filename)
+#define fftw_export_wisdom_to_filename  FFTW_MANGLE(export_wisdom_to_filename)
 
 namespace P3M {
 /***************************************************/
@@ -106,41 +107,50 @@ void Parallel3DFFT::forward_plan::print() {
 }
 
 Parallel3DFFT::Parallel3DFFT(Communication &comm) : comm(comm) {
-	for (int i = 0; i < 4; i++) {
-		plan[i].group = new int[comm.size];
-		plan[i].send_block = NULL;
-		plan[i].send_size = NULL;
-		plan[i].recv_block = NULL;
-		plan[i].recv_size = NULL;
-	}
-
-	is_prepared = false;
-	max_comm_size = 0;
-	max_grid_size = 0;
-	send_buf = NULL;
-	recv_buf = NULL;
-	data_buf = NULL;
+  for (int i = 0; i < 4; i++) {
+    plan[i].group = new int[comm.size];
+    plan[i].send_block = NULL;
+    plan[i].send_size = NULL;
+    plan[i].recv_block = NULL;
+    plan[i].recv_size = NULL;
+  }
+  
+  is_prepared = false;
+  max_comm_size = 0;
+  max_grid_size = 0;
+  send_buf = NULL;
+  recv_buf = NULL;
+  
+  // import fftw wisdom
+  fftw_import_system_wisdom();
+  fftw_import_wisdom_from_filename(P3M_FFTW_WISDOM_FILENAME);
 }
-
+  
 Parallel3DFFT::~Parallel3DFFT() {
-	for (int i = 0; i < 4; i++) {
-		sdelete(plan[i].group);
-		sfree(plan[i].send_block);
-		sfree(plan[i].send_size);
-		sfree(plan[i].recv_block);
-		sfree(plan[i].recv_size);
-	}
-	sfree(send_buf);
-	sfree(recv_buf);
-	if (data_buf != NULL) {
-		fftw_free(data_buf);
-		data_buf = NULL;
-	}
+  // store wisdom
+  fftw_export_wisdom_to_filename(P3M_FFTW_WISDOM_FILENAME);
+
+  for (int i = 0; i < 4; i++) {
+    sdelete(plan[i].group);
+    sfree(plan[i].send_block);
+    sfree(plan[i].send_size);
+    sfree(plan[i].recv_block);
+    sfree(plan[i].recv_size);
+  }
+  sfree(send_buf);
+  sfree(recv_buf);
 }
 
 p3m_float* Parallel3DFFT::malloc_data() {
-	return static_cast<p3m_float*>(fftw_malloc(
-			max_grid_size * sizeof(p3m_float)));
+    if (!is_prepared)
+        throw std::logic_error("Error: Parallel3DFFT "
+                "was not prepared before malloc_data was called.");
+    return _malloc_data();
+}
+
+p3m_float* Parallel3DFFT::_malloc_data() {
+    return static_cast<p3m_float*>(fftw_malloc(
+            max_grid_size * sizeof(p3m_float)));
 }
 
 void Parallel3DFFT::free_data(p3m_float* data) {
@@ -367,74 +377,36 @@ void Parallel3DFFT::prepare(p3m_int *local_grid_dim, p3m_int *local_grid_margin,
 	recv_buf = (p3m_float *) realloc(recv_buf,
 			max_comm_size * sizeof(p3m_float));
 
-	if (data_buf != NULL)
-		free_data(data_buf);
-	data_buf = malloc_data();
-
-	if (!data_buf || !recv_buf || !send_buf)
+	if (!recv_buf || !send_buf)
 		throw std::logic_error("Could not allocate FFT data arrays");
 
+	p3m_float* data_buf = _malloc_data();
 	fftw_complex *c_data_buf = reinterpret_cast<fftw_complex*>(data_buf);
 
 	/* FFTW WISDOM stuff. */
 	/* @todo: Planning shouldn't write to file. */
 	/* === FFT Routines (Using FFTW / RFFTW package)=== */
 	for (int i = 1; i < 4; i++) {
-		plan[i].dir = FFTW_FORWARD;
-		/* FFT plan creation.
-		 Attention: destroys contents of c_data/data and c_data_buf/data_buf. */
-		int wisdom_status = FFTW_FAILURE;
-		char wisdom_file_name[255];
-		sprintf(wisdom_file_name, "fftw3_1d_wisdom_forw_n%d.file",
-				plan[i].new_grid[2]);
-		FILE* wisdom_file = fopen(wisdom_file_name, "r");
-		if (wisdom_file != NULL) {
-			wisdom_status = fftw_import_wisdom_from_file(wisdom_file);
-			fclose(wisdom_file);
-		}
-		if (is_prepared)
-			fftw_destroy_plan(plan[i].plan);
-		//printf("plan[%d].n_ffts=%d\n",i,plan[i].n_ffts);
-		plan[i].plan =
-		fftw_plan_many_dft(1, &plan[i].new_grid[2], plan[i].n_ffts, c_data_buf,
-				NULL, 1, plan[i].new_grid[2], c_data_buf, NULL, 1,
-				plan[i].new_grid[2], plan[i].dir, FFTW_PATIENT);
-
-		if (wisdom_status == FFTW_FAILURE) {
-			FILE* wisdom_file = fopen(wisdom_file_name, "w");
-			if (wisdom_file != NULL) {
-				fftw_export_wisdom_to_file(wisdom_file);
-				fclose(wisdom_file);
-			}
-		}
+          plan[i].dir = FFTW_FORWARD;
+          if (is_prepared)
+            fftw_destroy_plan(plan[i].plan);
+          //printf("plan[%d].n_ffts=%d\n",i,plan[i].n_ffts);
+          plan[i].plan =
+            fftw_plan_many_dft(1, &plan[i].new_grid[2], plan[i].n_ffts, c_data_buf,
+                               NULL, 1, plan[i].new_grid[2], c_data_buf, NULL, 1,
+                               plan[i].new_grid[2], plan[i].dir, FFTW_PATIENT);
 	}
 
 	/* === The BACK Direction === */
 	/* this is needed because slightly different functions are used */
 	for (int i = 1; i < 4; i++) {
 		back[i].dir = FFTW_BACKWARD;
-		int wisdom_status = FFTW_FAILURE;
-		char wisdom_file_name[255];
-		sprintf(wisdom_file_name, "fftw3_1d_wisdom_back_n%d.file",
-				plan[i].new_grid[2]);
-		FILE* wisdom_file = fopen(wisdom_file_name, "r");
-		if (wisdom_file != NULL) {
-			wisdom_status = fftw_import_wisdom_from_file(wisdom_file);
-			fclose(wisdom_file);
-		}
 		if (is_prepared)
 			fftw_destroy_plan(back[i].plan);
 		back[i].plan =
 		fftw_plan_many_dft(1, &plan[i].new_grid[2], plan[i].n_ffts, c_data_buf,
 				NULL, 1, plan[i].new_grid[2], c_data_buf, NULL, 1,
 				plan[i].new_grid[2], back[i].dir, FFTW_PATIENT);
-		if (wisdom_status == FFTW_FAILURE) {
-			FILE* wisdom_file = fopen(wisdom_file_name, "w");
-			if (wisdom_file != NULL) {
-				fftw_export_wisdom_to_file(wisdom_file);
-				fclose(wisdom_file);
-			}
-		}
 		back[i].pack_function = pack_block_permute1;
 		P3M_DEBUG(printf("      back plan[%d] permute 1 \n", i));
 	}
@@ -445,17 +417,17 @@ void Parallel3DFFT::prepare(p3m_int *local_grid_dim, p3m_int *local_grid_margin,
 		back[1].pack_function = pack_block_permute2;
 		P3M_DEBUG(printf("      back plan[%d] permute 2 \n", 1));
 	}
-	is_prepared = true;
-
+	free_data(data_buf);
 	for (int i = 0; i < 4; i++) {
 		delete[] n_id[i];
 		delete[] n_pos[i];
 	}
 
+    is_prepared = true;
 	P3M_DEBUG(printf("    prepare() finished.\n"));
 } /* end of PREPARE */
 
-void Parallel3DFFT::forward(p3m_float *data) {
+void Parallel3DFFT::forward(p3m_float *data, p3m_float* buffer) {
 	p3m_int i;
 
 	/* int m,n,o; */
@@ -463,10 +435,10 @@ void Parallel3DFFT::forward(p3m_float *data) {
 	P3M_DEBUG(printf("    %d: fft_perform_forward: dir 1:\n", comm.rank));
 
 	fftw_complex *c_data = (fftw_complex *) data;
-	fftw_complex *c_data_buf = (fftw_complex *) data_buf;
+	fftw_complex *c_buffer = (fftw_complex *) buffer;
 
 	/* communication to current dir row format (in is data) */
-	forward_grid_comm(plan[1], data, data_buf);
+	forward_grid_comm(plan[1], data, buffer);
 
 	/*
 	 printf("%d: start grid \n",comm.rank);
@@ -474,7 +446,7 @@ void Parallel3DFFT::forward(p3m_float *data) {
 	 for(m=0;m<8;m++) {
 	 for(n=0;n<8;n++) {
 	 for(o=0;o<8;o++) {
-	 printf("%.3f ",data_buf[i++]);
+	 printf("%.3f ",buffer[i++]);
 	 }
 	 printf("\n");
 	 }
@@ -482,15 +454,15 @@ void Parallel3DFFT::forward(p3m_float *data) {
 	 }
 	 */
 
-	/* complexify the real data array (in is data_buf) */
+	/* complexify the real data array (in is buffer) */
 #ifndef P3M_INTERLACE
 	for (i = 0; i < plan[1].new_size; i++) {
-		data[2 * i] = data_buf[i]; /* real value */
+		data[2 * i] = buffer[i]; /* real value */
 		data[(2 * i) + 1] = 0; /* complex value */
 	}
 #else
 	for(i=0;i<(2*plan[1].new_size);i++)
-	data[i] = data_buf[i]; /* real value */
+	data[i] = buffer[i]; /* real value */
 #endif
 	/* perform FFT (in/out is data)*/
 	fftw_execute_dft(plan[1].plan, c_data, c_data);
@@ -498,13 +470,13 @@ void Parallel3DFFT::forward(p3m_float *data) {
 	/* ===== second direction ===== */
 	P3M_DEBUG_LOCAL(printf("    %d: fft_perform_forward: dir 2\n", comm.rank));
 	/* communication to current dir row format (in is data) */
-	forward_grid_comm(plan[2], data, data_buf);
-	/* perform FFT (in/out is data_buf)*/
-	fftw_execute_dft(plan[2].plan, c_data_buf, c_data_buf);
+	forward_grid_comm(plan[2], data, buffer);
+	/* perform FFT (in/out is buffer)*/
+	fftw_execute_dft(plan[2].plan, c_buffer, c_buffer);
 	/* ===== third direction  ===== */
 	P3M_DEBUG_LOCAL(printf("    %d: fft_perform_forward: dir 3\n", comm.rank));
-	/* communication to current dir row format (in is data_buf) */
-	forward_grid_comm(plan[3], data_buf, data);
+	/* communication to current dir row format (in is buffer) */
+	forward_grid_comm(plan[3], buffer, data);
 	/* perform FFT (in/out is data)*/
 	fftw_execute_dft(plan[3].plan, c_data, c_data);
 	//P3M_DEBUG_LOCAL(print_global_grid(comm, plan[3], data, 1, 0));
@@ -512,11 +484,11 @@ void Parallel3DFFT::forward(p3m_float *data) {
 	// REMARK: Result has to be in data.
 }
 
-void Parallel3DFFT::backward(p3m_float *data) {
+void Parallel3DFFT::backward(p3m_float *data, p3m_float* buffer) {
 	p3m_int i;
 
 	fftw_complex *c_data = (fftw_complex *) data;
-	fftw_complex *c_data_buf = (fftw_complex *) data_buf;
+	fftw_complex *c_buffer = (fftw_complex *) buffer;
 
 	/* ===== third direction  ===== */
 	P3M_DEBUG(printf("    %d: backward: dir 3\n", comm.rank));
@@ -524,14 +496,14 @@ void Parallel3DFFT::backward(p3m_float *data) {
 	/* perform FFT (in is data) */
 	fftw_execute_dft(back[3].plan, c_data, c_data);
 	/* communicate (in is data)*/
-	backward_grid_comm(plan[3], back[3], data, data_buf);
+	backward_grid_comm(plan[3], back[3], data, buffer);
 
 	/* ===== second direction ===== */
 	P3M_DEBUG_LOCAL(printf("    %d: back: dir 2\n", comm.rank));
-	/* perform FFT (in is data_buf) */
-	fftw_execute_dft(back[2].plan, c_data_buf, c_data_buf);
-	/* communicate (in is data_buf) */
-	backward_grid_comm(plan[2], back[2], data_buf, data);
+	/* perform FFT (in is buffer) */
+	fftw_execute_dft(back[2].plan, c_buffer, c_buffer);
+	/* communicate (in is buffer) */
+	backward_grid_comm(plan[2], back[2], buffer, data);
 
 	/* ===== first direction  ===== */
 	P3M_DEBUG_LOCAL(printf("    %d: backward: dir 1\n", comm.rank));
@@ -540,7 +512,7 @@ void Parallel3DFFT::backward(p3m_float *data) {
 #ifndef P3M_INTERLACE
 	/* throw away the (hopefully) empty complex component (in is data)*/
 	for (i = 0; i < plan[1].new_size; i++)
-		data_buf[i] = data[2 * i]; /* real value */
+		buffer[i] = data[2 * i]; /* real value */
 #ifdef ADDITIONAL_CHECKS
 	for (i = 0; i < plan[1].new_size; i++)
 		if (data[2 * i + 1] > 1e-5) {
@@ -553,10 +525,10 @@ void Parallel3DFFT::backward(p3m_float *data) {
 #else
 	/* keep imaginary part */
 	for (i=0; i<(2*plan[1].new_size); i++)
-	data_buf[i] = data[i];
+	buffer[i] = data[i];
 #endif
-	/* communicate (in is data_buf) */
-	backward_grid_comm(plan[1], back[1], data_buf, data);
+	/* communicate (in is buffer) */
+	backward_grid_comm(plan[1], back[1], buffer, data);
 
 	/* REMARK: Result has to be in data. */
 }
@@ -1018,6 +990,17 @@ void Parallel3DFFT::add_block(p3m_float *in, p3m_float *out,
         }
         li_out += s_out_offset;
     }
+}
+
+p3m_int Parallel3DFFT::getKSSize() const {
+    return plan[3].new_size;
+}
+
+
+void Parallel3DFFT::getKSExtent(const p3m_int*& offset,
+        const p3m_int*& size) const {
+    offset = plan[3].start;
+    size = plan[3].new_grid;
 }
 
 /** Debug function to print global fft grid.

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012 Olaf Lenz, Michael Hofmann
+  Copyright (C) 2011,2012,2013,2014 Olaf Lenz, Michael Hofmann
   
   This file is part of ScaFaCoS.
   
@@ -147,7 +147,7 @@ void compute_errors(errors_t *e, fcs_int nparticles,
       local_max[idx_potential_error_sqr].pid = pid_offset + pid;
     }
 
-    // count valid poential values
+    // count valid potential values
     ++local_nparticles[1];
   }
 
@@ -162,81 +162,34 @@ void compute_errors(errors_t *e, fcs_int nparticles,
   }
 
   if (e->have_field_errors)
-  for (fcs_int pid = 0; pid < nparticles; pid++) {
-    const fcs_float *res_field = &result_field[3*pid];
-    const fcs_float *ref_field = &reference_field[3*pid];
+      for (fcs_int pid = 0; pid < nparticles; pid++) {
+          const fcs_float *res_field = &result_field[3*pid];
+          const fcs_float *ref_field = &reference_field[3*pid];
 
-    if (isnan(res_field[0]) || isnan(res_field[1]) || isnan(res_field[2]) || isnan(ref_field[0]) || isnan(ref_field[1]) || isnan(ref_field[2])) continue;
+          if (isnan(res_field[0]) || isnan(res_field[1]) || isnan(res_field[2]) ||
+                  isnan(ref_field[0]) || isnan(ref_field[1]) || isnan(ref_field[2]))
+              continue;
 
-    // compute field sum
-    local_sum[idx_field_sqr] += res_field[0]*res_field[0] + res_field[1]*res_field[1] + res_field[2]*res_field[2];
+          // compute field sum
+          local_sum[idx_field_sqr] += res_field[0]*res_field[0] + res_field[1]*res_field[1] + res_field[2]*res_field[2];
 
-    // compute field error sum
-    fcs_float dx = res_field[0]-ref_field[0];
-    fcs_float dy = res_field[1]-ref_field[1];
-    fcs_float dz = res_field[2]-ref_field[2];
-    fcs_float field_error_sqr = dx*dx + dy*dy + dz*dz;
-    local_sum[idx_field_error_sqr] += field_error_sqr;
+          // compute field error sum
+          fcs_float dx = res_field[0] - ref_field[0];
+          fcs_float dy = res_field[1] - ref_field[1];
+          fcs_float dz = res_field[2] - ref_field[2];
+          fcs_float field_error_sqr = dx*dx + dy*dy + dz*dz;
+          local_sum[idx_field_error_sqr] += field_error_sqr;
 
-    // compute field error max
-    if (field_error_sqr > local_max[idx_field_error_sqr].val) {
-      local_max[idx_field_error_sqr].val = field_error_sqr;
-      local_max[idx_field_error_sqr].pid = pid_offset + pid;
-    }
+          // compute field error max
+          if (field_error_sqr > local_max[idx_field_error_sqr].val) {
+              local_max[idx_field_error_sqr].val = field_error_sqr;
+              local_max[idx_field_error_sqr].pid = pid_offset + pid;
+          }
 
-    // count valid field values
-    ++local_nparticles[2];
-  }
+          // count valid field values
+          ++local_nparticles[2];
+      }
 
-#ifdef FCS_ENABLE_DEBUG
-#define NUM_PARTICLES_TO_PRINT 20
-  if (comm_rank==MASTER_RANK && (e->have_potential_errors || e->have_field_errors)) {
-    for (fcs_int pid = 0; 
-	 pid < (nparticles>NUM_PARTICLES_TO_PRINT ? NUM_PARTICLES_TO_PRINT : nparticles); 
-	 pid++) {
-      const fcs_float *pos = &positions[3*pid];
-      const fcs_float &q = charges[pid];
-      
-      cout << pid << ": "
-	   << setw(15) << "position ="
-	   << setw(15) << pos[0] << setw(15) << pos[1] << setw(15) << pos[2] << endl;
-      cout << pid << ": " 
-	   << setw(15) << "q ="
-	   << setw(15) << q  << endl;
-      
-      if (e->have_potential_errors)
-	{
-	  const fcs_float &res_potential = result_potentials[pid];
-	  const fcs_float &ref_potential = reference_potentials[pid];
-	  cout << pid << ": " 
-	       << setw(15) << "potential ="
-	       << setw(15) << res_potential << endl;
-	  cout << pid << ": " 
-	       << setw(15) << "ref_pot ="
-	       << setw(15) << ref_potential << endl;
-	}
-      
-      if (e->have_field_errors)
-	{
-	  const fcs_float *res_field = &result_field[3*pid];
-	  const fcs_float *ref_field = &reference_field[3*pid];
-	  cout << pid << ": " 
-	       << setw(15) << "field ="
-	       << setw(15) << res_field[0] 
-	       << setw(15) << res_field[1] 
-	       << setw(15) << res_field[2] << endl;
-	  cout << pid << ": " 
-	       << setw(15) << "ref_field ="
-	       << setw(15) << ref_field[0] 
-	       << setw(15) << ref_field[1] 
-	       << setw(15) << ref_field[2] << endl;
-	}
-    }
-    if (nparticles > NUM_PARTICLES_TO_PRINT)
-      cout << "  (" << (nparticles-NUM_PARTICLES_TO_PRINT) << " more on #" 
-	   << comm_rank << ")" << endl;
-  }
-#endif
 
   MPI_Allreduce(local_nparticles, global_nparticles, 3, FCS_MPI_INT, MPI_SUM, comm);
 
@@ -250,6 +203,112 @@ void compute_errors(errors_t *e, fcs_int nparticles,
     MPI_DOUBLE_INT,
 #endif
     MPI_MAXLOC, comm);
+
+#ifdef FCS_ENABLE_DEBUG
+#define NUM_PARTICLES_TO_PRINT 20
+  if (comm_rank==MASTER_RANK && (e->have_potential_errors || e->have_field_errors)) {
+    for (fcs_int pid = 0; 
+     pid < (nparticles>NUM_PARTICLES_TO_PRINT ? NUM_PARTICLES_TO_PRINT : nparticles);
+     pid++) {
+      const fcs_float *pos = &positions[3*pid];
+      const fcs_float &q = charges[pid];
+      
+      cout << pid << ": "
+       << setw(15) << "position ="
+       << setw(15) << pos[0] << setw(15) << pos[1] << setw(15) << pos[2] << endl;
+      cout << pid << ": " 
+       << setw(15) << "q ="
+       << setw(15) << q  << endl;
+      
+      if (e->have_potential_errors) {
+          const fcs_float &res_potential = result_potentials[pid];
+          const fcs_float &ref_potential = reference_potentials[pid];
+          cout << pid << ": "
+                  << setw(15) << "potential ="
+                  << setw(15) << res_potential << endl;
+          cout << pid << ": "
+                  << setw(15) << "ref_pot ="
+                  << setw(15) << ref_potential << endl;
+      }
+
+      if (e->have_field_errors)
+      {
+          const fcs_float *res_field = &result_field[3*pid];
+          const fcs_float *ref_field = &reference_field[3*pid];
+          cout << pid << ": "
+                  << setw(15) << "field ="
+                  << setw(15) << res_field[0]
+                  << setw(15) << res_field[1]
+                  << setw(15) << res_field[2] << endl;
+          cout << pid << ": "
+                  << setw(15) << "ref_field ="
+                  << setw(15) << ref_field[0]
+                  << setw(15) << ref_field[1]
+                  << setw(15) << ref_field[2] << endl;
+      }
+    }
+    if (nparticles > NUM_PARTICLES_TO_PRINT)
+      cout << "  (" << (nparticles-NUM_PARTICLES_TO_PRINT) << " more on #" 
+       << comm_rank << ")" << endl;
+  }
+
+  MPI_Barrier(comm);
+  for (int i = 0; i < comm_size; i++) {
+      if (i == comm_rank) {
+          if (e->have_field_errors) {
+              cout << "#" << comm_rank << ": Particle with maximal field error:" << endl;
+
+              const fcs_int pid = local_max[idx_field_error_sqr].pid - pid_offset;
+              const fcs_float *res_field = &result_field[3*pid];
+              const fcs_float *ref_field = &reference_field[3*pid];
+              const fcs_float *pos = &positions[3*pid];
+              const fcs_float &q = charges[pid];
+
+              cout << pid << ": "
+                      << setw(15) << "position ="
+                      << setw(15) << pos[0] << setw(15) << pos[1] << setw(15) << pos[2] << endl;
+              cout << pid << ": "
+                      << setw(15) << "q ="
+                      << setw(15) << q  << endl;
+
+              cout << pid << ": "
+                      << setw(15) << "field ="
+                      << setw(15) << res_field[0]
+                                               << setw(15) << res_field[1]
+                                                                        << setw(15) << res_field[2] << endl;
+              cout << pid << ": "
+                      << setw(15) << "ref_field ="
+                      << setw(15) << ref_field[0]
+                                               << setw(15) << ref_field[1]
+                                                                        << setw(15) << ref_field[2] << endl;
+          }
+
+          if (e->have_potential_errors) {
+              cout << "#" << comm_rank << ": Particle with maximal potential error:" << endl;
+
+              const fcs_int pid = local_max[idx_potential_error_sqr].pid - pid_offset;
+              const fcs_float *pos = &positions[3*pid];
+              const fcs_float &q = charges[pid];
+              const fcs_float &res_potential = result_potentials[pid];
+              const fcs_float &ref_potential = reference_potentials[pid];
+              cout << pid << ": "
+                      << setw(15) << "position ="
+                      << setw(15) << pos[0] << setw(15) << pos[1] << setw(15) << pos[2] << endl;
+              cout << pid << ": "
+                      << setw(15) << "q ="
+                      << setw(15) << q  << endl;
+              cout << pid << ": "
+                      << setw(15) << "potential ="
+                      << setw(15) << res_potential << endl;
+              cout << pid << ": "
+                      << setw(15) << "ref_pot ="
+                      << setw(15) << ref_potential << endl;
+          }
+      }
+      MPI_Barrier(comm);
+  }
+#endif
+  MPI_Barrier(comm);
 
   // sums of the squared potentials/field error
   e->sum_potential_error_sqr = global_sum[idx_potential_error_sqr];

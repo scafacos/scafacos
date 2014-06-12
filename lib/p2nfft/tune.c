@@ -51,10 +51,8 @@
 #define At_TIMES_VEC(_A_, _v_, _d_) ( (_v_)[0] * (_A_)[_d_] + (_v_)[1] * (_A_)[_d_ + 3] + (_v_)[2] * (_A_)[_d_ + 6] )
 
 /* FORWARD DECLARATIONS OF STATIC FUNCTIONS */
-#if FCS_ENABLE_INFO 
 static void print_command_line_arguments(
     ifcs_p2nfft_data_struct *d, fcs_int verbose);
-#endif
 static void init_near_interpolation_table_potential_3dp(
     fcs_int num_nodes,
     fcs_float r_cut, fcs_float alpha,
@@ -117,12 +115,12 @@ static fcs_float p2nfft_real_space_error(
 static fcs_float p2nfft_tune_alpha(
     fcs_int sum_qpart, fcs_float sum_q2, fcs_int dim_tune,
     fcs_float box_l[3], fcs_float r_cut, ptrdiff_t grid[3],
-    fcs_int cao, fcs_float tolerance_field);
+    fcs_int cao, fcs_float tolerance_field, fcs_int plain_ewald_flag);
 static fcs_float p2nfft_get_accuracy(
     fcs_int sum_qpart, fcs_float sum_q2, fcs_int dim_tune,
     fcs_float box_l[3], fcs_float r_cut, ptrdiff_t grid[3],
     fcs_int cao, fcs_float tolerance_field,
-    fcs_float alpha, fcs_int interlaced,
+    fcs_float alpha, fcs_int interlaced, fcs_int plain_ewald_flag,
     fcs_float *rs_err, fcs_float *ks_err);
 static fcs_float p2nfft_k_space_error(
     fcs_int N, fcs_float sum_q2, fcs_int dim_tune,
@@ -180,6 +178,93 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
 
 static fcs_int is_cubic(
     fcs_float *box_l);
+
+
+/** Computes the real space contribution to the rms error in the
+   force (as described by Kolafa and Perram) as well as its
+   derivative.
+   \param N the number of charged particles in the system.
+   \param sum_q2 the sum of square of charges in the system
+   \param box_l fcs_float[3] system size
+   \param r_cut the real-space cutoff
+   \param alpha the Ewald splitting parameter
+   \param error (out) the real space error
+   \param derivative (out) the derivative of the real space error
+*/
+static inline void
+ewald_real_space_error(
+    fcs_int N, fcs_float sum_q2, fcs_float box_l[3],
+    fcs_float r_cut, fcs_float alpha,
+    fcs_float *error, fcs_float *derivative
+    )
+{
+  const fcs_float V = box_l[0]*box_l[1]*box_l[2];
+  *error = 2.0*sum_q2 / fcs_sqrt(N*r_cut*V) * fcs_exp(- alpha*alpha * r_cut*r_cut);
+  *derivative = -2.0 * alpha * r_cut*r_cut * *error;
+}
+
+/** Computes the reciprocal space contribution to the rms error in the
+   force (as described by Kolafa and Perram) as well as its derivative.
+   \param N the number of charged particles in the system.
+   \param sum_q2 the sum of square of charges in the system
+   \param box_l fcs_float[3] system size
+   \param kmax the maximal k vector
+   \param alpha the Ewald splitting parameter
+   \param error (out) the recipocal space error
+   \param derivative (out) the derivative of the recipocal space error
+*/
+static inline void
+ewald_k_space_error(
+    fcs_int N, fcs_float sum_q2, fcs_float box_l[3],
+    fcs_int kmax, fcs_float alpha,
+    fcs_float *error, fcs_float *derivative
+    )
+{
+  fcs_float Lmax = box_l[0];
+  if (box_l[1] > Lmax) Lmax = box_l[1];
+  if (box_l[2] > Lmax) Lmax = box_l[2];
+  const fcs_float K = 2.0*M_PI*kmax/Lmax;
+  const fcs_float V = box_l[0]*box_l[1]*box_l[2];
+  const fcs_float fak1 = 2.0*sum_q2 / fcs_sqrt(N*M_PI*K*V) * fcs_exp(-K*K/(4.0*alpha*alpha));
+  *error = fak1 * alpha;
+  *derivative = fak1 * (2.0*alpha*alpha + kmax*kmax/(2.0*alpha*alpha));
+}
+
+static inline ptrdiff_t
+get_kmax(
+    ptrdiff_t gridsize
+    )
+{
+  return gridsize/2-1;
+}
+
+static inline fcs_float
+ewald_tune_alpha(
+    fcs_int N, fcs_float sum_q2, fcs_float box_l[3],
+    fcs_float r_cut, fcs_int kmax
+    )
+{
+  fcs_float alpha;
+  fcs_float err_r, der_r;
+  fcs_float err_k, der_k;
+  fcs_float alpha_diff;
+
+  /* Newton-Raphson method to find optimal alpha */
+  alpha = 0.1;
+  do {
+    /* get errors and derivatives */
+    ewald_real_space_error(N, sum_q2, box_l, r_cut, alpha, &err_r, &der_r);
+    ewald_k_space_error(N, sum_q2, box_l, kmax, alpha, &err_k, &der_k);
+    
+    alpha_diff = (err_r - err_k) / (der_r - der_k);
+    alpha -= alpha_diff;
+  } while (fcs_fabs(alpha_diff) > FCS_P2NFFT_ALPHA_OPT_PREC);
+
+  return alpha;
+}
+
+
+
 
 
 
@@ -317,7 +402,6 @@ FCSResult ifcs_p2nfft_tune(
     }
     d->periodicity[t] = periodicity[t];
   }
-  d->use_ewald = periodicity[0] || periodicity[1] || periodicity[2];  
   d->num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
   d->num_periodic_dims    = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
 
@@ -439,7 +523,7 @@ FCSResult ifcs_p2nfft_tune(
     }
 
     /* check user defined epsI and epsB */
-    if(d->num_nonperiodic_dims)
+    if(d->num_nonperiodic_dims > 0)
       if(!d->tune_epsI && !d->tune_epsB)
         if(d->epsI + d->epsB >= 0.5)
           return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Sum of epsI and epsB must be less than 0.5.");
@@ -448,7 +532,7 @@ FCSResult ifcs_p2nfft_tune(
     if(d->tune_p)
       d->p = 8;
 
-    if(d->use_ewald){
+    if(d->num_periodic_dims > 0){
       fcs_float ks_error, rs_error;
       /* PNFFT calculates with real space cutoff 2*m+2
        * Therefore m is one less than the P3M cao. */
@@ -477,13 +561,13 @@ FCSResult ifcs_p2nfft_tune(
       if(!d->tune_N && !d->tune_m){
         if(d->tune_alpha)
           d->alpha = p2nfft_tune_alpha(
-              d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao, d->tolerance);
+              d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao, d->tolerance, d->pnfft_direct);
         
         /* User specified N and cao. Therefore we do not necessarily need the error calculation. */
         if(~d->flags & FCS_P2NFFT_IGNORE_TOLERANCE){
           error = p2nfft_get_accuracy(
               d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao,
-              d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED,
+              d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED, d->pnfft_direct,
               &rs_error, &ks_error);
 
           /* Return error, if tuning of alpha failed. */
@@ -501,7 +585,7 @@ FCSResult ifcs_p2nfft_tune(
         
         /* tune the grid size N */
         if(d->tune_N){
-          for (i = FCS_P2NFFT_MINGRID; i <= FCS_P2NFFT_MAXGRID; i *= 2) {
+          for (i = FCS_P2NFFT_MINGRID; i <= FCS_P2NFFT_MAXGRID; /* see below */ ) {
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG  || FCS_P2NFFT_DEBUG_TUNING
             if(!comm_rank) printf("P2NFFT_INFO: r_cut = %" FCS_LMOD_FLOAT "f.\n", d->r_cut);
             if(!comm_rank) printf("P2NFFT_INFO: Trying grid size %" FCS_LMOD_INT "d.\n", i);
@@ -512,16 +596,21 @@ FCSResult ifcs_p2nfft_tune(
             d->N[t2] = 2*fcs_ceil(d->N[t0]*d->box_l[t2]/(d->box_l[t0]*2.0));
             if(d->tune_alpha)
               d->alpha = p2nfft_tune_alpha(
-                  d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao, d->tolerance);
+                  d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao, d->tolerance, d->pnfft_direct);
             error = p2nfft_get_accuracy(
                 d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao,
-                d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED,
+                d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED, d->pnfft_direct,
                 &rs_error, &ks_error);
 #if FCS_P2NFFT_DEBUG_TUNING
             if(!comm_rank) printf("P2NFFT_DEBUG_TUNING: error = %e, rs_error = %e, ks_error = %e, tolerance = %e.\n",
                 error, rs_error, ks_error, d->tolerance);
 #endif
             if (error < d->tolerance) break;
+
+            if(d->pnfft_direct)
+              i += 2;
+            else
+              i *= 2;
           }
 
           /* Return error, if tuning of N failed. */
@@ -531,14 +620,14 @@ FCSResult ifcs_p2nfft_tune(
         }
 
         /* tune m, only if we found a feasible gridsize N */
-        if(d->tune_m){
+        if(d->tune_m && !d->pnfft_direct){
           for (cao = 1; cao <= FCS_P2NFFT_MAXCAO; ++cao) {
             if(d->tune_alpha)
               d->alpha = p2nfft_tune_alpha(
-                  d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao, d->tolerance);
+                  d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao, d->tolerance, d->pnfft_direct);
             error = p2nfft_get_accuracy(
                 d->sum_qpart, d->sum_q2, dim_tune, d->box_l, d->r_cut, d->N, cao,
-                d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED,
+                d->tolerance, d->alpha, d->pnfft_flags & PNFFT_INTERLACED, d->pnfft_direct,
                 &rs_error, &ks_error);
             if (error < d->tolerance) break;
           }
@@ -975,15 +1064,15 @@ FCSResult ifcs_p2nfft_tune(
   init_pnfft(&d->pnfft, 3, d->N, d->n, d->x_max, d->m, d->pnfft_flags, d->pnfft_interpolation_order, d->pnfft_window,
       d->pfft_flags, d->pfft_patience, d->cart_comm_pnfft);
 
-#if FCS_ENABLE_INFO 
   /* Print the command line arguments that recreate this plan. */
   if(d->needs_retune){
-    if(!comm_rank) printf("P2NFFT_INFO: CMD ARGS: -c ");
-    print_command_line_arguments(d, 0);
-    if(!comm_rank) printf("P2NFFT_INFO: ALL CMD ARGS: -c ");
-    print_command_line_arguments(d, 1);
+    if(d->verbose_tuning){
+      if(!comm_rank) printf("P2NFFT_INFO: CMD ARGS: -c ");
+      print_command_line_arguments(d, 0);
+      if(!comm_rank) printf("P2NFFT_INFO: ALL CMD ARGS: -c ");
+      print_command_line_arguments(d, 1);
+    }
   }
-#endif
 
   d->needs_retune = 0;
 
@@ -1002,7 +1091,6 @@ FCSResult ifcs_p2nfft_tune(
   return NULL;
 }
 
-#if FCS_ENABLE_INFO 
 /* For verbose == 0 only print the user defined parameters. 
  * For verbose != 0 print also the parameters which where determined by the tuning. */
 static void print_command_line_arguments(
@@ -1100,6 +1188,8 @@ static void print_command_line_arguments(
       printf("pnfft_m,%" FCS_LMOD_INT "d,", d->m);
     if(verbose || d->pnfft_interpolation_order != 3)
       printf("pnfft_intpol_order,%" FCS_LMOD_INT "d,", d->pnfft_interpolation_order);
+    if(verbose || !d->pnfft_direct)
+      printf("pnfft_direct,%" FCS_LMOD_INT "d,", d->pnfft_direct);
     if(verbose || (d->pnfft_flags & PNFFT_PRE_PHI_HAT) )
       printf("pnfft_pre_phi_hat,%d,", (d->pnfft_flags & PNFFT_PRE_PHI_HAT) ? 1 : 0);
     if(verbose || (d->pnfft_flags & PNFFT_FFT_IN_PLACE) )
@@ -1136,7 +1226,6 @@ static void print_command_line_arguments(
     printf("\n");
   }
 }
-#endif
 
 static void init_near_interpolation_table_potential_3dp(
     fcs_int num_nodes,
@@ -2070,10 +2159,14 @@ static fcs_float p2nfft_real_space_error(
 static fcs_float p2nfft_tune_alpha(
     fcs_int sum_qpart, fcs_float sum_q2, fcs_int dim_tune,
     fcs_float box_l[3], fcs_float r_cut, ptrdiff_t grid[3],
-    fcs_int cao, fcs_float tolerance_field
+    fcs_int cao, fcs_float tolerance_field, fcs_int plain_ewald_flag
     )
 {
   fcs_float alpha, rs_err; 
+
+  /* use plain Ewald error formulae */
+  if (plain_ewald_flag)
+    return ewald_tune_alpha(sum_qpart, sum_q2, box_l, r_cut, get_kmax(grid[dim_tune]));
   
   /* calc the maximal real space error for the setting (i.e., set alpha to 0) */
   rs_err = p2nfft_real_space_error(sum_qpart, sum_q2, box_l, r_cut, 0.0);
@@ -2094,10 +2187,20 @@ static fcs_float p2nfft_get_accuracy(
     fcs_int sum_qpart, fcs_float sum_q2, fcs_int dim_tune,
     fcs_float box_l[3], fcs_float r_cut, ptrdiff_t grid[3],
     fcs_int cao, fcs_float tolerance_field,
-    fcs_float alpha, fcs_int interlaced,
+    fcs_float alpha, fcs_int interlaced, fcs_int plain_ewald_flag,
     fcs_float *rs_err, fcs_float *ks_err
     )
 {
+  if(plain_ewald_flag){
+    /* use plain Ewald error formulae */
+    fcs_float dummy_der_r, dummy_der_k;
+
+    ewald_real_space_error(sum_qpart, sum_q2, box_l, r_cut, alpha, rs_err, &dummy_der_r);
+    ewald_k_space_error(sum_qpart, sum_q2, box_l, get_kmax(grid[dim_tune]), alpha, ks_err, &dummy_der_k);
+
+    return fcs_sqrt( FCS_P2NFFT_SQR(*rs_err) + FCS_P2NFFT_SQR(*ks_err) );
+  }
+
   /* calculate real space and k space error for this alpha */
   *rs_err = p2nfft_real_space_error(sum_qpart, sum_q2, box_l, r_cut, alpha);
 
@@ -2107,14 +2210,12 @@ static fcs_float p2nfft_get_accuracy(
     full_estimate = alpha_h > FCS_P2NFFT_FULL_ESTIMATE_ALPHA_H_THRESHOLD;
   }
   
-//full_estimate=0;
-
   if (full_estimate)
     *ks_err = p2nfft_k_space_error(sum_qpart, sum_q2, dim_tune, box_l, grid, alpha, cao, interlaced);
   else
     *ks_err = p2nfft_k_space_error_approx(sum_qpart, sum_q2, dim_tune, box_l, grid, alpha, cao);
 
-  return fcs_sqrt(FCS_P2NFFT_SQR(*rs_err)+FCS_P2NFFT_SQR(*ks_err));
+  return fcs_sqrt( FCS_P2NFFT_SQR(*rs_err) + FCS_P2NFFT_SQR(*ks_err) );
 }
 
 /* Calculate the analytic expression of the error estimate for the

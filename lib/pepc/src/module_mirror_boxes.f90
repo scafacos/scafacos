@@ -1,6 +1,6 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
 ! 
-! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
+! Copyright (C) 2002-2014 Juelich Supercomputing Centre, 
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
 ! 
@@ -51,7 +51,7 @@ module module_mirror_boxes
       real*8 , public :: spatial_interaction_cutoff(3) = huge(0._8) * [1., 1., 1.]
       #endif
 
-      public calc_neighbour_boxes
+      public neighbour_boxes_prepare
       public init_movement_constraint
       public constrain_periodic
       public lattice_vect
@@ -97,12 +97,14 @@ module module_mirror_boxes
         !> stores their number in num_neighbour_boxes and their logical
         !> indices/coordinates in neighbour_boxes
         !>
-        subroutine calc_neighbour_boxes()
+        subroutine neighbour_boxes_prepare()
         use module_math_tools, only : cross_product
         implicit none
         integer :: i,j,k,idx
 
-         LatticeCenter = 0.5*(t_lattice_1 + t_lattice_2 + t_lattice_3) + LatticeOrigin
+          do_periodic = any(periodicity)
+
+          LatticeCenter = 0.5*(t_lattice_1 + t_lattice_2 + t_lattice_3) + LatticeOrigin
 
           if (allocated(neighbour_boxes)) deallocate(neighbour_boxes)
 
@@ -152,7 +154,7 @@ module module_mirror_boxes
           unit_box_volume = abs(dot_product(cross_product(t_lattice_1, t_lattice_2),t_lattice_3))
 
           call init_movement_constraint()
-        end subroutine calc_neighbour_boxes
+        end subroutine neighbour_boxes_prepare
 
 
         !>

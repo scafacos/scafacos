@@ -76,11 +76,11 @@ Run \texttt{make install} to install the header and library files (\ie, to \text
 Alternatively, the header and library files can be found in \texttt{src/} and \texttt{lib/}, respectively.
 
   \item[5)]
-A configuration file \texttt{scafacos-fcs.pc} for \texttt{pkg-config} is created in \texttt{packages/} and installed with \texttt{make install}.
+A configuration file \texttt{scafacos.pc} for \texttt{pkg-config} is created in \texttt{packages/} and installed with \texttt{make install}.
 Use the following commands to determine the compiler and linker flags required to integrate the library into an application program:
 \begin{alltt}
-  pkg-config --cflags scafacos-fcs
-  pkg-config --libs scafacos-fcs
+  pkg-config --cflags scafacos
+  pkg-config --libs scafacos
 \end{alltt}
 
 \end{enumerate}

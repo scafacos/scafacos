@@ -11,8 +11,11 @@ p3m.periodicity = (True, True, True)
 p3m.near_field_flag = True
 p3m.total_particles = 2
 
-positions = numpy.array([[0.5, 1.5], [1.0, 1.0], [1.0, 1.0]], dtype='double')
+positions = numpy.array([[0.5, 1.0, 1.0], [1.5, 1.0, 1.0]], dtype='double')
+print(positions)
 charges = numpy.array([1.0, -1.0], dtype='double')
+
+print(positions.reshape(6))
 
 p3m.tune(positions, charges)
 fields, potentials = p3m(positions, charges)

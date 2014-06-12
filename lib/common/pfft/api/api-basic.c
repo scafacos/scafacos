@@ -48,6 +48,8 @@ static void vector_index(
     int rnk, INT k, const INT *n,
     INT *kvec);
 
+static void complex_conjugate(
+    const R* in, R* out, const int rnk_n, const INT *local_n);
 
 /* wrappers for fftw init and cleanup */
 void PX(init) (void){
@@ -105,6 +107,23 @@ static void vector_index(
     k = (k - kvec[t])/n[t];
   }
 }
+
+
+static void complex_conjugate(
+    const R* in, R* out, const int rnk_n, const INT *local_n
+    )
+{
+  if (in == NULL)
+    return;
+
+  INT local_n_total = PX(prod_INT)(rnk_n, local_n);
+
+  for (INT k=0; k<local_n_total; k++) {
+    out[2*k] = in[2*k];
+    out[2*k+1] = -in[2*k+1];
+  }
+}
+
 
 void PX(init_input_complex_3d)(
     const INT *n, const INT *local_n, const INT *local_start,
@@ -376,8 +395,8 @@ void PX(reduce)(
 
 
 
-static void print_complex_array(
-     const R *data, const INT *n, const INT *start, const char *name
+static void print_array(
+     const R *data, const INT *n, const INT *start, const char *name, const int is_complex
      )
 {
   INT k0, k1, k2, l=0;
@@ -391,12 +410,31 @@ static void print_complex_array(
     for(k1 = 0; k1 < n[1]; k1++){
       printf("  ");
       for(k2 = 0; k2 < n[2]; k2++, l++){
-        printf("  %.2e + %.2ei,", (double) data[2*l], (double) data[2*l+1]);
+        if( is_complex )
+          printf("  %.2e + %.2ei,", (double) data[2*l], (double) data[2*l+1]);
+        else
+          printf("  %.2e,", (double) data[l]);
       }
       printf("\n");
     }
   }
   printf("\n");
+}
+
+
+static void print_complex_array(
+     const R *data, const INT *n, const INT *start, const char *name
+     )
+{
+  print_array(data, n, start, name, 1);
+}
+
+
+static void print_real_array(
+     const R *data, const INT *n, const INT *start, const char *name
+     )
+{
+  print_array(data, n, start, name, 0);
 }
 
 
@@ -415,6 +453,28 @@ void PX(apr_complex_3d)(
     if(proc_rank == t){
       printf("Rank %d:\n", proc_rank);
       print_complex_array((R*) data, local_n, local_start, name);
+      fflush(stdout);
+    }
+    MPI_Barrier(comm);
+  }
+}
+
+
+void PX(apr_real_3d)(
+     const R *data, const INT *local_n, const INT *local_start,
+     const char *name, MPI_Comm comm
+     )
+{
+  int num_procs, proc_rank;
+  
+  MPI_Comm_size(comm, &num_procs);
+  MPI_Comm_rank(comm, &proc_rank);
+
+  fflush(stdout);
+  for(int t=0; t<num_procs; t++){
+    if(proc_rank == t){
+      printf("Rank %d:\n", proc_rank);
+      print_real_array( data, local_n, local_start, name);
       fflush(stdout);
     }
     MPI_Barrier(comm);
@@ -453,8 +513,17 @@ void PX(apr_complex_permuted_3d)(
 
 
 
+/****************
+ * 3d interface *
+ ***************/
 
-/* 3d interface */
+
+
+
+
+
+
+
 INT PX(local_size_dft_3d)(
     const INT *n,
     MPI_Comm comm_cart, unsigned pfft_flags,
@@ -549,6 +618,59 @@ PX(plan) PX(plan_r2r_3d)(
 
   return PX(plan_r2r)(rnk_n, n, in, out,
       comm_cart, kinds, pfft_flags);
+}
+
+/* compute block size and offset for arbitrary process rank */
+void PX(local_block_dft_3d)(
+    const INT *n,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  int rnk_n = 3;
+
+  PX(local_block_dft)(rnk_n, n, comm_cart, pid, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
+}
+
+void PX(local_block_dft_r2c_3d)(
+    const INT *n,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  int rnk_n = 3;
+
+  PX(local_block_dft_r2c)(rnk_n, n, comm_cart, pid, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
+}
+
+void PX(local_block_dft_c2r_3d)(
+    const INT *n,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  int rnk_n = 3;
+
+  PX(local_block_dft_c2r)(rnk_n, n, comm_cart, pid, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
+}
+
+void PX(local_block_r2r_3d)(
+    const INT *n,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  int rnk_n = 3;
+
+  PX(local_block_r2r)(rnk_n, n, comm_cart, pid, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
 }
 
 
@@ -659,6 +781,53 @@ PX(plan) PX(plan_r2r)(
     in, out, comm_cart, kinds, pfft_flags);
 }
 
+void PX(local_block_dft)(
+    int rnk_n, const INT *n,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  PX(local_block_many_dft)(rnk_n, n, n,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pid, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
+}
+
+void PX(local_block_dft_r2c)(
+    int rnk_n, const INT *n,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  PX(local_block_many_dft_r2c)(rnk_n, n, n,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pid, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
+}
+
+void PX(local_block_dft_c2r)(
+    int rnk_n, const INT *n,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  PX(local_block_many_dft_c2r)(rnk_n, n, n,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pid, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
+}
+
+void PX(local_block_r2r)(
+    int rnk_n, const INT *n,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  PX(local_block_many_r2r)(rnk_n, n, n,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, pid, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
+}
 
 
 /* functions to execute and destroy PX(plan) */
@@ -683,6 +852,9 @@ void PX(execute)(
 #endif
 
   r = ths->rnk_pm;
+
+  if (ths->trafo_flag & PFFTI_TRAFO_C2R)
+    complex_conjugate(ths->conjugate_in, ths->conjugate_out, ths->rnk_n, ths->local_ni);
 
   ths->timer->whole -= MPI_Wtime();
 
@@ -710,7 +882,10 @@ void PX(execute)(
   ths->timer->otwiddle -= MPI_Wtime(); 
   if(ths->pfft_flags & PFFT_SHIFTED_IN)
     twiddle_output(ths);
-  ths->timer->otwiddle += MPI_Wtime(); 
+  ths->timer->otwiddle += MPI_Wtime();
+
+  if (ths->trafo_flag & PFFTI_TRAFO_R2C)
+    complex_conjugate(ths->conjugate_in, ths->conjugate_out, ths->rnk_n, ths->local_no);
 
   ths->timer->iter++;
   ths->timer->whole += MPI_Wtime();

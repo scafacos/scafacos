@@ -55,11 +55,16 @@ static void convolution(
 
 
 static fcs_int box_not_large_enough(
-    fcs_int npart, fcs_float *pos, fcs_float *ibox, fcs_int *periodicity
+    fcs_int npart, const fcs_float *pos_with_offset, const fcs_float *box_base, const fcs_float *ibox, const fcs_int *periodicity
     )
 {
+  fcs_float pos[3];
   for(fcs_int j=0; j<npart; j++)
   {
+    pos[0] = pos_with_offset[3*j + 0] - box_base[0];
+    pos[1] = pos_with_offset[3*j + 1] - box_base[1];
+    pos[2] = pos_with_offset[3*j + 2] - box_base[2];
+
     if( (periodicity[0] == 0) && (XYZ2TRI(0, pos, ibox) < 0.0) ) return 1;
     if( (periodicity[0] == 0) && (XYZ2TRI(0, pos, ibox) > 1.0) ) return 1;
 
@@ -68,8 +73,6 @@ static fcs_int box_not_large_enough(
 
     if( (periodicity[2] == 0) && (XYZ2TRI(2, pos, ibox) < 0.0) ) return 1;
     if( (periodicity[2] == 0) && (XYZ2TRI(2, pos, ibox) > 1.0) ) return 1;
-
-    pos += 3;
   }
 
   return 0;
@@ -102,7 +105,7 @@ FCSResult ifcs_p2nfft_run(
 
   /* handle particles, that left the box [0,L] */
   /* for non-periodic boundary conditions: user must increase the box */
-  if(box_not_large_enough(local_num_particles, positions, d->box_inv, d->periodicity))
+  if(box_not_large_enough(local_num_particles, positions, d->box_base, d->box_inv, d->periodicity))
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box.");
 
   /* TODO: implement additional scaling of particles to ensure x \in [0,L)
@@ -191,7 +194,7 @@ FCSResult ifcs_p2nfft_run(
         case 3: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_cub_loop); break;
         default: return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
       } 
-    } else if(d->use_ewald){
+    } else if(d->num_periodic_dims > 0){
       if(d->interpolation_order == -1)
         fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_periodic_erfc_loop);
       else
@@ -218,7 +221,7 @@ FCSResult ifcs_p2nfft_run(
       near_params.one_over_r_cut = d->one_over_r_cut;
 
       fcs_near_compute(&near, d->r_cut, &near_params, d->cart_comm_3d);
-    } else if(d->use_ewald)
+    } else if(d->num_periodic_dims > 0)
       fcs_near_compute(&near, d->r_cut, &(d->alpha), d->cart_comm_3d);
     else
       fcs_near_compute(&near, d->r_cut, rd, d->cart_comm_3d);
@@ -297,7 +300,11 @@ FCSResult ifcs_p2nfft_run(
   /* Set NFFT nodes within [-0.5,0.5]^3 */
   for (fcs_int j = 0; j < sorted_num_particles; ++j)
   {
-    fcs_float *pos = &sorted_positions[3*j];
+    fcs_float pos[3];
+
+    pos[0] = sorted_positions[3*j + 0] - d->box_base[0];
+    pos[1] = sorted_positions[3*j + 1] - d->box_base[1];
+    pos[2] = sorted_positions[3*j + 2] - d->box_base[2];
 
     x[3 * j + 0] = ( XYZ2TRI(0, pos, d->box_inv) - 0.5 ) / d->box_expand[0];
     x[3 * j + 1] = ( XYZ2TRI(1, pos, d->box_inv) - 0.5 ) / d->box_expand[1];
@@ -360,7 +367,10 @@ FCSResult ifcs_p2nfft_run(
   FCS_P2NFFT_START_TIMING();
 
   /* Perform adjoint NFFT */
-  FCS_PNFFT(adj)(d->pnfft);
+  if(!d->pnfft_direct)
+    FCS_PNFFT(adj)(d->pnfft);
+  else
+    FCS_PNFFT(direct_adj)(d->pnfft);
 
   /* Checksum: Output of adjoint NFFT */  
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
@@ -394,7 +404,10 @@ FCSResult ifcs_p2nfft_run(
 #endif
     
   /* Perform NFFT */
-  FCS_PNFFT(trafo)(d->pnfft);
+  if(!d->pnfft_direct)
+    FCS_PNFFT(trafo)(d->pnfft);
+  else
+    FCS_PNFFT(direct_trafo)(d->pnfft);
 
   /* Copy the results to the output vector and rescale with L^{-T} */
   for (fcs_int j = 0; j < sorted_num_particles; ++j){
@@ -422,7 +435,7 @@ FCSResult ifcs_p2nfft_run(
   /* Finish far field timing */
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Far field computation");
 
-#if FCS_ENABLE_TIMING
+#if FCS_ENABLE_TIMING_PNFFT
   /* Print pnfft timer */
   FCS_P2NFFT_START_TIMING();
   FCS_PNFFT(print_average_timer_adv)(d->pnfft, d->cart_comm_3d);
@@ -435,10 +448,7 @@ FCSResult ifcs_p2nfft_run(
   fcs_float far_global;
 
   for(fcs_int j = 0; j < sorted_num_particles; ++j)
-    if(d->use_ewald)
-      far_energy += 0.5 * sorted_charges[j] * f[j];
-    else
-      far_energy += 0.5 * sorted_charges[j] * f[j];
+    far_energy += 0.5 * sorted_charges[j] * f[j];
 
   MPI_Reduce(&far_energy, &far_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: far field energy: %" FCS_LMOD_FLOAT "f\n", far_global);
@@ -456,7 +466,7 @@ FCSResult ifcs_p2nfft_run(
 
   /* Calculate virial if needed */
   if(d->virial != NULL){
-    if(d->use_ewald){
+    if(d->num_periodic_dims == 3){
       fcs_float total_energy = 0.0;
       fcs_float total_global;
       for(fcs_int j = 0; j < sorted_num_particles; ++j)
@@ -469,8 +479,8 @@ FCSResult ifcs_p2nfft_run(
       for(fcs_int t=0; t<9; t++)
         d->virial[t] = 0.0;
       d->virial[0] = d->virial[4] = d->virial[8] = total_global/3.0;
-    }
-    else {
+    } 
+    else if(d->num_periodic_dims == 0) {
       fcs_float local_virial[9];
 
       for(fcs_int t=0; t<9; t++)
@@ -483,6 +493,10 @@ FCSResult ifcs_p2nfft_run(
       
       MPI_Allreduce(local_virial, d->virial, 9, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
     }
+    else {
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Virial computation is currently not available for mixed boundary conditions.");
+    }
+
   }
 
   /* Checksum: global sum of self energy */

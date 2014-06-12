@@ -24,8 +24,8 @@
 
 #include "types.hpp"
 #include "Communication.hpp"
-#include "Parallel3DFFT.hpp"
 #include "ErrorEstimate.hpp"
+#include "FarSolver.hpp"
 #include "CAF.hpp"
 #include "common/gridsort/gridsort.h"
 #include <list>
@@ -33,9 +33,21 @@
 
 namespace P3M {
 
-/** Structure that holds all data of the P3M algorithm */
-class Solver {
-public:
+  /** Structure that holds all data of the P3M algorithm */
+  class Solver {
+  public:
+    enum TimingComponent {
+      TOTAL, COMP, DECOMP, NEAR,
+      FAR, CA, GATHER, FORWARD, BACK, INFLUENCE, SPREAD, POTENTIALS, FIELDS
+    };
+    static const int NUM_TIMINGS_NOTFAR = 4;
+    static const int NUM_TIMINGS = 13;
+    enum TimingType {
+      NONE, // do not time anything
+      NOTFAR, // do not time the far field
+      FULL // time everything
+    };
+    
     Solver(MPI_Comm mpicomm);
     ~Solver();
 
@@ -44,38 +56,47 @@ public:
     void tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges);
 
     void run(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
-            p3m_float *fields, p3m_float *potentials);
-
-    /** Test run the method with the current parameters. Afterwards, the
-     timing variables in the data struct are set. */
-    void timing(p3m_int num_particles, p3m_float *positions, p3m_float *charges);
-
+             p3m_float *fields, p3m_float *potentials);
+    
+    void setRequireTotalEnergy(bool flag = true);
+    fcs_float getTotalEnergy();
+    
+    void setRequireTimings(TimingType type = NONE);
+    TimingType getRequireTimings();
+    
+    /** Test run the method with the current parameters.
+     * Put the different run times in the TuneParameters. */
+    const double* measureTimings(p3m_int num_particles,
+                                 p3m_float *positions, p3m_float *charges);
+    /** Fetch the detailed timings. */
+    const double* getTimings();
+    
     Communication comm;
-    Parallel3DFFT fft;
     ErrorEstimate *errorEstimate;
+    FarSolver *farSolver;
 
     /****************************************************
      * SYSTEM PARAMETERS
      ****************************************************/
     /* System size in x,y,z */
     p3m_float box_l[3];
-    /* Skin */
-    p3m_float skin;
+    p3m_int sum_qpart;
+    p3m_float sum_q2, square_sum_q;
     /* the complete box vectors */
     p3m_float box_vectors[3][3];
     /* Volume of the box */
     p3m_float volume;
+    /* whether the box is triclinic */
+    bool isTriclinic; 
     /****************************************************
      * PARAMETERS OF THE METHOD
      ****************************************************/
+    /* Skin */
+    p3m_float skin;
     /** Tolerance in the field rms. */
     p3m_float tolerance_field;
-    /** number of interpolation points for charge assignment function */
-    p3m_int n_interpol;
     /** whether to compute the near field in the method */
     bool near_field_flag;
-    /* whether the box is triclinic */
-    bool isTriclinic; 
     /** flag that determines if the Gaussian potentials are shifted */
     bool shiftGaussians;
     
@@ -100,134 +121,17 @@ public:
     /** Whether or not the charge assignment order is to be automatically tuned. */
     bool tune_cao;
 
+private:
     /****************************************************
      * FLAGS TO TURN ON/OFF COMPUTATION OF DIFFERENT COMPONENTS
      ****************************************************/
     /** Whether or not the total energy is to be computed. */
     bool require_total_energy;
-    /** The total energy. */
-    p3m_float total_energy;
-    /** Whether and how timings are to be taken.
-     * 0: run without timings
-     * 1: partial timing to estimate without results
-     * 2: full means all timings and correct results*/
-    timingEnum require_timings;
+    double total_energy;
 
-    static const int TIMING = 0;
-    static const int TIMING_NEAR = 1;
-    static const int TIMING_FAR = 2;
-    static const int TIMING_CA = 3;
-    static const int TIMING_GATHER = 4;
-    static const int TIMING_FORWARD = 5;
-    static const int TIMING_BACK = 6;
-    static const int TIMING_INFLUENCE = 7;
-    static const int TIMING_SPREAD = 8;
-    static const int TIMING_POTENTIALS = 9;
-    static const int TIMING_FIELDS = 10;
-    static const int TIMING_DECOMP = 11;
-    static const int TIMING_COMP = 12;
-    static const int NUM_TIMINGS = 13;
+    /** Whether and how timings are to be taken. */
+    TimingType require_timings;
     double timings[NUM_TIMINGS];
-
-    /****************************************************
-     * DERIVED PARAMETERS
-     ****************************************************/
-    /** The errors of the method according to the error formula. */
-    p3m_float error, ks_error, rs_error;
-
-    /** offset of the first grid point (lower left corner) from the
-     coordinate origin ([0,1[). */
-    p3m_float grid_off[3];
-
-    /** Cutoff for charge assignment. */
-    p3m_float cao_cut[3];
-    /** grid constant. */
-    p3m_float a[3];
-    /** inverse grid constant. */
-    p3m_float ai[3];
-    /** additional points around the charge assignment grid, for method like dielectric ELC
-     creating virtual charges. */
-    p3m_float additional_grid[3];
-
-    /****************************************************
-     * METHOD DATA
-     ****************************************************/
-
-    /** local grid. */
-    local_grid_t local_grid;
-    /** real space grid (local) for CA/FFT.*/
-    p3m_float *rs_grid;
-    /** k space grid (local) for k space calculation and FFT.*/
-    p3m_float *ks_grid;
-
-    /** number of charged particles */
-    p3m_int sum_qpart;
-    /** Sum of square of charges */
-    p3m_float sum_q2;
-    /** square of sum of charges */
-    p3m_float square_sum_q;
-
-    /** charge assignment function. */
-    CAF *caf;
-    CAF::Cache *cafx;
-    CAF::Cache *cafy;
-    CAF::Cache *cafz;
-    /** gradient of charge assignment function */
-    CAF *caf_d;
-    CAF::Cache *cafx_d;
-    CAF::Cache *cafy_d;
-    CAF::Cache *cafz_d;
-
-    /** position shift for calc. of first assignment grid point. */
-    p3m_float pos_shift;
-
-    /** Spatial differential operator in k-space. We use an i*k differentiation. */
-    p3m_int *d_op[3];
-    /** Force optimized influence function (k-space) */
-    p3m_float *g_force;
-    /** Energy optimized influence function (k-space) */
-    p3m_float *g_energy;
-
-    /** number of permutations in k_space */
-    p3m_int ks_pnum;
-
-    /** send/recv grid sizes */
-    send_grid_t sm;
-
-    /** Field to store grid points to send. */
-    p3m_float *send_grid;
-    /** Field to store grid points to recv */
-    p3m_float *recv_grid;
-    
-    /** potential shift required to make real space potentials continuous */
-    p3m_float potentialOffset;
-
-private:
-    // submethods of prepare()
-    void prepareSendGrid();
-    void prepareLocalCAGrid();
-    void prepareDifferentialOperator();
-    void printLocalGrid();
-    void printSendGrid();
-
-    void computeInfluenceFunctionIK();
-    void computeInfluenceFunctionADI();
-    void computeInfluenceFunctionIKI();
-    void performAliasingSumsIK(
-            p3m_int nmx0, p3m_int nmy0, p3m_int nmz0,
-            p3m_float numerator_force[3],
-            p3m_float &numerator_energy,
-            p3m_float &denominator);
-    void performAliasingSumsADI(
-            p3m_int nmx0, p3m_int nmy0, p3m_int nmz0,
-            p3m_float &numerator_force,
-            p3m_float &numerator_energy, p3m_float denominator[4]);
-    void performAliasingSumsIKI(
-            p3m_int nmx0, p3m_int nmy0, p3m_int nmz0,
-            p3m_float numerator_force[3],
-            p3m_float &numerator_energy,
-            p3m_float denominator[2]);
-    p3m_int *computeGridShift(int dir, p3m_int size);
 
     // submethods of run()
     
@@ -248,93 +152,66 @@ private:
             p3m_float **ghost_positions, p3m_float **ghost_charges,
             fcs_gridsort_index_t **ghost_indices);
 
-    void computeFarADI(p3m_int num_charges, p3m_float* positions, p3m_float* charges,
-            p3m_float* fields, p3m_float* potentials);
-    void computeFarIK(p3m_int num_charges, p3m_float* positions, p3m_float* charges,
-            p3m_float* fields, p3m_float* potentials);
+    // submethods of tune()
 
-    /* charge assignment */
-    p3m_int getCAPoints(p3m_float real_pos[3], p3m_int shifted);
-    void assignCharges(p3m_float *data,
-            p3m_int num_charges, p3m_float *positions, p3m_float *charges, p3m_int shifted);
+    typedef std::list<TuneParameters> TuneParameterList;
 
-    /* collect grid from neighbor processes */
-    void gatherGrid(p3m_float* rs_grid);
-    /* spread grid to neighbor processors */
-    void spreadGrid(p3m_float* rs_grid);
+    /* Get a list of parameters that achieve the required tolerance.
+     * Does NOT time. */
+    TuneParameterList tuneFar(Parameters p);
+    /** Slave variant of tune_far. */
+    void tuneFarSlave();
 
-    /* apply influence function g to the array in, yielding out */
-    void applyInfluenceFunction(p3m_float *in, p3m_float *out, p3m_float *g);
+    void tuneAlpha(TuneParameterList &params_to_try);
+    void tuneCAO(TuneParameterList &params_to_try);
+    void tuneGrid(TuneParameterList &params_to_try);
 
-    /* differentiate in in direction dim, yielding out*/
-    void differentiateIK(int dim, p3m_float* in, p3m_float* out);
+    TuneParameters timeParams(p3m_int num_particles, p3m_float *positions,
+            p3m_float *charges, TuneParameterList &params_to_try);
 
-    /* compute the total energy (in k-space, so no backtransform) */
-    p3m_float computeTotalEnergy();
-    /* assign the potentials to the positions */
-    void
-    assignPotentials(p3m_float *data,
-            p3m_int num_particles, p3m_float* positions, p3m_float* charges,
-            p3m_int shifted, p3m_float* potentials);
+    void countCharges(p3m_int num_particles, p3m_float *charges);
 
-    void collectPrintTimings();
-
-    /* Assign the fields to the positions in dimension dim [IK] */
-    void
-    assignFieldsIK(p3m_float *data,
-            p3m_int dim, p3m_int num_particles, p3m_float* positions,
-            p3m_int shifted, p3m_float* fields);
-
-    /* Backinterpolate the forces obtained from k-space to the positions [AD]*/
-    void
-    assignFieldsAD(p3m_float *data,
-            p3m_int num_real_particles, p3m_float* positions,
-            p3m_int shifted, p3m_float* fields);
+    // tuning master functions
+    void tuneBroadcastSendParams(TuneParameters p);
+    void tuneBroadcastFail();
+    void tuneBroadcastTiming(TuneParameters &p, p3m_int num_particles,
+            p3m_float *positions, p3m_float *charges);
+    void tuneBroadcastFinish(TuneParameters p);
+    void tuneBroadcastNoTune();
+    TuneParameterList tuneBroadcastTuneFar(TuneParameters p);
     
     void
     cartesianizeFields(p3m_float *fields, p3m_int num_particles);
 
-    // submethods of tune()
-    struct TuneParameters {
-        Parameters p;
-        /** Errors */
-        p3m_float rs_error, ks_error, error;
-        /** Timings */
-        p3m_float timing, timing_near, timing_far;
-    };
-    typedef std::list<TuneParameters*> TuneParametersList;
-
-    TuneParameters* tuneFar(p3m_int num_particles, p3m_float *positions,
-            p3m_float *charges, p3m_float r_cut);
-
-    /** Slave variant of tune_far. */
-    void tuneFar(p3m_int num_particles,
+    // tuning slave functions
+    void tuneBroadcastReceiveParams();
+    void tuneLoopSlave(p3m_int num_particles,
             p3m_float *positions, p3m_float *charges);
 
-    void tuneAlpha(TuneParametersList &params_to_try);
-    void tuneCAO(TuneParametersList &params_to_try);
-    void tuneGrid(TuneParametersList &params_to_try);
+    void resetTimers() {
+        for (int i=0; i < NUM_TIMINGS; i++)
+            timings[i] = 0.0;
+    }
 
-    TuneParameters* timeParams(p3m_int num_particles, p3m_float *positions,
-            p3m_float *charges, TuneParametersList &params_to_try);
+    void startTimer(TimingComponent comp) {
+        if (require_timings != NONE)
+            timings[comp] += -MPI_Wtime();
+    }
 
-    void countCharges(p3m_int num_particles, p3m_float *charges);
+    void stopTimer(TimingComponent comp) {
+        if (require_timings != NONE)
+            timings[comp] += MPI_Wtime();
+    }
 
-    /* Events during tuning */
-    static const int CMD_FAILED = -1;
-    static const int CMD_FINISHED = 0;
-    static const int CMD_COMPUTE_ERROR_ESTIMATE = 1;
-    static const int CMD_TIMING = 2;
+    void switchTimer(TimingComponent comp1,
+            TimingComponent comp2) {
+        if (require_timings != NONE) {
+            timings[comp1] += MPI_Wtime();
+            timings[comp2] += -MPI_Wtime();
+        }
+    }
 
-    void tuneBroadcastParams(Parameters &p);
-    void tuneReceiveParams();
-
-    void tuneBroadcastCommand(p3m_int command);
-    void tuneBroadcastCommand(p3m_int command, Parameters &p);
-
-    void tuneBroadcastSlave(p3m_int num_particles,
-            p3m_float *positions, p3m_float *charges);
-
+    void gatherTimings();
 };
 
 

@@ -129,7 +129,7 @@ cdef class scafacos:
     def tune(self,
              np.ndarray[fcs_float, ndim=2, mode='c'] positions not None,
              np.ndarray[fcs_float, ndim=1, mode='c'] charges not None):
-        N = positions.shape[1]
+        N = positions.shape[0]
         if N != charges.shape[0]:
             raise Exception("The number of charges and positions must be equal!")
         handleResult(fcs_tune(self.handle, N, &positions[0,0], &charges[0]))

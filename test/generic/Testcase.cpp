@@ -127,6 +127,12 @@ void Configuration::realloc_dup_input_particles(fcs_int new_nparticles)
     dup_input_charges    = (fcs_float *) realloc(dup_input_charges,    dup_input_nparticles_allocated *     sizeof(fcs_float));
     dup_input_potentials = (fcs_float *) realloc(dup_input_potentials, dup_input_nparticles_allocated *     sizeof(fcs_float));
     dup_input_field      = (fcs_float *) realloc(dup_input_field,      dup_input_nparticles_allocated * 3 * sizeof(fcs_float));
+ }
+
+  if(dup_input_field == NULL || dup_input_positions == NULL || dup_input_charges == NULL || dup_input_potentials == NULL){
+    
+    cerr << "ERROR in Configuration::realloc_dup_input_particles: "<< strerror(errno) << endl;
+    MPI_Abort(communicator, 1);
   }
 }
 
@@ -1021,8 +1027,8 @@ void Configuration::free_decomp_particles(bool quiet)
 void Configuration::determine_total_duplication()
 {
   total_duplications[0] = ((params.periodicity[0])?params.periodic_duplications[0]:1);
-  total_duplications[1] = ((params.periodicity[1])?params.periodic_duplications[0]:1);
-  total_duplications[2] = ((params.periodicity[2])?params.periodic_duplications[0]:1);
+  total_duplications[1] = ((params.periodicity[1])?params.periodic_duplications[1]:1);
+  total_duplications[2] = ((params.periodicity[2])?params.periodic_duplications[2]:1);
 
   total_duplications[0] *= input_duplication.params.times[0];
   total_duplications[1] *= input_duplication.params.times[1];

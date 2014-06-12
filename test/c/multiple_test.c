@@ -64,9 +64,6 @@ int main (int argc, char **argv)
 #if FCS_ENABLE_P2NFFT
   char P2NFFT_parameters[] = "P2NFFT_required_accuracy,1e-6";
 #endif
-#if FCS_ENABLE_P3M
-  char P3M_parameters[] = "P3M_tolerance_field_abs,1e-6";
-#endif
   FILE *input_file;
   FILE *xyz_file;
   fcs_int local_particles;

@@ -31,65 +31,62 @@ namespace P3M {
 /* Base class of the P3M error estimates. */
 class ErrorEstimate {
 public:
-	static ErrorEstimate *create(Communication &comm);
+    static ErrorEstimate *create(Communication &comm);
 
-	class CantGetRequiredAccuracy: public std::logic_error {
-	public:
-		CantGetRequiredAccuracy();
-	};
+    class CantGetRequiredAccuracy: public std::logic_error {
+    public:
+        CantGetRequiredAccuracy();
+    };
 
-    ErrorEstimate(Communication &comm) : comm(comm) {}
-	virtual ~ErrorEstimate() {}
+    ErrorEstimate(Communication &comm)
+            : comm(comm) {
+    }
+    virtual ~ErrorEstimate() {
+    }
 
-	/** Determines a value for alpha that achieves the required_accuracy in
-	 * the near field. It still needs to be checked whether the far field
-	 * can achieve the required accuracy.
-	 */
-	virtual void
-	compute_alpha(p3m_float required_accuracy, Parameters &p,
-			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
-
-    /** Computes the error estimate. When called in parallel, the result is
-     * undefined on the slaves. */
-	virtual void
-	compute(Parameters &p,
-			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
-			p3m_float &error, p3m_float &rs_error, p3m_float &ks_error,p3m_float box_vectors[3][3], bool isTriclinic);
-
-    /** Computes the error estimate. When called in parallel, the result is
-     * undefined on the slaves. */
-	virtual p3m_float
-	compute(Parameters &p,
-			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],p3m_float box_vectors[3][3], bool isTriclinic);
+    /** Determines a value for alpha that achieves the required_accuracy in
+     * the near field. It still needs to be checked whether the far field
+     * can achieve the required accuracy.
+     */
+    virtual void
+    computeAlpha(p3m_float required_accuracy, TuneParameters &p,
+            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
     /** Master variant of the error computation. It first broadcasts the
      * parameters to all tasks, then runs compute. */
-    virtual p3m_float compute_master(Parameters &p,
-            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3], bool isTriclinic);
-
     virtual void
-    compute_master(Parameters &p,
+    computeMaster(TuneParameters &p,
+            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
+
+    /* Call this on the master to end the slave loop. */
+    void endLoop();
+
+    /** Slave variant of the error computation. It runs compute until
+     * finishedMaster is called. */
+    virtual void loopSlave();
+
+    /** Computes the error estimate. When called in parallel, the result is
+     * undefined on the slaves. */
+    virtual void
+    compute(TuneParameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
-            p3m_float &error, p3m_float &rs_error, p3m_float &ks_error,p3m_float box_vectors[3][3], bool isTriclinic);
-    /** Slave variant of the error computation. It first receives the
-     * parameters, then runs compute. */
-    virtual void compute_slave();
+            p3m_float box_vectors[3][3], bool isTriclinic);
 
     /** Calculates the real space contribution to the rms error in the
-	 force (as described by Kolafa and Perram).
-	 */
-	virtual p3m_float compute_rs_error(Parameters &p,
-			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
+     * force (as described by Kolafa and Perram). When called in parallel, the
+     * result is undefined on the slaves.
+     */
+    virtual void computeRSError(TuneParameters &p,
+            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
 
     /** Calculates the reciprocal space contribution to the rms error in the
-     force.
-     */
-    virtual p3m_float compute_ks_error(Parameters &p,
+     * force. When called in parallel, the result is undefined on the slaves. */
+    virtual void computeKSError(TuneParameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) = 0;
 /** Calculates the reciprocal space contribution to the rms error in the
      force.
      */
-    virtual p3m_float compute_ks_error_triclinic(Parameters &p,
+    virtual p3m_float computeKSError_triclinic(TuneParameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic) = 0;
 	protected:
 	    Communication &comm;

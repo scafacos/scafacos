@@ -19,7 +19,6 @@ AC_LANG([C])
 # Checks for the MPI C compiler
 AX_PROG_CC_MPI(,,AC_MSG_FAILURE([The solver P2NNFT requires an MPI C compiler.]))
 
-AC_PROG_RANLIB
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 

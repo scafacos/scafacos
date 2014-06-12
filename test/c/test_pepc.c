@@ -64,115 +64,124 @@ int main(int argc, char* argv[])
   fcs_float theta   = 0.2;
   fcs_float epsilon = 1.23e-6;
 
-
   MPI_Init_thread(&argc, &argv, mpi_thread_requested, &mpi_thread_provided);
   comm = MPI_COMM_WORLD;
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
-  
-  if (mpi_thread_provided < mpi_thread_requested && comm_rank == 0) {
-    printf("Call to MPI_INIT_THREAD failed. Requested/provided level of multithreading: %d / %d. Continuing but expect program crash.\n", mpi_thread_requested, mpi_thread_provided);
-  }
-  
-
-  n_axis = 16;
-  n_total = n_axis * n_axis * n_axis;
-
-  n_local = n_total / comm_size;
-  if(comm_rank == comm_size-1) n_local += n_total % comm_size;
-  n_local_max = n_total / comm_size + n_total % comm_size;
-
 
   if (comm_rank == 0) {
-    printf("*** RUNNING pepc TEST ***\n");
-    printf("  n_total =          %" FCS_LMOD_INT "d\n", n_total);
-    printf("  n_procs =          %d\n", comm_size);
-    printf("  theta =            %e\n", theta);
-    printf("  epsilon =          %e\n", epsilon);
+    fprintf(stderr, "----------------\n");
+    fprintf(stderr, "Running pepc test\n");
+    fprintf(stderr, "----------------\n");
+    fprintf(stderr, "Setting up MPI...\n");
+    fprintf(stderr, "  Using %d tasks.\n", comm_size);
   }
 
-  x = (fcs_float*)malloc(3 * n_local * sizeof(fcs_float));
-  q = (fcs_float*)malloc(    n_local * sizeof(fcs_float));
-  f = (fcs_float*)malloc(3 * n_local * sizeof(fcs_float));
-  p = (fcs_float*)malloc(    n_local * sizeof(fcs_float));
-
-  p_c = 0;
-  p_start = comm_rank*(n_total/comm_size);
-  p_stop  = p_start + n_local;
-  for (ip=p_start; ip<p_stop; ip++, p_c++) {
-    
-    i = ip % n_axis;
-    j = (ip / n_axis) % n_axis;
-    k = ip / (n_axis*n_axis);
-  
-    x[3*p_c  ] = offset[0] + (i * box_a[0]) / n_axis;
-    x[3*p_c+1] = offset[1] + (j * box_b[1]) / n_axis;
-    x[3*p_c+2] = offset[2] + (k * box_c[2]) / n_axis;
-    q[p_c] = ((i+j+k)%2 ? 1.0 : -1.0);
-  
-    /* printf("init positions (rank %d) for particle id %d: %e %e %e %e\n", */
-    /* 	   comm_rank, ip, x[3*p_c  ], x[3*p_c+1], x[3*p_c+2], q[p_c]); */
+  if (mpi_thread_provided < mpi_thread_requested) {
+    if (comm_rank == 0)
+      printf("Call to MPI_INIT_THREAD failed.\n"
+             "Requested level %d of multithreading, but only level %d is provided.\n"
+             "Aborting test.\n", mpi_thread_requested, mpi_thread_provided);
   }
+  else
+  {
+    n_axis = 16;
+    n_total = n_axis * n_axis * n_axis;
 
-  fcs_result = fcs_init(&fcs_handle, method, comm);
-  assert_fcs(fcs_result);
+    n_local = n_total / comm_size;
+    if(comm_rank == comm_size-1) n_local += n_total % comm_size;
+    n_local_max = n_total / comm_size + n_total % comm_size;
 
-  fcs_result = fcs_set_common(fcs_handle, 1,
-			      box_a, box_b, box_c,
-			      offset, periodic, n_total);
-  assert_fcs(fcs_result);
+    if (comm_rank == 0) {
+      printf("*** RUNNING pepc TEST ***\n");
+      printf("  n_total =          %" FCS_LMOD_INT "d\n", n_total);
+      printf("  n_procs =          %d\n", comm_size);
+      printf("  theta =            %e\n", theta);
+      printf("  epsilon =          %e\n", epsilon);
+    }
 
-  fcs_result = fcs_set_max_local_particles(fcs_handle, n_local_max);
-  assert_fcs(fcs_result);
+    x = (fcs_float*)malloc(3 * n_local * sizeof(fcs_float));
+    q = (fcs_float*)malloc(    n_local * sizeof(fcs_float));
+    f = (fcs_float*)malloc(3 * n_local * sizeof(fcs_float));
+    p = (fcs_float*)malloc(    n_local * sizeof(fcs_float));
 
-  fcs_result = fcs_pepc_setup(fcs_handle, epsilon, theta);
-  assert_fcs(fcs_result);
+    p_c = 0;
+    p_start = comm_rank*(n_total/comm_size);
+    p_stop  = p_start + n_local;
+    for (ip=p_start; ip<p_stop; ip++, p_c++) {
 
-  fcs_result = fcs_tune(fcs_handle, n_local, x, q);
-  assert_fcs(fcs_result);
+      i = ip % n_axis;
+      j = (ip / n_axis) % n_axis;
+      k = ip / (n_axis*n_axis);
 
-  fcs_result = fcs_run(fcs_handle, n_local, x, q, f, p);
-  assert_fcs(fcs_result);
+      x[3*p_c  ] = offset[0] + (i * box_a[0]) / n_axis;
+      x[3*p_c+1] = offset[1] + (j * box_b[1]) / n_axis;
+      x[3*p_c+2] = offset[2] + (k * box_c[2]) / n_axis;
+      q[p_c] = ((i+j+k)%2 ? 1.0 : -1.0);
 
-  e_local = 0.0;
-  for (i=0; i<n_local; ++i)
-    e_local += p[i] * q[i];
+      /* printf("init positions (rank %d) for particle id %d: %e %e %e %e\n", */
+      /* 	   comm_rank, ip, x[3*p_c  ], x[3*p_c+1], x[3*p_c+2], q[p_c]); */
+    }
 
-  MPI_Reduce(&e_local, &e_total, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    fcs_result = fcs_init(&fcs_handle, method, comm);
+    assert_fcs(fcs_result);
 
-  //madelung_approx = 8.0 * M_PI / n_axis * e_total / n_total;
-  madelung_approx = 1.0 / n_axis * e_total / n_total;
+    fcs_result = fcs_set_common(fcs_handle, 1,
+			        box_a, box_b, box_c,
+			        offset, periodic, n_total);
+    assert_fcs(fcs_result);
 
-  if (comm_rank == 0) {
-    printf("\n");
-    printf("  Results:\n");
-    printf("    Energy:            %e\n", e_total);
-    printf("    Madelung constant: %e\n", madelung_approx);
-    printf("    Relative error:    %e\n", fabs(madelung-fabs(madelung_approx))/madelung);
+    fcs_result = fcs_set_max_local_particles(fcs_handle, n_local_max);
+    assert_fcs(fcs_result);
+
+    fcs_result = fcs_pepc_setup(fcs_handle, epsilon, theta);
+    assert_fcs(fcs_result);
+
+    fcs_result = fcs_tune(fcs_handle, n_local, x, q);
+    assert_fcs(fcs_result);
+
+    fcs_result = fcs_run(fcs_handle, n_local, x, q, f, p);
+    assert_fcs(fcs_result);
+
+    e_local = 0.0;
+    for (i=0; i<n_local; ++i)
+      e_local += p[i] * q[i];
+
+    MPI_Reduce(&e_local, &e_total, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+
+    //madelung_approx = 8.0 * M_PI / n_axis * e_total / n_total;
+    madelung_approx = 1.0 / n_axis * e_total / n_total;
+
+    if (comm_rank == 0) {
+      printf("\n");
+      printf("  Results:\n");
+      printf("    Energy:            %e\n", e_total);
+      printf("    Madelung constant: %e\n", madelung_approx);
+      printf("    Relative error:    %e\n", fabs(madelung-fabs(madelung_approx))/madelung);
+    }
+
+    p_c = 0;
+    p_start = comm_rank*(n_total/comm_size);
+    p_stop  = p_start + n_local;
+    for (ip=p_start; ip<p_stop; ip++, p_c++) {
+
+      /* printf("results (rank %d) for particle id %d: %e %e %e %e\n", */
+      /* 	   comm_rank, ip, f[3*p_c  ], f[3*p_c+1], f[3*p_c+2], p[p_c]); */
+      /* printf("dataout: %e %e %e %e %e %e %e %e\n", x[3*p_c  ], x[3*p_c+1], x[3*p_c+2], q[p_c],  */
+      /* 	   f[3*p_c  ], f[3*p_c+1], f[3*p_c+2], p[p_c]); */
+    }
+
+
+    fcs_destroy(fcs_handle);
+
+    free(x);
+    free(q);
+    free(f);
+    free(p);
+
+    if (comm_rank == 0)
+      printf("*** pepc DONE ***\n");
   }
-
-  p_c = 0;
-  p_start = comm_rank*(n_total/comm_size);
-  p_stop  = p_start + n_local;
-  for (ip=p_start; ip<p_stop; ip++, p_c++) {
-    
-    /* printf("results (rank %d) for particle id %d: %e %e %e %e\n", */
-    /* 	   comm_rank, ip, f[3*p_c  ], f[3*p_c+1], f[3*p_c+2], p[p_c]); */
-    /* printf("dataout: %e %e %e %e %e %e %e %e\n", x[3*p_c  ], x[3*p_c+1], x[3*p_c+2], q[p_c],  */
-    /* 	   f[3*p_c  ], f[3*p_c+1], f[3*p_c+2], p[p_c]); */
-  }
-
-
-  fcs_destroy(fcs_handle);
-
-  free(x);
-  free(q);
-  free(f);
-  free(p);
-
-  if (comm_rank == 0)
-    printf("*** pepc DONE ***\n");
-
   MPI_Finalize();
 
   return 0;

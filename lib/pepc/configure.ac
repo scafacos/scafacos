@@ -1,6 +1,6 @@
 # Initialize Autoconf.  We require version 2.59 or newer.
 AC_PREREQ([2.59])
-AC_INIT([PEPC], [rev3965], [pepc@fz-juelich.de], [pepc])
+AC_INIT([PEPC], [rev4382], [pepc@fz-juelich.de], [pepc])
 
 AC_MSG_NOTICE([****************************************************************])
 AC_MSG_NOTICE([*      Configuring solver PEPC                                 *])
@@ -22,14 +22,14 @@ AX_PROG_CC_MPI(,,AC_MSG_FAILURE([The PEPC solver requires an MPI C compiler.]))
 # Find out whether the C compiler accepts '-c -o'. (What's this good for?)
 AM_PROG_CC_C_O
 
-# Get the Preprocessor.
-AC_PROG_CPP
-
 # Get the Fortran MPI compiler.
 AX_PROG_FC_MPI(,,AC_MSG_FAILURE([The PEPC solver requires an MPI Fortran compiler.]))
 
 # Accept preprocessed source files names ending in ".f90".
 AC_FC_PP_SRCEXT([f90])
+
+# Get the Fortran Preprocessor.
+ACX_PROG_FCCPP
 
 # Get the flag to use for setting Fortran defines on the command line.
 AC_FC_PP_DEFINE

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012 Olaf Lenz, Michael Hofmann
+  Copyright (C) 2011,2012,2013,2014 Olaf Lenz, Michael Hofmann
   
   This file is part of ScaFaCoS.
   
@@ -66,7 +66,7 @@ template<> class StaticAssert<true> {};
 //#define FCS_ENABLE_INFO
 //#define FCS_ENABLE_DEBUG
 
-#define MASTER(cmd)  do { if (comm_rank == MASTER_RANK) cmd; } while (0)
+#define MASTER(cmd)  do { if (comm_rank == MASTER_RANK) { cmd; } } while (0)
 
 #ifdef FCS_ENABLE_INFO
 #define INFO(cmd)  do { cmd; } while (0)

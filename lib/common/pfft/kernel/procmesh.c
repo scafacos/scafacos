@@ -160,6 +160,14 @@ int PX(get_mpi_cart_dims)(MPI_Comm comm_cart, int maxdims, int *dims)
   return ret;
 }
 
+void PX(coords_3dto2d)(
+    int q0, int q1, const int *coords_3d,
+    int *coords_2d
+    )
+{
+  coords_2d[0] = coords_3d[0]*q0 + coords_3d[2]/q1;
+  coords_2d[1] = coords_3d[1]*q1 + coords_3d[2]%q1;
+}
 
 void PX(split_cart_procmesh_3dto2d_p0q0)(
     MPI_Comm comm_cart_3d,
@@ -183,8 +191,8 @@ void PX(split_cart_procmesh_3dto2d_p0q0)(
   PX(get_procmesh_dims_2d)(comm_cart_3d, &p0, &p1, &q0, &q1);
 
   /* split into p1*q1 comms of size p0*q0 */
+  key   = coords_3d[0]*q0 + coords_3d[2]/q1;
   color = coords_3d[1]*q1 + coords_3d[2]%q1;
-  key = coords_3d[0]*q0 + coords_3d[2]/q1;
   MPI_Comm_split(comm_cart_3d, color, key, &comm);
 
   dim_1d = p0*q0; period_1d = 1;
@@ -218,7 +226,7 @@ void PX(split_cart_procmesh_3dto2d_p1q1)(
 
   /* split into p0*q0 comms of size p1*q1 */
   color = coords_3d[0]*q0 + coords_3d[2]/q1;
-  key = coords_3d[1]*q1 + coords_3d[2]%q1;
+  key   = coords_3d[1]*q1 + coords_3d[2]%q1;
   MPI_Comm_split(comm_cart_3d, color, key, &comm);
 
   dim_1d = p1*q1; period_1d = 1;
@@ -255,7 +263,6 @@ void PX(split_cart_procmesh_for_3dto2d_remap_q0)(
   /* split into p0*p1*q1 comms of size q0 */
   color = coords_3d[0]*p1*q1 + coords_3d[1]*q1 + coords_3d[2]%q1;
   key = coords_3d[2]/q1;
-//   key = coords_3d[2]%q0; /* TODO: delete this line after several tests */
   MPI_Comm_split(comm_cart_3d, color, key, &comm);
 
   dim_1d = q0; period_1d = 1;
@@ -300,7 +307,6 @@ void PX(split_cart_procmesh_for_3dto2d_remap_q1)(
   MPI_Comm_free(&comm);
 }
 
-
 void PX(get_procmesh_dims_2d)(
     MPI_Comm comm_cart_3d,
     int *p0, int *p1, int *q0, int *q1
@@ -313,7 +319,6 @@ void PX(get_procmesh_dims_2d)(
   factorize(dims[2], q0, q1);
 }
 
-
 /* factorize an integer q into q0*q1 with
  * q1 <= q0 and q0-q1 -> min */
 static void factorize(
@@ -321,12 +326,11 @@ static void factorize(
     int *ptr_q0, int *ptr_q1
     )
 {
-  for(int t1 = 1; t1 <= sqrt(q); t1++)
-    if(t1 * (q/t1) == q)
-      *ptr_q1 = t1;
+  for(int t = 1; t <= sqrt(q); t++)
+    if(t * (q/t) == q)
+      *ptr_q1 = t;
 
   *ptr_q0 = q / (*ptr_q1);
 }
-
 
 

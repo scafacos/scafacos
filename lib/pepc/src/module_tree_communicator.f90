@@ -1,19 +1,19 @@
 ! This file is part of PEPC - The Pretty Efficient Parallel Coulomb Solver.
-! 
-! Copyright (C) 2002-2013 Juelich Supercomputing Centre, 
+!
+! Copyright (C) 2002-2014 Juelich Supercomputing Centre,
 !                         Forschungszentrum Juelich GmbH,
 !                         Germany
-! 
+!
 ! PEPC is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! PEPC is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU Lesser General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with PEPC.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -75,7 +75,7 @@ module module_tree_communicator
 
   ! MPI buffer
   integer*1, allocatable, target :: tree_comm_bsend_buffer(:) !< buffer for bsend-calls
-  
+
   public :: tree_communicator_start
   public :: tree_communicator_stop
   public :: tree_node_fetch_children
@@ -113,7 +113,7 @@ module module_tree_communicator
       call MPI_BUFFER_ATTACH(tree_comm_bsend_buffer, buffsize, ierr)
     end if
   end subroutine tree_communicator_prepare
-    
+
 
   !>
   !> Deallocate MPI communication buffers in pepc_finalize.
@@ -165,12 +165,12 @@ module module_tree_communicator
     call timer_reset(t_comm_total)
     call timer_reset(t_comm_recv)
     call timer_reset(t_comm_sendreqs)
-    
+
     tp = c_loc(t)
     call atomic_store_int(t%communicator%thread_status, TREE_COMM_THREAD_STATUS_STARTING)
     tree_comm_thread_counter = tree_comm_thread_counter + 1
     ERROR_ON_FAIL(pthreads_createthread(t%communicator%comm_thread, c_funloc(run_communication_loop), tp, thread_type = THREAD_TYPE_COMMUNICATOR, counter = tree_comm_thread_counter))
-    
+
     ! we have to wait here until the communicator has really started to find out its processor id
     do while (atomic_load_int(t%communicator%thread_status) /= TREE_COMM_THREAD_STATUS_STARTED)
       ERROR_ON_FAIL(pthreads_sched_yield())
@@ -196,7 +196,7 @@ module module_tree_communicator
     include 'mpif.h'
 
     type(t_tree), intent(inout) :: t
-    
+
     ! prevent multiple calls to this function
     if (     (atomic_load_int(t%communicator%thread_status) == TREE_COMM_THREAD_STATUS_STARTED) &
         .or. (atomic_load_int(t%communicator%thread_status) == TREE_COMM_THREAD_STATUS_STARTING) ) then
@@ -247,7 +247,7 @@ module module_tree_communicator
     integer(kind_node), intent(in) :: nidx
     type(t_particle), intent(in), optional :: particle
     real*8, intent(in), optional :: pos(3)
-    
+
     integer :: local_queue_bottom
 
     ! check wether the node has already been requested
@@ -279,7 +279,7 @@ module module_tree_communicator
       ! eager request
       t%communicator%req_queue(local_queue_bottom)%eager_request    = .true.
       t%communicator%req_queue(local_queue_bottom)%request%particle = particle
-      
+
       if (present(pos)) then
         t%communicator%req_queue(local_queue_bottom)%request%particle%x = pos
       end if
@@ -372,28 +372,28 @@ module module_tree_communicator
   !>
   !> send node data
   !>
-  subroutine send_data(t, nodes, numnodes, adressee) 
-    use module_tree, only: t_tree 
-    use module_pepc_types, only: t_tree_node, t_tree_node_package, MPI_TYPE_tree_node_package, t_request_eager 
-    implicit none 
-    include 'mpif.h' 
+  subroutine send_data(t, nodes, numnodes, adressee)
+    use module_tree, only: t_tree
+    use module_pepc_types, only: t_tree_node, t_tree_node_package, MPI_TYPE_tree_node_package, t_request_eager
+    implicit none
+    include 'mpif.h'
 
-    type(t_tree), intent(inout) :: t 
-    type(t_tree_node_package), contiguous, intent(in) :: nodes(:) 
-    integer, intent(in) :: numnodes 
-    integer(kind_pe), intent(in) :: adressee 
-    integer(kind_default) :: ierr 
+    type(t_tree), intent(inout) :: t
+    type(t_tree_node_package), contiguous, intent(in) :: nodes(:)
+    integer, intent(in) :: numnodes
+    integer(kind_pe), intent(in) :: adressee
+    integer(kind_default) :: ierr
 
-    ! Ship child data back to PE that requested it 
-    call MPI_BSEND(nodes, numnodes, MPI_TYPE_tree_node_package, & 
-      adressee, TREE_COMM_TAG_REQUESTED_DATA, t%comm_env%comm, ierr) 
+    ! Ship child data back to PE that requested it
+    call MPI_BSEND(nodes, numnodes, MPI_TYPE_tree_node_package, &
+      adressee, TREE_COMM_TAG_REQUESTED_DATA, t%comm_env%comm, ierr)
 
-    ! statistics on number of sent children-packages 
-    t%communicator%sum_ships = t%communicator%sum_ships + 1 
- 
-  end subroutine send_data 
+    ! statistics on number of sent children-packages
+    t%communicator%sum_ships = t%communicator%sum_ships + 1
 
-  
+  end subroutine send_data
+
+
   !>
   !> Simply collect node and all its siblings
   !>
@@ -406,12 +406,12 @@ module module_tree_communicator
     type(t_tree), intent(inout) :: t
     integer(kind_node), intent(in) :: req(2)
     integer(kind_pe), intent(in) :: ipe_sender
-    
+
     type(t_tree_node_package) :: children_to_send(8) ! for an octtree, there will never be more than 8 direct children - no need for counting in advance
     integer :: nchild
-    
+
     integer(kind_node) :: n
-    
+
     if (tree_comm_debug) then
       DEBUG_INFO('("PE", I6, " answering request.                         node=", I22, ",        sender=", I6)', t%comm_env%rank, req(1), ipe_sender )
     end if
@@ -433,12 +433,12 @@ module module_tree_communicator
       n = tree_node_get_next_sibling(t%nodes(n))
       if (n == NODE_INVALID) exit
     end do
-    
+
     call send_data(t, children_to_send, nchild, ipe_sender)
-    
+
   end subroutine answer_request_simple
 
-  
+
   !>
   !> Collect node, child and grandchild nodes for `node`
   !> that are needed to fulfill the mac() from given position `pos`
@@ -454,13 +454,13 @@ module module_tree_communicator
     type(t_tree), intent(inout) :: t
     type(t_request_eager), intent(in) :: request
     integer(kind_pe), intent(in) :: ipe_sender
-    
+
     type(t_tree_node), pointer :: parent
     type(t_tree_node_package), allocatable :: children_to_send(:)
     integer :: nchild, i
-   
+
     integer(kind_node), allocatable :: child_nodes(:)
-    
+
     if (tree_comm_debug) then
       DEBUG_INFO('("PE", I6, " answering eager request.                   node=", O22, ",        sender=", I6)', t%comm_env%rank, request%node, ipe_sender )
     end if
@@ -470,68 +470,68 @@ module module_tree_communicator
     ! first, we only collect pointers to all nodes that have to be sent and count them - therefore we need the maximum number of child nodes to be expected
     parent => t%nodes(t%nodes(request%node)%parent)
     allocate(child_nodes(parent%descendants)) ! enough space to keep all descendants in this array
-      
+
     call eager_collect_traverse(request%node)
 
     ! collect real data from pointers in child_nodes
     if (nchild > 0) then
       allocate(children_to_send(nchild))
-        
+
       do i=1,nchild
         call tree_node_pack(t%nodes(child_nodes(i)), children_to_send(i))
       end do
-      
+
       ! we set the parent for the first entry correctly for insertion on the receiver side. request%parent is a valid node index there.
       children_to_send(1)%parent = request%parent
 
       call send_data(t, children_to_send, nchild, ipe_sender)
-        
+
       deallocate(children_to_send)
     endif
 
     deallocate(child_nodes)
-    
+
     contains
-    
+
       recursive subroutine eager_collect_traverse(node)
         use module_interaction_specific, only : mac
         use module_pepc_types, only: kind_node, t_tree_node
         implicit none
         integer(kind_node), intent(in) :: node
-        
+
         integer(kind_node) :: n, s
         type(t_tree_node), pointer :: n_ptr
         real*8 :: dist2
         real*8 :: delta(3)
-        
+
         n = node
-        
+
         do
           nchild = nchild + 1
           child_nodes(nchild) = n
-          
+
           n_ptr => t%nodes(n)
-        
+
           delta = request%particle%x - n_ptr%interaction_data%coc  ! Separation vector
           dist2 = dot_product(delta, delta)
 
           ! check MAC
-          if (.not. (mac(request%particle, n_ptr%interaction_data, dist2, t%boxlength2(n_ptr%level)) .or. tree_node_is_leaf(n_ptr))) then
+          if (.not. (mac(IF_MAC_NEEDS_PARTICLE(request%particle) n_ptr%interaction_data, dist2, t%boxlength2(n_ptr%level)) .or. tree_node_is_leaf(n_ptr))) then
             ! resolve the node
             s = tree_node_get_first_child(n_ptr)
             if (s /= NODE_INVALID) call eager_collect_traverse(s)
           else
             ! according to the MAC, the node does not have to be resolved any further (or it is a leaf) - there is nothing to do here
           end if
-          
+
           ! traverse to next sibling
           n = tree_node_get_next_sibling(n_ptr)
           if (n == NODE_INVALID) exit
-        end do          
+        end do
       end subroutine
-    
+
   end subroutine answer_request_eager
-  
+
 
   !>
   !> Insert incoming data into the tree.
@@ -553,9 +553,9 @@ module module_tree_communicator
 
     integer(kind_node) :: parent_node
     integer :: ic
-    
+
     DEBUG_ASSERT(num_children > 0)
-    
+
     parent_node = child_data(1)%parent
 
     if (tree_node_children_available(t%nodes(parent_node))) then
@@ -563,7 +563,7 @@ module module_tree_communicator
     else
       ic           = 1
       call unpack_children(parent_node, .true.)
-    
+
       ! count number of fetched nodes
       t%communicator%sum_fetches = t%communicator%sum_fetches + num_children
 
@@ -571,7 +571,7 @@ module module_tree_communicator
     end if
 
     contains
-    
+
     recursive subroutine unpack_children(parent_idx, toplvl)
       use module_pepc_types, only: kind_node
       use module_tree_node, only: NODE_INVALID
@@ -579,21 +579,21 @@ module module_tree_communicator
       implicit none
       integer(kind_node), intent(in) :: parent_idx
       logical, intent(in) :: toplvl
-      
+
       integer :: lvl
       type(t_tree_node), pointer :: parent
       integer(kind_node) :: newnode
       type(t_tree_node) :: unpack_node
-      integer(kind_node) :: child_nodes(1:8) 
-      integer :: nchild    
-      
-      if (ic > num_children) then; return; endif
+      integer(kind_node) :: child_nodes(1:8)
+      integer :: nchild
+
+      if (ic > num_children) return
 
       lvl     =  child_data(ic)%level
       nchild  =  0
       newnode =  NODE_INVALID ! in case of an algorithmic error, this invalid pointer should be catched
       parent  => t%nodes(parent_idx)
-      
+
       do
         if (child_data(ic)%level < lvl) then
           ! all nodes on this level (and below) have been inserted
@@ -604,9 +604,9 @@ module module_tree_communicator
           call tree_node_unpack(child_data(ic), unpack_node)
           ! tree nodes coming from remote PEs are flagged for easier identification
           unpack_node%flags_local = ibset(unpack_node%flags_local, TREE_NODE_FLAG_LOCAL_HAS_REMOTE_CONTRIBUTIONS)
-          
+
           call tree_insert_node(t, unpack_node, newnode)
-          
+
           ic     = ic     + 1
           nchild = nchild + 1
           child_nodes(nchild) = newnode
@@ -615,24 +615,24 @@ module module_tree_communicator
             DEBUG_INFO('("PE", I6, " received answer. parent_key=", O22, ",  sender=", I6, ",  owner=", I6, ",  kchild=", O22)', t%comm_env%rank, parent%key, ipe_sender, unpack_node%owner, unpack_node%key)
           end if
         endif
-        
+
         if (ic > num_children) then; exit; endif
       end do
-      
+
       call tree_node_connect_children(t, parent_idx, child_nodes(1:nchild))
 
       if (toplvl) then
         ! make sure children are actually inserted before indicating their presence
-        ! in fact, this is only relevant for the topmost parent node as the others cannot be traversed 
+        ! in fact, this is only relevant for the topmost parent node as the others cannot be traversed
         ! before its direct children are present
         call atomic_write_barrier()
       endif
       ! set 'children-here'-flag for all parent addresses
       ! may only be done *after inserting all* children, hence not(!) during the loop above
       parent%flags_local = ibset(parent%flags_local, TREE_NODE_FLAG_LOCAL_CHILDREN_AVAILABLE) ! Set children_HERE flag for parent node
-      
+
     end subroutine
-    
+
   end subroutine unpack_data
 
 
@@ -661,7 +661,7 @@ module module_tree_communicator
     do while (atomic_load_int(t) .ne. atomic_load_int(b))
       tmp_top = mod(atomic_load_int(t), TREE_COMM_REQUEST_QUEUE_LENGTH) + 1
 
-      ! first check whether the entry is actually valid	  
+      ! first check whether the entry is actually valid
       if (q(tmp_top)%entry_valid) then
         call atomic_read_barrier() ! make sure that reads of parts of the queue entry occurr in the correct order
 
@@ -691,7 +691,7 @@ module module_tree_communicator
       use module_pepc_types, only : MPI_TYPE_request_eager
       implicit none
       include 'mpif.h'
-      
+
       logical :: send_request
       type(t_request_queue_entry), volatile, intent(inout) :: req
       type(t_comm_env), intent(inout) :: comm_env
@@ -702,7 +702,7 @@ module module_tree_communicator
       if (.not. btest( req%node%flags_local, TREE_NODE_FLAG_LOCAL_REQUEST_SENT ) ) then
         ! send a request to PE req_queue_owners(req_queue_top)
         ! telling, that we need child data for particle request_key(req_queue_top)
-        
+
         if (req%eager_request) then
           call MPI_BSEND(req%request, 1, MPI_TYPE_request_eager, req%node%owner, TREE_COMM_TAG_REQUEST_KEY_EAGER, &
             comm_env%comm, ierr)
@@ -755,7 +755,7 @@ module module_tree_communicator
     t => null()
     call c_f_pointer(arg, t)
     DEBUG_ASSERT(associated(t))
-    
+
     ! store ID of comm-thread processor
     t%communicator%processor_id = get_my_core()
     call atomic_write_barrier()
@@ -802,14 +802,8 @@ module module_tree_communicator
       ! adjust the sched_yield()-timeout for the thread that shares its processor with the communicator
       !if (messages_per_iteration > MAX_MESSAGES_PER_ITERATION) then
       !  particles_per_yield = int(max(0.75 * particles_per_yield, 0.01*max_particles_per_thread))
-      !  if (walk_debug) then
-      !    DEBUG_INFO('("messages_per_iteration = ", I6, " > ", I6, " --> Decreased particles_per_yield to", I10)', messages_per_iteration, MAX_MESSAGES_PER_ITERATION, particles_per_yield)
-      !  end if
       !else if ((particles_per_yield < max_particles_per_thread) .and. (messages_per_iteration < MIN_MESSAGES_PER_ITERATION)) then
       !  particles_per_yield = int(min(1.5 * particles_per_yield, 1. * max_particles_per_thread))
-      !  if (walk_debug) then
-      !    DEBUG_INFO('("messages_per_iteration = ", I6, " < ", I6, " --> Increased particles_per_yield to", I10)', messages_per_iteration, MIN_MESSAGES_PER_ITERATION, particles_per_yield)
-      !  end if
       !end if
 
       ! currently, there is no further communication request --> other threads may do something interesting
@@ -904,7 +898,7 @@ module module_tree_communicator
             ! ... and put it into the tree and all other data structures
             call unpack_data(t, child_data, num_children, ipe_sender)
             deallocate(child_data)
-            
+
           ! rank 0 does bookkeeping about which PE is already finished with its walk
           ! no one else will ever receive this message tag
           case (TREE_COMM_TAG_FINISHED_PE)
@@ -944,10 +938,10 @@ module module_tree_communicator
             end if
 
             call atomic_store_int(t%communicator%thread_status, TREE_COMM_THREAD_STATUS_STOPPED)
-          
-          ! on some rank something went wrong - we shall dump our tree  
+
+          ! on some rank something went wrong - we shall dump our tree
           case (TREE_COMM_TAG_DUMP_TREE_AND_ABORT)
-            
+
             call MPI_RECV(tree_comm_dummy, 1, MPI_INTEGER, ipe_sender, TREE_COMM_TAG_DUMP_TREE_AND_ABORT, &
                         t%comm_env%comm, MPI_STATUS_IGNORE, ierr) ! TODO: use MPI_RECV_INIT(), MPI_START() and colleagues for faster communication
 

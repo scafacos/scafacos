@@ -77,7 +77,7 @@ void PNX(assign_f_c2c)(
 
   if(ths->pnfft_flags & PNFFT_PRE_FULL_PSI)
     PNX(assign_f_c2c_pre_full_psi)(
-        ths->g2, plan_pre_psi + ind*PNFFT_POW3(cutoff), m0, grid_size, cutoff,
+        grid, plan_pre_psi + ind*PNFFT_POW3(cutoff), m0, grid_size, cutoff,
         f);
   else if(ths->pnfft_flags & PNFFT_PRE_PSI)
     PNX(assign_f_c2c_pre_psi)(

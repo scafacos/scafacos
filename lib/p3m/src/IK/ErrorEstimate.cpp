@@ -21,12 +21,13 @@
  */
 
 #include "utils.hpp"
-#include "ErrorEstimateIK.hpp"
+#include "ErrorEstimate.hpp"
 
-namespace P3M {
+namespace P3M { namespace IK {
+
 static const p3m_float FULL_ESTIMATE_ALPHA_H_THRESHOLD = 0.5;
 
-p3m_float ErrorEstimateIK::compute_ks_error(Parameters& p, p3m_int num_charges,
+void ErrorEstimate::computeKSError(TuneParameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	bool full_estimate = false;
 	// use the full estimate if alpha*h is larger than the threshold in any dimension
@@ -42,17 +43,17 @@ p3m_float ErrorEstimateIK::compute_ks_error(Parameters& p, p3m_int num_charges,
 	}
 
 #ifdef P3M_ENABLE_DEBUG
-	if (!full_estimate)
+	if (comm.onMaster() && !full_estimate)
 	    printf("        alpha*h < " FFLOAT " => approximation\n",
 	            FULL_ESTIMATE_ALPHA_H_THRESHOLD);
 #endif
 
 	if (full_estimate)
-	    return compute_ks_error_full(p, num_charges, sum_q2, box_l);
+	    computeKSErrorFull(p, num_charges, sum_q2, box_l);
 	else
-	    return compute_ks_error_approx(p, num_charges, sum_q2, box_l);
+	    computeKSErrorApprox(p, num_charges, sum_q2, box_l);
 }
-p3m_float ErrorEstimateIK::compute_ks_error_triclinic(Parameters& p, p3m_int num_charges,
+void ErrorEstimate::computeKSError_triclinic(TuneParameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic) {
 	bool full_estimate = false;
 	 //use the full estimate if alpha*h is larger than the threshold in any dimension
@@ -75,16 +76,16 @@ p3m_float ErrorEstimateIK::compute_ks_error_triclinic(Parameters& p, p3m_int num
 
         fcs_float box_l[3] = {box_vectors[0][0], box_vectors[1][1], box_vectors[2][2]};
         if (full_estimate) {
-            return compute_ks_error_full(p, num_charges, sum_q2, box_l); //todo: remove this and get the triclinic estimate right.
-            //	    return compute_ks_error_full_triclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
+            return computeKSErrorFull(p, num_charges, sum_q2, box_l); //todo: remove this and get the triclinic estimate right.
+            //	    return computeKSErrorFullTriclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
         } else {
-            return compute_ks_error_approx(p, num_charges, sum_q2, box_l);
-            //return compute_ks_error_approx_triclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
+            return computeKSErrorApprox(p, num_charges, sum_q2, box_l);
+            //return computeKSErrorApproxTriclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
         }
     }
 
-p3m_float ErrorEstimateIK::compute_ks_error_approx(Parameters& p, p3m_int num_charges,
-		p3m_float sum_q2, p3m_float box_l[3]) {
+void ErrorEstimate::computeKSErrorApprox(TuneParameters& p,
+        p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) {
 
 	p3m_float h = box_l[0] / p.grid[0];
 	p3m_float ha = h * p.alpha;
@@ -126,13 +127,14 @@ p3m_float ErrorEstimateIK::compute_ks_error_approx(Parameters& p, p3m_int num_ch
 		+ 3617. / 35512320. * pow(ha, 2) + 1. / 345600.;
 		break;
 	default:
-		throw std::logic_error("INTERNAL_ERROR: k_space_error_approx: "
+		throw std::logic_error("Internal Error: k_space_error_approx: "
 				"Charge assignment order should not occur!\n");
 	};
 
-	return sum_q2 / (box_l[0] * box_l[0])
-					* pow(h * p.alpha, p.cao)
-					* sqrt(p.alpha * box_l[0] / num_charges * sqrt(2.0 * M_PI) * sum);
+	p.ks_error =
+	        sum_q2 / (box_l[0] * box_l[0])
+	        * pow(h * p.alpha, p.cao)
+	        * sqrt(p.alpha * box_l[0] / num_charges * sqrt(2.0 * M_PI) * sum);
 }
 
 /** Calculates the reciprocal space contribution to the rms error in the
@@ -140,7 +142,7 @@ p3m_float ErrorEstimateIK::compute_ks_error_approx(Parameters& p, p3m_int num_ch
  (Eqn. 8.23) (for a system of N randomly distributed particles in a
  cubic box).
  */
-p3m_float ErrorEstimateIK::compute_ks_error_full(Parameters& p, p3m_int num_charges,
+void ErrorEstimate::computeKSErrorFull(TuneParameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3]) {
 	/* #ifdef P3M_ENABLE_DEBUG */
 	/*   printf(  */
@@ -188,19 +190,19 @@ p3m_float ErrorEstimateIK::compute_ks_error_full(Parameters& p, p3m_int num_char
 		if (ny != old_ny) {
 			if (nx != old_nx) {
 				old_nx = nx;
-				ctan_x = k_space_error_sum1(nx, grid_i[0], p.cao);
+				ctan_x = KSErrorSum1(nx, grid_i[0], p.cao);
 			}
 			old_ny = ny;
-			ctan_y = k_space_error_sum1(ny, grid_i[1], p.cao);
+			ctan_y = KSErrorSum1(ny, grid_i[1], p.cao);
 		}
 
 		if (nx != 0 || ny != 0 || nz != 0) {
 			p3m_float n2 = nx * nx + ny * ny + nz * nz;
 			p3m_float cs = ctan_x * ctan_y
-					* k_space_error_sum1(nz, grid_i[2], p.cao);
+					* KSErrorSum1(nz, grid_i[2], p.cao);
 			p3m_float alias1, alias2;
 			// TODO: sum2_ad for IKI?
-			k_space_error_sum2(nx, ny, nz, p.grid, grid_i, p.cao, alpha_L_i,
+			KSErrorSum2(nx, ny, nz, p.grid, grid_i, p.cao, alpha_L_i,
 					&alias1, &alias2);
 			p3m_float d = alias1 - SQR(alias2 / cs) / n2;
 			/* at high precisions, d can become negative due to extinction;
@@ -212,10 +214,8 @@ p3m_float ErrorEstimateIK::compute_ks_error_full(Parameters& p, p3m_int num_char
 	p3m_float he_q;
 	MPI_Reduce(&local_he_q, &he_q, 1, P3M_MPI_FLOAT, MPI_SUM, 0, comm.mpicomm);
 
-	p3m_float ks_error = 2.0 * sum_q2 *
-			sqrt(he_q / (num_charges * box_l[0] * box_l[1] * box_l[2]));
-
-	return ks_error;
+	p.ks_error = 2.0 * sum_q2 *
+	        sqrt(he_q / (num_charges * box_l[0] * box_l[1] * box_l[2]));
 }
 
 /** One of the aliasing sums used by \ref p3m_fftcommon_k_space_error.
@@ -225,7 +225,7 @@ p3m_float ErrorEstimateIK::compute_ks_error_full(Parameters& p, p3m_int num_char
  the spline interpolation) can be written as an even trigonometric
  polynomial. The results are tabulated here (The employed formula
  is Eqn. 7.66 in the book of Hockney and Eastwood). */
-p3m_float ErrorEstimateIK::k_space_error_sum1(p3m_int n, p3m_float grid_i, p3m_int cao) {
+p3m_float ErrorEstimate::KSErrorSum1(p3m_int n, p3m_float grid_i, p3m_int cao) {
 	p3m_float c, res = 0.0;
 	c = SQR(cos(M_PI * grid_i * (p3m_float) n));
 
@@ -286,7 +286,7 @@ p3m_float ErrorEstimateIK::k_space_error_sum1(p3m_int n, p3m_float grid_i, p3m_i
 		break;
 	}
 	default:
-		throw std::logic_error("INTERNAL_ERROR: This value for the interpolation order should not occur!");
+		throw std::logic_error("Internal Error: This value for the interpolation order should not occur!");
 	}
 
 	return res;
@@ -294,7 +294,7 @@ p3m_float ErrorEstimateIK::k_space_error_sum1(p3m_int n, p3m_float grid_i, p3m_i
 
 /** aliasing sum used by \ref k_space_error. */
 void
-ErrorEstimateIK::k_space_error_sum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
+ErrorEstimate::KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
 		p3m_float grid_i[3], p3m_int cao, p3m_float alpha_L_i,
 		p3m_float *alias1, p3m_float *alias2) {
 	p3m_float prefactor = SQR(M_PI * alpha_L_i);
@@ -323,7 +323,7 @@ ErrorEstimateIK::k_space_error_sum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int 
 	}
 }
 
-//p3m_float ErrorEstimateIK::compute_ks_error_approx_triclinic(Parameters& p, p3m_int num_charges,
+//void ErrorEstimate::computeKSErrorApproxTriclinic(TuneParameters& p, p3m_int num_charges,
 //		p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic) {
 //
 //	p3m_float h = box_vectors[0][0] / p.grid[0];
@@ -370,7 +370,7 @@ ErrorEstimateIK::k_space_error_sum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int 
 //				"Charge assignment order should not occur!\n");
 //	};
 //
-//	return sum_q2 / (box_vectors[0][0] * box_vectors[0][0])
+//	p.ks_error = sum_q2 / (box_vectors[0][0] * box_vectors[0][0])
 //					* pow(h * p.alpha, p.cao)
 //					* sqrt(p.alpha * box_vectors[0][0] / num_charges * sqrt(2.0 * M_PI) * sum);
 //}
@@ -380,7 +380,7 @@ ErrorEstimateIK::k_space_error_sum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int 
  (Eqn. 8.23) (for a system of N randomly distributed particles in a
  cubic box).
  */
-p3m_float ErrorEstimateIK::compute_ks_error_full_triclinic(Parameters& p, p3m_int num_charges,
+void ErrorEstimate::computeKSErrorFullTriclinic(Parameters& p, p3m_int num_charges,
 		p3m_float sum_q2,  p3m_float box_vectors[3][3], bool isTriclinic) {
 	/* #ifdef P3M_ENABLE_DEBUG */
 	/*   printf(  */
@@ -452,10 +452,9 @@ p3m_float ErrorEstimateIK::compute_ks_error_full_triclinic(Parameters& p, p3m_in
 	p3m_float he_q;
 	MPI_Reduce(&local_he_q, &he_q, 1, P3M_MPI_FLOAT, MPI_SUM, 0, comm.mpicomm);
 
-	p3m_float ks_error = 2.0 * sum_q2 *
+	p.ks_error = 2.0 * sum_q2 *
 			sqrt(he_q / num_charges)/ (box_vectors[0][0] * box_vectors[1][1] * box_vectors[2][2]);
 
-	return ks_error;
 }
 
 /** One of the aliasing sums used by \ref p3m_fftcommon_k_space_error.
@@ -465,7 +464,7 @@ p3m_float ErrorEstimateIK::compute_ks_error_full_triclinic(Parameters& p, p3m_in
  the spline interpolation) can be written as an even trigonometric
  polynomial. The results are tabulated here (The employed formula
  is Eqn. 7.66 in the book of Hockney and Eastwood). */ // (-1)^s/s! * d^s/dx^s cot(x) = sum_-inf to inf (x-pi n)^-(s+1)
-p3m_float ErrorEstimateIK::k_space_error_sum1_triclinic(p3m_int n, p3m_float grid_i, p3m_int cao) {
+void ErrorEstimate::KSErrorSum1Triclinic(p3m_int n, p3m_float grid_i, p3m_int cao) {
 	p3m_float c, res = 0.0;
 	c = SQR(cos(M_PI * grid_i * (p3m_float) n)); // cos(pi/grid*n)^2
 
@@ -534,7 +533,7 @@ p3m_float ErrorEstimateIK::k_space_error_sum1_triclinic(p3m_int n, p3m_float gri
 
 /** aliasing sum used by \ref k_space_error. */
 void
-ErrorEstimateIK::k_space_error_sum2_triclinic(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
+ErrorEstimate::KSErrorSum2Triclinic(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
 		p3m_float grid_i[3], p3m_int cao, p3m_float alpha,
 		p3m_float *sum_Fref2, p3m_float *alias2, p3m_float box_vectors[3][3], bool isTriclinic) {
 	p3m_float prefactor = SQR(M_PI / alpha);
@@ -566,6 +565,6 @@ ErrorEstimateIK::k_space_error_sum2_triclinic(p3m_int nx, p3m_int ny, p3m_int nz
 	}
 }
 
-}
+}}
 
 

@@ -40,9 +40,8 @@ void mmm1d_init(void **rd, MPI_Comm communicator) {
   mmm1d_comm_init(&d->comm, communicator);
   
   /* Init the default MMM1D parameters */
-  d->far_switch_radius_2=MMM1D_DEFAULT_FAR_SWITCH_RADIUS*MMM1D_DEFAULT_FAR_SWITCH_RADIUS;
-  d->bessel_cutoff=MMM1D_DEFAULT_BESSEL_CUTOFF;
-  d->bessel_calculated=MMM1D_DEFAULT_BESSEL_CALCULATED;
+  d->far_switch_radius_2=-1;
+  d->bessel_cutoff=MMM1D_DEFAULT_MAXIMAL_B_CUT;
   d->maxPWerror=MMM1D_DEFAULT_REQUIRED_ACCURACY;
   d->total_charge=0.;
   
@@ -52,12 +51,11 @@ void mmm1d_init(void **rd, MPI_Comm communicator) {
   d->local_positions= NULL;
   d->n_localpart=0;
   
-  d->needs_retune = 1;
-  
   d->polTaylor=NULL;
   d->polTaylor = malloc(sizeof(mmm_data_struct));
   (d->polTaylor)->modPsi=NULL;
   (d->polTaylor)->n_modPsi=0;
+  d->bessel_radii = NULL;
 }
 
 /* safe free */

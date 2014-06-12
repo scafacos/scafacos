@@ -42,6 +42,12 @@
 ! Define to the kind of fcs_integer.
 #undef fcs_integer_kind
 
+! Define to the ISO C kind of fcs_real.
+#undef fcs_real_kind_isoc
+
+! Define to the ISO C kind of fcs_integer.
+#undef fcs_integer_kind_isoc
+
 ! Define to the communication library to use (FMM_MP_ARMCI or FMM_MP_A1).
 #undef FMM_MP
 

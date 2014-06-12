@@ -26,6 +26,7 @@ static void calculate_3dto2d_blocks(
     const INT *n, MPI_Comm comm_cart_3d,
     INT *iblk);
 
+
 INT PX(local_size_many_dft)(
     int rnk_n, const INT *n, const INT *ni, const INT *no,
     INT howmany, const INT *iblock, const INT *oblock,
@@ -35,9 +36,9 @@ INT PX(local_size_many_dft)(
     )
 {
   return PX(local_size_partrafo)(
-    rnk_n, n, ni, no, howmany, iblock, oblock,
-    comm_cart, PFFTI_TRAFO_C2C, pfft_flags,
-    local_ni, local_i_start, local_no, local_o_start);
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      comm_cart, PFFTI_TRAFO_C2C, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
 }
 
 INT PX(local_size_many_dft_r2c)(
@@ -49,9 +50,9 @@ INT PX(local_size_many_dft_r2c)(
     )
 {
   return PX(local_size_partrafo)(
-    rnk_n, n, ni, no, howmany, iblock, oblock,
-    comm_cart, PFFTI_TRAFO_R2C, pfft_flags,
-    local_ni, local_i_start, local_no, local_o_start);
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      comm_cart, PFFTI_TRAFO_R2C, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
 }
 
 INT PX(local_size_many_dft_c2r)(
@@ -63,9 +64,9 @@ INT PX(local_size_many_dft_c2r)(
     )
 {
   return PX(local_size_partrafo)(
-    rnk_n, n, ni, no, howmany, iblock, oblock,
-    comm_cart, PFFTI_TRAFO_C2R, pfft_flags,
-    local_ni, local_i_start, local_no, local_o_start);
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      comm_cart, PFFTI_TRAFO_C2R, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
 }
 
 INT PX(local_size_many_r2r)(
@@ -77,9 +78,9 @@ INT PX(local_size_many_r2r)(
     )
 {
   return PX(local_size_partrafo)(
-    rnk_n, n, ni, no, howmany, iblock, oblock,
-    comm_cart, PFFTI_TRAFO_R2R, pfft_flags,
-    local_ni, local_i_start, local_no, local_o_start);
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      comm_cart, PFFTI_TRAFO_R2R, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
 }
 
 
@@ -94,9 +95,9 @@ PX(plan) PX(plan_many_dft)(
   int *skip_trafos=NULL;
 
   return PX(plan_partrafo)(
-    rnk_n, n, ni, no, howmany, iblock, oblock,
-    (R*) in, (R*) out, comm_cart, sign, kinds, skip_trafos,
-    PFFTI_TRAFO_C2C, pfft_flags);
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      (R*) in, (R*) out, comm_cart, sign, kinds, skip_trafos,
+      PFFTI_TRAFO_C2C, pfft_flags);
 }
 
 PX(plan) PX(plan_many_dft_r2c)(
@@ -110,9 +111,9 @@ PX(plan) PX(plan_many_dft_r2c)(
   int *skip_trafos=NULL;
 
   return PX(plan_partrafo)(
-    rnk_n, n, ni, no, howmany, iblock, oblock,
-    in, (R*) out, comm_cart, sign, kinds, skip_trafos,
-    PFFTI_TRAFO_R2C, pfft_flags);
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      in, (R*) out, comm_cart, sign, kinds, skip_trafos,
+      PFFTI_TRAFO_R2C, pfft_flags);
 }
 
 PX(plan) PX(plan_many_dft_c2r)(
@@ -126,9 +127,9 @@ PX(plan) PX(plan_many_dft_c2r)(
   int *skip_trafos=NULL;
 
   return PX(plan_partrafo)(
-    rnk_n, n, ni, no, howmany, iblock, oblock,
-    (R*) in, out, comm_cart, sign, kinds, skip_trafos,
-    PFFTI_TRAFO_C2R, pfft_flags);
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      (R*) in, out, comm_cart, sign, kinds, skip_trafos,
+      PFFTI_TRAFO_C2R, pfft_flags);
 }
 
 PX(plan) PX(plan_many_r2r)(
@@ -142,9 +143,9 @@ PX(plan) PX(plan_many_r2r)(
   int *skip_trafos=NULL;
 
   return PX(plan_partrafo)(
-    rnk_n, n, ni, no, howmany, iblock, oblock,
-    in, out, comm_cart, sign, kinds, skip_trafos,
-    PFFTI_TRAFO_R2R, pfft_flags);
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      in, out, comm_cart, sign, kinds, skip_trafos,
+      PFFTI_TRAFO_R2R, pfft_flags);
 }
 
 PX(plan) PX(plan_many_dft_skipped)(
@@ -157,10 +158,56 @@ PX(plan) PX(plan_many_dft_skipped)(
   X(r2r_kind) *kinds=NULL;
 
   return PX(plan_partrafo)(
-    rnk_n, n, ni, no, howmany, iblock, oblock,
-    (R*) in, (R*) out, comm_cart, sign, kinds, skip_trafos,
-    PFFTI_TRAFO_C2C, pfft_flags);
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      (R*) in, (R*) out, comm_cart, sign, kinds, skip_trafos,
+      PFFTI_TRAFO_C2C, pfft_flags);
 }
+
+PX(plan) PX(plan_many_dft_r2c_skipped)(
+    int rnk_n, const INT *n, const INT *ni, const INT *no,
+    INT howmany, const INT *iblock, const INT *oblock,
+    const int *skip_trafos, R *in, C *out, MPI_Comm comm_cart,
+    int sign, unsigned pfft_flags
+    )
+{
+  X(r2r_kind) *kinds=NULL;
+
+  return PX(plan_partrafo)(
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      in, (R*) out, comm_cart, sign, kinds, skip_trafos,
+      PFFTI_TRAFO_R2C, pfft_flags);
+}
+
+PX(plan) PX(plan_many_dft_c2r_skipped)(
+    int rnk_n, const INT *n, const INT *ni, const INT *no,
+    INT howmany, const INT *iblock, const INT *oblock,
+    const int *skip_trafos, C *in, R *out, MPI_Comm comm_cart,
+    int sign, unsigned pfft_flags
+    )
+{
+  X(r2r_kind) *kinds=NULL;
+
+  return PX(plan_partrafo)(
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      (R*) in, out, comm_cart, sign, kinds, skip_trafos,
+      PFFTI_TRAFO_C2R, pfft_flags);
+}
+
+PX(plan) PX(plan_many_r2r_skipped)(
+    int rnk_n, const INT *n, const INT *ni, const INT *no,
+    INT howmany, const INT *iblock, const INT *oblock,
+    const int *skip_trafos, R *in, R *out, MPI_Comm comm_cart,
+    const PX(r2r_kind) *kinds, unsigned pfft_flags
+    )
+{
+  int sign=0;
+
+  return PX(plan_partrafo)(
+      rnk_n, n, ni, no, howmany, iblock, oblock,
+      in, out, comm_cart, sign, kinds, skip_trafos,
+      PFFTI_TRAFO_R2R, pfft_flags);
+}
+
 
 INT PX(local_size_many_gc)(
     int rnk_n, const INT *local_n, const INT *local_start, INT alloc_local,
@@ -230,8 +277,6 @@ static void calculate_3dto2d_blocks(
       iblk, mblk, oblk);
 }
 
-
-
 PX(gcplan) PX(plan_many_cgc)(
     int rnk_n, const INT *n,
     INT howmany, const INT *block,
@@ -244,3 +289,61 @@ PX(gcplan) PX(plan_many_cgc)(
       rnk_n, n, 2*howmany, block, gc_below, gc_above,
       (R*) data, comm_cart, gc_flags);
 }
+
+
+void PX(local_block_many_dft)(
+    int rnk_n, const INT *ni, const INT *no,
+    const INT *iblock, const INT *oblock,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  PX(local_block_partrafo)(
+      rnk_n, ni, no, iblock, oblock,
+      comm_cart, pid, PFFTI_TRAFO_C2C, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
+}
+
+void PX(local_block_many_dft_r2c)(
+    int rnk_n, const INT *ni, const INT *no,
+    const INT *iblock, const INT *oblock,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  PX(local_block_partrafo)(
+      rnk_n, ni, no, iblock, oblock,
+      comm_cart, pid, PFFTI_TRAFO_R2C, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
+}
+
+void PX(local_block_many_dft_c2r)(
+    int rnk_n, const INT *ni, const INT *no,
+    const INT *iblock, const INT *oblock,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  PX(local_block_partrafo)(
+      rnk_n, ni, no, iblock, oblock,
+      comm_cart, pid, PFFTI_TRAFO_C2R, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
+}
+
+void PX(local_block_many_r2r)(
+    int rnk_n, const INT *ni, const INT *no,
+    const INT *iblock, const INT *oblock,
+    MPI_Comm comm_cart, int pid, unsigned pfft_flags,
+    INT *local_ni, INT *local_i_start,
+    INT *local_no, INT *local_o_start
+    )
+{
+  PX(local_block_partrafo)(
+      rnk_n, ni, no, iblock, oblock,
+      comm_cart, pid, PFFTI_TRAFO_R2R, pfft_flags,
+      local_ni, local_i_start, local_no, local_o_start);
+}
+

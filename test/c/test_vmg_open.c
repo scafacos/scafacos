@@ -84,6 +84,12 @@ int main(int argc, char* argv[])
   }
 
   if (comm_rank == 0) {
+    fprintf(stderr, "----------------\n");
+    fprintf(stderr, "Running vmg open test\n");
+    fprintf(stderr, "----------------\n");
+    fprintf(stderr, "Setting up MPI...\n");
+    fprintf(stderr, "  Using %d tasks.\n", comm_size);
+
     printf("*** RUNNING vmg TEST ***\n");
     printf("  n_total =              %" FCS_LMOD_INT "d\n", n_total);
     printf("  n_procs =              %d\n", comm_size);

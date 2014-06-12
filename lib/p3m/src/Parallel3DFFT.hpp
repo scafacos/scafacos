@@ -120,62 +120,67 @@ public:
 	/* DATA MEMBERS */
 	/***************************************************/
 public:
-	/** Information about the three one dimensional FFTs and how the nodes
-	 *  have to communicate in between.
-	 *
-	 * NOTE: FFT numbering starts with 1 for technical reasons (because we
-	 *       have 4 node grids, the index 0 is used for the real space
-	 *       charge assignment grid).  */
-	forward_plan plan[4];
-	/** Information for Backward FFTs (see fft.plan). */
-	backward_plan back[4];
-	/** Buffer for receive data. */
-	p3m_float *data_buf;
 
 private:
-	Communication& comm;
+  Communication& comm;
 
-	/** Whether FFT is initialized or not. */
-	bool is_prepared;
-
-	/** Maximal size of the communication buffers. */
-	p3m_int max_comm_size;
-
-	/** Maximal local grid size. */
-	p3m_int max_grid_size;
-
-	/** send buffer. */
-	p3m_float *send_buf;
-	/** receive buffer. */
-	p3m_float *recv_buf;
+  /** Whether FFT is initialized or not. */
+  bool is_prepared;
+  
+  /** Information about the three one dimensional FFTs and how the nodes
+   *  have to communicate in between.
+   *
+   * NOTE: FFT numbering starts with 1 for technical reasons (because we
+   *       have 4 node grids, the index 0 is used for the real space
+   *       charge assignment grid).  */
+  forward_plan plan[4];
+  /** Information for Backward FFTs (see fft.plan). */
+  backward_plan back[4];
+  
+  /** Maximal size of the communication buffers. */
+  p3m_int max_comm_size;
+  
+  /** Maximal local grid size. */
+  p3m_int max_grid_size;
+  
+  /** send buffer. */
+  p3m_float *send_buf;
+  /** receive buffer. */
+  p3m_float *recv_buf;
 
 public:
-	/***************************************************/
-	/* MEMBER FUNCTIONS */
-	/***************************************************/
-	Parallel3DFFT(Communication &comm);
-	~Parallel3DFFT();
+  /***************************************************/
+  /* MEMBER FUNCTIONS */
+  /***************************************************/
+  Parallel3DFFT(Communication &comm);
+  ~Parallel3DFFT();
+  
+  /** Prepare the 3D-FFT for a given size.
+      
+   * \return Maximal size of local fft grid (needed for allocation of ca_grid).
+   * \param local_grid_dim    Pointer to local CA grid dimensions.
+   * \param local_grid_margin Pointer to local CA grid margins.
+   * \param global_grid_dim   Pointer to global CA grid dimensions.
+   * \param global_grid_off   Pointer to global CA grid margins.
+   * \param ks_pnum           Pointer to number of permutations in k-space.
+   */
+  void
+  prepare(p3m_int *local_grid_dim, p3m_int *local_grid_margin,
+          p3m_int* global_grid_dim, p3m_float *global_grid_off,
+          p3m_int *ks_pnum);
 
-	/** Prepare the 3D-FFT for a given size.
-
-	 * \return Maximal size of local fft grid (needed for allocation of ca_grid).
-	 * \param local_grid_dim    Pointer to local CA grid dimensions.
-	 * \param local_grid_margin Pointer to local CA grid margins.
-	 * \param global_grid_dim   Pointer to global CA grid dimensions.
-	 * \param global_grid_off   Pointer to global CA grid margins.
-	 * \param ks_pnum           Pointer to number of permutations in k-space.
-	 */
-	void
-	prepare(p3m_int *local_grid_dim, p3m_int *local_grid_margin,
-			p3m_int* global_grid_dim, p3m_float *global_grid_off,
-			p3m_int *ks_pnum);
-
-	/** perform the forward 3D FFT. */
-	void forward(p3m_float *data);
-	void backward(p3m_float *data);
+    /** Perform the forward 3D FFT. buffer has to be of the same size as data
+     * and will be used internally. */
+	void forward(p3m_float *data, p3m_float* buffer);
+    /** Perform the backward 3D FFT. buffer has to be of the same size as data
+     * and will be used internally. */
+	void backward(p3m_float *data, p3m_float* buffer);
 
 	p3m_float *malloc_data();
 	void free_data(p3m_float* data);
+
+	int getKSSize() const;
+	void getKSExtent(const p3m_int*& offset, const p3m_int*& size) const;
 
 	/** pack a block (size[3] starting at start[3]) of an input 3d-grid
 	 *  with dimension dim[3] into an output 3d-block with dimension size[3].
@@ -219,6 +224,7 @@ public:
 	        int start[3], int size[3], int dim[3]);
 
 private:
+    p3m_float *_malloc_data();
 	void forward_grid_comm(forward_plan plan, p3m_float *in, p3m_float *out);
 	void backward_grid_comm(forward_plan plan_f, backward_plan plan_b,
 			p3m_float *in, p3m_float *out);

@@ -128,6 +128,10 @@ typedef ptrdiff_t INT;
 #  define K(x) ((R) x)
 #endif
 
+/* internal flags */
+#define PNFFTI_TRAFO_C2C            (1U<< 0)
+#define PNFFTI_TRAFO_C2R            (1U<< 1)
+
 #define A(ex) /* nothing */
 
 #define PNFFT_PRINT_TIMER_BASIC    (1U<<0)
@@ -137,8 +141,8 @@ typedef ptrdiff_t INT;
 struct PNX(plan_s){                                                                      
   INT N_total;                /**< Total number of Fourier coefficients            */
   C *f_hat;                   /**< Vector of Fourier coefficients                  */
-  C *f;                       /**< Vector of samples                               */
-  C *grad_f;                  /**< Vector of gradients                             */
+  R *f;                       /**< Vector of samples                               */
+  R *grad_f;                  /**< Vector of gradients                             */
   R *x;                       /**< Nodes in time/spatial domain                    */
                                                                                      
   int d;                      /**< Dimension, rank                                 */
@@ -175,6 +179,7 @@ struct PNX(plan_s){
   unsigned pnfft_flags;        /**< Flags for precomputation, (de)allocation,        
                                    and FFTW usage                                  */
   unsigned compute_flags;     /**< Flags for choice of NFFT results                */
+  unsigned trafo_flag;        /**< Flags for choice of transformation type         */
   unsigned pfft_opt_flags;    /**< Flags for PFFT optimization                     */
                                                                                      
   /* internal*/                                                                      
@@ -182,9 +187,9 @@ struct PNX(plan_s){
   PX(plan)   pfft_back;       /**< Backward PFFT plan                              */
   PX(gcplan) gcplan;          /**< PFFT Ghostcell plan                             */
                                                                                      
-  C *g1;                      /**< Input of PFFT                                   */
-  C *g2;                      /**< Output of PFFT                                  */
-  C *g1_buffer;               /**< Buffer for computing Fourier-space derivatives  */
+  R *g1;                      /**< Input of PFFT                                   */
+  R *g2;                      /**< Output of PFFT                                  */
+  R *g1_buffer;               /**< Buffer for computing Fourier-space derivatives  */
                                                                                      
   int cutoff;                 /**< cutoff range                                    */
   INT local_M;                /**< Number of local nodes                           */
@@ -195,8 +200,10 @@ struct PNX(plan_s){
   R **intpol_tables_psi;      /**< sampled values of window functions              */
   R **intpol_tables_dpsi;     /**< sampled values of window function derivatives   */
                                                                                      
-  MPI_Comm comm_cart;         /**< Two-dimensional Cartesian communicator          */
+  MPI_Comm comm_cart;         /**< 2d or 3d Cartesian communicator                 */
   int np[3];                  /**< Size of Cartesian communicator                  */
+  int rnk_pm;                 /**< rank of Cartesian communicator                  */
+  int coords[3];              /**< 3d coordinates within Cartesian communicator    */
                                                                                      
   double* timer_trafo;        /**< Saves time measurements during PNFFT            */
   double* timer_adj;          /**< Saves time measurements during adjoint PNFFT    */
@@ -207,7 +214,12 @@ typedef struct PNX(plan_s) plan_s;
 typedef struct PNX(plan_s) *PNX(plan);
 #endif /* !PNFFT_H */
 
-
+#if PNFFT_ENABLE_DEBUG
+void PNX(debug_sum_print_strides)(
+    R *data, INT max, int strides, int is_complex, const char *msg);
+void PNX(debug_sum_print)(
+    R *data, INT max, int is_complex, const char *msg);
+#endif
 
 /* util.c */
 void PNX(message)(
@@ -263,14 +275,24 @@ void PNX(rmplan)(
     PNX(plan) ths);
 INT PNX(local_size_internal)(
     const INT *N, const INT *n, const INT *no,
-    MPI_Comm comm_cart_2d, unsigned pnfft_flags,
+    MPI_Comm comm_cart_2d,
+    unsigned trafo_flag, unsigned pnfft_flags,
     INT *local_N, INT *local_N_start,
     INT *local_no, INT *local_no_start);
+void PNX(local_block_internal)(
+    const INT *N, const INT *no,
+    MPI_Comm comm_cart, int pid,
+    unsigned pnfft_flags, unsigned trafo_flag,
+    INT *local_N, INT *local_N_start);
 PNX(plan) PNX(init_internal)(
     int d, const INT *N, const INT *n, const INT *no,
     INT local_M, int m,
-    unsigned pnfft_flags, unsigned pfft_opt_flags,
+    unsigned trafo_flag, unsigned pnfft_flags, unsigned pfft_opt_flags,
     MPI_Comm comm_cart_2d);
+void PNX(trafo_A)(
+    PNX(plan) ths);
+void PNX(adj_A)(
+    PNX(plan) ths);
 void PNX(trafo_F)(
     PNX(plan) ths);
 void PNX(adjoint_F)(
@@ -278,7 +300,7 @@ void PNX(adjoint_F)(
 void PNX(trafo_B_grad_ad)(
     PNX(plan) ths, int interlaced);
 void PNX(trafo_B_grad_ik)(
-    PNX(plan) ths, C *f, INT offset, INT stride);
+    PNX(plan) ths, R *f, INT offset, INT stride);
 void PNX(adjoint_B)(
     PNX(plan) ths, int interlaced);
 void PNX(malloc_x)(

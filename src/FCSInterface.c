@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011, 2012, 2013 Rene Halver, Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2014 Rene Halver, Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -24,6 +24,7 @@
 
 #include "FCSCommon.h"
 #include "FCSInterface.h"
+#include "fcs_common.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -813,7 +814,7 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
-  FCSResult r = FCS_RESULT_SUCCESS;
+  FCSResult result = FCS_RESULT_SUCCESS;
 
   char *cur;
   char *params, *param;
@@ -856,16 +857,18 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential_rel", set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL_REL), FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field",         set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_FIELD),         FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field_rel",     set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_FIELD_REL),     FCS_PARSE_VAL(fcs_float));
+
     if (handle->set_parameter)
     {
-      r = handle->set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+      result = handle->set_parameter(handle, continue_on_errors, &param, &cur, &matched);
       if (matched) goto next_param;
     }
 
-    FCS_PARSE_DUMMY_REFERENCE_TO_STATIC_FUNCTIONS(param);
+    result = fcs_common_set_parameter(handle, continue_on_errors, &param, &cur, &matched);
+    if (matched) goto next_param;
 
-    if (r == FCS_RESULT_SUCCESS)
-      r = fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "interface (parser): error in parameter string at '%s'!", param); 
+    if (result == FCS_RESULT_SUCCESS)
+      result = fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "interface (parser): error in parameter string at '%s'!", param); 
 
     if (FCS_IS_FALSE(continue_on_errors)) break;
 
@@ -875,7 +878,7 @@ next_param:
 
   free(params);
 
-  return r;
+  return result;
 }
 
 
@@ -908,6 +911,9 @@ FCSResult fcs_print_parameters(FCS handle)
     result = handle->print_parameters(handle);
     if (result != FCS_RESULT_SUCCESS) fcs_result_print_result(result);
   }
+
+  result = fcs_common_print_parameters(handle);
+  if (result != FCS_RESULT_SUCCESS) fcs_result_print_result(result);
 
   return FCS_RESULT_SUCCESS;
 }

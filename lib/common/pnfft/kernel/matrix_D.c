@@ -178,26 +178,19 @@ void PNX(trafo_D)(
     )
 {
 #if PNFFT_ENABLE_DEBUG
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  C csum, gcsum;
-
-  csum = 0.0;
-  for(INT t=0; t<ths->local_N[0]*ths->local_N[1]*ths->local_N[2]; t++)
-    csum += pnfft_fabs(pnfft_creal(ths->f_hat[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->f_hat[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT: Sum of Fourier coefficients before deconvolution: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+  PNX(debug_sum_print)((R*)ths->f_hat, ths->local_N[0]*ths->local_N[1]*ths->local_N[2], 1,
+      "PNFFT: Sum of Fourier coefficients before deconvolution");
 #endif
 
   /* use precomputed window Fourier coefficients if possible */
   if(ths->pnfft_flags & PNFFT_PRE_PHI_HAT){
     convolution_with_pre_inv_phi_hat(
         ths->f_hat, ths->local_N, ths->pre_inv_phi_hat_trafo, ths->pnfft_flags,
-        ths->g1);
+        (C*)ths->g1);
   } else {
     convolution_with_general_window(
         ths->f_hat, ths->n, ths->no, ths->local_N, ths->local_N_start, ths->pnfft_flags, ths, FFTW_FORWARD,
-        ths->g1);
+        (C*)ths->g1);
   }
 }
 
@@ -209,24 +202,17 @@ void PNX(adjoint_D)(
   /* use precomputed window Fourier coefficients if possible */
   if(ths->pnfft_flags & PNFFT_PRE_PHI_HAT){
     convolution_with_pre_inv_phi_hat(
-        ths->g1, ths->local_N, ths->pre_inv_phi_hat_adj, ths->pnfft_flags,
+        (C*)ths->g1, ths->local_N, ths->pre_inv_phi_hat_adj, ths->pnfft_flags,
         ths->f_hat);
   } else {
     convolution_with_general_window(
-        ths->g1, ths->n, ths->no, ths->local_N, ths->local_N_start, ths->pnfft_flags, ths, FFTW_BACKWARD,
+        (C*)ths->g1, ths->n, ths->no, ths->local_N, ths->local_N_start, ths->pnfft_flags, ths, FFTW_BACKWARD,
         ths->f_hat);
   }
 
 #if PNFFT_ENABLE_DEBUG
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  C csum, gcsum;
-
-  csum = 0.0;
-  for(INT t=0; t<ths->local_N[0]*ths->local_N[1]*ths->local_N[2]; t++)
-    csum += pnfft_fabs(pnfft_creal(ths->f_hat[t])) + _Complex_I * pnfft_fabs(pnfft_cimag(ths->f_hat[t])) ;
-  MPI_Reduce(&csum, &gcsum, 2, PNFFT_MPI_REAL_TYPE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(!myrank) fprintf(stderr, "PNFFT^H: Sum of Fourier coefficients after deconvolution: %e + I* %e\n", pnfft_creal(gcsum), pnfft_cimag(gcsum));
+  PNX(debug_sum_print)((R*)ths->f_hat, ths->local_N[0]*ths->local_N[1]*ths->local_N[2], 1,
+      "PNFFT^H: Sum of Fourier coefficients after deconvolution");
 #endif
 }
 

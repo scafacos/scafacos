@@ -2,11 +2,6 @@
 #include <complex.h>
 #include <pnfft.h>
 
-static void init_random_x(
-    const double *lo, const double *up, ptrdiff_t local_M,
-    double *x);
-static double random_number_less_than_one(
-    void);
 static void vpr_complex(
     MPI_Comm comm, ptrdiff_t num, pnfft_complex *vec, const char *info);
 
@@ -62,7 +57,7 @@ int main(int argc, char **argv){
       f_hat);
 
   /* Initialize nonequispaced nodes */
-  init_random_x(lower_border, upper_border, local_M,
+  pnfft_init_x_3d(lower_border, upper_border, local_M,
       x);
 
   /* Print input Fourier coefficents */
@@ -113,39 +108,5 @@ static void vpr_complex(
         printf("\n");
     }
   }
-}
-
-
-static void init_random_x(
-    const double *lo, const double *up, ptrdiff_t local_M,
-    double *x
-    )
-{
-  double tmp;
-  
-  for (ptrdiff_t j=0; j<local_M; j++){
-    for(int t=0; t<3; t++){
-      do{
-        tmp = random_number_less_than_one();
-        tmp = (up[t]-lo[t]) * tmp + lo[t];
-      }
-      while( (tmp < -0.5) || (0.5 <= tmp) );
-      x[3*j+t] = tmp;
-    }
-  }
-}
-
-
-static double random_number_less_than_one(
-    void
-    )
-{
-  double tmp;
-  
-  do
-    tmp = ( 1.0 * rand()) / RAND_MAX;
-  while(tmp>=1.0);
-  
-  return tmp;
 }
 

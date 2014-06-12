@@ -33,7 +33,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
 # Initialize Automake; require 1.9.6 or newer, do not enforce GNU rules, create pax/posix tarfiles in make dist to support longer filenames in doxgen stuff.
-AM_INIT_AUTOMAKE([1.9.6 -Wall -Wno-override foreign tar-pax subdir-objects])
+AM_INIT_AUTOMAKE([1.9.6 -Wall -Wno-override foreign tar-pax subdir-objects parallel-tests])
 # silent rules, backwards compatiblity
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
@@ -117,7 +117,6 @@ if test "x$fcs_cv_fc_module_ifport" = xyes ; then
    [Define if 'use ifport' is needed for functions like 'rand'.])
 fi
 
-AC_PROG_RANLIB
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
@@ -273,22 +272,26 @@ fi
 # Set up fftw3
 use_fcs_fftw3_common=no
 use_fcs_fftw3_mpi_common=no
+
+AC_ARG_WITH(internal-fftw, AS_HELP_STRING([--with-internal-fftw],
+                   [use the contributed fftw]),, with_internal_fftw=no)
+
 if test "x$use_fcs_fftw3" = xyes -o "x$use_fcs_fftw3_mpi" = xyes ; then
-  # Search for installed FFTW3
-  if test "x$fcs_float" = "xfloat" ; then
-    AX_LIB_FFTW3F_EXT([nobuilt])
-  elif test "x$fcs_float" = "xlong double" ; then
-    AX_LIB_FFTW3L_EXT([nobuilt])
-  else
-    AX_LIB_FFTW3_EXT([nobuilt])
+  # FFTW3 is required
+
+  if test "x$with_internal_fftw" != "xyes"; then
+    # Search for installed FFTW3
+    if test "x$fcs_float" = "xfloat" ; then
+      AX_LIB_FFTW3F_EXT([nobuilt])
+    elif test "x$fcs_float" = "xlong double" ; then
+      AX_LIB_FFTW3L_EXT([nobuilt])
+    else
+      AX_LIB_FFTW3_EXT([nobuilt])
+    fi
   fi
 
-#  echo "use_fcs_fftw3: $use_fcs_fftw3"
-#  echo "ax_lib_fftw3: $ax_lib_fftw3"
-#  echo "use_fcs_fftw3_mpi: $use_fcs_fftw3_mpi"
-#  echo "ax_lib_fftw3_mpi: $ax_lib_fftw3_mpi"
-
   if test "x$use_fcs_fftw3" = xyes -a "x$ax_lib_fftw3" != xyes || test "x$use_fcs_fftw3_mpi" = xyes -a "x$ax_lib_fftw3_mpi" != xyes || test "x$enable_dist" = xyes ; then
+    # No installed FFTW was found, so use internal FFTW
 
     use_fcs_fftw3_common="$use_fcs_fftw3"
     use_fcs_fftw3_mpi_common="$use_fcs_fftw3_mpi"
@@ -712,7 +715,8 @@ AC_CONFIG_FILES([Makefile
   lib/Makefile
   lib/common/fcs-common/Makefile
   src/Makefile
-  src/fortran/Makefile])
+  src/fortran/Makefile
+  python/Makefile])
 
 # Create near-field module files.
 AC_CONFIG_FILES([lib/common/near/Makefile])
@@ -730,11 +734,6 @@ AC_CONFIG_FILES([
   test/c/Makefile 
   test/fortran/Makefile
 ])
-
-AC_CONFIG_LINKS([test/generic/scafacos_test_all.sh:test/generic/scafacos_test_all.sh])
-AC_CONFIG_LINKS([test/generic/compute_nonperiodic_references.sh:test/generic/compute_nonperiodic_references.sh])
-AC_CONFIG_LINKS([test/generic/opt_alpha_cloud_wall_2dp.py:test/generic/opt_alpha_cloud_wall_2dp.py])
-AC_CONFIG_LINKS([test/generic/opt_alpha_cloud_wall_3dp.py:test/generic/opt_alpha_cloud_wall_3dp.py])
 
 # Create helper script for portable MPI job startup.
 AC_CONFIG_FILES([test/defs])
@@ -857,7 +856,7 @@ AC_MSG_NOTICE([ FCS C types                = $fcs_int / $fcs_float])
 AC_MSG_NOTICE([ FCS Fortan types           = $fcs_integer / $fcs_real])
 AC_MSG_NOTICE([ Fortan interface           = $use_fcs_fortran])
 AC_MSG_NOTICE([])
-AC_FOREACH([method], all_common_methods,
+AC_FOREACH([method], [fftw3_common fftw3_mpi_common pfft pnfft near gridsort resort],
 [
 m=`printf %26s method`
 m="method${m%method}"

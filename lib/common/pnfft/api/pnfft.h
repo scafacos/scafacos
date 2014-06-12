@@ -62,7 +62,17 @@
       unsigned pnfft_flags,                                                             \
       INT *local_N, INT *local_N_start,                                                 \
       R *lower_border, R *upper_border);                                                \
+  PNFFT_EXTERN void PNX(local_size_3d_c2r)(                                             \
+      const INT *N, MPI_Comm comm_cart,                                                 \
+      unsigned pnfft_flags,                                                             \
+      INT *local_N, INT *local_N_start,                                                 \
+      R *lower_border, R *upper_border);                                                \
   PNFFT_EXTERN void PNX(local_size_adv)(                                                \
+      int d, const INT *N, MPI_Comm comm_cart,                                          \
+      unsigned pnfft_flags,                                                             \
+      INT *local_N, INT *local_N_start,                                                 \
+      R *lower_border, R *upper_border);                                                \
+  PNFFT_EXTERN void PNX(local_size_adv_c2r)(                                            \
       int d, const INT *N, MPI_Comm comm_cart,                                          \
       unsigned pnfft_flags,                                                             \
       INT *local_N, INT *local_N_start,                                                 \
@@ -72,14 +82,31 @@
       MPI_Comm comm_cart, unsigned pnfft_flags,                                         \
       INT *local_N, INT *local_N_start,                                                 \
       R *lower_border, R *upper_border);                                                \
+  PNFFT_EXTERN void PNX(local_size_guru_c2r)(                                           \
+      int d, const INT *N, const INT *n, const R *x_max, int m,                         \
+      MPI_Comm comm_cart, unsigned pnfft_flags,                                         \
+      INT *local_N, INT *local_N_start,                                                 \
+      R *lower_border, R *upper_border);                                                \
                                                                                         \
   PNFFT_EXTERN PNX(plan) PNX(init_3d)(                                                  \
+      const INT *N, INT local_M,                                                        \
+      MPI_Comm comm_cart);                                                              \
+  PNFFT_EXTERN PNX(plan) PNX(init_3d_c2r)(                                              \
       const INT *N, INT local_M,                                                        \
       MPI_Comm comm_cart);                                                              \
   PNFFT_EXTERN PNX(plan) PNX(init_adv)(                                                 \
       int d, const INT *N, INT local_M,                                                 \
       unsigned pnfft_flags, unsigned fftw_flags, MPI_Comm comm_cart);                   \
+  PNFFT_EXTERN PNX(plan) PNX(init_adv_c2r)(                                             \
+      int d, const INT *N, INT local_M,                                                 \
+      unsigned pnfft_flags, unsigned fftw_flags, MPI_Comm comm_cart);                   \
   PNFFT_EXTERN PNX(plan) PNX(init_guru)(                                                \
+        int d,                                                                          \
+        const INT *N, const INT *n, const R *x_max,                                     \
+        INT local_M, int m,                                                             \
+        unsigned pnfft_flags, unsigned fftw_flags,                                      \
+        MPI_Comm comm_cart);                                                            \
+  PNFFT_EXTERN PNX(plan) PNX(init_guru_c2r)(                                            \
         int d,                                                                          \
         const INT *N, const INT *n, const R *x_max,                                     \
         INT local_M, int m,                                                             \
@@ -99,6 +126,12 @@
       C *f, PNX(plan) ths);                                                             \
   PNFFT_EXTERN void PNX(set_grad_f)(                                                    \
       C *grad_f, PNX(plan) ths);                                                        \
+  PNFFT_EXTERN void PNX(set_f_hat_real)(                                                \
+      R *f_hat, PNX(plan) ths);                                                         \
+  PNFFT_EXTERN void PNX(set_f_real)(                                                    \
+      R *f, PNX(plan) ths);                                                             \
+  PNFFT_EXTERN void PNX(set_grad_f_real)(                                               \
+      R *grad_f, PNX(plan) ths);                                                        \
   PNFFT_EXTERN void PNX(set_x)(                                                         \
       R *x, PNX(plan) ths);                                                             \
                                                                                         \
@@ -107,6 +140,12 @@
   PNFFT_EXTERN C *PNX(get_f)(                                                           \
       const PNX(plan) ths);                                                             \
   PNFFT_EXTERN C *PNX(get_grad_f)(                                                      \
+      const PNX(plan) ths);                                                             \
+  PNFFT_EXTERN R *PNX(get_f_hat_real)(                                                  \
+      const PNX(plan) ths);                                                             \
+  PNFFT_EXTERN R *PNX(get_f_real)(                                                      \
+      const PNX(plan) ths);                                                             \
+  PNFFT_EXTERN R *PNX(get_grad_f_real)(                                                 \
       const PNX(plan) ths);                                                             \
   PNFFT_EXTERN R *PNX(get_x)(                                                           \
       const PNX(plan) ths);                                                             \
@@ -129,6 +168,10 @@
   PNFFT_EXTERN void PNX(finalize)(                                                      \
         PNX(plan) ths, unsigned pnfft_finalize_flags);                                  \
                                                                                         \
+  PNFFT_EXTERN void PNX(direct_trafo)(                                                  \
+      PNX(plan) ths);                                                                   \
+  PNFFT_EXTERN void PNX(direct_adj)(                                                    \
+      PNX(plan) ths);                                                                   \
   PNFFT_EXTERN void PNX(trafo)(                                                         \
       PNX(plan) ths);                                                                   \
   PNFFT_EXTERN void PNX(adj)(                                                           \
@@ -173,6 +216,9 @@
       R *data, INT N, const char *name, MPI_Comm comm);                                 \
   PNFFT_EXTERN void PNX(apr_complex_3d)(                                                \
       C *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,                  \
+      const char *name, MPI_Comm comm);                                                 \
+  PNFFT_EXTERN void PNX(apr_real_3d)(                                                   \
+      R *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,                  \
       const char *name, MPI_Comm comm);                                                 \
                                                                                         \
   PNFFT_EXTERN double *PNX(get_timer_trafo)(                                            \

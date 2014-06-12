@@ -85,6 +85,30 @@ FCSResult ifcs_p2nfft_get_ ## METHOD ## NAME(                                   
  *  Setters and getters for P2NFFT parameters 
  ********************************************/
 
+FCSResult ifcs_p2nfft_set_verbose_tuning(
+    void *rd, const char* fnc_name, fcs_int verbose_tuning
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  d->verbose_tuning = verbose_tuning;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_get_verbose_tuning(
+    void *rd, const char* fnc_name, fcs_int *verbose_tuning
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *verbose_tuning = d->verbose_tuning;
+  return NULL;
+}
+
 /* setters/getters for tolerance */
 FCSResult ifcs_p2nfft_set_tolerance(
     void *rd, const char* fnc_name, fcs_int tolerance_type, fcs_float tolerance
@@ -846,6 +870,30 @@ FCSResult ifcs_p2nfft_get_pnfft_interpolation_order(
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *intpol_order = d->pnfft_interpolation_order;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_pnfft_direct(
+    void *rd, const char* fnc_name, fcs_int pnfft_direct
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  d->pnfft_direct = pnfft_direct;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_get_pnfft_direct(
+    void *rd, const char* fnc_name, fcs_int *pnfft_direct
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *pnfft_direct = d->pnfft_direct;
   return NULL;
 }
 

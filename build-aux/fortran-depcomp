@@ -21,7 +21,7 @@ echo "# This file is generated from running
 #  $0
 # with parameters
 #  SRCDIR: $SRCDIR
-#  CPP: $CPP
+#  FCCPP: $FCCPP
 #  OBJEXT: $OBJEXT
 #  MODEXT: $MODEXT
 #  IGNORE: $IGNORE
@@ -50,7 +50,10 @@ for f in ${FILES} ${UNIQSTR} ; do
 #    echo "#f: ${f}"
 #    echo "#l: ${l}"
     cat ${PRE_INCLUDE} ${f} ${POST_INCLUDE} | \
-    ${CPP} 2>&1 | \
+    ${FCCPP:-cat} 2>&1 - | \
+    ${SED} -e "/\/\*/{:l;s,\(.*\)/\*.*\*/,\1,;t l}" - | \
+    ${SED} -e "/\/\*/,/.*\*\//{s,.*\*/,,; t e; s,/\*.*,,; t e; d; :e;}" - | \
+    ${SED} -e "/\/\*/,/.*\*\//{s,.*\*/,,; t e; s,/\*.*,,; t e; d; :e;}" - | \
     ${SED} -e "s/\!.*$//" | \
     ${GREP} -e "use" -e "module" | \
     ${SED} -n -e "s/^.*use[ \t][ \t]*\([a-zA-Z][a-zA-Z0-9_]*\).*$/${UNIQSTR}use \1/p" \

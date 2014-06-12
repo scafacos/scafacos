@@ -29,29 +29,15 @@
 #include "common/mmm-common/specfunc.h"
 
 /* DEFAULTS */
-/** How many trial calculations */
-#define MMM1D_TEST_INTEGRATIONS 1000
+/** Largest cutoff for Bessel function. Shouldn't be much larger than 30,
+    otherwise we get numerical instabilities. */
+#define MMM1D_DEFAULT_MAXIMAL_B_CUT 30
 
-/** Largest reasonable cutoff for Bessel function */
-#define MMM1D_MAXIMAL_B_CUT 30
-
-/** Granularity of the radius scan in multiples of box_l[2] */
-#define MMM1D_RAD_STEPPING 0.1
-
-/** Default for the switching radius. */
-#define MMM1D_DEFAULT_FAR_SWITCH_RADIUS 0.05
-
-/** Default for the cutoff of the bessel sum. */
-#define MMM1D_DEFAULT_BESSEL_CUTOFF 5
-
-/** Default for the flag to wether recalculate the Bessel cutoff automatically. */
-#define MMM1D_DEFAULT_BESSEL_CALCULATED 1
+/** Default for the switching radius, in multiples of box-z. Should be optimal in most cases. */
+#define MMM1D_DEFAULT_FAR_SWITCH_RADIUS 0.33
 
 /** Default for the accuracy. */
 #define MMM1D_DEFAULT_REQUIRED_ACCURACY 1e-5
-
-/** Default for the coulomb prefactor, corresponding to vacuum in gaussian units */
-#define MMM1D_COULOMB_PREFACTOR 1.0
 
 /** if you define this, the Besselfunctions are calculated up
     to machine precision, otherwise 10^-14, which should be
@@ -63,7 +49,7 @@
 #define MMM1D_K1 LPK1
 #endif
 
-/** Structure that holds all data of the P3M algorithm */
+/** Structure that holds all data of the mmm1d algorithm */
 typedef struct {
   
   mmm1d_comm_struct comm;
@@ -85,38 +71,21 @@ typedef struct {
   fcs_float far_switch_radius_2;
   /* required accuracy */
   fcs_float maxPWerror;
-
-  /* TUNABLE PARAMETERS */
-  /* cutoff of the bessel sum */
+  /* maximal possible cutoff of the Bessel sum */
   fcs_int   bessel_cutoff;
-  
-
-  /****************************************************
-   * FLAGS TO TURN ON/OFF COMPUTATION OF DIFFERENT COMPONENTS
-   ****************************************************/
-  /* Wether to recalculate the Bessel cutoff automatically.
-     If some parameters like the box dimensions change, the current
-     Bessel cutoff may not be suitable to achieve the required accuracy
-     anymore. If the user did not specify the Bessel cutoff explicitly,
-     this flag is 1, and whenever necessary, the Bessel cutoff is
-     recalculated */
-  fcs_int    bessel_calculated;
-  fcs_int    needs_retune;
-  fcs_int    radius_reset;
-  fcs_int    cutoff_reset;
-  fcs_int    error_reset;
 
   /****************************************************
    * Derived parameters
    ****************************************************/
-  fcs_float uz; //  = 1/box_l[2]
-  fcs_float L2; //  = box_l[2]*box_l[2]
-  fcs_float uz2; // = uz*uz;
-  fcs_float prefuz2; // = coulomb.prefactor*uz2
-  fcs_float prefL3_i; // = prefuz2*uz
+  fcs_float uz;   //  = 1/box_l[2]
+  fcs_float L2;   //  = box_l[2]*box_l[2]
+  fcs_float uz2;  // = uz*uz;
+  fcs_float L3_i; // = uz2*uz
   
   //* table of the Taylor expansions of the modified polygamma functions */
   mmm_data_struct *polTaylor;
+
+  double *bessel_radii;
 
   /****************************************************
    * Method data

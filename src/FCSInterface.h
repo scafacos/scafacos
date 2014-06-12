@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011, 2012, 2013 Rene Halver, Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2014 Rene Halver, Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -30,6 +30,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <mpi.h>
 
 #include "FCSInterface_p.h"
@@ -330,8 +331,8 @@ FCS_PARSE_MAKE_TYPE_FUNC(fcs_p_char_t, , "%s")
     _r = fcs_##_param_(handle, _vv0, _vv1, _vv2); \
   FCS_PARSE_IF_PARAM_EXTRO()
 
-#define FCS_PARSE_DUMMY_REFERENCE_TO_STATIC_FUNCTIONS(_str_) \
-  if (FCS_PARSE_PARAM_SELECTED(_str_, "EVEN_IF_IT_MATCHES_IT_DOES_NOTHING")) { \
+#define FCS_PARSE_DUMMY() \
+  if (FCS_PARSE_PARAM_SELECTED("EVEN_IF_IT_MATCHES_IT_DOES_NOTHING", EVEN_IF_IT_MATCHES_IT_DOES_NOTHING)) { \
     parse_fcs_int(NULL, NULL); \
     const_fcs_int(0, NULL); \
     parse_fcs_float(NULL, NULL); \
@@ -342,6 +343,7 @@ FCS_PARSE_MAKE_TYPE_FUNC(fcs_p_char_t, , "%s")
     const_fcs_long_long_t(0, NULL); \
     parse_fcs_p_char_t(NULL, NULL); \
     const_fcs_p_char_t(NULL, NULL); \
+    goto next_param; \
   }
 
 

@@ -95,6 +95,11 @@ FCSResult ifcs_p2nfft_init(
 #endif
 
   /* Set the default values */
+#if FCS_ENABLE_INFO 
+  d->verbose_tuning = 1;
+#else
+  d->verbose_tuning = 0;
+#endif
   d->needs_retune = 1;
   d->tune_alpha = 1;
   d->tune_r_cut = 1;
@@ -110,6 +115,7 @@ FCSResult ifcs_p2nfft_init(
   d->pnfft_flags = PNFFT_MALLOC_F_HAT| PNFFT_PRE_PHI_HAT | PNFFT_FFT_OUT_OF_PLACE | PNFFT_TRANSPOSED_F_HAT;
   d->pnfft_interpolation_order = 3;
   d->pnfft_window = FCS_P2NFFT_DEFAULT_PNFFT_WINDOW;
+  d->pnfft_direct = 0;
   d->pfft_flags = PFFT_NO_TUNE | PFFT_DESTROY_INPUT;
   d->pfft_patience = FCS_P2NFFT_DEFAULT_PFFT_PATIENCE;
 
@@ -186,8 +192,6 @@ static ifcs_p2nfft_data_struct* mkplan_p2nfft(
 
   /* set PNFFT plan to NULL to avoid senseless references */
   d->pnfft = NULL;
-
-  d->use_ewald = -1;
 
   /* initialize pointer to interpolation table */
   d->interpolation_order = 3;

@@ -33,7 +33,6 @@ void PNX(cleanup) (void){
   PX(cleanup)();
 }
 
-
 void PNX(local_size_3d)(
     const INT *N, MPI_Comm comm_cart,
     unsigned pnfft_flags,
@@ -44,6 +43,21 @@ void PNX(local_size_3d)(
   const int d=3;
 
   PNX(local_size_adv)(
+      d, N, comm_cart, pnfft_flags,
+      local_N, local_N_start, lower_border, upper_border);
+}
+
+
+void PNX(local_size_3d_c2r)(
+    const INT *N, MPI_Comm comm_cart,
+    unsigned pnfft_flags,
+    INT *local_N, INT *local_N_start,
+    R *lower_border, R *upper_border
+    )
+{
+  const int d=3;
+
+  PNX(local_size_adv_c2r)(
       d, N, comm_cart, pnfft_flags,
       local_N, local_N_start, lower_border, upper_border);
 }
@@ -62,6 +76,24 @@ PNX(plan) PNX(init_3d)(
   pfft_flags = PFFT_MEASURE| PFFT_DESTROY_INPUT;
 
   return PNX(init_adv)(
+      d, N, local_M,
+      pnfft_flags, pfft_flags, comm_cart);
+}
+
+
+PNX(plan) PNX(init_3d_c2r)(
+    const INT *N, 
+    INT local_M,
+    MPI_Comm comm_cart
+    )
+{
+  const int d=3;
+  unsigned pnfft_flags, pfft_flags;
+
+  pnfft_flags = PNFFT_MALLOC_X | PNFFT_MALLOC_F_HAT | PNFFT_MALLOC_F;
+  pfft_flags = PFFT_MEASURE| PFFT_DESTROY_INPUT;
+
+  return PNX(init_adv_c2r)(
       d, N, local_M,
       pnfft_flags, pfft_flags, comm_cart);
 }
@@ -91,7 +123,7 @@ static void grad_ik_complex_input(
   /* duplicate g1 since we have to scale it several times for computing the gradient */
   ths->timer_trafo[PNFFT_TIMER_MATRIX_D] -= MPI_Wtime();
   for(INT k=0; k<ths->local_N_total; k++)
-    ths->g1_buffer[k] = ths->g1[k];
+    ((C*)ths->g1_buffer)[k] = ((C*)ths->g1)[k];
   ths->timer_trafo[PNFFT_TIMER_MATRIX_D] += MPI_Wtime();
 
   /* calculate potentials */
@@ -100,7 +132,12 @@ static void grad_ik_complex_input(
   ths->timer_trafo[PNFFT_TIMER_MATRIX_F] += MPI_Wtime();
 
   ths->timer_trafo[PNFFT_TIMER_MATRIX_B] -= MPI_Wtime();
-  for(INT j=0; j<ths->local_M; j++) ths->f[j] = 0;
+  if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+    for(INT j=0; j<ths->local_M; j++)
+      ths->f[j] = 0;
+  else
+    for(INT j=0; j<ths->local_M; j++)
+      ((C*)ths->f)[j] = 0;
   PNX(trafo_B_grad_ik)(ths, ths->f, 0, 1);
   ths->timer_trafo[PNFFT_TIMER_MATRIX_B] += MPI_Wtime();
 
@@ -116,10 +153,49 @@ static void grad_ik_complex_input(
     ths->timer_trafo[PNFFT_TIMER_MATRIX_F] += MPI_Wtime();
 
     ths->timer_trafo[PNFFT_TIMER_MATRIX_B] -= MPI_Wtime();
-    for(INT j=0; j<ths->local_M; j++) ths->grad_f[3*j+dim] = 0;
+    if(ths->trafo_flag & PNFFTI_TRAFO_C2R)
+      for(INT j=0; j<ths->local_M; j++)
+        ths->grad_f[3*j+dim] = 0;
+    else
+      for(INT j=0; j<ths->local_M; j++)
+        ((C*)ths->grad_f)[3*j+dim] = 0;
     PNX(trafo_B_grad_ik)(ths, ths->grad_f, dim, 3);
     ths->timer_trafo[PNFFT_TIMER_MATRIX_B] += MPI_Wtime();
   }
+}
+
+void PNX(direct_trafo)(
+    PNX(plan) ths
+    )
+{
+  if(ths==NULL){
+    PX(fprintf)(MPI_COMM_WORLD, stderr, "!!! Error: Can not execute PNFFT Plan == NULL !!!\n");
+    return;
+  }
+
+  ths->timer_trafo[PNFFT_TIMER_WHOLE] -= MPI_Wtime();
+  
+  PNX(trafo_A)(ths);
+
+  ths->timer_trafo[PNFFT_TIMER_ITER]++;
+  ths->timer_trafo[PNFFT_TIMER_WHOLE] += MPI_Wtime();
+}
+
+void PNX(direct_adj)(
+    PNX(plan) ths
+    )
+{
+  if(ths==NULL){
+    PX(fprintf)(MPI_COMM_WORLD, stderr, "!!! Error: Can not execute PNFFT Plan == NULL !!!\n");
+    return;
+  }
+
+  ths->timer_adj[PNFFT_TIMER_WHOLE] -= MPI_Wtime();
+
+  PNX(adj_A)(ths);
+
+  ths->timer_adj[PNFFT_TIMER_ITER]++;
+  ths->timer_adj[PNFFT_TIMER_WHOLE] += MPI_Wtime();
 }
 
 /* parallel 3dNFFT with different window functions */
@@ -285,29 +361,72 @@ void PNX(set_f)(
     C *f, PNX(plan) ths
     )
 {
-  ths->f = f;
+  ths->f = (R*)f;
 }
 
 C* PNX(get_f)(
     const PNX(plan) ths
     )
 {
-  return ths->f;
+  return (C*)ths->f;
 }
 
 void PNX(set_grad_f)(
     C* grad_f, PNX(plan) ths
     )
 {
-  ths->grad_f = grad_f;
+  ths->grad_f = (R*)grad_f;
 }
 
 C* PNX(get_grad_f)(
     const PNX(plan) ths
     )
 {
+  return (C*)ths->grad_f;
+}
+
+void PNX(set_f_hat_real)(
+    R *f_hat, PNX(plan) ths
+    )
+{
+  ths->f_hat = f_hat;
+}
+
+R* PNX(get_f_hat_real)(
+    const PNX(plan) ths
+    )
+{
+  return ths->f_hat;
+}
+
+void PNX(set_f_real)(
+    R *f, PNX(plan) ths
+    )
+{
+  ths->f = f;
+}
+
+R* PNX(get_f_real)(
+    const PNX(plan) ths
+    )
+{
+  return ths->f;
+}
+
+void PNX(set_grad_f_real)(
+    R* grad_f, PNX(plan) ths
+    )
+{
+  ths->grad_f = grad_f;
+}
+
+R* PNX(get_grad_f_real)(
+    const PNX(plan) ths
+    )
+{
   return ths->grad_f;
 }
+
 
 void PNX(set_x)(
     R *x, PNX(plan) ths
@@ -494,9 +613,9 @@ void PNX(vpr_real)(
 }
 
 
-void PNX(apr_complex_3d)(
-     C *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,
-     const char *name, MPI_Comm comm
+static void apr_3d(
+     R *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,
+     const char *name, MPI_Comm comm, const int is_complex
      )
 {
   INT local_Nt[3], local_Nt_start[3];
@@ -507,6 +626,27 @@ void PNX(apr_complex_3d)(
     local_Nt_start[t] = local_N_start[(t + shift) % 3];
   }
 
-  PX(apr_complex_3d)(
-     data, local_Nt, local_Nt_start, name, comm);
+  if( is_complex )
+    PX(apr_complex_3d)((C*)data, local_Nt, local_Nt_start, name, comm);
+  else
+    PX(apr_real_3d)(data, local_Nt, local_Nt_start, name, comm);
 }
+
+
+void PNX(apr_complex_3d)(
+     C *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,
+     const char *name, MPI_Comm comm
+     )
+{
+  apr_3d(data, local_N, local_N_start, pnfft_flags, name, comm, 1);
+}
+
+
+void PNX(apr_real_3d)(
+     R *data, INT *local_N, INT *local_N_start, unsigned pnfft_flags,
+     const char *name, MPI_Comm comm
+     )
+{
+  apr_3d(data, local_N, local_N_start, pnfft_flags, name, comm, 0);
+}
+

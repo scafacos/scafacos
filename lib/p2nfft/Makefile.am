@@ -23,7 +23,7 @@ AM_CPPFLAGS += -I$(top_srcdir)/../../src
 
 # Libraries to add to all programs that are built.
 
-libfcs_p2nfft_la_CPPFLAGS = $(fftw3_CPPFLAGS) $(pfft_CPPFLAGS) $(pnfft_CPPFLAGS) -I$(top_srcdir)/../../src -I$(top_srcdir)/../../lib -I$(top_srcdir)/../../lib/common/fcs-common
+libfcs_p2nfft_la_CPPFLAGS = $(fftw3_CPPFLAGS) $(pfft_CPPFLAGS) $(pnfft_CPPFLAGS) -I$(top_srcdir)/../../src -I$(top_srcdir)/../../lib -I$(top_srcdir)/../../lib/common/fcs-common -I$(top_builddir)/../..
 libfcs_p2nfft_la_SOURCES = \
 	types.h \
 	utils.h \

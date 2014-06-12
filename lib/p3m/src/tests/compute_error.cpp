@@ -21,18 +21,18 @@ int main(int argc, char *argv[]) {
   p3m_float num_charges = 300.0;
   p3m_float sum_q2 = 300.0;
 
-  Parameters p;
+  TuneParameters p;
   p.cao = 4;
   p.grid[0] = grid;
   p.grid[1] = grid;
   p.grid[2] = grid;
 
   for (p.alpha = 0.1; p.alpha < 10.0; p.alpha += 0.1) {
-	  p3m_float ks_error = error->compute_ks_error(p, num_charges, sum_q2, L);
+	  error->computeKSError(p, num_charges, sum_q2, L);
 
 	  p3m_float alpha_L = p.alpha*L[0];
-	  p3m_float Q = sqrt(ks_error/(L[0]*L[0]));
-	  printf("%le %le %le %le\n", p.alpha, ks_error, alpha_L, Q);
+	  p3m_float Q = sqrt(p.ks_error/(L[0]*L[0]));
+	  printf("%le %le %le %le\n", p.alpha, p.ks_error, alpha_L, Q);
   }
 
   MPI_Finalize();

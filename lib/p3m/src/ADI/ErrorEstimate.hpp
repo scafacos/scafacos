@@ -16,25 +16,26 @@
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _P3M_ERRORESTIMATEADI_HPP
-#define _P3M_ERRORESTIMATEADI_HPP
+#ifndef _P3M_ADI_ERRORESTIMATE_HPP
+#define _P3M_ADI_ERRORESTIMATE_HPP
 
-#include "ErrorEstimate.hpp"
+#include "../ErrorEstimate.hpp"
 
-namespace P3M {
+namespace P3M { namespace ADI {
+
 /** Estimate the errors in the IK differentiated P3M Algorithm */
-class ErrorEstimateADI : public ErrorEstimate {
+class ErrorEstimate : public P3M::ErrorEstimate {
 public:
-    ErrorEstimateADI(Communication &comm) : ErrorEstimate(comm) {}
+    ErrorEstimate(Communication &comm) : P3M::ErrorEstimate(comm) {}
 
-	virtual p3m_float compute_ks_error(Parameters &p,
+	virtual void computeKSError(TuneParameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
         virtual p3m_float compute_ks_error_triclinic(Parameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic);
 
 protected:
     void
-	k_space_error_sum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
+	KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
 			p3m_float grid_i[3], p3m_int cao, p3m_float alpha_L_i,
 			p3m_float *alias1, p3m_float *alias2, p3m_float *alias3,
 			p3m_float *alias4, p3m_float *alias5, p3m_float *alias6);
@@ -42,6 +43,6 @@ protected:
 			p3m_float grid_i[3], p3m_int cao, p3m_float alpha,p3m_float *alias1, p3m_float *alias2, p3m_float *alias3,
 			p3m_float *alias4, p3m_float *alias5, p3m_float *alias6, p3m_float box_vectors[3][3], bool isTriclinic);
 };
-}
 
+}}
 #endif

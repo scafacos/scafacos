@@ -97,7 +97,7 @@ int main(int argc, char **argv){
 
   /* check input */
   if(verbose)
-    pfft_apr_complex_3d(data, local_no, local_o_start, "reduced gcells", comm_cart_2d);
+    pfft_apr_complex_3d(data, local_ni, local_i_start, "reduced gcells", comm_cart_2d);
 
   /* Scale data */
   for(ptrdiff_t l=0; l < local_ni[0] * local_ni[1] * local_ni[2]; l++)

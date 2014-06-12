@@ -2,9 +2,9 @@
 # Get Fortran compile rules that include preprocessing.
 include $(top_srcdir)/build-aux/fortran-rules.am
 
-# Get linker flags from scafacos-fcs.mk. (The assignment and evaluation is
-# required to force Automake to include 'scafacos-fcs.mk' early enough.)
-DUMMY:=$(eval include $(top_builddir)/package/scafacos-fcs.mk)
+# Get linker flags from scafacos.mk. (The assignment and evaluation is
+# required to force Automake to include 'scafacos.mk' early enough.)
+DUMMY:=$(eval include $(top_builddir)/package/scafacos.mk)
 
 # Include paths for preprocessor and Fortran compiler.
 #AM_CPPFLAGS = -I$(top_srcdir)/src/fortran -I$(top_builddir)/src/fortran

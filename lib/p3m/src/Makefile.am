@@ -23,11 +23,12 @@ libp3m_la_CPPFLAGS = $(fftw3_CPPFLAGS) -I $(top_srcdir)/src \
 libp3m_la_SOURCES = \
 	p3mconfig.hpp \
 	utils.hpp \
+	CAF.cpp CAF.hpp \
 	Communication.hpp Communication.cpp \
 	ErrorEstimate.hpp ErrorEstimate.cpp \
-	ErrorEstimateIK.hpp ErrorEstimateIK.cpp \
-	ErrorEstimateADI.hpp ErrorEstimateADI.cpp \
-	CAF.cpp CAF.hpp \
+	IK/ErrorEstimate.hpp IK/ErrorEstimate.cpp \
+	ADI/ErrorEstimate.hpp ADI/ErrorEstimate.cpp \
+	FarSolver.hpp FarSolver.cpp \
 	Parallel3DFFT.cpp Parallel3DFFT.hpp \
 	Solver.cpp Solver.hpp \
 	types.hpp 

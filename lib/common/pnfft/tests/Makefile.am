@@ -17,7 +17,8 @@ LDADD = $(top_builddir)/lib@PNFFT_PREFIX@pnfft@PREC_SUFFIX@.la $(pfft_LIBS) $(ff
 
 # These programs are built by 'make check' and may be tested afterwards.
 check_PROGRAMS = \
-	simple_test
+	simple_test \
+	simple_test_c2r
 
 #if ENABLE_COMMON_PNFFT
 # do not compile checks
@@ -29,7 +30,12 @@ check_PROGRAMS += \
 	check_adj check_adj_transposed \
 	check_vs_pfft \
 	pnfft_test \
-	pnfft_test_adv
+	pnfft_test_adv \
+	check_trafo_vs_ndft check_trafo_grad_vs_ndft check_adj_vs_ndft \
+	check_trafo_vs_ndft_c2r check_adj_vs_ndft_c2r \
+	check_trafo_vs_ndft_transposed_2d \
+	simple_test_c2r_c2c_compare_real simple_test_c2r_c2c_compare_complex \
+	simple_test_c2r_c2c_compare_grad simple_test_c2r_c2c_compare_timer
 #endif
 
 EXTRA_DIST = \
