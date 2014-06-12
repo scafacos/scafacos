@@ -53,36 +53,36 @@ void ErrorEstimate::computeKSError(TuneParameters& p, p3m_int num_charges,
 	else
 	    computeKSErrorApprox(p, num_charges, sum_q2, box_l);
 }
-void ErrorEstimate::computeKSError_triclinic(TuneParameters& p, p3m_int num_charges,
-		p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic) {
-	bool full_estimate = false;
-	 //use the full estimate if alpha*h is larger than the threshold in any dimension
-	for (int i = 0; i < 3; i++) {
-	    p3m_float alpha_h = p.alpha * box_vectors[i][i] / p.grid[i];
-	    full_estimate = alpha_h > FULL_ESTIMATE_ALPHA_H_THRESHOLD;
-	    if (full_estimate) {
-	        P3M_DEBUG(printf("        alpha*h[%d]=" FFLOAT " > "        \
+void ErrorEstimate::computeKSErrorTriclinic(TuneParameters& p, p3m_int num_charges,
+                p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic) {
+            bool full_estimate = false;
+            //use the full estimate if alpha*h is larger than the threshold in any dimension
+            for (int i = 0; i < 3; i++) {
+                p3m_float alpha_h = p.alpha * box_vectors[i][i] / p.grid[i];
+                full_estimate = alpha_h > FULL_ESTIMATE_ALPHA_H_THRESHOLD;
+                if (full_estimate) {
+                    P3M_DEBUG(printf("        alpha*h[%d]=" FFLOAT " > "        \
 	                FFLOAT " => full estimate\n", i, alpha_h,   \
 	                FULL_ESTIMATE_ALPHA_H_THRESHOLD));
-	        break;
-	    }
-	}
+                    break;
+                }
+            }
 
-#ifdef P3M_ENABLE_DEBUG
-	if (!full_estimate)
-	    printf("        alpha*h < " FFLOAT " => approximation\n",
-	            FULL_ESTIMATE_ALPHA_H_THRESHOLD);
-#endif
+            #ifdef P3M_ENABLE_DEBUG
+            if (!full_estimate)
+                printf("        alpha*h < " FFLOAT " => approximation\n",
+                    FULL_ESTIMATE_ALPHA_H_THRESHOLD);
+            #endif
 
-        fcs_float box_l[3] = {box_vectors[0][0], box_vectors[1][1], box_vectors[2][2]};
-        if (full_estimate) {
-            return computeKSErrorFull(p, num_charges, sum_q2, box_l); //todo: remove this and get the triclinic estimate right.
-            //	    return computeKSErrorFullTriclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
-        } else {
-            return computeKSErrorApprox(p, num_charges, sum_q2, box_l);
-            //return computeKSErrorApproxTriclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
+            fcs_float box_l[3] = {box_vectors[0][0], box_vectors[1][1], box_vectors[2][2]};
+            if (full_estimate) {
+                computeKSErrorFull(p, num_charges, sum_q2, box_l); //todo: remove this and get the triclinic estimate right.
+                //return computeKSErrorFullTriclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
+            } else {
+                computeKSErrorApprox(p, num_charges, sum_q2, box_l);
+                //return computeKSErrorApproxTriclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
+            }
         }
-    }
 
 void ErrorEstimate::computeKSErrorApprox(TuneParameters& p,
         p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) {
@@ -380,7 +380,7 @@ ErrorEstimate::KSErrorSum2(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
  (Eqn. 8.23) (for a system of N randomly distributed particles in a
  cubic box).
  */
-void ErrorEstimate::computeKSErrorFullTriclinic(Parameters& p, p3m_int num_charges,
+void ErrorEstimate::computeKSErrorFullTriclinic(TuneParameters& p, p3m_int num_charges,
 		p3m_float sum_q2,  p3m_float box_vectors[3][3], bool isTriclinic) {
 	/* #ifdef P3M_ENABLE_DEBUG */
 	/*   printf(  */
@@ -428,19 +428,19 @@ void ErrorEstimate::computeKSErrorFullTriclinic(Parameters& p, p3m_int num_charg
 		if (ny != old_ny) {
 			if (nx != old_nx) {
 				old_nx = nx;
-				ctan_x = k_space_error_sum1_triclinic(nx, grid_i[0], p.cao);
+				ctan_x = KSErrorSum1Triclinic(nx, grid_i[0], p.cao);
 			}
 			old_ny = ny;
-			ctan_y = k_space_error_sum1_triclinic(ny, grid_i[1], p.cao);
+			ctan_y = KSErrorSum1Triclinic(ny, grid_i[1], p.cao);
 		}
 
 		if (nx != 0 || ny != 0 || nz != 0) {
 			p3m_float n2 = nx * nx + ny * ny + nz * nz;
 			p3m_float cs = ctan_x * ctan_y
-					* k_space_error_sum1_triclinic(nz, grid_i[2], p.cao); //Prod_a k_space_error_sum1(n_a,1/grid_a, cao)
+					* KSErrorSum1Triclinic(nz, grid_i[2], p.cao); //Prod_a k_space_error_sum1(n_a,1/grid_a, cao)
 			p3m_float sum_Fref2, alias2;
                         
-			k_space_error_sum2_triclinic(nx, ny, nz, p.grid, grid_i, p.cao, p.alpha,
+			KSErrorSum2Triclinic(nx, ny, nz, p.grid, grid_i, p.cao, p.alpha,
 					&sum_Fref2, &alias2, box_vectors, isTriclinic);
 			p3m_float d = sum_Fref2 - SQR(alias2 / cs) / n2;
 			/* at high precisions, d can become negative due to extinction;
@@ -464,7 +464,7 @@ void ErrorEstimate::computeKSErrorFullTriclinic(Parameters& p, p3m_int num_charg
  the spline interpolation) can be written as an even trigonometric
  polynomial. The results are tabulated here (The employed formula
  is Eqn. 7.66 in the book of Hockney and Eastwood). */ // (-1)^s/s! * d^s/dx^s cot(x) = sum_-inf to inf (x-pi n)^-(s+1)
-void ErrorEstimate::KSErrorSum1Triclinic(p3m_int n, p3m_float grid_i, p3m_int cao) {
+p3m_float ErrorEstimate::KSErrorSum1Triclinic(p3m_int n, p3m_float grid_i, p3m_int cao) {
 	p3m_float c, res = 0.0;
 	c = SQR(cos(M_PI * grid_i * (p3m_float) n)); // cos(pi/grid*n)^2
 

@@ -49,6 +49,10 @@ cdef extern from "fcs.h":
     fcs_int fcs_get_near_field_flag(FCS handle)
     FCSResult fcs_set_total_particles(FCS handle, fcs_int total_particles)
     fcs_int fcs_get_total_particles(FCS handle)
+    FCSResult fcs_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolerance)
+    # FCSResult fcs_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance)
+    FCSResult fcs_p3m_set_potential_shift(FCS handle, fcs_int flag)
+    fcs_int fcs_p3m_get_potential_shift(FCS handle)
 
     # box vectors
     FCSResult fcs_set_box_a(FCS handle, const fcs_float *box_a)
@@ -68,7 +72,7 @@ cdef extern from "fcs.h":
                       fcs_float *positions, fcs_float *charges,
                       fcs_float *fields, fcs_float *potentials)
 
-  
+
 cdef class scafacos:
     cdef FCS handle
 
@@ -86,6 +90,14 @@ cdef class scafacos:
     property method:
         def __get__(self):
             return fcs_get_method_name(self.handle)
+            
+    def set_tolerance(self, tolerance_type, tolerance):
+        handleResult(fcs_set_tolerance(self.handle, tolerance_type, tolerance))
+        
+    # def get_tolerance(self, tolerance_type, tolerance):
+    # cdef const fcs_int* p = fcs_get_periodicity(self.handle)
+    # return bool(p[0]), bool(p[1]), bool(p[2])
+    # handleResult(fcs_get_tolerance(self.handle, tolerance_type, tolerance))
 
     property box:
         def __set__(self, np.ndarray[fcs_float, ndim=2, mode='c'] box):
@@ -125,7 +137,15 @@ cdef class scafacos:
 
         def __get__(self):
             return bool(fcs_get_near_field_flag(self.handle))
-        
+
+    property shifted:
+        def __set__(self,f):
+            cdef fcs_int cf = int(f)
+            fcs_p3m_set_potential_shift(self.handle,cf)
+          
+        def __get__(self):
+           return bool(fcs_p3m_get_potential_shift(self.handle))
+
     def tune(self,
              np.ndarray[fcs_float, ndim=2, mode='c'] positions not None,
              np.ndarray[fcs_float, ndim=1, mode='c'] charges not None):

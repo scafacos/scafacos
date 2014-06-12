@@ -72,7 +72,7 @@ extern "C" {
   FCSResult ifcs_p3m_get_total_energy(void *rd, fcs_float *total_energy);
   
   void ifcs_p3m_set_potential_shift(void *rd, fcs_int flag);
-  void ifcs_p3m_get_potential_shift(void *rd, fcs_int *flag);
+  fcs_int ifcs_p3m_get_potential_shift(void *rd);
 
   void ifcs_p3m_require_timings(void *rd, fcs_int flag);
   FCSResult 

@@ -396,7 +396,6 @@ FCSResult fcs_p3m_set_potential_shift(FCS handle, fcs_int flag){
     return FCS_RESULT_SUCCESS;
 }
 
-FCSResult fcs_p3m_get_potential_shift(FCS handle, fcs_int *flag){
-    ifcs_p3m_get_potential_shift(handle->method_context, flag);
-    return FCS_RESULT_SUCCESS;
+fcs_int fcs_p3m_get_potential_shift(FCS handle){
+    return ifcs_p3m_get_potential_shift(handle->method_context);
 }

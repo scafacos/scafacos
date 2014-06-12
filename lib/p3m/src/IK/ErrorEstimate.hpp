@@ -29,7 +29,7 @@ public:
 
 	virtual void computeKSError(TuneParameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
-	virtual p3m_float compute_ks_error_triclinic(Parameters &p,
+	virtual void computeKSErrorTriclinic(TuneParameters &p,
 			p3m_int num_charges, p3m_float sum_q2,p3m_float box_vectors[3][3], bool isTriclinic);
 protected:
      /** Calculate the analytical approximation for the k-space part of the
@@ -56,7 +56,7 @@ protected:
     
     /** Calculate the analytical approximation for the k-space part of the
 	 error (Eq. 38 in Deserno, Holm; JCP 109,18; 1998). */
-	p3m_float compute_ks_error_approx_triclinic(Parameters &p,
+	p3m_float computeKSErrorApproxTriclinic(TuneParameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic);
 
 	/** Calculates the reciprocal space contribution to the rms error in the
@@ -64,14 +64,14 @@ protected:
 	 (Eqn. 8.23) (for a system of N randomly distributed particles in a
 	 cubic box).
 	 */
-	p3m_float compute_ks_error_full_triclinic(Parameters &p,
+	void computeKSErrorFullTriclinic(TuneParameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic);
 
 	p3m_float
-	k_space_error_sum1_triclinic(p3m_int n, p3m_float grid_i, p3m_int cao);
+	KSErrorSum1Triclinic(p3m_int n, p3m_float grid_i, p3m_int cao);
 
 	void
-	k_space_error_sum2_triclinic(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
+	KSErrorSum2Triclinic(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
 			p3m_float grid_i[3], p3m_int cao, p3m_float alpha_L_i,
 			p3m_float *alias1, p3m_float *alias2, p3m_float box_vectors[3][3], bool isTriclinic);
 

@@ -236,14 +236,16 @@ FCSResult fcs_p3m_get_cao(FCS handle, fcs_int *cao);
 FCSResult fcs_p3m_require_total_energy(FCS handle, fcs_int total_energy);
 FCSResult fcs_p3m_get_total_energy(FCS handle, fcs_float *total_energy);
 
+FCSResult fcs_p3m_set_potential_shift(FCS handle, fcs_int flag);
+fcs_int fcs_p3m_get_potential_shift(FCS handle);
+
 FCSResult fcs_p3m_set_tolerance_field(FCS handle, fcs_float tolerance_field);
 /* FORTRAN wrapper */
 void fcs_p3m_set_tolerance_field_f(void *handle, fcs_float tolerance_field, fcs_int *return_value);
 FCSResult fcs_p3m_set_tolerance_field_tune(FCS handle);
 FCSResult fcs_p3m_get_tolerance_field(FCS handle, fcs_float *tolerance_field);
 
-FCSResult fcs_p3m_set_potential_shift(FCS handle, fcs_int flag);
-FCSResult fcs_p3m_get_potential_shift(FCS handle, fcs_int *flag);
+
 
   /*
 FCSResult fcs_p3m_set_variant(FCS handle, fcs_int variant);

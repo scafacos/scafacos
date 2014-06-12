@@ -91,7 +91,7 @@ Solver::~Solver() {
 void Solver::prepare() {
     if (farSolver != NULL) delete farSolver;
     comm.prepare(box_l);
-    farSolver = new FarSolver(comm, box_l, r_cut, alpha, grid, cao);
+    farSolver = new FarSolver(comm, box_l, r_cut, alpha, grid, cao, box_vectors, volume, isTriclinic);
 }
 
 /* callback function for near field computations */
@@ -191,6 +191,30 @@ void Solver::decompose(fcs_gridsort_t *gridsort,
             *num_real_particles, *num_ghost_particles));
 }
 
+    /* conversion of cartesian coordinates to triclinic ones*/
+    void Solver::calculateTriclinicPositions(p3m_float *positions,
+            p3m_float *triclinic_positions, p3m_int number) {
+
+        for (p3m_int i = 0; i < number; i++) {
+            triclinic_positions[3 * i] = 1 / box_vectors[0][0] * positions[3 * i]
+                    - box_vectors[1][0] / (box_vectors[0][0] * box_vectors[1][1])
+                    * positions[3 * i + 1] + (box_vectors[1][0]
+                    * box_vectors[2][1] - box_vectors[1][1] * box_vectors[2][0])
+                    / (box_vectors[0][0] * box_vectors[1][1] * box_vectors[2][2])
+                    * positions[3 * i + 2];
+            triclinic_positions[3 * i + 1] = 1 / box_vectors[1][1]
+                    * positions[3 * i + 1] - box_vectors[2][1]
+                    / (box_vectors[1][1] * box_vectors[2][2])
+                    * positions[3 * i + 2];
+            triclinic_positions[3 * i + 2] = 1 / box_vectors[2][2]
+                    * positions[3 * i + 2];
+
+            P3M_DEBUG_LOCAL(if (i < 5)printf("triclinic position %d: %f %f %f \n", i,
+                    triclinic_positions[3 * i], triclinic_positions[3 * i + 1],
+                    triclinic_positions[3 * i + 2]));
+        }
+    }
+    
 void Solver::run(
         p3m_int _num_particles, p3m_float *_positions, p3m_float *_charges,
         p3m_float *_fields, p3m_float *_potentials) {
@@ -202,8 +226,12 @@ void Solver::run(
             box_l[0] = box_l[1] = box_l[2] = 1.0;
             this->prepare();
         }
+        
     P3M_INFO(printf("    system parameters: box_l=" F3FLOAT "\n", \
             box_l[0], box_l[1], box_l[2]));
+    P3M_INFO(if(this->isTriclinic)printf("    the box is triclinic.\n"))
+    P3M_INFO(if(this->shiftGaussians)printf("    shifted potentials are used.\n"))
+            
     P3M_DEBUG_LOCAL(MPI_Barrier(comm.mpicomm));
     P3M_DEBUG_LOCAL(printf("    %d: num_particles=%d\n",    \
             comm.rank, _num_particles));
@@ -246,7 +274,7 @@ void Solver::run(
     } else {//triclinic
       p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
       this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
-      FarSolver->runADI(num_real_particles, positions_triclinic, charges, fields, potentials);
+      farSolver->runADI(num_real_particles, positions_triclinic, charges, fields, potentials);
     }
     
 #else
@@ -287,11 +315,7 @@ void Solver::run(
                 ghost_positions, ghost_charges, ghost_indices);
         
         near_params_t params;
-      //  std::cout<<"in Solver run: flag "<<shiftGaussians<<std::endl;
         params.alpha=alpha; params.potentialOffset=(shiftGaussians?(erfc(alpha*r_cut))/r_cut:0.0);
-      //  std::cout<<"_____erfc(ar) in Solver run: "<<erfc(alpha*r_cut)<<std::endl;
-      //  std::cout<<"_____offset in Solver run: "<<params.potentialOffset<<std::endl;
-      //   printf("\033[31;1m solver run: off %e \033[0m \n", params.potentialOffset);
         P3M_DEBUG(printf( "  calling fcs_near_compute()...\n"));
         fcs_near_compute(&near, r_cut, &params, comm.mpicomm);
         P3M_DEBUG(printf( "  returning from fcs_near_compute().\n"));
@@ -366,7 +390,7 @@ void Solver::run(
 
     P3M_INFO(printf( "P3M::Solver::run() finished.\n"));
 }
-
+}
 void
 Solver::cartesianizeFields(p3m_float *fields, p3m_int num_particles){
     p3m_int part_no;   
@@ -664,7 +688,7 @@ Solver::tuneGrid(TuneParameterList &params_to_try) {
                 p3m_int grid1d = good_gridsize[upper_ix];
                 p.grid[0] = p.grid[1] = p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      rough grid=" FINT "\n", grid1d));
-                errorEstimate->computeMaster(p, sum_qpart, sum_q2, box_l);
+                errorEstimate->computeMaster(p, sum_qpart, sum_q2, box_l, box_vectors, isTriclinic);
             } while (p.error > tolerance_field);
             // store the (working) rough grid param set
             *pit = p;
@@ -686,7 +710,7 @@ Solver::tuneGrid(TuneParameterList &params_to_try) {
                 p3m_int grid1d = good_gridsize[test_ix];
                 p.grid[0] = p.grid[1] = p.grid[2] = grid1d;
                 P3M_DEBUG(printf("      fine grid=" FINT "\n", grid1d));
-                errorEstimate->computeMaster(p, sum_qpart, sum_q2, box_l);
+                errorEstimate->computeMaster(p, sum_qpart, sum_q2, box_l, box_vectors, isTriclinic);
                 if (p.error < tolerance_field) {
                     // parameters achieve error
                     upper_ix = test_ix;
@@ -742,7 +766,7 @@ Solver::tuneGrid(TuneParameterList &params_to_try) {
             // test whether accuracy can be achieved with given parameters
             P3M_INFO(printf("    grid=" F3INT " (fixed)\n",                \
                     pit->grid[0], pit->grid[1], pit->grid[2]));
-            errorEstimate->computeMaster(*pit, sum_qpart, sum_q2, box_l);
+            errorEstimate->computeMaster(*pit, sum_qpart, sum_q2, box_l, box_vectors, isTriclinic);
 
             if (pit->error < tolerance_field) {
                 // error is small enough for this parameter set, so keep it
