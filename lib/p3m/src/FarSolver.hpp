@@ -48,7 +48,7 @@ public:
     };
 
     FarSolver(Communication &comm, p3m_float box_l[3],
-            p3m_float r_cut, p3m_float alpha, p3m_int grid[3], p3m_int cao);
+            p3m_float r_cut, p3m_float alpha, p3m_int grid[3], p3m_int cao, p3m_float box_vectors[3][3], p3m_float volume, bool isTriclinic);
     virtual ~FarSolver();
 
     void runADI(p3m_int num_charges, p3m_float *positions, p3m_float *charges,
@@ -76,12 +76,19 @@ protected:
      ****************************************************/
     /* System size in x,y,z */
     p3m_float box_l[3];
-    /* Skin */
-    p3m_float skin;
+    /* the complete box vectors */
+    p3m_float box_vectors[3][3];
+    /* Volume of the box */
+    p3m_float volume;
+    /* whether the box is triclinic */
+    bool isTriclinic; 
+    
 
     /****************************************************
      * PARAMETERS OF THE METHOD
      ****************************************************/
+    /* Skin */
+    p3m_float skin;
     /** number of interpolation points for charge assignment function */
     p3m_int n_interpol;
 
@@ -207,6 +214,7 @@ protected:
             p3m_float numerator_force[3],
             p3m_float &numerator_energy,
             p3m_float denominator[2]);
+    void cartesianizeFields(p3m_float *fields, p3m_int num_particles);
     p3m_int *computeGridShift(int dir, p3m_int size);
 
     /* charge assignment */

@@ -71,7 +71,7 @@ FCSResult ifcs_p3m_set_triclinic_flag(void *rd) {
 #else
         const char* fnc_name = "ifcs_p3m_set_triclinic_flag";
         return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name,
-                "p3m triclinic is only implemented with interlaced AD so far.");
+                "p3m triclinic is only implemented with ADI so far.");
 #endif
 }
 
@@ -147,11 +147,11 @@ void ifcs_p3m_get_alpha(void *rd, fcs_float *alpha) {
 }
 
 void ifcs_p3m_get_near_params(void* rd, fcs_float *alpha, fcs_float *offset) {
-  Solver *d = static_cast<Solver *>(rd);
-  *alpha = d->alpha;
-  *offset = d->shiftGaussians?(1-erf(d->r_cut * d->alpha)) / d->r_cut:0.0; //todo: is it better to add the offset as a property of a Solver object?
-  printf("get offset %e", *offset);
-}
+        Solver *d = static_cast<Solver *> (rd);
+        *alpha = d->alpha;
+        *offset = d->shiftGaussians ? (1 - erf(d->r_cut * d->alpha)) / d->r_cut : 0.0;
+        printf("get offset %e", *offset);
+    }
 
 void ifcs_p3m_set_grid(void *rd, fcs_int grid) {
 	Solver *d = static_cast<Solver *>(rd);
@@ -282,8 +282,8 @@ void ifcs_p3m_set_potential_shift(void* rd, fcs_int flag){
     d->shiftGaussians=(flag!=0);
 }
 
-void ifcs_p3m_get_potential_shift(void* rd, fcs_int *flag){
+fcs_int ifcs_p3m_get_potential_shift(void* rd){
     Solver *d = static_cast<Solver *>(rd);
-    *flag = d->shiftGaussians?1:0;
+   return d->shiftGaussians?1:0;
 }
 }

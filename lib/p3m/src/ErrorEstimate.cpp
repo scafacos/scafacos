@@ -58,14 +58,15 @@ void ErrorEstimate::computeAlpha(p3m_float required_accuracy, TuneParameters& p,
 	}
 }
 
-void ErrorEstimate::compute(Parameters& p, p3m_int num_charges,
+void ErrorEstimate::compute(TuneParameters& p, p3m_int num_charges,
 		p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3], bool isTriclinic) {
 	if (comm.onMaster()) {
         computeRSError(p, num_charges, sum_q2, box_l);
+        if(!isTriclinic) //todo: when the triclinic error estimate for ik is correct this should be extended by: && (box_l[1]==box_l[0] && box_l[2]==box_l[0]) )
         computeKSError(p, num_charges, sum_q2, box_l);
-        //printf("ks error-orig %e\n",p.ks_error);
-        //computeKSError_triclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
-        // printf("ks error-tric %e\n",p.ks_error);
+        else
+        computeKSErrorTriclinic(p, num_charges, sum_q2, box_vectors, isTriclinic);
+        
         p.error = sqrt(SQR(p.rs_error) + SQR(p.ks_error));
 
 #ifdef P3M_ENABLE_DEBUG

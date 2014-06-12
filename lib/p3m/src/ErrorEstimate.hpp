@@ -56,7 +56,7 @@ public:
      * parameters to all tasks, then runs compute. */
     virtual void
     computeMaster(TuneParameters &p,
-            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
+            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3], p3m_float box_vectors[3][3], bool isTriclinic);
 
     /* Call this on the master to end the slave loop. */
     void endLoop();
@@ -86,7 +86,7 @@ public:
 /** Calculates the reciprocal space contribution to the rms error in the
      force.
      */
-    virtual p3m_float computeKSError_triclinic(TuneParameters &p,
+    virtual void computeKSErrorTriclinic(TuneParameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic) = 0;
 	protected:
 	    Communication &comm;
