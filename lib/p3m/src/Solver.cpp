@@ -42,6 +42,13 @@ Solver::Solver(MPI_Comm mpicomm) : comm(mpicomm), errorEstimate(NULL) {
     sum_q2 = 0.0;
     square_sum_q = 0.0;
 
+    box_vectors[0][0] = box_vectors[1][1] = box_vectors[2][2] = 1.0;
+    box_vectors[0][1] = box_vectors[0][2] = box_vectors[1][0] = box_vectors[2][0]
+            = box_vectors[2][1] = box_vectors[1][2] = 0.0;
+    isTriclinic = false;
+    
+    shiftGaussians=false;
+
     /* P3M PARAMETERS */
     skin = 0.0;
     tolerance_field = P3M_DEFAULT_TOLERANCE_FIELD;
@@ -91,9 +98,10 @@ void Solver::prepare() {
 inline void
 compute_near(const void *param, p3m_float dist, p3m_float *field, p3m_float *potential)
 {
-    const p3m_float alpha = *(static_cast<const p3m_float*>(param));
-    const p3m_float adist = alpha * dist;
-
+const near_params_t params = *(static_cast<const near_params_t*>(param));
+//    const p3m_float alpha = *(static_cast<const p3m_float*>(param));
+    const p3m_float adist = params.alpha * dist;
+    
 #ifdef P3M_USE_ERFC_APPROXIMATION
 
     /* approximate \f$ \exp(d^2) \mathrm{erfc}(d)\f$ by applying a formula from:
@@ -108,15 +116,22 @@ compute_near(const void *param, p3m_float dist, p3m_float *field, p3m_float *pot
                                             t * 1.061405429)))))
                                             / dist;
 
-    *potential = erfc_part_ri;
-    *field = -(erfc_part_ri + 2.0*alpha*0.56418958354775627928034964498*exp(-adist*adist))
+    *potential = erfc_part_ri-params.potentialOffset;
+    //printf("_______near loop offset: %e \n ",params.potentialOffset);
+   // printf("_______near loop alpha: %e \n ",params.alpha);
+    *field = -(erfc_part_ri + 2.0*params.alpha*0.56418958354775627928034964498*exp(-adist*adist))
               / dist;
 
 #else
 
     p3m_float erfc_part_ri = (1.0 - erf(adist)) / dist; /* use erf instead of erfc to fix ICC performance problems */
-    *potential = erfc_part_ri;
-    *field = -(erfc_part_ri + 2.0*alpha*0.56418958354775627928034964498*exp(-adist*adist))
+    *potential = erfc_part_ri-params.potentialOffset;
+     //   printf("erfc part ri: %f \n",erfc_part_ri);
+#ifdef ADDITIONAL_CHECKS
+        if(*potential<0.0) printf("ERROR: The calculated real space potential contribution is smaller than the potential offset.\n");
+#endif
+        
+    *field = -(erfc_part_ri + 2.0*params.alpha*0.56418958354775627928034964498*exp(-adist*adist))
               / dist;
 #endif
 
@@ -137,14 +152,11 @@ void Solver::decompose(fcs_gridsort_t *gridsort,
         fcs_gridsort_index_t **ghost_indices
 ) {
     p3m_float box_base[3] = {0.0, 0.0, 0.0 };
-    p3m_float box_a[3] = {box_l[0], 0.0, 0.0 };
-    p3m_float box_b[3] = {0.0, box_l[1], 0.0 };
-    p3m_float box_c[3] = {0.0, 0.0, box_l[2] };
     p3m_int num_particles;
 
     fcs_gridsort_create(gridsort);
 
-    fcs_gridsort_set_system(gridsort, box_base, box_a, box_b, box_c, NULL);
+    fcs_gridsort_set_system(gridsort, box_base, box_vectors[0], box_vectors[1], box_vectors[2], NULL);
     fcs_gridsort_set_particles(gridsort, _num_particles, _num_particles,
             _positions, _charges);
 
@@ -186,6 +198,10 @@ void Solver::run(
     if (farSolver == NULL)
         throw std::logic_error("FarSolver is not initialized.");
 
+        if (isTriclinic) {
+            box_l[0] = box_l[1] = box_l[2] = 1.0;
+            this->prepare();
+        }
     P3M_INFO(printf("    system parameters: box_l=" F3FLOAT "\n", \
             box_l[0], box_l[1], box_l[2]));
     P3M_DEBUG_LOCAL(MPI_Barrier(comm.mpicomm));
@@ -225,12 +241,29 @@ void Solver::run(
 
     if (require_timings != NOTFAR) {
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
-        farSolver->runADI(num_real_particles, positions, charges, fields, potentials);
-#else
-        farSolver->runIK(num_real_particles, positions, charges, fields, potentials);
-#endif
+    if(!isTriclinic){ //orthorhombic
+    farSolver->runADI(num_real_particles, positions, charges, fields, potentials);
+    } else {//triclinic
+      p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
+      this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
+      FarSolver->runADI(num_real_particles, positions_triclinic, charges, fields, potentials);
     }
+    
+#else
+    if(!isTriclinic){ //orthorhombic
+    farSolver->runIK(num_real_particles, positions, charges, fields, potentials);
+    } else {//triclinic
+      p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
+      this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
+      farSolver->runIK(num_real_particles, positions_triclinic, charges, fields, potentials);
+    }
+    
+#endif
 
+    if(isTriclinic){
+        for(p3m_int i=0;i<3;i++) box_l[i] = box_vectors[i][i];
+    }
+    
     if (near_field_flag) {
         /* start near timer */
         startTimer(NEAR);
@@ -243,11 +276,8 @@ void Solver::run(
         fcs_near_set_loop(&near, compute_near_loop);
 
         p3m_float box_base[3] = {0.0, 0.0, 0.0 };
-        p3m_float box_a[3] = {box_l[0], 0.0, 0.0 };
-        p3m_float box_b[3] = {0.0, box_l[1], 0.0 };
-        p3m_float box_c[3] = {0.0, 0.0, box_l[2] };
-        fcs_near_set_system(&near, box_base, box_a, box_b, box_c, NULL);
-
+        fcs_near_set_system(&near, box_base, box_vectors[0], box_vectors[1], box_vectors[2], NULL);
+        
         fcs_near_set_particles(&near, num_real_particles, num_real_particles,
                 positions, charges, indices,
                 (_fields != NULL) ? fields : NULL,
@@ -255,9 +285,15 @@ void Solver::run(
 
         fcs_near_set_ghosts(&near, num_ghost_particles,
                 ghost_positions, ghost_charges, ghost_indices);
-
+        
+        near_params_t params;
+      //  std::cout<<"in Solver run: flag "<<shiftGaussians<<std::endl;
+        params.alpha=alpha; params.potentialOffset=(shiftGaussians?(erfc(alpha*r_cut))/r_cut:0.0);
+      //  std::cout<<"_____erfc(ar) in Solver run: "<<erfc(alpha*r_cut)<<std::endl;
+      //  std::cout<<"_____offset in Solver run: "<<params.potentialOffset<<std::endl;
+      //   printf("\033[31;1m solver run: off %e \033[0m \n", params.potentialOffset);
         P3M_DEBUG(printf( "  calling fcs_near_compute()...\n"));
-        fcs_near_compute(&near, r_cut, &alpha, comm.mpicomm);
+        fcs_near_compute(&near, r_cut, &params, comm.mpicomm);
         P3M_DEBUG(printf( "  returning from fcs_near_compute().\n"));
 
         fcs_near_destroy(&near);
@@ -307,10 +343,10 @@ void Solver::run(
         PRINT("fields", FIELDS);
         //if(require_timings == ESTIMATE_ALL //not yet implemented
         //|| require_timings == ESTIMATE_ASSIGNMENT)
-        //    printf(" (empirical estimate)");
+        //    printf(" (estimate)");
         //if(require_timings == ESTIMATE_ALL //not yet implemented
         //|| require_timings == ESTIMATE_ASSIGNMENT)
-        //    printf(" (empirical estimate)");
+        //    printf(" (estimate)");
         PRINT("gather", GATHER);
         PRINT("spread", SPREAD);
         PRINT("forward", FORWARD);
@@ -331,6 +367,27 @@ void Solver::run(
     P3M_INFO(printf( "P3M::Solver::run() finished.\n"));
 }
 
+void
+Solver::cartesianizeFields(p3m_float *fields, p3m_int num_particles){
+    p3m_int part_no;   
+    
+    for (part_no = 0; part_no < num_particles; part_no++) {
+        fields[3 * part_no + 2] = 
+            (box_vectors[1][0] * box_vectors[2][1] - box_vectors[1][1] * box_vectors[2][0]) 
+            / (box_vectors[0][0] * box_vectors[1][1] * box_vectors[2][2]) 
+            * fields[3 * part_no]
+            -(box_vectors[2][1]) / (box_vectors[1][1] * box_vectors[2][2]) 
+            * fields[3 * part_no + 1]
+            + 1 / box_vectors[2][2] * fields[3 * part_no + 2];
+   //todo: -boxbx oder boxby?     
+        fields[3 * part_no + 1] =
+            -(box_vectors[1][0]) / (box_vectors[0][0] * box_vectors[1][1])
+            * fields[3 * part_no]
+            + 1 / box_vectors[1][1] * fields[3 * part_no + 1];
+        
+        fields[3 * part_no] = 1 / (box_vectors[0][0]) * fields[3 * part_no];
+    }
+}
 
 
 /***************************************************/
@@ -506,11 +563,11 @@ Solver::tuneFar(Parameters p) {
             throw std::domain_error("r_cut is too small!");
 
         /* check whether cutoff is larger than half a box length */
-        if ((p.r_cut > 0.5 * box_l[0]) ||
-                (p.r_cut > 0.5 * box_l[1]) ||
-                (p.r_cut > 0.5 * box_l[2]))
-            throw std::domain_error(
-                    "r_cut is larger than half a system box length.");
+//        if ((p.r_cut > 0.5 * box_l[0]) ||
+//                (p.r_cut > 0.5 * box_l[1]) ||
+//                (p.r_cut > 0.5 * box_l[2]))
+//            throw std::domain_error(
+//                    "r_cut is larger than half a system box length.");
 
         /* check whether cutoff is larger than domain size */
 

@@ -50,11 +50,11 @@ namespace P3M {
     
     Solver(MPI_Comm mpicomm);
     ~Solver();
-    
+
     void prepare();
-    
+
     void tune(p3m_int num_particles, p3m_float *positions, p3m_float *charges);
-    
+
     void run(p3m_int num_particles, p3m_float *positions, p3m_float *charges,
              p3m_float *fields, p3m_float *potentials);
     
@@ -82,7 +82,12 @@ namespace P3M {
     p3m_float box_l[3];
     p3m_int sum_qpart;
     p3m_float sum_q2, square_sum_q;
-
+    /* the complete box vectors */
+    p3m_float box_vectors[3][3];
+    /* Volume of the box */
+    p3m_float volume;
+    /* whether the box is triclinic */
+    bool isTriclinic; 
     /****************************************************
      * PARAMETERS OF THE METHOD
      ****************************************************/
@@ -92,7 +97,9 @@ namespace P3M {
     p3m_float tolerance_field;
     /** whether to compute the near field in the method */
     bool near_field_flag;
-
+    /** flag that determines if the Gaussian potentials are shifted */
+    bool shiftGaussians;
+    
     /* TUNABLE PARAMETERS */
     /** cutoff radius */
     p3m_float r_cut;
@@ -127,6 +134,12 @@ private:
     double timings[NUM_TIMINGS];
 
     // submethods of run()
+    
+    /* conversion of cartesian positions to triclinic positions */
+    void
+    calculateTriclinicPositions(p3m_float *positions,
+            p3m_float *triclinic_positions, p3m_int number);  
+    
     /* domain decomposition */
     void
     decompose(fcs_gridsort_t *gridsort,
@@ -166,6 +179,9 @@ private:
     void tuneBroadcastFinish(TuneParameters p);
     void tuneBroadcastNoTune();
     TuneParameterList tuneBroadcastTuneFar(TuneParameters p);
+    
+    void
+    cartesianizeFields(p3m_float *fields, p3m_int num_particles);
 
     // tuning slave functions
     void tuneBroadcastReceiveParams();

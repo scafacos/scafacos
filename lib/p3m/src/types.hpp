@@ -47,11 +47,11 @@ const p3m_float P3M_DEFAULT_TOLERANCE_FIELD = 1.0e-3;
 /* COMPILE TIME SWITCHES */
 /* Differentiation method */
 /** ik-Differentiation */
-#define P3M_IK
+//#define P3M_IK
 /** analytical differentiation */
-//#define P3M_AD
+#define P3M_AD
 /** Whether to use interlaced version of P3M algorithm. */
-//#define P3M_INTERLACE
+#define P3M_INTERLACE
 /* Sanity checks */
 #if defined(P3M_AD) && defined(P3M_IK)
 #error Cannot use P3M_AD and P3M_IK at the same time
@@ -99,9 +99,13 @@ const p3m_int P3M_BRILLOUIN = 0;
 #define REQ_P3M_GATHER 100
 #define REQ_P3M_SPREAD 101
 
+
 /***************************************************/
 /* DATA TYPES */
 /***************************************************/
+    /** structure for near computation parameters: alpha and the potential shift. */
+    typedef struct {p3m_float alpha; p3m_float potentialOffset;} near_params_t;
+    
 /** Structure for local grid parameters. */
 struct local_grid_t {
 	/* local grid characterization. */

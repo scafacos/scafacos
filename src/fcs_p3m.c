@@ -79,23 +79,34 @@ FCSResult fcs_p3m_tune(FCS handle,
   const fcs_int *periodicity = fcs_get_periodicity(handle);
   if (! (periodicity[0] && periodicity[1] && periodicity[2]))
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, 
-			    "p3m requires periodic boundary conditions.");
+      "p3m requires periodic boundary conditions.");
     
   /* Handle box size */
   const fcs_float *a = fcs_get_box_a(handle);
   const fcs_float *b = fcs_get_box_b(handle);
   const fcs_float *c = fcs_get_box_c(handle);
-  if (!fcs_is_orthogonal(a, b, c))
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, 
-			    "p3m requires the box to be orthorhombic.");
-
-  if (!fcs_uses_principal_axes(a, b, c))
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, 
-			    "p3m requires the box vectors to be parallel to the principal axes.");
+  if (!fcs_is_orthogonal(a, b, c)){
+        if (ifcs_p3m_check_triclinic_box(a[1],a[2],b[2])){
+            
+            if(ifcs_p3m_set_triclinic_flag(handle->method_context)!=NULL)
+           return ifcs_p3m_set_triclinic_flag(handle->method_context);           
+        }
+        else
+            return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+                "p3m triclinic requires the box to be as follows: \n \
+                the first box vector is parallel to the x axis\n \
+                the second box vector is in the yz plane.");
+    } else {
+        if (!fcs_uses_principal_axes(a, b, c))
+            return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+                "p3m requires the box vectors to be parallel to the principal axes.");
+    }
 
   ifcs_p3m_set_box_a(handle->method_context, a[0]);
   ifcs_p3m_set_box_b(handle->method_context, b[1]);
   ifcs_p3m_set_box_c(handle->method_context, c[2]);
+
+    ifcs_p3m_set_box_geometry(handle->method_context, a, b, c);
 
   ifcs_p3m_set_near_field_flag(handle->method_context, 
 				 fcs_get_near_field_flag(handle));
@@ -297,7 +308,14 @@ FCSResult fcs_p3m_get_tolerance_field(FCS handle, fcs_float *tolerance_field) {
 
 FCSResult fcs_p3m_get_near_parameters(FCS handle,
 				      fcs_p3m_near_parameters_t *near_params) {
+/*
   ifcs_p3m_get_alpha(handle->method_context, near_params);
+*/
+    fcs_float *alpha=(fcs_float*)malloc(sizeof(fcs_float));
+    fcs_float *offset=(fcs_float*)malloc(sizeof(fcs_float));
+    ifcs_p3m_get_near_params(handle->method_context, alpha, offset);
+    near_params->alpha=*alpha;
+    near_params->potentialOffset=*offset;
   return NULL;
 }
 
@@ -371,4 +389,14 @@ FCSResult fcs_p3m_print_parameters(FCS handle)
   printf("p3m absolute field tolerance: %" FCS_LMOD_FLOAT "e\n", tolerance);
 
   return FCS_RESULT_SUCCESS;
+}
+
+FCSResult fcs_p3m_set_potential_shift(FCS handle, fcs_int flag){
+    ifcs_p3m_set_potential_shift(handle->method_context, flag);
+    return FCS_RESULT_SUCCESS;
+}
+
+FCSResult fcs_p3m_get_potential_shift(FCS handle, fcs_int *flag){
+    ifcs_p3m_get_potential_shift(handle->method_context, flag);
+    return FCS_RESULT_SUCCESS;
 }

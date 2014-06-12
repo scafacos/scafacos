@@ -52,9 +52,27 @@ void ifcs_p3m_destroy(void *rd) {
 	}
 }
 
+fcs_int ifcs_p3m_check_triclinic_box(fcs_float ay, fcs_float az, fcs_float bz) {
+    if (ay == 0 && az == 0 && bz == 0) return 1;
+    return 0;
+}
+
 void ifcs_p3m_set_near_field_flag(void *rd, fcs_int flag) {
 	Solver *d = static_cast<Solver *>(rd);
 	d->near_field_flag = flag;
+    }
+
+FCSResult ifcs_p3m_set_triclinic_flag(void *rd) {
+        P3M_DEBUG_LOCAL(printf("P3M triclinic: triclinic box detected.\n"));
+#if defined(P3M_INTERLACE) && defined(P3M_AD)
+        Solver *d = static_cast<Solver *> (rd);
+        d->isTriclinic = true;
+        return FCS_RESULT_SUCCESS;
+#else
+        const char* fnc_name = "ifcs_p3m_set_triclinic_flag";
+        return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name,
+                "p3m triclinic is only implemented with interlaced AD so far.");
+#endif
 }
 
 void ifcs_p3m_set_box_a(void* rd, fcs_float a) {
@@ -76,6 +94,18 @@ void ifcs_p3m_set_box_c(void *rd, fcs_float c) {
 	if (!float_is_equal(c, d->box_l[2]))
 		d->needs_retune = 1;
 	d->box_l[2] = c;
+}
+
+void ifcs_p3m_set_box_geometry(void *rd, const fcs_float *a, const fcs_float *b, const fcs_float *c) {
+    Solver *d = static_cast<Solver *>(rd);
+
+    for (p3m_int i = 0; i < 3; i++) {
+        d->box_vectors[0][i] = a[i];
+        d->box_vectors[1][i] = b[i];
+        d->box_vectors[2][i] = c[i];
+    }
+    
+    d->volume = d->box_vectors[0][0]*d->box_vectors[1][1]*d->box_vectors[2][2];
 }
 
 void ifcs_p3m_set_r_cut(void *rd, fcs_float r_cut) {
@@ -114,6 +144,13 @@ void ifcs_p3m_set_alpha_tune(void *rd) {
 void ifcs_p3m_get_alpha(void *rd, fcs_float *alpha) {
 	Solver *d = static_cast<Solver *>(rd);
 	*alpha = d->alpha;
+}
+
+void ifcs_p3m_get_near_params(void* rd, fcs_float *alpha, fcs_float *offset) {
+  Solver *d = static_cast<Solver *>(rd);
+  *alpha = d->alpha;
+  *offset = d->shiftGaussians?(1-erf(d->r_cut * d->alpha)) / d->r_cut:0.0; //todo: is it better to add the offset as a property of a Solver object?
+  printf("get offset %e", *offset);
 }
 
 void ifcs_p3m_set_grid(void *rd, fcs_int grid) {
@@ -238,5 +275,15 @@ fcs_float *charges) {
 	}
 
 	return FCS_RESULT_SUCCESS;
+}
+
+void ifcs_p3m_set_potential_shift(void* rd, fcs_int flag){
+    Solver *d = static_cast<Solver *>(rd);
+    d->shiftGaussians=(flag!=0);
+}
+
+void ifcs_p3m_get_potential_shift(void* rd, fcs_int *flag){
+    Solver *d = static_cast<Solver *>(rd);
+    *flag = d->shiftGaussians?1:0;
 }
 }

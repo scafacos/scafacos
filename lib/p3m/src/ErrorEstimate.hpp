@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2014 Olaf Lenz
+ Copyright (C) 2014 Olaf Lenz, Gabriel Sichardt
  Copyright (C) 2010,2011 The ESPResSo project
  Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2010
  Max-Planck-Institute for Polymer Research, Theory Group
@@ -69,7 +69,8 @@ public:
      * undefined on the slaves. */
     virtual void
     compute(TuneParameters &p,
-            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
+            p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3],
+            p3m_float box_vectors[3][3], bool isTriclinic);
 
     /** Calculates the real space contribution to the rms error in the
      * force (as described by Kolafa and Perram). When called in parallel, the
@@ -82,9 +83,13 @@ public:
      * force. When called in parallel, the result is undefined on the slaves. */
     virtual void computeKSError(TuneParameters &p,
             p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]) = 0;
-
-protected:
-    Communication &comm;
+/** Calculates the reciprocal space contribution to the rms error in the
+     force.
+     */
+    virtual p3m_float computeKSError_triclinic(TuneParameters &p,
+            p3m_int num_charges, p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic) = 0;
+	protected:
+	    Communication &comm;
 
 };
 }
