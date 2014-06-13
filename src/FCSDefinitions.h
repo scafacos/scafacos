@@ -17,23 +17,18 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 
-
-#ifndef _FCSDEFINITIONS_H
-#define _FCSDEFINITIONS_H
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 /**
  * @file FCSDefinitions.h
  * @brief public definitions of the ScaFaCoS library interface
  * @author Rene Halver, Michael Hofmann
  */
 
+#ifndef _FCSDEFINITIONS_H
+#define _FCSDEFINITIONS_H
+
+#include "fcs_config.h"
 
 #define FCS_ENABLE_DEPRECATED
-
 
 #if defined(FCS_FLOAT_IS_FLOAT)
 # define FCS_CONST(_c_)  _c_ ## F

@@ -1,0 +1,6 @@
+[submodule "lib/common/pfft"]
+	path = lib/common/pfft
+	url = https://github.com/mpip/pfft.git
+[submodule "lib/common/pnfft"]
+	path = lib/common/pnfft
+	url = https://github.com/mpip/pnfft.git

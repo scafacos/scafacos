@@ -31,11 +31,9 @@
 
 #include "FCSDefinitions.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /**
  * @brief FCSResult-object that is used for handling the return state of the

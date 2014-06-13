@@ -45,10 +45,10 @@ fcs_float ifcs_p2nfft_compute_self_potential(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) param;
   
-  if(d->use_ewald)
-    return compute_self_potential_periodic(param);
-  else
+  if(d->num_periodic_dims == 0)
     return compute_self_potential_nonperiodic(param);
+  else
+    return compute_self_potential_periodic(param);
 }
 
 static fcs_float compute_self_potential_periodic(
@@ -96,10 +96,10 @@ fcs_float ifcs_p2nfft_compute_near_potential(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) param;
   
-  if(d->use_ewald)
-    return compute_near_potential_periodic(param, dist);
-  else
+  if(d->num_periodic_dims == 0)
     return compute_near_potential_nonperiodic(param, dist);
+  else
+    return compute_near_potential_periodic(param, dist);
 }
 
 static fcs_float compute_near_potential_periodic(
@@ -149,10 +149,10 @@ fcs_float ifcs_p2nfft_compute_near_field(
 {
   ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
 
-  if(d->use_ewald)
-    return compute_near_field_periodic(param, dist);
-  else
+  if(d->num_periodic_dims == 0)
     return compute_near_field_nonperiodic(param, dist);
+  else
+    return compute_near_field_periodic(param, dist);
 }
 
 static fcs_float compute_near_field_periodic(

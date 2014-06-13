@@ -122,52 +122,52 @@ public:
 public:
 
 private:
-	Communication& comm;
+  Communication& comm;
 
-	/** Whether FFT is initialized or not. */
-	bool is_prepared;
-
-    /** Information about the three one dimensional FFTs and how the nodes
-     *  have to communicate in between.
-     *
-     * NOTE: FFT numbering starts with 1 for technical reasons (because we
-     *       have 4 node grids, the index 0 is used for the real space
-     *       charge assignment grid).  */
-    forward_plan plan[4];
-    /** Information for Backward FFTs (see fft.plan). */
-    backward_plan back[4];
-
-    /** Maximal size of the communication buffers. */
-	p3m_int max_comm_size;
-
-	/** Maximal local grid size. */
-	p3m_int max_grid_size;
-
-	/** send buffer. */
-	p3m_float *send_buf;
-	/** receive buffer. */
-	p3m_float *recv_buf;
+  /** Whether FFT is initialized or not. */
+  bool is_prepared;
+  
+  /** Information about the three one dimensional FFTs and how the nodes
+   *  have to communicate in between.
+   *
+   * NOTE: FFT numbering starts with 1 for technical reasons (because we
+   *       have 4 node grids, the index 0 is used for the real space
+   *       charge assignment grid).  */
+  forward_plan plan[4];
+  /** Information for Backward FFTs (see fft.plan). */
+  backward_plan back[4];
+  
+  /** Maximal size of the communication buffers. */
+  p3m_int max_comm_size;
+  
+  /** Maximal local grid size. */
+  p3m_int max_grid_size;
+  
+  /** send buffer. */
+  p3m_float *send_buf;
+  /** receive buffer. */
+  p3m_float *recv_buf;
 
 public:
-	/***************************************************/
-	/* MEMBER FUNCTIONS */
-	/***************************************************/
-	Parallel3DFFT(Communication &comm);
-	~Parallel3DFFT();
-
-	/** Prepare the 3D-FFT for a given size.
-
-	 * \return Maximal size of local fft grid (needed for allocation of ca_grid).
-	 * \param local_grid_dim    Pointer to local CA grid dimensions.
-	 * \param local_grid_margin Pointer to local CA grid margins.
-	 * \param global_grid_dim   Pointer to global CA grid dimensions.
-	 * \param global_grid_off   Pointer to global CA grid margins.
-	 * \param ks_pnum           Pointer to number of permutations in k-space.
-	 */
-	void
-	prepare(p3m_int *local_grid_dim, p3m_int *local_grid_margin,
-			p3m_int* global_grid_dim, p3m_float *global_grid_off,
-			p3m_int *ks_pnum);
+  /***************************************************/
+  /* MEMBER FUNCTIONS */
+  /***************************************************/
+  Parallel3DFFT(Communication &comm);
+  ~Parallel3DFFT();
+  
+  /** Prepare the 3D-FFT for a given size.
+      
+   * \return Maximal size of local fft grid (needed for allocation of ca_grid).
+   * \param local_grid_dim    Pointer to local CA grid dimensions.
+   * \param local_grid_margin Pointer to local CA grid margins.
+   * \param global_grid_dim   Pointer to global CA grid dimensions.
+   * \param global_grid_off   Pointer to global CA grid margins.
+   * \param ks_pnum           Pointer to number of permutations in k-space.
+   */
+  void
+  prepare(p3m_int *local_grid_dim, p3m_int *local_grid_margin,
+          p3m_int* global_grid_dim, p3m_float *global_grid_off,
+          p3m_int *ks_pnum);
 
     /** Perform the forward 3D FFT. buffer has to be of the same size as data
      * and will be used internally. */

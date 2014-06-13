@@ -141,7 +141,7 @@ AC_PROG_CC_C99
 # Checks for library functions.
 
 # Init libtool
-LT_INIT([disable-shared])
+LT_INIT([disable-shared pic-only])
 
 #######################################################################
 # FCS library section
@@ -715,7 +715,8 @@ AC_CONFIG_FILES([Makefile
   lib/Makefile
   lib/common/fcs-common/Makefile
   src/Makefile
-  src/fortran/Makefile])
+  src/fortran/Makefile
+  python/Makefile])
 
 # Create near-field module files.
 AC_CONFIG_FILES([lib/common/near/Makefile])

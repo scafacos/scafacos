@@ -47,7 +47,8 @@ static fcs_int fcs_init_check(FCS handle)
 {
   if (handle == FCS_NULL) return 0;
 
-  return (fcs_get_method(handle) != FCS_METHOD_NONE && fcs_get_communicator(handle) != MPI_COMM_NULL);
+  return (fcs_get_method(handle) != FCS_METHOD_NONE && 
+          fcs_get_communicator(handle) != MPI_COMM_NULL);
 }
 
 
@@ -929,10 +930,12 @@ FCSResult fcs_tune(FCS handle, fcs_int local_particles,
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
   if (local_particles < 0)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "number of local particles must be non negative");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, 
+                             "number of local particles must be non negative");
 
   if (!fcs_init_check(handle) || !fcs_tune_check(handle))
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "not all needed data has been inserted into the given handle");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, 
+                             "not all needed data has been inserted into the given handle");
 
   fcs_set_values_changed(handle, 0);
 

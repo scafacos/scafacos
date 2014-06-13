@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2014 Olaf Lenz
+ Copyright (C) 2014 Olaf Lenz, Gabriel Sichardt
 
  This file is part of ScaFaCoS.
 
@@ -30,6 +30,8 @@ public:
 
 	virtual void computeKSError(TuneParameters &p,
 			p3m_int num_charges, p3m_float sum_q2, p3m_float box_l[3]);
+        virtual void computeKSErrorTriclinic(TuneParameters& p, p3m_int num_charges,
+		p3m_float sum_q2, p3m_float box_vectors[3][3], bool isTriclinic);
 
 protected:
     void
@@ -37,6 +39,9 @@ protected:
 			p3m_float grid_i[3], p3m_int cao, p3m_float alpha_L_i,
 			p3m_float *alias1, p3m_float *alias2, p3m_float *alias3,
 			p3m_float *alias4, p3m_float *alias5, p3m_float *alias6);
+    void KSErrorSum2Triclinic(p3m_int nx, p3m_int ny, p3m_int nz, p3m_int grid[3],
+			p3m_float grid_i[3], p3m_int cao, p3m_float alpha,p3m_float *alias1, p3m_float *alias2, p3m_float *alias3,
+			p3m_float *alias4, p3m_float *alias5, p3m_float *alias6, p3m_float box_vectors[3][3], bool isTriclinic);
 };
 
 }}

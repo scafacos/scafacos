@@ -99,4 +99,8 @@ FCSResult fcs_p3m_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *
 FCSResult fcs_p3m_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
 FCSResult fcs_p3m_print_parameters(FCS handle);
 
+FCSResult fcs_p3m_set_potential_shift(FCS handle, fcs_int flag);
+
+fcs_int fcs_p3m_get_potential_shift(FCS handle);
+
 #endif
