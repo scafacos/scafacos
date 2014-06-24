@@ -1166,7 +1166,7 @@ static void print_command_line_arguments(
     if(verbose || (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) )
       printf("p2nfft_ignore_tolerance,%d,", (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) ? 1 : 0);
     if(verbose || (d->virial != NULL) )
-      printf("p2nfft_virial,%d,", (d->virial != NULL) ? 1 : 0);
+      printf("p2nfft_require_virial,%d,", (d->virial != NULL) ? 1 : 0);
 
     /* print PNFFT specific parameters */
     if(verbose || !d->tune_N)
