@@ -1373,14 +1373,14 @@ static fcs_float get_derivative_bound_erf(
 {
   fcs_float val=0.0;
 
-  /* We computed the maximum absolute value numerically on the intervall [0,10]. */
+  /* We computed the maximum absolute value numerically via Mathematica. */
   switch(order){
-    case 0: val = 1.13; break;
-    case 1: val = 0.43; break;
-    case 2: val = 0.76; break;
-    case 3: val = 1.06; break;
-    case 4: val = 2.71; break;
-    case 5: val = 6.01; break;
+    case 0: val = 1.13; break; /* FindMaxValue[Evaluate[D[Erf[x]/x, {x, 0}]], {x, 1}] */
+    case 1: val = 0.43; break; /* FindMaxValue[Evaluate[-D[Erf[x]/x, {x, 1}]], {x, 1}] */
+    case 2: val = 0.76; break; /* FindMaxValue[Evaluate[-D[Erf[x]/x, {x, 2}]], {x, 1}] */
+    case 3: val = 1.06; break; /* FindMaxValue[Evaluate[D[Erf[x]/x, {x, 3}]], {x, 1}] */
+    case 4: val = 2.69; break; /* FindMaxValue[Evaluate[D[Erf[x]/x, {x, 4}]], {x, 1}] */
+    case 5: val = 6.01; break; /* FindMaxValue[Evaluate[-D[Erf[x]/x, {x, 5}]], {x, 1}] */
   }
 
   return alpha * val;
