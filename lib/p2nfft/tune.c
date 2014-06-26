@@ -166,7 +166,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
     fcs_int interpolation_order, fcs_int near_interpolation_num_nodes, fcs_int far_interpolation_num_nodes,
     const fcs_float *near_interpolation_table_potential, const fcs_float *far_interpolation_table_potential,
     MPI_Comm comm_cart, unsigned box_is_cubic);
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c,
     const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha,
@@ -1041,11 +1041,11 @@ FCSResult ifcs_p2nfft_tune(
       d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
           d->local_N, d->local_N_start, d->box_inv, d->alpha);
     if (d->num_periodic_dims == 2)
-      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp(
+      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_and_1dp(
           d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->periodicity, d->p, d->c, reg_far,
           d->cart_comm_pnfft);
     if (d->num_periodic_dims == 1)
-      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp(
+      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_and_1dp(
           d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->periodicity, d->p, d->c, reg_far,
           d->cart_comm_pnfft);
       /* malloc_and_precompute_regkern_hat_1dp */
@@ -1732,7 +1732,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
 }
 
 /* scale epsI and epsB according to box_size == 1 */
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c,
     const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha,
