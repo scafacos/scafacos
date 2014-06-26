@@ -491,7 +491,7 @@ FCSResult ifcs_p2nfft_tune(
   for(int t=0; t<3; t++){
     if (!fcs_float_is_equal(d->box_l[t], box_l[t])) {
 #if FCS_P2NFFT_DEBUG_RETUNE
-      fprintf(stderr, "Changed box size requires retune, box_l[%d] = %e, d->box_l[%d] = %e\n", box_l[t], t, d->box_l[t], t);
+      fprintf(stderr, "Changed box size requires retune, box_l[%d] = %e, d->box_l[%d] = %e\n", t, box_l[t], t, d->box_l[t]);
 #endif
       d->box_l[t] = box_l[t];
       local_needs_retune = 1;
@@ -1035,7 +1035,13 @@ FCSResult ifcs_p2nfft_tune(
       d->lower_border[t] += 0.5 / d->box_expand[t];
       d->upper_border[t] += 0.5 / d->box_expand[t];
     }
+  }
+  /* Finish timing of parameter tuning */
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Parameter tuning");
 
+  /* Start timing of precomputation */
+  FCS_P2NFFT_START_TIMING();
+  if (d->needs_retune) {
     /* precompute Fourier coefficients for convolution */
     if (d->num_periodic_dims == 3)
       d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
@@ -1057,8 +1063,8 @@ FCSResult ifcs_p2nfft_tune(
           d->near_interpolation_table_potential, d->far_interpolation_table_potential,
           d->cart_comm_pnfft, is_cubic(d->box_l)); 
   }
-  /* Finish timing of parameter tuning */
-  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Parameter tuning");
+  /* Finish timing of of precomputation */
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Precomputation of regularization");
 
   /* Initialize the plan for the PNFFT */
   init_pnfft(&d->pnfft, 3, d->N, d->n, d->x_max, d->m, d->pnfft_flags, d->pnfft_interpolation_order, d->pnfft_window,
