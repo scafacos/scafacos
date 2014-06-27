@@ -1849,9 +1849,12 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
             }
           }
         }
-        else{
+        else { /* k != 0 */
           if(num_periodic_dims == 2){
-            if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
+            if( (x2norm > h*(0.5-epsB)) && (FCS_PI * lknorm * h*(0.5-epsB) > 19) ){
+              /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
+              regkern_hat[m] = 0.0;
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / lknorm;
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
               regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB, c) / lknorm;
