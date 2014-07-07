@@ -1475,7 +1475,7 @@ static void init_pnfft(
     case 0: pnfft_flags |= PNFFT_PRE_CONST_PSI; break;
     case 1: pnfft_flags |= PNFFT_PRE_LIN_PSI; break;
     case 2: pnfft_flags |= PNFFT_PRE_QUAD_PSI; break;
-    case 3: pnfft_flags |= PNFFT_PRE_KUB_PSI; break;
+    case 3: pnfft_flags |= PNFFT_PRE_CUB_PSI; break;
   }
 
   switch(pfft_patience){
