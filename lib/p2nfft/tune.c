@@ -476,6 +476,7 @@ FCSResult ifcs_p2nfft_tune(
     d->sum_q2 = sum_q2;
     local_needs_retune = 1;
   }
+  printf("sum_q2 = %e\n", sum_q2);
 
   /* Calculate the sum of the absolute values of all charges
    * (needed for the error formulae) */
@@ -1783,6 +1784,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
   csum = 0.0;
 #endif
 
+  double timer_keq0=0, timer_kne0=0;
+  int count_Req0=0, count_Rne0=0;
+
   /* shift FFT output via twiddle factors on the input */
   /* twiddle only the non-periodic dims, since there we need to calculate 1d-FFTs */ 
   m=0;
@@ -1834,6 +1838,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
               regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB);
             }
           } else {
+double tmp = -MPI_Wtime();
             if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x2norm, p, param, epsB);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
@@ -1847,6 +1852,8 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
                   k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, x2norm, lknorm, alpha);
               MPI_Abort(MPI_COMM_WORLD, 1);
             }
+tmp += MPI_Wtime();
+timer_keq0 += tmp;
           }
         }
         else { /* k != 0 */
@@ -1869,15 +1876,37 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
 //             fprintf(stderr, "kne0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, xsnorm = %e, lknorm = %e, alpha = %e\n",
 //                 k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, xsnorm, lknorm, alpha);
           } else{
+//             if(k[2] >= 10) fprintf(stderr, "k = [%td, %td, %td], lknorm = %e, alpha = %e, Pi*k/(alpha*B) = %e\n", k[0], k[1], k[2], lknorm, alpha, FCS_PI*lknorm/alpha);
+double tmp = -MPI_Wtime();
+            if( FCS_PI*lknorm/alpha > fcs_sqrt(34) ){
+              /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
+              regkern_hat[m] = 0.0;
+            } else
+            if( (x2norm > h*(0.5-epsB)) && (ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5-epsB), 0, param) < 1e-16) ){
+              /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
+              regkern_hat[m] = 0.0;
+fcs_float x = FCS_PI*lknorm;
+fcs_float y = h*(0.5-epsB);
+if(x2norm > y && x*y > 67) ++count_Req0;
+else                       ++count_Rne0;
+            } else
             if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
-            regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
-            regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB, c);
+              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB, c);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
-            regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+// if(creal(regkern_hat[m]) < 1e-10) ++count_Req0;
+// else                              ++count_Rne0;
+// fcs_float x = FCS_PI*lknorm;
+// fcs_float y = h*(0.5-epsB);
+// if(x2norm > y && x*y > 67) ++count_Req0;
+// else                       ++count_Rne0;
             }
 //     if(k[2]==3 && fcs_float_is_zero(xs[1]))
 //     if(k[2]==3)
+//     if(creal(regkern_hat[m]) < 1e-17) 
+//     if(creal(regkern_hat[m]) > 1) 
 //       fprintf(stderr, "regkern[%e] = %e, x2norm = %e,xsnorm = %e, xs = [%f, %f, %f], x2 = [%f, %f, %f], k = [%td, %td, %td]\n",
 //           x2norm, creal(regkern_hat[m]), x2norm, xsnorm, xs[0], xs[1], xs[2], xs[0]*box_scales[0], xs[1]*box_scales[1], xs[2]*box_scales[2], k[0], k[1], k[2]);
             if(isnan(creal(regkern_hat[m]))){
@@ -1887,6 +1916,8 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
 //                 fprintf(stderr, "K_%d(0.4,0) = %e\n", t, ifcs_p2nfft_inc_upper_bessel_k(t, 0.4, 0, 1e-8));
               MPI_Abort(MPI_COMM_WORLD, 1);
             }
+tmp += MPI_Wtime();
+timer_kne0 += tmp;
           }
         }
 
@@ -1899,6 +1930,10 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     }
   }
 
+fprintf(stderr, "\nRegularization for k==0 takes %e\n", timer_keq0);
+fprintf(stderr,   "Regularization for k!=0 takes %e\n\n", timer_kne0);
+fprintf(stderr, "\nRegularization numerically     equal to 0 for %d times\n", count_Req0);
+fprintf(stderr, "\nRegularization numerically NOT equal to 0 for %d times\n", count_Rne0);
 
 //   {
 //     FILE *file = fopen("reg_keq0.txt", "w");

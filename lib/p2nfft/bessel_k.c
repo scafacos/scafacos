@@ -154,10 +154,11 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   const fcs_float bound = 1e-100;
 
   if(nu >= -1){
+    /* trivial error bound */
     if( x > gsl_sf_lambert_W0(1/bound) )
       return 0.0;
   } else{
-      fcs_int fak = 1;
+      fcs_float fak = 1;
       for(fcs_int t=1; t<-nu; t++){
         fak*=t;
       }
@@ -175,22 +176,26 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   if(fcs_float_is_zero(y))
     return fcs_pow(x,nu) * gsl_sf_gamma_inc(-nu,x); 
 
+  /* error bound based on the complement integral */
+  if( 2 * fcs_pow(x/y,nu/2) * ifcs_p2nfft_bessel_k(nu, 2*fcs_sqrt(x*y)) < bound)
+    return 0.0;
+
 
   /* for x<y compute the faster convergent complement integral,
    * see formula (4) of [Slevinsky-Safouhi 2010] */
   if(x<y){ /* upper bound for nu>=-1, in our application we always have nu>=-1 at this point */
-    if( 2*fcs_pow(x/y,nu/2)*fcs_exp(-fcs_sqrt(x*y))/fcs_sqrt(x*y) < 1e-100 ){
-      return 0.0;
-    } else {
+//     if( 2 * fcs_pow(x/y,nu/2)*fcs_exp(-fcs_sqrt(x*y))/fcs_sqrt(x*y) < bound )
+//       return 0.0;
+//     } else {
       return 2 * fcs_pow(x/y, nu/2) * ifcs_p2nfft_bessel_k(nu, 2*fcs_sqrt(x*y)) - ifcs_p2nfft_inc_upper_bessel_k(-nu, y, x, eps);
-    }
+//     }
   }
   
   /* for nu=0 and x,y small use Taylor approximation */
   if(fcs_float_is_zero(nu)){
     if(fcs_pow(x,2) + fcs_pow(y,2) < fcs_pow(0.75,2)){
       fcs_int k = 0;
-      fcs_int fak = 1;
+      fcs_float fak = 1;
       fcs_float z = 0.0;
       while( fcs_exp(-x)*fcs_pow(y,k+1)/(x*(k+1)*fak) > eps){
 	z+=fcs_pow(-1,k)*fcs_pow(x*y,k)*gsl_sf_gamma_inc(-k,x)/fak;
