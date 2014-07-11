@@ -117,6 +117,9 @@ typedef struct _FCS_t
 #ifdef FCS_ENABLE_MEMD
   fcs_memd_parameters memd_param;
 #endif
+#ifdef FCS_ENABLE_MMM1D
+  fcs_mmm1d_parameters mmm1d_param;
+#endif
 #ifdef FCS_ENABLE_P2NFFT
   fcs_p2nfft_parameters p2nfft_param;
 #endif

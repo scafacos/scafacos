@@ -25,7 +25,8 @@
 #include <config.h>
 #endif
 
-#include "communication.h"
+#include <mpi.h>
+
 #include "common/mmm-common/specfunc.h"
 
 /* DEFAULTS */
@@ -52,14 +53,13 @@
 /** Structure that holds all data of the mmm1d algorithm */
 typedef struct {
   
-  mmm1d_comm_struct comm;
+  MPI_Comm comm;
   
   /****************************************************
    * SYSTEM PARAMETERS
    ****************************************************/
   /* System size in x,y,z */
   fcs_float box_l[3];
-  fcs_float total_charge;
 
   /****************************************************
    * PARAMETERS OF THE METHOD
@@ -87,14 +87,6 @@ typedef struct {
 
   double *bessel_radii;
 
-  /****************************************************
-   * Method data
-   ****************************************************/
-   /* containers for the local particles */
-  fcs_int n_localpart;
-  fcs_float *local_charges;
-  fcs_float *local_positions;
-  
 } mmm1d_data_struct;
 
 #endif

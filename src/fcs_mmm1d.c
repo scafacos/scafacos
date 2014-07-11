@@ -30,6 +30,9 @@
 /* forward declarations */
 static FCSResult fcs_mmm1d_check(FCS handle, const char* fnc_name);
 
+static void swapf(fcs_float *a, fcs_float *b)
+{ fcs_float tmp = *a; *a = *b; *b = tmp; }
+
 /* initialization function for basic p3m parameters */
 FCSResult fcs_mmm1d_init(FCS handle)
 {
@@ -47,6 +50,8 @@ FCSResult fcs_mmm1d_init(FCS handle)
   handle->set_compute_virial = fcs_mmm1d_require_virial;
   handle->get_virial = fcs_mmm1d_get_virial;
 
+  handle->mmm1d_param = malloc(sizeof(fcs_mmm1d_parameters_t));
+
   mmm1d_init(&handle->method_context, handle->communicator);
   return NULL;
 }
@@ -63,22 +68,39 @@ FCSResult fcs_mmm1d_tune(FCS handle,
   
   /* Check box periodicity */
   const fcs_int *periodicity = fcs_get_periodicity(handle);
-  if (periodicity[0] != 0 ||
-      periodicity[1] != 0 ||
-      periodicity[2] != 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "mmm1d requires z-axis periodic boundary.");
+  if ((periodicity[0] ? 1 : 0) + (periodicity[1] ? 1 : 0) + (periodicity[2] ? 1 : 0) != 1)
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "mmm1d requires exactly one axis with periodic boundary.");
   
   /* Check box shape */
   const fcs_float *a = fcs_get_box_a(handle);
   const fcs_float *b = fcs_get_box_b(handle);
   const fcs_float *c = fcs_get_box_c(handle);
-//  if (!fcs_is_cubic(a, b, c))
-//    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "mmm1d requires a cubic box.");
-  
-  mmm1d_set_box_a(handle->method_context, a[0]);
-  mmm1d_set_box_b(handle->method_context, b[1]);
-  mmm1d_set_box_c(handle->method_context, c[2]);
-  
+
+  if (!fcs_is_orthogonal(a, b, c))
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, 
+          "mmm1d requires the box to be orthorhombic.");
+
+  if (!fcs_uses_principal_axes(a, b, c))
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, 
+          "mmm1d requires the box vectors to be parallel to the principal axes.");
+
+  /* setup unshuffled */
+  for(fcs_int i = 0; i < 3; ++i) handle->mmm1d_param->shuffle[i] = i;
+  fcs_float box_l[] = { a[0], b[1], c[2] };
+
+  /* shuffle such that z is periodic */
+  fcs_int periodic_c;
+  for (periodic_c = 0; periodic_c < 2; ++periodic_c) {
+    if (periodicity[periodic_c]) break;
+  }
+  handle->mmm1d_param->shuffle[periodic_c] = 2;
+  handle->mmm1d_param->shuffle[2] = periodic_c;
+  swapf(&box_l[periodic_c], &box_l[2]);
+
+  mmm1d_set_box_a(handle->method_context, box_l[0]);
+  mmm1d_set_box_b(handle->method_context, box_l[1]);
+  mmm1d_set_box_c(handle->method_context, box_l[2]);
+
   /* Effectively, tune initializes the algorithm */
   result = mmm1d_tune(handle->method_context, 
         local_particles,
@@ -101,8 +123,34 @@ FCSResult fcs_mmm1d_run(FCS handle,
   fcs_int max_local_particles = fcs_get_max_local_particles(handle);
   if (local_particles > max_local_particles) max_local_particles = local_particles;
 
+  fcs_float *shuffled_positions = (fcs_float *)malloc(3*sizeof(fcs_float)*max_local_particles);
+
+  /* shuffle positions */
+  fcs_int *shuffle = handle->mmm1d_param->shuffle;
+  for(fcs_int i = 0; i < local_particles; ++i) {
+    for(fcs_int j = 0; j < 3; ++j) {
+      shuffled_positions[3*i + j] = positions[3*i + shuffle[j]];
+    }
+  }
+
   mmm1d_run(handle->method_context,
-	  local_particles, max_local_particles, positions, charges, fields, potentials);
+	  local_particles, max_local_particles, shuffled_positions, charges, fields, potentials);
+
+  /* unshuffle fields */
+  if (fields) {
+    for(fcs_int i = 0; i < local_particles; ++i) {
+      fcs_float tmp[3];
+      for(fcs_int j = 0; j < 3; ++j) {
+        tmp[shuffle[j]] = fields[3*i + j];
+      }
+      for(fcs_int j = 0; j < 3; ++j) {
+        fields[3*i + j] = tmp[j];
+      }
+    }
+  }
+
+  free(shuffled_positions);
+
   return NULL;
 }
 
