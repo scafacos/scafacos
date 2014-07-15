@@ -158,35 +158,49 @@ typedef struct _errors_t
 {
   // sums of the squared potentials/field error
   fcs_float sum_potential_error_sqr;
+  fcs_float sum_energy_error_sqr;
   fcs_float sum_field_error_sqr;
+  fcs_float sum_force_error_sqr;
 
   // maximum of the squared potentials/field error
   fcs_float max_potential_error_sqr;
+  fcs_float max_energy_error_sqr;
   fcs_float max_field_error_sqr;
+  fcs_float max_force_error_sqr;
 
   // pid with the maximal potentials/field error
   fcs_int max_potential_error_pid;
+  fcs_int max_energy_error_pid;
   fcs_int max_field_error_pid;
+  fcs_int max_force_error_pid;
 
   // absolute rms errors
   fcs_float abs_rms_potential_error;
+  fcs_float abs_rms_energy_error;
   fcs_float abs_rms_field_error;
+  fcs_float abs_rms_force_error;
 
   // relative rms errors
   fcs_float rel_rms_potential_error;
+  fcs_float rel_rms_energy_error;
   fcs_float rel_rms_field_error;
+  fcs_float rel_rms_force_error;
 
   // absolute maximum errors
   fcs_float abs_max_potential_error;
+  fcs_float abs_max_energy_error;
   fcs_float abs_max_field_error;
+  fcs_float abs_max_force_error;
 
   // relative maximum errors
   fcs_float rel_max_potential_error;
+  fcs_float rel_max_energy_error;
   fcs_float rel_max_field_error;
+  fcs_float rel_max_force_error;
 
   // energy error
-  fcs_float abs_energy_error;
-  fcs_float rel_energy_error;
+  fcs_float abs_total_energy_error;
+  fcs_float rel_total_energy_error;
 
   // total energy
   fcs_float total_energy;
