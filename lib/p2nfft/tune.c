@@ -556,7 +556,7 @@ FCSResult ifcs_p2nfft_tune(
       d->one_over_r_cut = 1.0/d->r_cut;
 
       /* set normalized near field radius, relative to minimum box length */
-      d->epsI = d->r_cut / d->box_scales[mindim];
+      d->epsI = d->r_cut / d->box_l[mindim];
       
       /* Tune alpha for fixed N and m. */
       if(!d->tune_N && !d->tune_m){
@@ -1785,7 +1785,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
 #endif
 
   double timer_keq0=0, timer_kne0=0;
-  int count_Req0=0, count_Rne0=0;
+  int count_Req0=0, count_Rne0=0, count_all=0;
 
   /* shift FFT output via twiddle factors on the input */
   /* twiddle only the non-periodic dims, since there we need to calculate 1d-FFTs */ 
@@ -1820,6 +1820,8 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
         for(fcs_int t=0; t<3; t++)
           if(!periodicity[t])
             h = box_scales[t];
+
+if((l0==0) && (l1==0) && (l2==1)) fprintf(stderr, "l = [%td, %td, %td], h = %e, lknorm = %e, Pi*h*(0.5-epsB) = %e\n", l0, l1, l2, h, lknorm, FCS_PI*h*(0.5-epsB));
 
         fcs_float param[3];
         param[0] = alpha;
@@ -1875,20 +1877,24 @@ timer_keq0 += tmp;
 //             fprintf(stderr, "regkern = %e, x2norm = %e\n", creal(regkern_hat[m]), x2norm);
 //             fprintf(stderr, "kne0: k = [%td, %td, %td], x = [%e, %e, %e], p = %d, epsB = %e, xsnorm = %e, lknorm = %e, alpha = %e\n",
 //                 k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, xsnorm, lknorm, alpha);
-          } else{
+          } else { /* num_periodic_dims == 1 */
+            fcs_float xroot = FCS_PI * lknorm / alpha;
+            fcs_float x = xroot * xroot;
+
 //             if(k[2] >= 10) fprintf(stderr, "k = [%td, %td, %td], lknorm = %e, alpha = %e, Pi*k/(alpha*B) = %e\n", k[0], k[1], k[2], lknorm, alpha, FCS_PI*lknorm/alpha);
 double tmp = -MPI_Wtime();
-            if( FCS_PI*lknorm/alpha > fcs_sqrt(34) ){
+++count_all;
+            if( x > 34 ){
+              /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
+              regkern_hat[m] = 0.0;
+            } else
+            if( (x2norm > h*(0.5-epsB)) && ( FCS_PI*lknorm * h*(0.5-epsB) > 19) ){
               /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
               regkern_hat[m] = 0.0;
             } else
             if( (x2norm > h*(0.5-epsB)) && (ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5-epsB), 0, param) < 1e-16) ){
               /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
               regkern_hat[m] = 0.0;
-fcs_float x = FCS_PI*lknorm;
-fcs_float y = h*(0.5-epsB);
-if(x2norm > y && x*y > 67) ++count_Req0;
-else                       ++count_Rne0;
             } else
             if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
@@ -1896,8 +1902,8 @@ else                       ++count_Rne0;
               regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB, c);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
               regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
-// if(creal(regkern_hat[m]) < 1e-10) ++count_Req0;
-// else                              ++count_Rne0;
+if(creal(regkern_hat[m]) < 1e-15) ++count_Req0;
+else                              ++count_Rne0;
 // fcs_float x = FCS_PI*lknorm;
 // fcs_float y = h*(0.5-epsB);
 // if(x2norm > y && x*y > 67) ++count_Req0;
@@ -1932,8 +1938,9 @@ timer_kne0 += tmp;
 
 fprintf(stderr, "\nRegularization for k==0 takes %e\n", timer_keq0);
 fprintf(stderr,   "Regularization for k!=0 takes %e\n\n", timer_kne0);
+fprintf(stderr, "\nTotal calls of Regularization = %d\n", count_all);
 fprintf(stderr, "\nRegularization numerically     equal to 0 for %d times\n", count_Req0);
-fprintf(stderr, "\nRegularization numerically NOT equal to 0 for %d times\n", count_Rne0);
+fprintf(stderr,   "Regularization numerically NOT equal to 0 for %d times\n", count_Rne0);
 
 //   {
 //     FILE *file = fopen("reg_keq0.txt", "w");
