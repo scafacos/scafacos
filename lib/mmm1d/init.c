@@ -20,7 +20,37 @@
 #include "init.h"
 #include "types.h"
 #include <stdlib.h>
-#include <stdio.h>
+// #include <stdio.h>
+
+static MPI_Comm cart_comm_1d(MPI_Comm communicator) {
+  /* test whether the communicator is cartesian and correct dimensionality */
+  fcs_int status;
+  MPI_Topo_test(communicator, &status);
+  if (status == MPI_CART) {
+    /* Communicator is cartesian, so test dimensionality */
+    fcs_int ndims;
+    MPI_Cartdim_get(communicator, &ndims);
+    if (ndims == 3) {
+      /* Correct dimensionality, so get grid and test periodicity */
+      fcs_int node_grid[3], periodicity[3], node_pos[3];
+      MPI_Cart_get(communicator, 3, node_grid, periodicity, node_pos);
+      if (!periodicity[0] && !periodicity[1] && periodicity[2]) {
+        return communicator;
+      }
+    }
+  }
+  /* Otherwise, we have to set up the cartesian communicator */
+  fcs_int comm_size;
+  MPI_Comm_size(communicator, &comm_size);
+  fcs_int node_grid[3] = {0, 0, 0};
+  MPI_Dims_create(comm_size, 3, node_grid);
+  fcs_int periodicity[3] = {1, 1, 0};
+
+  MPI_Comm new_communicator;
+  MPI_Cart_create(communicator, 3, node_grid, periodicity, 1, &new_communicator);
+
+  return new_communicator;
+}
 
 void mmm1d_init(void **rd, MPI_Comm communicator) {
   
@@ -37,19 +67,14 @@ void mmm1d_init(void **rd, MPI_Comm communicator) {
   }
   
   /* Init the communication stuff */
-  mmm1d_comm_init(&d->comm, communicator);
-  
+  d->comm = cart_comm_1d(communicator);
+
   /* Init the default MMM1D parameters */
   d->far_switch_radius_2=-1;
   d->bessel_cutoff=MMM1D_DEFAULT_MAXIMAL_B_CUT;
   d->maxPWerror=MMM1D_DEFAULT_REQUIRED_ACCURACY;
-  d->total_charge=0.;
   
   d->box_l[0]=0.; d->box_l[1]=0.; d->box_l[2]=0.;
-  
-  d->local_charges= NULL;
-  d->local_positions= NULL;
-  d->n_localpart=0;
   
   d->polTaylor=NULL;
   d->polTaylor = malloc(sizeof(mmm_data_struct));
@@ -58,15 +83,9 @@ void mmm1d_init(void **rd, MPI_Comm communicator) {
   d->bessel_radii = NULL;
 }
 
-/* safe free */
-static void sfree(void* ptr) {
-  if (ptr != NULL)
-    free(ptr);
-}
-
 void mmm1d_destroy(void *rd) {
   if (rd != NULL) {
     mmm1d_data_struct *d = (mmm1d_data_struct*)rd;
-    sfree(d);
+    free(d);
   }
 }

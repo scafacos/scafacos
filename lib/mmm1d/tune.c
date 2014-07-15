@@ -45,12 +45,6 @@ FCSResult mmm1d_tune(void* rd,
   mmm1d_data_struct *d = (mmm1d_data_struct*)rd;
   const char* fnc_name = "mmm1d_tune";
   
-  /* Require charge neutrality */
-  mmm1d_check_system_charges(d, num_particles, charges);
-  if (!fcs_float_is_zero(d->total_charge)) {
-    return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "MMM1D requires a zero net charge.");
-  }
-  
   /* check whether the input parameters are sane */
   /* set switch radius to usually good value */
   if (d->far_switch_radius_2 < 0) {
@@ -139,12 +133,7 @@ static void mmm1d_prepare_polygamma_series(mmm1d_data_struct *d)
   n = 1;
   rhomax2nm2 = 1.0;
   do {
-     //printf("recalc 1 %d\n", n);
-     //if(!(d->modPsi)){printf("1. aki modPsi en NULL\n");}
-     //if((d->modPsi)==NULL){printf("2. aki modPsi en NULL\n");}
     mmm_create_mod_psi_up_to(d->polTaylor, n+1);
-    //printf("plofff %d\n", (&(d->modPsi)[0])->n);
-    //printf("recalc 2 %d\n", n);
     err = 2*n*fabs(mmm_mod_psi_even(d->polTaylor, n, 0.5))*rhomax2nm2;
     //printf("rank %d, recalc 3 %d, err: %e\n", d->comm.rank, n, err);
     rhomax2nm2 *= rhomax2;
@@ -152,22 +141,4 @@ static void mmm1d_prepare_polygamma_series(mmm1d_data_struct *d)
   }
   while (err > 0.1*d->maxPWerror);
   // printf("rank %d, rhomax2: %e, recalc_tables: n_modPsi: %d\n", d->comm.rank, rhomax2, (d->polTaylor)->n_modPsi);
-}
-
-/* compute the net charge of the system */
-FCSResult mmm1d_check_system_charges(mmm1d_data_struct *d,
-                fcs_int num_particles, fcs_float *charges) {
-  fcs_int i;
-  fcs_float local_charge=0., total_charge=0.;
-  for (i = 0; i < num_particles; i++) {
-    if (!fcs_float_is_zero(charges[i])) {
-      local_charge += charges[i];
-    }
-  }
-  // fprintf(stderr,"check charges: rank %d\n",d->comm.rank);
-  // fprintf(stderr, "local_charges %d, %e\n", num_particles, local_charge);
-  MPI_Allreduce(&local_charge, &total_charge, 1, FCS_MPI_FLOAT, MPI_SUM, d->comm.mpicomm);
-  d->total_charge=total_charge;
-  // fprintf(stderr, "total charge %e\n", d->total_charge);
-  return NULL;
 }

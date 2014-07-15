@@ -131,6 +131,9 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
 #ifdef FCS_ENABLE_MEMD
   handle->memd_param = NULL;
 #endif
+#ifdef FCS_ENABLE_MMM1D
+  handle->mmm1d_param = NULL;
+#endif
 #ifdef FCS_ENABLE_P2NFFT
   handle->p2nfft_param = NULL;
 #endif

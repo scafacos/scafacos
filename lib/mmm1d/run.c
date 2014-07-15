@@ -57,82 +57,65 @@ void mmm1d_run(void* rd,
   fcs_float box_b[3] = {0.0, d->box_l[1], 0.0 };
   fcs_float box_c[3] = {0.0, 0.0, d->box_l[2] };
   fcs_gridsort_t gridsort;
-  fcs_int i;
-  
+  fcs_int comm_size;
+  MPI_Comm_size(d->comm, &comm_size);
+  fcs_int comm_rank;
+  MPI_Comm_rank(d->comm, &comm_rank);
+
   fcs_gridsort_create(&gridsort);
   fcs_gridsort_set_system(&gridsort, box_base, box_a, box_b, box_c, NULL);
   fcs_gridsort_set_particles(&gridsort, num_particles, max_num_particles, positions, charges);
   
-  MPI_Barrier(d->comm.mpicomm);
-  // fprintf(stderr, "mmm1d_run, rank %d\n", d->comm.rank);
-  // fprintf(stderr, "  calling fcs_gridsort_sort_forward()...\n");
-  
-  fcs_gridsort_sort_forward(&gridsort, 0.0, d->comm.mpicomm);
+  fcs_gridsort_sort_forward(&gridsort, 0.0, d->comm);
   
   fcs_gridsort_separate_ghosts(&gridsort, &local_num_real_particles, NULL);
   fcs_gridsort_get_sorted_particles(&gridsort, &local_num_real_particles, NULL, NULL, NULL, NULL);
   
-  MPI_Barrier(d->comm.mpicomm);
   fcs_gridsort_get_real_particles(&gridsort, &local_num_real_particles, &local_positions, &local_charges, &local_indexes);
   
-  // fprintf(stderr, "rank %d, local particles %d\n", d->comm.rank, local_num_real_particles);
-  
-  ///@TODO: not really useful here
-  d->n_localpart=local_num_particles;
-  d->local_charges=local_charges;
-  d->local_positions=local_positions;
-  
-  MPI_Barrier(d->comm.mpicomm);
-  //printf("rank %d, after get: %d: %e, %e, %e\n", d->comm.rank, local_num_real_particles, local_positions[0], local_positions[1], local_positions[2]);
-  
-  fcs_int p1, p2, c1, c2;
+  // fprintf(stderr, "rank %d, local particles %d\n", comm_rank, local_num_real_particles);
   
   /* assign workload to nodes and distribute ghosts */
-  // fprintf(stderr, "rank %d, assign workload to nodes\n", d->comm.rank);
+  // fprintf(stderr, "rank %d, assign workload to nodes\n", comm_rank);
   fcs_int n_ghost_neighbors=0, n_clairvoyant_neighbors=0, n_ghosts=0;
-  fcs_int ghost_neighbors[(d->comm.size + 3)/2], clairvoyant_neighbors[(d->comm.size + 3)/2];
-  fcs_float **local_ghosts_positions = (fcs_float **)malloc((d->comm.size-1)*sizeof(fcs_float *));
-  fcs_float **local_ghosts_charges = (fcs_float **)malloc((d->comm.size-1)*sizeof(fcs_float *));
-  local_num_ghost_particles = (fcs_int *)malloc(sizeof(fcs_int)*(d->comm.size-1));
-  MPI_Barrier(d->comm.mpicomm);
+  fcs_int ghost_neighbors[(comm_size + 3)/2], clairvoyant_neighbors[(comm_size + 3)/2];
+  fcs_float **local_ghosts_positions = (fcs_float **)malloc((comm_size-1)*sizeof(fcs_float *));
+  fcs_float **local_ghosts_charges = (fcs_float **)malloc((comm_size-1)*sizeof(fcs_float *));
+  local_num_ghost_particles = (fcs_int *)malloc(sizeof(fcs_int)*(comm_size-1));
   MPI_Status status;
-  c1=0; c2=0;
-  for(i=0; i< d->comm.size; i++) {
-    p1 = i - d->comm.rank;
+  for(fcs_int i=0; i< comm_size; i++) {
+    fcs_int p1 = i - comm_rank;
     if (p1==0) continue;
     if ((p1 > 0 && p1 % 2 == 0) || (p1 < 0 && -p1 % 2 == 1)) {
       ghost_neighbors[n_ghost_neighbors]=i;
+      //printf("rank %d :receive workload from %d\n", comm_rank, i);
+      MPI_Recv(&n_ghosts, 1, FCS_MPI_INT, i, i, d->comm, &status);
+      local_num_ghost_particles[n_ghost_neighbors] = n_ghosts;
+      local_ghosts_positions[n_ghost_neighbors] = (fcs_float *)malloc(sizeof(fcs_float)*3*n_ghosts);
+      local_ghosts_charges[n_ghost_neighbors] = (fcs_float *)malloc(sizeof(fcs_float)*n_ghosts);
+      MPI_Recv(local_ghosts_positions[n_ghost_neighbors], 3*n_ghosts, FCS_MPI_FLOAT, i, i, d->comm, &status);
+      MPI_Recv(local_ghosts_charges[n_ghost_neighbors], n_ghosts, FCS_MPI_FLOAT, i, i, d->comm, &status);
       n_ghost_neighbors++;
-      //printf("rank %d :receive workload from %d\n", d->comm.rank, i);
-      MPI_Recv(&n_ghosts, 1, FCS_MPI_INT, i, i,
-             d->comm.mpicomm, &status);
-      local_num_ghost_particles[c1] = n_ghosts;
-      local_ghosts_positions[c1] = (fcs_float *)malloc(sizeof(fcs_float)*3*n_ghosts);
-      local_ghosts_charges[c1] = (fcs_float *)malloc(sizeof(fcs_float)*n_ghosts);
-      MPI_Recv(local_ghosts_positions[c1], 3*n_ghosts, FCS_MPI_FLOAT, i, i, d->comm.mpicomm, &status);
-      MPI_Recv(local_ghosts_charges[c1], n_ghosts, FCS_MPI_FLOAT, i, i, d->comm.mpicomm, &status);
-      c1++;
     } else {
       clairvoyant_neighbors[n_clairvoyant_neighbors]=i;
       n_clairvoyant_neighbors++;
-      MPI_Send(&local_num_real_particles, 1, FCS_MPI_INT, i, d->comm.rank, d->comm.mpicomm);
-      MPI_Send(local_positions, 3*local_num_real_particles, FCS_MPI_FLOAT, i, d->comm.rank, d->comm.mpicomm);
-      MPI_Send(local_charges, local_num_real_particles, FCS_MPI_FLOAT, i, d->comm.rank, d->comm.mpicomm);
-      //printf("rank %d :send workload to %d\n", d->comm.rank, i);
+      MPI_Send(&local_num_real_particles, 1, FCS_MPI_INT, i, comm_rank, d->comm);
+      MPI_Send(local_positions, 3*local_num_real_particles, FCS_MPI_FLOAT, i, comm_rank, d->comm);
+      MPI_Send(local_charges, local_num_real_particles, FCS_MPI_FLOAT, i, comm_rank, d->comm);
+      //printf("rank %d :send workload to %d\n", comm_rank, i);
     }
   }
-    
-  MPI_Barrier(d->comm.mpicomm);
+
+  MPI_Barrier(d->comm);
   
   /* allocate local containers */
-  // fprintf(stderr, "rank %d, allocate containers\n", d->comm.rank);
-  fcs_float disp[3], eng=0.;
+  // fprintf(stderr, "rank %d, allocate containers\n", comm_rank);
   fcs_float *local_fields = NULL;
   fcs_float *local_potentials = NULL;
   local_fields=malloc(sizeof(fcs_float)*3*local_num_real_particles);
   local_potentials=malloc(sizeof(fcs_float)*local_num_real_particles);
-  for(p1=0; p1<local_num_real_particles; p1++) {
-    c1=3*p1;
+  for(fcs_int p1=0; p1<local_num_real_particles; p1++) {
+    fcs_int c1=3*p1;
     local_fields[c1]=0;
     local_fields[c1+1]=0;
     local_fields[c1+2]=0;
@@ -140,11 +123,11 @@ void mmm1d_run(void* rd,
   }
   fcs_float **local_ghosts_fields = (fcs_float **)malloc(n_ghost_neighbors*sizeof(fcs_float *));
   fcs_float **local_ghosts_potentials = (fcs_float **)malloc(n_ghost_neighbors*sizeof(fcs_float *));
-  for(i=0; i<n_ghost_neighbors; i++) {
+  for(fcs_int i=0; i<n_ghost_neighbors; i++) {
     local_ghosts_fields[i]=(fcs_float *)malloc(3*local_num_ghost_particles[i]*sizeof(fcs_float));
     local_ghosts_potentials[i]=(fcs_float *)malloc(local_num_ghost_particles[i]*sizeof(fcs_float));
-    for(p1=0; p1<local_num_ghost_particles[i]; p1++) {
-      c1=3*p1;
+    for(fcs_int p1=0; p1<local_num_ghost_particles[i]; p1++) {
+      fcs_int c1=3*p1;
       local_ghosts_fields[i][c1]=0;
       local_ghosts_fields[i][c1+1]=0;
       local_ghosts_fields[i][c1+2]=0;
@@ -152,152 +135,127 @@ void mmm1d_run(void* rd,
     }
   }
   
-  ///main calculation loops
-  // fprintf(stderr, "rank %d, main calculation loops\n", d->comm.rank);
   /* calculate local interactions */
-  // fprintf(stderr, "rank %d, local interactions\n", d->comm.rank);
-  fcs_float x1,y1,z1,x2,y2,z2, field[3];
-  for(p1=0; p1<local_num_real_particles-1; p1++) {
-    c1=3*p1;
-    x1=local_positions[c1];
-    y1=local_positions[c1+1];
-    z1=local_positions[c1+2];
+  // fprintf(stderr, "rank %d, local interactions\n", comm_rank);
+  for(fcs_int p1=0; p1<local_num_real_particles-1; p1++) {
+    fcs_int c1=3*p1;
+    fcs_float x1=local_positions[c1];
+    fcs_float y1=local_positions[c1+1];
+    fcs_float z1=local_positions[c1+2];
   
-    for(p2=p1+1; p2<local_num_real_particles; p2++) {
-      c2=3*p2;
-      x2=local_positions[c2];
-      y2=local_positions[c2+1];
-      z2=local_positions[c2+2];
+    for(fcs_int p2=p1+1; p2<local_num_real_particles; p2++) {
+      fcs_int c2=3*p2;
+      fcs_float x2=local_positions[c2];
+      fcs_float y2=local_positions[c2+1];
+      fcs_float z2=local_positions[c2+2];
       
+      fcs_float disp[3];
       mmm_distance2vec(x1,y1,z1,x2,y2,z2,disp);
       // printf("mmm1d_run, selected real-real particles: %d, %d\n",p1,p2);
-      eng=mmm1d_coulomb_pair_energy(d, disp);
-      local_potentials[p1]+=local_charges[p2]*eng;
-      local_potentials[p2]+=local_charges[p1]*eng;
-      mmm1d_coulomb_pair_force(d, disp, field);
-      local_fields[c1]  += local_charges[p2]*field[0];
-      local_fields[c1+1]+= local_charges[p2]*field[1];
-      local_fields[c1+2]+= local_charges[p2]*field[2];
-      local_fields[c2]  +=-local_charges[p1]*field[0];
-      local_fields[c2+1]+=-local_charges[p1]*field[1];
-      local_fields[c2+2]+=-local_charges[p1]*field[2];
+
+      if (potentials) {
+        fcs_float eng = mmm1d_coulomb_pair_energy(d, disp);
+
+        local_potentials[p1]+=local_charges[p2]*eng;
+        local_potentials[p2]+=local_charges[p1]*eng;
+      }
+
+      if (fields) {
+        fcs_float field[3];
+        mmm1d_coulomb_pair_force(d, disp, field);
+
+        local_fields[c1]  += local_charges[p2]*field[0];
+        local_fields[c1+1]+= local_charges[p2]*field[1];
+        local_fields[c1+2]+= local_charges[p2]*field[2];
+        local_fields[c2]  +=-local_charges[p1]*field[0];
+        local_fields[c2+1]+=-local_charges[p1]*field[1];
+        local_fields[c2+2]+=-local_charges[p1]*field[2];
+      }
     }
   }
   
   /* calculate ghost interactions */
-  // fprintf(stderr, "rank %d, ghost interactions\n", d->comm.rank);
-  for(p1=0; p1<local_num_real_particles; p1++) {
-    c1=3*p1;
-    x1=local_positions[c1];
-    y1=local_positions[c1+1];
-    z1=local_positions[c1+2];
-    for(i=0; i<n_ghost_neighbors; i++){
-      for(p2=0; p2<local_num_ghost_particles[i]; p2++) {
-        c2=3*p2;
-        x2=local_ghosts_positions[i][c2];
-        y2=local_ghosts_positions[i][c2+1];
-        z2=local_ghosts_positions[i][c2+2];
-      
+  // fprintf(stderr, "rank %d, ghost interactions\n", comm_rank);
+  for(fcs_int p1=0; p1<local_num_real_particles; p1++) {
+    fcs_int c1=3*p1;
+    fcs_float x1=local_positions[c1];
+    fcs_float y1=local_positions[c1+1];
+    fcs_float z1=local_positions[c1+2];
+    for(fcs_int i=0; i<n_ghost_neighbors; i++){
+      for(fcs_int p2=0; p2<local_num_ghost_particles[i]; p2++) {
+        fcs_int c2=3*p2;
+        fcs_float x2=local_ghosts_positions[i][c2];
+        fcs_float y2=local_ghosts_positions[i][c2+1];
+        fcs_float z2=local_ghosts_positions[i][c2+2];
+
+
+        fcs_float disp[3];      
         mmm_distance2vec(x1,y1,z1,x2,y2,z2,disp);
         //printf("mmm1d_run, selected real-ghost particles: %d, %d\n",p1,p2);
-        eng=mmm1d_coulomb_pair_energy(d, disp);
-        local_potentials[p1]          +=local_ghosts_charges[i][p2]*eng;
-        local_ghosts_potentials[i][p2]+=local_charges[p1]*eng;
-        mmm1d_coulomb_pair_force(d, disp, field);
-        local_fields[c1]  +=local_ghosts_charges[i][p2]*field[0];
-        local_fields[c1+1]+=local_ghosts_charges[i][p2]*field[1];
-        local_fields[c1+2]+=local_ghosts_charges[i][p2]*field[2];
-        local_ghosts_fields[i][c2]  +=-local_charges[p1]*field[0];
-        local_ghosts_fields[i][c2+1]+=-local_charges[p1]*field[1];
-        local_ghosts_fields[i][c2+2]+=-local_charges[p1]*field[2];
+
+        if (potentials) {
+          fcs_float eng = mmm1d_coulomb_pair_energy(d, disp);
+
+          local_potentials[p1]          +=local_ghosts_charges[i][p2]*eng;
+          local_ghosts_potentials[i][p2]+=local_charges[p1]*eng;
+        }
+        if (fields) {
+          fcs_float field[3];
+          mmm1d_coulomb_pair_force(d, disp, field);
+
+          local_fields[c1]  +=local_ghosts_charges[i][p2]*field[0];
+          local_fields[c1+1]+=local_ghosts_charges[i][p2]*field[1];
+          local_fields[c1+2]+=local_ghosts_charges[i][p2]*field[2];
+          local_ghosts_fields[i][c2]  +=-local_charges[p1]*field[0];
+          local_ghosts_fields[i][c2+1]+=-local_charges[p1]*field[1];
+          local_ghosts_fields[i][c2+2]+=-local_charges[p1]*field[2];
+        }
       }
     }
   }
   
-  MPI_Barrier(d->comm.mpicomm);
-  //printf("rank %d, locals: potential: %e, field 0: %e %e %e\n", d->comm.rank, local_potentials[0], local_fields[0], local_fields[1], local_fields[2]);
-  //if (d->comm.rank==1) printf("rank %d, local ghosts: potential: %e, field 0: %e %e %e\n", d->comm.rank, local_ghosts_potentials[0][0], local_ghosts_fields[0][0], local_ghosts_fields[0][1], local_ghosts_fields[0][2]);
+  //printf("rank %d, locals: potential: %e, field 0: %e %e %e\n", comm_rank, local_potentials[0], local_fields[0], local_fields[1], local_fields[2]);
+  //if (comm_rank==1) printf("rank %d, local ghosts: potential: %e, field 0: %e %e %e\n", comm_rank, local_ghosts_potentials[0][0], local_ghosts_fields[0][0], local_ghosts_fields[0][1], local_ghosts_fields[0][2]);
   
   /* send back ghost interactions to neighbors */
-  // fprintf(stderr, "rank %d, send back ghosts\n", d->comm.rank);
+  // fprintf(stderr, "rank %d, send back ghosts\n", comm_rank);
   fcs_float foreign_ghost_fields[3*local_num_real_particles], foreign_ghost_potentials[local_num_real_particles];
   
-  c1=0; c2=0;
-  for(i=0; i< d->comm.size; i++) {
-    p1 = i - d->comm.rank;
+  fcs_int c1=0; fcs_int c2=0;
+  for(fcs_int i=0; i< comm_size; i++) {
+    fcs_int p1 = i - comm_rank;
     if (p1==0) continue;
     if ((p1 > 0 && p1 % 2 == 0) || (p1 < 0 && -p1 % 2 == 1)) {
       //send:
       if(local_num_ghost_particles[c1]>0) {
-        MPI_Send(local_ghosts_fields[c1], 3*local_num_ghost_particles[c1], FCS_MPI_FLOAT, ghost_neighbors[c1], d->comm.rank, d->comm.mpicomm);
-        MPI_Send(local_ghosts_potentials[c1], local_num_ghost_particles[c1], FCS_MPI_FLOAT, ghost_neighbors[c1], d->comm.rank, d->comm.mpicomm);
+        MPI_Send(local_ghosts_fields[c1], 3*local_num_ghost_particles[c1], FCS_MPI_FLOAT, ghost_neighbors[c1], comm_rank, d->comm);
+        MPI_Send(local_ghosts_potentials[c1], local_num_ghost_particles[c1], FCS_MPI_FLOAT, ghost_neighbors[c1], comm_rank, d->comm);
       }
       c1++;
-      /*
-      clairvoyant_neighbors[n_clairvoyant_neighbors]=i;
-      n_clairvoyant_neighbors++;
-      MPI_Send(&local_num_real_particles, 1, FCS_MPI_INT, i, d->comm.rank, d->comm.mpicomm);
-      MPI_Send(local_positions, 3*local_num_real_particles, FCS_MPI_FLOAT, i, d->comm.rank, d->comm.mpicomm);
-      MPI_Send(local_charges, local_num_real_particles, FCS_MPI_FLOAT, i, d->comm.rank, d->comm.mpicomm);
-      printf("rank %d :send workload to %d\n", d->comm.rank, i);
-      */
     } else {
       //receive
       if (local_num_real_particles>0) {
-        MPI_Recv(foreign_ghost_fields, 3*local_num_real_particles, FCS_MPI_FLOAT, clairvoyant_neighbors[c2], clairvoyant_neighbors[c2], d->comm.mpicomm, &status);
-        MPI_Recv(foreign_ghost_potentials, local_num_real_particles, FCS_MPI_FLOAT, clairvoyant_neighbors[c2], clairvoyant_neighbors[c2], d->comm.mpicomm, &status);
-        for(p1=0; p1<local_num_real_particles; p1++) {
-          p2=3*p1;
+        MPI_Recv(foreign_ghost_fields, 3*local_num_real_particles, FCS_MPI_FLOAT, clairvoyant_neighbors[c2], clairvoyant_neighbors[c2], d->comm, &status);
+        MPI_Recv(foreign_ghost_potentials, local_num_real_particles, FCS_MPI_FLOAT, clairvoyant_neighbors[c2], clairvoyant_neighbors[c2], d->comm, &status);
+        for(fcs_int p1=0; p1<local_num_real_particles; p1++) {
+          fcs_int p2=3*p1;
           local_fields[p2]+=foreign_ghost_fields[p2];
           local_fields[p2+1]+=foreign_ghost_fields[p2+1];
           local_fields[p2+2]+=foreign_ghost_fields[p2+2];
           local_potentials[p1]+=foreign_ghost_potentials[p2];
+        }
       }
       c2++;
-      /*
-      ghost_neighbors[n_ghost_neighbors]=i;
-      n_ghost_neighbors++;
-      printf("rank %d :receive workload from %d\n", d->comm.rank, i);
-      MPI_Recv(&n_ghosts, 1, FCS_MPI_INT, i, i,
-             d->comm.mpicomm, &status);
-      local_num_ghost_particles[i] = n_ghosts;
-      local_ghosts_positions[i] = (fcs_float *)malloc(sizeof(fcs_float)*3*n_ghosts);
-      local_ghosts_charges[i] = (fcs_float *)malloc(sizeof(fcs_float)*n_ghosts);
-      MPI_Recv(local_ghosts_positions[i], 3*n_ghosts, FCS_MPI_FLOAT, i, i, d->comm.mpicomm, &status);
-      MPI_Recv(local_ghosts_charges[i], n_ghosts, FCS_MPI_FLOAT, i, i, d->comm.mpicomm, &status);
-      */
-      }
     }
   }
   
-  /*
-  for(i=0; i<n_ghost_neighbors; i++){
-     MPI_Send(local_ghosts_fields[i], 3*local_num_ghost_particles[i], FCS_MPI_FLOAT, ghost_neighbors[i], d->comm.rank, d->comm.mpicomm);
-     MPI_Send(local_ghosts_potentials[i], local_num_ghost_particles[i], FCS_MPI_FLOAT, ghost_neighbors[i], d->comm.rank, d->comm.mpicomm);
-  }
-  
-  fprintf(stderr, "rank %d, receive\n", d->comm.rank);
-  for(i=0; i<n_clairvoyant_neighbors; i++) {
-     MPI_Recv(foreign_ghost_fields, 3*local_num_real_particles, FCS_MPI_FLOAT, clairvoyant_neighbors[i], clairvoyant_neighbors[i], d->comm.mpicomm, &status);
-     MPI_Recv(foreign_ghost_potentials, local_num_real_particles, FCS_MPI_FLOAT, clairvoyant_neighbors[i], clairvoyant_neighbors[i], d->comm.mpicomm, &status);
-     for(p1=0; p1<local_num_real_particles; p1++) {
-        p2=3*p1;
-       local_fields[p2]+=foreign_ghost_fields[p2];
-       local_fields[p2+1]+=foreign_ghost_fields[p2+1];
-       local_fields[p2+2]+=foreign_ghost_fields[p2+2];
-       local_potentials[p1]+=foreign_ghost_potentials[p2];
-     }
-  }
-  */
-  
-  MPI_Barrier(d->comm.mpicomm);
-  //printf("rank %d, local_potential 0: %e\n", d->comm.rank, local_potentials[0]);
+  //printf("rank %d, local_potential 0: %e\n", comm_rank, local_potentials[0]);
   
   /* sort back, clean up and finish */
   fcs_gridsort_sort_backward(&gridsort,
               local_fields, local_potentials,
               fields, potentials, 1,
-              d->comm.mpicomm);
+              d->comm);
   
   fcs_gridsort_free(&gridsort);
   
@@ -333,22 +291,20 @@ fcs_float mmm1d_coulomb_pair_energy(mmm1d_data_struct *d, fcs_float disp[3])
 
     //* real space parts *
 
-    E += 1./sqrt(disp[0]*disp[0]+disp[1]*disp[1]+disp[2]*disp[2]); 
+    E += 1./sqrt(rxy2 + disp[2]*disp[2]); 
 
     shift_z = disp[2] + d->box_l[2];
-    rt = sqrt(rxy2 + shift_z*shift_z);
-    E += 1./rt; 
+    E += 1./sqrt(rxy2 + shift_z*shift_z);
 
     shift_z = disp[2] - d->box_l[2];
-    rt = sqrt(rxy2 + shift_z*shift_z);
-    E += 1./rt; 
+    E += 1./sqrt(rxy2 + shift_z*shift_z);
   }
   else {
     //* far range formula *
     fcs_float rxy   = sqrt(rxy2);
     fcs_float rxy_d = rxy*d->uz;
     fcs_int bp;
-    //* The first Bessel term will compensate a little bit the log term, so add them close together *
+    // The first Bessel term will compensate a little bit the log term, so add them close together
     E = -0.25*log(rxy2_d) + 0.5*(M_LN2 - MMM_COMMON_C_GAMMA);
     for (bp = 1; bp < d->bessel_cutoff; bp++) {
       if (d->bessel_radii[bp-1] < rxy) {
@@ -374,20 +330,20 @@ void mmm1d_coulomb_pair_force(mmm1d_data_struct *d, fcs_float disp[3], fcs_float
   rxy2_d = rxy2*d->uz2;
   z_d    = disp[2]*d->uz;
   
-  //printf("rank %d, rxy2: %e, rxy2_d: %e, z_d: %e, far_switch_radius_2: %e\n", d->comm.rank, rxy2, rxy2_d, z_d, d->far_switch_radius_2);
+  //printf("rank %d, rxy2: %e, rxy2_d: %e, z_d: %e, far_switch_radius_2: %e\n", comm_rank, rxy2, rxy2_d, z_d, d->far_switch_radius_2);
   
   if (rxy2 <= d->far_switch_radius_2) {
-    //* near range formula
+    // near range formula
     fcs_float sr, sz, r2nm1, rt, rt2, shift_z;
     fcs_int n;
 
-    //* polygamma summation *
+    // polygamma summation
     sr = 0;
     sz = mmm_mod_psi_odd(d->polTaylor, 0, z_d);
-/*printf("rank %d, sz: %e\n", d->comm.rank, sz);
+/*printf("rank %d, sz: %e\n", comm_rank, sz);
 for(n=0; n<d->polTaylor->n_modPsi; n++) {
    for(dim=0; dim<d->polTaylor->modPsi[n].n; dim++) {
-      printf("rank %d, taylor [%d][%d]: %e\n", d->comm.rank, n, dim, d->polTaylor->modPsi[n].e[dim]);
+      printf("rank %d, taylor [%d][%d]: %e\n", comm_rank, n, dim, d->polTaylor->modPsi[n].e[dim]);
   }
 }*/
     r2nm1 = 1.0;
@@ -408,18 +364,20 @@ for(n=0; n<d->polTaylor->n_modPsi; n++) {
     Fx = d->L3_i*sr*disp[0];
     Fy = d->L3_i*sr*disp[1];
     Fz = d->uz2*sz;
-//printf("rank %d, F: %e %e %e\n", d->comm.rank, Fx, Fx, Fz);
-    //* real space parts *
+    //printf("rank %d, F: %e %e %e\n", comm_rank, Fx, Fx, Fz);
 
-    pref = 1./pow(disp[0]*disp[0]+disp[1]*disp[1]+disp[2]*disp[2],3./2.); //r2*r
+    // real space parts
+
+    shift_z = disp[2];
+    rt2 = rxy2 + shift_z*shift_z;
+    pref = 1./(rt2*sqrt(rt2));
     Fx += pref*disp[0];
     Fy += pref*disp[1];
     Fz += pref*disp[2];
 
     shift_z = disp[2] + d->box_l[2];
     rt2 = rxy2 + shift_z*shift_z;
-    rt  = sqrt(rt2);
-    pref = 1./(rt2*rt); 
+    pref = 1./(rt2*sqrt(rt2));
     Fx += pref*disp[0];
     Fy += pref*disp[1];
     Fz += pref*shift_z;
@@ -437,7 +395,7 @@ for(n=0; n<d->polTaylor->n_modPsi; n++) {
     force[2] = Fz;
   }
   else {
-    //* far range formula *
+    // far range formula
     fcs_float rxy   = sqrt(rxy2);
     fcs_float rxy_d = rxy*d->uz;
     fcs_float sr = 0, sz = 0;
@@ -468,5 +426,5 @@ for(n=0; n<d->polTaylor->n_modPsi; n++) {
     force[2] = sz;
   }
 
-  //printf("rank: %d, disp: %e %e %e, charge1: %e, charge2: %e, force: %e %e %e\n", d->comm.rank, disp[0], disp[1], disp[2], charge1, charge2,  chpref * F[0], chpref * F[1], chpref * F[2]);
+  //printf("rank: %d, disp: %e %e %e, charge1: %e, charge2: %e, force: %e %e %e\n", comm_rank, disp[0], disp[1], disp[2], charge1, charge2,  chpref * F[0], chpref * F[1], chpref * F[2]);
 }
