@@ -77,18 +77,22 @@ void compute_errors(errors_t *e, fcs_int nparticles,
   // Compare resulting potential and field values with reference values
 
   const int idx_potential_error_sqr = 0;
-  const int idx_field_error_sqr = 1;
-  const int idx_potential_sqr = 2;
-  const int idx_field_sqr = 3;
-  const int idx_energy_sum = 4;
-  const int idx_ref_energy_sum = 5;
+  const int idx_energy_error_sqr = 1;
+  const int idx_field_error_sqr = 2;
+  const int idx_force_error_sqr = 3;
+  const int idx_potential_sqr = 4;
+  const int idx_energy_sqr = 5;
+  const int idx_field_sqr = 6;
+  const int idx_force_sqr = 7;
+  const int idx_energy_sum = 8;
+  const int idx_ref_energy_sum = 9;
 
-  fcs_float local_sum[6], global_sum[6];
+  fcs_float local_sum[10], global_sum[10];
 
   struct {
     fcs_float val;
     int pid;
-  } local_max[2], global_max[2];
+  } local_max[4], global_max[4];
 
   fcs_int local_nparticles[3], global_nparticles[3];
 
@@ -99,11 +103,15 @@ void compute_errors(errors_t *e, fcs_int nparticles,
 
   // local sums of the squared potential/field
   local_sum[idx_potential_sqr] = 0.0;
+  local_sum[idx_energy_sqr] = 0.0;
   local_sum[idx_field_sqr] = 0.0;
+  local_sum[idx_force_sqr] = 0.0;
 
   // local sums of the squared potential/field error
   local_sum[idx_potential_error_sqr] = 0.0;
+  local_sum[idx_energy_error_sqr] = 0.0;
   local_sum[idx_field_error_sqr] = 0.0;
+  local_sum[idx_force_error_sqr] = 0.0;
 
   // local sums of the energy
   local_sum[idx_energy_sum] = 0.0;
@@ -112,8 +120,12 @@ void compute_errors(errors_t *e, fcs_int nparticles,
   // maximum of the squared potential/field error and its particle id
   local_max[idx_potential_error_sqr].val = 0.0;
   local_max[idx_potential_error_sqr].pid = 0;
+  local_max[idx_energy_error_sqr].val = 0.0;
+  local_max[idx_energy_error_sqr].pid = 0;
   local_max[idx_field_error_sqr].val = 0.0;
   local_max[idx_field_error_sqr].pid = 0;
+  local_max[idx_force_error_sqr].val = 0.0;
+  local_max[idx_force_error_sqr].pid = 0;
 
   fcs_int pid_offset = 0;
 
@@ -126,25 +138,38 @@ void compute_errors(errors_t *e, fcs_int nparticles,
   for (fcs_int pid = 0; pid < nparticles; pid++) {
     const fcs_float &res_potential = result_potentials[pid];
     const fcs_float &ref_potential = reference_potentials[pid];
+    const fcs_float &q = charges[pid];
 
     if (isnan(res_potential) || isnan(ref_potential)) continue;
 
-    // compute potential sum
+    // compute potential and energy sqr sum
     local_sum[idx_potential_sqr] += res_potential*res_potential;
+    local_sum[idx_energy_sqr]    += q*q * (res_potential*res_potential);
 
-    // compute potential error sum
+    // compute potential error sqr sum
     fcs_float potential_error = res_potential - ref_potential;
     fcs_float potential_error_sqr = potential_error*potential_error;
     local_sum[idx_potential_error_sqr] += potential_error_sqr;
 
+    // compute energy error sqr sum
+    fcs_float energy_error = q * potential_error;
+    fcs_float energy_error_sqr = energy_error*energy_error;
+    local_sum[idx_energy_error_sqr] += energy_error_sqr;
+
     // compute energy sum
-    local_sum[idx_energy_sum] += 0.5 * charges[pid] * res_potential;
-    local_sum[idx_ref_energy_sum] += 0.5 * charges[pid] * ref_potential;
+    local_sum[idx_energy_sum] += 0.5 * q * res_potential;
+    local_sum[idx_ref_energy_sum] += 0.5 * q * ref_potential;
 
     // compute potential error max
     if (potential_error_sqr > local_max[idx_potential_error_sqr].val) {
       local_max[idx_potential_error_sqr].val = potential_error_sqr;
       local_max[idx_potential_error_sqr].pid = pid_offset + pid;
+    }
+
+    // compute energy error max
+    if (energy_error_sqr > local_max[idx_energy_error_sqr].val) {
+      local_max[idx_energy_error_sqr].val = energy_error_sqr;
+      local_max[idx_energy_error_sqr].pid = pid_offset + pid;
     }
 
     // count valid potential values
@@ -162,39 +187,52 @@ void compute_errors(errors_t *e, fcs_int nparticles,
   }
 
   if (e->have_field_errors)
-      for (fcs_int pid = 0; pid < nparticles; pid++) {
-          const fcs_float *res_field = &result_field[3*pid];
-          const fcs_float *ref_field = &reference_field[3*pid];
+  for (fcs_int pid = 0; pid < nparticles; pid++) {
+      const fcs_float *res_field = &result_field[3*pid];
+      const fcs_float *ref_field = &reference_field[3*pid];
+      const fcs_float &q = charges[pid];
 
-          if (isnan(res_field[0]) || isnan(res_field[1]) || isnan(res_field[2]) ||
-                  isnan(ref_field[0]) || isnan(ref_field[1]) || isnan(ref_field[2]))
-              continue;
+      if (isnan(res_field[0]) || isnan(res_field[1]) || isnan(res_field[2]) ||
+              isnan(ref_field[0]) || isnan(ref_field[1]) || isnan(ref_field[2]))
+          continue;
 
-          // compute field sum
-          local_sum[idx_field_sqr] += res_field[0]*res_field[0] + res_field[1]*res_field[1] + res_field[2]*res_field[2];
+      // compute field and force sqr sum
+      fcs_float res_field_error_sqr = res_field[0]*res_field[0] + res_field[1]*res_field[1] + res_field[2]*res_field[2];
+      local_sum[idx_field_sqr] += res_field_error_sqr;
+      local_sum[idx_force_sqr] += q*q * res_field_error_sqr;
 
-          // compute field error sum
-          fcs_float dx = res_field[0] - ref_field[0];
-          fcs_float dy = res_field[1] - ref_field[1];
-          fcs_float dz = res_field[2] - ref_field[2];
-          fcs_float field_error_sqr = dx*dx + dy*dy + dz*dz;
-          local_sum[idx_field_error_sqr] += field_error_sqr;
+      // compute field error sqr sum
+      fcs_float dx = res_field[0] - ref_field[0];
+      fcs_float dy = res_field[1] - ref_field[1];
+      fcs_float dz = res_field[2] - ref_field[2];
+      fcs_float field_error_sqr = dx*dx + dy*dy + dz*dz;
+      local_sum[idx_field_error_sqr] += field_error_sqr;
 
-          // compute field error max
-          if (field_error_sqr > local_max[idx_field_error_sqr].val) {
-              local_max[idx_field_error_sqr].val = field_error_sqr;
-              local_max[idx_field_error_sqr].pid = pid_offset + pid;
-          }
+      // compute force error sqr sum
+      fcs_float force_error_sqr = q*q * field_error_sqr;
+      local_sum[idx_force_error_sqr] += force_error_sqr;
 
-          // count valid field values
-          ++local_nparticles[2];
+      // compute field error max
+      if (field_error_sqr > local_max[idx_field_error_sqr].val) {
+          local_max[idx_field_error_sqr].val = field_error_sqr;
+          local_max[idx_field_error_sqr].pid = pid_offset + pid;
       }
+
+      // compute force error max
+      if (force_error_sqr > local_max[idx_force_error_sqr].val) {
+          local_max[idx_force_error_sqr].val = force_error_sqr;
+          local_max[idx_force_error_sqr].pid = pid_offset + pid;
+      }
+
+      // count valid field values
+      ++local_nparticles[2];
+  }
 
 
   MPI_Allreduce(local_nparticles, global_nparticles, 3, FCS_MPI_INT, MPI_SUM, comm);
 
-  MPI_Allreduce(local_sum, global_sum, 6, FCS_MPI_FLOAT, MPI_SUM, comm);
-  MPI_Allreduce(local_max, global_max, 2,
+  MPI_Allreduce(local_sum, global_sum, 10, FCS_MPI_FLOAT, MPI_SUM, comm);
+  MPI_Allreduce(local_max, global_max, 4,
 #if defined(FCS_FLOAT_IS_FLOAT)
     MPI_FLOAT_INT,
 #elif defined(FCS_FLOAT_IS_LONG_DOUBLE)
@@ -312,46 +350,62 @@ void compute_errors(errors_t *e, fcs_int nparticles,
 
   // sums of the squared potentials/field error
   e->sum_potential_error_sqr = global_sum[idx_potential_error_sqr];
+  e->sum_energy_error_sqr = global_sum[idx_energy_error_sqr];
   e->sum_field_error_sqr = global_sum[idx_field_error_sqr];
+  e->sum_force_error_sqr = global_sum[idx_force_error_sqr];
 
   // maximum of the squared potentials/field error
   e->max_potential_error_sqr = global_max[idx_potential_error_sqr].val;
+  e->max_energy_error_sqr = global_max[idx_energy_error_sqr].val;
   e->max_field_error_sqr = global_max[idx_field_error_sqr].val;
+  e->max_force_error_sqr = global_max[idx_force_error_sqr].val;
 
   // pid with the maximal potentials/field error
   e->max_potential_error_pid = global_max[idx_potential_error_sqr].pid;
+  e->max_energy_error_pid = global_max[idx_energy_error_sqr].pid;
   e->max_field_error_pid = global_max[idx_field_error_sqr].pid;
+  e->max_force_error_pid = global_max[idx_force_error_sqr].pid;
 
-  // rms potential/field
+  // rms potential/energy, field/force
   fcs_float rms_potential = (global_nparticles[1])?sqrt(global_sum[idx_potential_sqr] / (fcs_float) global_nparticles[1]):NAN;
+  fcs_float rms_energy = (global_nparticles[1])?sqrt(global_sum[idx_energy_sqr] / (fcs_float) global_nparticles[1]):NAN;
   fcs_float rms_field = (global_nparticles[2])?sqrt(global_sum[idx_field_sqr] / (fcs_float) global_nparticles[2]):NAN;
+  fcs_float rms_force = (global_nparticles[2])?sqrt(global_sum[idx_force_sqr] / (fcs_float) global_nparticles[2]):NAN;
 
   // absolute rms errors
   e->abs_rms_potential_error = (global_nparticles[1])?sqrt(e->sum_potential_error_sqr / (fcs_float) global_nparticles[1]):NAN;
+  e->abs_rms_energy_error = (global_nparticles[1])?sqrt(e->sum_energy_error_sqr / (fcs_float) global_nparticles[1]):NAN;
   e->abs_rms_field_error = (global_nparticles[2])?sqrt(e->sum_field_error_sqr / (fcs_float) global_nparticles[2]):NAN;
+  e->abs_rms_force_error = (global_nparticles[2])?sqrt(e->sum_force_error_sqr / (fcs_float) global_nparticles[2]):NAN;
 
   // relative rms errors
   e->rel_rms_potential_error = e->abs_rms_potential_error / rms_potential;
+  e->rel_rms_energy_error = e->abs_rms_energy_error / rms_energy;
   e->rel_rms_field_error = e->abs_rms_field_error / rms_field;
+  e->rel_rms_force_error = e->abs_rms_force_error / rms_force;
 
   // absolute maximum errors
   e->abs_max_potential_error = sqrt(e->max_potential_error_sqr);
+  e->abs_max_energy_error = sqrt(e->max_energy_error_sqr);
   e->abs_max_field_error = sqrt(e->max_field_error_sqr);
+  e->abs_max_force_error = sqrt(e->max_force_error_sqr);
 
   // relative maximum errors
   e->rel_max_potential_error = e->abs_max_potential_error / rms_potential;
+  e->rel_max_energy_error = e->abs_max_energy_error / rms_energy;
   e->rel_max_field_error = e->abs_max_field_error / rms_field;
+  e->rel_max_force_error = e->abs_max_force_error / rms_force;
 
   // total energy
   e->total_energy = global_sum[idx_energy_sum] + energy_correction;
   e->total_energy_ref = global_sum[idx_ref_energy_sum];
 
   // absolute total energy error
-  e->abs_energy_error = fabs(e->total_energy - e->total_energy_ref);
+  e->abs_total_energy_error = fabs(e->total_energy - e->total_energy_ref);
   if (fcs_float_is_zero(e->total_energy_ref))
-    e->rel_energy_error = e->abs_energy_error;
+    e->rel_total_energy_error = NAN;
   else
-    e->rel_energy_error = fabs(e->abs_energy_error / e->total_energy_ref);
+    e->rel_total_energy_error = fabs(e->abs_total_energy_error / e->total_energy_ref);
 
   e->total_nparticles = global_nparticles[0];
   e->valid_potentials_errors = global_nparticles[1];
@@ -377,8 +431,25 @@ void print_errors(errors_t *e, const char *prefix)
 	   << setw(15) << scientific << e->abs_rms_potential_error << endl;
       cout << prefix << setw(30) << "abs_max_potential_error = " 
 	   << setw(15) << scientific << e->abs_max_potential_error << endl;
-      cout << prefix << setw(30) << "abs_energy_error = "
-	   << setw(15) << scientific << e->abs_energy_error << endl;   
+    }
+    
+    cout << endl;
+
+    if (e->have_field_errors) {
+      cout << prefix << setw(30) << "abs_rms_force_error = " 
+	   << setw(15) << scientific << e->abs_rms_force_error << endl;
+      cout << prefix << setw(30) << "abs_max_force_error = " 
+	   << setw(15) << scientific << e->abs_max_force_error << endl;
+    }
+
+    if (e->have_potential_errors) {
+      cout << prefix << setw(30) << "abs_rms_energy_error = " 
+	   << setw(15) << scientific << e->abs_rms_energy_error << endl;
+      cout << prefix << setw(30) << "abs_max_energy_error = " 
+	   << setw(15) << scientific << e->abs_max_energy_error << endl;
+      cout << endl;
+      cout << prefix << setw(30) << "abs_total_energy_error = "
+	   << setw(15) << scientific << e->abs_total_energy_error << endl;   
     }
   
     cout << endl;
@@ -395,8 +466,25 @@ void print_errors(errors_t *e, const char *prefix)
 	   << setw(15) << scientific << e->rel_rms_potential_error << endl;
       cout << prefix << setw(30) << "rel_max_potential_error = " 
 	   << setw(15) << scientific << e->rel_max_potential_error << endl;
-      cout << prefix << setw(30) << "rel_energy_error = "
-	   << setw(15) << scientific << e->rel_energy_error << endl;
+    }
+
+    cout << endl;
+
+    if (e->have_field_errors) {
+      cout << prefix << setw(30) << "rel_rms_force_error = " 
+	   << setw(15) << scientific << e->rel_rms_force_error << endl;
+      cout << prefix << setw(30) << "rel_max_force_error = " 
+	   << setw(15) << scientific << e->rel_max_force_error << endl;
+    }
+
+    if (e->have_potential_errors) {
+      cout << prefix << setw(30) << "rel_rms_energy_error = " 
+	   << setw(15) << scientific << e->rel_rms_energy_error << endl;
+      cout << prefix << setw(30) << "rel_max_energy_error = " 
+	   << setw(15) << scientific << e->rel_max_energy_error << endl;
+      cout << endl;
+      cout << prefix << setw(30) << "rel_total_energy_error = "
+	   << setw(15) << scientific << e->rel_total_energy_error << endl;
     }
 
     cout << endl;

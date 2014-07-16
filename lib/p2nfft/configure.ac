@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.60])
-AC_INIT([P2NFFT], [0.1], [sebastian.banert@s2008.tu-chemnitz.de])
+AC_INIT([P2NFFT], [0.1], [michael.pippig@mathematik.tu-chemnitz.de])
 
 AC_MSG_NOTICE([****************************************************************])
 AC_MSG_NOTICE([*      Configuring solver P2NFFT                               *])
@@ -17,7 +17,7 @@ AM_INIT_AUTOMAKE([1.7 -Wall foreign])
 AC_LANG([C])
 
 # Checks for the MPI C compiler
-AX_PROG_CC_MPI(,,AC_MSG_FAILURE([The solver P2NNFT requires an MPI C compiler.]))
+AX_PROG_CC_MPI(,,AC_MSG_FAILURE([The solver P2NFFT requires an MPI C compiler.]))
 
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])

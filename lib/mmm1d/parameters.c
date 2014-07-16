@@ -20,14 +20,11 @@
 #include "parameters.h"
 #include "types.h"
 #include "FCSCommon.h"
-#include <stdio.h>
-
-///@TODO: condition to force retuning
+// #include <stdio.h>
 
 void mmm1d_set_far_switch_radius_2(void *rd, fcs_float rad2) {
   mmm1d_data_struct *d = (mmm1d_data_struct*)rd;
   d->far_switch_radius_2 = rad2;
-  printf("set radius %e\n",d->far_switch_radius_2);
 }
 
 void mmm1d_get_far_switch_radius_2(void *rd, fcs_float *rad2) {

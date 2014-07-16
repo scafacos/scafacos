@@ -166,7 +166,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
     fcs_int interpolation_order, fcs_int near_interpolation_num_nodes, fcs_int far_interpolation_num_nodes,
     const fcs_float *near_interpolation_table_potential, const fcs_float *far_interpolation_table_potential,
     MPI_Comm comm_cart, unsigned box_is_cubic);
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c,
     const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha,
@@ -491,7 +491,7 @@ FCSResult ifcs_p2nfft_tune(
   for(int t=0; t<3; t++){
     if (!fcs_float_is_equal(d->box_l[t], box_l[t])) {
 #if FCS_P2NFFT_DEBUG_RETUNE
-      fprintf(stderr, "Changed box size requires retune, box_l[%d] = %e, d->box_l[%d] = %e\n", box_l[t], t, d->box_l[t], t);
+      fprintf(stderr, "Changed box size requires retune, box_l[%d] = %e, d->box_l[%d] = %e\n", t, box_l[t], t, d->box_l[t]);
 #endif
       d->box_l[t] = box_l[t];
       local_needs_retune = 1;
@@ -1035,17 +1035,23 @@ FCSResult ifcs_p2nfft_tune(
       d->lower_border[t] += 0.5 / d->box_expand[t];
       d->upper_border[t] += 0.5 / d->box_expand[t];
     }
+  }
+  /* Finish timing of parameter tuning */
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Parameter tuning");
 
+  /* Start timing of precomputation */
+  FCS_P2NFFT_START_TIMING();
+  if (d->needs_retune) {
     /* precompute Fourier coefficients for convolution */
     if (d->num_periodic_dims == 3)
       d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
           d->local_N, d->local_N_start, d->box_inv, d->alpha);
     if (d->num_periodic_dims == 2)
-      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp(
+      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_and_1dp(
           d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->periodicity, d->p, d->c, reg_far,
           d->cart_comm_pnfft);
     if (d->num_periodic_dims == 1)
-      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp(
+      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_and_1dp(
           d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->periodicity, d->p, d->c, reg_far,
           d->cart_comm_pnfft);
       /* malloc_and_precompute_regkern_hat_1dp */
@@ -1057,8 +1063,8 @@ FCSResult ifcs_p2nfft_tune(
           d->near_interpolation_table_potential, d->far_interpolation_table_potential,
           d->cart_comm_pnfft, is_cubic(d->box_l)); 
   }
-  /* Finish timing of parameter tuning */
-  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Parameter tuning");
+  /* Finish timing of of precomputation */
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Precomputation of regularization");
 
   /* Initialize the plan for the PNFFT */
   init_pnfft(&d->pnfft, 3, d->N, d->n, d->x_max, d->m, d->pnfft_flags, d->pnfft_interpolation_order, d->pnfft_window,
@@ -1166,7 +1172,7 @@ static void print_command_line_arguments(
     if(verbose || (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) )
       printf("p2nfft_ignore_tolerance,%d,", (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) ? 1 : 0);
     if(verbose || (d->virial != NULL) )
-      printf("p2nfft_virial,%d,", (d->virial != NULL) ? 1 : 0);
+      printf("p2nfft_require_virial,%d,", (d->virial != NULL) ? 1 : 0);
 
     /* print PNFFT specific parameters */
     if(verbose || !d->tune_N)
@@ -1373,14 +1379,14 @@ static fcs_float get_derivative_bound_erf(
 {
   fcs_float val=0.0;
 
-  /* We computed the maximum absolute value numerically on the intervall [0,10]. */
+  /* We computed the maximum absolute value numerically via Mathematica. */
   switch(order){
-    case 0: val = 1.13; break;
-    case 1: val = 0.43; break;
-    case 2: val = 0.76; break;
-    case 3: val = 1.06; break;
-    case 4: val = 2.71; break;
-    case 5: val = 6.01; break;
+    case 0: val = 1.13; break; /* FindMaxValue[Evaluate[D[Erf[x]/x, {x, 0}]], {x, 1}] */
+    case 1: val = 0.43; break; /* FindMaxValue[Evaluate[-D[Erf[x]/x, {x, 1}]], {x, 1}] */
+    case 2: val = 0.76; break; /* FindMaxValue[Evaluate[-D[Erf[x]/x, {x, 2}]], {x, 1}] */
+    case 3: val = 1.06; break; /* FindMaxValue[Evaluate[D[Erf[x]/x, {x, 3}]], {x, 1}] */
+    case 4: val = 2.69; break; /* FindMaxValue[Evaluate[D[Erf[x]/x, {x, 4}]], {x, 1}] */
+    case 5: val = 6.01; break; /* FindMaxValue[Evaluate[-D[Erf[x]/x, {x, 5}]], {x, 1}] */
   }
 
   return alpha * val;
@@ -1469,7 +1475,7 @@ static void init_pnfft(
     case 0: pnfft_flags |= PNFFT_PRE_CONST_PSI; break;
     case 1: pnfft_flags |= PNFFT_PRE_LIN_PSI; break;
     case 2: pnfft_flags |= PNFFT_PRE_QUAD_PSI; break;
-    case 3: pnfft_flags |= PNFFT_PRE_KUB_PSI; break;
+    case 3: pnfft_flags |= PNFFT_PRE_CUB_PSI; break;
   }
 
   switch(pfft_patience){
@@ -1732,7 +1738,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
 }
 
 /* scale epsI and epsB according to box_size == 1 */
-static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c,
     const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha,
@@ -1843,9 +1849,12 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp(
             }
           }
         }
-        else{
+        else { /* k != 0 */
           if(num_periodic_dims == 2){
-            if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
+            if( (x2norm > h*(0.5-epsB)) && (FCS_PI * lknorm * h*(0.5-epsB) > 19) ){
+              /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
+              regkern_hat[m] = 0.0;
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / lknorm;
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
               regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB, c) / lknorm;
