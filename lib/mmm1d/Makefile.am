@@ -9,7 +9,6 @@ libfcs_mmm1d_la_SOURCES = \
 	init.c init.h \
 	parameters.c parameters.h \
 	tune.c tune.h \
-	communication.c communication.h \
 	run.c run.h \
 	mmm1d.h \
 	types.h \

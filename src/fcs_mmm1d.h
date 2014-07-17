@@ -27,6 +27,15 @@
 #include "FCSResult.h"
 #include "FCSInterface.h"
 
+/** MMM1D parameters. That just keeps the shuffling information. */
+typedef struct fcs_mmm1d_parameters_t
+{
+  /* which outside coordinate is stored where internally, that is:
+     - shuffle[0] and shuffle[1] are the nonperiodic coordinates
+     - shuffle[2] is the periodic coordinate */
+  fcs_int shuffle[3];
+} fcs_mmm1d_parameters_t;
+
 /**
  * @brief initialization routine
  */

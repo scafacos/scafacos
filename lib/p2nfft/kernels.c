@@ -395,26 +395,6 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_one_over_cube(fcs_float x, fcs_int der, const
   return value;
 }
 
-#if FCS_P2NFFT_NORMALIZED_2DP_EWALD
-/* k includes factor 1/B */
-static fcs_float theta(
-    fcs_float x, fcs_float k, fcs_float alpha
-    )
-{
-  fcs_float arg = FCS_PI*k*x;
-  fcs_float ret = exp(2*arg) * ( erfc(FCS_PI*k/alpha + alpha*x) / erfc(FCS_PI*k/alpha) ); /* do not use 1-erf to compute the denominator, since it is VERY small */
-
-  return ret;
-// 
-//   if(arg<18){
-//     fcs_float y = FCS_PI*k/alpha;
-//     fprintf(stderr, "k = %.6e, x = %.6e, arg = %f, 1-erf(Pi*k/a + a*x) = %.6e, erfc(Pi*k/a + a*x) = %.6e, 1-erf(Pi*k/a) = %.6e, erfc(Pi*k/a) = %.6e, return = %.6e\n",
-//         k, x, arg, (1-erf(y + alpha*x)), erfc(y + alpha*x), (1-erf(y)), erfc(y),  ret);
-//   }
-// 
-//   return (arg>18) ? 0.0 : ret;
-}
-#else
 /* k includes factor 1/B */
 static fcs_float theta(
     fcs_float x, fcs_float k, fcs_float alpha
@@ -423,7 +403,6 @@ static fcs_float theta(
   fcs_float arg = FCS_PI*k*x;
   return (arg > 18) ? 0.0 : fcs_exp(2*arg) * fcs_erfc(FCS_PI*k/alpha + alpha*x);
 }
-#endif
 
 static fcs_float theta_p(
     fcs_float x, fcs_float k, fcs_float alpha
