@@ -317,6 +317,7 @@ FCSResult fcs_p2nfft_set_parameter(FCS handle, fcs_bool continue_on_errors, char
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_cao",              p2nfft_set_cao,                       FCS_PARSE_VAL(fcs_int));
 
   /* PNFFT specific parameters */
+  FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("pnfft_b",                 p2nfft_set_pnfft_b,                   FCS_PARSE_VAL(fcs_float), FCS_PARSE_VAL(fcs_float), FCS_PARSE_VAL(fcs_float));
   FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("pnfft_N",                 p2nfft_set_pnfft_N,                   FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int));
   FCS_PARSE_IF_PARAM_THEN_FUNC3_GOTO_NEXT("pnfft_n",                 p2nfft_set_pnfft_n,                   FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int), FCS_PARSE_VAL(fcs_int));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("pnfft_window_name",       p2nfft_set_pnfft_window_by_name,      FCS_PARSE_VAL(fcs_p_char_t));

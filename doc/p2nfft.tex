@@ -288,8 +288,9 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
 \begin{itemize}
   \item \verb!pnfft_N! (acronym: \verb!p2nfft_grid!) -
     Size of the FFT grid. Can be automatically tuned.
-    Feasible values are in the order of $M^{1/3}$, \ie, one
-    grid point for each particle. The grid size may be any positive integer, but powers of
+    Feasible values are three comma separated, even, positve integers, e.g., \verb!pnfft_N,16,32,12!.
+    Optimal values are in the order of $M^{1/3}$, \ie, one grid point for each particle.
+    The grid size may be any even, positive integer, but powers of
     two are recommended. The larger the grid, the smaller the
     error, but also the higher the memory and computational requirements
     of the algorithm.
@@ -297,8 +298,8 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
   \item \verb!pnfft_n! (acronym: \verb!p2nfft_oversampled_grid!) -
     Size of the oversampled FFT grid. Can be automatically tuned.
     Especially for non-periodic boundaries it is necessary to introduce oversampling to reduce the aliasing error.
-    Feasible values are any integer $\verb!n! \ge \verb!N!$. Default value is
-    \verb!N! for fully periodic boundaries and 2\verb!N! for fully non-periodic
+    Feasible values are three comma separated, even integers with $\verb!n! \ge \verb!N!$ in every dimension, e.g., \verb!pnfft_N,16,32,12,pnfft_n,20,64,12!.
+    Default value is \verb!N! for fully periodic boundaries and 2\verb!N! for fully non-periodic
     boundaries.
   \item \verb!pnfft_window! (alternative: \verb!pnfft_window_name!) -
     NFFT window function. Feasible values are $0$ (Kaiser-Bessel window), $1$ (Gaussian window),
@@ -316,6 +317,11 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     In most cases \verb!m! is chosen between $1$ (low precision) and $16$ (very high precision).\\
     {\bfseries Note: Due to historical reasons, this parameter corresponds to one half of the charge assignment order
     (\verb!cao!) of the P3M solver!}
+  \item \verb!pnfft_b! -
+    Shape parameter of the NFFT window function corresponding to the three dimensions. Can be automatically tuned.
+    Feasible values are three comma separated positiv floating point numbers, e.g., \verb!pnfft_b,0.5,1.0,3.2!.
+    Choosing an optimal value for b is not that easy but influences the error a lot.
+    Therefore, you should only change the default value if you know what you do.
   \item \verb!pnfft_intpol_order! -
     PNFFT uses interpolation tables to speed up the repeated evaluation of the window functions. The integer \verb!pnfft_intpol_order! gives the interpolation order.
     Feasible values are $-1$ (direct evaluation of window function without interpolation), $0$, (constant interpolation), $1$ (linear interpolation), $2$ (quadratic interpolation) and $3$ (cubic interpolation).

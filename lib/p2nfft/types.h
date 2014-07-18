@@ -142,6 +142,7 @@ typedef struct {
   fcs_int tune_n;
   fcs_int tune_m;
   fcs_int tune_p;
+  fcs_int tune_b;
   fcs_int tune_c;
   fcs_int sum_qpart;
   fcs_float sum_q;
@@ -198,6 +199,7 @@ typedef struct {
   /* NFFT specific parameters */
   ptrdiff_t n[3];
   fcs_float x_max[3];
+  fcs_float b[3];
   
   /* Near field parameters */
   fcs_float r_cut;    /* near field radius (unscaled) */

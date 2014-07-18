@@ -1070,6 +1070,12 @@ FCSResult ifcs_p2nfft_tune(
   init_pnfft(&d->pnfft, 3, d->N, d->n, d->x_max, d->m, d->pnfft_flags, d->pnfft_interpolation_order, d->pnfft_window,
       d->pfft_flags, d->pfft_patience, d->cart_comm_pnfft);
 
+  if(d->tune_b)
+    FCS_PNFFT(get_b)(d->pnfft, &d->b[0], &d->b[1], &d->b[2]);
+  else
+    FCS_PNFFT(set_b)(d->b[0], d->b[1], d->b[2], d->pnfft); 
+
+
   /* Print the command line arguments that recreate this plan. */
   if(d->needs_retune){
     if(d->verbose_tuning){
@@ -1190,6 +1196,8 @@ static void print_command_line_arguments(
         default: printf("failure,");
       }
     }
+    if(verbose || !d->tune_b)
+      printf("pnfft_b,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,", d->b[0], d->b[1], d->b[2]);
     if(verbose || !d->tune_m)
       printf("pnfft_m,%" FCS_LMOD_INT "d,", d->m);
     if(verbose || d->pnfft_interpolation_order != 3)
