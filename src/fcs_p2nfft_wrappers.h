@@ -72,6 +72,9 @@ FCS_P2NFFT_SET_GET_WRAPPER_1(ignore_tolerance, ignore_tolerance, fcs_int, set_ig
 /************************************************************
  *     Setter and Getter functions for pnfft parameters
  ************************************************************/
+/* Getters and Setters for NFFT window shape parameter b */
+FCS_P2NFFT_SET_GET_TUNE_WRAPPER_3(pnfft_b,  pnfft_b, fcs_float,  b0, fcs_float,  b1, fcs_float,  b2)
+
 /* Getters and Setters for FFT grid size, 2nd wrapper is compliant to P3M interface */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_3(pnfft_N,  pnfft_N, fcs_int,  N0, fcs_int,  N1, fcs_int,  N2)
 #if FCS_P2NFFT_INTERFACE_WITH_REDIRECTIONS

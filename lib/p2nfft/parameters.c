@@ -660,6 +660,47 @@ IFCS_P2NFFT_SET_GET_FLAG(, ignore_tolerance,      FCS_P2NFFT_IGNORE_TOLERANCE)
  *  Setters and getter for PNFFT parameters 
  *******************************************/
 
+/* Getters and Setters for NFFT window shape parameter b */
+FCSResult ifcs_p2nfft_set_pnfft_b(
+    void *rd, const char* fnc_name, fcs_float b0, fcs_float b1, fcs_float b2
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  d->b[0] = b0; d->b[1] = b1; d->b[2] = b2;
+  d->needs_retune = 1; 
+  d->tune_b = 0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_pnfft_b_tune(
+    void *rd, const char* fnc_name
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  d->needs_retune = 1;
+  d->tune_b = 1;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_get_pnfft_b(
+    void *rd, const char* fnc_name,
+    fcs_float *b0, fcs_float *b1, fcs_float *b2
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *b0 = d->b[0]; *b1 = d->b[1]; *b2 = d->b[2]; 
+  return NULL;
+}
+
 /* Getters and Setters for FFT grid size */
 FCSResult ifcs_p2nfft_set_pnfft_N(
     void *rd, const char* fnc_name, fcs_int N0, fcs_int N1, fcs_int N2

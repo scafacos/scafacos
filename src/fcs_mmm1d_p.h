@@ -28,6 +28,8 @@
 
 /// * @brief file containing all mmm1d specific functions
 
+typedef struct fcs_mmm1d_parameters_t *fcs_mmm1d_parameters;
+
 FCSResult fcs_mmm1d_set_far_switch_radius(FCS handle, fcs_float rad);
 FCSResult fcs_mmm1d_get_far_switch_radius(FCS handle, fcs_float *rad);
 

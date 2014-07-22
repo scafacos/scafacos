@@ -109,6 +109,7 @@ FCSResult ifcs_p2nfft_init(
   d->tune_n = 1;
   d->tune_m = 1;
   d->tune_p = 1;
+  d->tune_b = 1;
   d->tune_c = 1;
   d->flags = FCS_P2NFFT_CHECK_TOLERANCE; /* 1: continue even if accuracy estimation fails */
 
@@ -128,6 +129,7 @@ FCSResult ifcs_p2nfft_init(
   d->m = 4;
   d->p = 8;
   d->c = 0.0;
+  d->b[0] = d->b[1] = d->b[2] = 0.0;
 
   /* init to same nonsense on all processes */
   d->alpha = -1.0;
