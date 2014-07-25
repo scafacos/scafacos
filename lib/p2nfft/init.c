@@ -105,6 +105,7 @@ FCSResult ifcs_p2nfft_init(
   d->tune_r_cut = 1;
   d->tune_epsI = 1;
   d->tune_epsB = 1;
+  d->tune_k_cut = 1;
   d->tune_N = 1;
   d->tune_n = 1;
   d->tune_m = 1;
@@ -137,6 +138,7 @@ FCSResult ifcs_p2nfft_init(
   d->one_over_r_cut = -1.0;
   d->epsI = -1.0;
   d->epsB = -1.0;
+  d->k_cut = -1.0;
   d->num_nodes = -1;
   d->sum_qpart = -1;
   d->sum_q2 = -1.0;

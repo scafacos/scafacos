@@ -138,6 +138,7 @@ typedef struct {
   fcs_int tune_r_cut;
   fcs_int tune_epsI;
   fcs_int tune_epsB;
+  fcs_int tune_k_cut;
   fcs_int tune_N;
   fcs_int tune_n;
   fcs_int tune_m;
@@ -209,6 +210,7 @@ typedef struct {
 
   /* parameters for periodic case */
   fcs_float alpha;  /* Ewald splitting parameter */
+  fcs_float k_cut;    /* near field radius (unscaled) */
 
   /* parameters for non-periodic case */
   fcs_float epsI;  /* near field size scaled into unit cube */

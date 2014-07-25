@@ -301,6 +301,7 @@ FCSResult fcs_p2nfft_set_parameter(FCS handle, fcs_bool continue_on_errors, char
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_r_cut",            p2nfft_set_r_cut,                     FCS_PARSE_VAL(fcs_float));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsI",             p2nfft_set_epsI,                      FCS_PARSE_VAL(fcs_float));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsB",             p2nfft_set_epsB,                      FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_k_cut",            p2nfft_set_k_cut,                     FCS_PARSE_VAL(fcs_float));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_c",                p2nfft_set_c,                         FCS_PARSE_VAL(fcs_float));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_alpha",            p2nfft_set_alpha,                     FCS_PARSE_VAL(fcs_float));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_intpol_order",     p2nfft_set_interpolation_order,       FCS_PARSE_VAL(fcs_int));

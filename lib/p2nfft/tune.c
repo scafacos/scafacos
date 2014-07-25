@@ -174,7 +174,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     MPI_Comm comm_cart);
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
-    const fcs_float *ibox, fcs_float alpha);
+    const fcs_float *ibox, fcs_float alpha, fcs_float kc);
 
 static fcs_int is_cubic(
     fcs_float *box_l);
@@ -1045,7 +1045,7 @@ FCSResult ifcs_p2nfft_tune(
     /* precompute Fourier coefficients for convolution */
     if (d->num_periodic_dims == 3)
       d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
-          d->local_N, d->local_N_start, d->box_inv, d->alpha);
+          d->local_N, d->local_N_start, d->box_inv, d->alpha, d->k_cut);
     if (d->num_periodic_dims == 2)
       d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_and_1dp(
           d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->periodicity, d->p, d->c, reg_far,
@@ -1140,6 +1140,8 @@ static void print_command_line_arguments(
       printf("p2nfft_epsI,%" FCS_LMOD_FLOAT "f,", d->epsI);
     if(verbose || !d->tune_epsB)
       printf("p2nfft_epsB,%" FCS_LMOD_FLOAT "f,", d->epsB);
+    if(verbose || !d->tune_k_cut)
+      printf("p2nfft_k_cut,%" FCS_LMOD_FLOAT "f,", d->k_cut);
     if(verbose || !d->tune_c)
       printf("p2nfft_c,%" FCS_LMOD_FLOAT "f,", d->c);
     if(verbose || !d->tune_alpha)
@@ -1714,11 +1716,10 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
 
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
-    const fcs_float *ibox, fcs_float alpha
+    const fcs_float *ibox, fcs_float alpha, fcs_float kc
     )
 {
   ptrdiff_t m, k[3], alloc_local = 1;
-  fcs_float lk[3], lksqnorm;
   fcs_float ivol = fcs_fabs(det_3x3(ibox+0, ibox+3, ibox+6));
   fcs_pnfft_complex *regkern_hat;
  
@@ -1730,15 +1731,24 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
   for(k[1]=local_N_start[1]; k[1] < local_N_start[1] + local_N[1]; k[1]++){
     for(k[2]=local_N_start[2]; k[2] < local_N_start[2] + local_N[2]; k[2]++){
       for(k[0]=local_N_start[0]; k[0] < local_N_start[0] + local_N[0]; k[0]++, m++){
-        lk[0] = At_TIMES_VEC(ibox, k, 0);
-        lk[1] = At_TIMES_VEC(ibox, k, 1);
-        lk[2] = At_TIMES_VEC(ibox, k, 2);
 
-        lksqnorm = lk[0]*lk[0] + lk[1]*lk[1] + lk[2]*lk[2];
+        fcs_float kf0 = (fcs_float) k[0];
+        fcs_float kf1 = (fcs_float) k[1];
+        fcs_float kf2 = (fcs_float) k[2];
+        fcs_float ksqnorm = kf0*kf0 + kf1*kf1 + kf2*kf2;
+
         if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0))
           regkern_hat[m] = 0;
-        else
+        else if (kc > 0.0 && ksqnorm > kc*kc)
+          regkern_hat[m] = 0; /* Apply spherical cutoff for kc > 0 */
+        else {
+          fcs_float lk0 = At_TIMES_VEC(ibox, k, 0);
+          fcs_float lk1 = At_TIMES_VEC(ibox, k, 1);
+          fcs_float lk2 = At_TIMES_VEC(ibox, k, 2);
+          fcs_float lksqnorm = lk0*lk0 + lk1*lk1 + lk2*lk2;
+
           regkern_hat[m] = ivol * fcs_exp(-FCS_P2NFFT_PISQR * lksqnorm/(alpha*alpha))/lksqnorm/FCS_P2NFFT_PI;
+        }
       }
     }
   }

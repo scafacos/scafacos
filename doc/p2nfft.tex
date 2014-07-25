@@ -211,16 +211,12 @@ of parameter settings, e.g., use
 in order to run the test program with a near field cut off range of $4.5$ and a sloppy planned FFT of size $16\times 16 \times 16$ up to tolerance $10^{-4}$ in the fields.
 \begin{itemize}
   \item \verb!p2nfft_r_cut! -
-    Absolute cutoff distance of the near field. Can be
-    automatically tuned. Feasible values are in the order of the mean
-    free path between the two nearest charges.
-    \verb!p2nfft_r_cut! has to be less than half the
-    smallest simulation box length.  When \verb!p2nfft_r_cut! is chosen too
-    small, the errors of the algorithm become large, the required
-    accuracy might not be achieved, or the grid has to be chosen very
-    large, which will slow down the algorithm.  When \verb!p2nfft_r_cut! is
-    chosen too large, the algorithm might become slow as most
-    computation is done in the near field region.
+    Absolute cutoff distance of the near field. Can be automatically tuned.
+    Feasible values are any positive floats. Especially, \ptwonfft still works correct if \verb!p2nfft_r_cut! exceeds the simulation box.
+    We do not require that \verb!p2nfft_r_cut! has to be less than half the smallest simulation box length.
+    When \verb!p2nfft_r_cut! is chosen too small, the errors of the algorithm become large,
+    the required accuracy might not be achieved, or the grid has to be chosen very large, which will slow down the algorithm.
+    When \verb!p2nfft_r_cut! is chosen too large, the algorithm might become slow as most computation is done in the near field region.
     This parameter corresponds to \verb!r_cut! of the P3M solver.
   \item \verb!p2nfft_epsI! -
     Relative cutoff distance of the near field. \ptwonfft scales the original box size into a cube of side length 1.
@@ -231,6 +227,12 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     Regularization border for \ptwonfft with non-periodic boundary conditions. This parameter corresponds to the rescaled system into a unit cube of side length 1.
     Feasible values are any positive floats that fulfill $\verb!epsI! + \verb!epsB! < 0.5$.
     This parameter does not have any effect for fully periodic boundary conditions. Default value is $\verb!epsB! := \verb!epsI!$.
+  \item \verb!p2nfft_k_cut! -
+    Spherical cutoff distance in Fourier space. If this parameter is set to a positive float $k_c>0$, all Fourier coefficients $\hat f_{\mathbf k}$ with
+    $\|\mathbf k\|_2 > kc$ will be set to zero, i.e., the approximation in Fourier space uses a spherical cutoff scheme.
+    This is usefull, e.g., for comparision of results to classical Ewald summation.
+    Feasible values are any positive float (enable spherical cutoff) or any negative float (disable spherical cutoff).
+    The spherical cutoff is not applied per default, since FFTs naturally use a box shaped cutoff scheme.
   \item \verb!p2nfft_alpha! -
     Ewald splitting parameter. Can be automatically tuned.
     This parameter corresponds to \verb!alpha! of the P3M solver.

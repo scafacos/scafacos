@@ -289,6 +289,48 @@ FCSResult ifcs_p2nfft_get_epsB(
   return NULL;
 }
 
+/* Getters and Setters for far field cutoff radius */
+FCSResult ifcs_p2nfft_set_k_cut(
+    void *rd, const char* fnc_name, fcs_float k_cut
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  if (!fcs_float_is_equal(k_cut, d->k_cut))
+    d->needs_retune = 1;
+  d->k_cut = k_cut;
+  d->tune_k_cut = 0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_k_cut_tune(
+    void *rd, const char* fnc_name
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  d->needs_retune = 1;
+  d->tune_k_cut = 1;
+  d->k_cut = -1.0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_get_k_cut(
+    void *rd, const char* fnc_name, fcs_float *k_cut
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *k_cut = d->k_cut;
+  return NULL;
+}
+
 
 /* Getter and Setter for far field continuation value c used by taylor2p */
 FCSResult ifcs_p2nfft_set_c(
