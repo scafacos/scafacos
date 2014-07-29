@@ -169,7 +169,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c,
-    const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha,
+    const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha, fcs_float kc,
     const fcs_int *periodicity, fcs_int p, fcs_float c, fcs_int reg_far,
     MPI_Comm comm_cart);
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
@@ -1053,11 +1053,11 @@ FCSResult ifcs_p2nfft_tune(
           d->local_N, d->local_N_start, d->box_inv, d->alpha, d->k_cut);
     if (d->num_periodic_dims == 2)
       d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_and_1dp(
-          d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->periodicity, d->p, d->c, reg_far,
+          d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->k_cut, d->periodicity, d->p, d->c, reg_far,
           d->cart_comm_pnfft);
     if (d->num_periodic_dims == 1)
       d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_and_1dp(
-          d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->periodicity, d->p, d->c, reg_far,
+          d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->k_cut, d->periodicity, d->p, d->c, reg_far,
           d->cart_comm_pnfft);
       /* malloc_and_precompute_regkern_hat_1dp */
     if (d->num_periodic_dims == 0)
@@ -1766,7 +1766,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c,
-    const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha,
+    const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha, fcs_float kc,
     const fcs_int *periodicity, fcs_int p, fcs_float c, fcs_int reg_far,
     MPI_Comm comm_cart
     )
@@ -1828,6 +1828,11 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
         lk[1] = At_TIMES_VEC(box_inv, k, 1);
         lk[2] = At_TIMES_VEC(box_inv, k, 2);
 
+        fcs_float kf0 = (fcs_float) k[0];
+        fcs_float kf1 = (fcs_float) k[1];
+        fcs_float kf2 = (fcs_float) k[2];
+        fcs_float ksqnorm = kf0*kf0 + kf1*kf1 + kf2*kf2;
+
         for(fcs_int t=0; t<3; t++){
           lknorm += lk[t] * lk[t];
           x2norm += xs[t] * xs[t] * box_scales[t] * box_scales[t];
@@ -1874,6 +1879,8 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
             }
           }
         }
+        else if (kc > 0.0 && ksqnorm > kc*kc)
+          regkern_hat[m] = 0; /* Apply spherical cutoff for kc > 0 */
         else { /* k != 0 */
           if(num_periodic_dims == 2){
             if( (x2norm > h*(0.5-epsB)) && (FCS_PI * lknorm * h*(0.5-epsB) > 19) ){
