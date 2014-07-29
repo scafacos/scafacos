@@ -343,7 +343,7 @@ FCSResult ifcs_p2nfft_tune(
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
   fcs_int local_needs_retune = d->needs_retune;
   fcs_int i, num_particles;
-  fcs_float sum_q, sum_q2, sum_q_abs, avg_dist, error=0;
+  fcs_float sum_q, sum_q2, sum_q4, sum_q_abs, avg_dist, error=0;
   fcs_float box_l[3]; /* TODO: deprecated parameter  */
   FCSResult result;
 
@@ -476,6 +476,11 @@ FCSResult ifcs_p2nfft_tune(
     d->sum_q2 = sum_q2;
     local_needs_retune = 1;
   }
+
+  fcs_float local_sum_q4 = 0;
+  for (i = 0; i < local_particles; ++i)
+    local_sum_q4 += fcs_pow(charges[i] - d->bg_charge, 4.0);
+  MPI_Allreduce(&local_sum_q4, &sum_q4, 1, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
 
   /* Calculate the sum of the absolute values of all charges
    * (needed for the error formulae) */
@@ -1084,6 +1089,7 @@ FCSResult ifcs_p2nfft_tune(
       if(!comm_rank) printf("P2NFFT_INFO: ALL CMD ARGS: -c ");
       print_command_line_arguments(d, 1);
       if(!comm_rank) printf("P2NFFT_INFO: Q^2 = %.16e\n", d->sum_q2);
+      if(!comm_rank) printf("P2NFFT_INFO: Q^4 = %.16e\n", sum_q4);
     }
   }
 
