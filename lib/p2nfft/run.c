@@ -84,7 +84,7 @@ static fcs_int box_not_large_enough(
 FCSResult ifcs_p2nfft_run(
     void *rd, fcs_int local_num_particles, fcs_int max_local_num_particles,
     fcs_float *positions, fcs_float *charges,
-    fcs_float *potentials, fcs_float *field
+    fcs_float *potential, fcs_float *field
     )
 {
   const char* fnc_name = "ifcs_p2nfft_run";
@@ -102,6 +102,7 @@ FCSResult ifcs_p2nfft_run(
 #endif
 
   FCS_P2NFFT_INIT_TIMING(d->cart_comm_3d);
+
 
   /* handle particles, that left the box [0,L] */
   /* for non-periodic boundary conditions: user must increase the box */
@@ -169,19 +170,25 @@ FCSResult ifcs_p2nfft_run(
 /*  printf("%d: input number = %" FCS_LMOD_INT "d, sorted number = %" FCS_LMOD_INT "d, ghost number = %" FCS_LMOD_INT "d\n",
     myrank, local_num_particles, sorted_num_particles, ghost_num_particles);*/
 
-  fcs_int compute_field = (field != NULL);
-  fcs_int compute_potentials = (potentials != NULL);
+  /* additional switchs to turn off computation of field / potential */
+  if(d->flags & FCS_P2NFFT_IGNORE_FIELD)     field     = NULL;
+  if(d->flags & FCS_P2NFFT_IGNORE_POTENTIAL) potential = NULL;
 
-  fcs_float *sorted_field = (compute_field) ? malloc(sizeof(fcs_float)*3*sorted_num_particles) : NULL;
-  fcs_float *sorted_potentials = (compute_potentials) ? malloc(sizeof(fcs_float)*sorted_num_particles) : NULL;
+  fcs_int compute_field     = (field != NULL);
+  fcs_int compute_potential = (potential != NULL);
 
-  /* Initialize all the potentials */
-  for (fcs_int j = 0; j < sorted_num_particles; ++j)
-    sorted_potentials[j] = 0;
+  fcs_float *sorted_field     = (compute_field)     ? malloc(sizeof(fcs_float)*3*sorted_num_particles) : NULL;
+  fcs_float *sorted_potential = (compute_potential) ? malloc(sizeof(fcs_float)*sorted_num_particles) : NULL;
+
+  /* Initialize all the potential */
+  if(compute_potential)
+    for (fcs_int j = 0; j < sorted_num_particles; ++j)
+      sorted_potential[j] = 0;
   
   /* Initialize all the forces */
-  for (fcs_int j = 0; j < 3 * sorted_num_particles; ++j)
-    sorted_field[j] = 0;
+  if(compute_field)
+    for (fcs_int j = 0; j < 3 * sorted_num_particles; ++j)
+      sorted_field[j] = 0;
 
   if(d->short_range_flag){
     fcs_near_create(&near);
@@ -208,7 +215,7 @@ FCSResult ifcs_p2nfft_run(
     fcs_near_set_system(&near, d->box_base, d->box_a, d->box_b, d->box_c, d->periodicity);
   
     fcs_near_set_particles(&near, sorted_num_particles, sorted_num_particles, sorted_positions, sorted_charges, sorted_indices,
-        (compute_field)?sorted_field:NULL, (compute_potentials)?sorted_potentials:NULL);
+        (compute_field)?sorted_field:NULL, (compute_potential)?sorted_potential:NULL);
   
     fcs_near_set_ghosts(&near, ghost_num_particles, ghost_positions, ghost_charges, ghost_indices);
   
@@ -239,9 +246,9 @@ FCSResult ifcs_p2nfft_run(
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   fcs_float near_energy = 0.0;
   fcs_float near_global;
-  for(fcs_int j = 0; j < sorted_num_particles; ++j) {
-    near_energy += 0.5 * sorted_charges[j] * sorted_potentials[j];
-  }
+  if(compute_potential)
+    for(fcs_int j = 0; j < sorted_num_particles; ++j)
+      near_energy += 0.5 * sorted_charges[j] * sorted_potential[j];
   MPI_Reduce(&near_energy, &near_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: near field energy: %" FCS_LMOD_FLOAT "f\n", near_global);
 #endif
@@ -250,18 +257,24 @@ FCSResult ifcs_p2nfft_run(
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   for(fcs_int t=0; t<3; t++){
     rsum = 0.0;
-    for(fcs_int j = 0; (j < sorted_num_particles); ++j)
-      rsum += fabs(sorted_field[3*j+t]);
+    if(compute_field)
+      for(fcs_int j = 0; (j < sorted_num_particles); ++j)
+        rsum += fabs(sorted_field[3*j+t]);
     MPI_Reduce(&rsum, &rsum_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
     if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: near field %" FCS_LMOD_INT "d. component: %" FCS_LMOD_FLOAT "f\n", t, rsum_global);
   }
   
-  if (myrank == 0) fprintf(stderr, "E_NEAR(0) = %" FCS_LMOD_FLOAT "e\n", sorted_field[0]);
+  if(compute_field)
+    if (myrank == 0) fprintf(stderr, "E_NEAR(0) = %" FCS_LMOD_FLOAT "e\n", sorted_field[0]);
 #endif
       
   /* Reinit PNFFT corresponding to number of sorted nodes */
+  unsigned pnfft_malloc_flags = PNFFT_MALLOC_X | PNFFT_MALLOC_F;
+  if(compute_field)
+    pnfft_malloc_flags |= PNFFT_MALLOC_GRAD_F;
+
   FCS_PNFFT(init_nodes)(d->pnfft, sorted_num_particles,
-      PNFFT_MALLOC_X| PNFFT_MALLOC_F| PNFFT_MALLOC_GRAD_F,
+      pnfft_malloc_flags,
       PNFFT_FREE_X|   PNFFT_FREE_F|   PNFFT_FREE_GRAD_F);
 
   fcs_pnfft_complex *f_hat, *f, *grad_f;
@@ -410,26 +423,33 @@ FCSResult ifcs_p2nfft_run(
     FCS_PNFFT(direct_trafo)(d->pnfft);
 
   /* Copy the results to the output vector and rescale with L^{-T} */
-  for (fcs_int j = 0; j < sorted_num_particles; ++j){
-    sorted_potentials[j] += creal(f[j]);
+  if(compute_potential)
+    for (fcs_int j = 0; j < sorted_num_particles; ++j)
+      sorted_potential[j] += creal(f[j]);
 
-    sorted_field[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 0) );
-    sorted_field[3 * j + 1] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 1) );
-    sorted_field[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 2) );
+  if(compute_field){
+    for (fcs_int j = 0; j < sorted_num_particles; ++j){
+      sorted_field[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 0) );
+      sorted_field[3 * j + 1] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 1) );
+      sorted_field[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 2) );
+    }
   }
 
   /* Checksum: fields resulting from farfield interactions */
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   for(fcs_int t=0; t<3; t++){
     rsum = 0.0;
-    for(fcs_int j = 0; (j < sorted_num_particles); ++j)
-      rsum += fabs(sorted_field[3*j+t]);
+    if(compute_field)
+      for(fcs_int j = 0; (j < sorted_num_particles); ++j)
+        rsum += fabs(sorted_field[3*j+t]);
     MPI_Reduce(&rsum, &rsum_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
     if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: checksum near plus far field %" FCS_LMOD_INT "d. component: %" FCS_LMOD_FLOAT "f\n", t, rsum_global);
   }
 
-  if (myrank == 0) fprintf(stderr, "E_FAR(0) = %" FCS_LMOD_FLOAT "e\n", -fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*0, 0) ));
-  if (myrank == 0) fprintf(stderr, "E_NEAR_FAR(0) = %" FCS_LMOD_FLOAT "e\n", sorted_field[0]);
+  if(compute_field){
+    if (myrank == 0) fprintf(stderr, "E_FAR(0) = %" FCS_LMOD_FLOAT "e\n", -fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*0, 0) ));
+    if (myrank == 0) fprintf(stderr, "E_NEAR_FAR(0) = %" FCS_LMOD_FLOAT "e\n", sorted_field[0]);
+  }
 #endif
 
   /* Finish far field timing */
@@ -458,8 +478,9 @@ FCSResult ifcs_p2nfft_run(
   FCS_P2NFFT_START_TIMING();
 
   /* Calculate self-interactions */
-  for (fcs_int j = 0; j < sorted_num_particles; ++j)
-    sorted_potentials[j] -= sorted_charges[j] * ifcs_p2nfft_compute_self_potential(rd);
+  if(compute_potential)
+    for (fcs_int j = 0; j < sorted_num_particles; ++j)
+      sorted_potential[j] -= sorted_charges[j] * ifcs_p2nfft_compute_self_potential(rd);
 
   /* Finish self interaction timing */
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "self interaction calculation");
@@ -469,8 +490,9 @@ FCSResult ifcs_p2nfft_run(
     if(d->num_periodic_dims == 3){
       fcs_float total_energy = 0.0;
       fcs_float total_global;
-      for(fcs_int j = 0; j < sorted_num_particles; ++j)
-        total_energy += 0.5 * sorted_charges[j] * sorted_potentials[j];
+      if(compute_potential)
+        for(fcs_int j = 0; j < sorted_num_particles; ++j)
+          total_energy += 0.5 * sorted_charges[j] * sorted_potential[j];
 
       MPI_Allreduce(&total_energy, &total_global, 1, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
 
@@ -486,10 +508,11 @@ FCSResult ifcs_p2nfft_run(
       for(fcs_int t=0; t<9; t++)
         local_virial[t] = 0.0;
       
-      for(fcs_int j = 0; j < sorted_num_particles; ++j)
-        for(fcs_int t0=0; t0<3; t0++)
-          for(fcs_int t1=0; t1<3; t1++)
-            local_virial[t0*3+t1] += sorted_charges[j] * sorted_field[3*j+t0] * sorted_positions[3*j+t1];
+      if(compute_field)
+        for(fcs_int j = 0; j < sorted_num_particles; ++j)
+          for(fcs_int t0=0; t0<3; t0++)
+            for(fcs_int t1=0; t1<3; t1++)
+              local_virial[t0*3+t1] += sorted_charges[j] * sorted_field[3*j+t0] * sorted_positions[3*j+t1];
       
       MPI_Allreduce(local_virial, d->virial, 9, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
     }
@@ -514,8 +537,9 @@ FCSResult ifcs_p2nfft_run(
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   fcs_float total_energy = 0.0;
   fcs_float total_global;
-  for(fcs_int j = 0; j < sorted_num_particles; ++j)
-    total_energy += 0.5 * sorted_charges[j] * sorted_potentials[j];
+  if(compute_potential)
+    for(fcs_int j = 0; j < sorted_num_particles; ++j)
+      total_energy += 0.5 * sorted_charges[j] * sorted_potential[j];
 
   MPI_Reduce(&total_energy, &total_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: total energy: %" FCS_LMOD_FLOAT "f\n", total_global);
@@ -546,11 +570,11 @@ FCSResult ifcs_p2nfft_run(
 
   fcs_int resort;
 
-  if (d->resort) resort = fcs_gridsort_prepare_resort(&gridsort, sorted_field, sorted_potentials, field, potentials, d->cart_comm_3d);
+  if (d->resort) resort = fcs_gridsort_prepare_resort(&gridsort, sorted_field, sorted_potential, field, potential, d->cart_comm_3d);
   else resort = 0;
 
   /* Backsort data into user given ordering (if resort is disabled) */
-  if (!resort) fcs_gridsort_sort_backward(&gridsort, sorted_field, sorted_potentials, field, potentials, 1, d->cart_comm_3d);
+  if (!resort) fcs_gridsort_sort_backward(&gridsort, sorted_field, sorted_potential, field, potential, 1, d->cart_comm_3d);
 
   fcs_gridsort_resort_destroy(&d->gridsort_resort);
 
@@ -559,7 +583,7 @@ FCSResult ifcs_p2nfft_run(
   d->local_num_particles = local_num_particles;
 
   if (sorted_field) free(sorted_field);
-  if (sorted_potentials) free(sorted_potentials);
+  if (sorted_potential) free(sorted_potential);
 
   fcs_gridsort_free(&gridsort);
 
@@ -570,8 +594,10 @@ FCSResult ifcs_p2nfft_run(
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   /* print first value of fields */
-  if (myrank == 0) printf("P2NFFT_INFO: E(0) = %e\n", creal(field[0]));
-  if (myrank == 0) printf("P2NFFT_INFO: dE(0) = %e\n", creal(field[0])+1.619834832399799e-06);
+  if(compute_field){
+    if (myrank == 0) printf("P2NFFT_INFO: E(0) = %e\n", creal(field[0]));
+    if (myrank == 0) printf("P2NFFT_INFO: dE(0) = %e\n", creal(field[0])+1.619834832399799e-06);
+  }
 #endif
 
   return NULL;
