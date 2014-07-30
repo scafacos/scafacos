@@ -1083,7 +1083,7 @@ FCSResult ifcs_p2nfft_tune(
 
   /* Print the command line arguments that recreate this plan. */
   if(d->needs_retune){
-    if(d->verbose_tuning){
+    if(d->flags & FCS_P2NFFT_VERBOSE_TUNING){
       if(!comm_rank) printf("P2NFFT_INFO: CMD ARGS: -c ");
       print_command_line_arguments(d, 0);
       if(!comm_rank) printf("P2NFFT_INFO: ALL CMD ARGS: -c ");

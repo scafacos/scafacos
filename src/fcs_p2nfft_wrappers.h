@@ -69,8 +69,10 @@ FCS_P2NFFT_INTERFACE_WRAPPER_1(require_virial,   require_virial,   fcs_int,    r
 FCS_P2NFFT_INTERFACE_WRAPPER_1(get_virial,       get_virial,       fcs_float*, virial)
 FCS_P2NFFT_INTERFACE_WRAPPER_1(virial_is_active, virial_is_active, fcs_int*,   yes_or_no)
 
-/* Getters and Setters for ignore tolerance flag */
+/* Getters and Setters for P2NFFT flags */
 FCS_P2NFFT_SET_GET_WRAPPER_1(ignore_tolerance, ignore_tolerance, fcs_int, set_ignore_tolerance)
+FCS_P2NFFT_SET_GET_WRAPPER_1(ignore_potential, ignore_potential, fcs_int, set_ignore_potential)
+FCS_P2NFFT_SET_GET_WRAPPER_1(ignore_field,     ignore_field,     fcs_int, set_ignore_field)
 
 /************************************************************
  *     Setter and Getter functions for pnfft parameters

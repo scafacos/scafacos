@@ -90,6 +90,9 @@ typedef ptrdiff_t INT;
 /* p2nfft_flags */
 #define FCS_P2NFFT_CHECK_TOLERANCE           (0U)
 #define FCS_P2NFFT_IGNORE_TOLERANCE          (1U << 0)
+#define FCS_P2NFFT_IGNORE_POTENTIAL          (1U << 1)
+#define FCS_P2NFFT_IGNORE_FIELD              (1U << 2)
+#define FCS_P2NFFT_VERBOSE_TUNING            (1U << 3)
 
 #define FCS_P2NFFT_DEFAULT_TOLERANCE         0.01
 
@@ -131,7 +134,6 @@ typedef struct {
   fcs_float upper_border[3];
   fcs_int tolerance_type;
   fcs_float tolerance;
-  fcs_int verbose_tuning;
   fcs_int needs_retune;
   fcs_int num_nodes;
   fcs_int tune_alpha;

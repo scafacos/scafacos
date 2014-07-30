@@ -56,58 +56,34 @@ static fcs_int correct_flag(
     return unset_flag(new_flag, flags);
 }
 
-#define IFCS_P2NFFT_SET_GET_FLAG(METHOD, NAME, FLAG)                            \
-FCSResult ifcs_p2nfft_set_ ## METHOD ## NAME(                                   \
-    void *rd, const char* fnc_name, fcs_int set_ ## NAME                        \
-    ) 	                                                                        \
-{                                                                               \
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;                    \
-  if( rd==NULL )                                                                \
+#define IFCS_P2NFFT_SET_GET_FLAG(METHOD, NAME, FLAG)                                   \
+FCSResult ifcs_p2nfft_set_ ## METHOD ## NAME(                                          \
+    void *rd, const char* fnc_name, fcs_int set_ ## NAME                               \
+    ) 	                                                                               \
+{                                                                                      \
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;                           \
+  if( rd==NULL )                                                                       \
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer."); \
-  d->needs_retune |= correct_flag(FLAG, set_ ## NAME,                           \
-      &d->METHOD ## flags);                                                     \
-  return NULL;                                                                  \
-}                                                                               \
-FCSResult ifcs_p2nfft_get_ ## METHOD ## NAME(                                   \
-    void *rd, const char* fnc_name, fcs_int *get_ ## NAME                       \
-    )                                                                           \
-{                                                                               \
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;                    \
-  if( rd==NULL )                                                                \
+  d->needs_retune |= correct_flag(FLAG, set_ ## NAME,                                  \
+      &d->METHOD ## flags);                                                            \
+  return NULL;                                                                         \
+}                                                                                      \
+FCSResult ifcs_p2nfft_get_ ## METHOD ## NAME(                                          \
+    void *rd, const char* fnc_name, fcs_int *get_ ## NAME                              \
+    )                                                                                  \
+{                                                                                      \
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;                           \
+  if( rd==NULL )                                                                       \
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer."); \
-  *get_ ## NAME =  (d->METHOD ## flags & FLAG) ? 1 : 0;                         \
-  return NULL;                                                                  \
+  *get_ ## NAME =  (d->METHOD ## flags & FLAG) ? 1 : 0;                                \
+  return NULL;                                                                         \
 }
 
 
 
-/*********************************************
- *  Setters and getters for P2NFFT parameters 
- ********************************************/
-
-FCSResult ifcs_p2nfft_set_verbose_tuning(
-    void *rd, const char* fnc_name, fcs_int verbose_tuning
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  d->verbose_tuning = verbose_tuning;
-  return NULL;
-}
-
-FCSResult ifcs_p2nfft_get_verbose_tuning(
-    void *rd, const char* fnc_name, fcs_int *verbose_tuning
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  *verbose_tuning = d->verbose_tuning;
-  return NULL;
-}
+/**********************************
+ *  Inofficial Setters and getters  
+ **********************************/
 
 /* setters/getters for tolerance */
 FCSResult ifcs_p2nfft_set_tolerance(
@@ -154,6 +130,10 @@ FCSResult ifcs_p2nfft_get_tolerance(
   *tolerance      = d->tolerance;
   return NULL;
 }
+
+/******************************************************
+ *  Setters and getters for P2NFFT specific parameters 
+ ******************************************************/
 
 /* Getters and Setters for near field cutoff radius */
 FCSResult ifcs_p2nfft_set_r_cut(
@@ -243,138 +223,6 @@ FCSResult ifcs_p2nfft_get_epsI(
   return NULL;
 }
 
-
-/* Getters and Setters for scaled far field regularization border */
-FCSResult ifcs_p2nfft_set_epsB(
-    void *rd, const char* fnc_name, fcs_float epsB
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  if( epsB >= 0.5 )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Far field border 'epsB' does not hold epsB < 0.5");
-
-  if (!fcs_float_is_equal(epsB, d->epsB))
-    d->needs_retune = 1;
-  d->epsB = epsB;
-  d->tune_epsB = 0;
-  return NULL;
-}
-
-FCSResult ifcs_p2nfft_set_epsB_tune(
-    void *rd, const char* fnc_name
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  d->needs_retune = 1;
-  d->tune_epsB = 1;
-  d->epsB = -1.0;
-  return NULL;
-}
-
-FCSResult ifcs_p2nfft_get_epsB(
-    void *rd, const char* fnc_name, fcs_float *epsB
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  *epsB = d->epsB;
-  return NULL;
-}
-
-/* Getters and Setters for far field cutoff radius */
-FCSResult ifcs_p2nfft_set_k_cut(
-    void *rd, const char* fnc_name, fcs_float k_cut
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  if (!fcs_float_is_equal(k_cut, d->k_cut))
-    d->needs_retune = 1;
-  d->k_cut = k_cut;
-  d->tune_k_cut = 0;
-  return NULL;
-}
-
-FCSResult ifcs_p2nfft_set_k_cut_tune(
-    void *rd, const char* fnc_name
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  d->needs_retune = 1;
-  d->tune_k_cut = 1;
-  d->k_cut = -1.0;
-  return NULL;
-}
-
-FCSResult ifcs_p2nfft_get_k_cut(
-    void *rd, const char* fnc_name, fcs_float *k_cut
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  *k_cut = d->k_cut;
-  return NULL;
-}
-
-
-/* Getter and Setter for far field continuation value c used by taylor2p */
-FCSResult ifcs_p2nfft_set_c(
-    void *rd, const char* fnc_name, fcs_float c
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  if (!fcs_float_is_equal(c, d->c))
-    d->needs_retune = 1;
-  d->c = c;
-  d->tune_c = 0;
-  return NULL;
-}
-
-FCSResult ifcs_p2nfft_set_c_tune(
-    void *rd, const char* fnc_name
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  d->needs_retune = 1;
-  d->tune_c = 1;
-  d->c = 0.0;
-  return NULL;
-}
-
-FCSResult ifcs_p2nfft_get_c(
-    void *rd, const char* fnc_name, fcs_float *c
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  *c = d->c;
-  return NULL;
-}
-
-
 /* Getters and Setters for Ewald splitting parameter */
 FCSResult ifcs_p2nfft_set_alpha(
     void *rd, const char* fnc_name, fcs_float alpha
@@ -446,43 +294,6 @@ FCSResult ifcs_p2nfft_get_cao(
   return res;
 }
 
-/* Getters and Setters for order of P2NFFT near and far field interpolation */
-FCSResult ifcs_p2nfft_set_interpolation_order(
-    void *rd, const char* fnc_name, fcs_int intpol_order
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  if( intpol_order > 3 )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Interpolation order not yet supported.");
-
-  /* any negative value turns off interpolation */
-  if( intpol_order < 0 ){
-    if( d->interpolation_order >=0 )
-      d->needs_retune = 1;
-  } else {
-    if(intpol_order != d->interpolation_order)
-      d->needs_retune = 1;
-  }
-  d->interpolation_order = intpol_order;
-
-  return NULL;
-}
-
-FCSResult ifcs_p2nfft_get_interpolation_order(
-    void *rd, const char* fnc_name, fcs_int *intpol_order
-    )
-{
-  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
-  if( rd==NULL )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
-
-  *intpol_order = d->interpolation_order;
-  return NULL;
-}
-
 /* Getters and Setters for P2NFFT near field regularization flag */
 FCSResult ifcs_p2nfft_set_reg_near(
     void *rd, const char* fnc_name, fcs_int reg
@@ -492,7 +303,10 @@ FCSResult ifcs_p2nfft_set_reg_near(
   if( rd==NULL )
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  if( (reg != FCS_P2NFFT_REG_NEAR_DEFAULT) && (reg != FCS_P2NFFT_REG_NEAR_CG) && (reg != FCS_P2NFFT_REG_NEAR_T2P) )
+  if( (reg != FCS_P2NFFT_REG_NEAR_DEFAULT)
+      && (reg != FCS_P2NFFT_REG_NEAR_CG)
+      && (reg != FCS_P2NFFT_REG_NEAR_T2P)
+    )
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown regularization.");
   
   if(reg != d->reg_near)
@@ -599,6 +413,51 @@ FCSResult ifcs_p2nfft_get_reg_far(
   return NULL;
 }
 
+/* Getters and Setters for scaled far field regularization border */
+FCSResult ifcs_p2nfft_set_epsB(
+    void *rd, const char* fnc_name, fcs_float epsB
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  if( epsB >= 0.5 )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Far field border 'epsB' does not hold epsB < 0.5");
+
+  if (!fcs_float_is_equal(epsB, d->epsB))
+    d->needs_retune = 1;
+  d->epsB = epsB;
+  d->tune_epsB = 0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_epsB_tune(
+    void *rd, const char* fnc_name
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  d->needs_retune = 1;
+  d->tune_epsB = 1;
+  d->epsB = -1.0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_get_epsB(
+    void *rd, const char* fnc_name, fcs_float *epsB
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *epsB = d->epsB;
+  return NULL;
+}
+
 /* Getters and Setters for polynomial degree of near field regularization */
 FCSResult ifcs_p2nfft_set_p(
     void *rd, const char* fnc_name, fcs_int p
@@ -608,7 +467,7 @@ FCSResult ifcs_p2nfft_set_p(
   if( rd==NULL )
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  if (!fcs_float_is_equal(p, d->p))
+  if (p != d->p)
     d->needs_retune = 1;
   d->p = p;
   d->tune_p = 0;
@@ -637,6 +496,48 @@ FCSResult ifcs_p2nfft_get_p(
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *p = d->p;
+  return NULL;
+}
+
+/* Getter and Setter for far field continuation value c used by taylor2p */
+FCSResult ifcs_p2nfft_set_c(
+    void *rd, const char* fnc_name, fcs_float c
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  if (!fcs_float_is_equal(c, d->c))
+    d->needs_retune = 1;
+  d->c = c;
+  d->tune_c = 0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_c_tune(
+    void *rd, const char* fnc_name
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  d->needs_retune = 1;
+  d->tune_c = 1;
+  d->c = 0.0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_get_c(
+    void *rd, const char* fnc_name, fcs_float *c
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *c = d->c;
   return NULL;
 }
 
@@ -693,31 +594,60 @@ FCSResult ifcs_p2nfft_virial_is_active(
   return NULL;
 }
 
-
-/* Getters and Setters for ignore tolerance flag */
-IFCS_P2NFFT_SET_GET_FLAG(, ignore_tolerance,      FCS_P2NFFT_IGNORE_TOLERANCE)
-
-
-/********************************************
- *  Setters and getter for PNFFT parameters 
- *******************************************/
-
-/* Getters and Setters for NFFT window shape parameter b */
-FCSResult ifcs_p2nfft_set_pnfft_b(
-    void *rd, const char* fnc_name, fcs_float b0, fcs_float b1, fcs_float b2
+/* Getters and Setters for order of P2NFFT near and far field interpolation */
+FCSResult ifcs_p2nfft_set_interpolation_order(
+    void *rd, const char* fnc_name, fcs_int intpol_order
     )
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  d->b[0] = b0; d->b[1] = b1; d->b[2] = b2;
-  d->needs_retune = 1; 
-  d->tune_b = 0;
+  if( intpol_order > 3 )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Interpolation order not yet supported.");
+
+  /* any negative value turns off interpolation */
+  if( intpol_order < 0 ){
+    if( d->interpolation_order >=0 )
+      d->needs_retune = 1;
+  } else {
+    if(intpol_order != d->interpolation_order)
+      d->needs_retune = 1;
+  }
+  d->interpolation_order = intpol_order;
+
   return NULL;
 }
 
-FCSResult ifcs_p2nfft_set_pnfft_b_tune(
+FCSResult ifcs_p2nfft_get_interpolation_order(
+    void *rd, const char* fnc_name, fcs_int *intpol_order
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *intpol_order = d->interpolation_order;
+  return NULL;
+}
+
+/* Getters and Setters for far field cutoff radius */
+FCSResult ifcs_p2nfft_set_k_cut(
+    void *rd, const char* fnc_name, fcs_float k_cut
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  if (!fcs_float_is_equal(k_cut, d->k_cut))
+    d->needs_retune = 1;
+  d->k_cut = k_cut;
+  d->tune_k_cut = 0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_k_cut_tune(
     void *rd, const char* fnc_name
     )
 {
@@ -726,22 +656,33 @@ FCSResult ifcs_p2nfft_set_pnfft_b_tune(
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   d->needs_retune = 1;
-  d->tune_b = 1;
+  d->tune_k_cut = 1;
+  d->k_cut = -1.0;
   return NULL;
 }
 
-FCSResult ifcs_p2nfft_get_pnfft_b(
-    void *rd, const char* fnc_name,
-    fcs_float *b0, fcs_float *b1, fcs_float *b2
+FCSResult ifcs_p2nfft_get_k_cut(
+    void *rd, const char* fnc_name, fcs_float *k_cut
     )
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
   if( rd==NULL )
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  *b0 = d->b[0]; *b1 = d->b[1]; *b2 = d->b[2]; 
+  *k_cut = d->k_cut;
   return NULL;
 }
+
+/* Getters and Setters for P2NFFT flags */
+IFCS_P2NFFT_SET_GET_FLAG(, ignore_tolerance,  FCS_P2NFFT_IGNORE_TOLERANCE)
+IFCS_P2NFFT_SET_GET_FLAG(, ignore_potential,  FCS_P2NFFT_IGNORE_POTENTIAL)
+IFCS_P2NFFT_SET_GET_FLAG(, ignore_field,      FCS_P2NFFT_IGNORE_FIELD)
+IFCS_P2NFFT_SET_GET_FLAG(, verbose_tuning,    FCS_P2NFFT_VERBOSE_TUNING)
+
+
+/****************************************************
+ *  Setters and getter for PNFFT specific parameters 
+ ****************************************************/
 
 /* Getters and Setters for FFT grid size */
 FCSResult ifcs_p2nfft_set_pnfft_N(
@@ -887,7 +828,7 @@ FCSResult ifcs_p2nfft_set_pnfft_m(
   if( rd==NULL )
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  if (!fcs_float_is_equal(m, d->m))
+  if ( m != d->m)
     d->needs_retune = 1;
   d->m = m;
   d->tune_m = 0;
@@ -916,6 +857,51 @@ FCSResult ifcs_p2nfft_get_pnfft_m(
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
   *m = d->m;
+  return NULL;
+}
+
+/* Getters and Setters for NFFT window shape parameter b */
+FCSResult ifcs_p2nfft_set_pnfft_b(
+    void *rd, const char* fnc_name, fcs_float b0, fcs_float b1, fcs_float b2
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  if( !fcs_float_is_equal(b0, d->b[0])
+      || !fcs_float_is_equal(b1, d->b[1])
+      || !fcs_float_is_equal(b2, d->b[2])
+    )
+    d->needs_retune = 1; 
+  d->b[0] = b0; d->b[1] = b1; d->b[2] = b2;
+  d->tune_b = 0;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_pnfft_b_tune(
+    void *rd, const char* fnc_name
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  d->needs_retune = 1;
+  d->tune_b = 1;
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_get_pnfft_b(
+    void *rd, const char* fnc_name,
+    fcs_float *b0, fcs_float *b1, fcs_float *b2
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *b0 = d->b[0]; *b1 = d->b[1]; *b2 = d->b[2]; 
   return NULL;
 }
 
@@ -956,6 +942,7 @@ FCSResult ifcs_p2nfft_get_pnfft_interpolation_order(
   return NULL;
 }
 
+/* Getters and Setters for PNDFT */
 FCSResult ifcs_p2nfft_set_pnfft_direct(
     void *rd, const char* fnc_name, fcs_int pnfft_direct
     )
@@ -994,9 +981,9 @@ IFCS_P2NFFT_SET_GET_FLAG(pnfft_, pre_full_fg_psi,  PNFFT_PRE_FULL_FG_PSI)
 IFCS_P2NFFT_SET_GET_FLAG(pnfft_, real_f,           PNFFT_REAL_F)
 
 
-/********************************************
- *  Setters and getter for PFFT parameters 
- *******************************************/
+/***************************************************
+ *  Setters and getter for PFFT specific parameters 
+ ***************************************************/
 
 /* Getters and Setters for PFFT patience */
 FCSResult ifcs_p2nfft_set_pfft_patience(
@@ -1050,7 +1037,7 @@ FCSResult ifcs_p2nfft_set_pfft_patience_by_name(
 }
 
 /* Getters and Setters for PFFT flags */
-IFCS_P2NFFT_SET_GET_FLAG(pfft_,  preserve_input,   PFFT_PRESERVE_INPUT)
 IFCS_P2NFFT_SET_GET_FLAG(pfft_,  tune,             PFFT_TUNE)
+IFCS_P2NFFT_SET_GET_FLAG(pfft_,  preserve_input,   PFFT_PRESERVE_INPUT)
 
 

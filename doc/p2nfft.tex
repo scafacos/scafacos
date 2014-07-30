@@ -223,28 +223,20 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     For fully periodic boundary conditions this corresponds to a simple scaling by the box size. However, the scaling is more complicated if non-periodic
     boundary conditions are involved. Application of the same scaling factor on \verb!r_cut! gives \verb!epsI!.
     Feasible values are any positive floats that fulfill $\verb!epsI! < 0.5$.
-  \item \verb!p2nfft_epsB! -
-    Regularization border for \ptwonfft with non-periodic boundary conditions. This parameter corresponds to the rescaled system into a unit cube of side length 1.
-    Feasible values are any positive floats that fulfill $\verb!epsI! + \verb!epsB! < 0.5$.
-    This parameter does not have any effect for fully periodic boundary conditions. Default value is $\verb!epsB! := \verb!epsI!$.
-  \item \verb!p2nfft_k_cut! -
-    Spherical cutoff distance in Fourier space. If this parameter is set to a positive float $k_c>0$, all Fourier coefficients $\hat f_{\mathbf k}$ with
-    $\|\mathbf k\|_2 > kc$ will be set to zero, i.e., the approximation in Fourier space uses a spherical cutoff scheme.
-    This is usefull, e.g., for comparision of results to classical Ewald summation.
-    Feasible values are any positive float (enable spherical cutoff) or any negative float (disable spherical cutoff).
-    The spherical cutoff is not applied per default, since FFTs naturally use a box shaped cutoff scheme.
+  \item \verb!p2nfft_grid! (acronym: \verb!pnfft_N!) -
+    Size of the FFT grid. This is a acronym for \verb!pnfft_N! and is used in the same way. For details look at the PNFFT-specific parameters list.
+    This parameter corresponds to the FFT grid size (\verb!p3m_grid!) of the P3M solver.
+  \item \verb!p2nfft_oversampled_grid! (acronym: \verb!pnfft_n!) -
+    Size of the oversampled FFT grid.
+    This is a acronym for \verb!pnfft_n! and is used in the same way. For details look at the PNFFT-specific parameters list.
   \item \verb!p2nfft_alpha! -
-    Ewald splitting parameter. Can be automatically tuned.
+    Ewald splitting parameter $\alpha$. Can be automatically tuned. This parameter balances the errors of the Ewald splitting corresponding to
+    the real space and Fourier space contributions. Choosing $alpha$ too small (too large) means that the real space (Fourier space) error becomes dominating.
     This parameter corresponds to \verb!alpha! of the P3M solver.
-  \item \verb!p2nfft_cao! -
+  \item \verb!p2nfft_cao! (see also: \verb!pnfft_m!)-
     Charge assignment order. Can be automatically tuned. This parameter mostly corresponds to \verb!cao! of the P3M solver.
     However, note that this is only a wrapper that sets \verb!pnfft_m! to the value \verb!(p2nfft_cao+1)/2! (division rounded down).
     Therefore, \ptwonfft will always use an even charge assignment order.
-  \item \verb!p2nfft_intpol_order! -
-    \ptwonfft uses interpolation tables to speed up the repeated computation of the near field correction. The order of interpolation is given by \verb!intpol_order!.
-    Feasible values are $-2$ (approximation of the error function according to \cite[eq.~(7.1.26)]{AbSt72}, which yields an error of $1.5\times 10^{-7}$),
-    $-1$ (direct evaluation of the error function), $0$ (constant interpolation), $1$ (linear interpolation), $2$ (quadratic interpolation) and $3$ (cubic interpolation).
-    Default value is $3$.
   \item \verb!p2nfft_reg_near! -
     Choose between the two near field regularization methods for non-periodic boundaries. Feasible values are $0$ (Fourier coefficients have been precomputed via CG iteration, only available for some sets of parameters)
     and $1$ (Regularization with two-point Taylor polynomials). Default value is $0$, if possible.
@@ -253,33 +245,58 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     and \verb!t2p! (Regularization with two-point Taylor polynomials). Default is \verb!cg!, if possible.
   \item \verb!p2nfft_reg_far! -
     Choose between the available regularization methods at the far field boundary for non-periodic boundaries.
-    Feasible values are $0$ (Fourier coefficients have been precomputed via CG iteration, only available for some sets of parameters and only available in combination with the flag \verb!rad_cg! for near field regularization),
-    $1$ (Regularization with two-point Taylor polynomials and explicitly chosen constant continuation value), and
-    $2$ (Regularization with two-point Taylor polynomials and implicitly chosen constant continuation value). Default value is $2$.
+    Feasible values are 
+    $0$ (Fourier coefficients have been precomputed via CG iteration, only available for some sets of parameters and only available in combination with the flag \verb!rad_cg! for near field regularization),
+    $1$ (radial regularization with symmetric two-point Taylor polynomials),
+    $2$ (radial regularization with two-point Taylor polynomials and explicitly chosen constant continuation value; see \verb!p2nfft_c!),
+    $3$ (radial regularization with two-point Taylor polynomials and implicitly chosen constant continuation value),
+    $4$ (rectangular regularization with symmetric two-point Taylor polynomials),
+    $5$ (rectangular regularization with two-point Taylor polynomials and explicitly chosen constant continuation value; see \verb!p2nfft_c!), and
+    $6$ (rectangular regularization with two-point Taylor polynomials and implicitly chosen constant continuation value). 
+    Default value is $3$.
   \item \verb!p2nfft_reg_far_name! (alternative: \verb!p2nfft_reg_far!) -
-    Choose between the two regularization methods for non-periodic boundaries. Feasible values are \verb!rad_cg! (radial regularization based on the \verb!cg! near field regularization, only available for some sets of parameters),
+    Choose between the two regularization methods for non-periodic boundaries. Feasible values are
+    \verb!rad_cg!      (radial regularization based on the \verb!cg! near field regularization, only available for some sets of parameters),
     \verb!rad_t2p_sym! (radial regularization with symmetric two-point Taylor polynomial),
-    \verb!rad_t2p_ec!  (radial regularization with two-point Taylor polynomial and explicitly chosen constant continuation value),
+    \verb!rad_t2p_ec!  (radial regularization with two-point Taylor polynomial and explicitly chosen constant continuation value; see \verb!p2nfft_c!),
     \verb!rad_t2p_ic!  (radial regularization with two-point Taylor polynomial and implicitly chosen constant continuation value),
-    \verb!rec_t2p_sym! (radial regularization with symmetric two-point Taylor polynomial),
-    \verb!rec_t2p_ec!  (radial regularization with two-point Taylor polynomial and explicitly chosen constant continuation value), and
-    \verb!rec_t2p_ic!  (radial regularization with two-point Taylor polynomial and implicitly chosen constant continuation value).
+    \verb!rec_t2p_sym! (rectangular regularization with symmetric two-point Taylor polynomial),
+    \verb!rec_t2p_ec!  (rectangular regularization with two-point Taylor polynomial and explicitly chosen constant continuation value; see \verb!p2nfft_c!), and
+    \verb!rec_t2p_ic!  (rectangular regularization with two-point Taylor polynomial and implicitly chosen constant continuation value).
     Default value is \verb!rad_t2p_ic!.
-  \item \verb!p2nfft_c! -
-    The constant continuation value of the far field regularization. This parameter only takes affect, if far field regularization \verb!rad_t2p_ec! or \verb!rec_t2p_ec! is enabled.
-    Feasible values are any floating point numbers. Default value is $0.0$.
+  \item \verb!p2nfft_epsB! -
+    Regularization border for \ptwonfft with non-periodic boundary conditions. This parameter corresponds to the rescaled system into a unit cube of side length 1.
+    Feasible values are any positive floats that fulfill $\verb!epsI! + \verb!epsB! < 0.5$.
+    This parameter does not have any effect for fully periodic boundary conditions. Default value is $\verb!epsB! := \verb!epsI!$.
   \item \verb!p2nfft_p! -
     The degree of the two-point Taylor polynomial. This parameter only takes affect, if regularization \verb!t2p! has been enabled.
     Feasible values are any integers between $1$ and $16$. Default value is $7$.
+  \item \verb!p2nfft_c! -
+    The constant continuation value of the far field regularization. This parameter only takes affect, if far field regularization \verb!rad_t2p_ec! or \verb!rec_t2p_ec! is enabled.
+    Feasible values are any floating point numbers. Default value is $0.0$.
   \item \verb!p2nfft_require_virial! -
     Decide if the computation of the virial should be included in \ptwonfft.
     Feasible values are $0$ (disable virial computation), or any other integer (enable virial computation).
     Default value is $0$ (disable virial computation).
+  \item \verb!p2nfft_intpol_order! -
+    \ptwonfft uses interpolation tables to speed up the repeated computation of the near field correction. The order of interpolation is given by \verb!intpol_order!.
+    Feasible values are $-2$ (approximation of the error function according to \cite[eq.~(7.1.26)]{AbSt72}, which yields an error of $1.5\times 10^{-7}$),
+    $-1$ (direct evaluation of the error function), $0$ (constant interpolation), $1$ (linear interpolation), $2$ (quadratic interpolation) and $3$ (cubic interpolation).
+    Default value is $3$.
+  \item \verb!p2nfft_k_cut! -
+    Spherical cutoff distance in Fourier space. If this parameter is set to a positive float $k_c>0$, all Fourier coefficients $\hat f_{\mathbf k}$ with
+    $\|\mathbf k\|_2 > kc$ will be set to zero, i.e., the approximation in Fourier space uses a spherical cutoff scheme.
+    This is usefull, e.g., for comparision of results to classical Ewald summation.
+    Feasible values are any positive float (enable spherical cutoff) or any negative float (disable spherical cutoff).
+    The spherical cutoff is not applied per default, since FFTs naturally use a box shaped cutoff scheme.
   \item \verb!p2nfft_ignore_tolerance! -
     On default, \ptwonfft aborts with an error message, if the required error tolerance can not be reached.
     This flag disables the check for accuracy and gives the possibility to run \ptwonfft
     with any set of parameters. It is intended for very experienced users that tune all parameters manually.
     Default value is $0$ (abort if tolerance check fails). Any other value disables the tolerance check.
+  \item \verb!p2nfft_ignore_field! -
+    Disable the computation of the field during \verb!fcs_run!.
+    Default value is $0$ (compute field). Any other integer value disables the field computation.
   \item \verb!p2nfft_verbose_tuning! -
     Decide if a full list of \ptwonfft parameter settings is printed on stdout or not.
     Feasible values are $0$ (do not print), or any other integer (print the parameters).
@@ -411,52 +428,94 @@ FCSResult fcs_p2nfft_set_r_cut(FCS handle, fcs_float r_cut);
 FCSResult fcs_p2nfft_get_r_cut(FCS handle, fcs_float* r_cut);
 FCSResult fcs_p2nfft_set_r_cut_tune(FCS handle);
 \end{alltt}
-    Set/restore/retrieve absolute near field cutoff radius.
+    Set/retrieve/restore spherical near field cutoff radius.
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_epsI(FCS handle, fcs_float eps_I);
 FCSResult fcs_p2nfft_get_epsI(FCS handle, fcs_float* eps_I);
 FCSResult fcs_p2nfft_set_epsI_tune(FCS handle);
 \end{alltt}
-    Set/restore/retrieve relative near field cutoff radius.
+    Set/retrieve/restore normalized near field cutoff radius.
   \item
 \begin{alltt}
-FCSResult fcs_p2nfft_set_epsB(FCS handle, fcs_float eps_B);
-FCSResult fcs_p2nfft_get_epsB(FCS handle, fcs_float* eps_B);
-FCSResult fcs_p2nfft_set_epsB_tune(FCS handle);
+FCSResult fcs_p2nfft_set_grid(
+    FCS handle, fcs_int N0, fcs_int N1, fcs_int N2);
+FCSResult fcs_p2nfft_get_grid(
+    FCS handle, fcs_int* N0, fcs_int* N1, fcs_int* N2);
+FCSResult fcs_p2nfft_set_grid_tune(FCS handle);
 \end{alltt}
-    Set/restore/retrieve relative far field regularization border.
+    Set/retrieve/restore FFT grid size.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_oversampled_grid(
+    FCS handle, fcs_int n0, fcs_int n1, fcs_int n2);
+FCSResult fcs_p2nfft_get_oversampled_grid(
+    FCS handle, fcs_int* n0, fcs_int* n1, fcs_int* n2);
+FCSResult fcs_p2nfft_set_oversampled_grid_tune(FCS handle);
+\end{alltt}
+    Set/retrieve/restore oversampled FFT grid size.
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_alpha(FCS handle, fcs_float alpha);
 FCSResult fcs_p2nfft_get_alpha(FCS handle, fcs_float* alpha);
 FCSResult fcs_p2nfft_set_alpha_tune(FCS handle);
 \end{alltt}
-    Set/restore/retrieve Ewald splitting parameter.
+    Set/retrieve/restore Ewald splitting parameter.
   \item
 \begin{alltt}
-FCSResult fcs_p2nfft_set_interpolation_order(
-    FCS handle, fcs_int intpol_order);
-FCSResult fcs_p2nfft_get_interpolation_order(
-    FCS handle, fcs_int* intpol_order);
+FCSResult fcs_p2nfft_set_cao(FCS handle, fcs_int cao);
+FCSResult fcs_p2nfft_get_cao(FCS handle, fcs_int* cao);
+FCSResult fcs_p2nfft_set_cao_tune(FCS handle);
 \end{alltt}
-    Set/retrieve interpolation order of near field correction (optional, default = 3).
+    Set/retrieve/restore charge assignment order.
   \item
 \begin{alltt}
-FCSResult fcs_p2nfft_set_regularization(FCS handle, fcs_int reg);
-FCSResult fcs_p2nfft_get_regularization(FCS handle, fcs_int* reg);
-FCSResult fcs_p2nfft_set_regularization_by_name(
+FCSResult fcs_p2nfft_set_reg_near(FCS handle, fcs_int reg);
+FCSResult fcs_p2nfft_set_reg_near_by_name(
     FCS handle, char* reg_name);
+FCSResult fcs_p2nfft_get_reg_near(FCS handle, fcs_int* reg);
 \end{alltt}
-    Set/retrieve the near field regularization by number or name (default = 0).
-    Feasible values are 0 (\verb!"cg"!) and 1 (\verb!"t2p"!).
+    Set by number/set by name/retrieve number of near field regularization (default = 0).
+    Feasible values are
+    0 (\verb!"cg"!), and
+    1 (\verb!"t2p"!).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_reg_far(FCS handle, fcs_int reg);
+FCSResult fcs_p2nfft_set_reg_far_by_name(
+    FCS handle, char* reg_name);
+FCSResult fcs_p2nfft_get_reg_far(FCS handle, fcs_int* reg);
+\end{alltt}
+    Set by number/set by name/retrieve number of near field regularization (default = 0).
+    Feasible values are
+    0 (\verb!"rad_cg"!),
+    1 (\verb!"rad_t2p_sym"!),
+    2 (\verb!"rad_t2p_ec"!),
+    3 (\verb!"rad_t2p_ic"!),
+    4 (\verb!"rec_t2p_sym"!),
+    5 (\verb!"rec_t2p_ec"!), and 
+    6 (\verb!"rec_t2p_ic"!).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_epsB(FCS handle, fcs_float eps_B);
+FCSResult fcs_p2nfft_get_epsB(FCS handle, fcs_float* eps_B);
+FCSResult fcs_p2nfft_set_epsB_tune(FCS handle);
+\end{alltt}
+    Set/retrieve/restore normalized far field regularization border.
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_p(FCS handle, fcs_int p);
 FCSResult fcs_p2nfft_get_p(FCS handle, fcs_int* p);
 FCSResult fcs_p2nfft_set_p_tune(FCS handle);
 \end{alltt}
-    Set/restore/retrieve polynomial degree of two-point Taylor regularization.
+    Set/retrieve/restore polynomial degree of two-point Taylor regularization.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_c(FCS handle, fcs_float c);
+FCSResult fcs_p2nfft_get_c(FCS handle, fcs_float* c);
+FCSResult fcs_p2nfft_set_c_tune(FCS handle);
+\end{alltt}
+    Set/retrieve/restore explicit continuation value for two-point Taylor regularization.
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_require_virial(
@@ -474,6 +533,21 @@ FCSResult fcs_p2nfft_virial_is_active(
     Check if virial computation is enabled.
   \item
 \begin{alltt}
+FCSResult fcs_p2nfft_set_interpolation_order(
+    FCS handle, fcs_int intpol_order);
+FCSResult fcs_p2nfft_get_interpolation_order(
+    FCS handle, fcs_int* intpol_order);
+\end{alltt}
+    Set/retrieve interpolation order of near field correction (optional, default = 3).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_k_cut(FCS handle, fcs_float k_cut);
+FCSResult fcs_p2nfft_get_k_cut(FCS handle, fcs_float* k_cut);
+FCSResult fcs_p2nfft_set_k_cut_tune(FCS handle);
+\end{alltt}
+    Set/retrieve/restore spherical far field cutoff radius.
+  \item
+\begin{alltt}
 FCSResult fcs_p2nfft_set_ignore_tolerance(
     FCS handle, fcs_int set_ignore_tolerance);
 FCSResult fcs_p2nfft_get_ignore_tolerance(
@@ -482,29 +556,20 @@ FCSResult fcs_p2nfft_get_ignore_tolerance(
     Set/retrieve flag for disabling the accuracy check (default = 0).
   \item
 \begin{alltt}
-FCSResult fcs_p2nfft_set_grid(
-    FCS handle, fcs_int N0, fcs_int N1, fcs_int N2);
-FCSResult fcs_p2nfft_get_grid(
-    FCS handle, fcs_int* N0, fcs_int* N1, fcs_int* N2);
-FCSResult fcs_p2nfft_set_grid_tune(FCS handle);
+FCSResult fcs_p2nfft_set_ignore_field(
+    FCS handle, fcs_int set_ignore_field);
+FCSResult fcs_p2nfft_get_ignore_field(
+    FCS handle, fcs_int* set_ignore_field);
 \end{alltt}
-    Set/restore/retrieve FFT grid size.
+    Set/retrieve flag for disabling the field computation (default = 0).
   \item
 \begin{alltt}
-FCSResult fcs_p2nfft_set_oversampled_grid(
-    FCS handle, fcs_int n0, fcs_int n1, fcs_int n2);
-FCSResult fcs_p2nfft_get_oversampled_grid(
-    FCS handle, fcs_int* n0, fcs_int* n1, fcs_int* n2);
-FCSResult fcs_p2nfft_set_oversampled_grid_tune(FCS handle);
+FCSResult fcs_p2nfft_set_verbose_tuning(
+    FCS handle, fcs_int set_verbose_tuning);
+FCSResult fcs_p2nfft_get_verbose_tuning(
+    FCS handle, fcs_int* set_verbose_tuning);
 \end{alltt}
-    Set/restore/retrieve oversampled FFT grid size.
-  \item
-\begin{alltt}
-FCSResult fcs_p2nfft_set_cao(FCS handle, fcs_int cao);
-FCSResult fcs_p2nfft_get_cao(FCS handle, fcs_int* cao);
-FCSResult fcs_p2nfft_set_cao_tune(FCS handle);
-\end{alltt}
-    Set/restore/retrieve real space cutoff of window function.
+    Set/retrieve flag for verbose tuning. The default value will be 1 (library was configured with \verb!--enable-fcs-info!) or 0 (otherwise).
 \end{itemize}
 
 \subsection{PNFFT-specific Functions}
@@ -517,7 +582,7 @@ FCSResult fcs_p2nfft_get_pnfft_N(
     FCS handle, fcs_int* N0, fcs_int* N1, fcs_int* N2);
 FCSResult fcs_p2nfft_set_pnfft_N_tune(FCS handle);
 \end{alltt}
-    Set/restore/retrieve FFT grid size.
+    Set/retrieve/restore FFT grid size.
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_pnfft_n(
@@ -526,7 +591,7 @@ FCSResult fcs_p2nfft_get_pnfft_n(
     FCS handle, fcs_int* n0, fcs_int* n1, fcs_int* n2);
 FCSResult fcs_p2nfft_set_pnfft_n_tune(FCS handle);
 \end{alltt}
-    Set/restore/retrieve oversampled FFT grid size.
+    Set/retrieve/restore oversampled FFT grid size.
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_pnfft_window(
@@ -544,7 +609,14 @@ FCSResult fcs_p2nfft_set_pnfft_m(FCS handle, fcs_int m);
 FCSResult fcs_p2nfft_get_pnfft_m(FCS handle, fcs_int* m);
 FCSResult fcs_p2nfft_set_pnfft_m_tune(FCS handle);
 \end{alltt}
-    Set/restore/retrieve real space cutoff of window function.
+    Set/retrieve/restore real space cutoff of window function.
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_b(FCS handle, fcs_float b0, fcs_float b1, fcs_float b2);
+FCSResult fcs_p2nfft_get_pnfft_b(FCS handle, fcs_float* b0, fcs_float* b1, fcs_float* b2);
+FCSResult fcs_p2nfft_set_pnfft_b_tune(FCS handle);
+\end{alltt}
+    Set/retrieve/restore shape parameters of window function corresponding to each of the three dimensions.
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_pnfft_interpolation_order(
@@ -553,6 +625,15 @@ FCSResult fcs_p2nfft_get_pnfft_interpolation_order(
     FCS handle, fcs_int* intpol_order);
 \end{alltt}
     Set/retrieve \verb!pnfft_intpol_order! (optional, default = 3).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_direct(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_direct(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag that determines if plain NDFT is used instead of NFFT.
+    (optional, default = 0).
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_pnfft_pre_phi_hat(
@@ -633,6 +714,14 @@ FCSResult fcs_p2nfft_get_pnfft_pre_full_fg_psi(
     FCS handle, fcs_int* yes_or_no);
 \end{alltt}
     Set/retrieve flag \verb!pnfft_pre_full_fg_psi! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pnfft_real_f(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pnfft_real_f(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pnfft_real_f! (optional, default = 0).
 \end{itemize}
 
 \subsection{PFFT-specific Functions}
@@ -650,20 +739,20 @@ FCSResult fcs_p2nfft_set_pfft_patience_by_name(
     Feasible values are 0 (\verb!estimate!), 1 (\verb!measure!), 2 (\verb!patient!) and 3 (\verb!exhaustive!).
   \item
 \begin{alltt}
-FCSResult fcs_p2nfft_set_pfft_preserve_input(
-    FCS handle, fcs_int yes_or_no);
-FCSResult fcs_p2nfft_get_pfft_preserve_input(
-    FCS handle, fcs_int* yes_or_no);
-\end{alltt}
-    Set/retrieve flag \verb!pfft_preserve_input! (optional, default = 0).
-  \item
-\begin{alltt}
 FCSResult fcs_p2nfft_set_pfft_tune(
     FCS handle, fcs_int yes_or_no);
 FCSResult fcs_p2nfft_get_pfft_tune(
     FCS handle, fcs_int* yes_or_no);
 \end{alltt}
     Set/retrieve flag \verb!pfft_tune! (optional, default = 0).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_pfft_preserve_input(
+    FCS handle, fcs_int yes_or_no);
+FCSResult fcs_p2nfft_get_pfft_preserve_input(
+    FCS handle, fcs_int* yes_or_no);
+\end{alltt}
+    Set/retrieve flag \verb!pfft_preserve_input! (optional, default = 0).
 \end{itemize}
 
 

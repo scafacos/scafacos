@@ -95,11 +95,6 @@ FCSResult ifcs_p2nfft_init(
 #endif
 
   /* Set the default values */
-#if FCS_ENABLE_INFO 
-  d->verbose_tuning = 1;
-#else
-  d->verbose_tuning = 0;
-#endif
   d->needs_retune = 1;
   d->tune_alpha = 1;
   d->tune_r_cut = 1;
@@ -112,7 +107,11 @@ FCSResult ifcs_p2nfft_init(
   d->tune_p = 1;
   d->tune_b = 1;
   d->tune_c = 1;
-  d->flags = FCS_P2NFFT_CHECK_TOLERANCE; /* 1: continue even if accuracy estimation fails */
+#if FCS_ENABLE_INFO 
+  d->flags = FCS_P2NFFT_VERBOSE_TUNING; 
+#else
+  d->flags = 0; 
+#endif
 
   d->pnfft_flags = PNFFT_MALLOC_F_HAT| PNFFT_PRE_PHI_HAT | PNFFT_FFT_OUT_OF_PLACE | PNFFT_TRANSPOSED_F_HAT;
   d->pnfft_interpolation_order = 3;
