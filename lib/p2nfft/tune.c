@@ -476,7 +476,6 @@ FCSResult ifcs_p2nfft_tune(
     d->sum_q2 = sum_q2;
     local_needs_retune = 1;
   }
-  printf("sum_q2 = %e\n", sum_q2);
 
   fcs_float local_sum_q4 = 0;
   for (i = 0; i < local_particles; ++i)
