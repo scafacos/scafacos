@@ -1121,7 +1121,7 @@ static void print_command_line_arguments(
  
   /* print full set of command line arguments */ 
   if(!comm_rank){
-    if(verbose || !fcs_float_is_zero(d->tolerance - FCS_P2NFFT_DEFAULT_TOLERANCE)){
+    if(verbose || !fcs_float_is_equal(d->tolerance, FCS_P2NFFT_DEFAULT_TOLERANCE)){
       switch(d->tolerance_type){
         case FCS_TOLERANCE_TYPE_ENERGY:
           printf("tolerance_energy,"); break;
