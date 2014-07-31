@@ -169,12 +169,12 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c,
-    const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha,
+    const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha, fcs_float kc,
     const fcs_int *periodicity, fcs_int p, fcs_float c, fcs_int reg_far,
     MPI_Comm comm_cart);
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
-    const fcs_float *ibox, fcs_float alpha);
+    const fcs_float *ibox, fcs_float alpha, fcs_float kc);
 
 static fcs_int is_cubic(
     fcs_float *box_l);
@@ -343,7 +343,7 @@ FCSResult ifcs_p2nfft_tune(
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
   fcs_int local_needs_retune = d->needs_retune;
   fcs_int i, num_particles;
-  fcs_float sum_q, sum_q2, sum_q_abs, avg_dist, error=0;
+  fcs_float sum_q, sum_q2, sum_q4, sum_q_abs, avg_dist, error=0;
   fcs_float box_l[3]; /* TODO: deprecated parameter  */
   FCSResult result;
 
@@ -477,6 +477,11 @@ FCSResult ifcs_p2nfft_tune(
     local_needs_retune = 1;
   }
   printf("sum_q2 = %e\n", sum_q2);
+
+  fcs_float local_sum_q4 = 0;
+  for (i = 0; i < local_particles; ++i)
+    local_sum_q4 += fcs_pow(charges[i] - d->bg_charge, 4.0);
+  MPI_Allreduce(&local_sum_q4, &sum_q4, 1, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
 
   /* Calculate the sum of the absolute values of all charges
    * (needed for the error formulae) */
@@ -996,7 +1001,7 @@ FCSResult ifcs_p2nfft_tune(
         printf("P2NFFT_INFO: Test of new Stochastical error bound for near plus far field error: cg_err_3d * fcs_sqrt( sum_q2*sum_q2 / (M*V) + 1 ) = %" FCS_LMOD_FLOAT "e\n",
             error * fcs_sqrt(d->sum_q2*d->sum_q2/(d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2]) + 1));
         printf("P2NFFT_INFO: Test of new Stochastical error bound for near plus far field error: cg_err_3d * sum_q2 * fcs_sqrt(3 / (M*V)) = %" FCS_LMOD_FLOAT "e\n",
-            error * sum_q2 * fcs_sqrt(3.0 / (d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2])) );
+            error * d->sum_q2 * fcs_sqrt(3.0 / (d->num_nodes*d->box_l[0]*d->box_l[1]*d->box_l[2])) );
         printf("P2NFFT_INFO: General error bound (depending on box scale=%" FCS_LMOD_FLOAT "e): cg_err_3d * sum_q_abs * fcs_sqrt(2.0/V_scale) = %" FCS_LMOD_FLOAT "e\n",
             d->box_scales[0], error*sum_q_abs * fcs_sqrt(2.0 / (d->box_scales[0]*d->box_scales[1]*d->box_scales[2]) ));
       }
@@ -1046,14 +1051,14 @@ FCSResult ifcs_p2nfft_tune(
     /* precompute Fourier coefficients for convolution */
     if (d->num_periodic_dims == 3)
       d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
-          d->local_N, d->local_N_start, d->box_inv, d->alpha);
+          d->local_N, d->local_N_start, d->box_inv, d->alpha, d->k_cut);
     if (d->num_periodic_dims == 2)
       d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_and_1dp(
-          d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->periodicity, d->p, d->c, reg_far,
+          d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->k_cut, d->periodicity, d->p, d->c, reg_far,
           d->cart_comm_pnfft);
     if (d->num_periodic_dims == 1)
       d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_and_1dp(
-          d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->periodicity, d->p, d->c, reg_far,
+          d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->k_cut, d->periodicity, d->p, d->c, reg_far,
           d->cart_comm_pnfft);
       /* malloc_and_precompute_regkern_hat_1dp */
     if (d->num_periodic_dims == 0)
@@ -1071,13 +1076,21 @@ FCSResult ifcs_p2nfft_tune(
   init_pnfft(&d->pnfft, 3, d->N, d->n, d->x_max, d->m, d->pnfft_flags, d->pnfft_interpolation_order, d->pnfft_window,
       d->pfft_flags, d->pfft_patience, d->cart_comm_pnfft);
 
+  if(d->tune_b)
+    FCS_PNFFT(get_b)(d->pnfft, &d->b[0], &d->b[1], &d->b[2]);
+  else
+    FCS_PNFFT(set_b)(d->b[0], d->b[1], d->b[2], d->pnfft); 
+
+
   /* Print the command line arguments that recreate this plan. */
   if(d->needs_retune){
-    if(d->verbose_tuning){
+    if(d->flags & FCS_P2NFFT_VERBOSE_TUNING){
       if(!comm_rank) printf("P2NFFT_INFO: CMD ARGS: -c ");
       print_command_line_arguments(d, 0);
       if(!comm_rank) printf("P2NFFT_INFO: ALL CMD ARGS: -c ");
       print_command_line_arguments(d, 1);
+      if(!comm_rank) printf("P2NFFT_INFO: Q^2 = %.16e\n", d->sum_q2);
+      if(!comm_rank) printf("P2NFFT_INFO: Q^4 = %.16e\n", sum_q4);
     }
   }
 
@@ -1109,7 +1122,7 @@ static void print_command_line_arguments(
  
   /* print full set of command line arguments */ 
   if(!comm_rank){
-    if(verbose || !fcs_float_is_zero(d->tolerance - FCS_P2NFFT_DEFAULT_TOLERANCE)){
+    if(verbose || !fcs_float_is_equal(d->tolerance, FCS_P2NFFT_DEFAULT_TOLERANCE)){
       switch(d->tolerance_type){
         case FCS_TOLERANCE_TYPE_ENERGY:
           printf("tolerance_energy,"); break;
@@ -1134,6 +1147,8 @@ static void print_command_line_arguments(
       printf("p2nfft_epsI,%" FCS_LMOD_FLOAT "f,", d->epsI);
     if(verbose || !d->tune_epsB)
       printf("p2nfft_epsB,%" FCS_LMOD_FLOAT "f,", d->epsB);
+    if(verbose || !d->tune_k_cut)
+      printf("p2nfft_k_cut,%" FCS_LMOD_FLOAT "f,", d->k_cut);
     if(verbose || !d->tune_c)
       printf("p2nfft_c,%" FCS_LMOD_FLOAT "f,", d->c);
     if(verbose || !d->tune_alpha)
@@ -1191,6 +1206,8 @@ static void print_command_line_arguments(
         default: printf("failure,");
       }
     }
+    if(verbose || !d->tune_b)
+      printf("pnfft_b,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,", d->b[0], d->b[1], d->b[2]);
     if(verbose || !d->tune_m)
       printf("pnfft_m,%" FCS_LMOD_INT "d,", d->m);
     if(verbose || d->pnfft_interpolation_order != 3)
@@ -1706,11 +1723,10 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
 
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
     const ptrdiff_t *local_N, const ptrdiff_t *local_N_start,
-    const fcs_float *ibox, fcs_float alpha
+    const fcs_float *ibox, fcs_float alpha, fcs_float kc
     )
 {
   ptrdiff_t m, k[3], alloc_local = 1;
-  fcs_float lk[3], lksqnorm;
   fcs_float ivol = fcs_fabs(det_3x3(ibox+0, ibox+3, ibox+6));
   fcs_pnfft_complex *regkern_hat;
  
@@ -1722,15 +1738,24 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
   for(k[1]=local_N_start[1]; k[1] < local_N_start[1] + local_N[1]; k[1]++){
     for(k[2]=local_N_start[2]; k[2] < local_N_start[2] + local_N[2]; k[2]++){
       for(k[0]=local_N_start[0]; k[0] < local_N_start[0] + local_N[0]; k[0]++, m++){
-        lk[0] = At_TIMES_VEC(ibox, k, 0);
-        lk[1] = At_TIMES_VEC(ibox, k, 1);
-        lk[2] = At_TIMES_VEC(ibox, k, 2);
 
-        lksqnorm = lk[0]*lk[0] + lk[1]*lk[1] + lk[2]*lk[2];
+        fcs_float kf0 = (fcs_float) k[0];
+        fcs_float kf1 = (fcs_float) k[1];
+        fcs_float kf2 = (fcs_float) k[2];
+        fcs_float ksqnorm = kf0*kf0 + kf1*kf1 + kf2*kf2;
+
         if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0))
           regkern_hat[m] = 0;
-        else
+        else if (kc > 0.0 && ksqnorm > kc*kc)
+          regkern_hat[m] = 0; /* Apply spherical cutoff for kc > 0 */
+        else {
+          fcs_float lk0 = At_TIMES_VEC(ibox, k, 0);
+          fcs_float lk1 = At_TIMES_VEC(ibox, k, 1);
+          fcs_float lk2 = At_TIMES_VEC(ibox, k, 2);
+          fcs_float lksqnorm = lk0*lk0 + lk1*lk1 + lk2*lk2;
+
           regkern_hat[m] = ivol * fcs_exp(-FCS_P2NFFT_PISQR * lksqnorm/(alpha*alpha))/lksqnorm/FCS_P2NFFT_PI;
+        }
       }
     }
   }
@@ -1742,7 +1767,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_3dp(
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     const ptrdiff_t *N, fcs_float epsB,
     const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c,
-    const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha,
+    const fcs_float *box_inv, const fcs_float *box_scales, fcs_float alpha, fcs_float kc,
     const fcs_int *periodicity, fcs_int p, fcs_float c, fcs_int reg_far,
     MPI_Comm comm_cart
     )
@@ -1807,6 +1832,11 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
         lk[1] = At_TIMES_VEC(box_inv, k, 1);
         lk[2] = At_TIMES_VEC(box_inv, k, 2);
 
+        fcs_float kf0 = (fcs_float) k[0];
+        fcs_float kf1 = (fcs_float) k[1];
+        fcs_float kf2 = (fcs_float) k[2];
+        fcs_float ksqnorm = kf0*kf0 + kf1*kf1 + kf2*kf2;
+
         for(fcs_int t=0; t<3; t++){
           lknorm += lk[t] * lk[t];
           x2norm += xs[t] * xs[t] * box_scales[t] * box_scales[t];
@@ -1858,6 +1888,8 @@ tmp += MPI_Wtime();
 timer_keq0 += tmp;
           }
         }
+        else if (kc > 0.0 && ksqnorm > kc*kc)
+          regkern_hat[m] = 0; /* Apply spherical cutoff for kc > 0 */
         else { /* k != 0 */
           if(num_periodic_dims == 2){
             if( (x2norm > h*(0.5-epsB)) && (FCS_PI * lknorm * h*(0.5-epsB) > 19) ){

@@ -90,8 +90,15 @@ Solver::~Solver() {
 
 void Solver::prepare() {
     if (farSolver != NULL) delete farSolver;
+    if(!this->isTriclinic){
     comm.prepare(box_l);
     farSolver = new FarSolver(comm, box_l, r_cut, alpha, grid, cao, box_vectors, volume, isTriclinic);
+    }else{
+        p3m_float box_length[3]={1.0,1.0,1.0};
+    comm.prepare(box_length);
+    farSolver = new FarSolver(comm, box_length, r_cut, alpha, grid, cao, box_vectors, volume, isTriclinic);
+    }
+        
 }
 
 /* callback function for near field computations */
@@ -214,18 +221,13 @@ void Solver::decompose(fcs_gridsort_t *gridsort,
                     triclinic_positions[3 * i + 2]));
         }
     }
-    
+ 
 void Solver::run(
         p3m_int _num_particles, p3m_float *_positions, p3m_float *_charges,
         p3m_float *_fields, p3m_float *_potentials) {
     P3M_INFO(printf( "P3M::Solver::run() started...\n"));
     if (farSolver == NULL)
         throw std::logic_error("FarSolver is not initialized.");
-
-        if (isTriclinic) {
-            box_l[0] = box_l[1] = box_l[2] = 1.0;
-            this->prepare();
-        }
         
     P3M_INFO(printf("    system parameters: box_l=" F3FLOAT "\n", \
             box_l[0], box_l[1], box_l[2]));
@@ -287,10 +289,6 @@ void Solver::run(
     }
     
 #endif
-
-    if(isTriclinic){
-        for(p3m_int i=0;i<3;i++) box_l[i] = box_vectors[i][i];
-    }
     
     if (near_field_flag) {
         /* start near timer */
@@ -384,13 +382,14 @@ void Solver::run(
 //            printf(" (empirical estimate)");
     }
 #endif
-
+    
     sdelete(fields);
     sdelete(potentials);
 
     P3M_INFO(printf( "P3M::Solver::run() finished.\n"));
-}
-}
+        }
+    }
+
 void
 Solver::cartesianizeFields(p3m_float *fields, p3m_int num_particles){
     p3m_int part_no;   
@@ -403,7 +402,7 @@ Solver::cartesianizeFields(p3m_float *fields, p3m_int num_particles){
             -(box_vectors[2][1]) / (box_vectors[1][1] * box_vectors[2][2]) 
             * fields[3 * part_no + 1]
             + 1 / box_vectors[2][2] * fields[3 * part_no + 2];
-   //todo: -boxbx oder boxby?     
+        
         fields[3 * part_no + 1] =
             -(box_vectors[1][0]) / (box_vectors[0][0] * box_vectors[1][1])
             * fields[3 * part_no]

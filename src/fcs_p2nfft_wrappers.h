@@ -38,6 +38,9 @@ FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(epsI, epsI, fcs_float, eps_I)
 /* Getters and Setters for scaled far field regularization border */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(epsB, epsB, fcs_float, eps_I)
 
+/* Getters and Setters for near field cutoff radius */
+FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(k_cut, k_cut, fcs_float, k_cut)
+
 /* Getter and Setter for far field continuation value c used by taylor2p */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(c, c, fcs_float, c)
 
@@ -66,12 +69,17 @@ FCS_P2NFFT_INTERFACE_WRAPPER_1(require_virial,   require_virial,   fcs_int,    r
 FCS_P2NFFT_INTERFACE_WRAPPER_1(get_virial,       get_virial,       fcs_float*, virial)
 FCS_P2NFFT_INTERFACE_WRAPPER_1(virial_is_active, virial_is_active, fcs_int*,   yes_or_no)
 
-/* Getters and Setters for ignore tolerance flag */
+/* Getters and Setters for P2NFFT flags */
 FCS_P2NFFT_SET_GET_WRAPPER_1(ignore_tolerance, ignore_tolerance, fcs_int, set_ignore_tolerance)
+FCS_P2NFFT_SET_GET_WRAPPER_1(ignore_potential, ignore_potential, fcs_int, set_ignore_potential)
+FCS_P2NFFT_SET_GET_WRAPPER_1(ignore_field,     ignore_field,     fcs_int, set_ignore_field)
 
 /************************************************************
  *     Setter and Getter functions for pnfft parameters
  ************************************************************/
+/* Getters and Setters for NFFT window shape parameter b */
+FCS_P2NFFT_SET_GET_TUNE_WRAPPER_3(pnfft_b,  pnfft_b, fcs_float,  b0, fcs_float,  b1, fcs_float,  b2)
+
 /* Getters and Setters for FFT grid size, 2nd wrapper is compliant to P3M interface */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_3(pnfft_N,  pnfft_N, fcs_int,  N0, fcs_int,  N1, fcs_int,  N2)
 #if FCS_P2NFFT_INTERFACE_WITH_REDIRECTIONS
