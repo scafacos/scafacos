@@ -735,7 +735,7 @@ void Configuration::destroy_cart_comm()
   if (cart_comm != MPI_COMM_NULL) MPI_Comm_free(&cart_comm);
 }
 
-void Configuration::decompose_particles(fcs_float minalloc, fcs_float overalloc)
+void Configuration::decompose_particles(bool alloc_field, bool alloc_potentials, fcs_float minalloc, fcs_float overalloc)
 {
   fcs_int dup_input_minalloc;
   fcs_gridsort_resort_t gridsort_resort;
@@ -856,13 +856,20 @@ void Configuration::decompose_particles(fcs_float minalloc, fcs_float overalloc)
 
   if (decomp_max_nparticles > 0)
   {
-    decomp_potentials = new fcs_float[decomp_max_nparticles];
-    decomp_field = new fcs_float[3 * decomp_max_nparticles];
-    for (fcs_int i = 0; i < decomp_nparticles; ++i)
+    if (alloc_field)
     {
-      decomp_potentials[i] = NAN;
-      decomp_field[3 * i + 0] = decomp_field[3 * i + 1] = decomp_field[3 * i + 2] = NAN;
-    }
+      decomp_field = new fcs_float[3 * decomp_max_nparticles];
+      for (fcs_int i = 0; i < decomp_nparticles; ++i) decomp_field[3 * i + 0] = decomp_field[3 * i + 1] = decomp_field[3 * i + 2] = NAN;
+
+    } else decomp_field = NULL;
+
+    if (alloc_potentials)
+    {
+      decomp_potentials = new fcs_float[decomp_max_nparticles];
+      for (fcs_int i = 0; i < decomp_nparticles; ++i) decomp_potentials[i] = NAN;
+
+    } else decomp_potentials = NULL;
+
   } else
   {
     decomp_potentials = (fcs_float *) 1;
