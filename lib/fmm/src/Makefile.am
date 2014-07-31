@@ -10,6 +10,8 @@ SUBDIRS += \
 	unrolled/fmmmopn \
 	unrolled/fmmgradt
 
+.NOTPARALLEL:
+
 # Get Fortran compile rules that include preprocessing.
 include $(top_srcdir)/build-aux/fortran-rules.am
 
