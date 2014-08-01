@@ -1938,7 +1938,8 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
 
   if (original_field && original_potentials) type = 0;
   else if (original_field && !original_potentials) type = 1;
-  else type = 2;
+  else if (!original_field && original_potentials) type = 2;
+  else type = 3;
 
   switch (type)
   {

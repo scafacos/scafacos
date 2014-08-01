@@ -23,8 +23,6 @@ AX_PROG_CXX_MPI(,,AC_MSG_FAILURE([ScaFaCoS requires an MPI C++ compiler.]))
 # Get the Fortran MPI compiler.
 AX_PROG_FC_MPI(,,AC_MSG_FAILURE([ScaFaCoS requires an MPI Fortran compiler.]))
 
-AC_PROG_RANLIB
-
 # Init libtool
 LT_INIT([disable-shared])
 

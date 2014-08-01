@@ -125,8 +125,6 @@ AC_FC_MODULE_FLAG
 # Find out the file name extensions of module files.
 AC_FC_MODULE_EXTENSION
 
-AC_PROG_RANLIB
-
 AC_CHECK_TOOLS([AR], [ar xiar], [false])
 : ${ARFLAGS=r}
 AC_SUBST([ARFLAGS])

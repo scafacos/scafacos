@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <unistd.h>
+#include <getopt.h>
 #include <mpi.h>
 
 #include "fcs.h"
@@ -52,41 +53,57 @@ static void usage(char** argv, int argc, int c) {
   cout << endl;
   cout << "Usage: " << argv[0] << " [OPTIONS] METHOD FILE" << endl;
   cout << "  OPTIONS:" << endl;
-  cout << "    -o OUTFILE write new testcase file using references from the used method" << endl;
-  cout << "    -k         keep duplication/generation information in the new testcase file" << endl
-       << "               (only useful together with -o option)" << endl;
-  cout << "    -b         write particle data in a machine-dependent binary format to a" << endl
-       << "               separate file (basename of OUTFILE with 'bin' suffix, only useful" << endl
-       << "               together with -o option)" << endl;
-  cout << "    -p         write particle data in a portable format to a separate" << endl
-       << "               file (basename of OUTFILE with 'dat' suffix, only useful" << endl
-       << "               together with -o option)" << endl;
-  cout << "    -d DUP     duplicate a given periodic system in each periodic dimension, DUP" << endl
-       << "               can be a single value X or three values XxYxZ (i.e., one for each" << endl
-       << "               dimension), default value DUP=1 is equivalent to no duplication" << endl;
-  cout << "    -m MODE    use decomposition mode MODE=atomistic|all_on_master|random|domain" << endl
-       << "               (overrides file settings)" << endl;
-  cout << "    -C CART    use Cartesian communicator, CART has to be a grid size Xx[Yx[Z]]" << endl
-       << "               where X, Y, and Z is either greater 0 or 0 for automatic selection" << endl;
-  cout << "    -c CONF    use CONF for setting additional method configuration parameters" << endl;
-  cout << "    -i ITER    perform ITER number of runs with each configuration" << endl;
-  cout << "    -r RES     compute results only for RES of the given particles, RES can be" << endl
-       << "               an absolute integer number of particles (without '.') or a" << endl
-       << "               fractional number (with '.') relative to the given particles" << endl
-       << "               (default value RES=1.0 is equivalent to all particles)" << endl;
-  cout << "    -s         utilize resort support (if available) to retain the solver" << endl
-       << "               specific particle order (i.e., no back sorting), exploit the" << endl
-       << "               limited particle movement for integration runs (using -t ...)" << endl;
-  cout << "    -a [+]A    control size of particle data arrays for resort support, A can" << endl
-       << "               be the minimum size either as absolute value (integer w/o '.') or" << endl
-       << "               as fractional number (w/ '.') relative to average size, with" << endl
-       << "               prefix '+' A can be the additional size either as absolute value" << endl
-       << "               (integer w/o '.') or as fractional number (w/ '.') relative to" << endl
-       << "               the given particles, minimum and additional size can be set" << endl
-       << "               independently (default is minimum size A=0 and additional size" << endl
-       << "               A=+0.1, i.e. no minimum size and 10% additional size)" << endl;
-  cout << "    -t S       perform integration with S time steps (run METHOD S+1 times)" << endl;
-  cout << "    -g CONF    use CONF as integration configuration string" << endl;
+  cout << "    -o | --output <file>" << endl
+       << "      write new testcase file <file> using references from the used method" << endl;
+  cout << "    -b | --binary" << endl
+       << "      write particle data in a machine-dependent binary format to a separate file" << endl
+       << "      (only useful together with the option -o <file>, binary output file is" << endl
+       << "      <file> with extension '.bin')" << endl;
+  cout << "    -p | --portable" << endl
+       << "      write particle data in a portable format to a separate file" << endl
+       << "      (only usefultogether with the option -o <file>, portable output file is" << endl
+       << "      <file> with extension '.dat')" << endl;
+  cout << "    -d | --duplication <dup>" << endl
+       << "      duplicate a given periodic system in each periodic dimension, <dup> can be" << endl
+       << "      a single value X or three values XxYxZ (i.e., one for each dimension)," << endl
+       << "      default value <dup>=1 is equivalent to no duplication" << endl;
+  cout << "    -k | --keep-duplication" << endl
+       << "      keep duplication/generation information in the new testcase file" << endl
+       << "      (only useful together with the option -o)" << endl;
+  cout << "    -m | --decomposition <mode>" << endl
+       << "      use particle decomposition <mode>=atomistic|all_on_master|random|domain" << endl
+       << "      (overrides file settings)" << endl;
+  cout << "    -C | --cartestian <cart>" << endl
+       << "      use Cartesian communicator, <cart> has to be a grid size Xx[Yx[Z]]" << endl
+       << "      where X, Y, and Z is either greater 0 or 0 for automatic selection" << endl;
+  cout << "    -c | --configuration <conf>" << endl
+       << "      use <conf> as configuration string for setting method parameters" << endl;
+  cout << "    -i | --iterations <it>" << endl
+       << "      perform <it> number of runs with each configuration" << endl;
+  cout << "    -r | --results <res>" << endl
+       << "      compute results only for <res> of the given particles, <res> can be an" << endl
+       << "      absolute number of particles (integer value without '.') or a relative" << endl
+       << "      number of the given particles (fractional value with '.')," << endl
+       << "      default value <res>=1.0 is equivalent to all particles" << endl;
+  cout << "    -u | --compute <comp>" << endl
+       << "      compute only <comp> results where <comp> can be '[no]field', '[no]pot'," << endl
+       << "      'all', or 'none', default value is <comp>=all" << endl;
+  cout << "    -t | --integration <steps>" << endl
+       << "      use integration with <steps> time steps (i.e., run METHOD <steps>+1 times)" << endl;
+  cout << "    -g | --integ-configuration <conf>" << endl
+       << "      use <conf> as configuration string for the integration" << endl;
+  cout << "    -s | --resort" << endl
+       << "      utilize resort support (if available) to retain the solver specific" << endl
+       << "      particle order (i.e., no back sorting), exploit the limited particle" << endl
+       << "      movement for integration runs (using -t ...)" << endl;
+  cout << "    -a | --allocation <a>" << endl
+       << "      control the size of particle data arrays for resort support, <a> can be the" << endl
+       << "      minimum size either as absolute value (integer w/o '.') or as fractional" << endl
+       << "      number (w/ '.') relative to average size, with prefix '+' <a> can be the" << endl
+       << "      additional size either as absolute value (integer w/o '.') or as fractional" << endl
+       << "      number (w/ '.') relative to the given particles, minimum and additional" << endl
+       << "      size can be set independently, default is minimum size <a>=0 and additional" << endl
+       << "      size <a>=+0.1, i.e. no minimum size and 10% additional size" << endl;
   cout << "  METHOD:";
 #ifdef FCS_ENABLE_DIRECT
   cout << " direct";
@@ -162,6 +179,9 @@ static struct {
   // For how many particles results should be computed (0.1 = 10%).
   fcs_float result_particles;
 
+  // Whether to compute field and potential values or not
+  bool compute_field, compute_potentials;
+
   // Utilize resort support of solvers (if available)
   bool resort;
 
@@ -169,12 +189,37 @@ static struct {
   fcs_float minalloc, overalloc;
 
   // Integrate or not, number of time steps (t steps = t+1 computations), and integration configuration string
-  fcs_int integrate, time_steps;
+  bool integrate;
+  fcs_int time_steps;
   char integration_conf[MAX_CONF_LENGTH];
 
 } global_params = { 
-  "", false, false, false, "", "", "", false, {1, 1, 1}, -1, 
-  true, false, "none", 0, { 0, 0, 0 }, "", 1, -1.0, false, 0, -0.1, 0, 0, ""
+  "",          /* input file */
+  false,       /* output */
+  false,       /* binary output */
+  false,       /* portable output */
+  "",          /* output file */
+  "",          /* binary output file */
+  "",          /* portable output file */
+  false,       /* keep duplication */
+  {1, 1, 1},   /* duplication */
+  -1,          /* decomposition */
+  true,        /* abort on error */
+  false,       /* method given */
+  "none",      /* method */
+  0,           /* cartesian communicator dimensions */
+  { 0, 0, 0 }, /* cartesian communicator sizes */
+  "",          /* method configuration string */
+  1,           /* iterations */
+  -1.0,        /* number of particle results */
+  true,        /* compute potential values */
+  true,        /* compute field values */
+  false,       /* do resort */
+  0,           /* minimum number of particles to allocate */
+  -0.1,        /* additional number of particles to allocate */
+  false,       /* integration */
+  0,           /* integration time steps */
+  ""           /* integration configuration string */
 };
 
 static bool check_result(FCSResult result, bool force_abort = false) {
@@ -191,6 +236,7 @@ static bool check_result(FCSResult result, bool force_abort = false) {
   return true;
 }
 
+
 // split basename and extension of a filename
 static void filename_split(char* dest, char* suffix, size_t n, const char* filename)  {
     const char *s = strrchr(filename, '/');
@@ -201,119 +247,168 @@ static void filename_split(char* dest, char* suffix, size_t n, const char* filen
     if ( NULL != suffix) snprintf(suffix, n, "%s", s+1);
 }
 
+
+#define STRCMP_FRONT(_s_, _t_)          strncmp((_s_), (_t_), z_min(strlen(_s_), strlen(_t_)))
+#define STRCMP_FRONT_IS_EQUAL(_s_, _t_) (STRCMP_FRONT(_s_, _t_) == 0)
+
+
 // Command line parsing on master
 static void parse_commandline(int argc, char* argv[]) {
-  int c;
   char dup0[32], *dup1 = NULL, *dup2 = NULL;
 
   global_params.conf[0] = '\0';
 
-  while ((c = getopt (argc, argv, "o:bpkd:m:C:c:i:r:sa:t:g:")) != -1) {
-    switch (c) {
-    case 'o':
-      strncpy(global_params.outfilename, optarg, MAX_FILENAME_LENGTH);
-      global_params.have_outfile = true;
-      break;
-    case 'b':
-      global_params.have_binfile = true;
-      break;
-    case 'p':
-      global_params.have_portable_file = true;
-      break;
-    case 'k':
-      global_params.keep_dupgen = true;
-      break;
-    case 'd':
-      strncpy(dup0, optarg, sizeof(dup0));
-      if ((dup1 = strchr(dup0, 'x'))) {
-        *dup1 = 0; ++dup1;
-        if ((dup2 = strchr(dup1, 'x'))) {
-          *dup2 = 0; ++dup2;
-        }
-      }
-      global_params.periodic_duplications[0] = global_params.periodic_duplications[1] = global_params.periodic_duplications[2] = (strlen(dup0) > 0)?atoi(dup0):1;
-      if (dup1)
-      {
-        global_params.periodic_duplications[1] = (strlen(dup1) > 0)?atoi(dup1):1;
-        global_params.periodic_duplications[2] = (dup2 && strlen(dup2) > 0)?atoi(dup2):1;
-      }
-      break;
-    case 'm':
-#define STRCMP_FRONT(_s_, _t_) strncmp((_s_), (_t_), z_min(strlen(_s_), strlen(_t_)))
-      if (STRCMP_FRONT("all_on_master", optarg) == 0 || STRCMP_FRONT("master", optarg) == 0)
-        global_params.decomposition = DECOMPOSE_ALL_ON_MASTER;
-      if (STRCMP_FRONT("almost_all_on_master", optarg) == 0 || STRCMP_FRONT("almost", optarg) == 0)
-        global_params.decomposition = DECOMPOSE_ALMOST_ALL_ON_MASTER;
-      else if (STRCMP_FRONT("atomistic", optarg) == 0)
-        global_params.decomposition = DECOMPOSE_ATOMISTIC;
-      else if (STRCMP_FRONT("random", optarg) == 0)
-        global_params.decomposition = DECOMPOSE_RANDOM;
-      else if (STRCMP_FRONT("domain", optarg) == 0)
-        global_params.decomposition = DECOMPOSE_DOMAIN;
-      else if (STRCMP_FRONT("randeq", optarg) == 0)
-        global_params.decomposition = DECOMPOSE_RANDOM_EQUAL;
-      else
-        cout << "WARNING: ignoring unknown decomposition mode '" << optarg << "'" << endl;
-      break;
-#undef STRCMP_FRONT
-    case 'C':
-      strncpy(dup0, optarg, sizeof(dup0));
-      if ((dup1 = strchr(dup0, 'x')))
-      {
-        *dup1 = 0; ++dup1;
-        if ((dup2 = strchr(dup1, 'x')))
+  static struct option long_options[] =
+  {
+    {"output",              required_argument, NULL, 'o'},
+    {"binary",              no_argument,       NULL, 'b'},
+    {"portable",            no_argument,       NULL, 'p'},
+    {"duplication",         required_argument, NULL, 'd'},
+    {"keep-duplication",    no_argument,       NULL, 'k'},
+    {"decomposition",       required_argument, NULL, 'm'},
+    {"cartesian",           required_argument, NULL, 'C'},
+    {"configuration",       required_argument, NULL, 'c'},
+    {"iterations",          required_argument, NULL, 'i'},
+    {"results",             required_argument, NULL, 'r'},
+    {"compute",             required_argument, NULL, 'u'},
+    {"integration",         required_argument, NULL, 't'},
+    {"integ-configuration", required_argument, NULL, 'g'},
+    {"resort",              no_argument,       NULL, 's'},
+    {"allocation",          required_argument, NULL, 'a'},
+    {0, 0, 0, 0}
+  };
+
+  while (1)
+  {
+    int option_index = 0;
+
+    int c = getopt_long(argc, argv, "o:bpd:km:C:c:i:r:u:t:g:sa:", long_options, &option_index);
+
+    if (c == -1) break;
+
+    switch (c)
+    {
+      case 'o':
+        strncpy(global_params.outfilename, optarg, MAX_FILENAME_LENGTH);
+        global_params.have_outfile = true;
+        break;
+      case 'b':
+        global_params.have_binfile = true;
+        break;
+      case 'p':
+        global_params.have_portable_file = true;
+        break;
+      case 'd':
+        strncpy(dup0, optarg, sizeof(dup0));
+        if ((dup1 = strchr(dup0, 'x')))
         {
-          *dup2 = 0; ++dup2;
+          *dup1 = 0; ++dup1;
+          if ((dup2 = strchr(dup1, 'x')))
+          {
+            *dup2 = 0; ++dup2;
+          }
         }
-      }
-      global_params.cart_comm = 1;
-      global_params.cart_dims[0] = (strlen(dup0) > 0)?atoi(dup0):0;
-      if (dup1)
-      {
-        ++global_params.cart_comm;
-        global_params.cart_dims[1] = (strlen(dup1) > 0)?atoi(dup1):0;
-        if (dup2)
+        global_params.periodic_duplications[0] = global_params.periodic_duplications[1] = global_params.periodic_duplications[2] = (strlen(dup0) > 0)?atoi(dup0):1;
+        if (dup1)
+        {
+          global_params.periodic_duplications[1] = (strlen(dup1) > 0)?atoi(dup1):1;
+          global_params.periodic_duplications[2] = (dup2 && strlen(dup2) > 0)?atoi(dup2):1;
+        }
+        break;
+      case 'k':
+        global_params.keep_dupgen = true;
+        break;
+      case 'm':
+        if (STRCMP_FRONT("all_on_master", optarg) == 0 || STRCMP_FRONT("master", optarg) == 0)
+          global_params.decomposition = DECOMPOSE_ALL_ON_MASTER;
+        else if (STRCMP_FRONT("almost_all_on_master", optarg) == 0 || STRCMP_FRONT("almost", optarg) == 0)
+          global_params.decomposition = DECOMPOSE_ALMOST_ALL_ON_MASTER;
+        else if (STRCMP_FRONT("atomistic", optarg) == 0)
+          global_params.decomposition = DECOMPOSE_ATOMISTIC;
+        else if (STRCMP_FRONT("random", optarg) == 0)
+          global_params.decomposition = DECOMPOSE_RANDOM;
+        else if (STRCMP_FRONT("domain", optarg) == 0)
+          global_params.decomposition = DECOMPOSE_DOMAIN;
+        else if (STRCMP_FRONT("randeq", optarg) == 0)
+          global_params.decomposition = DECOMPOSE_RANDOM_EQUAL;
+        else
+          cout << "WARNING: ignoring unknown decomposition mode '" << optarg << "'" << endl;
+        break;
+      case 'C':
+        strncpy(dup0, optarg, sizeof(dup0));
+        if ((dup1 = strchr(dup0, 'x')))
+        {
+          *dup1 = 0; ++dup1;
+          if ((dup2 = strchr(dup1, 'x')))
+          {
+            *dup2 = 0; ++dup2;
+          }
+        }
+        global_params.cart_comm = 1;
+        global_params.cart_dims[0] = (strlen(dup0) > 0)?atoi(dup0):0;
+        if (dup1)
         {
           ++global_params.cart_comm;
-          global_params.cart_dims[2] = (strlen(dup2) > 0)?atoi(dup2):0;
+          global_params.cart_dims[1] = (strlen(dup1) > 0)?atoi(dup1):0;
+          if (dup2)
+          {
+            ++global_params.cart_comm;
+            global_params.cart_dims[2] = (strlen(dup2) > 0)?atoi(dup2):0;
+          }
         }
-      }
-      break;
-    case 'c':
-      if (global_params.conf[0] != '\0') strncat(global_params.conf, ",", MAX_CONF_LENGTH);
-      strncat(global_params.conf, optarg, MAX_CONF_LENGTH);
-      break;
-    case 'i':
-      global_params.iterations = atoi(optarg);
-      break;
-    case 'r':
-      global_params.result_particles = fabs(atof(optarg));
-      if (strchr(optarg, '.')) global_params.result_particles *= -1;
-      break;
-    case 's':
-      global_params.resort = true;
-      break;
-    case 'a':
-      if (optarg[0] == '+')
-      {
-        global_params.overalloc = fabs(atof(optarg + 1));
-        if (strchr(optarg + 1, '.')) global_params.overalloc *= -1;
+        break;
+      case 'c':
+        if (global_params.conf[0] != '\0') strncat(global_params.conf, ",", MAX_CONF_LENGTH);
+        strncat(global_params.conf, optarg, MAX_CONF_LENGTH);
+        break;
+      case 'i':
+        global_params.iterations = atoi(optarg);
+        break;
+      case 'r':
+        global_params.result_particles = fabs(atof(optarg));
+        if (strchr(optarg, '.')) global_params.result_particles *= -1;
+        break;
+      case 'u':
+        if (STRCMP_FRONT_IS_EQUAL(optarg, "field")) global_params.compute_field = true;
+        else if (STRCMP_FRONT_IS_EQUAL(optarg, "nofield")) global_params.compute_field = false;
+        else if (STRCMP_FRONT_IS_EQUAL(optarg, "pot")) global_params.compute_potentials = true;
+        else if (STRCMP_FRONT_IS_EQUAL(optarg, "nopot")) global_params.compute_potentials = false;
+        else if (STRCMP_FRONT_IS_EQUAL(optarg, "all"))
+        {
+          global_params.compute_field = true;
+          global_params.compute_potentials = true;
 
-      } else
-      {
-        global_params.minalloc = fabs(atof(optarg));
-        if (strchr(optarg, '.')) global_params.minalloc *= -1;
-      }
-      break;
-    case 't':
-      global_params.integrate = 1;
-      global_params.time_steps = atoi(optarg);
-      break;
-    case 'g':
-      strncpy(global_params.integration_conf, optarg, MAX_CONF_LENGTH);
-      break;
-    default:
-      usage(argv, argc, c);
+        } else if (STRCMP_FRONT_IS_EQUAL(optarg, "none"))
+        {
+          global_params.compute_field = false;
+          global_params.compute_potentials = false;
+
+        } else cout << "WARNING: ignoring unknown compute request '" << optarg << "'" << endl;
+        break;
+      case 't':
+        global_params.integrate = true;
+        global_params.time_steps = atoi(optarg);
+        break;
+      case 'g':
+        strncpy(global_params.integration_conf, optarg, MAX_CONF_LENGTH);
+        break;
+      case 's':
+        global_params.resort = true;
+        break;
+      case 'a':
+        if (optarg[0] == '+')
+        {
+          global_params.overalloc = fabs(atof(optarg + 1));
+          if (strchr(optarg + 1, '.')) global_params.overalloc *= -1;
+
+        } else
+        {
+          global_params.minalloc = fabs(atof(optarg));
+          if (strchr(optarg, '.')) global_params.minalloc *= -1;
+        }
+        break;
+      default:
+        usage(argv, argc, c);
     }
   }
 
@@ -337,6 +432,7 @@ static void broadcast_global_parameters() {
   MPI_Bcast(&global_params, sizeof(global_params), MPI_BYTE, MASTER_RANK, communicator);
 }
 
+
 typedef struct
 {
   fcs_int total_nparticles, nparticles, max_nparticles;
@@ -350,6 +446,7 @@ typedef struct
   fcs_float *in_positions, *in_charges;
 
 } particles_t;
+
 
 static void prepare_particles(particles_t *parts)
 {
@@ -619,12 +716,15 @@ static void run_method(FCS fcs, particles_t *parts)
                       << parts->field[3 * i + 1] << ", "
                       << parts->field[3 * i + 2] << "  " << parts->potentials[i] << endl;*/
 
-  // apply dipole correction to the fields
-  for (fcs_int pid = 0; pid < parts->nparticles; pid++)
+  if (parts->field)
   {
-    parts->field[3*pid] += current_config->field_correction[0];
-    parts->field[3*pid+1] += current_config->field_correction[1];
-    parts->field[3*pid+2] += current_config->field_correction[2];
+    // apply dipole correction to the fields
+    for (fcs_int pid = 0; pid < parts->nparticles; pid++)
+    {
+      parts->field[3*pid] += current_config->field_correction[0];
+      parts->field[3*pid+1] += current_config->field_correction[1];
+      parts->field[3*pid+2] += current_config->field_correction[2];
+    }
   }
 }
 
@@ -650,6 +750,12 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
 
 
   MASTER(cout << "  Integration with " << global_params.time_steps << " time step(s) " << (resort?"with":"without") << " utilization of resort support" << endl);
+
+  if (!parts->field)
+  {
+    MASTER(cout << "  ERROR: Performing integration requires computing of field values!" << endl);
+    return;
+  }
 
   v_cur = new fcs_float[3 * parts->max_nparticles];
   f_old = new fcs_float[3 * parts->max_nparticles];
@@ -1031,7 +1137,7 @@ int main(int argc, char* argv[])
     }
 
     // Distribute particles
-    current_config->decompose_particles(global_params.resort?global_params.minalloc:0, global_params.resort?global_params.overalloc:0);
+    current_config->decompose_particles(global_params.compute_field, global_params.compute_potentials, global_params.resort?global_params.minalloc:0, global_params.resort?global_params.overalloc:0);
 
     particles_t parts;
     prepare_particles(&parts);

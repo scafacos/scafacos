@@ -123,7 +123,7 @@ public:
   void create_cart_comm();
   void destroy_cart_comm();
 
-  void decompose_particles(fcs_float minalloc = 0, fcs_float overalloc = 0);
+  void decompose_particles(bool alloc_field, bool alloc_potentials, fcs_float minalloc = 0, fcs_float overalloc = 0);
   void equalize_particles();
   void almost_master_particles();
   void gather_particles();

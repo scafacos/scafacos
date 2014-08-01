@@ -180,7 +180,6 @@ fi
 AM_CONDITIONAL([COND_HAVE_BOOST_UNIT_TEST], [test "x$have_boost" = xyes && test x"$ax_cv_boost_unit_test_framework" = xyes])
 AM_CONDITIONAL([COND_HAVE_BOOST_UNIT_TEST_LIB], [test "x$have_boost" = xyes && test x"$ax_cv_boost_unit_test_framework" = xyes && test x"$ax_cv_boost_unit_test_framework_lib" = xyes])
 
-AC_PROG_RANLIB
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 # Init libtool
