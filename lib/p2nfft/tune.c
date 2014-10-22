@@ -1776,6 +1776,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
   fcs_float lk[3];
   fcs_int num_periodic_dims = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
   fcs_float scale = 1.0;
+  fcs_float scale2 = 1.0;
   fcs_float xs[3];
   FCS_PFFT(plan) pfft;
   fcs_pnfft_complex *regkern_hat;
@@ -1796,6 +1797,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
 
   /* compute the volume element corresponding to periodic dims */
   scale /= volume_of_periodic_dims(box_a, box_b, box_c, periodicity);
+  scale2 = scale;
 
   /* divide by FFT normalization factor for every nonperiodic dim */
   for(int t=0; t<3; t++) if(!periodicity[t]) scale /= N[t];
@@ -1809,7 +1811,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
 #endif
 
   double timer_keq0=0, timer_kne0=0;
-  int count_Req0=0, count_Rne0=0, count_all=0;
+  int count_Req0=0, count_Rne0=0, count_all=0, count_poisson=0, count_reg=0;
 
   /* shift FFT output via twiddle factors on the input */
   /* twiddle only the non-periodic dims, since there we need to calculate 1d-FFTs */ 
@@ -1826,6 +1828,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
 
         /* New regularization for mixed boundary conditions */
         fcs_float lknorm = 0.0, x2norm = 0.0, xsnorm = 0.0, h = 1.0;
+	fcs_float kxsqnorm = 0.0;
 
         lk[0] = At_TIMES_VEC(box_inv, k, 0);
         lk[1] = At_TIMES_VEC(box_inv, k, 1);
@@ -1840,6 +1843,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
           lknorm += lk[t] * lk[t];
           x2norm += xs[t] * xs[t] * box_scales[t] * box_scales[t];
           xsnorm += xs[t] * xs[t];
+	  kxsqnorm += lk[t] * lk[t] + xs[t]*xs[t]/(box_scales[t]*box_scales[t]*N[t]*N[t]);
         }
         lknorm = fcs_sqrt(lknorm);
         x2norm = fcs_sqrt(x2norm);
@@ -1887,19 +1891,27 @@ tmp += MPI_Wtime();
 timer_keq0 += tmp;
           }
         }
-        else if (kc > 0.0 && ksqnorm > kc*kc)
+        else if (kc > 0.0 && ksqnorm > kc*kc){
           regkern_hat[m] = 0; /* Apply spherical cutoff for kc > 0 */
+	}
         else { /* k != 0 */
           if(num_periodic_dims == 2){
-            if( (x2norm > h*(0.5-epsB)) && (FCS_PI * lknorm * h*(0.5-epsB) > 19) ){
+	    if(0.5 * scale2 * ifcs_p2nfft_ewald_2dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+	      /* use periodization (analytical Fourier coefficients, Poisson summation) instead of regularization */
+	      regkern_hat[m] = 0.0;
+	      // kern_hat_ana[m] = 0.5*2.0/(FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
+	    } else if( (x2norm > h*(0.5-epsB)) && (FCS_PI * lknorm * h*(0.5-epsB) > 19) ){
               /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
               regkern_hat[m] = 0.0;
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / lknorm;
+	      ++count_reg;
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
               regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB, c) / lknorm;
+	      ++count_reg;
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
               regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / lknorm;
+	      ++count_reg;
             }
 
 //             if((k[0] == 0) && (k[1] == 1) && (k[2] == 0))
@@ -1915,24 +1927,27 @@ timer_keq0 += tmp;
 //             if(k[2] >= 10) fprintf(stderr, "k = [%td, %td, %td], lknorm = %e, alpha = %e, Pi*k/(alpha*B) = %e\n", k[0], k[1], k[2], lknorm, alpha, FCS_PI*lknorm/alpha);
 double tmp = -MPI_Wtime();
 ++count_all;
-            if( x > 34 ){
+	    if(2.0 * scale2 * ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+	      regkern_hat[m] = 0.0;
+	      // kern_hat_ana[m] = 2.0/(2.0*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
+	    } else if( x > 34 ){
               /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
               regkern_hat[m] = 0.0;
-            } else
-            if( (x2norm > h*(0.5-epsB)) && ( FCS_PI*lknorm * h*(0.5-epsB) > 19) ){
+            } else if( (x2norm > h*(0.5-epsB)) && ( FCS_PI*lknorm * h*(0.5-epsB) > 19) ){
               /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
               regkern_hat[m] = 0.0;
-            } else
-            if( (x2norm > h*(0.5-epsB)) && (ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5-epsB), 0, param) < 1e-16) ){
+            } else if( (x2norm > h*(0.5-epsB)) && (ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5-epsB), 0, param) < 1e-16) ){
               /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
               regkern_hat[m] = 0.0;
-            } else
-            if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
+            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+	      ++count_reg;
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
               regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB, c);
+	      ++count_reg;
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
               regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+	      ++count_reg;
 if(creal(regkern_hat[m]) < 1e-15) ++count_Req0;
 else                              ++count_Rne0;
 // fcs_float x = FCS_PI*lknorm;
@@ -2029,7 +2044,91 @@ fprintf(stderr,   "Regularization numerically NOT equal to 0 for %d times\n", co
 #endif
     
   FCS_PFFT(execute)(pfft);
+  
+  FCS_PFFT(destroy_plan)(pfft);
+  
+  /* Poisson summation, take analytical Fourier coefficients */
+  m=0;
+  for(ptrdiff_t l1 = local_No_start[1]; l1 < local_No_start[1] + local_No[1]; l1++){
+    xs[1] = (periodicity[1]) ? 0.0 : (fcs_float) l1;
+    k[1] = (periodicity[1]) ? l1 : 0;
+    for(ptrdiff_t l2 = local_No_start[2]; l2 < local_No_start[2] + local_No[2]; l2++){
+      xs[2] = (periodicity[2]) ? 0.0 : (fcs_float) l2;
+      k[2] = (periodicity[2]) ? l2 : 0;
+      for(ptrdiff_t l0 = local_No_start[0]; l0 < local_No_start[0] + local_No[0]; l0++, m++){
+	xs[0] = (periodicity[0]) ? 0.0 : (fcs_float) l0;
+	k[0] = (periodicity[0]) ? l0 : 0;
+	
+        /* New regularization for mixed boundary conditions */
+        fcs_float lknorm = 0.0, h = 1.0;
+	fcs_float kxsqnorm = 0.0;
+	
+	/* works only for equal box lengths regarding nonperiodic dims */
+	for(fcs_int t=0; t<3; t++)
+          if(!periodicity[t])
+            h = box_scales[t];
 
+        lk[0] = At_TIMES_VEC(box_inv, k, 0);
+        lk[1] = At_TIMES_VEC(box_inv, k, 1);
+        lk[2] = At_TIMES_VEC(box_inv, k, 2);
+
+        fcs_float kf0 = (fcs_float) k[0];
+        fcs_float kf1 = (fcs_float) k[1];
+        fcs_float kf2 = (fcs_float) k[2];
+        fcs_float ksqnorm = kf0*kf0 + kf1*kf1 + kf2*kf2;
+
+        for(fcs_int t=0; t<3; t++){
+          lknorm += lk[t] * lk[t];
+	  kxsqnorm += lk[t] * lk[t] + xs[t]*xs[t] / (h*h);
+        }
+        lknorm = fcs_sqrt(lknorm);
+
+        fcs_float param[3];
+        param[0] = alpha;
+        param[1] = lknorm;
+        param[2] = h;
+
+	if (kc > 0.0){
+	  if (ksqnorm > 0.0 && ksqnorm < kc*kc){ /* apply spherical cutoff in kspace */
+	    if(num_periodic_dims == 2){
+	      if(0.5 * scale2 * ifcs_p2nfft_ewald_2dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+		regkern_hat[m] = scale2/(h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
+		count_poisson+=1;
+	      }
+	    } else { /* num_periodic_dims == 1 */
+	      if(2.0 * scale2 * ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+		regkern_hat[m] = scale2/(h*h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
+		count_poisson+=1;
+		}
+	      }
+	  }
+	} else{ /* no spherical cutoff, take full grid */
+	  if (ksqnorm > 0.0){
+	    if(num_periodic_dims == 2){
+	      if(0.5 * scale2 * ifcs_p2nfft_ewald_2dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+		regkern_hat[m] = scale2/(h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
+		count_poisson+=1;
+	      }
+	    } else { /* num_periodic_dims == 1 */
+	      if(2.0 * scale2 * ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+		regkern_hat[m] = scale2/(h*h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
+		count_poisson+=1;
+		}
+	      }
+	    }
+	  }
+          
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+#endif
+      }
+    }
+  }
+  
+fprintf(stderr, "\n# Evaluations of regularized kernels = %d\n", count_reg); 
+fprintf(stderr, "# Evaluations of analytical Fourier transform = %d\n\n", count_poisson);  
+  
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
     csum = 0.0;
 #endif
@@ -2052,8 +2151,6 @@ fprintf(stderr,   "Regularization numerically NOT equal to 0 for %d times\n", co
   if (myrank == 0) fprintf(stderr, "sum of regkernel_hat: %e + I* %e\n", creal(csum_global), cimag(csum_global));
 #endif
   
-  FCS_PFFT(destroy_plan)(pfft);
-
   return regkern_hat;
 }
 
