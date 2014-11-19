@@ -63,5 +63,5 @@ FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_x_times_erf(fcs_float x, fcs_int der, const f
 FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_1dp_kneq0(fcs_float r, fcs_int der, const fcs_float *param);       /* K(x) = K_nu(pi^2*k^2/alpha^2, alpha^2*r^2) */
 FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_ewald_1dp_keq0(fcs_float r, fcs_int der, const fcs_float *param);        /* K(x) = gamma + Gamma(0,a^2*r^2) + ln(a^2*r^2) */
 
-
+FCS_P2NFFT_KERNEL_TYPE ifcs_p2nfft_erfx_over_x(fcs_float r, fcs_int der, const fcs_float *param); /* K(x) = 1/x * erf(alpha*x) */
 #endif
