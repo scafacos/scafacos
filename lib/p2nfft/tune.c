@@ -158,6 +158,14 @@ static fcs_float compute_alias_k(
 
 #endif
 
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
+    const ptrdiff_t *N, fcs_float epsB,
+//    const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c,
+//    const fcs_float *box_inv,
+    const fcs_float *box_scales, fcs_float alpha,
+    fcs_int p, fcs_float c, fcs_int reg_far,
+    MPI_Comm comm_cart, unsigned box_is_cubic
+    );
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
     const ptrdiff_t *N, fcs_float r_cut, fcs_float epsI, fcs_float epsB,
     fcs_int p, fcs_float c, fcs_float *box_scales,
@@ -1060,13 +1068,20 @@ FCSResult ifcs_p2nfft_tune(
           d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->k_cut, d->periodicity, d->p, d->c, reg_far,
           d->cart_comm_pnfft);
       /* malloc_and_precompute_regkern_hat_1dp */
-    if (d->num_periodic_dims == 0)
+    if (d->num_periodic_dims == 0) {
+/*
       d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
           d->N, d->r_cut, d->epsI, d->epsB, d->p, d->c, d->box_scales, reg_near, reg_far,
           d->taylor2p_coeff, d->N_cg_cos, d->cg_cos_coeff,
           d->interpolation_order, d->near_interpolation_num_nodes, d->far_interpolation_num_nodes,
           d->near_interpolation_table_potential, d->far_interpolation_table_potential,
           d->cart_comm_pnfft, is_cubic(d->box_l)); 
+*/
+      fprintf(stderr, "using malloc_and_precompute_regkern_hat_0dp_ewald\n");
+      d->regkern_hat = malloc_and_precompute_regkern_hat_0dp_ewald(
+          d->N, d->epsB, d->box_scales, d->alpha, d->p, d->c, reg_far,
+          d->cart_comm_pnfft, is_cubic(d->box_l));
+    }
   }
   /* Finish timing of of precomputation */
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Precomputation of regularization");
@@ -1672,6 +1687,168 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
         }
 
 //         regkern_hat[m] = ifcs_p2nfft_reg_far_expl_cont_noncubic(
+//             ifcs_p2nfft_one_over_modulus, x2norm, xsnorm, p, NULL, r_cut, epsB, c);
+//         regkern_hat[m] = ifcs_p2nfft_reg_far_expl_cont(
+//             ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB, c*box_scales[0]) / box_scales[0];
+        
+        regkern_hat[m] *= scale;
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+#endif
+      
+      }
+    }
+  }
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+    MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    if (myrank == 0) fprintf(stderr, "sum of regkernel: %e + I* %e\n", creal(csum_global), cimag(csum_global));
+#endif
+    
+  FCS_PFFT(execute)(pfft);
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+    csum = 0.0;
+#endif
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  /* take care of transposed order N1 x N2 x N0 */
+  /* shift FFT input via twiddle factors on the output */
+  m=0;
+  for(ptrdiff_t k1 = 0; k1 < local_No[1]; k1++){
+    for(ptrdiff_t k2 = 0; k2 < local_No[2]; k2++){
+      for(ptrdiff_t k0 = 0; k0 < local_No[0]; k0++, m++){
+        csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+      }
+    }
+  }
+#endif
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  if (myrank == 0) fprintf(stderr, "sum of regkernel_hat: %e + I* %e\n", creal(csum_global), cimag(csum_global));
+#endif
+  
+  FCS_PFFT(destroy_plan)(pfft);
+
+  return regkern_hat;
+}
+
+/* scale epsI and epsB according to box_size == 1 */
+static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
+    const ptrdiff_t *N, fcs_float epsB,
+//    const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c,
+//    const fcs_float *box_inv,
+    const fcs_float *box_scales, fcs_float alpha,
+    fcs_int p, fcs_float c, fcs_int reg_far,
+    MPI_Comm comm_cart, unsigned box_is_cubic
+    )
+{
+  ptrdiff_t howmany = 1, alloc_local, m;
+  ptrdiff_t local_Ni[3], local_Ni_start[3], local_No[3], local_No_start[3];
+  fcs_float x0, x1, x2, x2norm, xsnorm, scale = 1.0;
+  FCS_PFFT(plan) pfft;
+  fcs_pnfft_complex *regkern_hat;
+
+  alloc_local = FCS_PFFT(local_size_many_dft)(3, N, N, N, howmany,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, comm_cart, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT,
+      local_Ni, local_Ni_start, local_No, local_No_start);
+
+  regkern_hat = FCS_PFFT(alloc_complex)(alloc_local);
+  
+  pfft = FCS_PFFT(plan_many_dft)(3, N, N, N, howmany,
+      PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, regkern_hat, regkern_hat, comm_cart,
+      PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT| PFFT_ESTIMATE);
+
+  for(int t=0; t<3; t++)
+    scale *= 1.0 / N[t];
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  int myrank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  C csum;
+  C csum_global;
+  csum = 0.0;
+#endif
+ 
+  /* shift FFT output via twiddle factors on the input */ 
+  m=0;
+  for(ptrdiff_t k0 = local_Ni_start[0]; k0 < local_Ni_start[0] + local_Ni[0]; k0++){
+    x0 = (fcs_float) k0 / N[0];
+    for(ptrdiff_t k1 = local_Ni_start[1]; k1 < local_Ni_start[1] + local_Ni[1]; k1++){
+      x1 = (fcs_float) k1 / N[1];
+      for(ptrdiff_t k2 = local_Ni_start[2]; k2 < local_Ni_start[2] + local_Ni[2]; k2++, m++){
+        x2 = (fcs_float) k2 / N[2];
+        xsnorm = fcs_sqrt(x0*x0+x1*x1+x2*x2);
+
+        /* constant continuation outside the ball with radius 0.5 */
+        x2norm = fcs_sqrt(x0*x0*box_scales[0]*box_scales[0]
+            + x1*x1*box_scales[1]*box_scales[1]
+            + x2*x2*box_scales[2]*box_scales[2]);
+
+        /* constant continuation for radii > 0.5 */
+        if (xsnorm > 0.5) xsnorm = 0.5;
+
+
+//        /* calculate farfield regularization via interpolation */
+//        if(reg_far_is_radial(reg_far)){
+//          if(xsnorm < 0.5-epsB) {
+//            regkern_hat[m] = 1.0/x2norm;
+//          } else {
+//            if(!box_is_cubic) {
+//              /* Noncubic regularization works with unscaled coordinates. */
+//              regkern_hat[m] = ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
+//                  ifcs_p2nfft_one_over_modulus, x2norm, xsnorm, p, NULL, r_cut, epsB, c);
+//            } else {
+//              /* Cubic regularization works with coordinates that are scaled into unit cube.
+//               * Therefore, use xsnorm, scale the continuation value 'c', and rescale after evaluation.
+//               * Note that box_scales are the same in every direction for cubic boxes. */
+//              if(far_interpolation_num_nodes){
+//                regkern_hat[m] = ifcs_p2nfft_interpolation(
+//                    xsnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential) / box_scales[0];
+//              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_CG){
+//                regkern_hat[m] = evaluate_cos_polynomial_1d(xsnorm, N_cg_cos, cg_cos_coeff) / box_scales[0];
+//              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
+//                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_sym(
+//                    ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB) / box_scales[0];
+//              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
+//                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_expl_cont(
+//                    ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB, c*box_scales[0]) / box_scales[0];
+//              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
+//                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_impl_cont(
+//                    ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB) / box_scales[0];
+//              }
+//            }
+//          }
+//        } else {
+//          fcs_float x[3] = {x0,x1,x2}, h[3];
+//          for(int t=0; t<3; t++){
+//            x[t] *= box_scales[t];
+//            h[t] = box_scales[t]; //* (0.5-epsB); /* TODO use d->box_l ? */
+//          }
+//          if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
+//            regkern_hat[m] = ifcs_p2nfft_reg_far_rect_sym(x, h, p, epsB);
+//          else if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_EC)
+//            regkern_hat[m] = ifcs_p2nfft_reg_far_rect_expl_cont(x, h, p, epsB, c);
+//          else if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_IC)
+//            regkern_hat[m] = ifcs_p2nfft_reg_far_rect_impl_cont(x, h, p, epsB);
+//        }
+
+          fcs_float param[3];
+          param[0] = alpha;
+          param[1] = xsnorm; //TODO revisit this. Probably wrong?
+          param[2] = box_scales[0]; //TODO assumes cubic box
+
+
+          if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
+            regkern_hat[m] = ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_erfx_over_x,
+                x2norm, p, param, epsB) / box_scales[0];
+          } else {
+            fprintf(stderr, "WRONG REGULARIZATION\n");
+	  }
+
+//        regkern_hat[m] = ifcs_p2nfft_reg_far_expl_cont_noncubic(
 //             ifcs_p2nfft_one_over_modulus, x2norm, xsnorm, p, NULL, r_cut, epsB, c);
 //         regkern_hat[m] = ifcs_p2nfft_reg_far_expl_cont(
 //             ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB, c*box_scales[0]) / box_scales[0];
