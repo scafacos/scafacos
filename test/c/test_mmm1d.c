@@ -69,8 +69,8 @@ int main(int argc, char **argv)
       exit(1);
     }
     for (pid = 0; pid < total_particles; pid++) {
-      fscanf(data, "%lf %lf %lf", &positions[3*pid], &positions[3*pid+1], &positions[3*pid+2]);
-      fscanf(data, "%lf", &charges[pid]);
+      fscanf(data, "%" FCS_LMOD_FLOAT "f %" FCS_LMOD_FLOAT "f %" FCS_LMOD_FLOAT "f", &positions[3*pid], &positions[3*pid+1], &positions[3*pid+2]);
+      fscanf(data, "%" FCS_LMOD_FLOAT "f", &charges[pid]);
       printf("read: %d %le %le %le %le\n", pid, charges[pid], positions[3*pid], positions[3*pid+1], positions[3*pid+2]);
       charge_sum += charges[pid];
     }

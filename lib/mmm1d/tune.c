@@ -28,7 +28,7 @@
 /***************************************************/
 /* FORWARD DECLARATIONS OF INTERNAL FUNCTIONS */
 /***************************************************/
-static double mmm1d_far_error(mmm1d_data_struct *d, fcs_int P, double minrad);
+static fcs_float mmm1d_far_error(mmm1d_data_struct *d, fcs_int P, fcs_float minrad);
 static fcs_int mmm1d_determine_minrad(mmm1d_data_struct *d, fcs_int P);
 static void mmm1d_determine_bessel_radii(mmm1d_data_struct *d);
 static void mmm1d_prepare_polygamma_series(mmm1d_data_struct *d);
@@ -117,7 +117,7 @@ static fcs_int mmm1d_determine_minrad(mmm1d_data_struct *d, fcs_int P)
 
 static void mmm1d_determine_bessel_radii(mmm1d_data_struct *d)
 {
-  d->bessel_radii = (fcs_float *)realloc(d->bessel_radii, sizeof(fcs_float)*d->bessel_cutoff);
+  d->bessel_radii = realloc(d->bessel_radii, sizeof(fcs_float)*d->bessel_cutoff);
   for (fcs_int P = 1; P <= d->bessel_cutoff; ++P) {
     d->bessel_radii[P-1] = mmm1d_determine_minrad(d, P);
     // printf("bessel cutoff %d %f\n", P, d->bessel_radii[P-1]);

@@ -85,7 +85,7 @@ typedef struct {
   //* table of the Taylor expansions of the modified polygamma functions */
   mmm_data_struct *polTaylor;
 
-  double *bessel_radii;
+  fcs_float *bessel_radii;
 
 } mmm1d_data_struct;
 
