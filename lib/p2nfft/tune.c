@@ -441,6 +441,18 @@ FCSResult ifcs_p2nfft_tune(
   } else
     reg_far = d->reg_far;
 
+  //FIXME: I don't really like rewriting d->kernel here, but I'm not sure how to do it better while still having a _DEFAULT
+  if(d->kernel == FCS_P2NFFT_KERNEL_DEFAULT){
+    if(d->num_periodic_dims == 0)
+      d->kernel = FCS_P2NFFT_KERNEL_OTHER;
+    else
+      d->kernel = FCS_P2NFFT_KERNEL_EWALD;
+  }
+
+  if(d->kernel == FCS_P2NFFT_KERNEL_OTHER)
+    if(d->num_periodic_dims != 0)
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "FCS_P2NFFT_KERNEL_OTHER is only available for 0d-periodicity.");
+
 
   /* Now, after the periodicity is clear, we can set the default tolerance type. */
   default_tolerance_type(d->periodicity,
@@ -1069,18 +1081,18 @@ FCSResult ifcs_p2nfft_tune(
           d->cart_comm_pnfft);
       /* malloc_and_precompute_regkern_hat_1dp */
     if (d->num_periodic_dims == 0) {
-/*
-      d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
-          d->N, d->r_cut, d->epsI, d->epsB, d->p, d->c, d->box_scales, reg_near, reg_far,
-          d->taylor2p_coeff, d->N_cg_cos, d->cg_cos_coeff,
-          d->interpolation_order, d->near_interpolation_num_nodes, d->far_interpolation_num_nodes,
-          d->near_interpolation_table_potential, d->far_interpolation_table_potential,
-          d->cart_comm_pnfft, is_cubic(d->box_l)); 
-*/
-      fprintf(stderr, "using malloc_and_precompute_regkern_hat_0dp_ewald\n");
-      d->regkern_hat = malloc_and_precompute_regkern_hat_0dp_ewald(
-          d->N, d->epsB, d->box_scales, d->alpha, d->p, d->c, reg_far,
-          d->cart_comm_pnfft, is_cubic(d->box_l));
+      if (d->kernel == FCS_P2NFFT_KERNEL_EWALD) {
+        d->regkern_hat = malloc_and_precompute_regkern_hat_0dp_ewald(
+            d->N, d->epsB, d->box_scales, d->alpha, d->p, d->c, reg_far,
+            d->cart_comm_pnfft, is_cubic(d->box_l));
+      } else if (d->kernel == FCS_P2NFFT_KERNEL_OTHER) {
+        d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
+            d->N, d->r_cut, d->epsI, d->epsB, d->p, d->c, d->box_scales, reg_near, reg_far,
+            d->taylor2p_coeff, d->N_cg_cos, d->cg_cos_coeff,
+            d->interpolation_order, d->near_interpolation_num_nodes, d->far_interpolation_num_nodes,
+            d->near_interpolation_table_potential, d->far_interpolation_table_potential,
+            d->cart_comm_pnfft, is_cubic(d->box_l));
+      }
     }
   }
   /* Finish timing of of precomputation */
@@ -1196,6 +1208,15 @@ static void print_command_line_arguments(
         printf("rec_t2p_mir_ec,");
       else if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_IC)
         printf("rec_t2p_mir_ic,");
+    }
+    if(verbose || (d->kernel != FCS_P2NFFT_KERNEL_DEFAULT) ){
+      printf("p2nfft_kernel,");
+      if(d->kernel == FCS_P2NFFT_KERNEL_DEFAULT)
+        printf("default,");
+      else if(d->kernel == FCS_P2NFFT_KERNEL_EWALD)
+        printf("ewald,");
+      else if(d->kernel == FCS_P2NFFT_KERNEL_OTHER)
+        printf("other,");
     }
     if(verbose || !d->tune_p)
       printf("p2nfft_p,%" FCS_LMOD_INT "d,", d->p);
@@ -1761,8 +1782,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
       PFFT_DEFAULT_BLOCKS, PFFT_DEFAULT_BLOCKS, regkern_hat, regkern_hat, comm_cart,
       PFFT_FORWARD, PFFT_TRANSPOSED_OUT| PFFT_SHIFTED_IN| PFFT_SHIFTED_OUT| PFFT_ESTIMATE);
 
+  //TODO make sure if that makes sense wrt (non-rectangular boxes?)
   for(int t=0; t<3; t++)
-    scale *= 1.0 / N[t];
+    scale /= N[t];
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   int myrank;
@@ -1772,6 +1794,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
   csum = 0.0;
 #endif
  
+  fprintf(stderr, "box_scales: %f %f %f\n", box_scales[0], box_scales[1], box_scales[2]);
   /* shift FFT output via twiddle factors on the input */ 
   m=0;
   for(ptrdiff_t k0 = local_Ni_start[0]; k0 < local_Ni_start[0] + local_Ni[0]; k0++){
@@ -1787,8 +1810,12 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
             + x1*x1*box_scales[1]*box_scales[1]
             + x2*x2*box_scales[2]*box_scales[2]);
 
+        //fprintf(stderr, "x: %f %f %f  x2norm: %f  xsnorm: %f \n", x0, x1, x2, x2norm, xsnorm);
         /* constant continuation for radii > 0.5 */
-        if (xsnorm > 0.5) xsnorm = 0.5;
+        //TODO different lengths?
+//        if (x2norm > (0.5-epsB) * box_scales[0])
+//          x2norm = (0.5-epsB) * box_scales[0];
+//        fprintf(stderr, "x: %f %f %f  x2norm: %f  xsnorm: %f \n", x0, x1, x2, x2norm, xsnorm);
 
 
 //        /* calculate farfield regularization via interpolation */
@@ -1837,16 +1864,16 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
 
           fcs_float param[3];
           param[0] = alpha;
-          param[1] = xsnorm; //TODO revisit this. Probably wrong?
+          param[1] = x2norm; //TODO revisit this. Probably wrong?
           param[2] = box_scales[0]; //TODO assumes cubic box
 
 
           if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
             regkern_hat[m] = ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_erfx_over_x,
-                x2norm, p, param, epsB) / box_scales[0];
+                x2norm, p, param, epsB);// / box_scales[0];
           } else {
             fprintf(stderr, "WRONG REGULARIZATION\n");
-	  }
+	        }
 
 //        regkern_hat[m] = ifcs_p2nfft_reg_far_expl_cont_noncubic(
 //             ifcs_p2nfft_one_over_modulus, x2norm, xsnorm, p, NULL, r_cut, epsB, c);

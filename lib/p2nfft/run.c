@@ -201,7 +201,7 @@ FCSResult ifcs_p2nfft_run(
         case 3: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_cub_loop); break;
         default: return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
       } 
-    } else if(d->num_periodic_dims > 0){
+    } else if(d->kernel == FCS_P2NFFT_KERNEL_EWALD) {
       if(d->interpolation_order == -1)
         fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_periodic_erfc_loop);
       else
@@ -228,7 +228,7 @@ FCSResult ifcs_p2nfft_run(
       near_params.one_over_r_cut = d->one_over_r_cut;
 
       fcs_near_compute(&near, d->r_cut, &near_params, d->cart_comm_3d);
-    } else if(d->num_periodic_dims > 0)
+    } else if(d->kernel == FCS_P2NFFT_KERNEL_EWALD)
       fcs_near_compute(&near, d->r_cut, &(d->alpha), d->cart_comm_3d);
     else
       fcs_near_compute(&near, d->r_cut, rd, d->cart_comm_3d);
@@ -487,7 +487,7 @@ FCSResult ifcs_p2nfft_run(
 
   /* Calculate virial if needed */
   if(d->virial != NULL){
-    if(d->num_periodic_dims == 3){
+    if ((d->num_periodic_dims == 3) && (d->kernel == FCS_P2NFFT_KERNEL_EWALD)) {
       fcs_float total_energy = 0.0;
       fcs_float total_global;
       if(compute_potential)
@@ -502,7 +502,7 @@ FCSResult ifcs_p2nfft_run(
         d->virial[t] = 0.0;
       d->virial[0] = d->virial[4] = d->virial[8] = total_global/3.0;
     } 
-    else if(d->num_periodic_dims == 0) {
+    else if ((d->num_periodic_dims == 0) && (d->kernel == FCS_P2NFFT_KERNEL_OTHER)) {
       fcs_float local_virial[9];
 
       for(fcs_int t=0; t<9; t++)

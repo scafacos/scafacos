@@ -61,6 +61,10 @@ FCS_P2NFFT_INTERFACE_WRAPPER_1(set_reg_near_by_name, set_reg_near_by_name, char*
 FCS_P2NFFT_SET_GET_WRAPPER_1(reg_far, reg_far, fcs_int, reg)
 FCS_P2NFFT_INTERFACE_WRAPPER_1(set_reg_far_by_name, set_reg_far_by_name, char*, reg_name)
 
+/* Getters and Setters for P2NFFT kernel function flag */
+FCS_P2NFFT_SET_GET_WRAPPER_1(kernel, kernel, fcs_int, kern)
+FCS_P2NFFT_INTERFACE_WRAPPER_1(set_kernel_by_name, set_kernel_by_name, char*, kern_name)
+
 /* Getters and Setters for polynomial degree of near field regularization */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_1(p, p, fcs_int, p)
 

@@ -413,6 +413,58 @@ FCSResult ifcs_p2nfft_get_reg_far(
   return NULL;
 }
 
+/* Getters and Setters for P2NFFT kernel function flag */
+FCSResult ifcs_p2nfft_set_kernel(
+    void *rd, const char* fnc_name, fcs_int kern
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  if( (kern != FCS_P2NFFT_KERNEL_DEFAULT)
+      && (kern != FCS_P2NFFT_KERNEL_EWALD)
+      && (kern != FCS_P2NFFT_KERNEL_OTHER)
+    )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown kernel.");
+  
+  if(kern != d->kernel)
+    d->needs_retune = 1;
+  d->kernel = kern;
+
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_kernel_by_name(
+    void *rd, const char* fnc_name, char *kern_name
+    )
+{
+  unsigned kern_flag;
+
+  if (strcmp(kern_name,"default") == 0)
+    kern_flag = FCS_P2NFFT_KERNEL_DEFAULT;
+  else if (strcmp(kern_name,"ewald") == 0)
+    kern_flag = FCS_P2NFFT_KERNEL_EWALD;
+  else if (strcmp(kern_name,"other") == 0)
+    kern_flag = FCS_P2NFFT_KERNEL_OTHER;
+  else /* unknown regularization */
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown kernel.");
+
+  return ifcs_p2nfft_set_kernel(rd, fnc_name, kern_flag);
+}
+
+FCSResult ifcs_p2nfft_get_kernel(
+    void *rd, const char* fnc_name, fcs_int *kern
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *kern = d->kernel;
+  return NULL;
+}
+
 /* Getters and Setters for scaled far field regularization border */
 FCSResult ifcs_p2nfft_set_epsB(
     void *rd, const char* fnc_name, fcs_float epsB
