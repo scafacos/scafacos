@@ -1210,7 +1210,7 @@ static void print_command_line_arguments(
         printf("rec_t2p_mir_ic,");
     }
     if(verbose || (d->reg_kernel != FCS_P2NFFT_REG_KERNEL_DEFAULT) ){
-      printf("p2nfft_kernel,");
+      printf("p2nfft_reg_kernel_name,");
       if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_DEFAULT)
         printf("default,");
       else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)
