@@ -441,17 +441,17 @@ FCSResult ifcs_p2nfft_tune(
   } else
     reg_far = d->reg_far;
 
-  //FIXME: I don't really like rewriting d->kernel here, but I'm not sure how to do it better while still having a _DEFAULT
-  if(d->kernel == FCS_P2NFFT_KERNEL_DEFAULT){
+  //FIXME: I don't really like rewriting d->reg_kernel here, but I'm not sure how to do it better while still having a _DEFAULT
+  if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_DEFAULT){
     if(d->num_periodic_dims == 0)
-      d->kernel = FCS_P2NFFT_KERNEL_OTHER;
+      d->reg_kernel = FCS_P2NFFT_REG_KERNEL_OTHER;
     else
-      d->kernel = FCS_P2NFFT_KERNEL_EWALD;
+      d->reg_kernel = FCS_P2NFFT_REG_KERNEL_EWALD;
   }
 
-  if(d->kernel == FCS_P2NFFT_KERNEL_OTHER)
+  if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER)
     if(d->num_periodic_dims != 0)
-      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "FCS_P2NFFT_KERNEL_OTHER is only available for 0d-periodicity.");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "FCS_P2NFFT_REG_KERNEL_OTHER is only available for 0d-periodicity.");
 
 
   /* Now, after the periodicity is clear, we can set the default tolerance type. */
@@ -557,7 +557,7 @@ FCSResult ifcs_p2nfft_tune(
     if(d->tune_p)
       d->p = 8;
 
-    if((d->num_periodic_dims > 0) || (d->num_periodic_dims == 0) && (d->kernel == FCS_P2NFFT_KERNEL_EWALD)){
+    if((d->num_periodic_dims > 0) || (d->num_periodic_dims == 0) && (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)){
       fcs_float ks_error, rs_error;
       /* PNFFT calculates with real space cutoff 2*m+2
        * Therefore m is one less than the P3M cao. */
@@ -1081,11 +1081,11 @@ FCSResult ifcs_p2nfft_tune(
           d->cart_comm_pnfft);
       /* malloc_and_precompute_regkern_hat_1dp */
     if (d->num_periodic_dims == 0) {
-      if (d->kernel == FCS_P2NFFT_KERNEL_EWALD) {
+      if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD) {
         d->regkern_hat = malloc_and_precompute_regkern_hat_0dp_ewald(
             d->N, d->epsB, d->box_scales, d->alpha, d->p, d->c, reg_far,
             d->cart_comm_pnfft, is_cubic(d->box_l));
-      } else if (d->kernel == FCS_P2NFFT_KERNEL_OTHER) {
+      } else if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER) {
         d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
             d->N, d->r_cut, d->epsI, d->epsB, d->p, d->c, d->box_scales, reg_near, reg_far,
             d->taylor2p_coeff, d->N_cg_cos, d->cg_cos_coeff,
@@ -1209,13 +1209,13 @@ static void print_command_line_arguments(
       else if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_IC)
         printf("rec_t2p_mir_ic,");
     }
-    if(verbose || (d->kernel != FCS_P2NFFT_KERNEL_DEFAULT) ){
+    if(verbose || (d->reg_kernel != FCS_P2NFFT_REG_KERNEL_DEFAULT) ){
       printf("p2nfft_kernel,");
-      if(d->kernel == FCS_P2NFFT_KERNEL_DEFAULT)
+      if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_DEFAULT)
         printf("default,");
-      else if(d->kernel == FCS_P2NFFT_KERNEL_EWALD)
+      else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)
         printf("ewald,");
-      else if(d->kernel == FCS_P2NFFT_KERNEL_OTHER)
+      else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER)
         printf("other,");
     }
     if(verbose || !d->tune_p)

@@ -45,9 +45,9 @@ fcs_float ifcs_p2nfft_compute_self_potential(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) param;
   
-  if (d->kernel == FCS_P2NFFT_KERNEL_EWALD)
+  if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)
     return compute_self_potential_periodic(param);
-  else if (d->kernel == FCS_P2NFFT_KERNEL_OTHER)
+  else if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER)
     return compute_self_potential_nonperiodic(param);
 }
 
@@ -96,9 +96,9 @@ fcs_float ifcs_p2nfft_compute_near_potential(
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) param;
   
-  if (d->kernel == FCS_P2NFFT_KERNEL_EWALD)
+  if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)
     return compute_near_potential_periodic(param, dist);
-  else if (d->kernel == FCS_P2NFFT_KERNEL_OTHER)
+  else if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER)
     return compute_near_potential_nonperiodic(param, dist);
 }
 
@@ -149,9 +149,9 @@ fcs_float ifcs_p2nfft_compute_near_field(
 {
   ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
 
-  if (d->kernel == FCS_P2NFFT_KERNEL_EWALD)
+  if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)
     return compute_near_field_periodic(param, dist);
-  else if (d->kernel == FCS_P2NFFT_KERNEL_OTHER)
+  else if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER)
     return compute_near_field_nonperiodic(param, dist);
 }
 
