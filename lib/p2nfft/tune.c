@@ -104,10 +104,10 @@ static int reg_far_is_radial(
     fcs_int reg_far);
 
 static void default_tolerance_type(
-    fcs_int *periodicity,
+    fcs_int *periodicity, fcs_int reg_kernel,
     fcs_int *tolerance_type, fcs_float *tolerance);
 static FCSResult check_tolerance(
-    fcs_int *periodicity, fcs_int tolerance_type, fcs_float tolerance);
+    fcs_int *periodicity, fcs_int reg_kernel, fcs_int tolerance_type, fcs_float tolerance);
 
 static fcs_float p2nfft_real_space_error(
     fcs_int N, fcs_float sum_q2, fcs_float box_l[3],
@@ -455,11 +455,11 @@ FCSResult ifcs_p2nfft_tune(
 
 
   /* Now, after the periodicity is clear, we can set the default tolerance type. */
-  default_tolerance_type(d->periodicity,
+  default_tolerance_type(d->periodicity, d->reg_kernel,
       &d->tolerance_type, &d->tolerance);
 
   /* Check if P2NFFT can handle the tolerance type */
-  result = check_tolerance(d->periodicity, d->tolerance_type, d->tolerance);
+  result = check_tolerance(d->periodicity, d->reg_kernel, d->tolerance_type, d->tolerance);
   if(result != NULL) return result;
 
   /* Calculate the sum of all charges
@@ -2441,11 +2441,11 @@ static int pnfft_is_up_to_date(
 }
 
 static void default_tolerance_type(
-    fcs_int *periodicity,
+    fcs_int *periodicity, fcs_int reg_kernel,
     fcs_int *tolerance_type, fcs_float *tolerance
     )
 {
-  if(!periodicity[0] && !periodicity[1] && !periodicity[2]){
+  if(!periodicity[0] && !periodicity[1] && !periodicity[2] && reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER){
     if(*tolerance < 0.0)
       *tolerance = FCS_P2NFFT_DEFAULT_TOLERANCE;
     if(*tolerance_type == FCS_TOLERANCE_TYPE_UNDEFINED)
@@ -2459,7 +2459,7 @@ static void default_tolerance_type(
 }
 
 static FCSResult check_tolerance(
-    fcs_int *periodicity, fcs_int tolerance_type, fcs_float tolerance
+    fcs_int *periodicity, fcs_int reg_kernel, fcs_int tolerance_type, fcs_float tolerance
     )
 {
   char* fnc_name = "check_tolerance";
@@ -2471,12 +2471,12 @@ static FCSResult check_tolerance(
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT does not support this kind of tolerance.");
 
   if(tolerance_type == FCS_TOLERANCE_TYPE_POTENTIAL)
-    if( periodicity[0] || periodicity[1] || periodicity[2] )
-      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_POTENTIAL only for non-periodic boundary conditions. Use FCS_TOLERANCE_FIELD instead.");
+    if( periodicity[0] || periodicity[1] || periodicity[2] || reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_POTENTIAL only for non-periodic boundary conditions and 1/x regularized kernel. Use FCS_TOLERANCE_FIELD instead.");
 
   if(tolerance_type == FCS_TOLERANCE_TYPE_FIELD)
-    if( !periodicity[0] && !periodicity[1] && !periodicity[2] )
-      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_FIELD only for 1d-, 2d- and 3d-periodic boundary conditions. Use FCS_TOLERANCE_POTENTIAL instead.");
+    if( !periodicity[0] && !periodicity[1] && !periodicity[2] && reg_kernel != FCS_P2NFFT_REG_KERNEL_EWALD )
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT supports FCS_TOLERANCE_FIELD only for 1d-, 2d- and 3d-periodic boundary conditions and non-periodic boundary conditions with Ewald regularized kernel. Use FCS_TOLERANCE_POTENTIAL instead.");
 
   if(tolerance < 0.0)
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"Tolerance must be non-negative.");
