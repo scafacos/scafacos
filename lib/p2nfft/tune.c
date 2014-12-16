@@ -557,7 +557,7 @@ FCSResult ifcs_p2nfft_tune(
     if(d->tune_p)
       d->p = 8;
 
-    if(d->num_periodic_dims > 0){
+    if((d->num_periodic_dims > 0) || (d->num_periodic_dims == 0) && (d->kernel == FCS_P2NFFT_KERNEL_EWALD)){
       fcs_float ks_error, rs_error;
       /* PNFFT calculates with real space cutoff 2*m+2
        * Therefore m is one less than the P3M cao. */
