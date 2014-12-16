@@ -940,8 +940,8 @@ FCSResult ifcs_p2nfft_tune(
       /* Initialize the tables for near field interpolation */
       /*   accuracy of 1e-16 needs 14000 interpolation nodes */
       /*   accuracy of 1e-17 needs 24896 interpolation nodes */
-//       d->near_interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
-      d->near_interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
+      d->near_interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, 1e-16);
+//       d->near_interpolation_num_nodes = calc_interpolation_num_nodes(d->interpolation_order, d->tolerance);
 
       if(d->near_interpolation_table_potential != NULL)
         free(d->near_interpolation_table_potential);
