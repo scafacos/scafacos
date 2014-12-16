@@ -2500,12 +2500,10 @@ static int get_dim_of_smallest_periodic_box_l(
     fcs_int periodicity[3], fcs_float box_l[3]
     )
 {
-  int tmin = -1;
+  int tmin = 0;
   for(int t=0; t<3; t++){
     if(periodicity[t]){
-      if(tmin < 0)
-        tmin = t;
-      else if (box_l[t] < box_l[tmin])
+      if (box_l[t] < box_l[tmin])
         tmin = t;
     }
   }
