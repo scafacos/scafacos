@@ -1808,10 +1808,10 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
   C csum;
   C csum_global;
   csum = 0.0;
-#endif
 
   double timer_keq0=0, timer_kne0=0;
-  int count_Req0=0, count_Rne0=0, count_all=0, count_poisson=0, count_reg=0;
+  int count_Req0=0, count_Rne0=0, count_all=0, count_analytic=0, count_interpolate=0, count_set_to_zero=0;
+#endif
 
   /* shift FFT output via twiddle factors on the input */
   /* twiddle only the non-periodic dims, since there we need to calculate 1d-FFTs */ 
@@ -1854,7 +1854,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
           if(!periodicity[t])
             h = box_scales[t];
 
-if((l0==0) && (l1==0) && (l2==1)) fprintf(stderr, "l = [%td, %td, %td], h = %e, lknorm = %e, Pi*h*(0.5-epsB) = %e\n", l0, l1, l2, h, lknorm, FCS_PI*h*(0.5-epsB));
+// if((l0==0) && (l1==0) && (l2==1)) fprintf(stderr, "l = [%td, %td, %td], h = %e, lknorm = %e, Pi*h*(0.5-epsB) = %e\n", l0, l1, l2, h, lknorm, FCS_PI*h*(0.5-epsB));
 
         fcs_float param[3];
         param[0] = alpha;
@@ -1864,6 +1864,7 @@ if((l0==0) && (l1==0) && (l2==1)) fprintf(stderr, "l = [%td, %td, %td], h = %e, 
         /* Check if all indices corresponding to periodic dims are 0.
          * Index correspoding to non-periodic dim will be 0 per default. */
         if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0)){
+          FCS_P2NFFT_IFDBG(double tmp = -MPI_Wtime());
           if(num_periodic_dims == 2){
             if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB);
@@ -1873,7 +1874,6 @@ if((l0==0) && (l1==0) && (l2==1)) fprintf(stderr, "l = [%td, %td, %td], h = %e, 
               regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB);
             }
           } else {
-double tmp = -MPI_Wtime();
             if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x2norm, p, param, epsB);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
@@ -1887,31 +1887,37 @@ double tmp = -MPI_Wtime();
                   k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, x2norm, lknorm, alpha);
               MPI_Abort(MPI_COMM_WORLD, 1);
             }
-tmp += MPI_Wtime();
-timer_keq0 += tmp;
           }
+          FCS_P2NFFT_IFDBG(++count_interpolate);
+          FCS_P2NFFT_IFDBG(tmp += MPI_Wtime(); timer_keq0 += tmp);
         }
         else if (kc > 0.0 && ksqnorm > kc*kc){
           regkern_hat[m] = 0; /* Apply spherical cutoff for kc > 0 */
+          FCS_P2NFFT_IFDBG(++count_set_to_zero);
 	}
         else { /* k != 0 */
+          FCS_P2NFFT_IFDBG(double tmp = -MPI_Wtime());
+
           if(num_periodic_dims == 2){
 	    if(0.5 * scale2 * ifcs_p2nfft_ewald_2dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
-	      /* use periodization (analytical Fourier coefficients, Poisson summation) instead of regularization */
+	      /* use periodization (analytical Fourier coefficients, Poisson summation) instead of regularization,
+               * For simpilicity, we compute 1d-FFTs on zeros and overwrite the values afterward. */
 	      regkern_hat[m] = 0.0;
+              FCS_P2NFFT_IFDBG(++count_analytic);
 	      // kern_hat_ana[m] = 0.5*2.0/(FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
 	    } else if( (x2norm > h*(0.5-epsB)) && (FCS_PI * lknorm * h*(0.5-epsB) > 19) ){
               /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
               regkern_hat[m] = 0.0;
+              FCS_P2NFFT_IFDBG(++count_set_to_zero);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / lknorm;
-	      ++count_reg;
+	      FCS_P2NFFT_IFDBG(++count_interpolate);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
               regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB, c) / lknorm;
-	      ++count_reg;
+	      FCS_P2NFFT_IFDBG(++count_interpolate);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
               regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / lknorm;
-	      ++count_reg;
+	      FCS_P2NFFT_IFDBG(++count_interpolate);
             }
 
 //             if((k[0] == 0) && (k[1] == 1) && (k[2] == 0))
@@ -1925,68 +1931,74 @@ timer_keq0 += tmp;
             fcs_float x = xroot * xroot;
 
 //             if(k[2] >= 10) fprintf(stderr, "k = [%td, %td, %td], lknorm = %e, alpha = %e, Pi*k/(alpha*B) = %e\n", k[0], k[1], k[2], lknorm, alpha, FCS_PI*lknorm/alpha);
-double tmp = -MPI_Wtime();
-++count_all;
+
 	    if(2.0 * scale2 * ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+	      /* use periodization (analytical Fourier coefficients, Poisson summation) instead of regularization,
+               * For simplicity, we compute 2d-FFTs on zeros and overwrite the values afterward. */
 	      regkern_hat[m] = 0.0;
+              FCS_P2NFFT_IFDBG(++count_analytic);
 	      // kern_hat_ana[m] = 2.0/(2.0*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
 	    } else if( x > 34 ){
               /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
               regkern_hat[m] = 0.0;
+	      FCS_P2NFFT_IFDBG(++count_set_to_zero);
             } else if( (x2norm > h*(0.5-epsB)) && ( FCS_PI*lknorm * h*(0.5-epsB) > 19) ){
               /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
               regkern_hat[m] = 0.0;
+	      FCS_P2NFFT_IFDBG(++count_set_to_zero);
             } else if( (x2norm > h*(0.5-epsB)) && (ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5-epsB), 0, param) < 1e-16) ){
               /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
               regkern_hat[m] = 0.0;
+	      FCS_P2NFFT_IFDBG(++count_set_to_zero);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
-	      ++count_reg;
+	      FCS_P2NFFT_IFDBG(++count_interpolate);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
               regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB, c);
-	      ++count_reg;
+	      FCS_P2NFFT_IFDBG(++count_interpolate);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
               regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
-	      ++count_reg;
-if(creal(regkern_hat[m]) < 1e-15) ++count_Req0;
-else                              ++count_Rne0;
-// fcs_float x = FCS_PI*lknorm;
-// fcs_float y = h*(0.5-epsB);
-// if(x2norm > y && x*y > 67) ++count_Req0;
-// else                       ++count_Rne0;
+	      FCS_P2NFFT_IFDBG(++count_interpolate);
             }
-//     if(k[2]==3 && fcs_float_is_zero(xs[1]))
-//     if(k[2]==3)
-//     if(creal(regkern_hat[m]) < 1e-17) 
-//     if(creal(regkern_hat[m]) > 1) 
-//       fprintf(stderr, "regkern[%e] = %e, x2norm = %e,xsnorm = %e, xs = [%f, %f, %f], x2 = [%f, %f, %f], k = [%td, %td, %td]\n",
-//           x2norm, creal(regkern_hat[m]), x2norm, xsnorm, xs[0], xs[1], xs[2], xs[0]*box_scales[0], xs[1]*box_scales[1], xs[2]*box_scales[2], k[0], k[1], k[2]);
+
             if(isnan(creal(regkern_hat[m]))){
               fprintf(stderr, "kne0: k = [%td, %td, %td], x = [%e, %e, %e], p = %" FCS_LMOD_INT "d, epsB = %e, xsnorm = %e, lknorm = %e, alpha = %e\n",
                   k[0], k[1], k[2], xs[0], xs[1], xs[2], p, epsB, xsnorm, lknorm, alpha);
-//               for(int t=0; t<9; t++)
-//                 fprintf(stderr, "K_%d(0.4,0) = %e\n", t, ifcs_p2nfft_inc_upper_bessel_k(t, 0.4, 0, 1e-8));
               MPI_Abort(MPI_COMM_WORLD, 1);
             }
-tmp += MPI_Wtime();
-timer_kne0 += tmp;
           }
+          FCS_P2NFFT_IFDBG(tmp += MPI_Wtime(); timer_kne0 += tmp);
         }
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+              if(creal(regkern_hat[m]) < 1e-15) ++count_Req0;
+              else                              ++count_Rne0;
+#endif
 
         regkern_hat[m] *= scale;
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
-  csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+        csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+        ++count_all;
 #endif
       }
     }
   }
 
-fprintf(stderr, "\nRegularization for k==0 takes %e\n", timer_keq0);
-fprintf(stderr,   "Regularization for k!=0 takes %e\n\n", timer_kne0);
-fprintf(stderr, "\nTotal calls of Regularization = %d\n", count_all);
-fprintf(stderr, "\nRegularization numerically     equal to 0 for %d times\n", count_Req0);
-fprintf(stderr,   "Regularization numerically NOT equal to 0 for %d times\n", count_Rne0);
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  if(myrank==0){
+    fprintf(stderr, "\nRegularization for k==0 takes %e\n", timer_keq0);
+    fprintf(stderr,   "Regularization for k!=0 takes %e\n\n", timer_kne0);
+
+    fprintf(stderr, "# grid points in the regularization domain = %d\n", count_all);  
+    fprintf(stderr, "# regularization values that are set to zero = %d\n", count_set_to_zero); 
+    fprintf(stderr, "# regularization values that come from interpolation = %d\n", count_interpolate); 
+    fprintf(stderr, "# regularization values that come from analytical Fourier transform = %d\n\n", count_analytic);  
+
+    fprintf(stderr, "Regularization numerically     equal to 0 for %d times\n", count_Req0);
+    fprintf(stderr, "Regularization numerically NOT equal to 0 for %d times\n\n", count_Rne0);
+  }
+#endif
 
 //   {
 //     FILE *file = fopen("reg_keq0.txt", "w");
@@ -2034,11 +2046,6 @@ fprintf(stderr,   "Regularization numerically NOT equal to 0 for %d times\n", co
 //   }
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
-    if (myrank == 0) fprintf(stderr, "N = [%td %td %td]\n", N[0], N[1], N[2]);
-    if (myrank == 0) fprintf(stderr, "local_Ni = [%td %td %td], local_Ni_start = [%td %td %td]\n",
-        local_Ni[0], local_Ni[1], local_Ni[2], local_Ni_start[0], local_Ni_start[1], local_Ni_start[2]);
-    if (myrank == 0) fprintf(stderr, "local_No = [%td %td %td], local_No_start = [%td %td %td]\n",
-        local_No[0], local_No[1], local_No[2], local_No_start[0], local_No_start[1], local_No_start[2]);
     MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     if (myrank == 0) fprintf(stderr, "sum of regkernel: %e + I* %e\n", creal(csum_global), cimag(csum_global));
 #endif
@@ -2091,51 +2098,38 @@ fprintf(stderr,   "Regularization numerically NOT equal to 0 for %d times\n", co
 	if (kc > 0.0){
 	  if (ksqnorm > 0.0 && ksqnorm < kc*kc){ /* apply spherical cutoff in kspace */
 	    if(num_periodic_dims == 2){
-	      if(0.5 * scale2 * ifcs_p2nfft_ewald_2dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+	      if(0.5 * scale2 * ifcs_p2nfft_ewald_2dp_kneq0(h*(0.5+epsB),0,param) < 1e-16)
 		regkern_hat[m] = scale2/(h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
-		count_poisson+=1;
-	      }
 	    } else { /* num_periodic_dims == 1 */
-	      if(2.0 * scale2 * ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+	      if(2.0 * scale2 * ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5+epsB),0,param) < 1e-16)
 		regkern_hat[m] = scale2/(h*h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
-		count_poisson+=1;
-		}
-	      }
+            }
 	  }
-	} else{ /* no spherical cutoff, take full grid */
+	} else { /* no spherical cutoff, take full grid */
 	  if (ksqnorm > 0.0){
 	    if(num_periodic_dims == 2){
-	      if(0.5 * scale2 * ifcs_p2nfft_ewald_2dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+	      if(0.5 * scale2 * ifcs_p2nfft_ewald_2dp_kneq0(h*(0.5+epsB),0,param) < 1e-16)
 		regkern_hat[m] = scale2/(h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
-		count_poisson+=1;
-	      }
 	    } else { /* num_periodic_dims == 1 */
-	      if(2.0 * scale2 * ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+	      if(2.0 * scale2 * ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5+epsB),0,param) < 1e-16)
 		regkern_hat[m] = scale2/(h*h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
-		count_poisson+=1;
-		}
-	      }
 	    }
 	  }
+	}
           
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
-  csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
+        csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
 #endif
       }
     }
   }
   
-fprintf(stderr, "\n# Evaluations of regularized kernels = %d\n", count_reg); 
-fprintf(stderr, "# Evaluations of analytical Fourier transform = %d\n\n", count_poisson);  
   
-#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
-    csum = 0.0;
-#endif
-
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   /* take care of transposed order N1 x N2 x N0 */
   /* shift FFT input via twiddle factors on the output */
+  csum = 0.0;
   m=0;
   for(ptrdiff_t k1 = 0; k1 < local_No[1]; k1++){
     for(ptrdiff_t k2 = 0; k2 < local_No[2]; k2++){
@@ -2144,9 +2138,7 @@ fprintf(stderr, "# Evaluations of analytical Fourier transform = %d\n\n", count_
       }
     }
   }
-#endif
 
-#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
   if (myrank == 0) fprintf(stderr, "sum of regkernel_hat: %e + I* %e\n", creal(csum_global), cimag(csum_global));
 #endif
