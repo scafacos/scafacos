@@ -77,10 +77,10 @@ static fcs_float IntBasisPoly(fcs_int p, fcs_int j, fcs_float y)
   return sum2 * fak(p)/fak(j)/(1<<p)*fcs_pow(1.0+y,(fcs_float)(j+1)); /* 1<<p = 2^p */
 }
 
-static fcs_float IntBasisPoly2(fcs_int p, fcs_int j, fcs_float y)
-{
-  return (j<0) ? 1.0 : IntBasisPoly(p-1,j,y) - IntBasisPoly(p-1,j,-1);
-}
+// static fcs_float IntBasisPoly2(fcs_int p, fcs_int j, fcs_float y)
+// {
+//   return (j<0) ? 1.0 : IntBasisPoly(p-1,j,y) - IntBasisPoly(p-1,j,-1);
+// }
 
 /** Use Lagrange basis polynomials for evaluating the interpolation polynomial P(x) that satisfies
  *  the odd symmetric Hermite interpolation conditions in two nodes up to the p-th derivative, i.e.,

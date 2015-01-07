@@ -29,6 +29,7 @@
 #include "types.h"
 #include "utils.h"
 #include "nearfield.h"
+#include "interpolation.h"
 #include <common/near/near.h>
 //#include "constants.h"
 

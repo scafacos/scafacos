@@ -222,8 +222,8 @@ fcs_float ifcs_p2nfft_reg_far_rad_sym_no_singularity(
   fcs_float xo = h * (0.5 + epsB);
 
   /* constant continuation for radii > h/2 */
-  if (x2norm > h*0.5)
-    x2norm = h*0.5;
+  if (x2norm > xo)
+    x2norm = xo;
 
   /* regularization at farfield border */
   if ( xi < x2norm )
