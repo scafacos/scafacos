@@ -26,22 +26,8 @@
 #endif
 
 #include "regularization.h"
+#include "taylor2p.h"
 #include "part_derive_one_over_norm_x.h"
-
-static fcs_float intpol_even_const(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I);
-static fcs_float intpol_even_lin(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I);
-static fcs_float intpol_even_quad(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I);
-static fcs_float intpol_even_cub(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I);
-
-
 
 
 /** factorial */
@@ -93,134 +79,9 @@ static fcs_float IntBasisPoly2(fcs_int p, fcs_int j, fcs_float y)
   return (j<0) ? 1.0 : IntBasisPoly(p-1,j,y) - IntBasisPoly(p-1,j,-1);
 }
 
-/** Use Lagrangian basis polynomials for evaluating the interpolation polynomial P(x) that satisfies
- *  the odd symmetric Hermite interpolation conditions in two nodes up to the p-th derivative, i.e.,
- *      P^k(x0) = (-1)^k P^k(x1) = kernel^k(x0), for all k=0,...,p-1
- */
-static fcs_float interpolate_lagrange_symmetric(
-    ifcs_p2nfft_kernel kernel, const fcs_float *param,
-    fcs_int p, fcs_float x0, fcs_float x1, fcs_float x
-    )
-{
-  fcs_float sum=0.0;
-
-  /* canonicalize x to y \in [-1,1] */
-  fcs_float r = 0.5*(x1-x0);
-  fcs_float m = 0.5*(x1+x0);
-  fcs_float y = (x-m)/r;
-
-  for (fcs_int i=0; i<p; i++)
-    sum += (BasisPoly(p-1,i,y) + BasisPoly(p-1,i,-y)) * fcs_pow(r,(fcs_float)i) * kernel(m-r,i,param);
-
-  return sum;
-}
-
-/* Evaluate polynomial of the type \sum_{j=0}^{2p} w_j(x), where 
- * w_0(x) := 1
- * w_j(x) := \prod_{i=0}^{j-1} x-z_j, for p=1,..,2p-1
- * and
- * z_j := x_0, for j=0,..,p
- * z_j := x_1, for j=p+1,..,2p */
-static fcs_float eval_newton_horner(
-    fcs_int p, fcs_float *coeff, fcs_float x0, fcs_float x1, fcs_float x
-    )
-{
-  fcs_float res=coeff[2*p+1];
-
-  for(int i=2*p; i>p; --i)
-    res = res * (x-x1) + coeff[i];
-  for(int i=p; i>=0; --i)
-    res = res * (x-x0) + coeff[i];
-
-  return res;
-}
-
-/** Compute the coefficients of the Newton basis polynomials corresponding to 
- *  the interpolation polynomial P(x) that satisfies the Hermite interpolation
- *  conditions in two nodes up to the p-th derivative, i.e.,
- *      P^k(x0) = kernel^k(x0), P^k(x1) = kernel^k(x1), for all k=0,...,p
- */
-static void newton_coeff(
-    fcs_float *kernel,
-    fcs_int p, fcs_float x0, fcs_float x1, 
-    fcs_float *coeff
-    )
-{
-  fcs_float *buf = (fcs_float*) malloc(sizeof(fcs_float) * (p+2)); 
-
-  /* init phase 1
-   * Start iteration with functions values at x0 and x1. */
-  coeff[0] = buf[p] = kernel[0];
-  buf[p+1] = kernel[p+1];
-
-  fcs_float one_over_x01 = 1.0 / (x1-x0);
-  fcs_float one_over_fak_k = 1.0;
-
-  /* phase 1 (expand coefficients from 2 to p+2):
-   * Start with the 2 function values at x0 and x1 in step k=0.
-   * In step k we use a Neville-Hermite recursion to compute the next k+2 from the k+1 preceding values (builds up a triangle structure).
-   * The values of the k-th derivatives enter the recursion in step k. */
-  for(int k=1; k<=p; k++){
-    one_over_fak_k /= k;
-
-    /* index i=p-k introduces k-th derivative at x0 */
-    buf[p-k] = one_over_fak_k * kernel[k];
-
-    /* use recursion for all values in the middle */
-    for(int i=p-k+1; i<=p; i++)
-      buf[i] = (buf[i+1] - buf[i]) * one_over_x01;
-
-    /* index i=p+1 introduces k-th derivative at x1 */
-    buf[p+1] = one_over_fak_k * kernel[k+p+1];
-
-    /* save coefficients of interpolation polynomial in Newton basis */
-    coeff[k] = buf[p-k];
-  }
-
-  /* phase 2 (reduce coefficients from p+2 to 1)
-   * After phase 1 all the derivatives have entered the Neville-table.
-   * Now use the recursion to reduce the 2p values by 1 in every step. */
-  for(int k=p+1; k<=2*p+1; k++){
-    for(int i=0; i<=2*p+1-k; i++)
-      buf[i] = (buf[i+1] - buf[i]) * one_over_x01;
-    coeff[k] = buf[0];
-  }
-
-  free(buf);
-}
-
-/** Use Newton basis polynomials for evaluating the interpolation polynomial P(x) that satisfies
- *  the odd symmetric Hermite interpolation conditions in two nodes up to the p-th derivative, i.e.,
- *      P^k(x0) = (-1)^k P^k(x1) = kernel^k(x0), for all k=0,...,p-1
- */
-static fcs_float interpolate_newton_symmetric(
-    ifcs_p2nfft_kernel k, const fcs_float *param,
-    fcs_int p, fcs_float x0, fcs_float x1, fcs_float x
-    )
-{
-  fcs_float Px;
-  fcs_float *coeff = (fcs_float*) malloc(sizeof(fcs_float) * (2*p+2)); 
-  fcs_float *kernel = (fcs_float*) malloc(sizeof(fcs_float) * (2*p+2));
-
-  fcs_float minus_one_to_i = 1.0;
-  for(int i=0; i<=p; i++){
-    kernel[i]     = k(x0, i, param);
-    kernel[i+p+1] = k(x0, i, param) * minus_one_to_i;
-    minus_one_to_i *= -1.0;
-  }
-
-  /* compute the coefficients of P(x) in Newton basis */
-  newton_coeff(kernel, p, x0, x1,
-      coeff);
-
-  /* evaluate P(x) via Horner scheme */
-  Px = eval_newton_horner(p, coeff, x0, x1, x);
-
-  free(coeff); free(kernel);
-  return Px;
-}
-
-
+/*********************************************************
+ * Implementation of different regularization approaches *
+ *********************************************************/
 
 /** regularized kernel for even kernels with K_I even
  *  and K_B symmetric to K(1/2) (used in 1D)
@@ -231,8 +92,6 @@ fcs_float ifcs_p2nfft_reg_far_rad_sym(
     fcs_float epsI, fcs_float epsB
     )
 {
-  fcs_float sum=0.0;
-
   xsnorm = fcs_fabs(xsnorm);
 
   /* constant continuation for radii > 0.5 */
@@ -240,22 +99,12 @@ fcs_float ifcs_p2nfft_reg_far_rad_sym(
     xsnorm = 0.5;
 
   /* regularization at farfield border */
-  if ( xsnorm > 0.5-epsB ) {
-    fcs_float r = epsB;
-    fcs_float m = 0.5;
-    fcs_float y = (xsnorm-m)/r;
-    for (fcs_int i=0; i<p; i++)
-      sum += (BasisPoly(p-1,i,y) + BasisPoly(p-1,i,-y)) * fcs_pow(r,(fcs_float)i) * k(m-r,i,param);
-    return sum;
-  }
+  if ( xsnorm > 0.5-epsB )
+    return ifcs_p2nfft_interpolate_symmetric(k, param, p, 0.5-epsB, 0.5+epsB, xsnorm);
   
   /* nearfield regularization */
-  if ( xsnorm < epsI ){
-    for (fcs_int i=0; i<p; i++)
-      sum += fcs_pow(-epsI,(fcs_float)i) * k(epsI,i,param)
-          * (BasisPoly(p-1,i,xsnorm/epsI)+BasisPoly(p-1,i,-xsnorm/epsI));
-    return sum;
-  }
+  if ( xsnorm < epsI )
+    return ifcs_p2nfft_interpolate_symmetric(k, param, p, -epsI, epsI, xsnorm);
 
   /* farfield: original kernel function */ 
   return k(xsnorm,0,param);
@@ -271,9 +120,6 @@ fcs_float ifcs_p2nfft_reg_far_rad_expl_cont(
     fcs_float epsI, fcs_float epsB, fcs_float c
     )
 {
-  fcs_int r;
-  fcs_float sum=0.0;
-
   xsnorm = fcs_fabs(xsnorm);
 
   /* constant continuation for radii > 0.5 */
@@ -281,23 +127,12 @@ fcs_float ifcs_p2nfft_reg_far_rad_expl_cont(
     xsnorm = 0.5;
 
   /* regularization at farfield border */
-  if ( xsnorm > 0.5-epsB ) {
-    sum = BasisPoly(p-1,0,-2.0*xsnorm/epsB+(1.0-epsB)/epsB) * c;
-    for (r=0; r<p; r++) {
-      sum += fcs_pow(epsB/2.0,(fcs_float)r) * k(0.5-epsB,r,param)
-          * BasisPoly(p-1,r,2.0*xsnorm/epsB-(1.0-epsB)/epsB);
-    }
-    return sum;
-  }
+  if ( xsnorm > 0.5-epsB )
+    return ifcs_p2nfft_interpolate_ec(k, param, c, p, 0.5-epsB, 0.5, xsnorm);
   
   /* nearfield regularization */
-  if ( xsnorm < epsI ){
-    for (r=0; r<p; r++) {
-      sum += fcs_pow(-epsI,(fcs_float)r) * k(epsI,r,param)
-          * (BasisPoly(p-1,r,xsnorm/epsI)+BasisPoly(p-1,r,-xsnorm/epsI));
-    }
-    return sum;
-  }
+  if ( xsnorm < epsI )
+    return ifcs_p2nfft_interpolate_symmetric(k, param, p, -epsI, epsI, xsnorm);
 
   /* farfield: original kernel function */ 
   return k(xsnorm,0,param);
@@ -323,11 +158,9 @@ fcs_float ifcs_p2nfft_reg_far_rad_expl_cont(
 fcs_float ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
     ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_float xsnorm,
     fcs_int p, const fcs_float *param,
-    fcs_float r_cut, fcs_float eps_B, fcs_float c
+    fcs_float r_cut, fcs_float epsB, fcs_float c
     )
 {
-  fcs_int j;
-
   xsnorm = fcs_fabs(xsnorm);
 
   /* constant continuation for radii > 0.5 */
@@ -335,26 +168,12 @@ fcs_float ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
     xsnorm = 0.5;
 
   /* regulariziton at far field border */
-  if (xsnorm > 0.5-eps_B) {
-    fcs_float m = (0.5 - eps_B/2.0)/xsnorm;
-    fcs_float r = eps_B/(2.0*xsnorm);
-    fcs_float y = (1.0-m)/r;
-    fcs_float result = BasisPoly(p, 0, -y) * c;
-    for (j = 0; j < p; ++j) {
-      result += BasisPoly(p, j, y) * fcs_pow(r, j) * k((0.5-eps_B)/xsnorm*x2norm, j, param) * fcs_pow(x2norm, j);
-    }
-    return result;
-  };
+  if (xsnorm > 0.5-epsB)
+    return ifcs_p2nfft_interpolate_ec(k, param, c, p, (0.5-epsB)*x2norm/xsnorm, 0.5*x2norm/xsnorm, x2norm);
 
   /* nearfield regularization */
-  if (x2norm < r_cut) {
-    fcs_float result = 0.0;
-    for (j=0; j<p; j++) {
-      result+=fcs_pow(-r_cut,(fcs_float)j)*k(r_cut,j,param)
-        *(BasisPoly(p-1,j,x2norm/r_cut)+BasisPoly(p-1,j,-x2norm/r_cut));
-    };
-    return result;
-  };
+  if ( x2norm < r_cut )
+    return ifcs_p2nfft_interpolate_symmetric(k, param, p, -r_cut, r_cut, x2norm);
 
   /* farfield: original kernel function */
   return k(x2norm, 0, param);
@@ -369,9 +188,6 @@ fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
     fcs_float epsI, fcs_float epsB
     )
 {
-  fcs_int j;
-  fcs_float sum=0.0;
-
   xsnorm = fcs_fabs(xsnorm);
 
   /* constant continuation for radii > 0.5 */
@@ -379,22 +195,12 @@ fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
     xsnorm = 0.5;
 
   /* regularization at farfield border */
-  if ( xsnorm > 0.5-epsB ) {
-    for (j=0; j<=p-2; j++) {
-      sum += fcs_pow(epsB/2.0,(fcs_float)j+1) * k(0.5-epsB,j+1,param)
-          * ( IntBasisPoly(p-1,j,2.0*xsnorm/epsB-(1.0-epsB)/epsB) - IntBasisPoly(p-1,j,-1) );
-    }
-    return sum + k(0.5-epsB,0,param);
-  }
+  if ( xsnorm > 0.5-epsB )
+    return ifcs_p2nfft_interpolate_ic(k, param, p, 0.5-epsB, 0.5, xsnorm);
  
   /* nearfield regularization */
-  if ( xsnorm < epsI ){
-    for (j=0; j<p; j++) {
-      sum += fcs_pow(-epsI,(fcs_float)j) * k(epsI,j,param)
-          * (BasisPoly(p-1,j,xsnorm/epsI)+BasisPoly(p-1,j,-xsnorm/epsI));
-    }
-    return sum;
-  }
+  if ( xsnorm < epsI )
+    return ifcs_p2nfft_interpolate_symmetric(k, param, p, -epsI, epsI, xsnorm);
 
   /* farfield: original kernel function */ 
   return k(xsnorm,0,param);
@@ -407,8 +213,6 @@ fcs_float ifcs_p2nfft_reg_far_rad_sym_no_singularity(
     ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB
     )
 {
-//   fcs_int j;
-//   fcs_float sum=0.0;
   fcs_float h = param[2];
 
   x2norm = fcs_fabs(x2norm);
@@ -417,30 +221,13 @@ fcs_float ifcs_p2nfft_reg_far_rad_sym_no_singularity(
   fcs_float xi = h * (0.5 - epsB);
   fcs_float xo = h * (0.5 + epsB);
 
-  /* constant continuation for radii > xo */
-  if (x2norm > xo)
-    x2norm = xo;
+  /* constant continuation for radii > h/2 */
+  if (x2norm > h*0.5)
+    x2norm = h*0.5;
 
   /* regularization at farfield border */
   if ( xi < x2norm )
-    return interpolate_newton_symmetric(k, param, p, xi, xo, x2norm);
-//     return interpolate_lagrange_symmetric(k, param, p, xi, xo, x2norm);
-
-//   /* canonicalize x to y \in [-1,1] */
-//   fcs_float r = 0.5 * (xo - xi);
-//   fcs_float m = 0.5 * (xo + xi);
-//   fcs_float y = (x2norm-m)/r;
-// 
-//   /* regularization at farfield border */
-//   if ( xi < x2norm ) {
-//     for (j=0; j<=p-1; j++) {
-//       sum += 
-//         fcs_pow(r,(fcs_float)j) * k(xi,j,param)
-//         * (BasisPoly(p-1,j,y) + BasisPoly(p-1,j,-y));
-//     }
-//     printf("\n!!! hier bin ich: far !!!\n\n");
-//     return sum;
-//   }
+    return ifcs_p2nfft_interpolate_symmetric(k, param, p, xi, xo, x2norm);
  
   /* near- and farfield (no singularity): original kernel function */ 
   return k(x2norm,0,param);
@@ -453,8 +240,6 @@ fcs_float ifcs_p2nfft_reg_far_rad_ec_no_singularity(
     ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB, fcs_float c
     )
 {
-  fcs_int j;
-  fcs_float sum=0.0;
   fcs_float h = param[2];
 
   x2norm = fcs_fabs(x2norm);
@@ -467,20 +252,9 @@ fcs_float ifcs_p2nfft_reg_far_rad_ec_no_singularity(
   if (x2norm > xo)
     x2norm = xo;
 
-  /* canonicalize x to y \in [-1,1] */
-  fcs_float r = 0.5 * (xo - xi);
-  fcs_float m = 0.5 * (xo + xi);
-  fcs_float y = (x2norm-m)/r;
-
   /* regularization at farfield border */
-  if ( xi < x2norm ) {
-    for (j=0; j<=p-1; j++) {
-      sum += 
-        fcs_pow(r,(fcs_float)j) * k(xi,j,param)
-        * BasisPoly(p-1,j,y);
-    }
-    return sum + c * BasisPoly(p-1,j,-y);
-  }
+  if ( xi < x2norm )
+    return ifcs_p2nfft_interpolate_ec(k, param, c, p, xi, xo, x2norm);
  
   /* near- and farfield (no singularity): original kernel function */ 
   return k(x2norm,0,param);
@@ -493,8 +267,6 @@ fcs_float ifcs_p2nfft_reg_far_rad_ic_no_singularity(
     ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB
     )
 {
-  fcs_int j;
-  fcs_float sum=0.0;
   fcs_float h = param[2];
 
   x2norm = fcs_fabs(x2norm);
@@ -507,39 +279,14 @@ fcs_float ifcs_p2nfft_reg_far_rad_ic_no_singularity(
   if (x2norm > xo)
     x2norm = xo;
 
-  /* canonicalize x to y \in [-1,1] */
-  fcs_float r = 0.5 * (xo - xi);
-  fcs_float m = 0.5 * (xo + xi);
-  fcs_float y = (x2norm-m)/r;
-
   /* regularization at farfield border */
-  if ( xi < x2norm ) {
-    for (j=0; j<=p-2; j++) {
-      sum += 
-        fcs_pow(r,j+1.0) * k(xi,j+1,param)
-        * (IntBasisPoly(p-1,j,y) - IntBasisPoly(p-1,j,-1));
-    }
-    return sum + k(xi,0,param);
-  }
+  if ( xi < x2norm )
+    ifcs_p2nfft_interpolate_ic(k, param, p, xi, xo, x2norm);
  
   /* near- and farfield (no singularity): original kernel function */ 
   return k(x2norm,0,param);
 } 
 
-
-fcs_float ifcs_p2nfft_interpolation(
-    fcs_float x, fcs_float one_over_epsI,
-    fcs_int order, fcs_int num_nodes,
-    const fcs_float *table
-    )
-{
-  switch(order){
-    case 0: return intpol_even_const(x, table, num_nodes, one_over_epsI);
-    case 1: return intpol_even_lin(x, table, num_nodes, one_over_epsI);
-    case 2: return intpol_even_quad(x, table, num_nodes, one_over_epsI);
-    default: return intpol_even_cub(x, table, num_nodes, one_over_epsI);
-  }
-}
 
 /* Regularize the kernel function 1/norm(x) in every dimension i,
  * where xi exceeds (0.5-epsB) * hi, based on one-dimensional symmetric two-point Taylor polynomials, i.e.
@@ -754,648 +501,5 @@ fcs_float ifcs_p2nfft_reg_far_rect_impl_cont(
 
   return sum;
 }
-
-/** regularized kernel for even kernels with K_I even
- *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)
- */
-fcs_float ifcs_p2nfft_nearfield_correction_taylor2p(
-    fcs_float xx, fcs_int p, const fcs_float *param
-    )
-{
-  fcs_float horner = param[0];
-
-  xx=fabs(xx);
-
-  /* use horner scheme for next p-2 coefficients */
-  for(fcs_int t=1; t<p; t++)
-    horner = xx * xx * horner + param[t];
-
-  return horner;
-}
-
-/** regularized kernel for even kernels with K_I even
- *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)
- */
-fcs_float ifcs_p2nfft_nearfield_correction_taylor2p_derive(
-    fcs_float xx, fcs_int p, const fcs_float *param
-    )
-{
-  fcs_float horner = param[0];
-
-  xx=fabs(xx);
-
-  /* use horner schema for next p-2 coefficients */
-  for(fcs_int t=1; t<p-1; t++)
-    horner = xx * xx * horner + param[t];
-
-  /* multiply last time by xx, since we have an odd polynomial */
-  return horner * xx;
-}
-
-
-fcs_int ifcs_p2nfft_load_taylor2p_coefficients(
-   fcs_int p,
-   fcs_float *param
-   )
-{
-  /* Case p<2 is senseless, for p>16 we need to add the coefficients. */
-  /* These coefficients are calculated analytically with a Maple script. */
-  switch(p){
-    case(2):
-      param[0] = -1.0/2.0;
-      param[1] = 3.0/2.0;
-      break;
-    case(3):
-      param[0] = 3.0/8.0;
-      param[1] = -5.0/4.0;
-      param[2] = 15.0/8.0;
-      break;
-    case(4):
-      param[0] = -5.0/16.0;
-      param[1] = 21.0/16.0;
-      param[2] = -35.0/16.0;
-      param[3] = 35.0/16.0;
-      break;
-    case(5):
-      param[0] = 35.0/128.0;
-      param[1] = -45.0/32.0;
-      param[2] = 189.0/64.0;
-      param[3] = -105.0/32.0;
-      param[4] = 315.0/128.0;
-      break;
-    case(6):
-      param[0] = -63.0/256.0;
-      param[1] = 385.0/256.0;
-      param[2] = -495.0/128.0;
-      param[3] = 693.0/128.0;
-      param[4] = -1155.0/256.0;
-      param[5] = 693.0/256.0;
-      break;
-    case(7):
-      param[0] = 231.0/1024.0;
-      param[1] = -819.0/512.0;
-      param[2] = 5005.0/1024.0;
-      param[3] = -2145.0/256.0;
-      param[4] = 9009.0/1024.0;
-      param[5] = -3003.0/512.0;
-      param[6] = 3003.0/1024.0;
-      break;
-    case(8):
-      param[0] = -429.0/2048.0;
-      param[1] = 3465.0/2048.0;
-      param[2] = -12285.0/2048.0;
-      param[3] = 25025.0/2048.0;
-      param[4] = -32175.0/2048.0;
-      param[5] = 27027.0/2048.0;
-      param[6] = -15015.0/2048.0;
-      param[7] = 6435.0/2048.0;
-      break;
-    case(9):
-      param[0] = 6435.0/32768.0;
-      param[1] = -7293.0/4096.0;
-      param[2] = 58905.0/8192.0;
-      param[3] = -69615.0/4096.0;
-      param[4] = 425425.0/16384.0;
-      param[5] = -109395.0/4096.0;
-      param[6] = 153153.0/8192.0;
-      param[7] = -36465.0/4096.0;
-      param[8] = 109395.0/32768.0;
-      break;
-    case(10):
-      param[0] = -12155.0/65536.0;
-      param[1] = 122265.0/65536.0;
-      param[2] = -138567.0/16384.0;
-      param[3] = 373065.0/16384.0;
-      param[4] = -1322685.0/32768.0;
-      param[5] = 1616615.0/32768.0;
-      param[6] = -692835.0/16384.0;
-      param[7] = 415701.0/16384.0;
-      param[8] = -692835.0/65536.0;
-      param[9] = 230945.0/65536.0;
-      break;
-    case(11):
-      param[0] = 46189.0/262144.0;
-      param[1] = -255255.0/131072.0;
-      param[2] = 2567565.0/262144.0;
-      param[3] = -969969.0/32768.0;
-      param[4] = 7834365.0/131072.0;
-      param[5] = -5555277.0/65536.0;
-      param[6] = 11316305.0/131072.0;
-      param[7] = -2078505.0/32768.0;
-      param[8] = 8729721.0/262144.0;
-      param[9] = -1616615.0/131072.0;
-      param[10] = 969969.0/262144.0;
-      break;
-    case(12):
-      param[0] = -88179.0/524288.0;
-      param[1] = 1062347.0/524288.0;
-      param[2] = -5870865.0/524288.0;
-      param[3] = 19684665.0/524288.0;
-      param[4] = -22309287.0/262144.0;
-      param[5] = 36038079.0/262144.0;
-      param[6] = -42590457.0/262144.0;
-      param[7] = 37182145.0/262144.0;
-      param[8] = -47805615.0/524288.0;
-      param[9] = 22309287.0/524288.0;
-      param[10] = -7436429.0/524288.0;
-      param[11] = 2028117.0/524288.0;
-      break;
-    case(13):
-      param[0] = 676039.0/4194304.0;
-      param[1] = -2204475.0/1048576.0;
-      param[2] = 26558675.0/2097152.0;
-      param[3] = -48923875.0/1048576.0;
-      param[4] = 492116625.0/4194304.0;
-      param[5] = -111546435.0/524288.0;
-      param[6] = 300317325.0/1048576.0;
-      param[7] = -152108775.0/524288.0;
-      param[8] = 929553625.0/4194304.0;
-      param[9] = -132793375.0/1048576.0;
-      param[10] = 111546435.0/2097152.0;
-      param[11] = -16900975.0/1048576.0;
-      param[12] = 16900975.0/4194304.0;
-      break;
-    case(14):
-      param[0] = -1300075.0/8388608.0;
-      param[1] = 18253053.0/8388608.0;
-      param[2] = -59520825.0/4194304.0;
-      param[3] = 239028075.0/4194304.0;
-      param[4] = -1320944625.0/8388608.0;
-      param[5] = 2657429775.0/8388608.0;
-      param[6] = -1003917915.0/2097152.0;
-      param[7] = 1158366825.0/2097152.0;
-      param[8] = -4106936925.0/8388608.0;
-      param[9] = 2788660875.0/8388608.0;
-      param[10] = -717084225.0/4194304.0;
-      param[11] = 273795795.0/4194304.0;
-      param[12] = -152108775.0/8388608.0;
-      param[13] = 35102025.0/8388608.0;
-      break;
-    case(15):
-      param[0] = 5014575.0/33554432.0;
-      param[1] = -37702175.0/16777216.0;
-      param[2] = 529338537.0/33554432.0;
-      param[3] = -575367975.0/8388608.0;
-      param[4] = 6931814175.0/33554432.0;
-      param[5] = -7661478825.0/16777216.0;
-      param[6] = 25688487825.0/33554432.0;
-      param[7] = -4159088505.0/4194304.0;
-      param[8] = 33592637925.0/33554432.0;
-      param[9] = -13233463425.0/16777216.0;
-      param[10] = 16174233075.0/33554432.0;
-      param[11] = -1890494775.0/8388608.0;
-      param[12] = 2646692685.0/33554432.0;
-      param[13] = -339319575.0/16777216.0;
-      param[14] = 145422675.0/33554432.0;
-      break;
-    case(16):
-      param[0] = -9694845.0/67108864.0;
-      param[1] = 155451825.0/67108864.0;
-      param[2] = -1168767425.0/67108864.0;
-      param[3] = 5469831549.0/67108864.0;
-      param[4] = -17836407225.0/67108864.0;
-      param[5] = 42977247885.0/67108864.0;
-      param[6] = -79168614525.0/67108864.0;
-      param[7] = 113763303225.0/67108864.0;
-      param[8] = -128931743655.0/67108864.0;
-      param[9] = 115707975075.0/67108864.0;
-      param[10] = -82047473235.0/67108864.0;
-      param[11] = 45581929575.0/67108864.0;
-      param[12] = -19535112675.0/67108864.0;
-      param[13] = 6311344095.0/67108864.0;
-      param[14] = -1502700975.0/67108864.0;
-      param[15] = 300540195.0/67108864.0;
-      break;
-    default:
-      return 1;
-  }
-  return 0;
-}
-
-
-
-fcs_int ifcs_p2nfft_load_taylor2p_coefficients_old(
-   fcs_float epsI, fcs_int p,
-   fcs_float *param
-   )
-{
-  fcs_float a = epsI;
-
-  /* Case p<2 is senseless, for p>16 we need to add the coefficients. */
-  /* These coefficients are calculated analytically with a Maple script. */ 
-  switch(p){
-    case 2:
-      param[0] = -1/(a*a*a)/2.0;
-      param[1] = 3.0/2.0/a;
-      break;
-    case 3:
-      param[0] = 3.0/8.0/(a*a*a*a*a);
-      param[1] = -5.0/4.0/(a*a*a);
-      param[2] = 15.0/8.0/a;
-      break;
-    case 4:
-      param[0] = -5.0/16.0/(a*a*a*a*a*a*a);
-      param[1] = 21.0/16.0/(a*a*a*a*a);
-      param[2] = -35.0/16.0/(a*a*a);
-      param[3] = 35.0/16.0/a;
-      break;
-    case 5:
-      param[0] = 35.0/128.0/(a*a*a*a*a*a*a*a*a);
-      param[1] = -45.0/32.0/(a*a*a*a*a*a*a);
-      param[2] = 189.0/64.0/(a*a*a*a*a);
-      param[3] = -105.0/32.0/(a*a*a);
-      param[4] = 315.0/128.0/a;
-      break;
-    case 6:
-      param[0] = -63.0/256.0/fcs_pow(a,11.0);
-      param[1] = 385.0/256.0/(a*a*a*a*a*a*a*a*a);
-      param[2] = -495.0/128.0/(a*a*a*a*a*a*a);
-      param[3] = 693.0/128.0/(a*a*a*a*a);
-      param[4] = -1155.0/256.0/(a*a*a);
-      param[5] = 693.0/256.0/a;
-      break;
-    case 7:
-      param[0] = 231.0/1024.0/fcs_pow(a,13.0);
-      param[1] = -819.0/512.0/fcs_pow(a,11.0);
-      param[2] = 5005.0/1024.0/(a*a*a*a*a*a*a*a*a);
-      param[3] = -2145.0/256.0/(a*a*a*a*a*a*a);
-      param[4] = 9009.0/1024.0/(a*a*a*a*a);
-      param[5] = -3003.0/512.0/(a*a*a);
-      param[6] = 3003.0/1024.0/a;
-      break;
-    case 8:
-      param[0] = -429.0/2048.0/fcs_pow(a,15.0);
-      param[1] = 3465.0/2048.0/fcs_pow(a,13.0);
-      param[2] = -12285.0/2048.0/fcs_pow(a,11.0);
-      param[3] = 25025.0/2048.0/(a*a*a*a*a*a*a*a*a);
-      param[4] = -32175.0/2048.0/(a*a*a*a*a*a*a);
-      param[5] = 27027.0/2048.0/(a*a*a*a*a);
-      param[6] = -15015.0/2048.0/(a*a*a);
-      param[7] = 6435.0/2048.0/a;
-      break;
-    case 9:
-      param[0] = 6435.0/32768.0/fcs_pow(a,17.0);
-      param[1] = -7293.0/4096.0/fcs_pow(a,15.0);
-      param[2] = 58905.0/8192.0/fcs_pow(a,13.0);
-      param[3] = -69615.0/4096.0/fcs_pow(a,11.0);
-      param[4] = 425425.0/16384.0/(a*a*a*a*a*a*a*a*a);
-      param[5] = -109395.0/4096.0/(a*a*a*a*a*a*a);
-      param[6] = 153153.0/8192.0/(a*a*a*a*a);
-      param[7] = -36465.0/4096.0/(a*a*a);
-      param[8] = 109395.0/32768.0/a;
-      break;
-    case 10:
-      param[0] = -12155.0/65536.0/fcs_pow(a,19.0);
-      param[1] = 122265.0/65536.0/fcs_pow(a,17.0);
-      param[2] = -138567.0/16384.0/fcs_pow(a,15.0);
-      param[3] = 373065.0/16384.0/fcs_pow(a,13.0);
-      param[4] = -1322685.0/32768.0/fcs_pow(a,11.0);
-      param[5] = 1616615.0/32768.0/(a*a*a*a*a*a*a*a*a);
-      param[6] = -692835.0/16384.0/(a*a*a*a*a*a*a);
-      param[7] = 415701.0/16384.0/(a*a*a*a*a);
-      param[8] = -692835.0/65536.0/(a*a*a);
-      param[9] = 230945.0/65536.0/a;
-      break;
-    case 11:
-      param[0] = 46189.0/262144.0/fcs_pow(a,21.0);
-      param[1] = -255255.0/131072.0/fcs_pow(a,19.0);
-      param[2] = 2567565.0/262144.0/fcs_pow(a,17.0);
-      param[3] = -969969.0/32768.0/fcs_pow(a,15.0);
-      param[4] = 7834365.0/131072.0/fcs_pow(a,13.0);
-      param[5] = -5555277.0/65536.0/fcs_pow(a,11.0);
-      param[6] = 11316305.0/131072.0/(a*a*a*a*a*a*a*a*a);
-      param[7] = -2078505.0/32768.0/(a*a*a*a*a*a*a);
-      param[8] = 8729721.0/262144.0/(a*a*a*a*a);
-      param[9] = -1616615.0/131072.0/(a*a*a);
-      param[10] = 969969.0/262144.0/a;
-      break;
-    case 12:
-      param[0] = -88179.0/524288.0/fcs_pow(a,23.0);
-      param[1] = 1062347.0/524288.0/fcs_pow(a,21.0);
-      param[2] = -5870865.0/524288.0/fcs_pow(a,19.0);
-      param[3] = 19684665.0/524288.0/fcs_pow(a,17.0);
-      param[4] = -22309287.0/262144.0/fcs_pow(a,15.0);
-      param[5] = 36038079.0/262144.0/fcs_pow(a,13.0);
-      param[6] = -42590457.0/262144.0/fcs_pow(a,11.0);
-      param[7] = 37182145.0/262144.0/(a*a*a*a*a*a*a*a*a);
-      param[8] = -47805615.0/524288.0/(a*a*a*a*a*a*a);
-      param[9] = 22309287.0/524288.0/(a*a*a*a*a);
-      param[10] = -7436429.0/524288.0/(a*a*a);
-      param[11] = 2028117.0/524288.0/a;
-      break;
-    case 13:
-      param[0] = 676039.0/4194304.0/fcs_pow(a,25.0);
-      param[1] = -2204475.0/1048576.0/fcs_pow(a,23.0);
-      param[2] = 26558675.0/2097152.0/fcs_pow(a,21.0);
-      param[3] = -48923875.0/1048576.0/fcs_pow(a,19.0);
-      param[4] = 492116625.0/4194304.0/fcs_pow(a,17.0);
-      param[5] = -111546435.0/524288.0/fcs_pow(a,15.0);
-      param[6] = 300317325.0/1048576.0/fcs_pow(a,13.0);
-      param[7] = -152108775.0/524288.0/fcs_pow(a,11.0);
-      param[8] = 929553625.0/4194304.0/(a*a*a*a*a*a*a*a*a);
-      param[9] = -132793375.0/1048576.0/(a*a*a*a*a*a*a);
-      param[10] = 111546435.0/2097152.0/(a*a*a*a*a);
-      param[11] = -16900975.0/1048576.0/(a*a*a);
-      param[12] = 16900975.0/4194304.0/a;
-      break;
-    case 14:
-      param[0] = -1300075.0/8388608.0/fcs_pow(a,27.0);
-      param[1] = 18253053.0/8388608.0/fcs_pow(a,25.0);
-      param[2] = -59520825.0/4194304.0/fcs_pow(a,23.0);
-      param[3] = 239028075.0/4194304.0/fcs_pow(a,21.0);
-      param[4] = -1320944625.0/8388608.0/fcs_pow(a,19.0);
-      param[5] = 2657429775.0/8388608.0/fcs_pow(a,17.0);
-      param[6] = -1003917915.0/2097152.0/fcs_pow(a,15.0);
-      param[7] = 1158366825.0/2097152.0/fcs_pow(a,13.0);
-      param[8] = -4106936925.0/8388608.0/fcs_pow(a,11.0);
-      param[9] = 2788660875.0/8388608.0/(a*a*a*a*a*a*a*a*a);
-      param[10] = -717084225.0/4194304.0/(a*a*a*a*a*a*a);
-      param[11] = 273795795.0/4194304.0/(a*a*a*a*a);
-      param[12] = -152108775.0/8388608.0/(a*a*a);
-      param[13] = 35102025.0/8388608.0/a;
-      break;
-    case 15:
-      param[0] = 5014575.0/33554432.0/fcs_pow(a,29.0);
-      param[1] = -37702175.0/16777216.0/fcs_pow(a,27.0);
-      param[2] = 529338537.0/33554432.0/fcs_pow(a,25.0);
-      param[3] = -575367975.0/8388608.0/fcs_pow(a,23.0);
-      param[4] = 6931814175.0/33554432.0/fcs_pow(a,21.0);
-      param[5] = -7661478825.0/16777216.0/fcs_pow(a,19.0);
-      param[6] = 25688487825.0/33554432.0/fcs_pow(a,17.0);
-      param[7] = -4159088505.0/4194304.0/fcs_pow(a,15.0);
-      param[8] = 33592637925.0/33554432.0/fcs_pow(a,13.0);
-      param[9] = -13233463425.0/16777216.0/fcs_pow(a,11.0);
-      param[10] = 16174233075.0/33554432.0/(a*a*a*a*a*a*a*a*a);
-      param[11] = -1890494775.0/8388608.0/(a*a*a*a*a*a*a);
-      param[12] = 2646692685.0/33554432.0/(a*a*a*a*a);
-      param[13] = -339319575.0/16777216.0/(a*a*a);
-      param[14] = 145422675.0/33554432.0/a;
-      break;
-    case 16:
-      param[0] = -9694845.0/67108864.0/fcs_pow(a,31.0);
-      param[1] = 155451825.0/67108864.0/fcs_pow(a,29.0);
-      param[2] = -1168767425.0/67108864.0/fcs_pow(a,27.0);
-      param[3] = 5469831549.0/67108864.0/fcs_pow(a,25.0);
-      param[4] = -17836407225.0/67108864.0/fcs_pow(a,23.0);
-      param[5] = 42977247885.0/67108864.0/fcs_pow(a,21.0);
-      param[6] = -79168614525.0/67108864.0/fcs_pow(a,19.0);
-      param[7] = 113763303225.0/67108864.0/fcs_pow(a,17.0);
-      param[8] = -128931743655.0/67108864.0/fcs_pow(a,15.0);
-      param[9] = 115707975075.0/67108864.0/fcs_pow(a,13.0);
-      param[10] = -82047473235.0/67108864.0/fcs_pow(a,11.0);
-      param[11] = 45581929575.0/67108864.0/(a*a*a*a*a*a*a*a*a);
-      param[12] = -19535112675.0/67108864.0/(a*a*a*a*a*a*a);
-      param[13] = 6311344095.0/67108864.0/(a*a*a*a*a);
-      param[14] = -1502700975.0/67108864.0/(a*a*a);
-      param[15] = 300540195.0/67108864.0/a;
-      break;
-    default:
-      return 1;
-  }
-
-  return 0;
-}
-
-fcs_int ifcs_p2nfft_load_taylor2p_derive_coefficients(
-   fcs_int p,
-   fcs_float *param
-   )
-{
-  /* Case p<2 is senseless, for p>16 we need to add the coefficients. */
-  /* These coefficients are calculated analytically with a Maple script. */
-  switch(p){
-    case(2):
-      param[0] = -1.0;
-      break;
-    case(3):
-      param[0] = 3.0/2.0;
-      param[1] = -5.0/2.0;
-      break;
-    case(4):
-      param[0] = -15.0/8.0;
-      param[1] = 21.0/4.0;
-      param[2] = -35.0/8.0;
-      break;
-    case(5):
-      param[0] = 35.0/16.0;
-      param[1] = -135.0/16.0;
-      param[2] = 189.0/16.0;
-      param[3] = -105.0/16.0;
-      break;
-    case(6):
-      param[0] = -315.0/128.0;
-      param[1] = 385.0/32.0;
-      param[2] = -1485.0/64.0;
-      param[3] = 693.0/32.0;
-      param[4] = -1155.0/128.0;
-      break;
-    case(7):
-      param[0] = 693.0/256.0;
-      param[1] = -4095.0/256.0;
-      param[2] = 5005.0/128.0;
-      param[3] = -6435.0/128.0;
-      param[4] = 9009.0/256.0;
-      param[5] = -3003.0/256.0;
-      break;
-    case(8):
-      param[0] = -3003.0/1024.0;
-      param[1] = 10395.0/512.0;
-      param[2] = -61425.0/1024.0;
-      param[3] = 25025.0/256.0;
-      param[4] = -96525.0/1024.0;
-      param[5] = 27027.0/512.0;
-      param[6] = -15015.0/1024.0;
-      break;
-    case(9):
-      param[0] = 6435.0/2048.0;
-      param[1] = -51051.0/2048.0;
-      param[2] = 176715.0/2048.0;
-      param[3] = -348075.0/2048.0;
-      param[4] = 425425.0/2048.0;
-      param[5] = -328185.0/2048.0;
-      param[6] = 153153.0/2048.0;
-      param[7] = -36465.0/2048.0;
-      break;
-    case(10):
-      param[0] = -109395.0/32768.0;
-      param[1] = 122265.0/4096.0;
-      param[2] = -969969.0/8192.0;
-      param[3] = 1119195.0/4096.0;
-      param[4] = -6613425.0/16384.0;
-      param[5] = 1616615.0/4096.0;
-      param[6] = -2078505.0/8192.0;
-      param[7] = 415701.0/4096.0;
-      param[8] = -692835.0/32768.0;
-      break;
-    case(11):
-      param[0] = 230945.0/65536.0;
-      param[1] = -2297295.0/65536.0;
-      param[2] = 2567565.0/16384.0;
-      param[3] = -6789783.0/16384.0;
-      param[4] = 23503095.0/32768.0;
-      param[5] = -27776385.0/32768.0;
-      param[6] = 11316305.0/16384.0;
-      param[7] = -6235515.0/16384.0;
-      param[8] = 8729721.0/65536.0;
-      param[9] = -1616615.0/65536.0;
-      break;
-    case(12):
-      param[0] = -969969.0/262144.0;
-      param[1] = 5311735.0/131072.0;
-      param[2] = -52837785.0/262144.0;
-      param[3] = 19684665.0/32768.0;
-      param[4] = -156165009.0/131072.0;
-      param[5] = 108114237.0/65536.0;
-      param[6] = -212952285.0/131072.0;
-      param[7] = 37182145.0/32768.0;
-      param[8] = -143416845.0/262144.0;
-      param[9] = 22309287.0/131072.0;
-      param[10] = -7436429.0/262144.0;
-      break;
-    case(13):
-      param[0] = 2028117.0/524288.0;
-      param[1] = -24249225.0/524288.0;
-      param[2] = 132793375.0/524288.0;
-      param[3] = -440314875.0/524288.0;
-      param[4] = 492116625.0/262144.0;
-      param[5] = -780825045.0/262144.0;
-      param[6] = 900951975.0/262144.0;
-      param[7] = -760543875.0/262144.0;
-      param[8] = 929553625.0/524288.0;
-      param[9] = -398380125.0/524288.0;
-      param[10] = 111546435.0/524288.0;
-      param[11] = -16900975.0/524288.0;
-      break;
-    case(14):
-      param[0] = -16900975.0/4194304.0;
-      param[1] = 54759159.0/1048576.0;
-      param[2] = -654729075.0/2097152.0;
-      param[3] = 1195140375.0/1048576.0;
-      param[4] = -11888501625.0/4194304.0;
-      param[5] = 2657429775.0/524288.0;
-      param[6] = -7027425405.0/1048576.0;
-      param[7] = 3475100475.0/524288.0;
-      param[8] = -20534684625.0/4194304.0;
-      param[9] = 2788660875.0/1048576.0;
-      param[10] = -2151252675.0/2097152.0;
-      param[11] = 273795795.0/1048576.0;
-      param[12] = -152108775.0/4194304.0;
-      break;
-    case(15):
-      param[0] = 35102025.0/8388608.0;
-      param[1] = -490128275.0/8388608.0;
-      param[2] = 1588015611.0/4194304.0;
-      param[3] = -6329047725.0/4194304.0;
-      param[4] = 34659070875.0/8388608.0;
-      param[5] = -68953309425.0/8388608.0;
-      param[6] = 25688487825.0/2097152.0;
-      param[7] = -29113619535.0/2097152.0;
-      param[8] = 100777913775.0/8388608.0;
-      param[9] = -66167317125.0/8388608.0;
-      param[10] = 16174233075.0/4194304.0;
-      param[11] = -5671484325.0/4194304.0;
-      param[12] = 2646692685.0/8388608.0;
-      param[13] = -339319575.0/8388608.0;
-      break;
-    case(16):
-      param[0] = -145422675.0/33554432.0;
-      param[1] = 1088162775.0/16777216.0;
-      param[2] = -15193976525.0/33554432.0;
-      param[3] = 16409494647.0/8388608.0;
-      param[4] = -196200479475.0/33554432.0;
-      param[5] = 214886239425.0/16777216.0;
-      param[6] = -712517530725.0/33554432.0;
-      param[7] = 113763303225.0/4194304.0;
-      param[8] = -902522205585.0/33554432.0;
-      param[9] = 347123925225.0/16777216.0;
-      param[10] = -410237366175.0/33554432.0;
-      param[11] = 45581929575.0/8388608.0;
-      param[12] = -58605338025.0/33554432.0;
-      param[13] = 6311344095.0/16777216.0;
-      param[14] = -1502700975.0/33554432.0;
-      break;
-    default:
-      return 1;
-  }
-  return 0;
-
-}
-
-
-/** linear spline interpolation in near field with even kernels */
-static fcs_float intpol_even_const(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I
-    )
-{
-  fcs_float c;
-  fcs_int r;
-  fcs_float f1;
-
-  c=fcs_fabs(x*num_nodes*one_over_eps_I);
-  r=(fcs_int)c;
-  f1=table[r];
-  return f1;
-}
-
-/** linear spline interpolation in near field with even kernels */
-static fcs_float intpol_even_lin(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I
-    )
-{
-  fcs_float c,c1,c3;
-  fcs_int r;
-  fcs_float f1,f2;
-
-  c=fcs_fabs(x*num_nodes*one_over_eps_I);
-  r=(fcs_int)c;
-  f1=table[r];f2=table[r+1];
-  c1=c-r;
-  c3=c1-1.0;
-  return (-f1*c3+f2*c1);
-}
-
-/** quadratic spline interpolation in near field with even kernels */
-static fcs_float intpol_even_quad(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I
-    )
-{
-  fcs_float c,c1,c2,c3;
-  fcs_int r;
-  fcs_float f0,f1,f2;
-
-  c=fcs_fabs(x*num_nodes*one_over_eps_I);
-  r=(fcs_int)c;
-  if (r==0) {f0=table[r+1];f1=table[r];f2=table[r+1];}
-  else { f0=table[r-1];f1=table[r];f2=table[r+1];}
-  c1=c-r;
-  c2=c1+1.0;
-  c3=c1-1.0;
-  return (0.5*f0*c1*c3-f1*c2*c3+0.5*f2*c2*c1);
-}
-
-/** cubic spline interpolation in near field with even kernels */
-static fcs_float intpol_even_cub(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I
-    )
-{
-  fcs_float c,c1,c2,c3,c4;
-  fcs_int r;
-  fcs_float f0,f1,f2,f3;
-
-  c=fcs_fabs(x*num_nodes*one_over_eps_I);
-  r=(fcs_int)c;
-  if (r==0) {f0=table[r+1];f1=table[r];f2=table[r+1];f3=table[r+2];}
-  else { f0=table[r-1];f1=table[r];f2=table[r+1];f3=table[r+2];}
-  c1=c-r;
-  c2=c1+1.0;
-  c3=c1-1.0;
-  c4=c1-2.0;
-  return(-f0*c1*c3*c4+3.0*f1*c2*c3*c4-3.0*f2*c2*c1*c4+f3*c2*c1*c3)/6.0;
-}
-
 
 

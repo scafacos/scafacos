@@ -34,6 +34,8 @@
 
 #include "kernels.h"
 #include "regularization.h"
+#include "interpolation.h"
+#include "taylor2p.h"
 #include "cg_cos_coeff.h"
 #include "cg_cos_err.h"
 #include "cg_cos_coeff_sym.h"
