@@ -93,6 +93,135 @@ static fcs_float IntBasisPoly2(fcs_int p, fcs_int j, fcs_float y)
   return (j<0) ? 1.0 : IntBasisPoly(p-1,j,y) - IntBasisPoly(p-1,j,-1);
 }
 
+/** Use Lagrangian basis polynomials for evaluating the interpolation polynomial P(x) that satisfies
+ *  the odd symmetric Hermite interpolation conditions in two nodes up to the p-th derivative, i.e.,
+ *      P^k(x0) = (-1)^k P^k(x1) = kernel^k(x0), for all k=0,...,p-1
+ */
+static fcs_float interpolate_lagrange_symmetric(
+    ifcs_p2nfft_kernel kernel, const fcs_float *param,
+    fcs_int p, fcs_float x0, fcs_float x1, fcs_float x
+    )
+{
+  fcs_float sum=0.0;
+
+  /* canonicalize x to y \in [-1,1] */
+  fcs_float r = 0.5*(x1-x0);
+  fcs_float m = 0.5*(x1+x0);
+  fcs_float y = (x-m)/r;
+
+  for (fcs_int i=0; i<p; i++)
+    sum += (BasisPoly(p-1,i,y) + BasisPoly(p-1,i,-y)) * fcs_pow(r,(fcs_float)i) * kernel(m-r,i,param);
+
+  return sum;
+}
+
+/* Evaluate polynomial of the type \sum_{j=0}^{2p} w_j(x), where 
+ * w_0(x) := 1
+ * w_j(x) := \prod_{i=0}^{j-1} x-z_j, for p=1,..,2p-1
+ * and
+ * z_j := x_0, for j=0,..,p
+ * z_j := x_1, for j=p+1,..,2p */
+static fcs_float eval_newton_horner(
+    fcs_int p, fcs_float *coeff, fcs_float x0, fcs_float x1, fcs_float x
+    )
+{
+  fcs_float res=coeff[2*p+1];
+
+  for(int i=2*p; i>p; --i)
+    res = res * (x-x1) + coeff[i];
+  for(int i=p; i>=0; --i)
+    res = res * (x-x0) + coeff[i];
+
+  return res;
+}
+
+/** Compute the coefficients of the Newton basis polynomials corresponding to 
+ *  the interpolation polynomial P(x) that satisfies the Hermite interpolation
+ *  conditions in two nodes up to the p-th derivative, i.e.,
+ *      P^k(x0) = kernel^k(x0), P^k(x1) = kernel^k(x1), for all k=0,...,p
+ */
+static void newton_coeff(
+    fcs_float *kernel,
+    fcs_int p, fcs_float x0, fcs_float x1, 
+    fcs_float *coeff
+    )
+{
+  fcs_float *buf = (fcs_float*) malloc(sizeof(fcs_float) * (p+2)); 
+
+  /* init phase 1
+   * Start iteration with functions values at x0 and x1. */
+  coeff[0] = buf[p] = kernel[0];
+  buf[p+1] = kernel[p+1];
+
+  fcs_float one_over_x01 = 1.0 / (x1-x0);
+  fcs_float one_over_fak_k = 1.0;
+
+  /* phase 1 (expand coefficients from 2 to p+2):
+   * Start with the 2 function values at x0 and x1 in step k=0.
+   * In step k we use a Neville-Hermite recursion to compute the next k+2 from the k+1 preceding values (builds up a triangle structure).
+   * The values of the k-th derivatives enter the recursion in step k. */
+  for(int k=1; k<=p; k++){
+    one_over_fak_k /= k;
+
+    /* index i=p-k introduces k-th derivative at x0 */
+    buf[p-k] = one_over_fak_k * kernel[k];
+
+    /* use recursion for all values in the middle */
+    for(int i=p-k+1; i<=p; i++)
+      buf[i] = (buf[i+1] - buf[i]) * one_over_x01;
+
+    /* index i=p+1 introduces k-th derivative at x1 */
+    buf[p+1] = one_over_fak_k * kernel[k+p+1];
+
+    /* save coefficients of interpolation polynomial in Newton basis */
+    coeff[k] = buf[p-k];
+  }
+
+  /* phase 2 (reduce coefficients from p+2 to 1)
+   * After phase 1 all the derivatives have entered the Neville-table.
+   * Now use the recursion to reduce the 2p values by 1 in every step. */
+  for(int k=p+1; k<=2*p+1; k++){
+    for(int i=0; i<=2*p+1-k; i++)
+      buf[i] = (buf[i+1] - buf[i]) * one_over_x01;
+    coeff[k] = buf[0];
+  }
+
+  free(buf);
+}
+
+/** Use Newton basis polynomials for evaluating the interpolation polynomial P(x) that satisfies
+ *  the odd symmetric Hermite interpolation conditions in two nodes up to the p-th derivative, i.e.,
+ *      P^k(x0) = (-1)^k P^k(x1) = kernel^k(x0), for all k=0,...,p-1
+ */
+static fcs_float interpolate_newton_symmetric(
+    ifcs_p2nfft_kernel k, const fcs_float *param,
+    fcs_int p, fcs_float x0, fcs_float x1, fcs_float x
+    )
+{
+  fcs_float Px;
+  fcs_float *coeff = (fcs_float*) malloc(sizeof(fcs_float) * (2*p+2)); 
+  fcs_float *kernel = (fcs_float*) malloc(sizeof(fcs_float) * (2*p+2));
+
+  fcs_float minus_one_to_i = 1.0;
+  for(int i=0; i<=p; i++){
+    kernel[i]     = k(x0, i, param);
+    kernel[i+p+1] = k(x0, i, param) * minus_one_to_i;
+    minus_one_to_i *= -1.0;
+  }
+
+  /* compute the coefficients of P(x) in Newton basis */
+  newton_coeff(kernel, p, x0, x1,
+      coeff);
+
+  /* evaluate P(x) via Horner scheme */
+  Px = eval_newton_horner(p, coeff, x0, x1, x);
+
+  free(coeff); free(kernel);
+  return Px;
+}
+
+
+
 /** regularized kernel for even kernels with K_I even
  *  and K_B symmetric to K(1/2) (used in 1D)
  */
@@ -278,8 +407,8 @@ fcs_float ifcs_p2nfft_reg_far_rad_sym_no_singularity(
     ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB
     )
 {
-  fcs_int j;
-  fcs_float sum=0.0;
+//   fcs_int j;
+//   fcs_float sum=0.0;
   fcs_float h = param[2];
 
   x2norm = fcs_fabs(x2norm);
@@ -292,20 +421,26 @@ fcs_float ifcs_p2nfft_reg_far_rad_sym_no_singularity(
   if (x2norm > xo)
     x2norm = xo;
 
-  /* canonicalize x to y \in [-1,1] */
-  fcs_float r = 0.5 * (xo - xi);
-  fcs_float m = 0.5 * (xo + xi);
-  fcs_float y = (x2norm-m)/r;
-
   /* regularization at farfield border */
-  if ( xi < x2norm ) {
-    for (j=0; j<=p-1; j++) {
-      sum += 
-        fcs_pow(r,(fcs_float)j) * k(xi,j,param)
-        * (BasisPoly(p-1,j,y) + BasisPoly(p-1,j,-y));
-    }
-    return sum;
-  }
+  if ( xi < x2norm )
+    return interpolate_newton_symmetric(k, param, p, xi, xo, x2norm);
+//     return interpolate_lagrange_symmetric(k, param, p, xi, xo, x2norm);
+
+//   /* canonicalize x to y \in [-1,1] */
+//   fcs_float r = 0.5 * (xo - xi);
+//   fcs_float m = 0.5 * (xo + xi);
+//   fcs_float y = (x2norm-m)/r;
+// 
+//   /* regularization at farfield border */
+//   if ( xi < x2norm ) {
+//     for (j=0; j<=p-1; j++) {
+//       sum += 
+//         fcs_pow(r,(fcs_float)j) * k(xi,j,param)
+//         * (BasisPoly(p-1,j,y) + BasisPoly(p-1,j,-y));
+//     }
+//     printf("\n!!! hier bin ich: far !!!\n\n");
+//     return sum;
+//   }
  
   /* near- and farfield (no singularity): original kernel function */ 
   return k(x2norm,0,param);
