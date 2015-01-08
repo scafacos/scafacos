@@ -761,8 +761,12 @@ FCSResult ifcs_p2nfft_tune(
           return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Far field regularization FCS_P2NFFT_REG_FAR_RAD_CG is only available in combiniation with FCS_P2NFFT_REG_NEAR_CG.");
 
       if(!is_cubic(d->box_l))
-        if(reg_far != FCS_P2NFFT_REG_FAR_RAD_T2P_EC)
-          return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Noncubic boxes require far field regularization FCS_P2NFFT_REG_FAR_RAD_T2P_EC.");
+        if(   reg_far != FCS_P2NFFT_REG_FAR_RAD_T2P_EC
+           && reg_far != FCS_P2NFFT_REG_FAR_REC_T2P_SYM
+           && reg_far != FCS_P2NFFT_REG_FAR_REC_T2P_IC
+           && reg_far != FCS_P2NFFT_REG_FAR_REC_T2P_EC
+          )
+          return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Noncubic boxes require far field regularization FCS_P2NFFT_REG_FAR_RAD_T2P_EC, FCS_P2NFFT_REG_FAR_REC_T2P_SYM, FCS_P2NFFT_REG_FAR_REC_T2P_IC, or FCS_P2NFFT_REG_FAR_REC_T2P_EC.");
 
       if(reg_near == FCS_P2NFFT_REG_NEAR_T2P){
         /* TODO: implement parameter tuning for 2-point-Taylor regularization 
@@ -1673,19 +1677,31 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
             }
           }
         } else {
-          fcs_float x[3] = {x0,x1,x2}, h[3];
+          fcs_float x[3] = {x0,x1,x2}, h[3], xi[3], xo[3];
           for(int t=0; t<3; t++){
             x[t] *= box_scales[t];
             h[t] = box_scales[t]; //* (0.5-epsB); /* TODO use d->box_l ? */
           }
           if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM){
-            regkern_hat[m] = ifcs_p2nfft_reg_far_rect_sym(x, h, p, epsB);
+            for(int t=0; t<3; t++){
+              xi[t] = (0.5-epsB)*h[t];
+              xo[t] = (0.5+epsB)*h[t];
+            }
+            regkern_hat[m] = ifcs_p2nfft_interpolate_cuboid_symmetric(p, xi, xo, x);
             FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rect_sym: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
           } else if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_EC){
-            regkern_hat[m] = ifcs_p2nfft_reg_far_rect_expl_cont(x, h, p, epsB, c);
+            for(int t=0; t<3; t++){
+              xi[t] = (0.5-epsB)*h[t];
+              xo[t] = 0.5*h[t];
+            }
+            regkern_hat[m] = ifcs_p2nfft_interpolate_cuboid_explicit_continuation(c, p, xi, xo, x);
             FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rect_expl_cont: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
           } else if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_IC){
-            regkern_hat[m] = ifcs_p2nfft_reg_far_rect_impl_cont(x, h, p, epsB);
+            for(int t=0; t<3; t++){
+              xi[t] = (0.5-epsB)*h[t];
+              xo[t] = 0.5*h[t];
+            }
+            regkern_hat[m] = ifcs_p2nfft_interpolate_cuboid_implicit_continuation(p, xi, xo, x);
             FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rect_impl_cont: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
           }
         }

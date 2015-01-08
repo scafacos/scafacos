@@ -38,6 +38,13 @@ fcs_float ifcs_p2nfft_interpolate_implicit_continuation(
     ifcs_p2nfft_kernel k, const fcs_float *param,
     fcs_int p, fcs_float x0, fcs_float x1, fcs_float x);
 
+fcs_float ifcs_p2nfft_interpolate_cuboid_symmetric(
+    fcs_int p, const fcs_float *x0, const fcs_float *x1, const fcs_float *x);
+fcs_float ifcs_p2nfft_interpolate_cuboid_explicit_continuation(
+    fcs_float c, fcs_int p, const fcs_float *x0, const fcs_float *x1, const fcs_float *x_signed);
+fcs_float ifcs_p2nfft_interpolate_cuboid_implicit_continuation(
+    fcs_int p, const fcs_float *x0, const fcs_float *x1, const fcs_float *x_signed);
+
 fcs_float ifcs_p2nfft_nearfield_correction_taylor2p(
     fcs_float xx, fcs_int p, const fcs_float *param);
 fcs_float ifcs_p2nfft_nearfield_correction_taylor2p_derive(
