@@ -31,10 +31,10 @@
 fcs_float ifcs_p2nfft_interpolate_symmetric(
     ifcs_p2nfft_kernel k, const fcs_float *param,
     fcs_int p, fcs_float x0, fcs_float x1, fcs_float x);
-fcs_float ifcs_p2nfft_interpolate_ec(
+fcs_float ifcs_p2nfft_interpolate_explicit_continuation(
     ifcs_p2nfft_kernel k, const fcs_float *param, fcs_float c,
     fcs_int p, fcs_float x0, fcs_float x1, fcs_float x);
-fcs_float ifcs_p2nfft_interpolate_ic(
+fcs_float ifcs_p2nfft_interpolate_implicit_continuation(
     ifcs_p2nfft_kernel k, const fcs_float *param,
     fcs_int p, fcs_float x0, fcs_float x1, fcs_float x);
 

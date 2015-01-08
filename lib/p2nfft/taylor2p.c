@@ -24,7 +24,9 @@
 
 #include "taylor2p.h"
 
-#define FCS_P2NFFT_INTPOL_LAGRANGE 1
+/* Switch to use Lagrange instead of Newton basis polynomials for interpolation.
+ * Default are Newton polynomials, since they are faster. */
+#define FCS_P2NFFT_INTPOL_LAGRANGE 0
 
 
 #if FCS_P2NFFT_INTPOL_LAGRANGE
@@ -402,7 +404,7 @@ fcs_float ifcs_p2nfft_interpolate_symmetric(
 #endif
 }
 
-fcs_float ifcs_p2nfft_interpolate_ec(
+fcs_float ifcs_p2nfft_interpolate_explicit_continuation(
     ifcs_p2nfft_kernel k, const fcs_float *param, fcs_float c,
     fcs_int p, fcs_float x0, fcs_float x1, fcs_float x
     )
@@ -414,7 +416,7 @@ fcs_float ifcs_p2nfft_interpolate_ec(
 #endif
 }
 
-fcs_float ifcs_p2nfft_interpolate_ic(
+fcs_float ifcs_p2nfft_interpolate_implicit_continuation(
     ifcs_p2nfft_kernel k, const fcs_float *param,
     fcs_int p, fcs_float x0, fcs_float x1, fcs_float x
     )

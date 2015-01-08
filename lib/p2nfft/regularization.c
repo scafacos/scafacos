@@ -128,7 +128,7 @@ fcs_float ifcs_p2nfft_reg_far_rad_expl_cont(
 
   /* regularization at farfield border */
   if ( xsnorm > 0.5-epsB )
-    return ifcs_p2nfft_interpolate_ec(k, param, c, p, 0.5-epsB, 0.5, xsnorm);
+    return ifcs_p2nfft_interpolate_explicit_continuation(k, param, c, p, 0.5-epsB, 0.5, xsnorm);
   
   /* nearfield regularization */
   if ( xsnorm < epsI )
@@ -169,7 +169,7 @@ fcs_float ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
 
   /* regulariziton at far field border */
   if (xsnorm > 0.5-epsB)
-    return ifcs_p2nfft_interpolate_ec(k, param, c, p, (0.5-epsB)*x2norm/xsnorm, 0.5*x2norm/xsnorm, x2norm);
+    return ifcs_p2nfft_interpolate_explicit_continuation(k, param, c, p, (0.5-epsB)*x2norm/xsnorm, 0.5*x2norm/xsnorm, x2norm);
 
   /* nearfield regularization */
   if ( x2norm < r_cut )
@@ -196,7 +196,7 @@ fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
 
   /* regularization at farfield border */
   if ( xsnorm > 0.5-epsB )
-    return ifcs_p2nfft_interpolate_ic(k, param, p, 0.5-epsB, 0.5, xsnorm);
+    return ifcs_p2nfft_interpolate_implicit_continuation(k, param, p, 0.5-epsB, 0.5, xsnorm);
  
   /* nearfield regularization */
   if ( xsnorm < epsI )
@@ -254,7 +254,7 @@ fcs_float ifcs_p2nfft_reg_far_rad_ec_no_singularity(
 
   /* regularization at farfield border */
   if ( xi < x2norm )
-    return ifcs_p2nfft_interpolate_ec(k, param, c, p, xi, xo, x2norm);
+    return ifcs_p2nfft_interpolate_explicit_continuation(k, param, c, p, xi, xo, x2norm);
  
   /* near- and farfield (no singularity): original kernel function */ 
   return k(x2norm,0,param);
@@ -281,7 +281,7 @@ fcs_float ifcs_p2nfft_reg_far_rad_ic_no_singularity(
 
   /* regularization at farfield border */
   if ( xi < x2norm )
-    ifcs_p2nfft_interpolate_ic(k, param, p, xi, xo, x2norm);
+    ifcs_p2nfft_interpolate_implicit_continuation(k, param, p, xi, xo, x2norm);
  
   /* near- and farfield (no singularity): original kernel function */ 
   return k(x2norm,0,param);
