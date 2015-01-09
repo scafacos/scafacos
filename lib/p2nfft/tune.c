@@ -1600,9 +1600,11 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
   for(int t=0; t<3; t++)
     scale *= 1.0 / N[t];
 
-#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG || FCS_P2NFFT_DEBUG_REGKERN
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+#endif
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   C csum;
   C csum_global;
   csum = 0.0;
@@ -1809,13 +1811,13 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
   /* divide by FFT normalization factor for every nonperiodic dim */
   for(int t=0; t<3; t++) if(!periodicity[t]) scale /= N[t];
 
-#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG || FCS_P2NFFT_DEBUG_REGKERN
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  C csum;
-  C csum_global;
+#endif
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  C csum, csum_global;
   csum = 0.0;
-
   double timer_keq0=0, timer_kne0=0;
   int count_Req0=0, count_Rne0=0, count_all=0, count_analytic=0, count_interpolate=0, count_set_to_zero=0;
 #endif
