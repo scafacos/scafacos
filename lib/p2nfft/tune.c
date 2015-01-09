@@ -82,6 +82,11 @@ static void init_far_interpolation_table_potential_0dp(
     fcs_float epsB, fcs_int p, fcs_float c,
     fcs_int N_cos, fcs_float *cos_coeff,
     fcs_float *table);
+static void init_far_interpolation_table_potential_0dp_ewald(
+    fcs_int num_nodes, fcs_int reg_far,
+    fcs_float alpha, fcs_float h,
+    fcs_float epsB, fcs_int p, fcs_float c,
+    fcs_float *table); 
 static void init_near_interpolation_table_force_0dp(
     fcs_int num_nodes,
     fcs_float r_cut, fcs_float epsI, fcs_int p,
@@ -173,6 +178,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
 //    const fcs_float *box_inv,
     const fcs_float *box_scales, fcs_float alpha,
     fcs_int p, fcs_float c, fcs_int reg_far,
+    fcs_int interpolation_order, fcs_int far_interpolation_num_nodes, const fcs_float *far_interpolation_table_potential,
     MPI_Comm comm_cart, unsigned box_is_cubic
     );
 static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
@@ -756,6 +762,8 @@ FCSResult ifcs_p2nfft_tune(
         free(d->near_interpolation_table_potential);
       if(d->near_interpolation_table_force != NULL)
         free(d->near_interpolation_table_force);
+      if(d->far_interpolation_table_potential != NULL)
+        free(d->far_interpolation_table_potential);
 
       if(d->near_interpolation_num_nodes){
         d->near_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->near_interpolation_num_nodes+3));
@@ -769,6 +777,21 @@ FCSResult ifcs_p2nfft_tune(
             d->near_interpolation_num_nodes,
             d->r_cut, d->alpha,
             d->near_interpolation_table_force);
+      }
+
+      /* far field interpolation only works for cubic boxes and radial far field regularization  
+       * and is only used with 0d-periodicity */
+      if( reg_far_is_radial(reg_far)  && is_cubic(d->box_l) && (d->num_periodic_dims==0) )
+        d->far_interpolation_num_nodes = d->near_interpolation_num_nodes;
+      else
+        d->far_interpolation_num_nodes = 0;
+
+      if(d->far_interpolation_num_nodes > 0){
+        d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->far_interpolation_num_nodes+3));
+        init_far_interpolation_table_potential_0dp_ewald(
+            d->far_interpolation_num_nodes, reg_far,
+            d->alpha, d->box_scales[0], d->epsB, d->p, d->c,
+            d->far_interpolation_table_potential);
       }
 
     } else {
@@ -1097,6 +1120,7 @@ FCSResult ifcs_p2nfft_tune(
       if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD) {
         d->regkern_hat = malloc_and_precompute_regkern_hat_0dp_ewald(
             d->N, d->epsB, d->box_scales, d->alpha, d->p, d->c, reg_far,
+            d->interpolation_order, d->far_interpolation_num_nodes, d->far_interpolation_table_potential,
             d->cart_comm_pnfft, is_cubic(d->box_l));
       } else if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER) {
         d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
@@ -1344,6 +1368,9 @@ static void init_far_interpolation_table_potential_0dp(
     fcs_float *table 
     )
 {
+  fcs_float epsI = 0.0;
+  fcs_float *param = NULL;
+
   if(reg_far == FCS_P2NFFT_REG_FAR_RAD_CG){
     /* use CG approximiation */
     for(fcs_int k=0; k<num_nodes+3; k++)
@@ -1353,18 +1380,48 @@ static void init_far_interpolation_table_potential_0dp(
     /* use symmetric Taylor2p, not smooth at r=0.5 in 3d */
     for(fcs_int k=0; k<num_nodes+3; k++)
       table[k] = ifcs_p2nfft_reg_far_rad_sym(
-          ifcs_p2nfft_one_over_modulus, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, 0, epsB, epsB);
+          ifcs_p2nfft_one_over_modulus, param, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, epsI, epsB);
   } else if(reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
     /* use normal basis polynomials and set constant continuation value 'c' explicitly */
     /* Since we only evaluate regkernel in [0.5-epsB, 0.5] we can savely set epsI = epsB */
     for(fcs_int k=0; k<num_nodes+3; k++)
-      table[k] = ifcs_p2nfft_reg_far_rad_expl_cont(
-          ifcs_p2nfft_one_over_modulus, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, 0, epsB, epsB, c);
+      table[k] = ifcs_p2nfft_reg_far_rad_ec(
+          ifcs_p2nfft_one_over_modulus, param, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, epsI, epsB, c);
   } else if(reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
     /* use integrated basis polynomials, sets continuation value 'c' implicitily */
     for(fcs_int k=0; k<num_nodes+3; k++)
-      table[k] = ifcs_p2nfft_reg_far_rad_impl_cont(
-          ifcs_p2nfft_one_over_modulus, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, 0, epsB, epsB);
+      table[k] = ifcs_p2nfft_reg_far_rad_ic(
+          ifcs_p2nfft_one_over_modulus, param, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, epsI, epsB);
+  } else
+    for(fcs_int k=0; k<num_nodes+3; k++)
+      table[k] = 0.0;
+}
+
+static void init_far_interpolation_table_potential_0dp_ewald(
+    fcs_int num_nodes, fcs_int reg_far,
+    fcs_float alpha, fcs_float h,
+    fcs_float epsB, fcs_int p, fcs_float c,
+    fcs_float *table 
+    )
+{
+  fcs_float param[3] = {alpha, 0, h}; 
+
+  if(reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
+    /* use symmetric Taylor2p, not smooth at r=0.5*h in 3d */
+    for(fcs_int k=0; k<num_nodes+3; k++)
+      table[k] = ifcs_p2nfft_reg_far_rad_sym_no_singularity(
+          ifcs_p2nfft_erfx_over_x, param, h*(0.5 - epsB + epsB * (fcs_float) k / num_nodes), p, epsB);
+  } else if(reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
+    /* use normal basis polynomials and set constant continuation value 'c' explicitly */
+    /* Since we only evaluate regkernel in h*[0.5-epsB, 0.5] we can savely set epsI = epsB */
+    for(fcs_int k=0; k<num_nodes+3; k++)
+      table[k] = ifcs_p2nfft_reg_far_rad_ec_no_singularity(
+          ifcs_p2nfft_erfx_over_x, param, h*(0.5 - epsB + epsB * (fcs_float) k / num_nodes), p, epsB, c);
+  } else if(reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
+    /* use integrated basis polynomials, sets continuation value 'c' implicitily */
+    for(fcs_int k=0; k<num_nodes+3; k++)
+      table[k] = ifcs_p2nfft_reg_far_rad_ic_no_singularity(
+          ifcs_p2nfft_erfx_over_x, param, h*(0.5 - epsB + epsB * (fcs_float) k / num_nodes), p, epsB);
   } else
     for(fcs_int k=0; k<num_nodes+3; k++)
       table[k] = 0.0;
@@ -1685,9 +1742,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
           } else {
             if(!box_is_cubic) {
               /* Noncubic regularization works with unscaled coordinates. */
-              regkern_hat[m] = ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
-                  ifcs_p2nfft_one_over_modulus, x2norm, xsnorm, p, NULL, r_cut, epsB, c);
-              FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rad_expl_cont_noncubic: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+              regkern_hat[m] = ifcs_p2nfft_reg_far_rad_ec_noncubic(
+                  ifcs_p2nfft_one_over_modulus, NULL, x2norm, xsnorm, p, r_cut, epsB, c);
+              FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rad_ec_noncubic: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else {
               /* Cubic regularization works with coordinates that are scaled into unit cube.
                * Therefore, use xsnorm, scale the continuation value 'c', and rescale after evaluation.
@@ -1701,16 +1758,16 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
                 FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "evaluate_cos_polynomial_1d: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
               } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
                 regkern_hat[m] = ifcs_p2nfft_reg_far_rad_sym(
-                    ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB) / box_scales[0];
+                    ifcs_p2nfft_one_over_modulus, NULL, xsnorm, p, epsI, epsB) / box_scales[0];
                 FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rad_sym: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
               } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
-                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_expl_cont(
-                    ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB, c*box_scales[0]) / box_scales[0];
-                FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rad_expl_cont: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_ec(
+                    ifcs_p2nfft_one_over_modulus, NULL, xsnorm, p, epsI, epsB, c*box_scales[0]) / box_scales[0];
+                FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rad_ec: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
               } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
-                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_impl_cont(
-                    ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB) / box_scales[0];
-                FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rad_impl_cont: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_ic(
+                    ifcs_p2nfft_one_over_modulus, NULL, xsnorm, p, epsI, epsB) / box_scales[0];
+                FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rad_ic: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
               }
             }
           }
@@ -1733,14 +1790,14 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
               xo[t] = 0.5*h[t];
             }
             regkern_hat[m] = ifcs_p2nfft_interpolate_cuboid_explicit_continuation(c, p, xi, xo, x);
-            FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rect_expl_cont: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+            FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rect_ec: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
           } else if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_IC){
             for(int t=0; t<3; t++){
               xi[t] = (0.5-epsB)*h[t];
               xo[t] = 0.5*h[t];
             }
             regkern_hat[m] = ifcs_p2nfft_interpolate_cuboid_implicit_continuation(p, xi, xo, x);
-            FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rect_impl_cont: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+            FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_reg_far_rect_ic: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
           }
         }
         
@@ -1790,6 +1847,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
 //    const fcs_float *box_inv,
     const fcs_float *box_scales, fcs_float alpha,
     fcs_int p, fcs_float c, fcs_int reg_far,
+    fcs_int interpolation_order, fcs_int far_interpolation_num_nodes, const fcs_float *far_interpolation_table_potential,
     MPI_Comm comm_cart, unsigned box_is_cubic
     )
 {
@@ -1852,8 +1910,8 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
 //          } else {
 //            if(!box_is_cubic) {
 //              /* Noncubic regularization works with unscaled coordinates. */
-//              regkern_hat[m] = ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
-//                  ifcs_p2nfft_one_over_modulus, x2norm, xsnorm, p, NULL, r_cut, epsB, c);
+//              regkern_hat[m] = ifcs_p2nfft_reg_far_rad_ec_noncubic(
+//                  ifcs_p2nfft_one_over_modulus, NULL, x2norm, xsnorm, p, r_cut, epsB, c);
 //            } else {
 //              /* Cubic regularization works with coordinates that are scaled into unit cube.
 //               * Therefore, use xsnorm, scale the continuation value 'c', and rescale after evaluation.
@@ -1865,13 +1923,13 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
 //                regkern_hat[m] = evaluate_cos_polynomial_1d(xsnorm, N_cg_cos, cg_cos_coeff) / box_scales[0];
 //              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
 //                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_sym(
-//                    ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB) / box_scales[0];
+//                    ifcs_p2nfft_one_over_modulus, NULL, xsnorm, p, epsI, epsB) / box_scales[0];
 //              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
-//                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_expl_cont(
-//                    ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB, c*box_scales[0]) / box_scales[0];
+//                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_ec(
+//                    ifcs_p2nfft_one_over_modulus, NULL, xsnorm, p, epsI, epsB, c*box_scales[0]) / box_scales[0];
 //              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
-//                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_impl_cont(
-//                    ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB) / box_scales[0];
+//                regkern_hat[m] = ifcs_p2nfft_reg_far_rad_ic(
+//                    ifcs_p2nfft_one_over_modulus, NULL, xsnorm, p, epsI, epsB) / box_scales[0];
 //              }
 //            }
 //          }
@@ -1884,9 +1942,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
 //          if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
 //            regkern_hat[m] = ifcs_p2nfft_reg_far_rect_sym(x, h, p, epsB);
 //          else if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_EC)
-//            regkern_hat[m] = ifcs_p2nfft_reg_far_rect_expl_cont(x, h, p, epsB, c);
+//            regkern_hat[m] = ifcs_p2nfft_reg_far_rect_ec(x, h, p, epsB, c);
 //          else if(reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_IC)
-//            regkern_hat[m] = ifcs_p2nfft_reg_far_rect_impl_cont(x, h, p, epsB);
+//            regkern_hat[m] = ifcs_p2nfft_reg_far_rect_ic(x, h, p, epsB);
 //        }
 
           fcs_float param[3];
@@ -1894,17 +1952,21 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
           param[1] = x2norm; //TODO revisit this. Probably wrong?
           param[2] = box_scales[0]; //TODO assumes cubic box
 
+          fcs_float h = box_scales[0];
 
-          if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
-            regkern_hat[m] = ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_erfx_over_x,
-                x2norm, p, param, epsB);// / box_scales[0];
+          if( (far_interpolation_num_nodes > 0) && (h*(0.5-epsB) < x2norm) && (x2norm < h*0.5) ){
+            regkern_hat[m] = ifcs_p2nfft_interpolation(
+                xsnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential);
+          } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
+            regkern_hat[m] = ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_erfx_over_x, param,
+                x2norm, p, epsB);
           } else {
             fprintf(stderr, "WRONG REGULARIZATION\n");
 	        }
 
-//        regkern_hat[m] = ifcs_p2nfft_reg_far_expl_cont_noncubic(
+//        regkern_hat[m] = ifcs_p2nfft_reg_far_ec_noncubic(
 //             ifcs_p2nfft_one_over_modulus, x2norm, xsnorm, p, NULL, r_cut, epsB, c);
-//         regkern_hat[m] = ifcs_p2nfft_reg_far_expl_cont(
+//         regkern_hat[m] = ifcs_p2nfft_reg_far_ec(
 //             ifcs_p2nfft_one_over_modulus, xsnorm, p, NULL,  epsI,  epsB, c*box_scales[0]) / box_scales[0];
         
         regkern_hat[m] *= scale;
@@ -2098,24 +2160,24 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
           FCS_P2NFFT_IFDBG(double tmp = -MPI_Wtime());
           if(num_periodic_dims == 2){
             if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
-              regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB);
+              regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, param, x2norm, p, epsB);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_reg_far_rad_sym_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
-              regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB, c);
+              regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, param, x2norm, p, epsB, c);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_reg_far_rad_ec_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
-              regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, x2norm, p, param, epsB);
+              regkern_hat[m] = -2.0 * FCS_SQRTPI * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_2dp_keq0, param, x2norm, p, epsB);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_reg_far_rad_ic_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             }
           } else {
             if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
-              regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x2norm, p, param, epsB);
+              regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, param, x2norm, p, epsB);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_reg_far_rad_sym_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
-              regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x2norm, p, param, epsB, c);
+              regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, param, x2norm, p, epsB, c);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_reg_far_rad_ec_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
-              regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x2norm, p, param, epsB);
+              regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, param, x2norm, p, epsB);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_reg_far_rad_ic_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             }
 
@@ -2147,15 +2209,15 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
               regkern_hat[m] = 0.0;
               FCS_P2NFFT_IFDBG(++count_set_to_zero);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
-              regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / lknorm;
+              regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, param, x2norm, p, epsB) / lknorm;
 	      FCS_P2NFFT_IFDBG(++count_interpolate);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_sym_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
-              regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB, c) / lknorm;
+              regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, param, x2norm, p, epsB, c) / lknorm;
 	      FCS_P2NFFT_IFDBG(++count_interpolate);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_ec_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
-              regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, x2norm, p, param, epsB) / lknorm;
+              regkern_hat[m] = 0.5 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_2dp_kneq0, param, x2norm, p, epsB) / lknorm;
 	      FCS_P2NFFT_IFDBG(++count_interpolate);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_ic_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             }
@@ -2191,15 +2253,15 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
               regkern_hat[m] = 0.0;
 	      FCS_P2NFFT_IFDBG(++count_set_to_zero);
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
-              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, param, x2norm, p, epsB);
 	      FCS_P2NFFT_IFDBG(++count_interpolate);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_sym_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
-              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB, c);
+              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, param, x2norm, p, epsB, c);
 	      FCS_P2NFFT_IFDBG(++count_interpolate);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_ec_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
-              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, param, x2norm, p, epsB);
 	      FCS_P2NFFT_IFDBG(++count_interpolate);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_ic_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             }
@@ -2253,15 +2315,15 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
 //     param[2] = h;
 //     for(int t=0; t<20; t++){
 //       fcs_float x = (0.5-epsB)*t/20.0*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, param, x, p, epsB));
 //     }
 //     for(int t=0; t<=100; t++){
 //       fcs_float x = (0.5-epsB + epsB*t/100.0)*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, param, x, p, epsB));
 //     }
 //     for(int t=1; t<=5; t++){
 //       fcs_float x = (0.5 + 0.1*t/5.0)*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, param, x, p, epsB));
 //     }
 //     fclose(file);
 //   }
@@ -2275,15 +2337,15 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
 //     param[2] = h;
 //     for(int t=0; t<20; t++){
 //       fcs_float x = (0.5-epsB)*t/20.0*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, param, x, p, epsB));
 //     }
 //     for(int t=0; t<=100; t++){
 //       fcs_float x = (0.5-epsB + epsB*t/100.0)*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, param, x, p, epsB));
 //     }
 //     for(int t=1; t<=5; t++){
 //       fcs_float x = (0.5 + 0.1*t/5.0)*h;
-//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x, p, param, epsB));
+//       fprintf(file, "%e %e\n", x, -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, param, x, p, epsB));
 //     }
 //     fclose(file);
 //   }
