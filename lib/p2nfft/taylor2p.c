@@ -50,22 +50,40 @@ static fcs_float binom(fcs_int n, fcs_int m)
   return fak(n)/fak(m)/fak(n-m);
 }
 
-/** basis polynomial for regularized kernel */
-static fcs_float BasisPoly(fcs_int m, fcs_int r, fcs_float xx)
+/** Generalized Lagrange basis polynomials (including derivatives up to degree p)
+ *    B_j(y) := r^j BasisPoly(p,j,y) 
+ *  satisfies the 2p+2 Hermite interpolation conditions
+ *    B_j^k(-1) = delta(k,j), for k=0,...,p,
+ *    B_j^k(1)  = 0,          for k=0,...,p.
+ *  I.e., each B_j(y) is equal to 1 in the j-th derivative at y=-1 and zero in all other interpolation points.
+ *  Analogously, we get the derivates at y=1 via
+ *    C_j(y) := (-r)^j BasisPoly(p,j,-y) 
+ *  that satisfies the 2p+2 Hermite interpolation conditions
+ *    C_j^k(-1) = 0,          for k=0,...,p,
+ *    C_j^k(1)  = delta(k,j), for k=0,...,p.
+ *  */
+static fcs_float BasisPoly(fcs_int p, fcs_int j, fcs_float y)
 {
   fcs_int k;
   fcs_float sum=0.0;
 
-//   if(fcs_float_is_zero(xx+1.0))
-//     return 1.0;
-
-  for (k=0; k<=m-r; k++) {
-    sum+=binom(m+k,k)*fcs_pow((xx+1.0)/2.0,(fcs_float)k);
+  for (k=0; k<=p-j; k++) {
+    sum+=binom(p+k,k)*fcs_pow((y+1.0)/2.0,(fcs_float)k);
   }
-  return sum*fcs_pow((xx+1.0),(fcs_float)r)*fcs_pow(1.0-xx,(fcs_float)(m+1))/(1<<(m+1))/fak(r); /* 1<<(m+1) = 2^(m+1) */
+  return sum*fcs_pow((y+1.0),(fcs_float)j)*fcs_pow(1.0-y,(fcs_float)(p+1))/(1<<(p+1))/fak(j); /* 1<<(p+1) = 2^(p+1) */
 }
 
-/** integrated basis polynomial for regularized kernel */
+/** Integrated generalized Lagrange basis polynomials
+ *    B_j(y) := r^(j+1) (IntBasisPoly(p,j,y) - IntBasisPoly(p,j,-1))
+ *  satisfies the 2p+1 Hermite interpolation conditions
+ *    B_j^k(-1) = delta(k,j), for k=0,...,p,
+ *    B_j^k(1)  = 0,          for k=1,...,p. (the function value at y=-1 is not interpolated)
+ *  Analogously, we get the derivates at y=1 via
+ *    C_j(y) := (-r)^(j+1) (IntBasisPoly(p,j,-y) - IntBasisPoly(p,j,1))
+ *  that satisfies the 2p+1 Hermite interpolation conditions
+ *    C_j^k(-1) = 0,          for k=0,...,p,
+ *    C_j^k(1)  = delta(k,j), for k=1,...,p.
+ *  */
 static fcs_float IntBasisPoly(fcs_int p, fcs_int j, fcs_float y)
 {
   fcs_int k,l;
@@ -83,7 +101,7 @@ static fcs_float IntBasisPoly(fcs_int p, fcs_int j, fcs_float y)
 
 /** Use Lagrange basis polynomials for evaluating the interpolation polynomial P(x) that satisfies
  *  the odd symmetric Hermite interpolation conditions in two nodes up to the p-th derivative, i.e.,
- *      P^k(x0) = (-1)^k P^k(x1) = kernel^k(x0), for all k=0,...,p-1
+ *      P^k(x0) = (-1)^k P^k(x1) = kernel^k(x0), for all k=0,...,p
  */
 static fcs_float interpolate_lagrange_sym(
     const fcs_float *kernel, fcs_int p,
@@ -97,17 +115,17 @@ static fcs_float interpolate_lagrange_sym(
   fcs_float m = 0.5*(x1+x0);
   fcs_float y = (x-m)/r;
 
-  for (fcs_int i=0; i<p; i++)
-    sum += (BasisPoly(p-1,i,y) + BasisPoly(p-1,i,-y)) * fcs_pow(r,(fcs_float)i) * kernel[i];
+  for (fcs_int i=0; i<p+1; i++)
+    sum += (BasisPoly(p,i,y) + BasisPoly(p,i,-y)) * fcs_pow(r,(fcs_float)i) * kernel[i];
 
   return sum;
 }
 
 /** Use Lagrange basis polynomials for evaluating the interpolation polynomial P(x) that satisfies
  *  the non-symmetric Hermite interpolation conditions in two nodes up to the p-th derivative, i.e.,
- *      P^k(x0) = kernel^k(x0), for all k=0,...,p-1,
+ *      P^k(x0) = kernel^k(x0), for all k=0,...,p,
  *      P(x1)   = c,
- *      p^k(x1) = 0,            for all k=1,...,p-1
+ *      P^k(x1) = 0,            for all k=1,...,p
  */
 static fcs_float interpolate_lagrange_ec(
     const fcs_float *kernel, fcs_int p,
@@ -121,17 +139,17 @@ static fcs_float interpolate_lagrange_ec(
   fcs_float m = 0.5*(x1+x0);
   fcs_float y = (x-m)/r;
 
-  for (fcs_int i=0; i<p; i++)
-    sum += BasisPoly(p-1,i,y) * fcs_pow(r,(fcs_float)i) * kernel[i];
+  for (fcs_int i=0; i<p+1; i++)
+    sum += BasisPoly(p,i,y) * fcs_pow(r,(fcs_float)i) * kernel[i];
 
-  return sum + kernel[p] * BasisPoly(p-1,0,-y);
+  return sum + kernel[p+1] * BasisPoly(p,0,-y);
 }
 
 /** Use Lagrangian basis polynomials for evaluating the interpolation polynomial P(x) that satisfies
  *  the non-symmetric Hermite interpolation conditions in two nodes up to the p-th derivative, i.e.,
- *      P^k(x0) = kernel^k(x0), for all k=0,...,p-1,
+ *      P^k(x0) = kernel^k(x0), for all k=0,...,p,
  *      P(x1) is not determined
- *      P^k(x1) = 0,            for all k=1,...,p-1,
+ *      P^k(x1) = 0,            for all k=1,...,p,
  */
 static fcs_float interpolate_lagrange_ic(
     const fcs_float *kernel, fcs_int p,
@@ -145,9 +163,9 @@ static fcs_float interpolate_lagrange_ic(
   fcs_float m = 0.5*(x1+x0);
   fcs_float y = (x-m)/r;
 
-  for (fcs_int j=0; j<=p-2; j++)
+  for (fcs_int j=0; j<p; j++)
     sum += fcs_pow(r,j+1.0) * kernel[j+1]
-      * (IntBasisPoly(p-1,j,y) - IntBasisPoly(p-1,j,-1));
+      * (IntBasisPoly(p,j,y) - IntBasisPoly(p,j,-1));
 
   return sum + kernel[0];
 }
@@ -349,7 +367,7 @@ static fcs_float interpolate_sym(
   }
 
 #if FCS_P2NFFT_INTPOL_LAGRANGE
-  retval = interpolate_lagrange_sym(buf, p, x0, x1, x);
+  retval = interpolate_lagrange_sym(buf, p-1, x0, x1, x);
 #else
   retval = interpolate_newton(buf, p-1, x0, x1, x);
 #endif
@@ -359,7 +377,7 @@ static fcs_float interpolate_sym(
 }
 
 /** Use Lagrange or Newton basis polynomials for evaluating the interpolation polynomial P(x) that satisfies
- *  the odd symmetric Hermite interpolation conditions in two nodes up to the p-th derivative, i.e.,
+ *  the odd symmetric Hermite interpolation conditions in two nodes up to the (p-1)-th derivative, i.e.,
  *      P^k(x0) = (-1)^k P^k(x1) = kernel^k(x0), for all k=0,...,p-1
  */
 fcs_float ifcs_p2nfft_interpolate_symmetric(
@@ -378,7 +396,7 @@ fcs_float ifcs_p2nfft_interpolate_symmetric(
   }
 
 #if FCS_P2NFFT_INTPOL_LAGRANGE
-  retval = interpolate_lagrange_sym(kernel, p, x0, x1, x);
+  retval = interpolate_lagrange_sym(kernel, p-1, x0, x1, x);
 #else
   retval = interpolate_newton(kernel, p-1, x0, x1, x);
 #endif
@@ -402,7 +420,7 @@ static fcs_float interpolate_ec(
   buf[p] = c;
 
 #if FCS_P2NFFT_INTPOL_LAGRANGE
-  retval = interpolate_lagrange_ec(buf, p, x0, x1, x);
+  retval = interpolate_lagrange_ec(buf, p-1, x0, x1, x);
 #else
   retval = interpolate_newton(buf, p-1, x0, x1, x);
 #endif
@@ -412,10 +430,10 @@ static fcs_float interpolate_ec(
 }
 
 /** Use Lagrange or Newton basis polynomials for evaluating the interpolation polynomial P(x) that satisfies
- *  the non-symmetric Hermite interpolation conditions in two nodes up to the p-th derivative, i.e.,
+ *  the non-symmetric Hermite interpolation conditions in two nodes up to the (p-1)-th derivative, i.e.,
  *      P^k(x0) = kernel^k(x0), for all k=0,...,p-1,
  *      P(x1)   = c,
- *      p^k(x1) = 0,            for all k=1,...,p-1
+ *      P^k(x1) = 0,            for all k=1,...,p-1
  */
 fcs_float ifcs_p2nfft_interpolate_explicit_continuation(
     ifcs_p2nfft_kernel k, const fcs_float *param, fcs_float c,
@@ -432,7 +450,7 @@ fcs_float ifcs_p2nfft_interpolate_explicit_continuation(
   kernel[p] = c;
 
 #if FCS_P2NFFT_INTPOL_LAGRANGE
-  retval = interpolate_lagrange_ec(kernel, p, x0, x1, x);
+  retval = interpolate_lagrange_ec(kernel, p-1, x0, x1, x);
 #else
   retval = interpolate_newton(kernel, p-1, x0, x1, x);
 #endif
@@ -455,7 +473,7 @@ static fcs_float interpolate_ic(
     buf[i+p] = 0;
 
 #if FCS_P2NFFT_INTPOL_LAGRANGE
-  retval = interpolate_lagrange_ic(buf, p, x0, x1, x);
+  retval = interpolate_lagrange_ic(buf, p-1, x0, x1, x);
 #else
   retval = interpolate_newton_ic(buf, p-1, x0, x1, x);
 #endif
@@ -465,7 +483,7 @@ static fcs_float interpolate_ic(
 }
 
 /** Use Lagrange or Newton basis polynomials for evaluating the interpolation polynomial P(x) that satisfies
- *  the non-symmetric Hermite interpolation conditions in two nodes up to the p-th derivative, i.e.,
+ *  the non-symmetric Hermite interpolation conditions in two nodes up to the (p-1)-th derivative, i.e.,
  *      P^k(x0) = kernel^k(x0), for all k=0,...,p-1,
  *      P(x1) is not determined
  *      P^k(x1) = 0,            for all k=1,...,p-1,
@@ -484,7 +502,7 @@ fcs_float ifcs_p2nfft_interpolate_implicit_continuation(
     kernel[i+p] = 0;
 
 #if FCS_P2NFFT_INTPOL_LAGRANGE
-  retval = interpolate_lagrange_ic(kernel, p, x0, x1, x);
+  retval = interpolate_lagrange_ic(kernel, p-1, x0, x1, x);
 #else
   retval = interpolate_newton_ic(kernel, p-1, x0, x1, x);
 #endif
