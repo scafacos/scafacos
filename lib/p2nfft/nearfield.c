@@ -20,6 +20,7 @@
 #include "nearfield.h"
 #include "kernels.h"
 #include "types.h"
+#include "taylor2p.h"
 
 static fcs_float compute_self_potential_periodic(
     const void* param);

@@ -45,19 +45,6 @@ fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
     fcs_int p, const fcs_float *param,
     fcs_float epsI, fcs_float epsB);
 
-fcs_float ifcs_p2nfft_reg_far_rect_sym(
-    const fcs_float *x, const fcs_float *h,
-    fcs_int p, fcs_float epsB);
-fcs_float ifcs_p2nfft_reg_far_rect_sym_version2(
-    const fcs_float *x, const fcs_float *h,
-    fcs_int p, fcs_float epsB);
-fcs_float ifcs_p2nfft_reg_far_rect_expl_cont(
-    const fcs_float *x, const fcs_float *h,
-    fcs_int p, fcs_float epsB, fcs_float c);
-fcs_float ifcs_p2nfft_reg_far_rect_impl_cont(
-    const fcs_float *x, const fcs_float *h,
-    fcs_int p, fcs_float epsB);
-
 fcs_float ifcs_p2nfft_reg_far_rad_sym_no_singularity(
     ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p,
     const fcs_float *param, fcs_float epsB);
@@ -67,25 +54,6 @@ fcs_float ifcs_p2nfft_reg_far_rad_ec_no_singularity(
 fcs_float ifcs_p2nfft_reg_far_rad_ic_no_singularity(
     ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p,
     const fcs_float *param, fcs_float epsB);
-
-fcs_float ifcs_regkern3_2ptaylor_x_inv(fcs_float *x, fcs_int p, fcs_float a, fcs_float b, fcs_float *n);
-
-fcs_float ifcs_p2nfft_interpolation(
-    fcs_float x, fcs_float one_over_epsI,
-    fcs_int order, fcs_int num_nodes,
-    const fcs_float *table);
-
-fcs_float ifcs_p2nfft_nearfield_correction_taylor2p(
-    fcs_float xx, fcs_int p, const fcs_float *param);
-fcs_float ifcs_p2nfft_nearfield_correction_taylor2p_derive(
-    fcs_float xx, fcs_int p, const fcs_float *param);
-
-fcs_int ifcs_p2nfft_load_taylor2p_coefficients(
-   fcs_int p,
-   fcs_float *param);
-fcs_int ifcs_p2nfft_load_taylor2p_derive_coefficients(
-   fcs_int p,
-   fcs_float *param);
 
 #endif
 

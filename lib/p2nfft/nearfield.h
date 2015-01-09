@@ -28,6 +28,7 @@
 #include "FCSCommon.h"
 #include "constants.h"
 #include "regularization.h"
+#include "interpolation.h"
 
 
 typedef struct {

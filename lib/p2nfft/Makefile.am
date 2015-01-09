@@ -38,6 +38,8 @@ libfcs_p2nfft_la_SOURCES = \
 	nearfield.c nearfield.h \
 	kernels.c kernels.h \
 	regularization.c regularization.h \
+	taylor2p.c taylor2p.h \
+	interpolation.c interpolation.h \
 	cg_cos_coeff.c cg_cos_coeff.h \
 	cg_cos_err.c cg_cos_err.h \
 	cg_cos_coeff_sym.c cg_cos_coeff_sym.h \

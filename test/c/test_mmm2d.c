@@ -138,9 +138,9 @@ node_grid[2]);
     
     fcs_float charge_sum = 0.0;
     for (pid = 0; pid < n_particles; pid++) {
-      fscanf(data, "%lf %lf %lf", &positions[3*pid], &positions[3*pid+1],
+      fscanf(data, "%" FCS_LMOD_FLOAT "f %" FCS_LMOD_FLOAT "f %" FCS_LMOD_FLOAT "f", &positions[3*pid], &positions[3*pid+1],
 &positions[3*pid+2]);
-      fscanf(data, "%lf", &charges[pid]);
+      fscanf(data, "%" FCS_LMOD_FLOAT "f", &charges[pid]);
       charge_sum += charges[pid];
     }
     fclose(data);

@@ -36,6 +36,13 @@
 #define FCS_P2NFFT_DEBUG_RETUNE 0
 #define FCS_P2NFFT_TIMING 0
 
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+#  define FCS_P2NFFT_IFDBG(code) code
+#else
+#  define FCS_P2NFFT_IFDBG(code) 
+#endif
+
+
 #define CONCAT2(prefix, name)  prefix ## name
 #define CONCAT(prefix, name)  CONCAT2(prefix, name)
 

@@ -90,7 +90,7 @@ public:
 		p3m_int *group;
 
 		/** packing function for send blocks. */
-		void (*pack_function)(double*, double*, int*, int*, int*, int);
+		void (*pack_function)(fcs_float*, fcs_float*, int*, int*, int*, int);
 		/** Send block specification. 6 integers for each node: start[3], size[3]. */
 		p3m_int *send_block;
 		/** Send block communication sizes. */
@@ -113,7 +113,7 @@ public:
 		fftw_plan plan;
 
 		/** packing function for send blocks. */
-		void (*pack_function)(double*, double*, int*, int*, int*, int);
+		void (*pack_function)(fcs_float*, fcs_float*, int*, int*, int*, int);
 	};
 
 	/***************************************************/

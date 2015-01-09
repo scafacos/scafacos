@@ -426,8 +426,9 @@ static void mmm_preparePolygammaEven(fcs_int n, fcs_float binom, SizedList *seri
     for (order = 1;; order += 1) {
       x_order = 2*order;
       coeff = -2*mmm_hzeta(x_order + 1, 2);
+      if (fcs_isnan(coeff)) break;
       if (fcs_float_is_zero(fabs(maxx*coeff)*(4.0/3.0)))
-  break;
+        break;
       mmm_realloc_doublelist(series, order + 1);
       series->e[order] = coeff;
       maxx *= 0.25;
@@ -443,8 +444,9 @@ static void mmm_preparePolygammaEven(fcs_int n, fcs_float binom, SizedList *seri
       // only even exponents of x
       x_order = 2*order;
       coeff = pref*mmm_hzeta(1 + deriv + x_order, 2);
+      if (fcs_isnan(coeff)) break;
       if ((fcs_float_is_zero(fabs(maxx*coeff)*(4.0/3.0))) && (x_order > deriv))
-  break;
+        break;
       mmm_realloc_doublelist(series, order + 1);
       series->e[order] = -binom*coeff;
       maxx *= 0.25;
@@ -469,9 +471,9 @@ static void mmm_preparePolygammaOdd(fcs_int n, fcs_float binom, SizedList *serie
     // only odd exponents of x
     x_order = 2*order + 1;
     coeff = pref*mmm_hzeta(1 + deriv + x_order, 2);
+    if (fcs_isnan(coeff)) break;
     if ((fcs_float_is_zero(fabs(maxx*coeff)*(4.0/3.0))) && (x_order > deriv))
       break;
-
     mmm_realloc_doublelist(series, order + 1);
     series->e[order] = -binom*coeff;
     maxx *= 0.25;

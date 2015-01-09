@@ -58,6 +58,9 @@ extern "C" {
 #define fcs_creal(_x_)     FCS_MATH(creal)(_x_)
 #define fcs_cimag(_x_)     FCS_MATH(cimag)(_x_)
 
+#define fcs_isnan(_x_)     isnan(_x_)
+#define fcs_isinf(_x_)     isinf(_x_)
+
 /**
  * @brief function to determine if two float values are equal
  * @param x - fcs_float first float value
