@@ -27,7 +27,7 @@
 
 /* Switch to use Lagrange instead of Newton basis polynomials for interpolation.
  * Default are Newton polynomials, since they are faster. */
-#define FCS_P2NFFT_INTPOL_LAGRANGE 1
+#define FCS_P2NFFT_INTPOL_LAGRANGE 0
 
 
 
