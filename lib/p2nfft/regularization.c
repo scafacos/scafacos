@@ -232,7 +232,7 @@ fcs_float ifcs_p2nfft_reg_far_rad_ic_no_singularity(
 
   /* regularization at farfield border */
   if ( xi < x2norm )
-    ifcs_p2nfft_interpolate_implicit_continuation(k, param, p, xi, xo, x2norm);
+    return ifcs_p2nfft_interpolate_implicit_continuation(k, param, p, xi, xo, x2norm);
  
   /* near- and farfield (no singularity): original kernel function */ 
   return k(x2norm,0,param);
