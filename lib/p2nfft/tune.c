@@ -1954,9 +1954,14 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
 
           fcs_float h = box_scales[0];
 
-          if( (far_interpolation_num_nodes > 0) && (h*(0.5-epsB) < x2norm) && (x2norm < h*0.5) ){
+          if( (far_interpolation_num_nodes > 0) && (h*(0.5-epsB) < x2norm) ){
+            /* interpolation requires constant continuation */
+            fcs_float x2 = (x2norm > h*0.5) ? h*0.5 : x2norm;
+            fcs_float xs = (x2norm > h*0.5) ? 0.5   : xsnorm;
+            param[1] = x2;
+
             regkern_hat[m] = ifcs_p2nfft_interpolation(
-                xsnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential);
+                xs - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential);
           } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
             regkern_hat[m] = ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_erfx_over_x, param,
                 x2norm, p, epsB);
