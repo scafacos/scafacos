@@ -1982,18 +1982,44 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
               /* avoid regularization of functions that are numerically equal to zero (less than 1e-16) */
               regkern_hat[m] = 0.0;
 	      FCS_P2NFFT_IFDBG(++count_set_to_zero);
-            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
-              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
-	      FCS_P2NFFT_IFDBG(++count_interpolate);
-              FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_sym_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
-            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
-              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB, c);
-	      FCS_P2NFFT_IFDBG(++count_interpolate);
-              FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_ec_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
-            } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
-              regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
-	      FCS_P2NFFT_IFDBG(++count_interpolate);
-              FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_ic_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+            } else {
+              /* The function evaluations 'in the middle' of the far field are much more expensive than the rest.
+               * Here, we use symmetry to reduce the number of expensive function evaluations. 
+               * At least in the serial case every regkern value is computed 8 times on one process. 
+               * Let's compute it only once and copy afterward. */
+              fcs_int found_symmetric_value = 0;
+              
+              if( (l0>0 || l1>0 || l2>0) ){
+                ptrdiff_t k0 = -abs(l0) - local_Ni_start[0];
+                ptrdiff_t k1 = -abs(l1) - local_Ni_start[1];
+                ptrdiff_t k2 = -abs(l2) - local_Ni_start[2];
+
+                if(0 <= k0 && k0 < local_Ni[0]){
+                  if(0 <= k1 && k1 < local_Ni[1]){
+                    if(0 <= k2 && k2 < local_Ni[2]){
+                      ptrdiff_t ind = k2 + local_Ni[2]* (k1 + local_Ni[1]*k0);
+                      regkern_hat[m] = regkern_hat[ind]/scale;
+                      found_symmetric_value = 1;
+                    }
+                  }
+                }
+              }
+
+              if(!found_symmetric_value){
+                if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
+                  regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+	          FCS_P2NFFT_IFDBG(++count_interpolate);
+                  FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_sym_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+                } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
+                  regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ec_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB, c);
+	          FCS_P2NFFT_IFDBG(++count_interpolate);
+                  FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_ec_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+                } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
+                  regkern_hat[m] = 2.0 * ifcs_p2nfft_reg_far_rad_ic_no_singularity(ifcs_p2nfft_ewald_1dp_kneq0, x2norm, p, param, epsB);
+	          FCS_P2NFFT_IFDBG(++count_interpolate);
+                  FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_reg_far_rad_ic_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+                }
+              }
             }
 
             if(isnan(creal(regkern_hat[m]))){
