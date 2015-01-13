@@ -48,7 +48,7 @@
 #define FCS_P2NFFT_EXIT_AFTER_TUNING 0
 #define FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE 0
 #define FCS_P2NFFT_ENABLE_TUNING_BUG 0
-#define FCS_P2NFFT_DEBUG_REGKERN 1
+#define FCS_P2NFFT_DEBUG_REGKERN 0
 
 #if FCS_P2NFFT_DEBUG_REGKERN
 #  define FCS_P2NFFT_IFDBG_REGKERN(code) code
@@ -814,7 +814,7 @@ FCSResult ifcs_p2nfft_tune(
         if(num_intpol < num_grid_reg)
           d->far_interpolation_num_nodes = d->near_interpolation_num_nodes;
 //             d->far_interpolation_num_nodes = 0;
-        FCS_P2NFFT_IFDBG(if(comm_rank==0) fprintf(stderr, "num_intpol = %td, num_grid_reg = %td\n", num_intpol, num_grid_reg));
+        FCS_P2NFFT_IFDBG(if(comm_rank==0) fprintf(stderr, "num_intpol = %d, num_grid_reg = %d\n", num_intpol, num_grid_reg));
       }
 
       if(d->far_interpolation_num_nodes > 0){
