@@ -1826,6 +1826,12 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
   scale /= volume_of_periodic_dims(box_a, box_b, box_c, periodicity);
   scale2 = scale;
 
+  /* this works only for equal nonperiodic box lengths */
+  fcs_float h=0.0;
+  for(fcs_int t=0; t<3; t++)
+    if(!periodicity[t])
+      h = box_scales[t];
+
   /* divide by FFT normalization factor for every nonperiodic dim */
   for(int t=0; t<3; t++) if(!periodicity[t]) scale /= N[t];
 
@@ -1836,7 +1842,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   C csum, csum_global;
   csum = 0.0;
-  double timer_keq0=0, timer_kne0=0;
+  double timer_keq0=0, timer_kne0=0, timer_analytic=0;
   int count_Req0=0, count_Rne0=0, count_all=0, count_analytic=0, count_interpolate=0, count_set_to_zero=0;
 #endif
 
@@ -1854,7 +1860,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
         k[2] = (periodicity[2]) ? l2 : 0;  
 
         /* New regularization for mixed boundary conditions */
-        fcs_float lknorm = 0.0, x2norm = 0.0, xsnorm = 0.0, h = 1.0;
+        fcs_float lknorm = 0.0, x2norm = 0.0, xsnorm = 0.0;
 	fcs_float kxsqnorm = 0.0;
 
         lk[0] = At_TIMES_VEC(box_inv, k, 0);
@@ -1876,17 +1882,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
         x2norm = fcs_sqrt(x2norm);
         xsnorm = fcs_sqrt(xsnorm);
 
-        /* this works only for equal nonperiodic box lengths */
-        for(fcs_int t=0; t<3; t++)
-          if(!periodicity[t])
-            h = box_scales[t];
-
-// if((l0==0) && (l1==0) && (l2==1)) fprintf(stderr, "l = [%td, %td, %td], h = %e, lknorm = %e, Pi*h*(0.5-epsB) = %e\n", l0, l1, l2, h, lknorm, FCS_PI*h*(0.5-epsB));
-
-        fcs_float param[3];
-        param[0] = alpha;
-        param[1] = lknorm;
-        param[2] = h;
+        fcs_float param[3] = {alpha, lknorm, h};
 
         /* Check if all indices corresponding to periodic dims are 0.
          * Index correspoding to non-periodic dim will be 0 per default. */
@@ -2024,21 +2020,6 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     }
   }
 
-#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
-  if(myrank==0){
-    fprintf(stderr, "\nRegularization for k==0 takes %e\n", timer_keq0);
-    fprintf(stderr,   "Regularization for k!=0 takes %e\n\n", timer_kne0);
-
-    fprintf(stderr, "# grid points in the regularization domain = %d\n", count_all);  
-    fprintf(stderr, "# regularization values that are set to zero = %d\n", count_set_to_zero); 
-    fprintf(stderr, "# regularization values that come from interpolation = %d\n", count_interpolate); 
-    fprintf(stderr, "# regularization values that come from analytical Fourier transform = %d\n\n", count_analytic);  
-
-    fprintf(stderr, "Regularization numerically     equal to 0 for %d times\n", count_Req0);
-    fprintf(stderr, "Regularization numerically NOT equal to 0 for %d times\n\n", count_Rne0);
-  }
-#endif
-
 //   {
 //     FILE *file = fopen("reg_keq0.txt", "w");
 //     fcs_float h = box_scales[0];
@@ -2106,14 +2087,8 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
 	k[0] = (periodicity[0]) ? l0 : 0;
 	
         /* New regularization for mixed boundary conditions */
-        fcs_float lknorm = 0.0, h = 1.0;
-	fcs_float kxsqnorm = 0.0;
+        fcs_float lknorm = 0.0, kxsqnorm = 0.0;
 	
-	/* works only for equal box lengths regarding nonperiodic dims */
-	for(fcs_int t=0; t<3; t++)
-          if(!periodicity[t])
-            h = box_scales[t];
-
         lk[0] = At_TIMES_VEC(box_inv, k, 0);
         lk[1] = At_TIMES_VEC(box_inv, k, 1);
         lk[2] = At_TIMES_VEC(box_inv, k, 2);
@@ -2134,28 +2109,26 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
         param[1] = lknorm;
         param[2] = h;
 
-	if (kc > 0.0){
-	  if (ksqnorm > 0.0 && ksqnorm < kc*kc){ /* apply spherical cutoff in kspace */
-	    if(num_periodic_dims == 2){
-	      if(0.5 * scale2 * ifcs_p2nfft_ewald_2dp_kneq0(h*(0.5+epsB),0,param) < 1e-16)
-		regkern_hat[m] = scale2/(h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
-	    } else { /* num_periodic_dims == 1 */
-	      if(2.0 * scale2 * ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5+epsB),0,param) < 1e-16)
-		regkern_hat[m] = scale2/(h*h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
+        if ((k[0] == 0) && (k[1] == 0) && (k[2] == 0)){
+          ; /* do not use analytic formula for k==0 */
+        }
+        else if (kc > 0.0 && ksqnorm > kc*kc){
+          ; /* apply spherical cutoff in kspace */
+        } else { /* no spherical cutoff, take full grid */
+          FCS_P2NFFT_IFDBG(double tmp = -MPI_Wtime());
+          if(num_periodic_dims == 2){
+            if(0.5 * scale2 * ifcs_p2nfft_ewald_2dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+              regkern_hat[m] = scale2/(h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
+              FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, analytic Fourier transform: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             }
-	  }
-	} else { /* no spherical cutoff, take full grid */
-	  if (ksqnorm > 0.0){
-	    if(num_periodic_dims == 2){
-	      if(0.5 * scale2 * ifcs_p2nfft_ewald_2dp_kneq0(h*(0.5+epsB),0,param) < 1e-16)
-		regkern_hat[m] = scale2/(h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
-	    } else { /* num_periodic_dims == 1 */
-	      if(2.0 * scale2 * ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5+epsB),0,param) < 1e-16)
-		regkern_hat[m] = scale2/(h*h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
-	    }
-	  }
-	}
-          
+          } else { /* num_periodic_dims == 1 */
+            if(2.0 * scale2 * ifcs_p2nfft_ewald_1dp_kneq0(h*(0.5+epsB),0,param) < 1e-16){
+              regkern_hat[m] = scale2/(h*h*FCS_PI*kxsqnorm) * fcs_exp(-FCS_P2NFFT_PISQR * kxsqnorm/(alpha*alpha));
+              FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, analytic Fourier transform: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+            }
+          }
+          FCS_P2NFFT_IFDBG(tmp += MPI_Wtime(); timer_analytic += tmp);
+        }
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
         csum += fabs(creal(regkern_hat[m])) + fabs(cimag(regkern_hat[m]));
@@ -2164,7 +2137,22 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
     }
   }
   
-  
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
+  if(myrank==0){
+    fprintf(stderr, "\nRegularization for k==0 takes %e\n", timer_keq0);
+    fprintf(stderr,   "Regularization for k!=0 takes %e\n", timer_kne0);
+    fprintf(stderr,   "Analytic Reg.  for k!=0 takes %e\n\n", timer_analytic);
+
+    fprintf(stderr, "# grid points in the regularization domain = %d\n", count_all);  
+    fprintf(stderr, "# regularization values that are set to zero = %d\n", count_set_to_zero); 
+    fprintf(stderr, "# regularization values that come from interpolation = %d\n", count_interpolate); 
+    fprintf(stderr, "# regularization values that come from analytical Fourier transform = %d\n\n", count_analytic);  
+
+    fprintf(stderr, "Regularization numerically     equal to 0 for %d times\n", count_Req0);
+    fprintf(stderr, "Regularization numerically NOT equal to 0 for %d times\n\n", count_Rne0);
+  }
+#endif
+
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   /* take care of transposed order N1 x N2 x N0 */
   /* shift FFT input via twiddle factors on the output */
