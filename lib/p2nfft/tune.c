@@ -781,9 +781,10 @@ FCSResult ifcs_p2nfft_tune(
 
       /* far field interpolation only works for cubic boxes and radial far field regularization  
        * and is only used with 0d-periodicity */
-      if( reg_far_is_radial(reg_far)  && is_cubic(d->box_l) && (d->num_periodic_dims==0) )
-        d->far_interpolation_num_nodes = d->near_interpolation_num_nodes;
-      else
+      if( reg_far_is_radial(reg_far)  && is_cubic(d->box_l) && (d->num_periodic_dims==0) ){
+        d->far_interpolation_num_nodes = (int) d->near_interpolation_num_nodes * d->epsB / d->epsI;
+        FCS_P2NFFT_IFDBG(if(!comm_rank) fprintf(stderr, "interpolation nodes: near = %d, far = %d\n", d->near_interpolation_num_nodes, d->far_interpolation_num_nodes));
+      } else
         d->far_interpolation_num_nodes = 0;
 
       if(d->far_interpolation_num_nodes > 0){
@@ -1025,9 +1026,10 @@ FCSResult ifcs_p2nfft_tune(
       }
 
       /* far field interpolation only works for cubic boxes and radial far field regularization */
-      if( reg_far_is_radial(reg_far)  && is_cubic(d->box_l) )
-        d->far_interpolation_num_nodes = d->near_interpolation_num_nodes;
-      else
+      if( reg_far_is_radial(reg_far)  && is_cubic(d->box_l) ){
+        d->far_interpolation_num_nodes = (int) d->near_interpolation_num_nodes * d->epsB / d->epsI;
+        FCS_P2NFFT_IFDBG(if(!comm_rank) fprintf(stderr, "interpolation nodes: near = %d, far = %d\n", d->near_interpolation_num_nodes, d->far_interpolation_num_nodes));
+      } else
         d->far_interpolation_num_nodes = 0;
 
       if(d->far_interpolation_num_nodes > 0){
