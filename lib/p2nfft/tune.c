@@ -48,7 +48,7 @@
 #define FCS_P2NFFT_EXIT_AFTER_TUNING 0
 #define FCS_P2NFFT_TEST_GENERAL_ERROR_ESTIMATE 0
 #define FCS_P2NFFT_ENABLE_TUNING_BUG 0
-#define FCS_P2NFFT_DEBUG_REGKERN 0
+#define FCS_P2NFFT_DEBUG_REGKERN 1
 
 #if FCS_P2NFFT_DEBUG_REGKERN
 #  define FCS_P2NFFT_IFDBG_REGKERN(code) code
@@ -750,7 +750,6 @@ FCSResult ifcs_p2nfft_tune(
             d->r_cut, d->alpha,
             d->near_interpolation_table_force);
       }
-
     } else {
       /********************/
       /* nonperiodic case */
@@ -988,7 +987,8 @@ FCSResult ifcs_p2nfft_tune(
         d->far_interpolation_num_nodes = 0;
 
       if(d->far_interpolation_num_nodes > 0){
-        d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->far_interpolation_num_nodes+3));
+        /* far field regularization table needs one extra point before 0.5-epsB for cubic interpolation */
+        d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->far_interpolation_num_nodes+4));
         init_far_interpolation_table_potential_0dp(
             d->far_interpolation_num_nodes, reg_far,
             d->epsB, d->p, d->c,
@@ -1310,28 +1310,28 @@ static void init_far_interpolation_table_potential_0dp(
 {
   if(reg_far == FCS_P2NFFT_REG_FAR_RAD_CG){
     /* use CG approximiation */
-    for(fcs_int k=0; k<num_nodes+3; k++)
-      table[k] = evaluate_cos_polynomial_1d(
+    for(fcs_int k=-1; k<num_nodes+3; k++)
+      table[k+1] = evaluate_cos_polynomial_1d(
           0.5 - epsB + epsB * (fcs_float) k / num_nodes, N_cos, cos_coeff);
   } else if(reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
     /* use symmetric Taylor2p, not smooth at r=0.5 in 3d */
-    for(fcs_int k=0; k<num_nodes+3; k++)
-      table[k] = ifcs_p2nfft_reg_far_rad_sym(
+    for(fcs_int k=-1; k<num_nodes+3; k++)
+      table[k+1] = ifcs_p2nfft_reg_far_rad_sym(
           ifcs_p2nfft_one_over_modulus, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, 0, epsB, epsB);
   } else if(reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC){
     /* use normal basis polynomials and set constant continuation value 'c' explicitly */
     /* Since we only evaluate regkernel in [0.5-epsB, 0.5] we can savely set epsI = epsB */
-    for(fcs_int k=0; k<num_nodes+3; k++)
-      table[k] = ifcs_p2nfft_reg_far_rad_expl_cont(
+    for(fcs_int k=-1; k<num_nodes+3; k++)
+      table[k+1] = ifcs_p2nfft_reg_far_rad_expl_cont(
           ifcs_p2nfft_one_over_modulus, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, 0, epsB, epsB, c);
   } else if(reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC){
     /* use integrated basis polynomials, sets continuation value 'c' implicitily */
-    for(fcs_int k=0; k<num_nodes+3; k++)
-      table[k] = ifcs_p2nfft_reg_far_rad_impl_cont(
+    for(fcs_int k=-1; k<num_nodes+3; k++)
+      table[k+1] = ifcs_p2nfft_reg_far_rad_impl_cont(
           ifcs_p2nfft_one_over_modulus, 0.5 - epsB + epsB * (fcs_float) k / num_nodes, p, 0, epsB, epsB);
   } else
-    for(fcs_int k=0; k<num_nodes+3; k++)
-      table[k] = 0.0;
+    for(fcs_int k=-1; k<num_nodes+3; k++)
+      table[k+1] = 0.0;
 }
 
 static void init_near_interpolation_table_force_3dp(
@@ -1637,7 +1637,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
         /* calculate near and farfield regularization via interpolation */
         if(x2norm < r_cut){
           if(near_interpolation_num_nodes > 0)
-            regkern_hat[m] = ifcs_p2nfft_interpolation(
+            regkern_hat[m] = ifcs_p2nfft_interpolation_near(
                 x2norm, 1.0/r_cut, interpolation_order, near_interpolation_num_nodes, near_interpolation_table_potential);
           else if (reg_near == FCS_P2NFFT_REG_NEAR_CG)
             regkern_hat[m] = epsI/r_cut * evaluate_cos_polynomial_1d(x2norm * epsI/r_cut, N_cg_cos, cg_cos_coeff);
@@ -1657,9 +1657,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp(
                * Therefore, use xsnorm, scale the continuation value 'c', and rescale after evaluation.
                * Note that box_scales are the same in every direction for cubic boxes. */
               if(far_interpolation_num_nodes){
-                regkern_hat[m] = ifcs_p2nfft_interpolation(
+                regkern_hat[m] = ifcs_p2nfft_interpolation_far(
                     xsnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential) / box_scales[0];
-                FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_interpolation: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+                FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "ifcs_p2nfft_interpolation_far: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
               } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_CG){
                 regkern_hat[m] = evaluate_cos_polynomial_1d(xsnorm, N_cg_cos, cg_cos_coeff) / box_scales[0];
                 FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "evaluate_cos_polynomial_1d: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));

@@ -151,7 +151,7 @@ ifcs_p2nfft_compute_near_potential_interpolation(
 {
   ifcs_p2nfft_near_params *d = (ifcs_p2nfft_near_params*) param;
 
-  return 1.0/dist - ifcs_p2nfft_interpolation(
+  return 1.0/dist - ifcs_p2nfft_interpolation_near(
       dist, d->one_over_r_cut,
       d->interpolation_order, d->interpolation_num_nodes,
       d->near_interpolation_table_potential);
@@ -165,7 +165,7 @@ ifcs_p2nfft_compute_near_field_interpolation(
   ifcs_p2nfft_near_params *d = (ifcs_p2nfft_near_params*) param;
   fcs_float inv_dist = 1.0/dist;
 
-  return -inv_dist*inv_dist - ifcs_p2nfft_interpolation(
+  return -inv_dist*inv_dist - ifcs_p2nfft_interpolation_near(
         dist, d->one_over_r_cut,
         d->interpolation_order, d->interpolation_num_nodes,
         d->near_interpolation_table_force);
@@ -180,91 +180,14 @@ ifcs_p2nfft_compute_near_interpolation(
   ifcs_p2nfft_near_params *d = (ifcs_p2nfft_near_params*) param;
   fcs_float inv_dist = 1.0/dist;
 
-  *p = inv_dist - ifcs_p2nfft_interpolation(
+  *p = inv_dist - ifcs_p2nfft_interpolation_near(
       dist, d->one_over_r_cut,
       d->interpolation_order, d->interpolation_num_nodes,
       d->near_interpolation_table_potential);
-  *f = -inv_dist*inv_dist - ifcs_p2nfft_interpolation(
+  *f = -inv_dist*inv_dist - ifcs_p2nfft_interpolation_near(
         dist, d->one_over_r_cut,
         d->interpolation_order, d->interpolation_num_nodes,
         d->near_interpolation_table_force);
-}
-
-
-
-/** linear spline interpolation in near field with even kernels */
-static inline fcs_float ifcs_p2nfft_intpol_even_const(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I
-    )
-{
-  fcs_float c;
-  fcs_int r;
-  fcs_float f1;
-
-  c=fcs_fabs(x*num_nodes*one_over_eps_I);
-  r=(fcs_int)c;
-  f1=table[r];
-  return f1;
-}
-
-/** linear spline interpolation in near field with even kernels */
-static inline fcs_float ifcs_p2nfft_intpol_even_lin(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I
-    )
-{
-  fcs_float c,c1,c3;
-  fcs_int r;
-  fcs_float f1,f2;
-
-  c=fcs_fabs(x*num_nodes*one_over_eps_I);
-  r=(fcs_int)c;
-  f1=table[r];f2=table[r+1];
-  c1=c-r;
-  c3=c1-1.0;
-  return (-f1*c3+f2*c1);
-}
-
-/** quadratic spline interpolation in near field with even kernels */
-static inline fcs_float ifcs_p2nfft_intpol_even_quad(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I
-    )
-{
-  fcs_float c,c1,c2,c3;
-  fcs_int r;
-  fcs_float f0,f1,f2;
-
-  c=fcs_fabs(x*num_nodes*one_over_eps_I);
-  r=(fcs_int)c;
-  if (r==0) {f0=table[r+1];f1=table[r];f2=table[r+1];}
-  else { f0=table[r-1];f1=table[r];f2=table[r+1];}
-  c1=c-r;
-  c2=c1+1.0;
-  c3=c1-1.0;
-  return (0.5*f0*c1*c3-f1*c2*c3+0.5*f2*c2*c1);
-}
-
-/** cubic spline interpolation in near field with even kernels */
-static inline fcs_float ifcs_p2nfft_intpol_even_cub(
-    const fcs_float x, const fcs_float *table,
-    const fcs_int num_nodes, const fcs_float one_over_eps_I
-    )
-{
-  fcs_float c,c1,c2,c3,c4;
-  fcs_int r;
-  fcs_float f0,f1,f2,f3;
-
-  c=fcs_fabs(x*num_nodes*one_over_eps_I);
-  r=(fcs_int)c;
-  if (r==0) {f0=table[r+1];f1=table[r];f2=table[r+1];f3=table[r+2];}
-  else { f0=table[r-1];f1=table[r];f2=table[r+1];f3=table[r+2];}
-  c1=c-r;
-  c2=c1+1.0;
-  c3=c1-1.0;
-  c4=c1-2.0;
-  return(-f0*c1*c3*c4+3.0*f1*c2*c3*c4-3.0*f2*c2*c1*c4+f3*c2*c1*c3)/6.0;
 }
 
 /* define one inline near field evaluation function for each interpolation order */

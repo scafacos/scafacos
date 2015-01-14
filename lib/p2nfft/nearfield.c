@@ -60,7 +60,7 @@ static fcs_float compute_self_potential_periodic(
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) param;
 
   if(d->interpolation_order >= 0)
-    return ifcs_p2nfft_interpolation(
+    return ifcs_p2nfft_interpolation_near(
         dist, d->one_over_r_cut,
         d->interpolation_order, d->near_interpolation_num_nodes,
         d->near_interpolation_table_potential);
@@ -76,7 +76,7 @@ static fcs_float compute_self_potential_nonperiodic(
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) param;
 
   if(d->interpolation_order >= 0){
-    return ifcs_p2nfft_interpolation(
+    return ifcs_p2nfft_interpolation_near(
         dist, d->one_over_r_cut,
         d->interpolation_order, d->near_interpolation_num_nodes,
         d->near_interpolation_table_potential
@@ -110,7 +110,7 @@ static fcs_float compute_near_potential_periodic(
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) param;
   if(d->interpolation_order >= 0){
     return 1.0/dist
-      - ifcs_p2nfft_interpolation(
+      - ifcs_p2nfft_interpolation_near(
           dist, d->one_over_r_cut,
           d->interpolation_order, d->near_interpolation_num_nodes,
           d->near_interpolation_table_potential);
@@ -127,7 +127,7 @@ static fcs_float compute_near_potential_nonperiodic(
 
   if(d->interpolation_order >= 0){
     return 1.0/dist
-      - ifcs_p2nfft_interpolation(
+      - ifcs_p2nfft_interpolation_near(
           dist, d->one_over_r_cut,
           d->interpolation_order, d->near_interpolation_num_nodes,
           d->near_interpolation_table_potential
@@ -164,7 +164,7 @@ static fcs_float compute_near_field_periodic(
   
   if(d->interpolation_order >=0 )
     return -1.0/(dist*dist)
-      - ifcs_p2nfft_interpolation(
+      - ifcs_p2nfft_interpolation_near(
           dist, d->one_over_r_cut,
           d->interpolation_order, d->near_interpolation_num_nodes,
           d->near_interpolation_table_force);
@@ -182,7 +182,7 @@ static fcs_float compute_near_field_nonperiodic(
  
   if(d->interpolation_order >= 0){
     return -1.0/(dist*dist)
-      - ifcs_p2nfft_interpolation(
+      - ifcs_p2nfft_interpolation_near(
           dist, d->one_over_r_cut,
           d->interpolation_order, d->near_interpolation_num_nodes,
           d->near_interpolation_table_force
