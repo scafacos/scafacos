@@ -1185,15 +1185,15 @@ static void print_command_line_arguments(
       else if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM)
         printf("rad_t2p_sym,");
       else if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_EC)
-        printf("rad_t2p_mir_ec,");
+        printf("rad_t2p_ec,");
       else if(d->reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_IC)
-        printf("rad_t2p_mir_ic,");
+        printf("rad_t2p_ic,");
       else if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_SYM)
         printf("rec_t2p_sym,");
       else if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_EC)
-        printf("rec_t2p_mir_ec,");
+        printf("rec_t2p_ec,");
       else if(d->reg_far == FCS_P2NFFT_REG_FAR_REC_T2P_IC)
-        printf("rec_t2p_mir_ic,");
+        printf("rec_t2p_ic,");
     }
     if(verbose || !d->tune_p)
       printf("p2nfft_p,%" FCS_LMOD_INT "d,", d->p);
