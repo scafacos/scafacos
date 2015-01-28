@@ -70,9 +70,7 @@ PP_FILES_PP.lo = $(addsuffix .$(PP_SUFFIX).lo,$(basename $(PP_FILES)))
 	@echo "Building file '$@'" 
 	cat $(ALL_INCLUDE_HEADER) $< | \
 	$(FCCPP) -P -C $(AM_CPPFLAGS) $(CPPFLAGS) $(DEFAULT_INCLUDES) - | \
-	$(SED) -e '/\/\*/{:l;s,\(.*\)/\*\(.*\)\*/,\1!\2,;t l}' - | \
-	$(SED) -e '/\/\*/,/.*\*\//{s,\(.*\)\*/,!\1,; t e; s,/\*\(.*\),!\1,; t e; s,^,!,; :e;}' - | \
-	$(SED) -e '/\/\*/,/.*\*\//{s,\(.*\)\*/,!\1,; t e; s,/\*\(.*\),!\1,; t e; s,^,!,; :e;}' - > $@
+	$(SHELL) $(top_srcdir)/build-aux/comments_c2fortran > $@
 
 #%.o: %.f90
 #	@echo "target: $@, prerequisites: $^"

@@ -1,0 +1,43 @@
+#!/bin/sh
+#set -xv
+
+SED=${SED:-sed}
+
+if [ -n "$1" ] ; then
+  [ "$1" != "-" ] && exec 0< "$1"
+  shift
+fi
+
+exec 3>&1 # fd 3: default output to stdout
+
+if [ -n "$1" ] ; then
+  [ "$1" != "-" ] && exec 3> "$1"
+  shift
+fi
+
+
+# sed commands transform C comments '/* ... */' into Fortran comments '! ...'
+# 1. handle single-line comments, warning: everything after the first C comment is transformed into a Fortran comment
+# 2. handle multi-line comments, i.e. start and end of comment
+# 3. repeat second multi-line handling (why is this necessary?)
+
+${SED} -e '/\/\*/{:l
+s,\(.*\)/\*\(.*\)\*/,\1!\2,
+t l
+}' | \
+${SED} -e '/\/\*/,/.*\*\//{
+s,\(.*\)\*/,!\1,
+t e
+s,/\*\(.*\),!\1,
+t e
+s,^,!,
+:e
+}' | \
+${SED} -e '/\/\*/,/.*\*\//{
+s,\(.*\)\*/,!\1,
+t e
+s,/\*\(.*\),!\1,
+t e
+s,^,!,
+:e
+}' >&3
