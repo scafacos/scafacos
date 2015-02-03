@@ -1090,8 +1090,20 @@ FCSResult ifcs_p2nfft_tune(
 
   if(d->tune_b)
     FCS_PNFFT(get_b)(d->pnfft, &d->b[0], &d->b[1], &d->b[2]);
-  else
-    FCS_PNFFT(set_b)(d->b[0], d->b[1], d->b[2], d->pnfft); 
+  else {
+    /* skip retune if b is the same in P2NFFT and PNFFT plans
+     * This is important, since we call fcs_tune as part of fcs_run. */
+    fcs_float b[3];
+    FCS_PNFFT(get_b)(d->pnfft, &b[0], &b[1], &b[2]);
+
+    fcs_int b_is_out_of_sync=0;
+    for(int t=0; t<3; t++)
+      if(!fcs_float_is_zero(d->b[t]-b[t]))
+        b_is_out_of_sync = 1;
+
+    if(b_is_out_of_sync)
+      FCS_PNFFT(set_b)(d->b[0], d->b[1], d->b[2], d->pnfft);
+  }
 
 
   /* Print the command line arguments that recreate this plan. */
