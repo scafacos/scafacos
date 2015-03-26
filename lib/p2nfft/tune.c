@@ -367,7 +367,7 @@ FCSResult ifcs_p2nfft_tune(
 
   MPI_Comm_rank(d->cart_comm_3d, &comm_rank);
   FCS_P2NFFT_INIT_TIMING(d->cart_comm_3d);
-  FCS_P2NFFT_START_TIMING();
+  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
 
   d->short_range_flag = short_range_flag;
 
@@ -1058,7 +1058,7 @@ FCSResult ifcs_p2nfft_tune(
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Parameter tuning");
 
   /* Start timing of precomputation */
-  FCS_P2NFFT_START_TIMING();
+  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
   if (d->needs_retune) {
     /* precompute Fourier coefficients for convolution */
     if (d->num_periodic_dims == 3)
@@ -1574,7 +1574,7 @@ static void init_pnfft(
 
   /* Start timing of PNFFT tuning */
   FCS_P2NFFT_INIT_TIMING(cart_comm_pnfft);
-  FCS_P2NFFT_START_TIMING();
+  FCS_P2NFFT_START_TIMING(cart_comm_pnfft);
   
   /* finalize, if memory has been already allocated */
   if(*ths != NULL)

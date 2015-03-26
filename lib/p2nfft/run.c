@@ -114,7 +114,7 @@ FCSResult ifcs_p2nfft_run(
    * Idea: use allreduce to get min and max coordinates, adapt scaling of particles for every time step */
 
   /* Start forw sort timing */
-  FCS_P2NFFT_START_TIMING();
+  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
   
   /* Compute the near field */
   fcs_near_t near;
@@ -142,7 +142,7 @@ FCSResult ifcs_p2nfft_run(
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Forward grid sort");
 
   /* Start near sort timing */
-  FCS_P2NFFT_START_TIMING();
+  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
   if (d->short_range_flag) fcs_gridsort_create_ghosts(&gridsort, d->r_cut, d->cart_comm_3d);
 #else
   fcs_gridsort_sort_forward(&gridsort, (d->short_range_flag ? d->r_cut: 0.0), d->cart_comm_3d);
@@ -166,7 +166,7 @@ FCSResult ifcs_p2nfft_run(
   fcs_wrap_positions(sorted_num_particles, sorted_positions, d->box_a, d->box_b, d->box_c, d->box_base, d->periodicity);
 
   /* Start near field timing */
-  FCS_P2NFFT_START_TIMING();
+  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
 
 /*  printf("%d: input number = %" FCS_LMOD_INT "d, sorted number = %" FCS_LMOD_INT "d, ghost number = %" FCS_LMOD_INT "d\n",
     myrank, local_num_particles, sorted_num_particles, ghost_num_particles);*/
@@ -353,7 +353,7 @@ FCSResult ifcs_p2nfft_run(
 //   fprintf(stderr, "myrank = %d, sorted_num_particles = %d\n", myrank, sorted_num_particles);
 // #endif
 
-  FCS_P2NFFT_START_TIMING();
+  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
   FCS_PNFFT(precompute_psi)(d->pnfft);
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "pnfft_precompute_psi");
 
@@ -378,7 +378,7 @@ FCSResult ifcs_p2nfft_run(
 #endif
 
   /* Start far field timing */
-  FCS_P2NFFT_START_TIMING();
+  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
 
   /* Perform adjoint NFFT */
   if(!d->pnfft_direct)
@@ -458,7 +458,7 @@ FCSResult ifcs_p2nfft_run(
 
 #if FCS_ENABLE_TIMING_PNFFT
   /* Print pnfft timer */
-  FCS_P2NFFT_START_TIMING();
+  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
   FCS_PNFFT(print_average_timer_adv)(d->pnfft, d->cart_comm_3d);
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Printing of PNFFT timings");
 #endif
@@ -476,7 +476,7 @@ FCSResult ifcs_p2nfft_run(
 #endif
   
   /* Start self interaction timing */
-  FCS_P2NFFT_START_TIMING();
+  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
 
   /* Calculate self-interactions */
   if(compute_potential)
@@ -567,7 +567,7 @@ FCSResult ifcs_p2nfft_run(
 #endif
       
   /* Start back sort timing */
-  FCS_P2NFFT_START_TIMING();
+  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
 
   fcs_int resort;
 

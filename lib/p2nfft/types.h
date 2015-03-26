@@ -110,16 +110,19 @@ typedef ptrdiff_t INT;
 #define FCS_P2NFFT_INIT_TIMING(comm) \
   int tm_rank; \
   MPI_Comm_rank(comm, &tm_rank); \
-  double tm_timer, tm_global_timer;
-#define FCS_P2NFFT_START_TIMING() \
+  double tm_timer, tm_global_timer_max, tm_global_timer_min;
+#define FCS_P2NFFT_START_TIMING(comm) \
+  MPI_Barrier(comm); \
   tm_timer = -MPI_Wtime();
 #define FCS_P2NFFT_FINISH_TIMING(comm, str) \
   tm_timer += MPI_Wtime(); \
-  MPI_Reduce(&tm_timer, &tm_global_timer, 1, MPI_DOUBLE, MPI_MAX, 0, comm); \
-  if(!tm_rank) printf("P2NFFT_TIMING: %s takes %e s\n", str, tm_global_timer);
+  MPI_Reduce(&tm_timer, &tm_global_timer_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm); \
+  MPI_Reduce(&tm_timer, &tm_global_timer_min, 1, MPI_DOUBLE, MPI_MIN, 0, comm); \
+  if(!tm_rank) printf("P2NFFT_TIMING: %s takes %.2e s\n", str, tm_global_timer_max); \
+  if(!tm_rank) printf("               (minimum %.2e s, load imbalance %.2f %%)\n", tm_global_timer_min, 100.0*(tm_global_timer_max-tm_global_timer_min)/tm_global_timer_min);
 #else
 #define FCS_P2NFFT_INIT_TIMING(comm)
-#define FCS_P2NFFT_START_TIMING()
+#define FCS_P2NFFT_START_TIMING(comm)
 #define FCS_P2NFFT_FINISH_TIMING(comm, str)
 #endif
 
