@@ -46,13 +46,16 @@ EXTRA_DIST = \
 	systems/xml2xyz.py \
 	systems/xml2vtf.py \
 	systems/xml2vtk.py \
+	scripts/compute_nonperiodic_references.sh \
+	scripts/estimate_p2nfft_parameters.py \
+	scripts/execute_scaling_cloud_ball.sh \
+	scripts/opt_alpha_cloud_wall_2dp.py \
+	scripts/opt_alpha_cloud_wall_3dp.py \
 	scripts/scafacos_test_all.sh \
+	scripts/shuffle_input.py \
 	scripts/tune_alpha_2dp.py \
 	scripts/tune_alpha_3dp.py \
 	scripts/tune_alpha_cloud_wall_3dp.py \
-	scripts/opt_alpha_cloud_wall_2dp.py \
-	scripts/opt_alpha_cloud_wall_3dp.py \
-	scripts/compute_nonperiodic_references.sh \
 	rapidxml/manual.html \
 	rapidxml/license.txt
 
