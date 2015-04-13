@@ -1,11 +1,12 @@
 #!/usr/bin/python
 
-import sys
+import sys, getopt
 import os
 import subprocess
 from scipy.special import lambertw
 from scipy.optimize import minimize_scalar
 from math import *
+import argparse
 
 # from math import sqrt,ceil,pi
 
@@ -137,9 +138,7 @@ def parameter_heuristic(rc, L, Q2, N, tol, tol_type, split_tol, P, m, osp, osn):
 
   h = L*M0/M
 
-  epsB = 0.5*P/M0
-  if nd == "3d":
-    epsB = 0.0
+  epsB = 0.5*P/M0 if nd != "3d" else 0.0
 
   # Compare correctness of near- and farfield error formulae.
   # Therefore, choose either large rc or large kc.
@@ -193,32 +192,35 @@ def oversampled_gridsize(M, m, flag):
     return M + flag
 
 # overwrite default parameters, if command line arguments are given
-def set_str(nr, default):
-  if len(sys.argv) > nr:
-    if sys.argv[nr] >= 0:
-      return str(sys.argv[nr])
+def set_str(args, nr, default):
+  if len(args) > nr:
+    if args[nr] >= 0:
+      return str(args[nr])
   return default
 
-def set_int(nr, default):
-  if len(sys.argv) > nr:
-    if sys.argv[nr] >= 0:
-      return int(sys.argv[nr])
+def set_int(args, nr, default):
+  if len(args) > nr:
+    if args[nr] >= 0:
+      return int(args[nr])
   return default
 
-def set_float(nr, default):
-  if len(sys.argv) > nr:
-    if sys.argv[nr] > 0:
-      return float(sys.argv[nr])
+def set_float(args, nr, default):
+  if len(args) > nr:
+    if args[nr] > 0:
+      return float(args[nr])
   return default
 
-def set_number(nr, default):
-  if len(sys.argv) > nr:
-    if sys.argv[nr] > 0:
-      s = sys.argv[nr]
-      return float(s) if '.' in s else int(s)
-  return default
+def set_number(string):
+  try:
+    n = float(string) if '.' in string else int(string)
+  except:
+    print("Error in set_number: string is neither float nor int")
+    sys.exit()
+  return n
 
 def inv_kolper_potential_alpha(rc, L, Q2, tol):
+#   if rc < 0.0:
+#     return 1e20
   lamb = lambertw( 1.0 / tol * sqrt(Q2 * rc / L**3) )
   return 1.0/rc * sqrt(lamb.real)
 def inv_kolper_field_alpha(rc, L, Q2, tol):
@@ -385,94 +387,130 @@ def print_errors(kc):
   print("rel Force:\t"+ str('%.2e' % 0) +"\t"+ str('%.2e' % 0) +"\t"+ str('%.2e' % 0) +"\t"+ str('%.2e' % rel_error_force))
   print("rel tot. Energy:"+ str('%.2e' % 0) +"\t"+ str('%.2e' % 0) +"\t"+ str('%.2e' % 0) +"\t"+ str('%.2e' % rel_error_tenergy))
 
-def print_parameter_list():
-  print("Usage: "+ os.path.basename(__file__) +" nd testcase testsize tol tol-type m ndft P p [window] [non-periodic oversampling] [periodic oversampling] [rc] [kc] [ignore_field] [nprocs]")
-  print("Options:")
-  print("\tnd\t\t0d, 1d, 2d, or 3d")
-  print("\ttestcase\t'cloud' (cloud wall), 'silica' (silica melt), 'random' (uniformly random), 'cloud-ball' (cloud ball), 'nacl' (nacl crystal)")
-  print("\ttestsize\tall testcases support different number of particles (in most cases testsize is the multiplier of each box length)")
-  print("\ttol\t\taccuracy goal")
-  print("\ttol-type\ttune for accuracy of 'phi' (abs. potential), 'U' (abs. energy), 'E' (abs. field), 'F' (abs. force)")
-  print("\tndft\t\tchoose method for computing nonequispaced discrete Fourier transform:")
-  print("\tm\t\tNFFT window cutoff (ignored for ndft)")
-  print("\t\t\tndft (direct computation), nfft (fast approximation)")
-  print("\tP\t\tnumber of gridpoints for regularization (ignored for 3dp)")
-  print("\tp\t\tdegree of smoothness for regularization (ignored for 3dp)")
-  print("\twindow\t\tNFFT window 'gaussian', 'bspline', 'sinc', 'kaiser', 'bessel_i0'")
-  print("\tnon-periodic oversampling")
-  print("\t\t\toversampling for non-periodic dimensions with M gridpoints:")
-  print("\t\t\t-2 (double: 2*M), -1 (constant: M +2*m+2), value >= 0 (add: M + value)")
-  print("\tperiodic oversampling")
-  print("\t\t\toversampling for periodic dimensions with M gridpoints:")
-  print("\t\t\t'-2' (double: 2*M), '-1' (constant: M +2*m+2), integer 'value' >= 0 (add: M + value), float 'value' >= 0 (multiply: value*M)")
-  print("\trc\t\t'value' > 0 (set real space cutoff) or 'value' <= 0 (use default cutoff)\t")
-  print("\tkc\t\tchoose cutoff in Fourier space to be 'box' (rectangular) or 'ball' (radial)")
-  print("\tignore_field\tchoose 'ignore_field' to avoid field computations")
-  print("\tnprocs\t\tstart test runs with: mpirun -np nprocs\t")
 
-# We do not have a tuning for these parameters 
-nd = set_str(1, "3d")
-tc = set_str(2, "random")
-ts = set_int(3, 1)
-tol = set_float(4, 5e-6)
-tol_type = set_str(5, "phi")
-ndft = set_str(6,"nfft")
-m  = set_int(7, 9)
-P = set_int(8, 18)
-p = set_int(9, 9)
-window = set_str(10, "bspline")
-osn = set_number(11, -2)
-osp = set_number(12, 0)
-rc = set_float(13,-1.0)
-kc_type = set_str(14,"box")
-ignore_field = set_str(15,"compute_field")
-nprocs = set_int(16,1)
+def unsigned(value):
+  try:
+    ivalue = int(value)
+  except:
+    raise argparse.ArgumentTypeError("invalid unsigned int value: %s" % value)
+  if ivalue < 0:
+    raise argparse.ArgumentTypeError("invalid unsigned int value: %s" % value)
+  return ivalue
 
-if (nd != "3d" and len(sys.argv) < 10) or (len(sys.argv) < 8) :
-  print("!!! Error: not enough arguments !!!")
-  print_parameter_list()
-  sys.exit()
+def posint(value):
+  try:
+    ivalue = int(value)
+  except:
+    raise argparse.ArgumentTypeError("invalid positive int value: %s" % value)
+  if ivalue <= 0:
+    raise argparse.ArgumentTypeError("invalid positive int value: %s" % value)
+  return ivalue
 
-# parameter sanity checks
-if nd not in ("0d", "1d", "2d", "3d"):
-  print("1st parameter 'nd' must be either '0d', '1d', '2d', or '3d'")
-  sys.exit()
-if tc not in ("cloud","silica","random","cloud-ball","nacl"):
-  print("2nd parameter 'testcase' must be either 'cloud', 'silica', 'random', 'cloud-ball', or 'nacl'")
-  sys.exit()
-if ts < 1:
-  print("3rd parameter 'testsize' must be at least 1")
-  sys.exit()
-if not tol > 0.0:
-  print("4th parameter 'tol' must be positive")
-  sys.exit()
-if tol_type not in ("phi", "U", "E", "F"):
-  print("5th parameter 'tol-type' must be 'phi' (abs_pot), 'U' (abs_energy), 'E' (abs_field), or 'F' (abs_force)")
-  sys.exit()
-if ndft not in ("ndft","nfft"):
-  print("6th parameter 'nfft' must be either \"ndft\", or \"nfft\"")
-  sys.exit()
-if m < 1:
-  print("7th parameter 'm' must be at least 1")
-  sys.exit()
-if P < 0:
-  print("8th parameter 'P' must be non-negative")
-  sys.exit()
-if p < 0:
-  print("9th parameter 'p' must be non-negative")
-  sys.exit()
-if window not in ("gaussian", "bspline", "sinc", "kaiser", "bessel_i0"):
-  print("10th parameter 'window' must be either 'gaussian', 'bspline', 'sinc', 'kaiser', or 'bessel_i0'")
-  sys.exit()
-if osn < -2:
-  print("11th parameter 'non-periodic oversampling' must be either 'val' > 0 (M+val), '-1' (M + 2*m+2), or '-2' (2*M)")
-  sys.exit()
-if osp < -2:
-  print("12th parameter 'periodic oversampling' must be either 'val' > 0 (M+val), '-1' (M + 2*m+2), or '-2' (2*M)")
-  sys.exit()
-if nprocs < 1:
-  print("16th parameter 'nprocs' must be > 0")
-  sys.exit()
+def posfloat(value):
+  try:
+    fvalue = float(value)
+  except:
+    raise argparse.ArgumentTypeError("invalid positive float value: %s" % value)
+  if fvalue <= 0:
+    raise argparse.ArgumentTypeError("invalid positive float value: %s" % value)
+  return fvalue
+
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("nd",
+    help="number of periodic dimensions",
+    choices=['0d', '1d', '2d', '3d'],
+    type=str)
+parser.add_argument("testcase",
+    help="choose a test case",
+    choices=['random', 'nacl', 'cloud-wall', 'cloud-ball', 'silica'],
+    type=str)
+parser.add_argument("tolerance",
+    help="set tolerance",
+    type=posfloat)
+
+parser.add_argument("-s", "--testsize",
+    help="all testcases support different number of particles (in most cases TESTSIZE is the multiplier of each box length)",
+    default=1,
+    type=posint)
+parser.add_argument("-t", "--tolerance-type",
+    help="set (absolute) tolerance type to potential (phi), energy (U), field (E), or force (F)",
+    choices=['phi', 'U', 'E', 'F'],
+    default='phi',
+    type=str)
+parser.add_argument("-n", "--num-procs",
+    help="start parallel test runs with: mpirun -np NUM_PROCS",
+    default=1,
+    type=posint)
+
+parser.add_argument("-r", "--rspace-cutoff",
+    help="set real space cutoff",
+    default=-1.0,
+    type=float)
+parser.add_argument("-f", "--fast", "--nfft",
+    help="enable NFFT instead of ndft",
+    action="store_true")
+parser.add_argument("-w", "--window",
+    help="choose NFFT window function",
+    choices=['gaussian', 'bspline', 'sinc', 'kaiser', 'bessel_i0'],
+    default='bspline',
+    type=str)
+parser.add_argument("-m", "--window-cutoff",
+    help="set NFFT window cutoff (ignored for ndft)",
+    default=6,
+    type=posint)
+parser.add_argument("-o", "--oversampling",
+    help="set oversampling '-2' (double: 2*M), '-1' (constant: M +2*m+2), integer 'value' >= 0 (add: M + value), float 'value' >= 0 (multiply: value*M)",
+    default='1.0',
+    type=str)
+parser.add_argument("--oversampling-periodic",
+    help="set periodic oversampling '-2' (double: 2*M), '-1' (constant: M +2*m+2), integer 'value' >= 0 (add: M + value), float 'value' >= 0 (multiply: value*M)",
+    default='-3',
+    type=str)
+parser.add_argument("--oversampling-nonperiodic",
+    help="set nonperiodic oversampling '-2' (double: 2*M), '-1' (constant: M +2*m+2), integer 'value' >= 0 (add: M + value), float 'value' >= 0 (multiply: value*M)",
+    default='-3',
+    type=str)
+parser.add_argument("-p", "--reg-smoothness",
+    help="set degree of smoothness for regularization (ignored for 3dp)",
+    metavar='p',
+    type=unsigned)
+parser.add_argument("-P", "--reg-gridpoints",
+    help="set number of gridpoints for regularization (ignored for 3dp)",
+    type=unsigned)
+parser.add_argument("--kspace-ball",
+    help="enable radial cutoff scheme in Fourier space",
+    action="store_true")
+parser.add_argument("--ignore-field",
+    help="omit field computation",
+    action="store_true")
+
+args = parser.parse_args()
+
+print args
+
+nd = args.nd
+tc = args.testcase
+ts = args.testsize
+tol = args.tolerance
+tol_type = args.tolerance_type
+m = args.window_cutoff
+p = args.reg_smoothness
+P = args.reg_gridpoints
+window = args.window
+osp = set_number(args.oversampling)
+if args.oversampling_periodic != "-3":
+  osp = set_number(args.oversampling_periodic)
+osn = set_number(args.oversampling)
+if args.oversampling_nonperiodic != "-3":
+  osn = set_number(args.oversampling_nonperiodic)
+nprocs = args.num_procs
+rc = args.rspace_cutoff
+kc_type = "ball" if args.kspace_ball else "box"
+
+
+
 
 cwd = os.getcwd()
 
@@ -551,33 +589,24 @@ conf += "p2nfft_alpha,"+ str(alpha) +","
 conf += "pnfft_window_name,"+ window +","
 conf += "pnfft_N,"+ str(M0) +","+ str(M1) +","+ str(M2) +","
 conf += "pnfft_n,"+ str(m0) +","+ str(m1) +","+ str(m2) +","
-conf += "pnfft_m,"+ str(m) +","
+conf += "pnfft_m,"+ str(m) +"," if m != None else ""
 conf += "p2nfft_epsB,"+ str('%.4e' % epsB) +","
-conf += "p2nfft_p,"+ str(p) +","
-if ndft == "ndft":
-  conf += "pnfft_direct,1,"
-else:
-  conf += "pnfft_direct,0,"
+conf += "p2nfft_p,"+ str(p) +"," if p != None else ""
+conf += "pnfft_direct,0," if args.fast else "pnfft_direct,1,"
 
 intpol_order = "3"
 conf += "p2nfft_intpol_order,"+ intpol_order +","
 conf += "pnfft_intpol_order,"+ intpol_order +","
 conf += "pnfft_grad_ik,0,"
-if kc_type == "ball":
-  conf += "p2nfft_k_cut,"+ str(kc) +","
-if ignore_field == "ignore_field":
-  conf += "p2nfft_ignore_field,1,"
+conf += "p2nfft_k_cut,"+ str(kc) +"," if args.kspace_ball else ""
+conf += "p2nfft_ignore_field,1," if args.ignore_field else ""
 
-if nd == "0d":
-  conf += "p2nfft_reg_kernel,0,"
+conf += "p2nfft_reg_kernel,0," if nd == "0d" else ""
 
 nofield=""
 # nofield+=" -u nofield"
 
-if nprocs > 1:
-  startmpi = "mpirun -np "+ str(nprocs) +" "
-else:
-  startmpi = ""
+startmpi = "mpirun -np "+ str(args.num_procs) +" " if args.num_procs > 1 else ""
 
 line = startmpi + cwd + "/scafacos_test p2nfft " + testname + nofield + conf
 print(line)
@@ -615,61 +644,62 @@ print_errors(M/2.0-1.0)
 # print("Error estimates with kc = M/2-1 = "+ str('%.2e' % (M/2.0-1)) +" predict following errors:")
 # print_errors(M/2.0-1.0)
 
-if is_in_text(output, "pnfft_trf_matrix_D("):
-  rt_D, rt_F, rt_C, rt_G = filter_pnfft_runtimes(output)
-  print("\nPNFFT runtimes:")
-  print("D\t\tF\t\tC\t\tG")
-  print(
-      str('%.4e' % rt_D) +"\t"+
-      str('%.4e' % rt_F) +"\t"+
-      str('%.4e' % rt_C) +"\t"+
-      str('%.4e' % rt_G)
-      )
+if args.fast:
+  if is_in_text(output, "pnfft_trf_matrix_D("):
+    rt_D, rt_F, rt_C, rt_G = filter_pnfft_runtimes(output)
+    print("\nPNFFT runtimes:")
+    print("D\t\tF\t\tC\t\tG")
+    print(
+        str('%.4e' % rt_D) +"\t"+
+        str('%.4e' % rt_F) +"\t"+
+        str('%.4e' % rt_C) +"\t"+
+        str('%.4e' % rt_G)
+        )
 
-  rt_F_0, rt_F_1, rt_F_2, rt_F_twiddle, rt_F_remap, rt_F_3dto2d, rt_F_sum = filter_pfft_runtimes(output)
-  headline = "trafo0\t\ttrafo1\t\ttrafo2\t\tremap\t\ttwiddle\t\t3dto2d\tsum"
-  line = \
-      str('%.4e' % rt_F_0) +"\t" \
-    + str('%.4e' % rt_F_1) +"\t" \
-    + str('%.4e' % rt_F_2) +"\t" \
-    + str('%.4e' % rt_F_remap) +"\t" \
-    + str('%.4e' % rt_F_twiddle) +"\t" \
-    + str('%.4e' % rt_F_3dto2d) +"\t" \
-    + str('%.4e' % rt_F_sum) +"\t"
+    rt_F_0, rt_F_1, rt_F_2, rt_F_twiddle, rt_F_remap, rt_F_3dto2d, rt_F_sum = filter_pfft_runtimes(output)
+    headline = "trafo0\t\ttrafo1\t\ttrafo2\t\tremap\t\ttwiddle\t\t3dto2d\tsum"
+    line = \
+        str('%.4e' % rt_F_0) +"\t" \
+      + str('%.4e' % rt_F_1) +"\t" \
+      + str('%.4e' % rt_F_2) +"\t" \
+      + str('%.4e' % rt_F_remap) +"\t" \
+      + str('%.4e' % rt_F_twiddle) +"\t" \
+      + str('%.4e' % rt_F_3dto2d) +"\t" \
+      + str('%.4e' % rt_F_sum) +"\t"
 
 
-  print("\nPFFT runtimes:")
-  print(headline)
-  print(line)
+    print("\nPFFT runtimes:")
+    print(headline)
+    print(line)
 
-  time_file = "pfft_runtimes.txt"
-  if not os.path.isfile(time_file):
+    time_file = "pfft_runtimes.txt"
+    if not os.path.isfile(time_file):
+      with open(time_file, 'a') as f:
+        f.write("  M0  " + "  m0  " + headline + "\n")
+
     with open(time_file, 'a') as f:
-      f.write("  M0  " + "  m0  " + headline + "\n")
-
-  with open(time_file, 'a') as f:
-    f.write(
-        str('%4d  ' % M0)
-      + str('%4d  ' % m0)
-      + line + "\n") 
+      f.write(
+          str('%4d  ' % M0)
+        + str('%4d  ' % m0)
+        + line + "\n") 
 
 
-  # set up global variables for (scalar) objective function
-  t0_near = search_val(output, "Near field computation takes", "takes", "s")
-  t0_far_M = rt_F_twiddle + rt_F_3dto2d + rt_F_remap + rt_D + rt_C + rt_G
-  t0_far_MlogM = rt_F_0 + rt_F_1 + rt_F_2
-  rc_start = rc
-  M0_start = M0
+    # set up global variables for (scalar) objective function
+    t0_near = search_val(output, "Near field computation takes", "takes", "s")
+    t0_far_M = rt_F_twiddle + rt_F_3dto2d + rt_F_remap + rt_D + rt_C + rt_G
+    t0_far_MlogM = rt_F_0 + rt_F_1 + rt_F_2
+    rc_start = rc
+    M0_start = M0
 
-#   t = estimate_time(t0_near, t0_far_M, t0_far_MlogM, rc, M0, 0.7)
-#   print("t = "+ str(t))
+  #   t = estimate_time(t0_near, t0_far_M, t0_far_MlogM, rc, M0, 0.7)
+  #   print("t = "+ str(t))
 
-  res = minimize_scalar(estimate_time_onearg, bracket=(rc, 1.5*rc), method='brent', tol=1e-2)
+    res = minimize_scalar(estimate_time_onearg, bracket=(rc, 1.5*rc), method='brent', tol=1e-2)
 
-  print("\noptimal rc = "+ str(res.x) + " gives estimated runtime of " + str('%.4e' % res.fun))
+    print("\noptimal rc = "+ str(res.x) + " gives estimated runtime of " + str('%.4e' % res.fun))
 
-else:
-  print("\n!!! PNFFT runtimes not available, configure with --enable-fcs-timing=pnfft\n")
+  else:
+    print("\n!!! PNFFT runtimes not available, configure with --enable-fcs-timing=pnfft\n")
 
 if is_in_text(output, "Near field computation takes"):
   rt_tune, rt_all, rt_near, rt_far = filter_p2nfft_runtimes(output)
@@ -677,9 +707,9 @@ if is_in_text(output, "Near field computation takes"):
   print("all\t\tnear\t\tfar\t\ttune")
   print(str('%.4e' % rt_all) +"\t"+  str('%.4e' % rt_near) +"\t"+ str('%.4e' % rt_far) +"\t"+ str('%.4e' % rt_tune))
 
-  outfile="parameters_"+ tn +"_"+ nd +"p_"+ str('%.2e'%tol) +"_"+ ndft
-  if kc_type == "ball":
-    outfile += "_kc"
+  outfile="parameters_"+ tn +"_"+ nd +"p_"+ str('%.2e'%tol)
+  outfile += "_nfft" if args.fast else "_ndft"
+  outfile += "_kc" if args.kspace_ball else ""
   outfile += ".txt"
   if not os.path.isfile(outfile):
     with open(outfile, 'a') as f:
@@ -710,48 +740,43 @@ if is_in_text(output, "Near field computation takes"):
           "rt-near   "+\
           "rt-far    "+\
           "rt-tune   "+\
-          "ndft  "+\
+          "nfft  "+\
           "kc        "+\
           "nprocs  "+\
           "\n")
 
-  if kc_type == "ball":
-    kcstr = str('%.2e  ' % kc)
-  else:
-    kcstr = "box       "
-
   with open(outfile, 'a') as f:
-    f.write( \
-        str('%9d  ' % N) +\
-        str('%.2e  ' % Q2) +\
-        str('%.2e  ' % L)  +\
-        str('%f  ' % rc) +\
-        str('%f  ' % alpha) +\
-        str('%4d  ' % M0) +\
-        str('%4d  ' % M1) +\
-        str('%4d  ' % M2) +\
-        str('%4d  ' % m0) +\
-        str('%4d  ' % m1) +\
-        str('%4d  ' % m2) +\
-        str('%.2e  ' % epsB) +\
-        str('%.2e  ' % h)    +\
-        str('%2d  ' % m) +\
-        str('%4d  ' % P) +\
-        str('%2d  ' % p) +\
-        str('%.2e    ' % abs_error_energy) +\
-        str('%.2e    ' % abs_error_force)  +\
-        str('%.2e     ' % abs_error_tenergy)+\
-        str('%.2e    ' % rel_error_energy) +\
-        str('%.2e    ' % rel_error_force)  +\
-        str('%.2e     ' % rel_error_tenergy)+\
-        str('%.2e  ' % rt_all)  +\
-        str('%.2e  ' % rt_near) +\
-        str('%.2e  ' % rt_far)  +\
-        str('%.2e  ' % rt_tune) +\
-        ndft + "  " +\
-        kcstr +\
-        str('%6d  ' % nprocs) +\
-        "\n".expandtabs(2))
+    txt  = str('%9d  ' % N)
+    txt += str('%.2e  ' % Q2)
+    txt += str('%.2e  ' % L)  
+    txt += str('%f  ' % rc) 
+    txt += str('%f  ' % alpha) 
+    txt += str('%4d  ' % M0) 
+    txt += str('%4d  ' % M1) 
+    txt += str('%4d  ' % M2) 
+    txt += str('%4d  ' % m0) 
+    txt += str('%4d  ' % m1) 
+    txt += str('%4d  ' % m2) 
+    txt += str('%.2e  ' % epsB) 
+    txt += str('%.2e  ' % h)    
+    txt += str('%2d  ' % m) if m != None else "No"
+    txt += str('%4d  ' % P) if P != None else "None" 
+    txt += str('%4d  ' % p) if p != None else "None" 
+    txt += str('%.2e    ' % abs_error_energy) 
+    txt += str('%.2e    ' % abs_error_force)  
+    txt += str('%.2e     ' % abs_error_tenergy)
+    txt += str('%.2e    ' % rel_error_energy) 
+    txt += str('%.2e    ' % rel_error_force)  
+    txt += str('%.2e     ' % rel_error_tenergy)
+    txt += str('%.2e  ' % rt_all)  
+    txt += str('%.2e  ' % rt_near) 
+    txt += str('%.2e  ' % rt_far)  
+    txt += str('%.2e  ' % rt_tune) 
+    txt += str(args.fast) + "  " 
+    txt += str('%.2e  ' % kc) if kc_type == "ball" else "box       "
+    txt += str('%6d  ' % args.num_procs) 
+    txt += "\n"
+    f.write( txt.expandtabs(2) )
 else:
   print("\n!!! P2NFFT runtimes not available, configure with --enable-fcs-timing\n")
 
