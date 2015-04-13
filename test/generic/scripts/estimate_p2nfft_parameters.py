@@ -448,8 +448,8 @@ parser.add_argument("-r", "--rspace-cutoff",
     help="set real space cutoff",
     default=-1.0,
     type=float)
-parser.add_argument("-f", "--fast", "--nfft",
-    help="enable NFFT instead of ndft",
+parser.add_argument("-d", "--direct", "--ndft",
+    help="enable NDFT instead of NFFT",
     action="store_true")
 parser.add_argument("-w", "--window",
     help="choose NFFT window function",
@@ -464,17 +464,17 @@ parser.add_argument("-o", "--oversampling",
     help="set oversampling '-2' (double: 2*M), '-1' (constant: M +2*m+2), integer 'value' >= 0 (add: M + value), float 'value' >= 0 (multiply: value*M)",
     default='1.0',
     type=str)
-parser.add_argument("--oversampling-periodic",
+parser.add_argument("--oversampling-periodic", "--op",
     help="set periodic oversampling '-2' (double: 2*M), '-1' (constant: M +2*m+2), integer 'value' >= 0 (add: M + value), float 'value' >= 0 (multiply: value*M)",
     default='-3',
     type=str)
-parser.add_argument("--oversampling-nonperiodic",
+parser.add_argument("--oversampling-nonperiodic", "--on",
     help="set nonperiodic oversampling '-2' (double: 2*M), '-1' (constant: M +2*m+2), integer 'value' >= 0 (add: M + value), float 'value' >= 0 (multiply: value*M)",
     default='-3',
     type=str)
 parser.add_argument("-p", "--reg-smoothness",
     help="set degree of smoothness for regularization (ignored for 3dp)",
-    metavar='p',
+#     metavar='p',
     type=unsigned)
 parser.add_argument("-P", "--reg-gridpoints",
     help="set number of gridpoints for regularization (ignored for 3dp)",
@@ -517,7 +517,7 @@ cwd = os.getcwd()
 test_dir = "nonperiodic" if nd == "0d" else nd +"-periodic"
 
 # switch test case
-if tc=="cloud":
+if tc=="cloud-wall":
   # cloud_wall
   scale = 2**(ts-1)
   N  = 300 * scale**3
@@ -592,7 +592,7 @@ conf += "pnfft_n,"+ str(m0) +","+ str(m1) +","+ str(m2) +","
 conf += "pnfft_m,"+ str(m) +"," if m != None else ""
 conf += "p2nfft_epsB,"+ str('%.4e' % epsB) +","
 conf += "p2nfft_p,"+ str(p) +"," if p != None else ""
-conf += "pnfft_direct,0," if args.fast else "pnfft_direct,1,"
+conf += "pnfft_direct,1," if args.direct else "pnfft_direct,0,"
 
 intpol_order = "3"
 conf += "p2nfft_intpol_order,"+ intpol_order +","
@@ -644,7 +644,7 @@ print_errors(M/2.0-1.0)
 # print("Error estimates with kc = M/2-1 = "+ str('%.2e' % (M/2.0-1)) +" predict following errors:")
 # print_errors(M/2.0-1.0)
 
-if args.fast:
+if not args.direct:
   if is_in_text(output, "pnfft_trf_matrix_D("):
     rt_D, rt_F, rt_C, rt_G = filter_pnfft_runtimes(output)
     print("\nPNFFT runtimes:")
@@ -708,7 +708,7 @@ if is_in_text(output, "Near field computation takes"):
   print(str('%.4e' % rt_all) +"\t"+  str('%.4e' % rt_near) +"\t"+ str('%.4e' % rt_far) +"\t"+ str('%.4e' % rt_tune))
 
   outfile="parameters_"+ tn +"_"+ nd +"p_"+ str('%.2e'%tol)
-  outfile += "_nfft" if args.fast else "_ndft"
+  outfile += "_ndft" if args.direct else "_nfft"
   outfile += "_kc" if args.kspace_ball else ""
   outfile += ".txt"
   if not os.path.isfile(outfile):
@@ -772,7 +772,7 @@ if is_in_text(output, "Near field computation takes"):
     txt += str('%.2e  ' % rt_near) 
     txt += str('%.2e  ' % rt_far)  
     txt += str('%.2e  ' % rt_tune) 
-    txt += str(args.fast) + "  " 
+    txt += str(not args.direct) + "  " 
     txt += str('%.2e  ' % kc) if kc_type == "ball" else "box       "
     txt += str('%6d  ' % args.num_procs) 
     txt += "\n"
