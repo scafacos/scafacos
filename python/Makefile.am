@@ -1,5 +1,7 @@
 COPYFILES = setup.py scafacos.pyx test.py
 
+EXTRA_DIST = $(COPYFILES)
+
 .PHONY: copy-files
 FORCE:
 copy-files: FORCE
