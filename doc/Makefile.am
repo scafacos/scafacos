@@ -102,6 +102,8 @@ install-data-local: html man
 uninstall-local:
 	rm $(htmldir)/html/*
 	-rmdir $(htmldir)/html
+	rm $(mandir)/man3/*
+	-rmdir $(mandir)/man3
 
 else
 doxyfile.stamp: 
