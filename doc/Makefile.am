@@ -75,6 +75,7 @@ endif
 
 html: doxyfile.stamp
 manpage: doxyfile.stamp
+man: manpage
 
 if HAVE_DOXYGEN
 doxyfile.stamp: Doxyfile
@@ -89,7 +90,7 @@ CLEAN_LOCAL += html man
 #html_DATA = html
 #man_MANS  = man/man3/*
 
-install-data-local:	html
+install-data-local: html man
 	@$(NORMAL_INSTALL)
 	$(MKDIR_P) $(htmldir)/html
 	$(INSTALL_DATA) $(builddir)/html/* $(htmldir)/html/
