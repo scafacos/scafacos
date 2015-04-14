@@ -2,7 +2,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # Distribute script for Fortran module dependency generation.
-EXTRA_DIST = build-aux/fortran-depcomp
+EXTRA_DIST = build-aux/fortran-depcomp build-aux/comments_c2fortran
 
 # Remove files created during configure.
 DISTCLEANFILES = fcs-package.info
