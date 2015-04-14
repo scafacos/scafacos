@@ -125,7 +125,8 @@ program test
 #if FCS_ENABLE_PEPC
     character(len=256, kind = c_char)                             ::  pepc_parameters = & 
                    "pepc_debuglevel,-1,pepc_epsilon,0.5,pepc_theta,0.5"
-    integer :: provided
+    integer :: mpi_thread_requested = MPI_THREAD_MULTIPLE
+    integer :: mpi_thread_provided
 #endif
 #if FCS_ENABLE_P2NFFT
     character(len=256, kind = c_char)                             ::  p2nfft_parameters = & 
@@ -143,7 +144,7 @@ program test
 "box_a,1.01,0.0,0.0,box_b,0.0,1.01,0.0,box_c,0.0,0.0,1.01,periodicity,1,1,1,offset,0.0,0.0,0.0,near_field_flag,0"
 
 #if FCS_ENABLE_PEPC
-    call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE, provided, ierr)
+    call MPI_INIT_THREAD(mpi_thread_requested, mpi_thread_provided, ierr)
 #else
     call MPI_INIT(ierr)
 #endif
@@ -163,7 +164,7 @@ program test
     call MPI_COMM_SIZE(communicator, comm_size, ierr)
     call MPI_CART_COORDS(communicator,my_rank,3,dims,ierr)
     !write(*,'(a,i7,a,i7,a,3i7)') "rank/size -> coords", my_rank, "/", comm_size, " -> ", dims
-    
+
     command_count = COMMAND_ARGUMENT_COUNT()
     ! check if command is called correctly
     if (command_count /= 3) then
@@ -182,6 +183,21 @@ program test
     call GET_COMMAND_ARGUMENT(3,read_dummy)
 
     read(read_dummy,'(i10)') run_count
+
+#if FCS_ENABLE_PEPC
+    if (method == "pepc" .and. mpi_thread_provided < mpi_thread_requested) then
+      if (my_rank == 0) then
+        !inform the user about possible issues concerning MPI thread safety
+        write(*,'(a)') "Call to MPI_INIT_THREAD failed."
+        write(*,'("Requested level", I2, " of multithreading, but only level", I2, " is provided.")') &
+              mpi_thread_requested, mpi_thread_provided
+        write(*,'(a)') "Aborting test."
+      endif
+      call MPI_FINALIZE(ierr)
+      stop
+    endif
+#endif
+
 
     open(1409, FILE=filename, ACTION="read", FORM="formatted")
 
