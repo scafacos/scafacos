@@ -90,20 +90,21 @@ CLEAN_LOCAL += html man
 #html_DATA = html
 #man_MANS  = man/man3/*
 
-install-data-local: html man
-	@$(NORMAL_INSTALL)
-	$(MKDIR_P) $(htmldir)/html
-	$(INSTALL_DATA) $(builddir)/html/* $(htmldir)/html/
-	$(MKDIR_P) $(mandir)/man3
-	$(INSTALL_DATA) $(builddir)/man/man3/* $(mandir)/man3/
+## Disable doc install and uninstall as long as it breaks 'make distcheck'
+# install-data-local: html man
+# 	@$(NORMAL_INSTALL)
+# 	$(MKDIR_P) $(htmldir)/html
+# 	$(INSTALL_DATA) $(builddir)/html/* $(htmldir)/html/
+# 	$(MKDIR_P) $(mandir)/man3
+# 	$(INSTALL_DATA) $(builddir)/man/man3/* $(mandir)/man3/
 
 ## Warning: the following rule assumes that this package is the
 ## sole owner of files below $(htmldir)/html!
-uninstall-local:
-	rm $(htmldir)/html/*
-	-rmdir $(htmldir)/html
-	rm $(mandir)/man3/*
-	-rmdir $(mandir)/man3
+# uninstall-local:
+# 	rm $(htmldir)/html/*
+# 	-rmdir $(htmldir)/html
+# 	rm $(mandir)/man3/*
+# 	-rmdir $(mandir)/man3
 
 else
 doxyfile.stamp: 
