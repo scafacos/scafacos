@@ -657,7 +657,7 @@ if not args.direct:
         )
 
     rt_F_0, rt_F_1, rt_F_2, rt_F_twiddle, rt_F_remap, rt_F_3dto2d, rt_F_sum = filter_pfft_runtimes(output)
-    headline = "trafo0\t\ttrafo1\t\ttrafo2\t\tremap\t\ttwiddle\t\t3dto2d\tsum"
+    headline = "trafo0\t\ttrafo1\t\ttrafo2\t\tremap\t\ttwiddle\t\t3dto2d\t\tsum"
     line = \
         str('%.4e' % rt_F_0) +"\t" \
       + str('%.4e' % rt_F_1) +"\t" \
