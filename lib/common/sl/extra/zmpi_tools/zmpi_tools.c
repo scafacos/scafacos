@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -258,6 +258,189 @@ int ZMPI_Alltoall_2step_int(void *sendbuf, int sendcount, MPI_Datatype sendtype,
 #include "zmpi_tools.h"
 
 
+#define DEFAULT_INT  0
+
+
+int ZMPI_Alltoall_int_alltoall(int *sendbuf, int *recvbuf, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_alltoall */
+{
+  return MPI_Alltoall(sendbuf, 1, MPI_INT, recvbuf, 1, MPI_INT, comm);
+}
+
+
+int ZMPI_Alltoall_int_2step(int *sendbuf, int *recvbuf, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_2step */
+{
+  return ZMPI_Alltoall_2step_int(sendbuf, 1, MPI_INT, recvbuf, 1, MPI_INT, comm);
+}
+
+
+static int _ZMPI_Alltoall_int_proclists_put(int alloc_mem, int nphases, int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm)
+{
+  int i, p, size, rank, *rcounts_put;
+
+  MPI_Win win;
+
+
+  MPI_Comm_size(comm, &size);
+  MPI_Comm_rank(comm, &rank);
+
+  if (alloc_mem) MPI_Alloc_mem(size * sizeof(int), MPI_INFO_NULL, &rcounts_put);
+  else rcounts_put = recvbuf;
+
+  if (nrprocs >= 0)
+    for (i = 0; i < nrprocs; ++i) rcounts_put[rprocs[i]] = DEFAULT_INT;
+  else
+    for (i = 0; i < size; ++i) rcounts_put[i] = DEFAULT_INT;
+
+  MPI_Win_create(rcounts_put, size * sizeof(int), sizeof(int), MPI_INFO_NULL, comm, &win);
+  MPI_Win_fence(MPI_MODE_NOSTORE|MPI_MODE_NOPRECEDE, win);
+
+  for (p = 0; p < nphases; ++p)
+  {
+/*    printf("%d: phase = %d of %d\n", rank, p, nphases);*/
+  
+    if (rank % nphases == p)
+    {
+      if (nsprocs >= 0)
+      {
+        for (i = 0; i < nsprocs; ++i)
+          if (sendbuf[sprocs[i]] != DEFAULT_INT) MPI_Put(&sendbuf[sprocs[i]], 1, MPI_INT, sprocs[i], rank, 1, MPI_INT, win);
+
+      } else
+      {
+        for (i = 0; i < size; ++i)
+          if (sendbuf[i] != DEFAULT_INT) MPI_Put(&sendbuf[i], 1, MPI_INT, i, rank, 1, MPI_INT, win);
+      }
+    }
+
+    if (p < nphases - 1) MPI_Win_fence(0, win);
+  }
+
+  MPI_Win_fence(MPI_MODE_NOPUT|MPI_MODE_NOSUCCEED, win);
+  MPI_Win_free(&win);
+
+  if (alloc_mem)
+  {
+    if (nrprocs >= 0)
+      for (i = 0; i < nrprocs; ++i) recvbuf[rprocs[i]] = rcounts_put[rprocs[i]];
+    else
+      for (i = 0; i < size; ++i) recvbuf[i] = rcounts_put[i];
+
+    MPI_Free_mem(rcounts_put);    
+  }
+
+  return MPI_SUCCESS;
+}
+
+
+int ZMPI_Alltoall_int_put(int *sendbuf, int *recvbuf, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_put */
+{
+  return _ZMPI_Alltoall_int_proclists_put(0, 1, sendbuf, -1, NULL, recvbuf, -1, NULL, comm);
+}
+
+
+int ZMPI_Alltoall_int_put_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_put_alloc */
+{
+  return _ZMPI_Alltoall_int_proclists_put(1, 1, sendbuf, -1, NULL, recvbuf, -1, NULL, comm);
+}
+
+
+int ZMPI_Alltoall_int_put_2phases(int *sendbuf, int *recvbuf, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_put_2phases */
+{
+  return _ZMPI_Alltoall_int_proclists_put(0, 2, sendbuf, -1, NULL, recvbuf, -1, NULL, comm);
+}
+
+
+int ZMPI_Alltoall_int_put_2phases_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_put_2phases_alloc */
+{
+  return _ZMPI_Alltoall_int_proclists_put(1, 2, sendbuf, -1, NULL, recvbuf, -1, NULL, comm);
+}
+
+
+int ZMPI_Alltoall_int_put_3phases(int *sendbuf, int *recvbuf, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_put_3phases */
+{
+  return _ZMPI_Alltoall_int_proclists_put(0, 3, sendbuf, -1, NULL, recvbuf, -1, NULL, comm);
+}
+
+
+int ZMPI_Alltoall_int_put_3phases_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_put_3phases_alloc */
+{
+  return _ZMPI_Alltoall_int_proclists_put(1, 3, sendbuf, -1, NULL, recvbuf, -1, NULL, comm);
+}
+
+
+int ZMPI_Alltoall_int_proclists_isendirecv(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_proclists_isendirecv */
+{
+  return ZMPI_Alltoall_proclists_isendirecv(sendbuf, 1, MPI_INT, nsprocs, sprocs, recvbuf, 1, MPI_INT, nrprocs, rprocs, comm);
+}
+
+
+int ZMPI_Alltoall_int_proclists_alltoallv(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_proclists_alltoallv */
+{
+  int i, size;
+
+  int *scounts2, *sdispls2, *rcounts2, *rdispls2;
+
+
+  MPI_Comm_size(comm, &size);
+
+  scounts2 = z_alloc(4 * size, sizeof(int));
+  sdispls2 = scounts2 + 1 * size;
+  rcounts2 = scounts2 + 2 * size;
+  rdispls2 = scounts2 + 3 * size;
+
+  for (i = 0; i < size; ++i)
+  {
+    scounts2[i] = rcounts2[i] = DEFAULT_INT;
+    sdispls2[i] = rdispls2[i] = i;
+    recvbuf[i] = 0;
+  }
+
+  for (i = 0; i < nsprocs; ++i) scounts2[sprocs[i]] = 1;
+  for (i = 0; i < nrprocs; ++i) rcounts2[rprocs[i]] = 1;
+
+  MPI_Alltoallv(sendbuf, scounts2, sdispls2, MPI_INT, recvbuf, rcounts2, rdispls2, MPI_INT, comm);
+
+  z_free(scounts2);
+
+  return MPI_SUCCESS;
+}
+
+
+int ZMPI_Alltoall_int_proclists_put(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_proclists_put */
+{
+  return _ZMPI_Alltoall_int_proclists_put(0, 1, sendbuf, nsprocs, sprocs, recvbuf, nrprocs, rprocs, comm);
+}
+
+
+int ZMPI_Alltoall_int_proclists_put_alloc(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_proclists_put_alloc */
+{
+  return _ZMPI_Alltoall_int_proclists_put(1, 1, sendbuf, nsprocs, sprocs, recvbuf, nrprocs, rprocs, comm);
+}
+
+
+int ZMPI_Alltoall_int_proclists_put_2phases(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_proclists_put_2phases */
+{
+  return _ZMPI_Alltoall_int_proclists_put(0, 2, sendbuf, nsprocs, sprocs, recvbuf, nrprocs, rprocs, comm);
+}
+
+
+int ZMPI_Alltoall_int_proclists_put_2phases_alloc(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_int_proclists_put_2phases_alloc */
+{
+  return _ZMPI_Alltoall_int_proclists_put(1, 2, sendbuf, nsprocs, sprocs, recvbuf, nrprocs, rprocs, comm);
+}
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <mpi.h>
+
+#include "z_pack.h"
+
+#include "zmpi_tools.h"
+
+
 int ZMPI_Alltoall_proclists_isendirecv(void *sendbuf, int sendcount, MPI_Datatype sendtype, int nsendprocs, int *sendprocs, void *recvbuf, int recvcount, MPI_Datatype recvtype, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_proclists_isendirecv */
 {
   int i, j;
@@ -271,8 +454,8 @@ int ZMPI_Alltoall_proclists_isendirecv(void *sendbuf, int sendcount, MPI_Datatyp
   MPI_Aint sendtype_lb, sendtype_extent, recvtype_lb, recvtype_extent;
 
 
-  reqs = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Request));
-  stats = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Status));
+  reqs = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Request) + sizeof(MPI_Status));
+  stats = (MPI_Status *) (reqs + nrecvprocs + nsendprocs);
 
   MPI_Type_get_extent(sendtype, &sendtype_lb, &sendtype_extent);
   MPI_Type_get_extent(recvtype, &recvtype_lb, &recvtype_extent);
@@ -296,7 +479,6 @@ int ZMPI_Alltoall_proclists_isendirecv(void *sendbuf, int sendcount, MPI_Datatyp
   MPI_Waitall(nreqs, reqs, stats);
 
   z_free(reqs);
-  z_free(stats);
 
   return MPI_SUCCESS;
 }
@@ -321,8 +503,8 @@ int ZMPI_Alltoallv_proclists_isendirecv(void *sendbuf, int *sendcounts, int *sen
   MPI_Aint sendtype_lb, sendtype_extent, recvtype_lb, recvtype_extent;
 
 
-  reqs = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Request));
-  stats = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Status));
+  reqs = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Request) + sizeof(MPI_Status));
+  stats = (MPI_Status *) (reqs + nrecvprocs + nsendprocs);
 
   MPI_Type_get_extent(sendtype, &sendtype_lb, &sendtype_extent);
   MPI_Type_get_extent(recvtype, &recvtype_lb, &recvtype_extent);
@@ -352,7 +534,6 @@ int ZMPI_Alltoallv_proclists_isendirecv(void *sendbuf, int *sendcounts, int *sen
   MPI_Waitall(nreqs, reqs, stats);
 
   z_free(reqs);
-  z_free(stats);
 
   return MPI_SUCCESS;
 }
@@ -377,8 +558,8 @@ int ZMPI_Alltoallw_proclists_isendirecv(void *sendbuf, int *sendcounts, int *sen
   MPI_Aint sendtype_lb, sendtype_extent, recvtype_lb, recvtype_extent;
 
 
-  reqs = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Request));
-  stats = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Status));
+  reqs = z_alloc(nrecvprocs + nsendprocs, sizeof(MPI_Request) + sizeof(MPI_Status));
+  stats = (MPI_Status *) (reqs + nrecvprocs + nsendprocs);
 
   nreqs = 0;
 
@@ -388,7 +569,7 @@ int ZMPI_Alltoallw_proclists_isendirecv(void *sendbuf, int *sendcounts, int *sen
     if (recvcounts[j] > 0)
     {
       MPI_Type_get_extent(recvtypes[j], &recvtype_lb, &recvtype_extent);
-      MPI_Irecv(((char *) recvbuf) + (recvdispls[j] * recvtype_extent), recvcounts[j], recvtypes[j], j, tag, comm, &reqs[nreqs]);
+      MPI_Irecv(((char *) recvbuf) + recvdispls[j], recvcounts[j], recvtypes[j], j, tag, comm, &reqs[nreqs]);
       ++nreqs;
     }
   }
@@ -399,7 +580,7 @@ int ZMPI_Alltoallw_proclists_isendirecv(void *sendbuf, int *sendcounts, int *sen
     if (sendcounts[j] > 0)
     {
       MPI_Type_get_extent(sendtypes[j], &sendtype_lb, &sendtype_extent);
-      MPI_Isend(((char *) sendbuf) + (senddispls[j] * sendtype_extent), sendcounts[j], sendtypes[j], j, tag, comm, &reqs[nreqs]);
+      MPI_Isend(((char *) sendbuf) + senddispls[j], sendcounts[j], sendtypes[j], j, tag, comm, &reqs[nreqs]);
       ++nreqs;
     }
   }
@@ -407,7 +588,6 @@ int ZMPI_Alltoallw_proclists_isendirecv(void *sendbuf, int *sendcounts, int *sen
   MPI_Waitall(nreqs, reqs, stats);
 
   z_free(reqs);
-  z_free(stats);
 
   return MPI_SUCCESS;
 }
@@ -416,4 +596,181 @@ int ZMPI_Alltoallw_proclists_isendirecv(void *sendbuf, int *sendcounts, int *sen
 int ZMPI_Alltoallw_proclists(void *sendbuf, int *sendcounts, int *senddispls, MPI_Datatype *sendtypes, int nsendprocs, int *sendprocs, void *recvbuf, int *recvcounts, int *recvdispls, MPI_Datatype *recvtypes, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Alltoallw_proclists */
 {
   return ZMPI_Alltoallw_proclists_isendirecv(sendbuf, sendcounts, senddispls, sendtypes, nsendprocs, sendprocs, recvbuf, recvcounts, recvdispls, recvtypes, nrecvprocs, recvprocs, comm);
+}
+
+
+
+#include <mpi.h>
+
+#include "z_pack.h"
+
+#include "zmpi_tools.h"
+
+
+int ZMPI_Reduce_scatter_block(const void *sendbuf, void *recvbuf, int recvcount, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) /* zmpi_func ZMPI_Reduce_scatter_block */
+{
+#if MPI_VERSION >= 2 && MPI_SUBVERSION >= 2
+
+  return MPI_Reduce_scatter_block((void *) sendbuf, recvbuf, recvcount, datatype,op, comm);
+
+#else
+
+  int comm_size, *recvcounts, i, exit_code;
+
+
+  MPI_Comm_size(comm, &comm_size);
+
+  recvcounts = z_alloc(comm_size, sizeof(int));
+
+  for (i = 0; i < comm_size; ++i) recvcounts[i] = recvcount;
+
+  exit_code = MPI_Reduce_scatter((void *) sendbuf, recvbuf, recvcounts, datatype, op, comm);
+
+  z_free(recvcounts);
+
+  return exit_code;
+#endif
+}
+
+
+
+#include <string.h>
+#include <mpi.h>
+
+#include "z_pack.h"
+
+#include "zmpi_tools.h"
+
+
+#define DEFAULT_INT  0
+
+
+static int _ZMPI_Reduce_scatter_block_intsum_accumulate(const int *sendbuf, int nsendprocs, int *sendprocs, int *recvbuf, int recvcount, int nrecvprocs, int *recvprocs, MPI_Comm comm)
+{
+  int i, j, size, rank;
+
+  MPI_Win win;
+
+
+  MPI_Comm_size(comm, &size);
+  MPI_Comm_rank(comm, &rank);
+
+  for (i = 0; i < recvcount; ++i) recvbuf[i] = DEFAULT_INT;
+
+  MPI_Win_create(recvbuf, recvcount * sizeof(int), sizeof(int), MPI_INFO_NULL, comm, &win);
+  MPI_Win_fence(MPI_MODE_NOSTORE|MPI_MODE_NOPRECEDE, win);
+
+  if (nsendprocs >= 0)
+  {
+    for (j = 0; j < nsendprocs; ++j)
+    {
+      for (i = 0; i < recvcount; ++i) if (sendbuf[sendprocs[j] * recvcount + i] != DEFAULT_INT) break;
+
+      if (i < recvcount) MPI_Accumulate((void *) &sendbuf[sendprocs[j] * recvcount], recvcount, MPI_INT, sendprocs[j], 0, recvcount, MPI_INT, MPI_SUM, win);
+    }
+
+  } else
+  {
+    for (j = 0; j < size; ++j)
+    {
+      for (i = 0; i < recvcount; ++i) if (sendbuf[j * recvcount + i] != DEFAULT_INT) break;
+
+      if (i < recvcount) MPI_Accumulate((void *) &sendbuf[j * recvcount], recvcount, MPI_INT, j, 0, recvcount, MPI_INT, MPI_SUM, win);
+    }
+  }
+
+  MPI_Win_fence(MPI_MODE_NOPUT|MPI_MODE_NOSUCCEED, win);
+  MPI_Win_free(&win);
+
+  return MPI_SUCCESS;
+}
+
+
+int ZMPI_Reduce_scatter_block_intsum_accumulate(const int *sendbuf, int *recvbuf, int recvcount, MPI_Comm comm) /* zmpi_func ZMPI_Reduce_scatter_block_intsum_accumulate */
+{
+  return _ZMPI_Reduce_scatter_block_intsum_accumulate(sendbuf, -1, NULL, recvbuf, recvcount, -1, NULL, comm);
+}
+
+
+int ZMPI_Reduce_scatter_block_intsum_proclists_isendirecv(const int *sendbuf, int nsendprocs, int *sendprocs, int *recvbuf, int recvcount, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Reduce_scatter_block_intsum_proclists_isendirecv */
+{
+  int i, j;
+
+  int *recvbuf_full;
+  MPI_Request *reqs;
+
+
+  recvbuf_full = z_alloc(nrecvprocs * recvcount, sizeof(int));
+
+  reqs = z_alloc(nsendprocs + nrecvprocs, sizeof(MPI_Request));
+
+  for (j = 0; j < nrecvprocs; ++j) MPI_Irecv(&recvbuf_full[j * recvcount], recvcount, MPI_INT, recvprocs[j], 0, comm, &reqs[j]);
+
+  for (j = 0; j < nsendprocs; ++j) MPI_Isend((void *) &sendbuf[sendprocs[j] * recvcount], recvcount, MPI_INT, sendprocs[j], 0, comm, &reqs[nrecvprocs + j]);
+
+  MPI_Waitall(nsendprocs + nrecvprocs, reqs, MPI_STATUSES_IGNORE);
+
+  for (i = 0; i < recvcount; ++i) recvbuf[i] = DEFAULT_INT;
+
+  for (j = 0; j < nrecvprocs; ++j)
+    for (i = 0; i < recvcount; ++i) recvbuf[i] += recvbuf_full[j * recvcount + i];
+
+  z_free(reqs);
+
+  z_free(recvbuf_full);
+
+  return MPI_SUCCESS;
+}
+
+
+int ZMPI_Reduce_scatter_block_intsum_proclists_alltoallv(const int *sendbuf, int nsendprocs, int *sendprocs, int *recvbuf, int recvcount, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Reduce_scatter_block_intsum_proclists_alltoallv */
+{
+  int i, j, size, rank;
+
+  int *recvbuf_full;
+  int *scounts, *sdispls, *rcounts, *rdispls;
+
+
+  MPI_Comm_size(comm, &size);
+  MPI_Comm_rank(comm, &rank);
+
+  recvbuf_full = z_alloc(nrecvprocs * recvcount, sizeof(int));
+
+  scounts = z_alloc(4 * size, sizeof(int));
+  sdispls = scounts + 1 * size;
+  rcounts = scounts + 2 * size;
+  rdispls = scounts + 3 * size;
+
+  memset(scounts, 0, 4 * size * sizeof(int));
+
+  for (j = 0; j < nrecvprocs; ++j)
+  {
+    rcounts[recvprocs[j]] = recvcount;
+    rdispls[recvprocs[j]] = j * recvcount;
+  }
+
+  for (j = 0; j < nsendprocs; ++j)
+  {
+    scounts[sendprocs[j]] = recvcount;
+    sdispls[sendprocs[j]] = sendprocs[j] * recvcount;
+  }
+
+  MPI_Alltoallv((void *) sendbuf, scounts, sdispls, MPI_INT, recvbuf_full, rcounts, rdispls, MPI_INT, comm);
+
+  for (i = 0; i < recvcount; ++i) recvbuf[i] = DEFAULT_INT;
+
+  for (j = 0; j < nrecvprocs; ++j)
+    for (i = 0; i < recvcount; ++i) recvbuf[i] += recvbuf_full[j * recvcount + i];
+
+  z_free(scounts);
+
+  z_free(recvbuf_full);
+
+  return MPI_SUCCESS;
+}
+
+
+int ZMPI_Reduce_scatter_block_intsum_proclists_accumulate(const int *sendbuf, int nsendprocs, int *sendprocs, int *recvbuf, int recvcount, int nrecvprocs, int *recvprocs, MPI_Comm comm) /* zmpi_func ZMPI_Reduce_scatter_block_intsum_proclists_accumulate */
+{
+  return _ZMPI_Reduce_scatter_block_intsum_accumulate(sendbuf, nsendprocs, sendprocs, recvbuf, recvcount, nrecvprocs, recvprocs, comm);
 }

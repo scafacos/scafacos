@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -48,7 +48,7 @@
 
 
 /* zmpil_simple.c */
-#define zmpil_simple_create  ZMPI_FUNC(zmpil_simple_create)
+#define zmpil_simple_create_derived  ZMPI_FUNC(zmpil_simple_create_derived)
 #define zmpil_simple_destroy  ZMPI_FUNC(zmpil_simple_destroy)
 
 

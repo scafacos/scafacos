@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -26,7 +26,7 @@
 #define __SL_GLOBALS_H__
 
 
-/* src/base/base.c */
+/* base/base.c */
 extern sl_context_t sl_default_context;
 extern const int default_sl_dummy_rank;
 #ifdef SL_USE_RTI
@@ -37,7 +37,7 @@ extern const slint_t default_sr_db_threshold;
 extern const slint_t default_sr_ma_threshold;
 extern const slint_t default_sri_threshold;
 
-/* src/base_mpi/base_mpi.c */
+/* base_mpi/base_mpi.c */
 #ifdef SL_USE_MPI
 extern const MPI_Datatype default_mpi_int_datatype;
 extern const MPI_Datatype default_mpi_key_datatype;
@@ -52,10 +52,13 @@ extern const void *default_me_sendrecv_replace_mem;
 extern const slint_t default_me_sendrecv_replace_memsize;
 extern const slint_t default_me_sendrecv_replace_mpi_maxsize;
 extern const double default_meas_t[];
-extern const slint_t default_meas_max_nprocs;
 extern const slint_t default_meas_packed;
 extern const slint_t default_meas_minalloc;
 extern const double default_meas_overalloc;
+extern const slint_t default_meas_type;
+extern const void *default_meas_sendrecv_aux;
+extern const slint_t default_meas_sendrecv_aux_size;
+extern const slint_t default_meas_sendrecv_requests;
 extern const slint_t default_mea_packed;
 extern const slint_t default_mea_db_packed;
 extern const slint_t default_mea_ip_packed;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -43,27 +43,28 @@ spint_t spec_check_buffer_size(spec_elem_t *b, spint_t min_size, spint_t allocat
 void spec_tproc_setup(spec_tproc_t tproc, spec_elem_t *b, spec_proc_t **procs, spec_elem_t **mods);
 void spec_tproc_release(spec_proc_t **procs, spec_elem_t **mods);
 
-spint_t spec_make_counts(spec_elem_t *b, spec_tproc_t tproc, spec_tproc_data_t tproc_data, int ip, int size, int *counts, spec_proc_t *procs);
+spint_t spec_make_counts(spec_tproc_t tproc, spec_tproc_data_t tproc_data, spec_elem_t *b, int ip, int size, int *counts, spec_proc_t *procs);
 
 extern spint_t spec_redistribute_counts_type, spec_redistribute_counts_proclists_type;
 
-#define SPEC_REDISTRIBUTE_COUNTS_ALLTOALL           0
-#define SPEC_REDISTRIBUTE_COUNTS_2STEP              1
-#define SPEC_REDISTRIBUTE_COUNTS_PUT                2
-#define SPEC_REDISTRIBUTE_COUNTS_PUT_ALLOC          3
-#define SPEC_REDISTRIBUTE_COUNTS_PUT_2PHASES        4
-#define SPEC_REDISTRIBUTE_COUNTS_PUT_2PHASES_ALLOC  5
-#define SPEC_REDISTRIBUTE_COUNTS_PUT_3PHASES        6
-#define SPEC_REDISTRIBUTE_COUNTS_PUT_3PHASES_ALLOC  7
-#define SPEC_REDISTRIBUTE_COUNTS_DEFAULT            SPEC_REDISTRIBUTE_COUNTS_ALLTOALL
+#define SPEC_REDISTRIBUTE_COUNTS_DEFAULT            0
+#define SPEC_REDISTRIBUTE_COUNTS_ALLTOALL           1
+#define SPEC_REDISTRIBUTE_COUNTS_2STEP              2
+#define SPEC_REDISTRIBUTE_COUNTS_PUT                3
+#define SPEC_REDISTRIBUTE_COUNTS_PUT_ALLOC          4
+#define SPEC_REDISTRIBUTE_COUNTS_PUT_2PHASES        5
+#define SPEC_REDISTRIBUTE_COUNTS_PUT_2PHASES_ALLOC  6
+#define SPEC_REDISTRIBUTE_COUNTS_PUT_3PHASES        7
+#define SPEC_REDISTRIBUTE_COUNTS_PUT_3PHASES_ALLOC  8
 
-#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_ISENDIRECV         0
-#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_ALLTOALLV          1
-#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_PUT                2
-#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_PUT_ALLOC          3
-#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_PUT_2PHASES        4
-#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_PUT_2PHASES_ALLOC  5
-#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_DEFAULT            SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_ISENDIRECV
+#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_DEFAULT            0
+#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_IGNORE             1
+#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_ISENDIRECV         2
+#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_ALLTOALLV          3
+#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_PUT                4
+#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_PUT_ALLOC          5
+#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_PUT_2PHASES        6
+#define SPEC_REDISTRIBUTE_COUNTS_PROCLISTS_PUT_2PHASES_ALLOC  7
 
 spint_t spec_redistribute_counts(int *scounts, int *rcounts,
 #ifdef SPEC_PROCLISTS
@@ -71,13 +72,37 @@ spint_t spec_redistribute_counts(int *scounts, int *rcounts,
 #endif
   int size, int rank, MPI_Comm comm);
 
-extern spint_t spec_redistribute_displs_type;
+extern spint_t spec_reduce_scatter_counts_type, spec_reduce_scatter_counts_proclists_type;
 
-#define SPEC_REDISTRIBUTE_DISPLS_COUNTS   0
-#define SPEC_REDISTRIBUTE_DISPLS_PUT      1
-#define SPEC_REDISTRIBUTE_DISPLS_DEFAULT  SPEC_REDISTRIBUTE_DISPLS_COUNTS
+#define SPEC_REDUCE_SCATTER_COUNTS_DEFAULT     0
+#define SPEC_REDUCE_SCATTER_COUNTS_REDSCAT     1
+#define SPEC_REDUCE_SCATTER_COUNTS_ACCUMULATE  2
 
-spint_t spec_redistribute_displs(int *sdispls, int stotal, int *rdispls,
+#define SPEC_REDUCE_SCATTER_COUNTS_PROCLISTS_DEFAULT     0
+#define SPEC_REDUCE_SCATTER_COUNTS_PROCLISTS_IGNORE      1
+#define SPEC_REDUCE_SCATTER_COUNTS_PROCLISTS_ISENDIRECV  2
+#define SPEC_REDUCE_SCATTER_COUNTS_PROCLISTS_ALLTOALLV   3
+#define SPEC_REDUCE_SCATTER_COUNTS_PROCLISTS_ACCUMULATE  4
+
+spint_t spec_reduce_scatter_counts(int *scounts, int *rcounts, int ncounts,
+#ifdef SPEC_PROCLISTS
+  spint_t nsend_procs, sproc_t *send_procs, spint_t nrecv_procs, sproc_t *recv_procs,
+#endif
+  int size, int rank, MPI_Comm comm);
+
+extern spint_t spec_prefix_counts_type, spec_prefix_counts_proclists_type;
+
+#define SPEC_PREFIX_COUNTS_SCAN        0
+/*#define SPEC_PREFIX_COUNTS_ACCUMULATE  1*/
+#define SPEC_PREFIX_COUNTS_DEFAULT     SPEC_PREFIX_COUNTS_SCAN
+
+#define SPEC_PREFIX_COUNTS_PROCLISTS_IGNORE      0
+/*#define SPEC_PREFIX_COUNTS_PROCLISTS_ISENDIRECV  1
+#define SPEC_PREFIX_COUNTS_PROCLISTS_ALLTOALLV   2
+#define SPEC_PREFIX_COUNTS_PROCLISTS_ACCUMULATE  3*/
+#define SPEC_PREFIX_COUNTS_PROCLISTS_DEFAULT     SPEC_PREFIX_COUNTS_PROCLISTS_IGNORE
+
+spint_t spec_prefix_counts(int *scounts, int *rcounts, int ncounts,
 #ifdef SPEC_PROCLISTS
   spint_t nsend_procs, sproc_t *send_procs, spint_t nrecv_procs, sproc_t *recv_procs,
 #endif

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -22,11 +22,15 @@
  */
 
 
-#include <stdio.h>
+/* _XOPEN_SOURCE >= 500 required for nftw */
+/* _XOPEN_SOURCE >= 600 required for vsscanf */
+#define _XOPEN_SOURCE 600
 
 #include "z_pack.h"
 
+
 #ifdef Z_PACK_MPI
+
 # ifdef HAVE_SPI_KERNEL_INTERFACE_H
 #  include <spi/kernel_interface.h>
 # endif
@@ -39,10 +43,7 @@
 # ifdef HAVE_MPIX_H
 #  include <mpix.h>
 # endif
-#endif
 
-
-#ifdef Z_PACK_MPI
 
 void z_mpi_remap_cart_topology(int from_ndims, int *from_dims, int *from_torus, int *from_pos, int to_ndims, int *to_dims, int *to_torus, int *to_pos) /* z_proto, z_func z_mpi_remap_cart_topology */
 {
@@ -503,9 +504,7 @@ z_int_t z_digest_hash_read(void *hdl, void *hash) /* z_proto, z_func z_digest_ha
 
 #if defined(Z_PACK_GMP) && defined(HAVE_GMP_H)
 
-#ifdef HAVE_GMP_H
-# include <gmp.h>
-#endif
+#include <gmp.h>
 
 
 void z_gmp_mpz_set_ull(mpz_t z, unsigned long long v) /* z_proto, z_func z_gmp_mpz_set_ull */
@@ -601,3 +600,212 @@ long long z_gmp_mpz_get_sll(mpz_t z) /* z_proto, z_func z_gmp_mpz_get_sll */
 }
 
 #endif /* Z_PACK_GMP && HAVE_GMP_H */
+
+
+#ifdef Z_PACK_FS
+
+#if HAVE_SYS_STAT_H && HAVE_SYS_TYPES_H
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
+
+z_int_t z_fs_exists(const char *pathname) /* z_proto, z_func z_fs_exists */
+{
+  struct stat s;
+
+
+  return (stat(pathname, &s) == 0);
+}
+
+
+z_int_t z_fs_is_directory(const char *pathname) /* z_proto, z_func z_fs_is_directory */
+{
+  struct stat s;
+
+
+  if (stat(pathname, &s) != 0) return 0;
+
+  return S_ISDIR(s.st_mode)?1:0;
+}
+
+
+z_int_t z_fs_is_file(const char *pathname) /* z_proto, z_func z_fs_is_file */
+{
+  struct stat s;
+
+
+  if (stat(pathname, &s) != 0) return 0;
+
+  return S_ISREG(s.st_mode)?1:0;
+}
+
+
+z_int_t z_fs_is_link(const char *pathname) /* z_proto, z_func z_fs_is_link */
+{
+  struct stat s;
+
+
+  if (stat(pathname, &s) != 0) return 0;
+
+  return S_ISLNK(s.st_mode)?1:0;
+}
+
+
+z_int_t z_fs_get_file_size(const char *pathname) /* z_proto, z_func z_fs_get_file_size */
+{
+  struct stat s;
+
+
+  if (stat(pathname, &s) != 0) return -1;
+
+  return (z_int_t) s.st_size;
+}
+
+
+z_int_t z_fs_mkdir(const char *pathname) /* z_proto, z_func z_fs_mkdir */
+{
+  const mode_t mode = 0777;
+
+
+  if (z_fs_is_directory(pathname)) return 1;
+
+  return (mkdir(pathname, mode) == 0);
+}
+
+#endif /* HAVE_SYS_STAT_H && HAVE_SYS_TYPES_H */
+
+
+#if HAVE_STDLIB_H && HAVE_STRING_H
+
+#include <stdlib.h>
+#include <string.h>
+
+
+z_int_t z_fs_mkdir_p(const char *pathname) /* z_proto, z_func z_fs_mkdir_p */
+{
+  z_int_t ret = 1;
+  char *p, *pb, *pe;
+
+
+  pb = p = strdup(pathname);
+
+  while (ret && pb != NULL)
+  {
+    pe = strchr(pb, '/');
+
+    if (pe != pb)
+    {
+      if (pe) *pe = '\0';
+
+      ret = z_fs_mkdir(p);
+
+      if (pe) *pe = '/';
+    }
+
+    pb = pe;
+
+    if (pb) ++pb;
+  }
+
+  free(p);
+
+  return ret;
+}
+
+#endif /* HAVE_STDLIB_H && HAVE_STRING_H */
+
+
+#if HAVE_STDIO_H
+
+#include <stdio.h>
+
+
+z_int_t z_fs_rm(const char *pathname) /* z_proto, z_func z_fs_rm */
+{
+  return (remove(pathname) == 0);
+}
+
+
+#if HAVE_FTW_H
+
+#include <ftw.h>
+
+/*
+static int display_info_fn(const char *fpath, const struct stat *sb, int tflag, struct FTW *ftwbuf)
+{
+  printf("%-3s %2d %7d   %-40s %d %s\n",
+    (tflag == FTW_D)?"d":
+    (tflag == FTW_DNR)?"dnr":
+    (tflag == FTW_DP)?"dp":
+    (tflag == FTW_F)?(
+      S_ISBLK(sb->st_mode)?"f b":
+      S_ISCHR(sb->st_mode)?"f c":
+      S_ISFIFO(sb->st_mode)?"f p":
+      S_ISREG(sb->st_mode)?"f r":
+      S_ISSOCK(sb->st_mode)?"f s":"f ?"):
+    (tflag == FTW_NS)?"ns":
+    (tflag == FTW_SL)?"sl":
+    (tflag == FTW_SLN)?"sln":"?",
+    ftwbuf->level,
+    (int) sb->st_size,
+    fpath,
+    ftwbuf->base,
+    fpath + ftwbuf->base);
+  return 0;
+}
+*/
+
+
+static int rm_r_fn(const char *fpath, const struct stat *sb, int tflag, struct FTW *ftwbuf)
+{
+/*  printf("remove: %s\n", fpath);*/
+  remove(fpath);
+
+  return 0;
+}
+
+
+z_int_t z_fs_rm_r(const char *pathname) /* z_proto, z_func z_fs_rm_r */
+{
+  return (nftw(pathname, rm_r_fn, 20, FTW_PHYS|FTW_DEPTH) == 0);
+}
+
+#endif /* HAVE_FTW_H */
+
+#endif /* HAVE_STDIO_H */
+
+#endif /* Z_PACK_FS */
+
+
+#ifdef Z_PACK_STDIO
+
+#if HAVE_STDIO_H && HAVE_STRING_H && HAVE_STDARG_H
+
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+
+
+int z_snscanf(const char *str, size_t size, const char *format, ...) /* z_proto, z_func z_snscanf */
+{
+  int n;
+  char str2[size + 1];
+
+
+  strncpy(str2, str, size);
+  str2[size] = '\0';
+
+  va_list argp;
+  va_start(argp, format);
+
+  n = vsscanf(str2, format, argp);
+
+  va_end(argp);
+
+  return n;
+}
+
+#endif /* HAVE_STDIO_H && HAVE_STRING_H && HAVE_STDARG_H */
+
+#endif /* Z_PACK_STDIO */

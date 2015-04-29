@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -921,6 +921,38 @@ slint_t mpi_elements_sendrecv_replace(elements_t *s, int count, int dest, int se
 }
 
 
+slint_t mpi_elements_isend_components(elements_t *s, slint_t at, int count, int dest, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm)  /* sl_proto, sl_func mpi_elements_isend_components */
+{
+  slint_t n = 0;
+
+#define xelem_call  if ((components & xelem_cm) || ((components & SLCM_WEIGHTS) && xelem_weight)) { \
+  MPI_Isend(xelem_buf_at(s, at), count, xelem_mpi_datatype, dest, tag + n, comm, &reqs[n]); \
+  ++n; \
+}
+#include "sl_xelem_call.h"
+
+/*  printf("%d: MPI_Isend: %d: send %d @ %d to %d with tag %d\n", rank, (int) n, count, (int) at, dest, tag + (int) n); \*/
+
+  return n;
+}
+
+
+slint_t mpi_elements_irecv_components(elements_t *s, slint_t at, int count, int source, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm)  /* sl_proto, sl_func mpi_elements_irecv_components */
+{
+  slint_t n = 0;
+
+#define xelem_call  if ((components & xelem_cm) || ((components & SLCM_WEIGHTS) && xelem_weight)) { \
+  MPI_Irecv(xelem_buf_at(s, at), count, xelem_mpi_datatype, source, tag + n, comm, &reqs[n]); \
+  ++n; \
+}
+#include "sl_xelem_call.h"
+
+/*  printf("%d: MPI_Irecv: %d: recv %d @ %d from %d with tag %d\n", rank, (int) n, count, (int) at, source, tag + (int) n); \*/
+
+  return n;
+}
+
+
 
 /* sl_macro MEAS_TRACE_IF */
 
@@ -930,11 +962,14 @@ slint_t mpi_elements_sendrecv_replace(elements_t *s, int count, int dest, int se
 
 
 /* sl_ifdef SL_USE_MPI sl_context CONTEXT_BEGIN meas */
-const double default_meas_t[2] = { 0 };     /* sl_global sl_context sl_var default_meas_t */
-const slint_t default_meas_max_nprocs = 8;  /* sl_global sl_context sl_var default_meas_max_nprocs */
-const slint_t default_meas_packed = 0;      /* sl_global sl_context sl_var default_meas_packed */
-const slint_t default_meas_minalloc = 0;    /* sl_global sl_context sl_var default_meas_minalloc */
-const double default_meas_overalloc = 0;    /* sl_global sl_context sl_var default_meas_overalloc */
+const double default_meas_t[2] = { 0 };                    /* sl_global sl_context sl_var default_meas_t */
+const slint_t default_meas_packed = 0;                     /* sl_global sl_context sl_var default_meas_packed */
+const slint_t default_meas_minalloc = 0;                   /* sl_global sl_context sl_var default_meas_minalloc */
+const double default_meas_overalloc = 0;                   /* sl_global sl_context sl_var default_meas_overalloc */
+const slint_t default_meas_type = SL_MEAS_TYPE_ALLTOALLV;  /* sl_global sl_context sl_var default_meas_type */
+const void *default_meas_sendrecv_aux = NULL;              /* sl_global sl_context sl_var default_meas_sendrecv_aux */
+const slint_t default_meas_sendrecv_aux_size = 0;          /* sl_global sl_context sl_var default_meas_sendrecv_aux_size */
+const slint_t default_meas_sendrecv_requests = 10;         /* sl_global sl_context sl_var default_meas_sendrecv_requests */
 /* sl_endif sl_context CONTEXT_END meas */
 
 
@@ -947,38 +982,16 @@ const double default_meas_overalloc = 0;    /* sl_global sl_context sl_var defau
 #endif
 
 
-struct _tproc_t
-{
-  spec_tproc_t spec_tproc;
-};
-
-
-static void _tproc_create(tproc_t *tproc)
-{
-  *tproc = z_alloc(1, sizeof(*tproc));
-}
-
-
-static void _tproc_free(tproc_t *tproc)
-{
-  z_free(*tproc);
-  
-  *tproc = NULL;
-}
-
-
 slint_t tproc_create_tproc(tproc_t *tproc, tproc_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef) /* sl_proto, sl_func tproc_create_tproc */
 {
   if (exdef != TPROC_EXDEF_NULL && exdef->type != 1) return 1;
 
-  _tproc_create(tproc);
+  spec_tproc_create(tproc, tfn, NULL, NULL, NULL, 0);
 
-  spec_tproc_create(&(*tproc)->spec_tproc, tfn, NULL, NULL, NULL, 0);
-
-  spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
+  spec_tproc_set_reset(*tproc, rfn);
 
   if (exdef != TPROC_EXDEF_NULL)
-    spec_tproc_set_ext_tproc(&(*tproc)->spec_tproc, exdef->tproc_count_db, exdef->tproc_count_ip, exdef->tproc_rearrange_db, exdef->tproc_rearrange_ip, exdef->tproc_indices_db);
+    spec_tproc_set_ext_tproc(*tproc, &exdef->tproc_ext);
 
   return 0;
 }
@@ -988,14 +1001,12 @@ slint_t tproc_create_tproc_mod(tproc_t *tproc, tproc_mod_f *tfn, tproc_reset_f *
 {
   if (exdef != TPROC_EXDEF_NULL && exdef->type != 2) return 1;
 
-  _tproc_create(tproc);
+  spec_tproc_create(tproc, NULL, tfn, NULL, NULL, 0);
 
-  spec_tproc_create(&(*tproc)->spec_tproc, NULL, tfn, NULL, NULL, 0);
-
-  spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
+  spec_tproc_set_reset(*tproc, rfn);
 
   if (exdef != TPROC_EXDEF_NULL)
-    spec_tproc_set_ext_tproc_mod(&(*tproc)->spec_tproc, exdef->tproc_mod_count_db, exdef->tproc_mod_count_ip, exdef->tproc_mod_rearrange_db, exdef->tproc_mod_rearrange_ip);
+    spec_tproc_set_ext_tproc_mod(*tproc, &exdef->tproc_mod_ext);
 
   return 0;
 }
@@ -1004,15 +1015,13 @@ slint_t tproc_create_tproc_mod(tproc_t *tproc, tproc_mod_f *tfn, tproc_reset_f *
 slint_t tproc_create_tprocs(tproc_t *tproc, slint_t max_tprocs, tprocs_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef) /* sl_proto, sl_func tproc_create_tprocs */
 {
   if (exdef != TPROC_EXDEF_NULL && exdef->type != 3) return 1;
-
-  _tproc_create(tproc);
   
-  spec_tproc_create(&(*tproc)->spec_tproc, NULL, NULL, tfn, NULL, max_tprocs);
+  spec_tproc_create(tproc, NULL, NULL, tfn, NULL, max_tprocs);
 
-  spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
+  spec_tproc_set_reset(*tproc, rfn);
 
   if (exdef != TPROC_EXDEF_NULL)
-    spec_tproc_set_ext_tprocs(&(*tproc)->spec_tproc, exdef->tprocs_count_db, exdef->tprocs_count_ip, exdef->tprocs_rearrange_db, exdef->tprocs_rearrange_ip, exdef->tprocs_indices_db);
+    spec_tproc_set_ext_tprocs(*tproc, &exdef->tprocs_ext);
   
   return 0;
 }
@@ -1022,14 +1031,12 @@ slint_t tproc_create_tprocs_mod(tproc_t *tproc, slint_t max_tprocs, tprocs_mod_f
 {
   if (exdef != TPROC_EXDEF_NULL && exdef->type != 4) return 1;
 
-  _tproc_create(tproc);
-  
-  spec_tproc_create(&(*tproc)->spec_tproc, NULL, NULL, NULL, tfn, max_tprocs);
+  spec_tproc_create(tproc, NULL, NULL, NULL, tfn, max_tprocs);
 
-  spec_tproc_set_reset(&(*tproc)->spec_tproc, rfn);
+  spec_tproc_set_reset(*tproc, rfn);
   
   if (exdef != TPROC_EXDEF_NULL)
-    spec_tproc_set_ext_tprocs_mod(&(*tproc)->spec_tproc, exdef->tprocs_mod_count_db, exdef->tprocs_mod_count_ip, exdef->tprocs_mod_rearrange_db, exdef->tprocs_mod_rearrange_ip);
+    spec_tproc_set_ext_tprocs_mod(*tproc, &exdef->tprocs_mod_ext);
   
   return 0;
 }
@@ -1037,17 +1044,15 @@ slint_t tproc_create_tprocs_mod(tproc_t *tproc, slint_t max_tprocs, tprocs_mod_f
 
 slint_t tproc_free(tproc_t *tproc) /* sl_proto, sl_func tproc_free */
 {
-  spec_tproc_destroy(&(*tproc)->spec_tproc);
-
-  _tproc_free(tproc);
+  spec_tproc_destroy(tproc);
   
   return 0;
 }
 
 
-slint_t tproc_set_proclists(tproc_t *tproc, slint_t nsend_procs, int *send_procs, slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm) /* sl_proto, sl_func tproc_set_proclists */
+slint_t tproc_set_proclists(tproc_t tproc, slint_t nsend_procs, int *send_procs, slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm) /* sl_proto, sl_func tproc_set_proclists */
 {
-  spec_tproc_set_proclists(&(*tproc)->spec_tproc, nsend_procs, send_procs, nrecv_procs, recv_procs, size, rank, comm);
+  spec_tproc_set_proclists(tproc, nsend_procs, send_procs, nrecv_procs, recv_procs, size, rank, comm);
 
   return 0;
 }
@@ -1085,16 +1090,47 @@ slint_t mpi_elements_alltoall_specific_alloc_size(slint_t n) /* sl_func mpi_elem
 
 slint_t mpi_elements_alltoall_specific(elements_t *sin, elements_t *sout, elements_t *xs, tproc_t tproc, void *data, int size, int rank, MPI_Comm comm) /* sl_proto, sl_func mpi_elements_alltoall_specific */
 {
-  slint_t r, original_mea_packed;
+  slint_t r = -1;
+  struct {
+    slint_t mea_packed;
+    void *sendrecv_aux;
+    slint_t sendrecv_aux_size, sendrecv_send_requests, sendrecv_recv_requests;
+  } original;
 
-  original_mea_packed = SL_DEFCON(mea.packed); SL_DEFCON(mea.packed) = SL_DEFCON(meas.packed);
+  original.mea_packed = SL_DEFCON(mea.packed); SL_DEFCON(mea.packed) = SL_DEFCON(meas.packed);
 
-  if (sin == NULL || sout == NULL)
-    r = spec_alltoallv_ip((sin)?sin:sout, xs, tproc->spec_tproc, data, size, rank, comm);
-  else
-    r = spec_alltoallv_db(sin, sout, xs, tproc->spec_tproc, data, size, rank, comm);
+  if (SL_DEFCON(meas.type) == SL_MEAS_TYPE_ALLTOALLV)
+  {
+    if (sin == NULL || sout == NULL)
+      r = spec_alltoallv_ip((sin)?sin:sout, xs, tproc, data, size, rank, comm);
+    else
+      r = spec_alltoallv_db(sin, sout, xs, tproc, data, size, rank, comm);
 
-  SL_DEFCON(mea.packed) = original_mea_packed;
+  } else if (SL_DEFCON(meas.type) == SL_MEAS_TYPE_SENDRECV)
+  {
+    original.sendrecv_aux = spec_sendrecv_aux;
+    original.sendrecv_aux_size = spec_sendrecv_aux_size;
+    original.sendrecv_send_requests = spec_sendrecv_send_requests;
+    original.sendrecv_recv_requests = spec_sendrecv_receive_requests;
+
+    spec_sendrecv_aux = SL_DEFCON(meas.sendrecv_aux);
+    spec_sendrecv_aux_size = SL_DEFCON(meas.sendrecv_aux_size);
+
+    if (SL_DEFCON(meas.sendrecv_requests) > 0) spec_sendrecv_send_requests = spec_sendrecv_receive_requests = SL_DEFCON(meas.sendrecv_requests);
+
+    r = spec_sendrecv_db(sin, sout, xs, tproc, data, size, rank, comm);
+
+    spec_sendrecv_aux = original.sendrecv_aux;
+    spec_sendrecv_aux_size = original.sendrecv_aux_size;
+    spec_sendrecv_send_requests = original.sendrecv_send_requests;
+    spec_sendrecv_receive_requests = original.sendrecv_recv_requests;
+
+  } else
+  {
+    fprintf(stderr, "%d: mpi_elements_alltoall_specific: error: unknown type '%" slint_fmt "'\n", rank, SL_DEFCON(meas.type));
+  }
+
+  SL_DEFCON(mea.packed) = original.mea_packed;
 
   return r;
 }
@@ -1490,18 +1526,84 @@ slint_t mpi_elements_alltoallv_ip(elements_t *s, elements_t *sx, int *scounts, i
 #endif
 
 
-#ifdef HAVE_ZMPI_ALLTOALLX_PROCLISTS
+#define MEAP_TYPE  2
+
 
 slint_t mpi_elements_alltoallv_proclists_db(elements_t *sbuf, int *scounts, int *sdispls, int nsendprocs, int *sendprocs, elements_t *rbuf, int *rcounts, int *rdispls, int nrecvprocs, int *recvprocs, int size, int rank, MPI_Comm comm) /* sl_proto, sl_func mpi_elements_alltoallv_proclists_db */
 {
+#if defined(HAVE_ZMPI_ALLTOALLX_PROCLISTS) && MEAP_TYPE == 0
+
 #define xelem_call \
   ZMPI_Alltoallv_proclists(xelem_buf(sbuf), scounts, sdispls, xelem_mpi_datatype, nsendprocs, sendprocs, xelem_buf(rbuf), rcounts, rdispls, xelem_mpi_datatype, nrecvprocs, recvprocs, comm);
+
 #include "sl_xelem_call.h"
+
+#elif MEAP_TYPE == 1 || MEAP_TYPE == 2
+
+  slint_t i, j, k;
+
+  const int tag = 0;
+
+  slint_t nreqs;
+  MPI_Request *reqs;
+  MPI_Status *stats;
+
+
+  reqs = z_alloc((nrecvprocs + nsendprocs) * elem_n, sizeof(MPI_Request) + sizeof(MPI_Status));
+  stats = (MPI_Status *) (reqs + (nrecvprocs + nsendprocs) * elem_n);
+
+  nreqs = 0;
+  k = 0;
+
+next:
+
+  if (k + 1 == MEAP_TYPE)
+  {
+    for (i = 0; i < nrecvprocs; ++i)
+    {
+      j = recvprocs[i];
+      if (rcounts[j] > 0)
+      {
+#define xelem_call \
+        MPI_Irecv(xelem_buf_at(rbuf, rdispls[j]), rcounts[j], xelem_mpi_datatype, j, tag, comm, &reqs[nreqs++]);
+#include "sl_xelem_call.h"
+      }
+    }
+  }
+
+  if (k + 1 != MEAP_TYPE)
+  {
+    for (i = 0; i < nsendprocs; ++i)
+    {
+      j = sendprocs[i];
+      if (scounts[j] > 0)
+      {
+#define xelem_call \
+        MPI_Isend(xelem_buf_at(sbuf, sdispls[j]), scounts[j], xelem_mpi_datatype, j, tag, comm, &reqs[nreqs++]);
+#include "sl_xelem_call.h"
+      }
+    }
+  }
+
+  ++k;
+
+  if (k <= 1) goto next;
+
+  MPI_Waitall(nreqs, reqs, stats);
+
+  z_free(reqs);
+
+#else
+
+#define xelem_call \
+  MPI_Alltoallv(xelem_buf(sbuf), scounts, sdispls, xelem_mpi_datatype, xelem_buf(rbuf), rcounts, rdispls, xelem_mpi_datatype, comm);
+
+#include "sl_xelem_call.h"
+
+#endif
 
   return 0;
 }
-
-#endif
 
 
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -975,6 +975,46 @@ slint_t elements_alloc_from_blocks(elements_t *s, slint_t nblocks, void **blocks
 slint_t elements_alloc_from_block(elements_t *s, void *block, slint_t blocksize, slint_t alignment, slint_t nmax, slcint_t components) /* sl_proto, sl_func elements_alloc_from_block */
 {
   return elements_alloc_from_blocks(s, 1, &block, &blocksize, alignment, nmax, components);
+}
+
+
+slint_t elements_block_alloc(elements_t *s, slint_t nelements, slcint_t components) /* sl_proto, sl_func elements_block_alloc */
+{
+  slint_t nbytes = 0;
+  void *block = NULL;
+
+  if (s == NULL) return -1;
+
+  elem_null(s);
+
+  if (nelements == 0) return 0;
+
+#define xelem_call  if ((components & xelem_cm) || ((components & SLCM_WEIGHTS) && xelem_weight)) nbytes += xelem_byte;
+#include "sl_xelem_call.h"
+
+  block = z_alloc(nelements, nbytes);
+
+  elements_alloc_from_block(s, block, nelements * nbytes, 0, nelements, components);
+
+  return 0;
+}
+
+
+slint_t elements_block_free(elements_t *s) /* sl_proto, sl_func elements_block_free */
+{
+  void *block = NULL;
+
+
+  if (s == NULL) return -1;
+
+#define xelem_call          if (block == NULL) block = xelem_buf(s);
+#include "sl_xelem_call.h"
+
+  z_free(block);
+
+  elem_null(s);
+
+  return 0;
 }
 
 
@@ -4950,6 +4990,18 @@ slint_t elem_get_max_byte() /* sl_proto, sl_func elem_get_max_byte */
 }
 
 
+void elem_set(elements_t *s, elements_t *d) /* sl_proto, sl_func elem_set */
+{
+  elem_assign(s, d);
+}
+
+
+void elem_set_at(elements_t *s, slint_t sat, elements_t *d) /* sl_proto, sl_func elem_set_at */
+{
+  elem_assign_at(s, sat, d);
+}
+
+
 #if ELEM_REVERSE == 0 || ELEM_ROTATE == 0
 static slint_t elem_reverse_aio(elements_t *e, elements_t *t) /* sl_func elem_reverse_aio */
 {
@@ -7123,19 +7175,19 @@ static void _split_generic_count_db(elements_t *s, split_generic_t *sg, void *sg
   switch (sg->type)
   {
     case 1:
-      if (sg->tproc_count_db) sg->tproc_count_db(s, sg_data, counts);
+      if (sg->tproc_ext.count_db) sg->tproc_ext.count_db(sg_data, s, counts);
       else SPEC_DO_TPROC_COUNT_DB(sg->tproc, sg_data, s, counts);
       break;
     case 2:
-      if (sg->tproc_mod_count_db) sg->tproc_mod_count_db(s, sg_data, counts);
+      if (sg->tproc_mod_ext.count_db) sg->tproc_mod_ext.count_db(sg_data, s, counts);
       else SPEC_DO_TPROC_MOD_COUNT_DB(sg->tproc_mod, sg_data, s, counts);
       break;
     case 3:
-      if (sg->tprocs_count_db) sg->tprocs_count_db(s, sg_data, counts, procs);
+      if (sg->tprocs_ext.count_db) sg->tprocs_ext.count_db(sg_data, s, counts, procs);
       else SPEC_DO_TPROCS_COUNT_DB(sg->tprocs, sg_data, s, counts, procs);
       break;
     case 4:
-      if (sg->tprocs_mod_count_db) sg->tprocs_mod_count_db(s, sg_data, counts, procs);
+      if (sg->tprocs_mod_ext.count_db) sg->tprocs_mod_ext.count_db(sg_data, s, counts, procs);
       else SPEC_DO_TPROCS_MOD_COUNT_DB(sg->tprocs_mod, sg_data, s, counts, procs);
       break;
   }
@@ -7153,19 +7205,19 @@ static void _split_generic_rearrange_db(elements_t *s, elements_t *d, split_gene
   switch (sg->type)
   {
     case 1:
-      if (sg->tproc_rearrange_db) sg->tproc_rearrange_db(s, d, sg_data, displs);
+      if (sg->tproc_ext.rearrange_db) sg->tproc_ext.rearrange_db(sg_data, s, d, displs);
       else SPEC_DO_TPROC_REARRANGE_DB(sg->tproc, sg_data, s, d, displs);
       break;
     case 2:
-      if (sg->tproc_mod_rearrange_db) sg->tproc_mod_rearrange_db(s, d, sg_data, displs, m);
+      if (sg->tproc_mod_ext.rearrange_db) sg->tproc_mod_ext.rearrange_db(sg_data, s, d, displs, m);
       else SPEC_DO_TPROC_MOD_REARRANGE_DB(sg->tproc_mod, sg_data, s, d, displs, m);
       break;
     case 3:
-      if (sg->tprocs_rearrange_db) sg->tprocs_rearrange_db(s, d, sg_data, displs, procs);
+      if (sg->tprocs_ext.rearrange_db) sg->tprocs_ext.rearrange_db(sg_data, s, d, displs, procs);
       else SPEC_DO_TPROCS_REARRANGE_DB(sg->tprocs, sg_data, s, d, displs, procs);
       break;
     case 4:
-      if (sg->tprocs_mod_rearrange_db) sg->tprocs_mod_rearrange_db(s, d, sg_data, displs, procs, m);
+      if (sg->tprocs_mod_ext.rearrange_db) sg->tprocs_mod_ext.rearrange_db(sg_data, s, d, displs, procs, m);
       else SPEC_DO_TPROCS_MOD_REARRANGE_DB(sg->tprocs_mod, sg_data, s, d, displs, procs, m);
       break;
   }
@@ -7183,19 +7235,19 @@ static void _split_generic_count_ip(elements_t *s, split_generic_t *sg, void *sg
   switch (sg->type)
   {
     case 1:
-      if (sg->tproc_count_ip) sg->tproc_count_ip(s, sg_data, counts);
+      if (sg->tproc_ext.count_ip) sg->tproc_ext.count_ip(sg_data, s, counts);
       else SPEC_DO_TPROC_COUNT_IP(sg->tproc, sg_data, s, counts);
       break;
     case 2:
-      if (sg->tproc_mod_count_ip) sg->tproc_mod_count_ip(s, sg_data, counts);
+      if (sg->tproc_mod_ext.count_ip) sg->tproc_mod_ext.count_ip(sg_data, s, counts);
       else SPEC_DO_TPROC_MOD_COUNT_IP(sg->tproc_mod, sg_data, s, counts);
       break;
     case 3:
-      if (sg->tprocs_count_ip) sg->tprocs_count_ip(s, sg_data, counts, procs);
+      if (sg->tprocs_ext.count_ip) sg->tprocs_ext.count_ip(sg_data, s, counts, procs);
       else SPEC_DO_TPROCS_COUNT_IP(sg->tprocs, sg_data, s, counts, procs);
       break;
     case 4:
-      if (sg->tprocs_mod_count_ip) sg->tprocs_mod_count_ip(s, sg_data, counts, procs);
+      if (sg->tprocs_mod_ext.count_ip) sg->tprocs_mod_ext.count_ip(sg_data, s, counts, procs);
       else SPEC_DO_TPROCS_MOD_COUNT_IP(sg->tprocs_mod, sg_data, s, counts, procs);
       break;
   }
@@ -7213,19 +7265,19 @@ static void _split_generic_rearrange_ip(elements_t *s, elements_t *x, split_gene
   switch (sg->type)
   {
     case 1:
-      if (sg->tproc_rearrange_ip) sg->tproc_rearrange_ip(s, x, sg_data, displs, counts, n);
+      if (sg->tproc_ext.rearrange_ip) sg->tproc_ext.rearrange_ip(sg_data, s, x, displs, counts, n);
       else SPEC_DO_TPROC_REARRANGE_IP(sg->tproc, sg_data, s, x, displs, counts, n);
       break;
     case 2:
-      if (sg->tproc_mod_rearrange_ip) sg->tproc_mod_rearrange_ip(s, x, sg_data, displs, counts, n, m);
+      if (sg->tproc_mod_ext.rearrange_ip) sg->tproc_mod_ext.rearrange_ip(sg_data, s, x, displs, counts, n, m);
       else SPEC_DO_TPROC_MOD_REARRANGE_IP(sg->tproc_mod, sg_data, s, x, displs, counts, n, m);
       break;
     case 3:
-      if (sg->tprocs_rearrange_ip) sg->tprocs_rearrange_ip(s, x, sg_data, displs, counts, n, procs);
+      if (sg->tprocs_ext.rearrange_ip) sg->tprocs_ext.rearrange_ip(sg_data, s, x, displs, counts, n, procs);
       else SPEC_DO_TPROCS_REARRANGE_IP(sg->tprocs, sg_data, s, x, displs, counts, n, procs);
       break;
     case 4:
-      if (sg->tprocs_mod_rearrange_ip) sg->tprocs_mod_rearrange_ip(s, x, sg_data, displs, counts, n, procs, m);
+      if (sg->tprocs_mod_ext.rearrange_ip) sg->tprocs_mod_ext.rearrange_ip(sg_data, s, x, displs, counts, n, procs, m);
       else SPEC_DO_TPROCS_MOD_REARRANGE_IP(sg->tprocs_mod, sg_data, s, x, displs, counts, n, procs, m);
       break;
   }

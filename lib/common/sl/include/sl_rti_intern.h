@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -39,21 +39,21 @@
 #ifdef SL_USE_RTI_CMC
 
  /* regular commands */
- #define rti_cadd_cmp(n)          (SL_DEFCON(rti).cmc.cmp += n)
- #define rti_cadd_movek(n)        (SL_DEFCON(rti).cmc.movek += n)
- #define rti_cadd_moved(n)        (SL_DEFCON(rti).cmc.moved += n)
- #define rti_cclear_cmp()         (SL_DEFCON(rti).cmc.cmp = 0)
- #define rti_cclear_movek()       (SL_DEFCON(rti).cmc.movek = 0)
- #define rti_cclear_moved()       (SL_DEFCON(rti).cmc.moved = 0)
- #define rti_cclear_all()         (SL_DEFCON(rti).cmc.cmp = SL_DEFCON(rti).cmc.movek = SL_DEFCON(rti).cmc.moved = 0)
- #define rti_ccmp()               my_rti_ccmp(SL_DEFCON(rti))
- #define rti_cmovek()             my_rti_cmovek(SL_DEFCON(rti))
- #define rti_cmoved()             my_rti_cmoved(SL_DEFCON(rti))
+ #define rti_cadd_cmp(n)          (SL_DEFCON(rti).cmc.cmp += n)  /* sl_macro */
+ #define rti_cadd_movek(n)        (SL_DEFCON(rti).cmc.movek += n)  /* sl_macro */
+ #define rti_cadd_moved(n)        (SL_DEFCON(rti).cmc.moved += n)  /* sl_macro */
+ #define rti_cclear_cmp()         (SL_DEFCON(rti).cmc.cmp = 0)  /* sl_macro */
+ #define rti_cclear_movek()       (SL_DEFCON(rti).cmc.movek = 0)  /* sl_macro */
+ #define rti_cclear_moved()       (SL_DEFCON(rti).cmc.moved = 0)  /* sl_macro */
+ #define rti_cclear_all()         (SL_DEFCON(rti).cmc.cmp = SL_DEFCON(rti).cmc.movek = SL_DEFCON(rti).cmc.moved = 0)  /* sl_macro */
+ #define rti_ccmp()               my_rti_ccmp(SL_DEFCON(rti))  /* sl_macro */
+ #define rti_cmovek()             my_rti_cmovek(SL_DEFCON(rti))  /* sl_macro */
+ #define rti_cmoved()             my_rti_cmoved(SL_DEFCON(rti))  /* sl_macro */
 
  /* chained commands */
- #define cc_rti_cadd_cmp(n)       rti_cadd_cmp(n),
- #define cc_rti_cadd_movek(n)     rti_cadd_movek(n),
- #define cc_rti_cadd_moved(n)     rti_cadd_moved(n),
+ #define cc_rti_cadd_cmp(n)       rti_cadd_cmp(n),  /* sl_macro */
+ #define cc_rti_cadd_movek(n)     rti_cadd_movek(n),  /* sl_macro */
+ #define cc_rti_cadd_moved(n)     rti_cadd_moved(n),  /* sl_macro */
 
 #else /* SL_USE_RTI_CMC */
 
@@ -79,13 +79,13 @@
 
 #ifdef SL_USE_RTI_TIM
 
- #define rti_tstart(t)            (SL_DEFCON(rti).tim[t].start = z_time_get_s(), ++SL_DEFCON(rti).tim[t].num)
- #define rti_tstop(t)             (SL_DEFCON(rti).tim[t].stop = z_time_get_s(), SL_DEFCON(rti).tim[t].cumu += (SL_DEFCON(rti).tim[t].last = SL_DEFCON(rti).tim[t].stop - SL_DEFCON(rti).tim[t].start))
- #define rti_tclear(t)            (SL_DEFCON(rti).tim[t].last = 0)
- #define rti_treset(t)            (SL_DEFCON(rti).tim[t].last = SL_DEFCON(rti).tim[t].cumu = 0, SL_DEFCON(rti).tim[t].num = 0)
- #define rti_tlast(t)             my_rti_tlast(SL_DEFCON(rti), t)
- #define rti_tcumu(t)             my_rti_tcumu(SL_DEFCON(rti), t)
- #define rti_tnum(t)              my_rti_tnum(SL_DEFCON(rti), t)
+ #define rti_tstart(t)            (SL_DEFCON(rti).tim[t].start = z_time_get_s(), ++SL_DEFCON(rti).tim[t].num)  /* sl_macro */
+ #define rti_tstop(t)             (SL_DEFCON(rti).tim[t].stop = z_time_get_s(), SL_DEFCON(rti).tim[t].cumu += (SL_DEFCON(rti).tim[t].last = SL_DEFCON(rti).tim[t].stop - SL_DEFCON(rti).tim[t].start))  /* sl_macro */
+ #define rti_tclear(t)            (SL_DEFCON(rti).tim[t].last = 0)  /* sl_macro */
+ #define rti_treset(t)            (SL_DEFCON(rti).tim[t].last = SL_DEFCON(rti).tim[t].cumu = 0, SL_DEFCON(rti).tim[t].num = 0)  /* sl_macro */
+ #define rti_tlast(t)             my_rti_tlast(SL_DEFCON(rti), t)  /* sl_macro */
+ #define rti_tcumu(t)             my_rti_tcumu(SL_DEFCON(rti), t)  /* sl_macro */
+ #define rti_tnum(t)              my_rti_tnum(SL_DEFCON(rti), t)  /* sl_macro */
 
 #else
 
@@ -102,15 +102,15 @@
 
 #ifdef SL_USE_RTI_MEM
 
- #define rti_minc_alloc()         ++SL_DEFCON(rti).mem.nalloc
- #define rti_minc_free()          ++SL_DEFCON(rti).mem.nfree
- #define rti_malloc(_s_)          (SL_DEFCON(rti).mem.max = z_max(_s_, SL_DEFCON(rti).mem.max), SL_DEFCON(rti).mem.cur += _s_, SL_DEFCON(rti).mem.cur_max = z_max(SL_DEFCON(rti).mem.cur, SL_DEFCON(rti).mem.cur_max))
- #define rti_mfree(_s_)           (SL_DEFCON(rti).mem.cur -= _s_)
+ #define rti_minc_alloc()         ++SL_DEFCON(rti).mem.nalloc  /* sl_macro */
+ #define rti_minc_free()          ++SL_DEFCON(rti).mem.nfree  /* sl_macro */
+ #define rti_malloc(_s_)          (SL_DEFCON(rti).mem.max = z_max(_s_, SL_DEFCON(rti).mem.max), SL_DEFCON(rti).mem.cur += _s_, SL_DEFCON(rti).mem.cur_max = z_max(SL_DEFCON(rti).mem.cur, SL_DEFCON(rti).mem.cur_max))  /* sl_macro */
+ #define rti_mfree(_s_)           (SL_DEFCON(rti).mem.cur -= _s_)  /* sl_macro */
 
- #define cc_rti_minc_alloc()      rti_minc_alloc(),
- #define cc_rti_minc_free()       rti_minc_free(),
- #define cc_rti_malloc(_s_)       rti_malloc(_s_),
- #define cc_rti_mfree(_s_)        rti_mfree(_s_),
+ #define cc_rti_minc_alloc()      rti_minc_alloc(),  /* sl_macro */
+ #define cc_rti_minc_free()       rti_minc_free(),  /* sl_macro */
+ #define cc_rti_malloc(_s_)       rti_malloc(_s_),  /* sl_macro */
+ #define cc_rti_mfree(_s_)        rti_mfree(_s_),  /* sl_macro */
 
 #else
 
@@ -128,7 +128,7 @@
 
 
 #ifdef SL_USE_RTI
- #define rti_reset()              my_rti_reset(SL_DEFCON(rti))
+ #define rti_reset()              my_rti_reset(SL_DEFCON(rti))  /* sl_macro */
 #else
  #define rti_reset()              Z_NOP()
 #endif

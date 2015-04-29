@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -31,7 +31,7 @@
 
 enum rti_tid
 {
-  /* src/base_mpi/base_mpi.c */
+  /* base_mpi/base_mpi.c */
   rti_tid_mpi_merge2,
   rti_tid_mpi_merge2_find,
   rti_tid_mpi_merge2_moveright,

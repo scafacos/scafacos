@@ -54,7 +54,6 @@ tproc_mod_f
 tprocs_f
 tprocs_mod_f
 tproc_reset_f
-_tproc_t
 tproc_t
 _tproc_exdef
 tproc_exdef

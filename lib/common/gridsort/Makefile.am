@@ -98,107 +98,9 @@ sl_SOURCE = \
   ../sl/include/z_config.h \
   ../sl/include/z_pack_conf.h \
   ../sl/include/z_pack.h \
-  ../sl/include/z_pack_rename.h \
-  ../sl/extra/include/zmpi_ataip.h \
-  ../sl/extra/include/zmpi_ataip_rename.h \
-  ../sl/extra/include/zmpi_atasp.h \
-  ../sl/extra/include/zmpi_atasp_rename.h \
-  ../sl/extra/include/zmpi_local.h \
-  ../sl/extra/include/zmpi_local_rename.h \
-  ../sl/extra/include/zmpi_tools.h \
-  ../sl/extra/include/zmpi_tools_rename.h
+  ../sl/include/z_pack_rename.h
 
-libfcs_gridsort_back__p_la_SOURCES = \
-  bounds_xyz2coords.h \
-  common.h \
-  gridsort_back_tproc.h \
-  gridsort_back_tproc_sl.h \
-  gridsort_front_tproc_combinations.h \
-  gridsort_front_tproc.h \
-  gridsort_front_tproc_sl.h \
-  gridsort.h \
-  gridsort_resort.h \
-  z_tools.h \
-  sl_back__p/sl_config.h \
-  sl_back__p/sl_environment.h \
-  sl_back__p/sl_extra.h \
-  sl_back__p/sl_tune_auto.h \
-  sl_back__p/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_gridsort_back_f__la_SOURCES = \
-  bounds_xyz2coords.h \
-  common.h \
-  gridsort_back_tproc.h \
-  gridsort_back_tproc_sl.h \
-  gridsort_front_tproc_combinations.h \
-  gridsort_front_tproc.h \
-  gridsort_front_tproc_sl.h \
-  gridsort.h \
-  gridsort_resort.h \
-  z_tools.h \
-  sl_back_f_/sl_config.h \
-  sl_back_f_/sl_environment.h \
-  sl_back_f_/sl_extra.h \
-  sl_back_f_/sl_tune_auto.h \
-  sl_back_f_/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_gridsort_back_fp_la_SOURCES = \
-  bounds_xyz2coords.h \
-  common.h \
-  gridsort_back_tproc.h \
-  gridsort_back_tproc_sl.h \
-  gridsort_front_tproc_combinations.h \
-  gridsort_front_tproc.h \
-  gridsort_front_tproc_sl.h \
-  gridsort.h \
-  gridsort_resort.h \
-  z_tools.h \
-  sl_back_fp/sl_config.h \
-  sl_back_fp/sl_environment.h \
-  sl_back_fp/sl_extra.h \
-  sl_back_fp/sl_tune_auto.h \
-  sl_back_fp/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_gridsort_back_x_la_SOURCES = \
-  bounds_xyz2coords.h \
-  common.h \
-  gridsort_back_tproc.h \
-  gridsort_back_tproc_sl.h \
-  gridsort_front_tproc_combinations.h \
-  gridsort_front_tproc.h \
-  gridsort_front_tproc_sl.h \
-  gridsort.h \
-  gridsort_resort.h \
-  z_tools.h \
-  sl_back_x/sl_config.h \
-  sl_back_x/sl_environment.h \
-  sl_back_x/sl_extra.h \
-  sl_back_x/sl_tune_auto.h \
-  sl_back_x/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_gridsort_forw_la_SOURCES = \
-  bounds_xyz2coords.h \
-  common.h \
-  gridsort_back_tproc.h \
-  gridsort_back_tproc_sl.h \
-  gridsort_front_tproc_combinations.h \
-  gridsort_front_tproc.h \
-  gridsort_front_tproc_sl.h \
-  gridsort.h \
-  gridsort_resort.h \
-  z_tools.h \
-  sl_forw/sl_config.h \
-  sl_forw/sl_environment.h \
-  sl_forw/sl_extra.h \
-  sl_forw/sl_tune_auto.h \
-  sl_forw/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_gridsort_extra_la_SOURCES = \
+sl_extra_SOURCE = \
   ../sl/extra/z_pack/z_config.h \
   ../sl/extra/z_pack/z_pack.c \
   ../sl/extra/z_pack/z_pack_conf.h \
@@ -247,6 +149,113 @@ libfcs_gridsort_extra_la_SOURCES = \
   ../sl/extra/zmpi_atasp/zmpi_atasp.h \
   ../sl/extra/zmpi_atasp/zmpi_atasp_rename.h
 
+sl_extra_include_SOURCE = \
+  ../sl/extra/include/zmpi_ataip.h \
+  ../sl/extra/include/zmpi_ataip_rename.h \
+  ../sl/extra/include/zmpi_atasp.h \
+  ../sl/extra/include/zmpi_atasp_rename.h \
+  ../sl/extra/include/zmpi_local.h \
+  ../sl/extra/include/zmpi_local_rename.h \
+  ../sl/extra/include/zmpi_tools.h \
+  ../sl/extra/include/zmpi_tools_rename.h
+
+libfcs_gridsort_back__p_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
+  gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_back__p/sl_config.h \
+  sl_back__p/sl_environment.h \
+  sl_back__p/sl_extra.h \
+  sl_back__p/sl_tune_auto.h \
+  sl_back__p/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_gridsort_back_f__la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
+  gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_back_f_/sl_config.h \
+  sl_back_f_/sl_environment.h \
+  sl_back_f_/sl_extra.h \
+  sl_back_f_/sl_tune_auto.h \
+  sl_back_f_/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_gridsort_back_fp_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
+  gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_back_fp/sl_config.h \
+  sl_back_fp/sl_environment.h \
+  sl_back_fp/sl_extra.h \
+  sl_back_fp/sl_tune_auto.h \
+  sl_back_fp/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_gridsort_back_x_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
+  gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_back_x/sl_config.h \
+  sl_back_x/sl_environment.h \
+  sl_back_x/sl_extra.h \
+  sl_back_x/sl_tune_auto.h \
+  sl_back_x/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_gridsort_forw_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
+  gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_forw/sl_config.h \
+  sl_forw/sl_environment.h \
+  sl_forw/sl_extra.h \
+  sl_forw/sl_tune_auto.h \
+  sl_forw/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_gridsort_extra_la_SOURCES = $(sl_extra_SOURCE)
+
 libfcs_gridsort_mpiwrap_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
@@ -264,4 +273,5 @@ libfcs_gridsort_mpiwrap_la_SOURCES = \
   include/sl_back__p.h \
   include/sl_back_x.h \
   include/sl_forw.h \
-  z_tools.h
+  z_tools.h \
+  $(sl_extra_include_SOURCE)

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #  
-#  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+#  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
 #  
 #  This file is part of ScaFaCoS.
 #  
@@ -93,6 +93,7 @@ cfg_automake_libprefix=sl_
 cfg_automake_noinst=
 cfg_automake_libtool=
 cfg_source=
+cfg_source_link=
 cfg_source_rename=
 cfg_source_ref=
 cfg_source_ref_set=
@@ -207,7 +208,7 @@ print_settings()
   local prefix="$2"
 
   local list1="my_pwd cfg_config cfg_config_not"
-  local list2="cfg_di_versions cfg_makefile_sl_use_mpi cfg_local cfg_makefile cfg_makefile_in cfg_prefix cfg_autoconf cfg_automake cfg_interface cfg_source cfg_source_rename cfg_source_ref cfg_source_ref_set"
+  local list2="cfg_di_versions cfg_makefile_sl_use_mpi cfg_local cfg_makefile cfg_makefile_in cfg_prefix cfg_autoconf cfg_automake cfg_interface cfg_source cfg_source_link cfg_source_rename cfg_source_ref cfg_source_ref_set"
 
   local list_src="src_sl src_sl_src src_sl_src_sub src_sl_extra src_sl_extra_sub src_sl_scripts src_sl_scripts_sub src_sl_adds src_sl_adds_sub"
   local list_dst="dst_sl dst_sl_src dst_sl_src_sub dst_sl_extra dst_sl_extra_sub dst_sl_scripts dst_sl_scripts_sub dst_sl_adds dst_sl_adds_sub dst_if dst_if_sub"
@@ -242,7 +243,15 @@ print_commands()
   done
 }
 
-canonize_dir()
+mkdir_save()
+{
+  while [ -n "$*" ] ; do
+    [ -n "$1" -a ! -d "$1" ] && ${cmd_mkdir} $1
+    shift
+  done
+}
+
+canonize_dir_old()
 {
   local xdir
   local v
@@ -264,12 +273,89 @@ canonize_dir()
   done
 }
 
-mkdir_save()
+canonize_dir()
 {
-  while [ -n "$*" ] ; do
-    [ -n "$1" -a ! -d "$1" ] && ${cmd_mkdir} $1
+  local dir="$1"
+
+  local ifs_="${IFS}"
+  IFS="/"
+  set -- ${dir}
+  IFS="${ifs_}"
+
+  local d=
+  local first="yes"
+
+  while [ "$#" -gt "0" ] ; do
+    if [ ! -n "$1" ] ; then
+      if [ -n "${first}" ] ; then
+        d="/"
+      fi
+    elif [ "$1" = "." ] ; then
+      .
+    else
+      d="${d}$1/"
+    fi
+    first=
     shift
   done
+
+  echo "${d}"
+}
+
+canonize_dir_vars()
+{
+#  canonize_dir_old $*
+#  return
+
+  local var d n
+
+  while [ -n "$1" ] ; do
+    var="$1"
+    eval d=\"\$${var}\"
+    n="$(canonize_dir ${d})"
+    eval "${var}"=\"${n}\"
+    pdebug "canonize ${var}: '$d' -> '$n'"
+    shift
+  done
+}
+
+invert_dir()
+{
+  local dir="$1"
+  local pwd="${2:-${PWD}}"
+
+  pwd=$(canonize_dir "${pwd}")
+  sub="${pwd%/}"
+
+  local ifs_="${IFS}"
+  IFS="/"
+  set -- ${dir}
+  IFS="${ifs_}"
+
+  local d=
+  local first="yes"
+
+  while [ "$#" -gt "0" ] ; do
+    if [ ! -n "$1" ] ; then
+      if [ -n "${first}" ] ; then
+        d="${pwd}"
+        break
+      fi
+    elif [ "$1" = "." ] ; then
+      .
+    elif [ "$1" = ".." ] ; then
+      local n="${sub%/*}"
+      local p="${sub#${n}}"
+      sub="${n}"
+      d="${p#/}/${d}"
+    else
+      sub="{sub}/$1"
+      d="../${d}"
+    fi
+    shift
+  done
+
+  echo "${d}"
 }
 
 
@@ -447,6 +533,9 @@ for opt in $all ; do
       prev=cfg_source
       opt=${optarg}
       opt_isset=true
+      ;;
+    -source-link | --source-link | -src-link | --src-link)
+      cfg_source_link=true
       ;;
     -source-rename | --source-rename | -src-rename | --src-rename)
       cfg_source_rename=true
@@ -828,7 +917,7 @@ if [ -z "${cfg_config}" ] ; then
 fi
 
 # cfg_config
-[ -d "${cfg_config}" ] && canonize_dir cfg_config
+[ -d "${cfg_config}" ] && canonize_dir_vars cfg_config
 
 # cfg_config_not
 if [ -n "${cfg_config_not}" ] ; then
@@ -840,12 +929,12 @@ if [ -n "${cfg_config_not}" ] ; then
 fi
 
 # src_sl directories
-canonize_dir src_sl src_sl_src src_sl_extra src_sl_scripts src_sl_adds
+canonize_dir_vars src_sl src_sl_src src_sl_extra src_sl_scripts src_sl_adds
 
 # dst_sl directories
-canonize_dir dst_sl dst_sl_src dst_sl_extra dst_sl_scripts dst_sl_adds dst_if
+canonize_dir_vars dst_sl dst_sl_src dst_sl_extra dst_sl_scripts dst_sl_adds dst_if
 
-[ -n "${cfg_source_ref_set}" ] && canonize_dir cfg_source_ref
+[ -n "${cfg_source_ref_set}" ] && canonize_dir_vars cfg_source_ref
 
 # verify settings
 
@@ -1175,6 +1264,21 @@ create_sl_extra()
 }
 
 
+link_file()
+{
+  local src_file="$1"
+  local dst_file="$2"
+
+  [ -z "${dst_file##*/}" ] && dst_file="${dst_file}${src_file##*/}"
+
+  pprogress -n "    ${dst_file} ..."
+
+  ln -s "${src_file}" "${dst_file}"
+
+  pprogress " done"
+}
+
+
 create_file_far_sed()
 {
   local src_file="$1"
@@ -1217,12 +1321,18 @@ include_include_files()
   local incdir="$1"
   shift
   local files="$*"
+  local sed_script_inc sed_script_del
 
   for f in ${files} ; do
-    sed_script="${sed_script} -e '/#include \"${f}\"/r ${incdir}${f}' -e '/#include \"${f}\"/d'"
+    local tag=`echo __${f}__ | tr 'a-z.' 'A-Z_'`
+    sed_script_inc="${sed_script_inc} -e '/#include \"${f}\"/r ${incdir}${f}'"
+    sed_script_del="${sed_script_del} -e '/#include \"${f}\"/d' -e '/${tag}/d'"
   done
 
-  eval ${cmd_sed} ${sed_script}
+#  echo "sed_script_inc: ${sed_script_inc}"
+#  echo "sed_script_del: ${sed_script_del}"
+
+  eval ${cmd_sed} ${sed_script_inc} | eval ${cmd_sed} ${sed_script_del}
 }
 
 create_sl_interface()
@@ -1255,11 +1365,13 @@ create_sl_interface()
   printf "#define SL_PROTO(_f_)  _f_"             >> ${dst_file}
   printf "\n"                                     >> ${dst_file}
   cat_files "${cur_config_file}" \
-            "${cur_tune_file}" "${config_tune_file}" "${src_tune_file}" \
             "${src_incdir}/sl_config_global.h" \
             "${src_incdir}/sl_config_intern.h" \
+            "${cur_tune_file}" "${config_tune_file}" "${src_tune_file}" \
             "${src_incdir}/sl_tune_intern.h" \
+            "${src_incdir}/sl_elements.h" \
             "${src_incdir}/sl_rti_tids.h" \
+            "${src_incdir}/sl_rti_intern.h" \
             "${src_incdir}/spec_public_conf.h" \
             "${src_incdir}/spec_public.h" \
             "${src_incdir}/sl_types.h" \
@@ -1274,7 +1386,7 @@ create_sl_interface()
 #endif \/\* SL_USE_MPI \*\/\
 ' \
    | ${cmd_grep} -v "__" \
-   | include_include_files "${src_incdir}/" "sl_context_struct.h" \
+   | include_include_files "${src_incdir}/" "sl_key.h" "sl_index.h" "sl_data_singles.h" "sl_data.h" "sl_context_struct.h" \
    | ${cmd_far} exec "${far_script}" \
    | ${cmd_sed} -e '/\/\*$/,/ \*\/$/d'                 >> ${dst_file}
   printf "\n"                                          >> ${dst_file}
@@ -1283,108 +1395,85 @@ create_sl_interface()
   printf "#endif /* __SL_${uppercase_config}_H__ */\n" >> ${dst_file}
 }
 
-create_includes()
+create_files()
 {
-  local src=$1
-  local dst=$2
-  local sub=$3
-  local file src_file dst_file
+  local lnk=$1
+  local src=$2
+  local dst=$3
+  local sub=$4
+  local pat=$5
+  local prefix=$6
+  shift 6
+  local excl=" $* "
+
+  local lnk_abs lnk_inv
+  if [ -n "${lnk}" ] ; then
+    if [ "${src#/}" != "${src}" ] ; then
+      lnk_abs="yes"
+    else
+      lnk_abs=
+      lnk_inv=$(invert_dir "${dst}${sub}" "${PWD}")
+    fi
+  fi
 
   mkdir_save "${dst}${sub}"
 
-  for src_file in `echo ${src}${sub}*.h | tr ' ' '\n' | sort` ; do
-    [ ! -f ${src_file} ] && continue
-
-    file="${src_file##*/}"
-    dst_file="${dst}${sub}${file}"
-
-    [ "${file}" = "sl_config.h" ] && continue
-    [ "${file}" = "sl_environment.h" ] && continue
-    [ "${file}" = "sl_tune.h" ] && continue
-    [ "${file}" = "sl_auto_tune.h" ] && continue
-    [ "${file}" = "sl_extra.h" ] && continue
-
-    pdebug "file: ${file}"
-    pdebug "src_file: ${src_file}"
-    pdebug "dst_file: ${dst_file}"
-
-    create_file_far_sed "${src_file}" "${dst_file}"
-  done
-}
-
-create_sources()
-{
-  local src=$1
-  local dst=$2
-  local sub=$3
-  local pat=$4
-  local prefix=$5
   local file src_file dst_file
-
-  mkdir_save "${dst}${sub}"
 
   for src_file in `echo ${src}${sub}${pat} | tr ' ' '\n' | sort` ; do
     [ ! -f ${src_file} ] && continue
 
     file="${src_file##*/}"
-    dst_file="${dst}${sub}${prefix}${file}"
+    dst_file="${dst}${sub}${file}"
+
+    [ "${excl#* ${file} }" != "${excl}" ] && continue
 
     pdebug "file: ${file}"
     pdebug "src_file: ${src_file}"
     pdebug "dst_file: ${dst_file}"
 
-    create_file_far_sed "${src_file}" "${dst_file}"
-
-#    if [ "${cfg_di_versions}" = "config" ] ; then
-#      # base file di-version, rename variable & function names!
-#      create_file_far_sed "${file}" "${dst_file_di}" "${far_script_varfuncs_di}" "1i#define SL_DATA_IGNORE"
-#    fi
+    if [ -n "${lnk}" ] ; then
+      if [ -n "${lnk_abs}" ] ; then
+        # link to absolute source file
+        lnk_file=${src_file}
+      else
+        # link to relative source file
+        lnk_file="${lnk_inv}${src_file}"
+      fi
+      pdebug "lnk_file: ${lnk_file}"
+      link_file "${lnk_file}" "${dst_file}"
+    else
+      create_file_far_sed "${src_file}" "${dst_file}"
+    fi
   done
+}
+
+create_includes()
+{
+  create_files "$1" "$2" "$3" "$4" "${5:-*.h}" "" "sl_config.h sl_environment.h sl_tune.h sl_auto_tune.h sl_extra.h"
+}
+
+create_sources()
+{
+  create_files "$1" "$2" "$3" "$4" "${5:-*.c}" "$6"
+
+#  if [ "${cfg_di_versions}" = "config" ] ; then
+#    # base file di-version, rename variable & function names!
+#    create_files "$1" "$2" "$3" "$4" "${5:-*.c}" "$6"
+#    create_file_far_sed "${file}" "${dst_file_di}" "${far_script_varfuncs_di}" "1i#define SL_DATA_IGNORE"
+#  fi
 }
 
 create_scripts()
 {
-  local src=$1
-  local dst=$2
+  create_files "$1" "${src_sl_scripts}" "$3${dst_sl_scripts}" "" "*" ""
 
-  local dst_scripts="${dst}${dst_sl_scripts}"
-
-  local file src_file dst_file
-
-#  pdebug "src_sl_scripts: ${src_sl_scripts}"
-#  pdebug "dst_scripts: ${dst_scripts}"
-
-  mkdir_save "${dst_scripts}"
-
-  for src_file in ${src_sl_scripts}* ; do
-    [ ! -f ${src_file} ] && continue
-
-    file="${src_file##*/}"
-    dst_file="${dst_scripts}${file}"
-
-    pdebug "file: ${file}"
-    pdebug "src_file: ${src_file}"
-    pdebug "dst_file: ${dst_file}"
-
-    create_file_far_sed "${src_file}" "${dst_file}"
-
-    chmod u+x "${dst_file}"
-  done
+  chmod u+x "${dst}${dst_sl_scripts}/*"
 }
 
 create_adds()
 {
-  local src=$1
-  local dst=$2
-
-  local dst_adds="${dst}${dst_sl_adds}"
-
-  pdebug "src_sl_adds: ${src_sl_adds}"
-  pdebug "dst_adds: ${dst_adds}"
-
-  mkdir_save "${dst_adds}"
-
-  create_file_far_sed "${src_sl_adds}names_oxl_all_functions" "${dst_adds}"
+  create_files "$1" "${src_sl_adds}" "$3${dst_sl_adds}" "" "names_oxl_all_functions" ""
 }
 
 
@@ -1416,14 +1505,14 @@ if [ "${cfg_source}" = "single" ] ; then
   pprogress ""
   pprogress "   creating source headers ..."
 
-  create_includes "${src_sl_src}" "${current_dst_sl_src}" "${sub_include}"
+  create_includes "${cfg_source_link}" "${src_sl_src}" "${current_dst_sl_src}" "${sub_include}" "*.h"
 
   # base files
   pprogress ""
   pprogress "   creating base source files ..."
 
-  create_sources "${src_sl_src}" "${current_dst_sl_src}" "${sub_base}" "*.c"
-  create_sources "${src_sl_src}" "${current_dst_sl_src}" "${sub_base_mpi}" "*.c"
+  create_sources "${cfg_source_link}" "${src_sl_src}" "${current_dst_sl_src}" "${sub_base}" "*.c"
+  create_sources "${cfg_source_link}" "${src_sl_src}" "${current_dst_sl_src}" "${sub_base_mpi}" "*.c"
 
   # tuning
   if [ -n "${cfg_tuning}" ] ; then
@@ -1431,8 +1520,8 @@ if [ "${cfg_source}" = "single" ] ; then
     pprogress ""
     pprogress "   creating tune source files ..."
 
-    create_sources "${src_sl_src}" "${current_dst_sl_src}" "${sub_tune}" "*.[ch]"
-    create_sources "${src_sl_src}" "${current_dst_sl_src}" "${sub_tune_mpi}" "*.[ch]"
+    create_sources "${cfg_source_link}" "${src_sl_src}" "${current_dst_sl_src}" "${sub_tune}" "*.[ch]"
+    create_sources "${cfg_source_link}" "${src_sl_src}" "${current_dst_sl_src}" "${sub_tune_mpi}" "*.[ch]"
 
     pprogress ""
     pprogress "   creating automatical tuning support ..."
@@ -1454,10 +1543,10 @@ if [ "${cfg_source}" = "single" ] ; then
     pprogress ""
     pprogress "   creating extra files ..."
 
-    create_sources "${src_sl_extra}" "${current_dst_sl_extra}" "" "*"
+    create_sources "${cfg_source_link}" "${src_sl_extra}" "${current_dst_sl_extra}" "" "*"
 
     for x in ${cfg_extras} include ; do
-      create_sources "${src_sl_extra}" "${current_dst_sl_extra}" "${x}/" "*.[hc]"
+      create_sources "${cfg_source_link}" "${src_sl_extra}" "${current_dst_sl_extra}" "${x}/" "*.[hc]"
     done
   fi
 
@@ -1466,8 +1555,8 @@ if [ "${cfg_source}" = "single" ] ; then
     pprogress ""
     pprogress "   creating script files ..."
 
-    create_scripts "DUMMY" "${current_dst}"
-    create_adds "DUMMY" "${current_dst}"
+    create_scripts "${cfg_source_link}" "DUMMY" "${current_dst}"
+    create_adds "${cfg_source_link}" "DUMMY" "${current_dst}"
   fi
 fi
 
@@ -1564,14 +1653,14 @@ for current_config_file in ${all_config_files} ; do
 
   if [ "${cfg_source}" = "separate" ] ; then
 
-    create_includes "${src_sl_src}" "${current_dst_sl_src}" "${sub_include}"
+    create_includes "${cfg_source_link}" "${src_sl_src}" "${current_dst_sl_src}" "${sub_include}" "*.h"
 
     # base files
     pprogress ""
     pprogress "   creating base source files ..."
 
-    create_sources "${src_sl_src}" "${current_dst_sl_src}" "${sub_base}" "*.c" "${current_prefix}"
-    create_sources "${src_sl_src}" "${current_dst_sl_src}" "${sub_base_mpi}" "*.c" "${current_prefix}"
+    create_sources "${cfg_source_link}" "${src_sl_src}" "${current_dst_sl_src}" "${sub_base}" "*.c" "${current_prefix}"
+    create_sources "${cfg_source_link}" "${src_sl_src}" "${current_dst_sl_src}" "${sub_base_mpi}" "*.c" "${current_prefix}"
 
     # tuning
     if [ -n "${cfg_tuning}" ] ; then
@@ -1579,8 +1668,8 @@ for current_config_file in ${all_config_files} ; do
       pprogress ""
       pprogress "   creating tune source files ..."
 
-      create_sources "${src_sl_src}" "${current_dst_sl_src}" "${sub_tune}" "*.[ch]" "${current_prefix}"
-      create_sources "${src_sl_src}" "${current_dst_sl_src}" "${sub_tune_mpi}" "*.[ch]" "${current_prefix}"
+      create_sources "${cfg_source_link}" "${src_sl_src}" "${current_dst_sl_src}" "${sub_tune}" "*.[ch]" "${current_prefix}"
+      create_sources "${cfg_source_link}" "${src_sl_src}" "${current_dst_sl_src}" "${sub_tune_mpi}" "*.[ch]" "${current_prefix}"
 
       pprogress ""
       pprogress "   creating automatical tuning support ..."
@@ -1594,8 +1683,8 @@ for current_config_file in ${all_config_files} ; do
       pprogress ""
       pprogress "   creating script files ..."
 
-      create_scripts "DUMMY" "${current_dst}"
-      create_adds "DUMMY" "${current_dst}"
+      create_scripts "${cfg_source_link}" "DUMMY" "${current_dst}"
+      create_adds "${cfg_source_link}" "DUMMY" "${current_dst}"
     fi
   fi
 
@@ -1623,7 +1712,7 @@ for current_config_file in ${all_config_files} ; do
 
     far_script_interface="${current_dst}far_script_interface"
 
-    ${cmd_far} begin                                                                           > ${far_script_interface}
+    ${cmd_far} begin                                                                                       > ${far_script_interface}
 
     # make rename-script for type to <prefix>_type
     ${cmd_far} mod_list 1 "${src_adds}names_types" ":" "${cfg_prefix}${current_config_name}_:"             >> ${far_script_interface}
@@ -1935,7 +2024,21 @@ if [ -n "${cfg_automake}" ] ; then
       echo " \\"
       echo -n "  ${srcdir_sl_source}${f#${current_dst_sl_src}${sub_src}}"
     done
+    echo ""
     if [ -n "${cfg_extra}" ] ; then
+      echo ""
+      echo -n "sl_extra_SOURCE ="
+      for x in ${cfg_extras} ; do
+        for f in `echo ${current_dst_sl_extra}${sub_extra}${x}/*.[hc] | tr ' ' '\n' | sort` ; do
+          pdebug "file: ${f}"
+          [ ! -e "${f}" ] && continue
+          echo " \\"
+          echo -n "  ${srcdir_sl_extra}${f#${current_dst_sl_extra}${sub_extra}}"
+        done
+      done
+      echo ""
+      echo ""
+      echo -n "sl_extra_include_SOURCE ="
       for f in `echo ${current_dst_sl_extra}${sub_extra}include/*.h | tr ' ' '\n' | sort` ; do
         pdebug "file: ${f}"
         [ ! -e "${f}" ] && continue
@@ -1960,7 +2063,7 @@ if [ -n "${cfg_automake}" ] ; then
     done
     if [ "${cfg_source}" = "ref" -o "${cfg_source}" = "single" ] ; then
       echo " \\"
-      echo "  \$(sl_SOURCE)"
+      echo -n "  \$(sl_SOURCE)"
     else
       for f in `echo ${dst_sl}sl_${c}/${dst_sl_src}${sub_include}*.h ${dst_sl}sl_${c}/${dst_sl_src}${sub_base}*.c ${dst_sl}sl_${c}/${dst_sl_src}${sub_base_mpi}*.c | tr ' ' '\n' | sort` ; do
         [ ! -e "${f}" ] && continue
@@ -1968,20 +2071,17 @@ if [ -n "${cfg_automake}" ] ; then
         echo -n "  ${srcdir_sl}${f#${dst_sl}}"
       done
     fi
+    if [ -n "${cfg_extra}" ] ; then
+      echo " \\"
+      echo -n "  \$(sl_extra_include_SOURCE)"
+    fi
+    echo ""
   done
   if [ -n "${cfg_extra}" ] ; then
     pdebug "current_dst_sl_extra: ${current_dst_sl_extra}"
     pdebug "sub_extra: ${sub_extra}"
     echo ""
-    echo -n "lib${cfg_automake_libprefix}extra_${LT_l}a_SOURCES ="
-    for x in ${cfg_extras} ; do
-      for f in `echo ${current_dst_sl_extra}${sub_extra}${x}/*.[hc] | tr ' ' '\n' | sort` ; do
-        pdebug "file: ${f}"
-        [ ! -e "${f}" ] && continue
-        echo " \\"
-        echo -n "  ${srcdir_sl_extra}${f#${current_dst_sl_extra}${sub_extra}}"
-      done
-    done
+    echo -n "lib${cfg_automake_libprefix}extra_${LT_l}a_SOURCES = \$(sl_extra_SOURCE)"
     echo ""
   fi
   echo ""
@@ -1992,6 +2092,10 @@ if [ -n "${cfg_automake}" ] ; then
       echo " \\"
       echo -n "  ${srcdir_sl}${f#${dst_sl}}"
     done
+    if [ -n "${cfg_extra}" ] ; then
+      echo " \\"
+      echo -n "  \$(sl_extra_include_SOURCE)"
+    fi
     echo ""
   else
     echo -n "noinst_HEADERS ="

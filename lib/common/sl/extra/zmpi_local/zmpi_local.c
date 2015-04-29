@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -28,11 +28,15 @@
 #include "zmpil_simple.h"
 
 
-int zmpil_simple_create(zmpil_simple_t *mpil, MPI_Datatype type) /* zmpi_func zmpil_simple_create */
+int zmpil_simple_create_derived(zmpil_simple_t *mpil, MPI_Datatype type, int count) /* zmpi_func zmpil_simple_create_derived */
 {
 /*  mpil->type = type;*/
 
+  Z_TRACE("zmpil_simple_create_derived");
+
   MPI_Type_get_true_extent(type, &mpil->true_lb, &mpil->true_extent);
+
+  mpil->true_extent *= count;
 
   Z_ASSERT(mpil->true_lb == 0);
 

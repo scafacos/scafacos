@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -59,6 +59,15 @@ slint_t mpi_elements_alltoall_specific_alloc_size(slint_t n);
 #define spec_elem_alloc_buf(_e_, _n_)  elements_alloc((_e_), mpi_elements_alltoall_specific_alloc_size(_n_), SLCM_ALL)
 #define spec_elem_free_buf(_e_)        elements_free((_e_))
 
+/*#define spec_elem_alloc_tmp(_e_, _n_)  elements_block_alloc((_e_), mpi_elements_alltoall_specific_alloc_size(_n_), SLCM_ALL)
+#define spec_elem_free_tmp(_e_)        elements_block_free((_e_))*/
+
+#define spec_elem_alloc_tmp_from_block(_e_, _b_, _s_)  elements_alloc_from_block((_e_), (_b_), (_s_), 0, -1, SLCM_ALL)
+
+#define spec_elem_alloc_rbuf(_e_)      ((_e_)->max_size <= 0)
+
+#define spec_elem_sizefor(_e_, _s_)    ((slint_t) (_s_) / elem_byte)
+
 #define spec_elem_copy_type(_s_, _d_)  Z_NOP()
 
 #define spec_elem_ncopy_at(_se_, _sat_, _de_, _dat_, _n_) \
@@ -73,7 +82,24 @@ slint_t mpi_elements_alltoall_specific_alloc_size(slint_t n);
 #define spec_elem_alltoallv_ip(_b_, _xb_, _sc_, _sd_, _rc_, _rd_, _s_, _r_, _c_) \
   mpi_elements_alltoallv_ip((_b_), (_xb_), (_sc_), (_sd_), (_rc_), (_rd_), (_s_), (_r_), (_c_))
 
-#define spec_elem_alloc_rbuf(_e_)  ((_e_)->max_size <= 0)
+#define spec_elem_isend(_e_, _at_, _n_, _p_, _t_, _rq_, _s_, _r_, _c_) \
+  mpi_elements_isend_components(_e_, _at_, _n_, _p_, _t_, _rq_, SLCM_ALL, _s_, _r_, _c_)
+
+#define spec_elem_isend_first(_e_, _at_, _n_, _p_, _t_, _rq_, _s_, _r_, _c_) \
+  mpi_elements_isend_components(_e_, _at_, _n_, _p_, _t_, _rq_, SLCM_KEYS, _s_, _r_, _c_)
+
+#define spec_elem_isend_next(_e_, _at_, _n_, _p_, _t_, _rq_, _s_, _r_, _c_) \
+  mpi_elements_isend_components(_e_, _at_, _n_, _p_, (_t_) + 1, (_rq_) + 1, SLCM_ALL & ~SLCM_KEYS, _s_, _r_, _c_)
+
+#define spec_elem_irecv_first(_e_, _at_, _n_, _p_, _t_, _rq_, _s_, _r_, _c_) \
+  mpi_elements_irecv_components(_e_, _at_, _n_, _p_, _t_, _rq_, SLCM_KEYS, _s_, _r_, _c_)
+
+#define spec_elem_irecv_next(_e_, _at_, _n_, _p_, _t_, _rq_, _s_, _r_, _c_) \
+  mpi_elements_irecv_components(_e_, _at_, _n_, _p_, (_t_) + 1, (_rq_) + 1, SLCM_ALL & ~SLCM_KEYS, _s_, _r_, _c_)
+
+#define spec_elem_get_recv_count(_e_, _s_, _rc_)  MPI_Get_count(_s_, key_mpi_datatype, _rc_)
+
+#define spec_elem_x  elem_n
 
 
 /*#define SPEC_GLOBAL_EXIT_ON_ERROR*/
@@ -88,6 +114,7 @@ slint_t mpi_elements_alltoall_specific_alloc_size(slint_t n);
 #define SPEC_EXIT_FAILED   1
 
 #define SPEC_ALLTOALLV
+#define SPEC_SENDRECV
 
 #ifdef MC_ALLTOALL_INT_2STEP_THRESHOLD
 # define SPEC_MPI_ALLTOALL_2STEP_THRESHOLD  MC_ALLTOALL_INT_2STEP_THRESHOLD

@@ -83,17 +83,9 @@ sl_SOURCE = \
   ../sl/include/z_config.h \
   ../sl/include/z_pack_conf.h \
   ../sl/include/z_pack.h \
-  ../sl/include/z_pack_rename.h \
-  ../sl/extra/include/zmpi_ataip.h \
-  ../sl/extra/include/zmpi_ataip_rename.h \
-  ../sl/extra/include/zmpi_atasp.h \
-  ../sl/extra/include/zmpi_atasp_rename.h \
-  ../sl/extra/include/zmpi_local.h \
-  ../sl/extra/include/zmpi_local_rename.h \
-  ../sl/extra/include/zmpi_tools.h \
-  ../sl/extra/include/zmpi_tools_rename.h
+  ../sl/include/z_pack_rename.h
 
-libfcs_resort_extra_la_SOURCES = \
+sl_extra_SOURCE = \
   ../sl/extra/z_pack/z_config.h \
   ../sl/extra/z_pack/z_pack.c \
   ../sl/extra/z_pack/z_pack_conf.h \
@@ -142,7 +134,20 @@ libfcs_resort_extra_la_SOURCES = \
   ../sl/extra/zmpi_atasp/zmpi_atasp.h \
   ../sl/extra/zmpi_atasp/zmpi_atasp_rename.h
 
+sl_extra_include_SOURCE = \
+  ../sl/extra/include/zmpi_ataip.h \
+  ../sl/extra/include/zmpi_ataip_rename.h \
+  ../sl/extra/include/zmpi_atasp.h \
+  ../sl/extra/include/zmpi_atasp_rename.h \
+  ../sl/extra/include/zmpi_local.h \
+  ../sl/extra/include/zmpi_local_rename.h \
+  ../sl/extra/include/zmpi_tools.h \
+  ../sl/extra/include/zmpi_tools_rename.h
+
+libfcs_resort_extra_la_SOURCES = $(sl_extra_SOURCE)
+
 libfcs_resort_mpiwrap_la_SOURCES = \
   resort.c \
   resort.h \
-  z_tools.h
+  z_tools.h \
+  $(sl_extra_include_SOURCE)

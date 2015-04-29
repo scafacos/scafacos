@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -32,6 +32,8 @@
 
 #ifdef HAVE_ZMPI_LOCAL_H
 # include "zmpi_local.h"
+#else
+# error zmpi-local is required for local copying of mpi-typed data
 #endif
 
 
@@ -57,7 +59,11 @@ typedef struct
 
 } spec_elem_t;
 
+#if MPI_VERSION >= 3
+typedef MPI_Count spec_elem_index_t;
+#else
 typedef long spec_elem_index_t;
+#endif
 
 #define spec_elem_set_n(_e_, _n_)     (_e_)->count = (_n_)
 #define spec_elem_get_n(_e_)          (_e_)->count
@@ -76,6 +82,20 @@ typedef long spec_elem_index_t;
     spec_elem_copy_at((_s1_), (_s1at_), (_s0_), (_s0at_)); \
     spec_elem_copy_at((_t_), 0, (_s1_), (_s1at_)); \
   } while (0)
+
+#ifdef HAVE_ZMPI_LOCAL_H
+
+# define ZMPI_FIXTYPE_DECLARE(_fx_, _fxp_)
+# define ZMPI_FIXTYPE_CREATE(_fx_, _fxp_)
+# define ZMPI_FIXTYPE_COPY_AT(_se_, _sat_, _de_, _dat_, _fx_, _fxp_)             ((_fxp_ *) (_de_)->buf)[_dat_] = ((_fxp_ *) (_se_)->buf)[_sat_]
+# define ZMPI_FIXTYPE_EXCHANGE_AT(_s0_, _s0at_, _s1_, _s1at_, _t_, _fx_, _fxp_)  do { \
+    ZMPI_FIXTYPE_COPY_AT((_s0_), (_s0at_), (_t_), 0, _fx_, _fxp_); \
+    ZMPI_FIXTYPE_COPY_AT((_s1_), (_s1at_), (_s0_), (_s0at_), _fx_, _fxp_); \
+    ZMPI_FIXTYPE_COPY_AT((_t_), 0, (_s1_), (_s1at_), _fx_, _fxp_); \
+  } while (0)
+# define ZMPI_FIXTYPE_DESTROY(_fx_, _fxp_)
+
+#endif
 
 
 #endif /* __SPEC_PUBLIC_CONF_H__ */

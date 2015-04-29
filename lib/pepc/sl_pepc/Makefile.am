@@ -82,29 +82,9 @@ sl_SOURCE = \
   ../../common/sl/include/z_config.h \
   ../../common/sl/include/z_pack_conf.h \
   ../../common/sl/include/z_pack.h \
-  ../../common/sl/include/z_pack_rename.h \
-  ../../common/sl/extra/include/zmpi_ataip.h \
-  ../../common/sl/extra/include/zmpi_ataip_rename.h \
-  ../../common/sl/extra/include/zmpi_atasp.h \
-  ../../common/sl/extra/include/zmpi_atasp_rename.h \
-  ../../common/sl/extra/include/zmpi_local.h \
-  ../../common/sl/extra/include/zmpi_local_rename.h \
-  ../../common/sl/extra/include/zmpi_tools.h \
-  ../../common/sl/extra/include/zmpi_tools_rename.h
+  ../../common/sl/include/z_pack_rename.h
 
-libfcs_pepc_pepckeys_la_SOURCES = \
-  config_pepc_sort.h \
-  fortran2c_types.h \
-  mpi_common.h \
-  rename_pepc_sort.h \
-  sl_pepckeys/sl_config.h \
-  sl_pepckeys/sl_environment.h \
-  sl_pepckeys/sl_extra.h \
-  sl_pepckeys/sl_tune_auto.h \
-  sl_pepckeys/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_pepc_extra_la_SOURCES = \
+sl_extra_SOURCE = \
   ../../common/sl/extra/z_pack/z_config.h \
   ../../common/sl/extra/z_pack/z_pack.c \
   ../../common/sl/extra/z_pack/z_pack_conf.h \
@@ -153,6 +133,31 @@ libfcs_pepc_extra_la_SOURCES = \
   ../../common/sl/extra/zmpi_atasp/zmpi_atasp.h \
   ../../common/sl/extra/zmpi_atasp/zmpi_atasp_rename.h
 
+sl_extra_include_SOURCE = \
+  ../../common/sl/extra/include/zmpi_ataip.h \
+  ../../common/sl/extra/include/zmpi_ataip_rename.h \
+  ../../common/sl/extra/include/zmpi_atasp.h \
+  ../../common/sl/extra/include/zmpi_atasp_rename.h \
+  ../../common/sl/extra/include/zmpi_local.h \
+  ../../common/sl/extra/include/zmpi_local_rename.h \
+  ../../common/sl/extra/include/zmpi_tools.h \
+  ../../common/sl/extra/include/zmpi_tools_rename.h
+
+libfcs_pepc_pepckeys_la_SOURCES = \
+  config_pepc_sort.h \
+  fortran2c_types.h \
+  mpi_common.h \
+  rename_pepc_sort.h \
+  sl_pepckeys/sl_config.h \
+  sl_pepckeys/sl_environment.h \
+  sl_pepckeys/sl_extra.h \
+  sl_pepckeys/sl_tune_auto.h \
+  sl_pepckeys/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_pepc_extra_la_SOURCES = $(sl_extra_SOURCE)
+
 libfcs_pepc_mpiwrap_la_SOURCES = \
   config_pepc_sort.h \
   fortran2c_types.h \
@@ -162,4 +167,5 @@ libfcs_pepc_mpiwrap_la_SOURCES = \
   mpi_common.h \
   mpi_pepckeys.c \
   mpi_pepcparts.c \
-  rename_pepc_sort.h
+  rename_pepc_sort.h \
+  $(sl_extra_include_SOURCE)

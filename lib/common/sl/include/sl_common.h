@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -55,7 +55,9 @@
 # undef SLDEBUG_ALLOC
 #endif
 
-#define SL_TIMING_PRINT_DEFAULT  z_timing_print_default
+#ifndef SL_TIMING_PRINT_DEFAULT
+# define SL_TIMING_PRINT_DEFAULT  z_timing_print_default
+#endif
 
 
 #include "sl_rename.h"

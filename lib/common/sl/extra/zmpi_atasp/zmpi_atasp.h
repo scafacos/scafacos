@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -35,50 +35,43 @@
 #endif
 
 
-typedef struct _ZMPI_Tproc *ZMPI_Tproc;
+typedef struct _spec_tproc_t *ZMPI_Tproc;
 
 #define ZMPI_TPROC_NULL  NULL
 
 #if MPI_VERSION >= 3
+typedef int ZMPI_TPROC_FN(void *b, MPI_Count x, void *tproc_data);
+typedef int ZMPI_TPROC_MOD_FN(void *b, MPI_Count x, void *tproc_data, void *mod);
+typedef void ZMPI_TPROCS_FN(void *b, MPI_Count x, void *tproc_data, int *nprocs, int *procs);
+typedef void ZMPI_TPROCS_MOD_FN(void *b, MPI_Count x, void *tproc_data, int *nprocs, int *procs, void *mod);
 typedef MPI_Count ZMPI_Count;
 #else
 typedef long ZMPI_Count;
-#endif
-
 typedef int ZMPI_TPROC_FN(void *b, ZMPI_Count x, void *tproc_data);
 typedef int ZMPI_TPROC_MOD_FN(void *b, ZMPI_Count x, void *tproc_data, void *mod);
 typedef void ZMPI_TPROCS_FN(void *b, ZMPI_Count x, void *tproc_data, int *nprocs, int *procs);
 typedef void ZMPI_TPROCS_MOD_FN(void *b, ZMPI_Count x, void *tproc_data, int *nprocs, int *procs, void *mod);
+#endif
+
 
 typedef void ZMPI_TPROC_RESET_FN(void *tproc_data);
 
 #define ZMPI_TPROC_RESET_NULL  NULL
 
-typedef struct _ZMPI_Tproc_exdef {
+typedef struct _ZMPI_Tproc_exdef
+{
   int type;
 
-  spec_tproc_count_f *tproc_count_db, *tproc_count_ip;
-  spec_tproc_rearrange_db_f *tproc_rearrange_db;
-  spec_tproc_rearrange_ip_f *tproc_rearrange_ip;
-  spec_tproc_indices_db_f *tproc_indices_db;
-
-  spec_tproc_mod_count_f *tproc_mod_count_db, *tproc_mod_count_ip;
-  spec_tproc_mod_rearrange_db_f *tproc_mod_rearrange_db;
-  spec_tproc_mod_rearrange_ip_f *tproc_mod_rearrange_ip;
-
-  spec_tprocs_count_f *tprocs_count_db, *tprocs_count_ip;
-  spec_tprocs_rearrange_db_f *tprocs_rearrange_db;
-  spec_tprocs_rearrange_ip_f *tprocs_rearrange_ip;
-  spec_tprocs_indices_db_f *tprocs_indices_db;
-
-  spec_tprocs_mod_count_f *tprocs_mod_count_db, *tprocs_mod_count_ip;
-  spec_tprocs_mod_rearrange_db_f *tprocs_mod_rearrange_db;
-  spec_tprocs_mod_rearrange_ip_f *tprocs_mod_rearrange_ip;
+  spec_tproc_ext_t tproc_ext;
+  spec_tproc_mod_ext_t tproc_mod_ext;
+  spec_tprocs_ext_t tprocs_ext;
+  spec_tprocs_mod_ext_t tprocs_mod_ext;
 
 } const *ZMPI_Tproc_exdef;
 
 #define ZMPI_TPROC_EXDEF_NULL  NULL
 
+/* default */
 #define ZMPI_TPROC_EXDEF_DEFINE_TPROC(_name_, _tp_, _s_...) \
   SPEC_DEFINE_TPROC(_name_, _tp_, _s_) \
   _s_ const struct _ZMPI_Tproc_exdef _##_name_ = { 1, SPEC_EXT_PARAM_TPROC(_name_), SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
@@ -95,10 +88,33 @@ typedef struct _ZMPI_Tproc_exdef {
   SPEC_DEFINE_TPROCS_MOD(_name_, _tp_, _s_) \
   _s_ const struct _ZMPI_Tproc_exdef _##_name_ = { 4, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
 
-int ZMPI_Tproc_create_tproc(ZMPI_Tproc *tproc, ZMPI_TPROC_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef);
-int ZMPI_Tproc_create_tproc_mod(ZMPI_Tproc *tproc, ZMPI_TPROC_MOD_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef);
-int ZMPI_Tproc_create_tprocs(ZMPI_Tproc *tproc, int max_tprocs, ZMPI_TPROCS_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef);
-int ZMPI_Tproc_create_tprocs_mod(ZMPI_Tproc *tproc, int max_tprocs, ZMPI_TPROCS_MOD_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, ZMPI_Tproc_exdef exdef);
+/* fixtype */
+#define ZMPI_TPROC_EXDEF_DEFINE_FIXTYPE_TPROC(_name_, _fxt_, _tp_, _s_...) \
+  SPEC_DEFINE_FIXED_TPROC(_name_, ZMPI_FIXTYPE_DECLARE, _fxt_, ZMPI_FIXTYPE_CREATE, ZMPI_FIXTYPE_COPY_AT, ZMPI_FIXTYPE_EXCHANGE_AT, ZMPI_FIXTYPE_DESTROY, _tp_, _s_) \
+  _s_ const struct _ZMPI_Tproc_exdef _##_name_ = { 1, SPEC_EXT_PARAM_TPROC(_name_), SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+
+#define ZMPI_TPROC_EXDEF_DEFINE_FIXTYPE_TPROC_MOD(_name_, _fxt_, _tp_, _s_...) \
+  SPEC_DEFINE_FIXED_TPROC_MOD(_name_, ZMPI_FIXTYPE_DECLARE, _fxt_, ZMPI_FIXTYPE_CREATE, ZMPI_FIXTYPE_COPY_AT, ZMPI_FIXTYPE_EXCHANGE_AT, ZMPI_FIXTYPE_DESTROY, _tp_, _s_) \
+  _s_ const struct _ZMPI_Tproc_exdef _##_name_ = { 2, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD(_name_), SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+
+#define ZMPI_TPROC_EXDEF_DEFINE_FIXTYPE_TPROCS(_name_, _fxt_, _tp_, _s_...) \
+  SPEC_DEFINE_FIXED_TPROCS(_name_, ZMPI_FIXTYPE_DECLARE, _fxt_, ZMPI_FIXTYPE_CREATE, ZMPI_FIXTYPE_COPY_AT, ZMPI_FIXTYPE_EXCHANGE_AT, ZMPI_FIXTYPE_DESTROY, _tp_, _s_) \
+  _s_ const struct _ZMPI_Tproc_exdef _##_name_ = { 3, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS(_name_), SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+
+#define ZMPI_TPROC_EXDEF_DEFINE_FIXTYPE_TPROCS_MOD(_name_, _fxt_, _tp_, _s_...) \
+  SPEC_DEFINE_FIXED_TPROCS_MOD(_name_, ZMPI_FIXTYPE_DECLARE, _fxt_, ZMPI_FIXTYPE_CREATE, ZMPI_FIXTYPE_COPY_AT, ZMPI_FIXTYPE_EXCHANGE_AT, ZMPI_FIXTYPE_DESTROY, _tp_, _s_) \
+  _s_ const struct _ZMPI_Tproc_exdef _##_name_ = { 4, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
+
+/* fixsize */
+#define ZMPI_TPROC_EXDEF_DEFINE_FIXSIZE_TPROC(_name_, _fxs_, _tp_, _s_...) \
+  _s_ const int _name_##_params = _fxs_; \
+  SPEC_DEFINE_FIXED_TPROC(_name_, ZMPI_FIXSIZE_DECLARE, _name_##_params, ZMPI_FIXSIZE_CREATE, ZMPI_FIXSIZE_COPY_AT, ZMPI_FIXSIZE_EXCHANGE_AT, ZMPI_FIXSIZE_DESTROY, _tp_, _s_) \
+  _s_ const struct _ZMPI_Tproc_exdef _##_name_ = { 1, SPEC_EXT_PARAM_TPROC(_name_), SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD_NULL }, *_name_ = &_##_name_;
+
+int ZMPI_Tproc_create_tproc(ZMPI_Tproc *tproc, ZMPI_TPROC_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, const ZMPI_Tproc_exdef exdef);
+int ZMPI_Tproc_create_tproc_mod(ZMPI_Tproc *tproc, ZMPI_TPROC_MOD_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, const ZMPI_Tproc_exdef exdef);
+int ZMPI_Tproc_create_tprocs(ZMPI_Tproc *tproc, int max_tprocs, ZMPI_TPROCS_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, const ZMPI_Tproc_exdef exdef);
+int ZMPI_Tproc_create_tprocs_mod(ZMPI_Tproc *tproc, int max_tprocs, ZMPI_TPROCS_MOD_FN *tfn, ZMPI_TPROC_RESET_FN *rfn, const ZMPI_Tproc_exdef exdef);
 int ZMPI_Tproc_free(ZMPI_Tproc *tproc);
 
 int ZMPI_Tproc_set_neighbors(ZMPI_Tproc tproc, int nneighbors, int *neighbors, MPI_Comm comm);
@@ -106,11 +122,11 @@ int ZMPI_Tproc_set_proclists(ZMPI_Tproc tproc, int ndstprocs, int *dstprocs, int
 
 typedef int ZMPI_ALLTOALL_SPECIFIC_FN(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, MPI_Comm comm);
 
-#define ZMPI_ALLTOALL_SPECIFIC_TYPE_ALLTOALLV        0
-#define ZMPI_ALLTOALL_SPECIFIC_TYPE_ALLTOALLW        1
-#define ZMPI_ALLTOALL_SPECIFIC_TYPE_PUT              2
-#define ZMPI_ALLTOALL_SPECIFIC_TYPE_SENDRECV_SINGLE  3
-#define ZMPI_ALLTOALL_SPECIFIC_TYPE_SENDRECV_BUFFER  4
+#define ZMPI_ALLTOALL_SPECIFIC_TYPE_ALLTOALLV    0
+#define ZMPI_ALLTOALL_SPECIFIC_TYPE_ALLTOALLW    1
+#define ZMPI_ALLTOALL_SPECIFIC_TYPE_PUT          2
+#define ZMPI_ALLTOALL_SPECIFIC_TYPE_PUT_2PHASES  3
+#define ZMPI_ALLTOALL_SPECIFIC_TYPE_SENDRECV     4
 
 #define ZMPI_ALLTOALL_SPECIFIC_TYPE_DEFAULT  ZMPI_ALLTOALL_SPECIFIC_TYPE_ALLTOALLV
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -541,26 +541,16 @@ typedef struct _split_generic_t
   slint_t max_tprocs;
 
   spec_tproc_f *tproc;
-  spec_tproc_count_f *tproc_count_db, *tproc_count_ip;
-  spec_tproc_rearrange_db_f *tproc_rearrange_db;
-  spec_tproc_rearrange_ip_f *tproc_rearrange_ip;
-  spec_tproc_indices_db_f *tproc_indices_db;
+  spec_tproc_ext_t tproc_ext;
 
   spec_tproc_mod_f *tproc_mod;
-  spec_tproc_mod_count_f *tproc_mod_count_db, *tproc_mod_count_ip;
-  spec_tproc_mod_rearrange_db_f *tproc_mod_rearrange_db;
-  spec_tproc_mod_rearrange_ip_f *tproc_mod_rearrange_ip;
+  spec_tproc_mod_ext_t tproc_mod_ext;
 
   spec_tprocs_f *tprocs;
-  spec_tprocs_count_f *tprocs_count_db, *tprocs_count_ip;
-  spec_tprocs_rearrange_db_f *tprocs_rearrange_db;
-  spec_tprocs_rearrange_ip_f *tprocs_rearrange_ip;
-  spec_tprocs_indices_db_f *tprocs_indices_db;
+  spec_tprocs_ext_t tprocs_ext;
 
   spec_tprocs_mod_f *tprocs_mod;
-  spec_tprocs_mod_count_f *tprocs_mod_count_db, *tprocs_mod_count_ip;
-  spec_tprocs_mod_rearrange_db_f *tprocs_mod_rearrange_db;
-  spec_tprocs_mod_rearrange_ip_f *tprocs_mod_rearrange_ip;
+  spec_tprocs_mod_ext_t tprocs_mod_ext;
 
   spec_tproc_reset_f *reset;
 
@@ -602,30 +592,18 @@ typedef void tproc_reset_f(void *tproc_data);
 /* sl_macro TPROC_RESET_NULL */
 #define TPROC_RESET_NULL  NULL
 
-/* sl_type _tproc_t tproc_t */
-typedef struct _tproc_t *tproc_t;
+/* sl_type tproc_t */
+typedef struct _spec_tproc_t *tproc_t;
 
 /* sl_type _tproc_exdef tproc_exdef */
-typedef struct _tproc_exdef {
+typedef struct _tproc_exdef
+{
   int type;
 
-  spec_tproc_count_f *tproc_count_db, *tproc_count_ip;
-  spec_tproc_rearrange_db_f *tproc_rearrange_db;
-  spec_tproc_rearrange_ip_f *tproc_rearrange_ip;
-  spec_tproc_indices_db_f *tproc_indices_db;
-
-  spec_tproc_mod_count_f *tproc_mod_count_db, *tproc_mod_count_ip;
-  spec_tproc_mod_rearrange_db_f *tproc_mod_rearrange_db;
-  spec_tproc_mod_rearrange_ip_f *tproc_mod_rearrange_ip;
-
-  spec_tprocs_count_f *tprocs_count_db, *tprocs_count_ip;
-  spec_tprocs_rearrange_db_f *tprocs_rearrange_db;
-  spec_tprocs_rearrange_ip_f *tprocs_rearrange_ip;
-  spec_tprocs_indices_db_f *tprocs_indices_db;
-
-  spec_tprocs_mod_count_f *tprocs_mod_count_db, *tprocs_mod_count_ip;
-  spec_tprocs_mod_rearrange_db_f *tprocs_mod_rearrange_db;
-  spec_tprocs_mod_rearrange_ip_f *tprocs_mod_rearrange_ip;
+  spec_tproc_ext_t tproc_ext;
+  spec_tproc_mod_ext_t tproc_mod_ext;
+  spec_tprocs_ext_t tprocs_ext;
+  spec_tprocs_mod_ext_t tprocs_mod_ext;
 
 } const *tproc_exdef;
 
@@ -648,6 +626,16 @@ typedef struct _tproc_exdef {
 #define TPROC_EXDEF_DEFINE_TPROCS_MOD(_name_, _tp_, _s_...) \
   SPEC_DEFINE_TPROCS_MOD(_name_, _tp_, _s_) \
   _s_ const struct _tproc_exdef _##_name_ = { 4, SPEC_EXT_PARAM_TPROC_NULL, SPEC_EXT_PARAM_TPROC_MOD_NULL, SPEC_EXT_PARAM_TPROCS_NULL, SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
+
+
+/* mpi_elements_alltoall_specific */
+#ifndef SL_MEAS_TYPE_ALLTOALLV
+# define SL_MEAS_TYPE_ALLTOALLV  0
+#endif
+
+#ifndef SL_MEAS_TYPE_SENDRECV
+# define SL_MEAS_TYPE_SENDRECV   1
+#endif
 
 
 /* deprecated, sl_type k2c_func pivot_func sn_func m2x_func m2X_func */

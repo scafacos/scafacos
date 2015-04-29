@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -21,7 +21,7 @@
  *  SL - Sorting Library, michael <dot> hofmann <at> informatik <dot> tu-chemnitz <dot> de
  */
 
-/* src/base/base.c */
+/* base/base.c */
   {
  -2,
   },
@@ -36,7 +36,7 @@
   {
  sort_radix_iter_threshold,
   },
-/* src/base_mpi/base_mpi.c */
+/* base_mpi/base_mpi.c */
 #ifdef SL_USE_MPI
   {
  MPI_DATATYPE_NULL,
@@ -64,10 +64,13 @@ MPI_DATATYPE_NULL
 #ifdef SL_USE_MPI
   {
  { 0 },
- 8,
  0,
  0,
  0,
+ SL_MEAS_TYPE_ALLTOALLV,
+ NULL,
+ 0,
+ 10,
   },
 #endif
 #ifdef SL_USE_MPI

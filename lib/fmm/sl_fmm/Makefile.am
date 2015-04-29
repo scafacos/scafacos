@@ -130,289 +130,9 @@ sl_SOURCE = \
   ../../common/sl/include/z_config.h \
   ../../common/sl/include/z_pack_conf.h \
   ../../common/sl/include/z_pack.h \
-  ../../common/sl/include/z_pack_rename.h \
-  ../../common/sl/extra/include/zmpi_ataip.h \
-  ../../common/sl/extra/include/zmpi_ataip_rename.h \
-  ../../common/sl/extra/include/zmpi_atasp.h \
-  ../../common/sl/extra/include/zmpi_atasp_rename.h \
-  ../../common/sl/extra/include/zmpi_local.h \
-  ../../common/sl/extra/include/zmpi_local_rename.h \
-  ../../common/sl/extra/include/zmpi_tools.h \
-  ../../common/sl/extra/include/zmpi_tools_rename.h
+  ../../common/sl/include/z_pack_rename.h
 
-libfcs_fmm_back_idx_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_back_idx/sl_config.h \
-  sl_back_idx/sl_environment.h \
-  sl_back_idx/sl_extra.h \
-  sl_back_idx/sl_tune_auto.h \
-  sl_back_idx/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_back_q__g_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_back_q__g/sl_config.h \
-  sl_back_q__g/sl_environment.h \
-  sl_back_q__g/sl_extra.h \
-  sl_back_q__g/sl_tune_auto.h \
-  sl_back_q__g/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_back_q__gl_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_back_q__gl/sl_config.h \
-  sl_back_q__gl/sl_environment.h \
-  sl_back_q__gl/sl_extra.h \
-  sl_back_q__gl/sl_tune_auto.h \
-  sl_back_q__gl/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_back_q_pg_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_back_q_pg/sl_config.h \
-  sl_back_q_pg/sl_environment.h \
-  sl_back_q_pg/sl_extra.h \
-  sl_back_q_pg/sl_tune_auto.h \
-  sl_back_q_pg/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_back_q_pgl_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_back_q_pgl/sl_config.h \
-  sl_back_q_pgl/sl_environment.h \
-  sl_back_q_pgl/sl_extra.h \
-  sl_back_q_pgl/sl_tune_auto.h \
-  sl_back_q_pgl/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_back_qx_g_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_back_qx_g/sl_config.h \
-  sl_back_qx_g/sl_environment.h \
-  sl_back_qx_g/sl_extra.h \
-  sl_back_qx_g/sl_tune_auto.h \
-  sl_back_qx_g/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_back_qx_gl_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_back_qx_gl/sl_config.h \
-  sl_back_qx_gl/sl_environment.h \
-  sl_back_qx_gl/sl_extra.h \
-  sl_back_qx_gl/sl_tune_auto.h \
-  sl_back_qx_gl/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_back_qxpg_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_back_qxpg/sl_config.h \
-  sl_back_qxpg/sl_environment.h \
-  sl_back_qxpg/sl_extra.h \
-  sl_back_qxpg/sl_tune_auto.h \
-  sl_back_qxpg/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_back_qxpgl_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_back_qxpgl/sl_config.h \
-  sl_back_qxpgl/sl_environment.h \
-  sl_back_qxpgl/sl_extra.h \
-  sl_back_qxpgl/sl_tune_auto.h \
-  sl_back_qxpgl/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_front_xq_a0_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_front_xq_a0/sl_config.h \
-  sl_front_xq_a0/sl_environment.h \
-  sl_front_xq_a0/sl_extra.h \
-  sl_front_xq_a0/sl_tune_auto.h \
-  sl_front_xq_a0/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_front_xq_aI_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_front_xq_aI/sl_config.h \
-  sl_front_xq_aI/sl_environment.h \
-  sl_front_xq_aI/sl_extra.h \
-  sl_front_xq_aI/sl_tune_auto.h \
-  sl_front_xq_aI/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_front_xq_aIl_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_front_xq_aIl/sl_config.h \
-  sl_front_xq_aIl/sl_environment.h \
-  sl_front_xq_aIl/sl_extra.h \
-  sl_front_xq_aIl/sl_tune_auto.h \
-  sl_front_xq_aIl/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_front_xq_aX_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_front_xq_aX/sl_config.h \
-  sl_front_xq_aX/sl_environment.h \
-  sl_front_xq_aX/sl_extra.h \
-  sl_front_xq_aX/sl_tune_auto.h \
-  sl_front_xq_aX/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_front_xqsa0_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_front_xqsa0/sl_config.h \
-  sl_front_xqsa0/sl_environment.h \
-  sl_front_xqsa0/sl_extra.h \
-  sl_front_xqsa0/sl_tune_auto.h \
-  sl_front_xqsa0/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_front_xqsaI_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_front_xqsaI/sl_config.h \
-  sl_front_xqsaI/sl_environment.h \
-  sl_front_xqsaI/sl_extra.h \
-  sl_front_xqsaI/sl_tune_auto.h \
-  sl_front_xqsaI/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_front_xqsaIl_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_front_xqsaIl/sl_config.h \
-  sl_front_xqsaIl/sl_environment.h \
-  sl_front_xqsaIl/sl_extra.h \
-  sl_front_xqsaIl/sl_tune_auto.h \
-  sl_front_xqsaIl/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_front_xqsaX_la_SOURCES = \
-  common.h \
-  config_fmm_sort.h \
-  config_types.h \
-  fmm_sort.h \
-  fortran2c_types.h \
-  mpi_fmm_resort.h \
-  mpi_fmm_sort.h \
-  rename_fmm_sort.h \
-  sl_front_xqsaX/sl_config.h \
-  sl_front_xqsaX/sl_environment.h \
-  sl_front_xqsaX/sl_extra.h \
-  sl_front_xqsaX/sl_tune_auto.h \
-  sl_front_xqsaX/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_fmm_extra_la_SOURCES = \
+sl_extra_SOURCE = \
   ../../common/sl/extra/z_pack/z_config.h \
   ../../common/sl/extra/z_pack/z_pack.c \
   ../../common/sl/extra/z_pack/z_pack_conf.h \
@@ -461,6 +181,307 @@ libfcs_fmm_extra_la_SOURCES = \
   ../../common/sl/extra/zmpi_atasp/zmpi_atasp.h \
   ../../common/sl/extra/zmpi_atasp/zmpi_atasp_rename.h
 
+sl_extra_include_SOURCE = \
+  ../../common/sl/extra/include/zmpi_ataip.h \
+  ../../common/sl/extra/include/zmpi_ataip_rename.h \
+  ../../common/sl/extra/include/zmpi_atasp.h \
+  ../../common/sl/extra/include/zmpi_atasp_rename.h \
+  ../../common/sl/extra/include/zmpi_local.h \
+  ../../common/sl/extra/include/zmpi_local_rename.h \
+  ../../common/sl/extra/include/zmpi_tools.h \
+  ../../common/sl/extra/include/zmpi_tools_rename.h
+
+libfcs_fmm_back_idx_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_back_idx/sl_config.h \
+  sl_back_idx/sl_environment.h \
+  sl_back_idx/sl_extra.h \
+  sl_back_idx/sl_tune_auto.h \
+  sl_back_idx/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_back_q__g_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_back_q__g/sl_config.h \
+  sl_back_q__g/sl_environment.h \
+  sl_back_q__g/sl_extra.h \
+  sl_back_q__g/sl_tune_auto.h \
+  sl_back_q__g/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_back_q__gl_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_back_q__gl/sl_config.h \
+  sl_back_q__gl/sl_environment.h \
+  sl_back_q__gl/sl_extra.h \
+  sl_back_q__gl/sl_tune_auto.h \
+  sl_back_q__gl/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_back_q_pg_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_back_q_pg/sl_config.h \
+  sl_back_q_pg/sl_environment.h \
+  sl_back_q_pg/sl_extra.h \
+  sl_back_q_pg/sl_tune_auto.h \
+  sl_back_q_pg/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_back_q_pgl_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_back_q_pgl/sl_config.h \
+  sl_back_q_pgl/sl_environment.h \
+  sl_back_q_pgl/sl_extra.h \
+  sl_back_q_pgl/sl_tune_auto.h \
+  sl_back_q_pgl/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_back_qx_g_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_back_qx_g/sl_config.h \
+  sl_back_qx_g/sl_environment.h \
+  sl_back_qx_g/sl_extra.h \
+  sl_back_qx_g/sl_tune_auto.h \
+  sl_back_qx_g/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_back_qx_gl_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_back_qx_gl/sl_config.h \
+  sl_back_qx_gl/sl_environment.h \
+  sl_back_qx_gl/sl_extra.h \
+  sl_back_qx_gl/sl_tune_auto.h \
+  sl_back_qx_gl/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_back_qxpg_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_back_qxpg/sl_config.h \
+  sl_back_qxpg/sl_environment.h \
+  sl_back_qxpg/sl_extra.h \
+  sl_back_qxpg/sl_tune_auto.h \
+  sl_back_qxpg/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_back_qxpgl_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_back_qxpgl/sl_config.h \
+  sl_back_qxpgl/sl_environment.h \
+  sl_back_qxpgl/sl_extra.h \
+  sl_back_qxpgl/sl_tune_auto.h \
+  sl_back_qxpgl/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_front_xq_a0_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_front_xq_a0/sl_config.h \
+  sl_front_xq_a0/sl_environment.h \
+  sl_front_xq_a0/sl_extra.h \
+  sl_front_xq_a0/sl_tune_auto.h \
+  sl_front_xq_a0/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_front_xq_aI_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_front_xq_aI/sl_config.h \
+  sl_front_xq_aI/sl_environment.h \
+  sl_front_xq_aI/sl_extra.h \
+  sl_front_xq_aI/sl_tune_auto.h \
+  sl_front_xq_aI/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_front_xq_aIl_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_front_xq_aIl/sl_config.h \
+  sl_front_xq_aIl/sl_environment.h \
+  sl_front_xq_aIl/sl_extra.h \
+  sl_front_xq_aIl/sl_tune_auto.h \
+  sl_front_xq_aIl/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_front_xq_aX_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_front_xq_aX/sl_config.h \
+  sl_front_xq_aX/sl_environment.h \
+  sl_front_xq_aX/sl_extra.h \
+  sl_front_xq_aX/sl_tune_auto.h \
+  sl_front_xq_aX/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_front_xqsa0_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_front_xqsa0/sl_config.h \
+  sl_front_xqsa0/sl_environment.h \
+  sl_front_xqsa0/sl_extra.h \
+  sl_front_xqsa0/sl_tune_auto.h \
+  sl_front_xqsa0/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_front_xqsaI_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_front_xqsaI/sl_config.h \
+  sl_front_xqsaI/sl_environment.h \
+  sl_front_xqsaI/sl_extra.h \
+  sl_front_xqsaI/sl_tune_auto.h \
+  sl_front_xqsaI/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_front_xqsaIl_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_front_xqsaIl/sl_config.h \
+  sl_front_xqsaIl/sl_environment.h \
+  sl_front_xqsaIl/sl_extra.h \
+  sl_front_xqsaIl/sl_tune_auto.h \
+  sl_front_xqsaIl/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_front_xqsaX_la_SOURCES = \
+  common.h \
+  config_fmm_sort.h \
+  config_types.h \
+  fmm_sort.h \
+  fortran2c_types.h \
+  mpi_fmm_resort.h \
+  mpi_fmm_sort.h \
+  rename_fmm_sort.h \
+  sl_front_xqsaX/sl_config.h \
+  sl_front_xqsaX/sl_environment.h \
+  sl_front_xqsaX/sl_extra.h \
+  sl_front_xqsaX/sl_tune_auto.h \
+  sl_front_xqsaX/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_fmm_extra_la_SOURCES = $(sl_extra_SOURCE)
+
 libfcs_fmm_mpiwrap_la_SOURCES = \
   common.h \
   config_fmm_sort.h \
@@ -489,4 +510,5 @@ libfcs_fmm_mpiwrap_la_SOURCES = \
   mpi_fmm_resort.h \
   mpi_fmm_sort.c \
   mpi_fmm_sort.h \
-  rename_fmm_sort.h
+  rename_fmm_sort.h \
+  $(sl_extra_include_SOURCE)

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -32,25 +32,25 @@
 /* features of the GNU C Compiler */
 #ifdef __GNUC__
 # ifdef __STDC_VERSION__
-#  define HAVE_ROUND
+#  define HAVE_ROUND  1
 # else
-#  define HAVE_RANDOM
-#  define HAVE_SRANDOM
+#  define HAVE_RANDOM  1
+#  define HAVE_SRANDOM  1
 # endif
 #endif
 
 
 #ifdef __bgp__
-# define HAVE_SPI_KERNEL_INTERFACE_H
-# define HAVE_COMMON_BGP_PERSONALITY_H
-# define HAVE_COMMON_BGP_PERSONALITY_INLINES_H
-# define HAVE__BGP_PERSONALITY_T
+# define HAVE_SPI_KERNEL_INTERFACE_H  1
+# define HAVE_COMMON_BGP_PERSONALITY_H  1
+# define HAVE_COMMON_BGP_PERSONALITY_INLINES_H  1
+# define HAVE__BGP_PERSONALITY_T  1
 #endif
 
 
 #ifdef __bgq__
-# define HAVE_MPIX_H
-# define HAVE_MPIX_HARDWARE_T
+# define HAVE_MPIX_H  1
+# define HAVE_MPIX_HARDWARE_T  1
 #endif
 
 
@@ -59,7 +59,7 @@
 
 #if !defined(HAVE_MPI_IN_PLACE) && !defined(IGNORE_MPI_IN_PLACE)
 # if defined(MPI_VERSION) && (MPI_VERSION >= 2)
-#  define HAVE_MPI_IN_PLACE
+#  define HAVE_MPI_IN_PLACE  1
 # endif
 #endif
 

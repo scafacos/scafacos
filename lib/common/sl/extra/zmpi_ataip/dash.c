@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -1561,7 +1561,7 @@ static void make_sym(ds_exec_t *exec)
 
 switch_sym:
 
-  switch (exec->make_sym)
+  switch (i)
   {
     case DASH_EXEC_MAKE_SYM_LINEAR:
       Z_TRACE_IF(DS_TRACE_IF, "make_sym_linear");
@@ -2170,7 +2170,7 @@ dsint_t ds_exec_mpi_add_type(ds_exec_t *exec, MPI_Datatype type) /* ds_func ds_e
     ++exec_mpi->ntypes;
 
     exec_mpi->mpi_types[exec_id] = type;
-    zmpil_create(&exec_mpi->zmpil_types[exec_id], type);
+    zmpil_create(&exec_mpi->zmpil_types[exec_id], type, 1);
   }
 
   Z_TRACE_IF(DS_TRACE_IF, "END");

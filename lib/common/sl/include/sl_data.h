@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -26,6 +26,7 @@
 #define __SL_DATA_H__
 
 
+/* sl_macro data_nmax */
 #define data_nmax (0 \
  + 1 \
  + 1 \
@@ -49,6 +50,7 @@
  + 1 \
 )
 
+/* sl_macro data_n */
 #define data_n (0 \
  + (data0_n) \
  + (data1_n) \
@@ -72,6 +74,7 @@
  + (data19_n) \
 )
 
+/* sl_macro data_byte */
 #define data_byte (0 \
  + (data0_byte) \
  + (data1_byte) \
@@ -95,6 +98,7 @@
  + (data19_byte) \
 )
 
+/* sl_macro data_byte_flex */
 #define data_byte_flex (0 \
  + (data0_byte_flex) \
  + (data1_byte_flex) \
@@ -118,7 +122,7 @@
  + (data19_byte_flex) \
 )
 
-/* regular use */
+/* sl_macro data_assign */
 #define data_assign(_s_, _d_) \
  cc_data0_assign(_s_, _d_) \
  cc_data1_assign(_s_, _d_) \
@@ -141,6 +145,7 @@
  cc_data18_assign(_s_, _d_) \
  cc_data19_assign(_s_, _d_) \
 
+/* sl_macro data_assign_at */
 #define data_assign_at(_s_, _sat_, _d_) \
  cc_data0_assign_at(_s_, _sat_, _d_) \
  cc_data1_assign_at(_s_, _sat_, _d_) \
@@ -163,6 +168,7 @@
  cc_data18_assign_at(_s_, _sat_, _d_) \
  cc_data19_assign_at(_s_, _sat_, _d_) \
 
+/* sl_macro data_null */
 #define data_null(_e_) \
  cc_data0_null(_e_) \
  cc_data1_null(_e_) \
@@ -185,6 +191,7 @@
  cc_data18_null(_e_) \
  cc_data19_null(_e_) \
 
+/* sl_macro data_inc */
 #define data_inc(_e_) \
  cc_data0_inc(_e_) \
  cc_data1_inc(_e_) \
@@ -207,6 +214,7 @@
  cc_data18_inc(_e_) \
  cc_data19_inc(_e_) \
 
+/* sl_macro data_dec */
 #define data_dec(_e_) \
  cc_data0_dec(_e_) \
  cc_data1_dec(_e_) \
@@ -229,6 +237,7 @@
  cc_data18_dec(_e_) \
  cc_data19_dec(_e_) \
 
+/* sl_macro data_add */
 #define data_add(_e_, _n_) \
  cc_data0_add(_e_, _n_) \
  cc_data1_add(_e_, _n_) \
@@ -251,6 +260,7 @@
  cc_data18_add(_e_, _n_) \
  cc_data19_add(_e_, _n_) \
 
+/* sl_macro data_sub */
 #define data_sub(_e_, _n_) \
  cc_data0_sub(_e_, _n_) \
  cc_data1_sub(_e_, _n_) \
@@ -275,6 +285,7 @@
 
 /* FIXME: add rti_cadd_moved(_n_,cmd) -> only ifdef SL_DATA else empty (like dataX) */
 
+/* sl_macro data_copy */
 #define data_copy(_s_, _d_) \
  cc_data0_copy(_s_, _d_) \
  cc_data1_copy(_s_, _d_) \
@@ -297,6 +308,7 @@
  cc_data18_copy(_s_, _d_) \
  cc_data19_copy(_s_, _d_) \
 
+/* sl_macro data_ncopy */
 #define data_ncopy(_s_, _d_, _n_) \
  cc_data0_ncopy(_s_, _d_, _n_) \
  cc_data1_ncopy(_s_, _d_, _n_) \
@@ -319,6 +331,7 @@
  cc_data18_ncopy(_s_, _d_, _n_) \
  cc_data19_ncopy(_s_, _d_, _n_) \
 
+/* sl_macro data_nmove */
 #define data_nmove(_s_, _d_, _n_) \
  cc_data0_nmove(_s_, _d_, _n_) \
  cc_data1_nmove(_s_, _d_, _n_) \
@@ -341,6 +354,7 @@
  cc_data18_nmove(_s_, _d_, _n_) \
  cc_data19_nmove(_s_, _d_, _n_) \
 
+/* sl_macro data_copy_at */
 #define data_copy_at(_s_, _sat_, _d_, _dat_) \
  cc_data0_copy_at(_s_, _sat_, _d_, _dat_) \
  cc_data1_copy_at(_s_, _sat_, _d_, _dat_) \
@@ -363,6 +377,7 @@
  cc_data18_copy_at(_s_, _sat_, _d_, _dat_) \
  cc_data19_copy_at(_s_, _sat_, _d_, _dat_) \
 
+/* sl_macro data_ncopy_at */
 #define data_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
  cc_data0_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
  cc_data1_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
@@ -385,6 +400,7 @@
  cc_data18_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
  cc_data19_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
 
+/* sl_macro data_nmove_at */
 #define data_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
  cc_data0_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
  cc_data1_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
@@ -407,6 +423,7 @@
  cc_data18_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
  cc_data19_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
 
+/* sl_macro data_xchange */
 #define data_xchange(_e0_, _e1_, _t_) \
  cc_data0_xchange(_e0_, _e1_, _t_) \
  cc_data1_xchange(_e0_, _e1_, _t_) \
@@ -429,6 +446,7 @@
  cc_data18_xchange(_e0_, _e1_, _t_) \
  cc_data19_xchange(_e0_, _e1_, _t_) \
 
+/* sl_macro data_xchange_at */
 #define data_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
  cc_data0_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
  cc_data1_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
@@ -454,21 +472,21 @@
 /* chained versions */
 #ifdef SL_DATA
 
- #define cc_data_assign(_s_, _d_)                           , data_assign(_s_, _d_)
- #define cc_data_assign_at(_s_, _sat_, _d_)                 , data_assign_at(_s_, _sat_, _d_)
- #define cc_data_null(_e_)                                  , data_null(_e_)
- #define cc_data_inc(_e_)                                   , data_inc(_e_)
- #define cc_data_dec(_e_)                                   , data_dec(_e_)
- #define cc_data_add(_e_, _n_)                              , data_add(_e_, _n_)
- #define cc_data_sub(_e_, _n_)                              , data_sub(_e_, _n_)
- #define cc_data_copy(_s_, _d_)                             , data_copy(_s_, _d_)
- #define cc_data_ncopy(_s_, _d_, _n_)                       , data_ncopy(_s_, _d_, _n_)
- #define cc_data_nmove(_s_, _d_, _n_)                       , data_nmove(_s_, _d_, _n_)
- #define cc_data_copy_at(_s_, _sat_, _d_, _dat_)            , data_copy_at(_s_, _sat_, _d_, _dat_)
- #define cc_data_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)      , data_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)
- #define cc_data_nmove_at(_s_, _sat_, _d_, _dat_, _n_)      , data_nmove_at(_s_, _sat_, _d_, _dat_, _n_)
- #define cc_data_xchange(_e0_, _e1_, _t_)                   , data_xchange(_e0_, _e1_, _t_)
- #define cc_data_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_)  , data_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_)
+ #define cc_data_assign(_s_, _d_)                           , data_assign(_s_, _d_)  /* sl_macro */
+ #define cc_data_assign_at(_s_, _sat_, _d_)                 , data_assign_at(_s_, _sat_, _d_)  /* sl_macro */
+ #define cc_data_null(_e_)                                  , data_null(_e_)  /* sl_macro */
+ #define cc_data_inc(_e_)                                   , data_inc(_e_)  /* sl_macro */
+ #define cc_data_dec(_e_)                                   , data_dec(_e_)  /* sl_macro */
+ #define cc_data_add(_e_, _n_)                              , data_add(_e_, _n_)  /* sl_macro */
+ #define cc_data_sub(_e_, _n_)                              , data_sub(_e_, _n_)  /* sl_macro */
+ #define cc_data_copy(_s_, _d_)                             , data_copy(_s_, _d_)  /* sl_macro */
+ #define cc_data_ncopy(_s_, _d_, _n_)                       , data_ncopy(_s_, _d_, _n_)  /* sl_macro */
+ #define cc_data_nmove(_s_, _d_, _n_)                       , data_nmove(_s_, _d_, _n_)  /* sl_macro */
+ #define cc_data_copy_at(_s_, _sat_, _d_, _dat_)            , data_copy_at(_s_, _sat_, _d_, _dat_)  /* sl_macro */
+ #define cc_data_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)      , data_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)  /* sl_macro */
+ #define cc_data_nmove_at(_s_, _sat_, _d_, _dat_, _n_)      , data_nmove_at(_s_, _sat_, _d_, _dat_, _n_)  /* sl_macro */
+ #define cc_data_xchange(_e0_, _e1_, _t_)                   , data_xchange(_e0_, _e1_, _t_)  /* sl_macro */
+ #define cc_data_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_)  , data_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_)  /* sl_macro */
 
 #else /* SL_DATA */
 

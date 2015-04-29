@@ -22,6 +22,8 @@ elements_alloca
 elements_freea
 elements_alloc_from_blocks
 elements_alloc_from_block
+elements_block_alloc
+elements_block_free
 elements_alloc_block
 elements_copy
 elements_copy_at
@@ -131,6 +133,8 @@ displs2counts
 get_displcounts_extent
 elem_set_data
 elem_get_max_byte
+elem_set
+elem_set_at
 elem_reverse_aio
 elem_reverse_obo
 elem_reverse
@@ -224,6 +228,8 @@ mpi_elements_get_counts
 mpi_elements_get_weights
 mpi_elements_get_counts_and_weights
 mpi_elements_sendrecv_replace
+mpi_elements_isend_components
+mpi_elements_irecv_components
 tproc_create_tproc
 tproc_create_tproc_mod
 tproc_create_tprocs

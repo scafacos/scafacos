@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -21,7 +21,7 @@
  *  SL - Sorting Library, michael <dot> hofmann <at> informatik <dot> tu-chemnitz <dot> de
  */
 
-/* src/base/base.c */
+/* base/base.c */
   struct {
 int dummy_rank;
   } sl;
@@ -36,7 +36,7 @@ slint_t ma_threshold;
   struct {
 slint_t threshold;
   } sri;
-/* src/base_mpi/base_mpi.c */
+/* base_mpi/base_mpi.c */
 #ifdef SL_USE_MPI
   struct {
 MPI_Datatype int_datatype;
@@ -59,10 +59,13 @@ slint_t sendrecv_replace_mpi_maxsize;
 #ifdef SL_USE_MPI
   struct {
 double t[2];
-slint_t max_nprocs;
 slint_t packed;
 slint_t minalloc;
 double overalloc;
+slint_t type;
+void *sendrecv_aux;
+slint_t sendrecv_aux_size;
+slint_t sendrecv_requests;
   } meas;
 #endif
 #ifdef SL_USE_MPI

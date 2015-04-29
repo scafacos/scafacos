@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -159,18 +159,6 @@
 #define fcs_pepcparts_sl_elem_weight(e, at)  ((e)->data8[at])
 
 #define fcs_pepcparts_sl_data8_weight
-
-#define fcs_pepcparts_MSEG_BORDER_UPDATE_REDUCTION
-
-#define fcs_pepcparts_MSEG_INFO
-
-/*#define fcs_pepcparts_MSS_ROOT*/
-
-
-/* do reduce+bcast instead of allreduce on jugene */
-#ifdef JUGENE
-# define GLOBAL_REDUCEBCAST_THRESHOLD  0
-#endif
 
 
 
@@ -746,6 +734,18 @@
 
 
 
+#define fcs_pepcparts_MSEG_BORDER_UPDATE_REDUCTION
+
+#define fcs_pepcparts_MSEG_INFO
+
+/*#define fcs_pepcparts_MSS_ROOT*/
+
+
+/* do reduce+bcast instead of allreduce on jugene */
+#ifdef JUGENE
+# define GLOBAL_REDUCEBCAST_THRESHOLD  0
+#endif
+
 
 
 
@@ -827,6 +827,4162 @@
 
 
 
+/* SL_DATA_IGNORE -> prevents that the present data is processed */
+
+
+
+
+/* prevent the following functions from processing the DATAs (even though they may exist) */
+#ifdef SL_DATA_IGNORE
+ /* disable the single DATAs */
+/* DATAX_TEMPLATE_BEGIN */
+ #undef fcs_pepcparts_SL_DATA0
+ #undef fcs_pepcparts_SL_DATA1
+ #undef fcs_pepcparts_SL_DATA2
+ #undef fcs_pepcparts_SL_DATA3
+ #undef fcs_pepcparts_SL_DATA4
+ #undef fcs_pepcparts_SL_DATA5
+ #undef fcs_pepcparts_SL_DATA6
+ #undef fcs_pepcparts_SL_DATA7
+ #undef fcs_pepcparts_SL_DATA8
+ #undef fcs_pepcparts_SL_DATA9
+ #undef fcs_pepcparts_SL_DATA10
+ #undef fcs_pepcparts_SL_DATA11
+ #undef fcs_pepcparts_SL_DATA12
+ #undef fcs_pepcparts_SL_DATA13
+ #undef fcs_pepcparts_SL_DATA14
+ #undef fcs_pepcparts_SL_DATA15
+ #undef fcs_pepcparts_SL_DATA16
+ #undef fcs_pepcparts_SL_DATA17
+ #undef fcs_pepcparts_SL_DATA18
+ #undef fcs_pepcparts_SL_DATA19
+/* DATAX_TEMPLATE_END */
+#endif /* SL_DATA_IGNORE */
+
+
+#ifndef SL_ARRAYX_COPY
+# define SL_ARRAYX_COPY
+# define SL_ARRAY1_COPY(_s_, _d_)  ((_d_)[0] = (_s_)[0])
+# define SL_ARRAY2_COPY(_s_, _d_)  SL_ARRAY1_COPY(_s_, _d_), ((_d_)[1] = (_s_)[1])
+# define SL_ARRAY3_COPY(_s_, _d_)  SL_ARRAY2_COPY(_s_, _d_), ((_d_)[2] = (_s_)[2])
+# define SL_ARRAY4_COPY(_s_, _d_)  SL_ARRAY3_COPY(_s_, _d_), ((_d_)[3] = (_s_)[3])
+# define SL_ARRAY5_COPY(_s_, _d_)  SL_ARRAY4_COPY(_s_, _d_), ((_d_)[4] = (_s_)[4])
+# define SL_ARRAY6_COPY(_s_, _d_)  SL_ARRAY5_COPY(_s_, _d_), ((_d_)[5] = (_s_)[5])
+# define SL_ARRAY7_COPY(_s_, _d_)  SL_ARRAY6_COPY(_s_, _d_), ((_d_)[6] = (_s_)[6])
+# define SL_ARRAY8_COPY(_s_, _d_)  SL_ARRAY7_COPY(_s_, _d_), ((_d_)[7] = (_s_)[7])
+# define SL_ARRAY9_COPY(_s_, _d_)  SL_ARRAY8_COPY(_s_, _d_), ((_d_)[8] = (_s_)[8])
+#endif
+
+
+
+
+
+/* sl_macro fcs_pepcparts_sl_key_type_c fcs_pepcparts_sl_key_type_mpi fcs_pepcparts_sl_key_size_mpi fcs_pepcparts_sl_key_type_fmt fcs_pepcparts_sl_key_integer fcs_pepcparts_sl_key_memcpy */
+
+
+#define fcs_pepcparts_sl_key_byte                          ((fcs_pepcparts_slint_t) sizeof(fcs_pepcparts_sl_key_type_c))  /* sl_macro */
+
+#ifndef fcs_pepcparts_sl_key_copy
+ #ifndef fcs_pepcparts_sl_key_memcpy
+  #define fcs_pepcparts_sl_key_copy(src, dst)              SL_ARRAY1_COPY(src, dst)
+ #else
+  #define fcs_pepcparts_sl_key_copy(src, dst)              memcpy(dst, src, fcs_pepcparts_sl_key_byte)  /* sl_macro */
+ #endif
+#endif
+#ifndef fcs_pepcparts_sl_key_ncopy
+ #define fcs_pepcparts_sl_key_ncopy(src, dst, n)           memcpy(dst, src, (n) * fcs_pepcparts_sl_key_byte)  /* sl_macro */
+#endif
+#ifndef fcs_pepcparts_sl_key_nmove
+ #define fcs_pepcparts_sl_key_nmove(src, dst, n)           memmove(dst, src, (n) * fcs_pepcparts_sl_key_byte)  /* sl_macro */
+#endif
+
+
+#define fcs_pepcparts_key_type_c                           fcs_pepcparts_sl_key_type_c  /* sl_macro */
+#define fcs_pepcparts_key_type_mpi                         (fcs_pepcparts_sl_key_type_mpi)  /* sl_macro */
+#define fcs_pepcparts_key_size_mpi                         (fcs_pepcparts_sl_key_size_mpi)  /* sl_macro */
+#ifdef fcs_pepcparts_sl_key_type_fmt
+# define fcs_pepcparts_key_type_fmt                        fcs_pepcparts_sl_key_type_fmt  /* sl_macro */
+#endif
+#define fcs_pepcparts_key_integer                          fcs_pepcparts_sl_key_integer  /* sl_macro */
+
+#define fcs_pepcparts_key_pure_type_c                      fcs_pepcparts_sl_key_pure_type_c  /* sl_macro */
+#define fcs_pepcparts_key_pure_type_mpi                    (fcs_pepcparts_sl_key_pure_type_mpi)  /* sl_macro */
+#define fcs_pepcparts_key_pure_size_mpi                    (fcs_pepcparts_sl_key_pure_size_mpi)  /* sl_macro */
+#ifdef fcs_pepcparts_sl_key_pure_type_fmt
+# define fcs_pepcparts_key_pure_type_fmt                   fcs_pepcparts_sl_key_pure_type_fmt  /* sl_macro */
+#endif
+
+#define fcs_pepcparts_key_purify(k)                        (fcs_pepcparts_sl_key_purify(k))  /* sl_macro */
+#define fcs_pepcparts_key_get_pure(k)                      (fcs_pepcparts_sl_key_get_pure(k))  /* sl_macro */
+#define fcs_pepcparts_key_set_pure(k, p)                   (fcs_pepcparts_sl_key_set_pure(k, p))  /* sl_macro */
+
+#ifdef fcs_pepcparts_key_integer
+# define fcs_pepcparts_key_integer_unsigned                (((fcs_pepcparts_key_pure_type_c) ~((fcs_pepcparts_key_pure_type_c) 0)) >= ((fcs_pepcparts_key_pure_type_c) 0))  /* sl_macro */
+#endif
+
+#define fcs_pepcparts_key_n                                1  /* sl_macro */
+#define fcs_pepcparts_key_byte                             (fcs_pepcparts_sl_key_byte)  /* sl_macro */
+
+#define fcs_pepcparts_key_cmp_eq(k0, k1)                   (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_cmp_eq((k0), (k1)))  /* sl_macro */
+#define fcs_pepcparts_key_cmp_ne(k0, k1)                   (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_cmp_ne((k0), (k1)))  /* sl_macro */
+#define fcs_pepcparts_key_cmp_lt(k0, k1)                   (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_cmp_lt((k0), (k1)))  /* sl_macro */
+#define fcs_pepcparts_key_cmp_le(k0, k1)                   (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_cmp_le((k0), (k1)))  /* sl_macro */
+#define fcs_pepcparts_key_cmp_gt(k0, k1)                   (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_cmp_gt((k0), (k1)))  /* sl_macro */
+#define fcs_pepcparts_key_cmp_ge(k0, k1)                   (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_cmp_ge((k0), (k1)))  /* sl_macro */
+
+#define fcs_pepcparts_key_pure_cmp_eq(k0, k1)              (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_pure_cmp_eq((k0), (k1)))  /* sl_macro */
+#define fcs_pepcparts_key_pure_cmp_ne(k0, k1)              (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_pure_cmp_ne((k0), (k1)))  /* sl_macro */
+#define fcs_pepcparts_key_pure_cmp_lt(k0, k1)              (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_pure_cmp_lt((k0), (k1)))  /* sl_macro */
+#define fcs_pepcparts_key_pure_cmp_le(k0, k1)              (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_pure_cmp_le((k0), (k1)))  /* sl_macro */
+#define fcs_pepcparts_key_pure_cmp_gt(k0, k1)              (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_pure_cmp_gt((k0), (k1)))  /* sl_macro */
+#define fcs_pepcparts_key_pure_cmp_ge(k0, k1)              (fcs_pepcparts_cc_rti_cadd_cmp(1) fcs_pepcparts_sl_key_pure_cmp_ge((k0), (k1)))  /* sl_macro */
+
+#ifdef fcs_pepcparts_sl_key_val_srand
+# define fcs_pepcparts_key_val_srand(_s_)                  fcs_pepcparts_sl_key_val_srand(_s_)  /* sl_macro */
+#endif
+#ifdef fcs_pepcparts_sl_key_val_rand
+# define fcs_pepcparts_key_val_rand()                      fcs_pepcparts_sl_key_val_rand()  /* sl_macro */
+# define fcs_pepcparts_have_key_val_rand                   1  /* sl_macro */
+#else
+# define fcs_pepcparts_key_val_rand()                      Z_NOP()
+# define fcs_pepcparts_have_key_val_rand                   0
+#endif
+#ifdef fcs_pepcparts_sl_key_val_rand_minmax
+# define fcs_pepcparts_key_val_rand_minmax(_min_, _max_)   fcs_pepcparts_sl_key_val_rand_minmax(_min_, _max_)  /* sl_macro */
+# define fcs_pepcparts_have_key_val_rand_minmax            1  /* sl_macro */
+#else
+# define fcs_pepcparts_key_val_rand_minmax(_min_, _max_)   Z_NOP()
+# define fcs_pepcparts_have_key_val_rand_minmax            0
+#endif
+
+
+#define fcs_pepcparts_key_at(_s_, _sat_)                   ((_s_) + (_sat_))  /* sl_macro */
+
+#define fcs_pepcparts_key_assign(src, dst)                 (dst = src)  /* sl_macro */
+#define fcs_pepcparts_key_assign_at(src, sat, dst)         (dst = &src[sat])  /* sl_macro */
+#define fcs_pepcparts_key_null(k)                          (k = NULL)  /* sl_macro */
+#define fcs_pepcparts_key_inc(k)                           (++k)  /* sl_macro */
+#define fcs_pepcparts_key_dec(k)                           (--k)  /* sl_macro */
+#define fcs_pepcparts_key_add(k, n)                        (k += n)  /* sl_macro */
+#define fcs_pepcparts_key_sub(k, n)                        (k -= n)  /* sl_macro */
+
+#define fcs_pepcparts_key_copy(src, dst)                   (fcs_pepcparts_cc_rti_cadd_movek(1) fcs_pepcparts_sl_key_copy(src, dst))  /* sl_macro */
+#define fcs_pepcparts_key_ncopy(src, dst, n)               (fcs_pepcparts_cc_rti_cadd_movek(n) fcs_pepcparts_sl_key_ncopy(src, dst, n))  /* sl_macro */
+#define fcs_pepcparts_key_nmove(src, dst, n)               (fcs_pepcparts_cc_rti_cadd_movek(n) fcs_pepcparts_sl_key_nmove(src, dst, n))  /* sl_macro */
+
+#define fcs_pepcparts_key_copy_at(src, sat, dst, dat)      fcs_pepcparts_key_copy(&(src)[sat], &(dst)[dat])  /* sl_macro */
+#define fcs_pepcparts_key_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_key_ncopy(&(src)[sat], &(dst)[dat], n)  /* sl_macro */
+#define fcs_pepcparts_key_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_key_nmove(&(src)[sat], &(dst)[dat], n)  /* sl_macro */
+
+#define fcs_pepcparts_key_xchange(k0, k1, t)               (fcs_pepcparts_key_copy(k0, t), fcs_pepcparts_key_copy(k1, k0), fcs_pepcparts_key_copy(t, k1))  /* sl_macro */
+#define fcs_pepcparts_key_xchange_at(k0, at0, k1, at1, t)  (fcs_pepcparts_key_copy_at(k0, at0, t, 0), fcs_pepcparts_key_copy_at(k1, at1, k0, at0), fcs_pepcparts_key_copy_at(t, 0, k1, at1))  /* sl_macro */
+
+#define fcs_pepcparts_key_cm                               SLCM_KEYS  /* sl_macro */
+
+#ifdef fcs_pepcparts_key_integer
+# define fcs_pepcparts_key_radix_low                       ((fcs_pepcparts_slint_t) 0)  /* sl_macro */
+# define fcs_pepcparts_key_radix_high                      ((fcs_pepcparts_slint_t) (sizeof(fcs_pepcparts_key_pure_type_c) * 8 - 1))  /* sl_macro */
+# define fcs_pepcparts_key_radix_key2class(_k_, _x_, _y_)  (((_k_) >> (_x_)) & (_y_))  /* sl_macro */
+#endif
+
+
+
+
+
+
+
+/* sl_macro fcs_pepcparts_SL_INDEX fcs_pepcparts_SL_PACKED_INDEX fcs_pepcparts_sl_index_type_c fcs_pepcparts_sl_index_type_mpi fcs_pepcparts_sl_index_size_mpi fcs_pepcparts_sl_index_type_fmt fcs_pepcparts_sl_index_integer fcs_pepcparts_sl_index_memcpy */
+
+#ifdef fcs_pepcparts_SL_INDEX
+
+# define fcs_pepcparts_sl_index_byte                                       ((fcs_pepcparts_slint_t) sizeof(fcs_pepcparts_sl_index_type_c))  /* sl_macro */
+
+# ifndef fcs_pepcparts_sl_index_copy
+#  ifndef fcs_pepcparts_sl_index_memcpy
+#   define fcs_pepcparts_sl_index_copy(_s_, _d_)                           SL_ARRAY1_COPY(_s_, _d_)
+#  else
+#   define fcs_pepcparts_sl_index_copy(_s_, _d_)                           memcpy(_d_, _s_, fcs_pepcparts_sl_index_byte)  /* sl_macro */
+#  endif
+# endif
+# ifndef fcs_pepcparts_sl_index_ncopy
+#  define fcs_pepcparts_sl_index_ncopy(_s_, _d_, _n_)                      memcpy(_d_, _s_, (_n_) * fcs_pepcparts_sl_index_byte)  /* sl_macro */
+# endif
+# ifndef fcs_pepcparts_sl_index_nmove
+#  define fcs_pepcparts_sl_index_nmove(_s_, _d_, _n_)                      memmove(_d_, _s_, (_n_) * fcs_pepcparts_sl_index_byte)  /* sl_macro */
+# endif
+
+
+# define fcs_pepcparts_index_type_c                                        fcs_pepcparts_sl_index_type_c  /* sl_macro */
+# define fcs_pepcparts_index_type_mpi                                      (fcs_pepcparts_sl_index_type_mpi)  /* sl_macro */
+# define fcs_pepcparts_index_size_mpi                                      (fcs_pepcparts_sl_index_size_mpi)  /* sl_macro */
+# define fcs_pepcparts_index_type_fmt                                      fcs_pepcparts_sl_index_type_fmt  /* sl_macro */
+
+# define fcs_pepcparts_index_n                                             1  /* sl_macro */
+# define fcs_pepcparts_index_byte                                          (fcs_pepcparts_sl_index_byte)  /* sl_macro */
+
+/* commands for regular use */
+# define fcs_pepcparts_index_assign(_s_, _d_)                              (_d_ = _s_)  /* sl_macro */
+# define fcs_pepcparts_index_assign_at(_s_, _sat_, _d_)                    (_d_ = &_s_[_sat_])  /* sl_macro */
+# define fcs_pepcparts_index_null(_i_)                                     (_i_ = NULL)  /* sl_macro */
+# define fcs_pepcparts_index_inc(_i_)                                      (++_i_)  /* sl_macro */
+# define fcs_pepcparts_index_dec(_i_)                                      (--_i_)  /* sl_macro */
+# define fcs_pepcparts_index_add(_i_, _n_)                                 (_i_ += _n_)  /* sl_macro */
+# define fcs_pepcparts_index_sub(_i_, _n_)                                 (_i_ -= _n_)  /* sl_macro */
+
+# define fcs_pepcparts_index_copy(_s_, _d_)                                fcs_pepcparts_sl_index_copy(_s_, _d_)  /* sl_macro */
+# define fcs_pepcparts_index_ncopy(_s_, _d_, _n_)                          fcs_pepcparts_sl_index_ncopy(_s_, _d_, _n_)  /* sl_macro */
+# define fcs_pepcparts_index_nmove(_s_, _d_, _n_)                          fcs_pepcparts_sl_index_nmove(_s_, _d_, _n_)  /* sl_macro */
+
+# define fcs_pepcparts_index_copy_at(_s_, _sat_, _d_, _dat_)               fcs_pepcparts_index_copy(&(_s_)[_sat_], &(_d_)[_dat_])  /* sl_macro */
+# define fcs_pepcparts_index_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)         fcs_pepcparts_index_ncopy(&(_s_)[_sat_], &(_d_)[_dat_], _n_)  /* sl_macro */
+# define fcs_pepcparts_index_nmove_at(_s_, _sat_, _d_, _dat_, _n_)         fcs_pepcparts_index_nmove(&(_s_)[_sat_], &(_d_)[_dat_], _n_)  /* sl_macro */
+
+# define fcs_pepcparts_index_xchange(_i0_, _i1_, _t_)                      (fcs_pepcparts_index_copy(_i0_, _t_), fcs_pepcparts_index_copy(_i1_, _i0_), fcs_pepcparts_index_copy(_t_, _i1_))  /* sl_macro */
+# define fcs_pepcparts_index_xchange_at(_i0_, _at0_, _i1_, _at1_, _t_)     (fcs_pepcparts_index_copy_at(_i0_, _at0_, _t_, 0), fcs_pepcparts_index_copy_at(_i1_, _at1_, _i0_, _at0_), fcs_pepcparts_index_copy_at(_t_, 0, _i1_, _at1_))  /* sl_macro */
+
+/* chained command versions */
+# define fcs_pepcparts_cc_index_assign(_s_, _d_)                           , fcs_pepcparts_index_assign(_s_, _d_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_assign_at(_s_, _sat_, _d_)                 , fcs_pepcparts_index_assign_at(_s_, _sat_, _d_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_null(_i_)                                  , fcs_pepcparts_index_null(_i_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_inc(_i_)                                   , fcs_pepcparts_index_inc(_i_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_dec(_i_)                                   , fcs_pepcparts_index_dec(_i_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_add(_i_, _n_)                              , fcs_pepcparts_index_add(_i_, _n_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_sub(_i_, _n_)                              , fcs_pepcparts_index_sub(_i_, _n_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_copy(_s_, _d_)                             , fcs_pepcparts_index_copy(_s_, _d_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_ncopy(_s_, _d_, _n_)                       , fcs_pepcparts_index_ncopy(_s_, _d_, _n_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_nmove(_s_, _d_, _n_)                       , fcs_pepcparts_index_nmove(_s_, _d_, _n_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_copy_at(_s_, _sat_, _d_, _dat_)            , fcs_pepcparts_index_copy_at(_s_, _sat_, _d_, _dat_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)      , fcs_pepcparts_index_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_nmove_at(_s_, _sat_, _d_, _dat_, _n_)      , fcs_pepcparts_index_nmove_at(_s_, _sat_, _d_, _dat_, _n_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_xchange(_i0_, _i1_, _t_)                   , fcs_pepcparts_index_xchange(_i0_, _i1_, _t_)  /* sl_macro */
+# define fcs_pepcparts_cc_index_xchange_at(_i0_, _at0_, _i1_, _at1_, _t_)  , fcs_pepcparts_index_xchange_at(_i0_, _at0_, _i1_, _at1_, _t_)  /* sl_macro */
+
+#else /* fcs_pepcparts_SL_INDEX */
+
+# define fcs_pepcparts_index_n                                             0
+# define fcs_pepcparts_index_byte                                          0
+
+/* commands for regular use */
+# define fcs_pepcparts_index_assign(_s_, _d_)                              Z_NOP()
+# define fcs_pepcparts_index_assign_at(_s_, _sat_, _d_)                    Z_NOP()
+# define fcs_pepcparts_index_null(_i_)                                     Z_NOP()
+# define fcs_pepcparts_index_inc(_i_)                                      Z_NOP()
+# define fcs_pepcparts_index_dec(_i_)                                      Z_NOP()
+# define fcs_pepcparts_index_add(_i_, _n_)                                 Z_NOP()
+# define fcs_pepcparts_index_sub(_i_, _n_)                                 Z_NOP()
+# define fcs_pepcparts_index_copy(_s_, _d_)                                Z_NOP()
+# define fcs_pepcparts_index_ncopy(_s_, _d_, _n_)                          Z_NOP()
+# define fcs_pepcparts_index_nmove(_s_, _d_, _n_)                          Z_NOP()
+# define fcs_pepcparts_index_copy_at(_s_, _sat_, _d_, _dat_)               Z_NOP()
+# define fcs_pepcparts_index_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)         Z_NOP()
+# define fcs_pepcparts_index_nmove_at(_s_, _sat_, _d_, _dat_, _n_)         Z_NOP()
+# define fcs_pepcparts_index_xchange(_i0_, _i1_, _t_)                      Z_NOP()
+# define fcs_pepcparts_index_xchange_at(_i0_, _at0_, _i1_, _at1_, _t_)     Z_NOP()
+
+/* chained command versions */
+# define fcs_pepcparts_cc_index_assign(_s_, _d_)
+# define fcs_pepcparts_cc_index_assign_at(_s_, _sat_, _d_)
+# define fcs_pepcparts_cc_index_null(_i_)
+# define fcs_pepcparts_cc_index_inc(_i_)
+# define fcs_pepcparts_cc_index_dec(_i_)
+# define fcs_pepcparts_cc_index_add(_i_, _n_)
+# define fcs_pepcparts_cc_index_sub(_i_, _n_)
+# define fcs_pepcparts_cc_index_copy(_s_, _d_)
+# define fcs_pepcparts_cc_index_ncopy(_s_, _d_, _n_)
+# define fcs_pepcparts_cc_index_nmove(_s_, _d_, _n_)
+# define fcs_pepcparts_cc_index_copy_at(_s_, _sat_, _d_, _dat_)
+# define fcs_pepcparts_cc_index_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)
+# define fcs_pepcparts_cc_index_nmove_at(_s_, _sat_, _d_, _dat_, _n_)
+# define fcs_pepcparts_cc_index_xchange(_i0_, _i1_, _t_)
+# define fcs_pepcparts_cc_index_xchange_at(_i0_, _at0_, _i1_, _at1_, _t_)
+
+#endif /* fcs_pepcparts_SL_INDEX */
+
+#define fcs_pepcparts_index_cm                                             SLCM_INDICES  /* sl_macro */
+
+
+
+#undef SL_DATA
+
+
+
+
+
+/* DATAX_TEMPLATE_BEGIN */
+
+/* sl_macro fcs_pepcparts_SL_DATA0 fcs_pepcparts_SL_DATA0_IGNORE fcs_pepcparts_sl_data0_type_c fcs_pepcparts_sl_data0_size_c fcs_pepcparts_sl_data0_type_mpi fcs_pepcparts_sl_data0_size_mpi fcs_pepcparts_sl_data0_memcpy fcs_pepcparts_sl_data0_weight fcs_pepcparts_sl_data0_flex */
+
+#ifdef fcs_pepcparts_SL_DATA0
+
+ #define fcs_pepcparts_sl_data0_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data0_size_c) * sizeof(fcs_pepcparts_sl_data0_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data0_copy
+  #if fcs_pepcparts_sl_data0_size_c <= 9 && !defined(fcs_pepcparts_sl_data0_memcpy)
+   #if fcs_pepcparts_sl_data0_size_c == 1
+    #define fcs_pepcparts_sl_data0_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data0_size_c == 2
+    #define fcs_pepcparts_sl_data0_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data0_size_c == 3
+    #define fcs_pepcparts_sl_data0_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data0_size_c == 4
+    #define fcs_pepcparts_sl_data0_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data0_size_c == 5
+    #define fcs_pepcparts_sl_data0_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data0_size_c == 6
+    #define fcs_pepcparts_sl_data0_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data0_size_c == 7
+    #define fcs_pepcparts_sl_data0_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data0_size_c == 8
+    #define fcs_pepcparts_sl_data0_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data0_size_c == 9
+    #define fcs_pepcparts_sl_data0_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data0_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data0_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data0_ncopy
+  #define fcs_pepcparts_sl_data0_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data0_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data0_nmove
+  #define fcs_pepcparts_sl_data0_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data0_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data0_type_c                              fcs_pepcparts_sl_data0_type_c  /* sl_macro */
+ #define fcs_pepcparts_data0_size_c                              (fcs_pepcparts_sl_data0_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data0_type_mpi                            (fcs_pepcparts_sl_data0_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data0_size_mpi                            (fcs_pepcparts_sl_data0_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data0_idx                                 0  /* sl_macro */
+
+ #define fcs_pepcparts_data0_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data0_byte                                (fcs_pepcparts_sl_data0_byte)  /* sl_macro */
+ #define fcs_pepcparts_data0_ptr(e)                              (e)->data0  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data0_flex
+ # define fcs_pepcparts_data0_byte_flex                          (fcs_pepcparts_sl_data0_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data0_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data0_weight
+ # define fcs_pepcparts_data0_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data0_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data0_assign(src, dst)                    ((dst)->data0 = (src)->data0)  /* sl_macro */
+ #define fcs_pepcparts_data0_assign_at(src, sat, dst)            ((dst)->data0 = &(src)->data0[(sat) * fcs_pepcparts_data0_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data0_null(e)                             ((e)->data0 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data0_inc(e)                              ((e)->data0 += fcs_pepcparts_data0_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data0_dec(e)                              ((e)->data0 -= fcs_pepcparts_data0_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data0_add(e, n)                           ((e)->data0 += (n) * fcs_pepcparts_data0_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data0_sub(e, n)                           ((e)->data0 -= (n) * fcs_pepcparts_data0_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data0_copy(src, dst)                      fcs_pepcparts_sl_data0_copy((src)->data0, (dst)->data0)  /* sl_macro */
+ #define fcs_pepcparts_data0_ncopy(src, dst, n)                  fcs_pepcparts_sl_data0_ncopy((src)->data0, (dst)->data0, n)  /* sl_macro */
+ #define fcs_pepcparts_data0_nmove(src, dst, n)                  fcs_pepcparts_sl_data0_nmove((src)->data0, (dst)->data0, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data0_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data0_copy(&(src)->data0[(sat) * fcs_pepcparts_data0_size_c], &(dst)->data0[(dat) * fcs_pepcparts_data0_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data0_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data0_ncopy(&(src)->data0[(sat) * fcs_pepcparts_data0_size_c], &(dst)->data0[(dat) * fcs_pepcparts_data0_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data0_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data0_nmove(&(src)->data0[(sat) * fcs_pepcparts_data0_size_c], &(dst)->data0[(dat) * fcs_pepcparts_data0_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data0_xchange(e0, e1, t)                  (fcs_pepcparts_data0_copy(e0, t), fcs_pepcparts_data0_copy(e1, e0), fcs_pepcparts_data0_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data0_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data0_copy_at(e0, at0, t, 0), fcs_pepcparts_data0_copy_at(e1, at1, e0, at0), fcs_pepcparts_data0_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data0_assign(src, dst)                 , fcs_pepcparts_data0_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_assign_at(src, sat, dst)         , fcs_pepcparts_data0_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_null(e)                          , fcs_pepcparts_data0_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_inc(e)                           , fcs_pepcparts_data0_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_dec(e)                           , fcs_pepcparts_data0_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_add(e, n)                        , fcs_pepcparts_data0_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_sub(e, n)                        , fcs_pepcparts_data0_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_copy(src, dst)                   , fcs_pepcparts_data0_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_ncopy(src, dst, n)               , fcs_pepcparts_data0_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_nmove(src, dst, n)               , fcs_pepcparts_data0_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data0_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data0_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data0_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_xchange(e0, e1, t)               , fcs_pepcparts_data0_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data0_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data0_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data0_assign(src, dst)                 fcs_pepcparts_data0_assign(src, dst)
+ #define fcs_pepcparts_cc_data0_assign_at(src, sat, dst)         fcs_pepcparts_data0_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data0_null(e)                          fcs_pepcparts_data0_null(e)
+ #define fcs_pepcparts_cc_data0_inc(e)                           fcs_pepcparts_data0_inc(e)
+ #define fcs_pepcparts_cc_data0_dec(e)                           fcs_pepcparts_data0_dec(e)
+ #define fcs_pepcparts_cc_data0_add(e, n)                        fcs_pepcparts_data0_add(e, n)
+ #define fcs_pepcparts_cc_data0_sub(e, n)                        fcs_pepcparts_data0_sub(e, n)
+ #define fcs_pepcparts_cc_data0_copy(src, dst)                   fcs_pepcparts_data0_copy(src, dst)
+ #define fcs_pepcparts_cc_data0_ncopy(src, dst, n)               fcs_pepcparts_data0_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data0_nmove(src, dst, n)               fcs_pepcparts_data0_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data0_copy_at(src, sat, dst, dat)      fcs_pepcparts_data0_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data0_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data0_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data0_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data0_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data0_xchange(e0, e1, t)               fcs_pepcparts_data0_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data0_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data0_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA0 */
+
+ #define fcs_pepcparts_data0_n                                   0
+ #define fcs_pepcparts_data0_byte                                0
+/* #define fcs_pepcparts_data0_ptr(e)*/
+
+ #define fcs_pepcparts_data0_byte_flex                           0
+ #define fcs_pepcparts_data0_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data0_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data0_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data0_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data0_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data0_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data0_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data0_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data0_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data0_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data0_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data0_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data0_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data0_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data0_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data0_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data0_assign(src, dst)
+ #define fcs_pepcparts_cc_data0_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data0_null(e)
+ #define fcs_pepcparts_cc_data0_inc(e)
+ #define fcs_pepcparts_cc_data0_dec(e)
+ #define fcs_pepcparts_cc_data0_add(e, n)
+ #define fcs_pepcparts_cc_data0_sub(e, n)
+ #define fcs_pepcparts_cc_data0_copy(src, dst)
+ #define fcs_pepcparts_cc_data0_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data0_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data0_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data0_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data0_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data0_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data0_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA0 */
+
+#define fcs_pepcparts_data0_cm                                   SLCM_DATA0  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA1 fcs_pepcparts_SL_DATA1_IGNORE fcs_pepcparts_sl_data1_type_c fcs_pepcparts_sl_data1_size_c fcs_pepcparts_sl_data1_type_mpi fcs_pepcparts_sl_data1_size_mpi fcs_pepcparts_sl_data1_memcpy fcs_pepcparts_sl_data1_weight fcs_pepcparts_sl_data1_flex */
+
+#ifdef fcs_pepcparts_SL_DATA1
+
+ #define fcs_pepcparts_sl_data1_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data1_size_c) * sizeof(fcs_pepcparts_sl_data1_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data1_copy
+  #if fcs_pepcparts_sl_data1_size_c <= 9 && !defined(fcs_pepcparts_sl_data1_memcpy)
+   #if fcs_pepcparts_sl_data1_size_c == 1
+    #define fcs_pepcparts_sl_data1_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data1_size_c == 2
+    #define fcs_pepcparts_sl_data1_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data1_size_c == 3
+    #define fcs_pepcparts_sl_data1_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data1_size_c == 4
+    #define fcs_pepcparts_sl_data1_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data1_size_c == 5
+    #define fcs_pepcparts_sl_data1_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data1_size_c == 6
+    #define fcs_pepcparts_sl_data1_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data1_size_c == 7
+    #define fcs_pepcparts_sl_data1_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data1_size_c == 8
+    #define fcs_pepcparts_sl_data1_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data1_size_c == 9
+    #define fcs_pepcparts_sl_data1_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data1_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data1_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data1_ncopy
+  #define fcs_pepcparts_sl_data1_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data1_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data1_nmove
+  #define fcs_pepcparts_sl_data1_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data1_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data1_type_c                              fcs_pepcparts_sl_data1_type_c  /* sl_macro */
+ #define fcs_pepcparts_data1_size_c                              (fcs_pepcparts_sl_data1_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data1_type_mpi                            (fcs_pepcparts_sl_data1_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data1_size_mpi                            (fcs_pepcparts_sl_data1_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data1_idx                                 1  /* sl_macro */
+
+ #define fcs_pepcparts_data1_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data1_byte                                (fcs_pepcparts_sl_data1_byte)  /* sl_macro */
+ #define fcs_pepcparts_data1_ptr(e)                              (e)->data1  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data1_flex
+ # define fcs_pepcparts_data1_byte_flex                          (fcs_pepcparts_sl_data1_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data1_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data1_weight
+ # define fcs_pepcparts_data1_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data1_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data1_assign(src, dst)                    ((dst)->data1 = (src)->data1)  /* sl_macro */
+ #define fcs_pepcparts_data1_assign_at(src, sat, dst)            ((dst)->data1 = &(src)->data1[(sat) * fcs_pepcparts_data1_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data1_null(e)                             ((e)->data1 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data1_inc(e)                              ((e)->data1 += fcs_pepcparts_data1_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data1_dec(e)                              ((e)->data1 -= fcs_pepcparts_data1_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data1_add(e, n)                           ((e)->data1 += (n) * fcs_pepcparts_data1_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data1_sub(e, n)                           ((e)->data1 -= (n) * fcs_pepcparts_data1_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data1_copy(src, dst)                      fcs_pepcparts_sl_data1_copy((src)->data1, (dst)->data1)  /* sl_macro */
+ #define fcs_pepcparts_data1_ncopy(src, dst, n)                  fcs_pepcparts_sl_data1_ncopy((src)->data1, (dst)->data1, n)  /* sl_macro */
+ #define fcs_pepcparts_data1_nmove(src, dst, n)                  fcs_pepcparts_sl_data1_nmove((src)->data1, (dst)->data1, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data1_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data1_copy(&(src)->data1[(sat) * fcs_pepcparts_data1_size_c], &(dst)->data1[(dat) * fcs_pepcparts_data1_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data1_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data1_ncopy(&(src)->data1[(sat) * fcs_pepcparts_data1_size_c], &(dst)->data1[(dat) * fcs_pepcparts_data1_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data1_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data1_nmove(&(src)->data1[(sat) * fcs_pepcparts_data1_size_c], &(dst)->data1[(dat) * fcs_pepcparts_data1_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data1_xchange(e0, e1, t)                  (fcs_pepcparts_data1_copy(e0, t), fcs_pepcparts_data1_copy(e1, e0), fcs_pepcparts_data1_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data1_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data1_copy_at(e0, at0, t, 0), fcs_pepcparts_data1_copy_at(e1, at1, e0, at0), fcs_pepcparts_data1_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data1_assign(src, dst)                 , fcs_pepcparts_data1_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_assign_at(src, sat, dst)         , fcs_pepcparts_data1_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_null(e)                          , fcs_pepcparts_data1_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_inc(e)                           , fcs_pepcparts_data1_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_dec(e)                           , fcs_pepcparts_data1_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_add(e, n)                        , fcs_pepcparts_data1_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_sub(e, n)                        , fcs_pepcparts_data1_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_copy(src, dst)                   , fcs_pepcparts_data1_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_ncopy(src, dst, n)               , fcs_pepcparts_data1_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_nmove(src, dst, n)               , fcs_pepcparts_data1_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data1_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data1_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data1_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_xchange(e0, e1, t)               , fcs_pepcparts_data1_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data1_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data1_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data1_assign(src, dst)                 fcs_pepcparts_data1_assign(src, dst)
+ #define fcs_pepcparts_cc_data1_assign_at(src, sat, dst)         fcs_pepcparts_data1_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data1_null(e)                          fcs_pepcparts_data1_null(e)
+ #define fcs_pepcparts_cc_data1_inc(e)                           fcs_pepcparts_data1_inc(e)
+ #define fcs_pepcparts_cc_data1_dec(e)                           fcs_pepcparts_data1_dec(e)
+ #define fcs_pepcparts_cc_data1_add(e, n)                        fcs_pepcparts_data1_add(e, n)
+ #define fcs_pepcparts_cc_data1_sub(e, n)                        fcs_pepcparts_data1_sub(e, n)
+ #define fcs_pepcparts_cc_data1_copy(src, dst)                   fcs_pepcparts_data1_copy(src, dst)
+ #define fcs_pepcparts_cc_data1_ncopy(src, dst, n)               fcs_pepcparts_data1_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data1_nmove(src, dst, n)               fcs_pepcparts_data1_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data1_copy_at(src, sat, dst, dat)      fcs_pepcparts_data1_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data1_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data1_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data1_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data1_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data1_xchange(e0, e1, t)               fcs_pepcparts_data1_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data1_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data1_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA1 */
+
+ #define fcs_pepcparts_data1_n                                   0
+ #define fcs_pepcparts_data1_byte                                0
+/* #define fcs_pepcparts_data1_ptr(e)*/
+
+ #define fcs_pepcparts_data1_byte_flex                           0
+ #define fcs_pepcparts_data1_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data1_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data1_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data1_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data1_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data1_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data1_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data1_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data1_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data1_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data1_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data1_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data1_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data1_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data1_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data1_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data1_assign(src, dst)
+ #define fcs_pepcparts_cc_data1_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data1_null(e)
+ #define fcs_pepcparts_cc_data1_inc(e)
+ #define fcs_pepcparts_cc_data1_dec(e)
+ #define fcs_pepcparts_cc_data1_add(e, n)
+ #define fcs_pepcparts_cc_data1_sub(e, n)
+ #define fcs_pepcparts_cc_data1_copy(src, dst)
+ #define fcs_pepcparts_cc_data1_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data1_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data1_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data1_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data1_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data1_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data1_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA1 */
+
+#define fcs_pepcparts_data1_cm                                   SLCM_DATA1  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA2 fcs_pepcparts_SL_DATA2_IGNORE fcs_pepcparts_sl_data2_type_c fcs_pepcparts_sl_data2_size_c fcs_pepcparts_sl_data2_type_mpi fcs_pepcparts_sl_data2_size_mpi fcs_pepcparts_sl_data2_memcpy fcs_pepcparts_sl_data2_weight fcs_pepcparts_sl_data2_flex */
+
+#ifdef fcs_pepcparts_SL_DATA2
+
+ #define fcs_pepcparts_sl_data2_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data2_size_c) * sizeof(fcs_pepcparts_sl_data2_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data2_copy
+  #if fcs_pepcparts_sl_data2_size_c <= 9 && !defined(fcs_pepcparts_sl_data2_memcpy)
+   #if fcs_pepcparts_sl_data2_size_c == 1
+    #define fcs_pepcparts_sl_data2_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data2_size_c == 2
+    #define fcs_pepcparts_sl_data2_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data2_size_c == 3
+    #define fcs_pepcparts_sl_data2_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data2_size_c == 4
+    #define fcs_pepcparts_sl_data2_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data2_size_c == 5
+    #define fcs_pepcparts_sl_data2_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data2_size_c == 6
+    #define fcs_pepcparts_sl_data2_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data2_size_c == 7
+    #define fcs_pepcparts_sl_data2_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data2_size_c == 8
+    #define fcs_pepcparts_sl_data2_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data2_size_c == 9
+    #define fcs_pepcparts_sl_data2_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data2_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data2_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data2_ncopy
+  #define fcs_pepcparts_sl_data2_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data2_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data2_nmove
+  #define fcs_pepcparts_sl_data2_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data2_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data2_type_c                              fcs_pepcparts_sl_data2_type_c  /* sl_macro */
+ #define fcs_pepcparts_data2_size_c                              (fcs_pepcparts_sl_data2_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data2_type_mpi                            (fcs_pepcparts_sl_data2_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data2_size_mpi                            (fcs_pepcparts_sl_data2_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data2_idx                                 2  /* sl_macro */
+
+ #define fcs_pepcparts_data2_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data2_byte                                (fcs_pepcparts_sl_data2_byte)  /* sl_macro */
+ #define fcs_pepcparts_data2_ptr(e)                              (e)->data2  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data2_flex
+ # define fcs_pepcparts_data2_byte_flex                          (fcs_pepcparts_sl_data2_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data2_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data2_weight
+ # define fcs_pepcparts_data2_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data2_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data2_assign(src, dst)                    ((dst)->data2 = (src)->data2)  /* sl_macro */
+ #define fcs_pepcparts_data2_assign_at(src, sat, dst)            ((dst)->data2 = &(src)->data2[(sat) * fcs_pepcparts_data2_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data2_null(e)                             ((e)->data2 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data2_inc(e)                              ((e)->data2 += fcs_pepcparts_data2_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data2_dec(e)                              ((e)->data2 -= fcs_pepcparts_data2_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data2_add(e, n)                           ((e)->data2 += (n) * fcs_pepcparts_data2_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data2_sub(e, n)                           ((e)->data2 -= (n) * fcs_pepcparts_data2_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data2_copy(src, dst)                      fcs_pepcparts_sl_data2_copy((src)->data2, (dst)->data2)  /* sl_macro */
+ #define fcs_pepcparts_data2_ncopy(src, dst, n)                  fcs_pepcparts_sl_data2_ncopy((src)->data2, (dst)->data2, n)  /* sl_macro */
+ #define fcs_pepcparts_data2_nmove(src, dst, n)                  fcs_pepcparts_sl_data2_nmove((src)->data2, (dst)->data2, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data2_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data2_copy(&(src)->data2[(sat) * fcs_pepcparts_data2_size_c], &(dst)->data2[(dat) * fcs_pepcparts_data2_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data2_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data2_ncopy(&(src)->data2[(sat) * fcs_pepcparts_data2_size_c], &(dst)->data2[(dat) * fcs_pepcparts_data2_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data2_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data2_nmove(&(src)->data2[(sat) * fcs_pepcparts_data2_size_c], &(dst)->data2[(dat) * fcs_pepcparts_data2_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data2_xchange(e0, e1, t)                  (fcs_pepcparts_data2_copy(e0, t), fcs_pepcparts_data2_copy(e1, e0), fcs_pepcparts_data2_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data2_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data2_copy_at(e0, at0, t, 0), fcs_pepcparts_data2_copy_at(e1, at1, e0, at0), fcs_pepcparts_data2_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data2_assign(src, dst)                 , fcs_pepcparts_data2_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_assign_at(src, sat, dst)         , fcs_pepcparts_data2_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_null(e)                          , fcs_pepcparts_data2_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_inc(e)                           , fcs_pepcparts_data2_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_dec(e)                           , fcs_pepcparts_data2_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_add(e, n)                        , fcs_pepcparts_data2_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_sub(e, n)                        , fcs_pepcparts_data2_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_copy(src, dst)                   , fcs_pepcparts_data2_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_ncopy(src, dst, n)               , fcs_pepcparts_data2_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_nmove(src, dst, n)               , fcs_pepcparts_data2_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data2_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data2_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data2_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_xchange(e0, e1, t)               , fcs_pepcparts_data2_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data2_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data2_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data2_assign(src, dst)                 fcs_pepcparts_data2_assign(src, dst)
+ #define fcs_pepcparts_cc_data2_assign_at(src, sat, dst)         fcs_pepcparts_data2_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data2_null(e)                          fcs_pepcparts_data2_null(e)
+ #define fcs_pepcparts_cc_data2_inc(e)                           fcs_pepcparts_data2_inc(e)
+ #define fcs_pepcparts_cc_data2_dec(e)                           fcs_pepcparts_data2_dec(e)
+ #define fcs_pepcparts_cc_data2_add(e, n)                        fcs_pepcparts_data2_add(e, n)
+ #define fcs_pepcparts_cc_data2_sub(e, n)                        fcs_pepcparts_data2_sub(e, n)
+ #define fcs_pepcparts_cc_data2_copy(src, dst)                   fcs_pepcparts_data2_copy(src, dst)
+ #define fcs_pepcparts_cc_data2_ncopy(src, dst, n)               fcs_pepcparts_data2_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data2_nmove(src, dst, n)               fcs_pepcparts_data2_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data2_copy_at(src, sat, dst, dat)      fcs_pepcparts_data2_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data2_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data2_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data2_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data2_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data2_xchange(e0, e1, t)               fcs_pepcparts_data2_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data2_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data2_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA2 */
+
+ #define fcs_pepcparts_data2_n                                   0
+ #define fcs_pepcparts_data2_byte                                0
+/* #define fcs_pepcparts_data2_ptr(e)*/
+
+ #define fcs_pepcparts_data2_byte_flex                           0
+ #define fcs_pepcparts_data2_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data2_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data2_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data2_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data2_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data2_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data2_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data2_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data2_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data2_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data2_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data2_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data2_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data2_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data2_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data2_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data2_assign(src, dst)
+ #define fcs_pepcparts_cc_data2_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data2_null(e)
+ #define fcs_pepcparts_cc_data2_inc(e)
+ #define fcs_pepcparts_cc_data2_dec(e)
+ #define fcs_pepcparts_cc_data2_add(e, n)
+ #define fcs_pepcparts_cc_data2_sub(e, n)
+ #define fcs_pepcparts_cc_data2_copy(src, dst)
+ #define fcs_pepcparts_cc_data2_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data2_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data2_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data2_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data2_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data2_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data2_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA2 */
+
+#define fcs_pepcparts_data2_cm                                   SLCM_DATA2  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA3 fcs_pepcparts_SL_DATA3_IGNORE fcs_pepcparts_sl_data3_type_c fcs_pepcparts_sl_data3_size_c fcs_pepcparts_sl_data3_type_mpi fcs_pepcparts_sl_data3_size_mpi fcs_pepcparts_sl_data3_memcpy fcs_pepcparts_sl_data3_weight fcs_pepcparts_sl_data3_flex */
+
+#ifdef fcs_pepcparts_SL_DATA3
+
+ #define fcs_pepcparts_sl_data3_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data3_size_c) * sizeof(fcs_pepcparts_sl_data3_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data3_copy
+  #if fcs_pepcparts_sl_data3_size_c <= 9 && !defined(fcs_pepcparts_sl_data3_memcpy)
+   #if fcs_pepcparts_sl_data3_size_c == 1
+    #define fcs_pepcparts_sl_data3_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data3_size_c == 2
+    #define fcs_pepcparts_sl_data3_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data3_size_c == 3
+    #define fcs_pepcparts_sl_data3_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data3_size_c == 4
+    #define fcs_pepcparts_sl_data3_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data3_size_c == 5
+    #define fcs_pepcparts_sl_data3_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data3_size_c == 6
+    #define fcs_pepcparts_sl_data3_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data3_size_c == 7
+    #define fcs_pepcparts_sl_data3_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data3_size_c == 8
+    #define fcs_pepcparts_sl_data3_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data3_size_c == 9
+    #define fcs_pepcparts_sl_data3_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data3_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data3_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data3_ncopy
+  #define fcs_pepcparts_sl_data3_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data3_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data3_nmove
+  #define fcs_pepcparts_sl_data3_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data3_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data3_type_c                              fcs_pepcparts_sl_data3_type_c  /* sl_macro */
+ #define fcs_pepcparts_data3_size_c                              (fcs_pepcparts_sl_data3_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data3_type_mpi                            (fcs_pepcparts_sl_data3_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data3_size_mpi                            (fcs_pepcparts_sl_data3_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data3_idx                                 3  /* sl_macro */
+
+ #define fcs_pepcparts_data3_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data3_byte                                (fcs_pepcparts_sl_data3_byte)  /* sl_macro */
+ #define fcs_pepcparts_data3_ptr(e)                              (e)->data3  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data3_flex
+ # define fcs_pepcparts_data3_byte_flex                          (fcs_pepcparts_sl_data3_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data3_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data3_weight
+ # define fcs_pepcparts_data3_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data3_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data3_assign(src, dst)                    ((dst)->data3 = (src)->data3)  /* sl_macro */
+ #define fcs_pepcparts_data3_assign_at(src, sat, dst)            ((dst)->data3 = &(src)->data3[(sat) * fcs_pepcparts_data3_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data3_null(e)                             ((e)->data3 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data3_inc(e)                              ((e)->data3 += fcs_pepcparts_data3_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data3_dec(e)                              ((e)->data3 -= fcs_pepcparts_data3_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data3_add(e, n)                           ((e)->data3 += (n) * fcs_pepcparts_data3_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data3_sub(e, n)                           ((e)->data3 -= (n) * fcs_pepcparts_data3_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data3_copy(src, dst)                      fcs_pepcparts_sl_data3_copy((src)->data3, (dst)->data3)  /* sl_macro */
+ #define fcs_pepcparts_data3_ncopy(src, dst, n)                  fcs_pepcparts_sl_data3_ncopy((src)->data3, (dst)->data3, n)  /* sl_macro */
+ #define fcs_pepcparts_data3_nmove(src, dst, n)                  fcs_pepcparts_sl_data3_nmove((src)->data3, (dst)->data3, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data3_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data3_copy(&(src)->data3[(sat) * fcs_pepcparts_data3_size_c], &(dst)->data3[(dat) * fcs_pepcparts_data3_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data3_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data3_ncopy(&(src)->data3[(sat) * fcs_pepcparts_data3_size_c], &(dst)->data3[(dat) * fcs_pepcparts_data3_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data3_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data3_nmove(&(src)->data3[(sat) * fcs_pepcparts_data3_size_c], &(dst)->data3[(dat) * fcs_pepcparts_data3_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data3_xchange(e0, e1, t)                  (fcs_pepcparts_data3_copy(e0, t), fcs_pepcparts_data3_copy(e1, e0), fcs_pepcparts_data3_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data3_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data3_copy_at(e0, at0, t, 0), fcs_pepcparts_data3_copy_at(e1, at1, e0, at0), fcs_pepcparts_data3_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data3_assign(src, dst)                 , fcs_pepcparts_data3_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_assign_at(src, sat, dst)         , fcs_pepcparts_data3_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_null(e)                          , fcs_pepcparts_data3_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_inc(e)                           , fcs_pepcparts_data3_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_dec(e)                           , fcs_pepcparts_data3_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_add(e, n)                        , fcs_pepcparts_data3_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_sub(e, n)                        , fcs_pepcparts_data3_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_copy(src, dst)                   , fcs_pepcparts_data3_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_ncopy(src, dst, n)               , fcs_pepcparts_data3_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_nmove(src, dst, n)               , fcs_pepcparts_data3_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data3_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data3_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data3_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_xchange(e0, e1, t)               , fcs_pepcparts_data3_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data3_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data3_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data3_assign(src, dst)                 fcs_pepcparts_data3_assign(src, dst)
+ #define fcs_pepcparts_cc_data3_assign_at(src, sat, dst)         fcs_pepcparts_data3_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data3_null(e)                          fcs_pepcparts_data3_null(e)
+ #define fcs_pepcparts_cc_data3_inc(e)                           fcs_pepcparts_data3_inc(e)
+ #define fcs_pepcparts_cc_data3_dec(e)                           fcs_pepcparts_data3_dec(e)
+ #define fcs_pepcparts_cc_data3_add(e, n)                        fcs_pepcparts_data3_add(e, n)
+ #define fcs_pepcparts_cc_data3_sub(e, n)                        fcs_pepcparts_data3_sub(e, n)
+ #define fcs_pepcparts_cc_data3_copy(src, dst)                   fcs_pepcparts_data3_copy(src, dst)
+ #define fcs_pepcparts_cc_data3_ncopy(src, dst, n)               fcs_pepcparts_data3_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data3_nmove(src, dst, n)               fcs_pepcparts_data3_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data3_copy_at(src, sat, dst, dat)      fcs_pepcparts_data3_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data3_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data3_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data3_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data3_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data3_xchange(e0, e1, t)               fcs_pepcparts_data3_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data3_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data3_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA3 */
+
+ #define fcs_pepcparts_data3_n                                   0
+ #define fcs_pepcparts_data3_byte                                0
+/* #define fcs_pepcparts_data3_ptr(e)*/
+
+ #define fcs_pepcparts_data3_byte_flex                           0
+ #define fcs_pepcparts_data3_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data3_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data3_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data3_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data3_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data3_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data3_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data3_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data3_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data3_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data3_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data3_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data3_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data3_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data3_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data3_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data3_assign(src, dst)
+ #define fcs_pepcparts_cc_data3_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data3_null(e)
+ #define fcs_pepcparts_cc_data3_inc(e)
+ #define fcs_pepcparts_cc_data3_dec(e)
+ #define fcs_pepcparts_cc_data3_add(e, n)
+ #define fcs_pepcparts_cc_data3_sub(e, n)
+ #define fcs_pepcparts_cc_data3_copy(src, dst)
+ #define fcs_pepcparts_cc_data3_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data3_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data3_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data3_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data3_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data3_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data3_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA3 */
+
+#define fcs_pepcparts_data3_cm                                   SLCM_DATA3  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA4 fcs_pepcparts_SL_DATA4_IGNORE fcs_pepcparts_sl_data4_type_c fcs_pepcparts_sl_data4_size_c fcs_pepcparts_sl_data4_type_mpi fcs_pepcparts_sl_data4_size_mpi fcs_pepcparts_sl_data4_memcpy fcs_pepcparts_sl_data4_weight fcs_pepcparts_sl_data4_flex */
+
+#ifdef fcs_pepcparts_SL_DATA4
+
+ #define fcs_pepcparts_sl_data4_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data4_size_c) * sizeof(fcs_pepcparts_sl_data4_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data4_copy
+  #if fcs_pepcparts_sl_data4_size_c <= 9 && !defined(fcs_pepcparts_sl_data4_memcpy)
+   #if fcs_pepcparts_sl_data4_size_c == 1
+    #define fcs_pepcparts_sl_data4_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data4_size_c == 2
+    #define fcs_pepcparts_sl_data4_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data4_size_c == 3
+    #define fcs_pepcparts_sl_data4_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data4_size_c == 4
+    #define fcs_pepcparts_sl_data4_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data4_size_c == 5
+    #define fcs_pepcparts_sl_data4_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data4_size_c == 6
+    #define fcs_pepcparts_sl_data4_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data4_size_c == 7
+    #define fcs_pepcparts_sl_data4_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data4_size_c == 8
+    #define fcs_pepcparts_sl_data4_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data4_size_c == 9
+    #define fcs_pepcparts_sl_data4_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data4_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data4_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data4_ncopy
+  #define fcs_pepcparts_sl_data4_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data4_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data4_nmove
+  #define fcs_pepcparts_sl_data4_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data4_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data4_type_c                              fcs_pepcparts_sl_data4_type_c  /* sl_macro */
+ #define fcs_pepcparts_data4_size_c                              (fcs_pepcparts_sl_data4_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data4_type_mpi                            (fcs_pepcparts_sl_data4_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data4_size_mpi                            (fcs_pepcparts_sl_data4_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data4_idx                                 4  /* sl_macro */
+
+ #define fcs_pepcparts_data4_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data4_byte                                (fcs_pepcparts_sl_data4_byte)  /* sl_macro */
+ #define fcs_pepcparts_data4_ptr(e)                              (e)->data4  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data4_flex
+ # define fcs_pepcparts_data4_byte_flex                          (fcs_pepcparts_sl_data4_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data4_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data4_weight
+ # define fcs_pepcparts_data4_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data4_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data4_assign(src, dst)                    ((dst)->data4 = (src)->data4)  /* sl_macro */
+ #define fcs_pepcparts_data4_assign_at(src, sat, dst)            ((dst)->data4 = &(src)->data4[(sat) * fcs_pepcparts_data4_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data4_null(e)                             ((e)->data4 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data4_inc(e)                              ((e)->data4 += fcs_pepcparts_data4_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data4_dec(e)                              ((e)->data4 -= fcs_pepcparts_data4_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data4_add(e, n)                           ((e)->data4 += (n) * fcs_pepcparts_data4_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data4_sub(e, n)                           ((e)->data4 -= (n) * fcs_pepcparts_data4_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data4_copy(src, dst)                      fcs_pepcparts_sl_data4_copy((src)->data4, (dst)->data4)  /* sl_macro */
+ #define fcs_pepcparts_data4_ncopy(src, dst, n)                  fcs_pepcparts_sl_data4_ncopy((src)->data4, (dst)->data4, n)  /* sl_macro */
+ #define fcs_pepcparts_data4_nmove(src, dst, n)                  fcs_pepcparts_sl_data4_nmove((src)->data4, (dst)->data4, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data4_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data4_copy(&(src)->data4[(sat) * fcs_pepcparts_data4_size_c], &(dst)->data4[(dat) * fcs_pepcparts_data4_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data4_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data4_ncopy(&(src)->data4[(sat) * fcs_pepcparts_data4_size_c], &(dst)->data4[(dat) * fcs_pepcparts_data4_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data4_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data4_nmove(&(src)->data4[(sat) * fcs_pepcparts_data4_size_c], &(dst)->data4[(dat) * fcs_pepcparts_data4_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data4_xchange(e0, e1, t)                  (fcs_pepcparts_data4_copy(e0, t), fcs_pepcparts_data4_copy(e1, e0), fcs_pepcparts_data4_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data4_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data4_copy_at(e0, at0, t, 0), fcs_pepcparts_data4_copy_at(e1, at1, e0, at0), fcs_pepcparts_data4_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data4_assign(src, dst)                 , fcs_pepcparts_data4_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_assign_at(src, sat, dst)         , fcs_pepcparts_data4_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_null(e)                          , fcs_pepcparts_data4_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_inc(e)                           , fcs_pepcparts_data4_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_dec(e)                           , fcs_pepcparts_data4_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_add(e, n)                        , fcs_pepcparts_data4_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_sub(e, n)                        , fcs_pepcparts_data4_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_copy(src, dst)                   , fcs_pepcparts_data4_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_ncopy(src, dst, n)               , fcs_pepcparts_data4_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_nmove(src, dst, n)               , fcs_pepcparts_data4_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data4_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data4_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data4_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_xchange(e0, e1, t)               , fcs_pepcparts_data4_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data4_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data4_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data4_assign(src, dst)                 fcs_pepcparts_data4_assign(src, dst)
+ #define fcs_pepcparts_cc_data4_assign_at(src, sat, dst)         fcs_pepcparts_data4_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data4_null(e)                          fcs_pepcparts_data4_null(e)
+ #define fcs_pepcparts_cc_data4_inc(e)                           fcs_pepcparts_data4_inc(e)
+ #define fcs_pepcparts_cc_data4_dec(e)                           fcs_pepcparts_data4_dec(e)
+ #define fcs_pepcparts_cc_data4_add(e, n)                        fcs_pepcparts_data4_add(e, n)
+ #define fcs_pepcparts_cc_data4_sub(e, n)                        fcs_pepcparts_data4_sub(e, n)
+ #define fcs_pepcparts_cc_data4_copy(src, dst)                   fcs_pepcparts_data4_copy(src, dst)
+ #define fcs_pepcparts_cc_data4_ncopy(src, dst, n)               fcs_pepcparts_data4_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data4_nmove(src, dst, n)               fcs_pepcparts_data4_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data4_copy_at(src, sat, dst, dat)      fcs_pepcparts_data4_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data4_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data4_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data4_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data4_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data4_xchange(e0, e1, t)               fcs_pepcparts_data4_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data4_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data4_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA4 */
+
+ #define fcs_pepcparts_data4_n                                   0
+ #define fcs_pepcparts_data4_byte                                0
+/* #define fcs_pepcparts_data4_ptr(e)*/
+
+ #define fcs_pepcparts_data4_byte_flex                           0
+ #define fcs_pepcparts_data4_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data4_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data4_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data4_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data4_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data4_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data4_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data4_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data4_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data4_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data4_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data4_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data4_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data4_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data4_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data4_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data4_assign(src, dst)
+ #define fcs_pepcparts_cc_data4_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data4_null(e)
+ #define fcs_pepcparts_cc_data4_inc(e)
+ #define fcs_pepcparts_cc_data4_dec(e)
+ #define fcs_pepcparts_cc_data4_add(e, n)
+ #define fcs_pepcparts_cc_data4_sub(e, n)
+ #define fcs_pepcparts_cc_data4_copy(src, dst)
+ #define fcs_pepcparts_cc_data4_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data4_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data4_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data4_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data4_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data4_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data4_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA4 */
+
+#define fcs_pepcparts_data4_cm                                   SLCM_DATA4  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA5 fcs_pepcparts_SL_DATA5_IGNORE fcs_pepcparts_sl_data5_type_c fcs_pepcparts_sl_data5_size_c fcs_pepcparts_sl_data5_type_mpi fcs_pepcparts_sl_data5_size_mpi fcs_pepcparts_sl_data5_memcpy fcs_pepcparts_sl_data5_weight fcs_pepcparts_sl_data5_flex */
+
+#ifdef fcs_pepcparts_SL_DATA5
+
+ #define fcs_pepcparts_sl_data5_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data5_size_c) * sizeof(fcs_pepcparts_sl_data5_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data5_copy
+  #if fcs_pepcparts_sl_data5_size_c <= 9 && !defined(fcs_pepcparts_sl_data5_memcpy)
+   #if fcs_pepcparts_sl_data5_size_c == 1
+    #define fcs_pepcparts_sl_data5_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data5_size_c == 2
+    #define fcs_pepcparts_sl_data5_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data5_size_c == 3
+    #define fcs_pepcparts_sl_data5_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data5_size_c == 4
+    #define fcs_pepcparts_sl_data5_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data5_size_c == 5
+    #define fcs_pepcparts_sl_data5_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data5_size_c == 6
+    #define fcs_pepcparts_sl_data5_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data5_size_c == 7
+    #define fcs_pepcparts_sl_data5_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data5_size_c == 8
+    #define fcs_pepcparts_sl_data5_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data5_size_c == 9
+    #define fcs_pepcparts_sl_data5_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data5_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data5_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data5_ncopy
+  #define fcs_pepcparts_sl_data5_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data5_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data5_nmove
+  #define fcs_pepcparts_sl_data5_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data5_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data5_type_c                              fcs_pepcparts_sl_data5_type_c  /* sl_macro */
+ #define fcs_pepcparts_data5_size_c                              (fcs_pepcparts_sl_data5_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data5_type_mpi                            (fcs_pepcparts_sl_data5_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data5_size_mpi                            (fcs_pepcparts_sl_data5_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data5_idx                                 5  /* sl_macro */
+
+ #define fcs_pepcparts_data5_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data5_byte                                (fcs_pepcparts_sl_data5_byte)  /* sl_macro */
+ #define fcs_pepcparts_data5_ptr(e)                              (e)->data5  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data5_flex
+ # define fcs_pepcparts_data5_byte_flex                          (fcs_pepcparts_sl_data5_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data5_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data5_weight
+ # define fcs_pepcparts_data5_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data5_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data5_assign(src, dst)                    ((dst)->data5 = (src)->data5)  /* sl_macro */
+ #define fcs_pepcparts_data5_assign_at(src, sat, dst)            ((dst)->data5 = &(src)->data5[(sat) * fcs_pepcparts_data5_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data5_null(e)                             ((e)->data5 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data5_inc(e)                              ((e)->data5 += fcs_pepcparts_data5_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data5_dec(e)                              ((e)->data5 -= fcs_pepcparts_data5_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data5_add(e, n)                           ((e)->data5 += (n) * fcs_pepcparts_data5_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data5_sub(e, n)                           ((e)->data5 -= (n) * fcs_pepcparts_data5_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data5_copy(src, dst)                      fcs_pepcparts_sl_data5_copy((src)->data5, (dst)->data5)  /* sl_macro */
+ #define fcs_pepcparts_data5_ncopy(src, dst, n)                  fcs_pepcparts_sl_data5_ncopy((src)->data5, (dst)->data5, n)  /* sl_macro */
+ #define fcs_pepcparts_data5_nmove(src, dst, n)                  fcs_pepcparts_sl_data5_nmove((src)->data5, (dst)->data5, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data5_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data5_copy(&(src)->data5[(sat) * fcs_pepcparts_data5_size_c], &(dst)->data5[(dat) * fcs_pepcparts_data5_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data5_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data5_ncopy(&(src)->data5[(sat) * fcs_pepcparts_data5_size_c], &(dst)->data5[(dat) * fcs_pepcparts_data5_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data5_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data5_nmove(&(src)->data5[(sat) * fcs_pepcparts_data5_size_c], &(dst)->data5[(dat) * fcs_pepcparts_data5_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data5_xchange(e0, e1, t)                  (fcs_pepcparts_data5_copy(e0, t), fcs_pepcparts_data5_copy(e1, e0), fcs_pepcparts_data5_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data5_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data5_copy_at(e0, at0, t, 0), fcs_pepcparts_data5_copy_at(e1, at1, e0, at0), fcs_pepcparts_data5_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data5_assign(src, dst)                 , fcs_pepcparts_data5_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_assign_at(src, sat, dst)         , fcs_pepcparts_data5_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_null(e)                          , fcs_pepcparts_data5_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_inc(e)                           , fcs_pepcparts_data5_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_dec(e)                           , fcs_pepcparts_data5_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_add(e, n)                        , fcs_pepcparts_data5_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_sub(e, n)                        , fcs_pepcparts_data5_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_copy(src, dst)                   , fcs_pepcparts_data5_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_ncopy(src, dst, n)               , fcs_pepcparts_data5_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_nmove(src, dst, n)               , fcs_pepcparts_data5_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data5_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data5_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data5_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_xchange(e0, e1, t)               , fcs_pepcparts_data5_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data5_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data5_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data5_assign(src, dst)                 fcs_pepcparts_data5_assign(src, dst)
+ #define fcs_pepcparts_cc_data5_assign_at(src, sat, dst)         fcs_pepcparts_data5_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data5_null(e)                          fcs_pepcparts_data5_null(e)
+ #define fcs_pepcparts_cc_data5_inc(e)                           fcs_pepcparts_data5_inc(e)
+ #define fcs_pepcparts_cc_data5_dec(e)                           fcs_pepcparts_data5_dec(e)
+ #define fcs_pepcparts_cc_data5_add(e, n)                        fcs_pepcparts_data5_add(e, n)
+ #define fcs_pepcparts_cc_data5_sub(e, n)                        fcs_pepcparts_data5_sub(e, n)
+ #define fcs_pepcparts_cc_data5_copy(src, dst)                   fcs_pepcparts_data5_copy(src, dst)
+ #define fcs_pepcparts_cc_data5_ncopy(src, dst, n)               fcs_pepcparts_data5_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data5_nmove(src, dst, n)               fcs_pepcparts_data5_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data5_copy_at(src, sat, dst, dat)      fcs_pepcparts_data5_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data5_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data5_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data5_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data5_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data5_xchange(e0, e1, t)               fcs_pepcparts_data5_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data5_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data5_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA5 */
+
+ #define fcs_pepcparts_data5_n                                   0
+ #define fcs_pepcparts_data5_byte                                0
+/* #define fcs_pepcparts_data5_ptr(e)*/
+
+ #define fcs_pepcparts_data5_byte_flex                           0
+ #define fcs_pepcparts_data5_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data5_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data5_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data5_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data5_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data5_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data5_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data5_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data5_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data5_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data5_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data5_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data5_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data5_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data5_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data5_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data5_assign(src, dst)
+ #define fcs_pepcparts_cc_data5_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data5_null(e)
+ #define fcs_pepcparts_cc_data5_inc(e)
+ #define fcs_pepcparts_cc_data5_dec(e)
+ #define fcs_pepcparts_cc_data5_add(e, n)
+ #define fcs_pepcparts_cc_data5_sub(e, n)
+ #define fcs_pepcparts_cc_data5_copy(src, dst)
+ #define fcs_pepcparts_cc_data5_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data5_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data5_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data5_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data5_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data5_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data5_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA5 */
+
+#define fcs_pepcparts_data5_cm                                   SLCM_DATA5  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA6 fcs_pepcparts_SL_DATA6_IGNORE fcs_pepcparts_sl_data6_type_c fcs_pepcparts_sl_data6_size_c fcs_pepcparts_sl_data6_type_mpi fcs_pepcparts_sl_data6_size_mpi fcs_pepcparts_sl_data6_memcpy fcs_pepcparts_sl_data6_weight fcs_pepcparts_sl_data6_flex */
+
+#ifdef fcs_pepcparts_SL_DATA6
+
+ #define fcs_pepcparts_sl_data6_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data6_size_c) * sizeof(fcs_pepcparts_sl_data6_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data6_copy
+  #if fcs_pepcparts_sl_data6_size_c <= 9 && !defined(fcs_pepcparts_sl_data6_memcpy)
+   #if fcs_pepcparts_sl_data6_size_c == 1
+    #define fcs_pepcparts_sl_data6_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data6_size_c == 2
+    #define fcs_pepcparts_sl_data6_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data6_size_c == 3
+    #define fcs_pepcparts_sl_data6_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data6_size_c == 4
+    #define fcs_pepcparts_sl_data6_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data6_size_c == 5
+    #define fcs_pepcparts_sl_data6_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data6_size_c == 6
+    #define fcs_pepcparts_sl_data6_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data6_size_c == 7
+    #define fcs_pepcparts_sl_data6_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data6_size_c == 8
+    #define fcs_pepcparts_sl_data6_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data6_size_c == 9
+    #define fcs_pepcparts_sl_data6_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data6_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data6_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data6_ncopy
+  #define fcs_pepcparts_sl_data6_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data6_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data6_nmove
+  #define fcs_pepcparts_sl_data6_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data6_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data6_type_c                              fcs_pepcparts_sl_data6_type_c  /* sl_macro */
+ #define fcs_pepcparts_data6_size_c                              (fcs_pepcparts_sl_data6_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data6_type_mpi                            (fcs_pepcparts_sl_data6_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data6_size_mpi                            (fcs_pepcparts_sl_data6_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data6_idx                                 6  /* sl_macro */
+
+ #define fcs_pepcparts_data6_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data6_byte                                (fcs_pepcparts_sl_data6_byte)  /* sl_macro */
+ #define fcs_pepcparts_data6_ptr(e)                              (e)->data6  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data6_flex
+ # define fcs_pepcparts_data6_byte_flex                          (fcs_pepcparts_sl_data6_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data6_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data6_weight
+ # define fcs_pepcparts_data6_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data6_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data6_assign(src, dst)                    ((dst)->data6 = (src)->data6)  /* sl_macro */
+ #define fcs_pepcparts_data6_assign_at(src, sat, dst)            ((dst)->data6 = &(src)->data6[(sat) * fcs_pepcparts_data6_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data6_null(e)                             ((e)->data6 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data6_inc(e)                              ((e)->data6 += fcs_pepcparts_data6_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data6_dec(e)                              ((e)->data6 -= fcs_pepcparts_data6_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data6_add(e, n)                           ((e)->data6 += (n) * fcs_pepcparts_data6_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data6_sub(e, n)                           ((e)->data6 -= (n) * fcs_pepcparts_data6_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data6_copy(src, dst)                      fcs_pepcparts_sl_data6_copy((src)->data6, (dst)->data6)  /* sl_macro */
+ #define fcs_pepcparts_data6_ncopy(src, dst, n)                  fcs_pepcparts_sl_data6_ncopy((src)->data6, (dst)->data6, n)  /* sl_macro */
+ #define fcs_pepcparts_data6_nmove(src, dst, n)                  fcs_pepcparts_sl_data6_nmove((src)->data6, (dst)->data6, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data6_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data6_copy(&(src)->data6[(sat) * fcs_pepcparts_data6_size_c], &(dst)->data6[(dat) * fcs_pepcparts_data6_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data6_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data6_ncopy(&(src)->data6[(sat) * fcs_pepcparts_data6_size_c], &(dst)->data6[(dat) * fcs_pepcparts_data6_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data6_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data6_nmove(&(src)->data6[(sat) * fcs_pepcparts_data6_size_c], &(dst)->data6[(dat) * fcs_pepcparts_data6_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data6_xchange(e0, e1, t)                  (fcs_pepcparts_data6_copy(e0, t), fcs_pepcparts_data6_copy(e1, e0), fcs_pepcparts_data6_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data6_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data6_copy_at(e0, at0, t, 0), fcs_pepcparts_data6_copy_at(e1, at1, e0, at0), fcs_pepcparts_data6_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data6_assign(src, dst)                 , fcs_pepcparts_data6_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_assign_at(src, sat, dst)         , fcs_pepcparts_data6_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_null(e)                          , fcs_pepcparts_data6_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_inc(e)                           , fcs_pepcparts_data6_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_dec(e)                           , fcs_pepcparts_data6_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_add(e, n)                        , fcs_pepcparts_data6_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_sub(e, n)                        , fcs_pepcparts_data6_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_copy(src, dst)                   , fcs_pepcparts_data6_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_ncopy(src, dst, n)               , fcs_pepcparts_data6_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_nmove(src, dst, n)               , fcs_pepcparts_data6_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data6_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data6_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data6_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_xchange(e0, e1, t)               , fcs_pepcparts_data6_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data6_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data6_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data6_assign(src, dst)                 fcs_pepcparts_data6_assign(src, dst)
+ #define fcs_pepcparts_cc_data6_assign_at(src, sat, dst)         fcs_pepcparts_data6_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data6_null(e)                          fcs_pepcparts_data6_null(e)
+ #define fcs_pepcparts_cc_data6_inc(e)                           fcs_pepcparts_data6_inc(e)
+ #define fcs_pepcparts_cc_data6_dec(e)                           fcs_pepcparts_data6_dec(e)
+ #define fcs_pepcparts_cc_data6_add(e, n)                        fcs_pepcparts_data6_add(e, n)
+ #define fcs_pepcparts_cc_data6_sub(e, n)                        fcs_pepcparts_data6_sub(e, n)
+ #define fcs_pepcparts_cc_data6_copy(src, dst)                   fcs_pepcparts_data6_copy(src, dst)
+ #define fcs_pepcparts_cc_data6_ncopy(src, dst, n)               fcs_pepcparts_data6_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data6_nmove(src, dst, n)               fcs_pepcparts_data6_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data6_copy_at(src, sat, dst, dat)      fcs_pepcparts_data6_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data6_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data6_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data6_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data6_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data6_xchange(e0, e1, t)               fcs_pepcparts_data6_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data6_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data6_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA6 */
+
+ #define fcs_pepcparts_data6_n                                   0
+ #define fcs_pepcparts_data6_byte                                0
+/* #define fcs_pepcparts_data6_ptr(e)*/
+
+ #define fcs_pepcparts_data6_byte_flex                           0
+ #define fcs_pepcparts_data6_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data6_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data6_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data6_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data6_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data6_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data6_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data6_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data6_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data6_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data6_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data6_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data6_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data6_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data6_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data6_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data6_assign(src, dst)
+ #define fcs_pepcparts_cc_data6_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data6_null(e)
+ #define fcs_pepcparts_cc_data6_inc(e)
+ #define fcs_pepcparts_cc_data6_dec(e)
+ #define fcs_pepcparts_cc_data6_add(e, n)
+ #define fcs_pepcparts_cc_data6_sub(e, n)
+ #define fcs_pepcparts_cc_data6_copy(src, dst)
+ #define fcs_pepcparts_cc_data6_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data6_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data6_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data6_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data6_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data6_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data6_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA6 */
+
+#define fcs_pepcparts_data6_cm                                   SLCM_DATA6  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA7 fcs_pepcparts_SL_DATA7_IGNORE fcs_pepcparts_sl_data7_type_c fcs_pepcparts_sl_data7_size_c fcs_pepcparts_sl_data7_type_mpi fcs_pepcparts_sl_data7_size_mpi fcs_pepcparts_sl_data7_memcpy fcs_pepcparts_sl_data7_weight fcs_pepcparts_sl_data7_flex */
+
+#ifdef fcs_pepcparts_SL_DATA7
+
+ #define fcs_pepcparts_sl_data7_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data7_size_c) * sizeof(fcs_pepcparts_sl_data7_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data7_copy
+  #if fcs_pepcparts_sl_data7_size_c <= 9 && !defined(fcs_pepcparts_sl_data7_memcpy)
+   #if fcs_pepcparts_sl_data7_size_c == 1
+    #define fcs_pepcparts_sl_data7_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data7_size_c == 2
+    #define fcs_pepcparts_sl_data7_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data7_size_c == 3
+    #define fcs_pepcparts_sl_data7_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data7_size_c == 4
+    #define fcs_pepcparts_sl_data7_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data7_size_c == 5
+    #define fcs_pepcparts_sl_data7_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data7_size_c == 6
+    #define fcs_pepcparts_sl_data7_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data7_size_c == 7
+    #define fcs_pepcparts_sl_data7_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data7_size_c == 8
+    #define fcs_pepcparts_sl_data7_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data7_size_c == 9
+    #define fcs_pepcparts_sl_data7_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data7_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data7_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data7_ncopy
+  #define fcs_pepcparts_sl_data7_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data7_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data7_nmove
+  #define fcs_pepcparts_sl_data7_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data7_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data7_type_c                              fcs_pepcparts_sl_data7_type_c  /* sl_macro */
+ #define fcs_pepcparts_data7_size_c                              (fcs_pepcparts_sl_data7_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data7_type_mpi                            (fcs_pepcparts_sl_data7_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data7_size_mpi                            (fcs_pepcparts_sl_data7_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data7_idx                                 7  /* sl_macro */
+
+ #define fcs_pepcparts_data7_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data7_byte                                (fcs_pepcparts_sl_data7_byte)  /* sl_macro */
+ #define fcs_pepcparts_data7_ptr(e)                              (e)->data7  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data7_flex
+ # define fcs_pepcparts_data7_byte_flex                          (fcs_pepcparts_sl_data7_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data7_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data7_weight
+ # define fcs_pepcparts_data7_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data7_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data7_assign(src, dst)                    ((dst)->data7 = (src)->data7)  /* sl_macro */
+ #define fcs_pepcparts_data7_assign_at(src, sat, dst)            ((dst)->data7 = &(src)->data7[(sat) * fcs_pepcparts_data7_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data7_null(e)                             ((e)->data7 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data7_inc(e)                              ((e)->data7 += fcs_pepcparts_data7_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data7_dec(e)                              ((e)->data7 -= fcs_pepcparts_data7_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data7_add(e, n)                           ((e)->data7 += (n) * fcs_pepcparts_data7_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data7_sub(e, n)                           ((e)->data7 -= (n) * fcs_pepcparts_data7_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data7_copy(src, dst)                      fcs_pepcparts_sl_data7_copy((src)->data7, (dst)->data7)  /* sl_macro */
+ #define fcs_pepcparts_data7_ncopy(src, dst, n)                  fcs_pepcparts_sl_data7_ncopy((src)->data7, (dst)->data7, n)  /* sl_macro */
+ #define fcs_pepcparts_data7_nmove(src, dst, n)                  fcs_pepcparts_sl_data7_nmove((src)->data7, (dst)->data7, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data7_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data7_copy(&(src)->data7[(sat) * fcs_pepcparts_data7_size_c], &(dst)->data7[(dat) * fcs_pepcparts_data7_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data7_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data7_ncopy(&(src)->data7[(sat) * fcs_pepcparts_data7_size_c], &(dst)->data7[(dat) * fcs_pepcparts_data7_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data7_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data7_nmove(&(src)->data7[(sat) * fcs_pepcparts_data7_size_c], &(dst)->data7[(dat) * fcs_pepcparts_data7_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data7_xchange(e0, e1, t)                  (fcs_pepcparts_data7_copy(e0, t), fcs_pepcparts_data7_copy(e1, e0), fcs_pepcparts_data7_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data7_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data7_copy_at(e0, at0, t, 0), fcs_pepcparts_data7_copy_at(e1, at1, e0, at0), fcs_pepcparts_data7_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data7_assign(src, dst)                 , fcs_pepcparts_data7_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_assign_at(src, sat, dst)         , fcs_pepcparts_data7_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_null(e)                          , fcs_pepcparts_data7_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_inc(e)                           , fcs_pepcparts_data7_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_dec(e)                           , fcs_pepcparts_data7_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_add(e, n)                        , fcs_pepcparts_data7_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_sub(e, n)                        , fcs_pepcparts_data7_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_copy(src, dst)                   , fcs_pepcparts_data7_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_ncopy(src, dst, n)               , fcs_pepcparts_data7_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_nmove(src, dst, n)               , fcs_pepcparts_data7_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data7_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data7_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data7_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_xchange(e0, e1, t)               , fcs_pepcparts_data7_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data7_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data7_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data7_assign(src, dst)                 fcs_pepcparts_data7_assign(src, dst)
+ #define fcs_pepcparts_cc_data7_assign_at(src, sat, dst)         fcs_pepcparts_data7_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data7_null(e)                          fcs_pepcparts_data7_null(e)
+ #define fcs_pepcparts_cc_data7_inc(e)                           fcs_pepcparts_data7_inc(e)
+ #define fcs_pepcparts_cc_data7_dec(e)                           fcs_pepcparts_data7_dec(e)
+ #define fcs_pepcparts_cc_data7_add(e, n)                        fcs_pepcparts_data7_add(e, n)
+ #define fcs_pepcparts_cc_data7_sub(e, n)                        fcs_pepcparts_data7_sub(e, n)
+ #define fcs_pepcparts_cc_data7_copy(src, dst)                   fcs_pepcparts_data7_copy(src, dst)
+ #define fcs_pepcparts_cc_data7_ncopy(src, dst, n)               fcs_pepcparts_data7_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data7_nmove(src, dst, n)               fcs_pepcparts_data7_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data7_copy_at(src, sat, dst, dat)      fcs_pepcparts_data7_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data7_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data7_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data7_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data7_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data7_xchange(e0, e1, t)               fcs_pepcparts_data7_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data7_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data7_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA7 */
+
+ #define fcs_pepcparts_data7_n                                   0
+ #define fcs_pepcparts_data7_byte                                0
+/* #define fcs_pepcparts_data7_ptr(e)*/
+
+ #define fcs_pepcparts_data7_byte_flex                           0
+ #define fcs_pepcparts_data7_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data7_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data7_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data7_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data7_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data7_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data7_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data7_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data7_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data7_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data7_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data7_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data7_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data7_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data7_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data7_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data7_assign(src, dst)
+ #define fcs_pepcparts_cc_data7_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data7_null(e)
+ #define fcs_pepcparts_cc_data7_inc(e)
+ #define fcs_pepcparts_cc_data7_dec(e)
+ #define fcs_pepcparts_cc_data7_add(e, n)
+ #define fcs_pepcparts_cc_data7_sub(e, n)
+ #define fcs_pepcparts_cc_data7_copy(src, dst)
+ #define fcs_pepcparts_cc_data7_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data7_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data7_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data7_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data7_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data7_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data7_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA7 */
+
+#define fcs_pepcparts_data7_cm                                   SLCM_DATA7  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA8 fcs_pepcparts_SL_DATA8_IGNORE fcs_pepcparts_sl_data8_type_c fcs_pepcparts_sl_data8_size_c fcs_pepcparts_sl_data8_type_mpi fcs_pepcparts_sl_data8_size_mpi fcs_pepcparts_sl_data8_memcpy fcs_pepcparts_sl_data8_weight fcs_pepcparts_sl_data8_flex */
+
+#ifdef fcs_pepcparts_SL_DATA8
+
+ #define fcs_pepcparts_sl_data8_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data8_size_c) * sizeof(fcs_pepcparts_sl_data8_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data8_copy
+  #if fcs_pepcparts_sl_data8_size_c <= 9 && !defined(fcs_pepcparts_sl_data8_memcpy)
+   #if fcs_pepcparts_sl_data8_size_c == 1
+    #define fcs_pepcparts_sl_data8_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data8_size_c == 2
+    #define fcs_pepcparts_sl_data8_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data8_size_c == 3
+    #define fcs_pepcparts_sl_data8_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data8_size_c == 4
+    #define fcs_pepcparts_sl_data8_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data8_size_c == 5
+    #define fcs_pepcparts_sl_data8_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data8_size_c == 6
+    #define fcs_pepcparts_sl_data8_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data8_size_c == 7
+    #define fcs_pepcparts_sl_data8_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data8_size_c == 8
+    #define fcs_pepcparts_sl_data8_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data8_size_c == 9
+    #define fcs_pepcparts_sl_data8_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data8_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data8_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data8_ncopy
+  #define fcs_pepcparts_sl_data8_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data8_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data8_nmove
+  #define fcs_pepcparts_sl_data8_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data8_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data8_type_c                              fcs_pepcparts_sl_data8_type_c  /* sl_macro */
+ #define fcs_pepcparts_data8_size_c                              (fcs_pepcparts_sl_data8_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data8_type_mpi                            (fcs_pepcparts_sl_data8_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data8_size_mpi                            (fcs_pepcparts_sl_data8_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data8_idx                                 8  /* sl_macro */
+
+ #define fcs_pepcparts_data8_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data8_byte                                (fcs_pepcparts_sl_data8_byte)  /* sl_macro */
+ #define fcs_pepcparts_data8_ptr(e)                              (e)->data8  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data8_flex
+ # define fcs_pepcparts_data8_byte_flex                          (fcs_pepcparts_sl_data8_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data8_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data8_weight
+ # define fcs_pepcparts_data8_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data8_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data8_assign(src, dst)                    ((dst)->data8 = (src)->data8)  /* sl_macro */
+ #define fcs_pepcparts_data8_assign_at(src, sat, dst)            ((dst)->data8 = &(src)->data8[(sat) * fcs_pepcparts_data8_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data8_null(e)                             ((e)->data8 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data8_inc(e)                              ((e)->data8 += fcs_pepcparts_data8_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data8_dec(e)                              ((e)->data8 -= fcs_pepcparts_data8_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data8_add(e, n)                           ((e)->data8 += (n) * fcs_pepcparts_data8_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data8_sub(e, n)                           ((e)->data8 -= (n) * fcs_pepcparts_data8_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data8_copy(src, dst)                      fcs_pepcparts_sl_data8_copy((src)->data8, (dst)->data8)  /* sl_macro */
+ #define fcs_pepcparts_data8_ncopy(src, dst, n)                  fcs_pepcparts_sl_data8_ncopy((src)->data8, (dst)->data8, n)  /* sl_macro */
+ #define fcs_pepcparts_data8_nmove(src, dst, n)                  fcs_pepcparts_sl_data8_nmove((src)->data8, (dst)->data8, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data8_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data8_copy(&(src)->data8[(sat) * fcs_pepcparts_data8_size_c], &(dst)->data8[(dat) * fcs_pepcparts_data8_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data8_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data8_ncopy(&(src)->data8[(sat) * fcs_pepcparts_data8_size_c], &(dst)->data8[(dat) * fcs_pepcparts_data8_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data8_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data8_nmove(&(src)->data8[(sat) * fcs_pepcparts_data8_size_c], &(dst)->data8[(dat) * fcs_pepcparts_data8_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data8_xchange(e0, e1, t)                  (fcs_pepcparts_data8_copy(e0, t), fcs_pepcparts_data8_copy(e1, e0), fcs_pepcparts_data8_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data8_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data8_copy_at(e0, at0, t, 0), fcs_pepcparts_data8_copy_at(e1, at1, e0, at0), fcs_pepcparts_data8_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data8_assign(src, dst)                 , fcs_pepcparts_data8_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_assign_at(src, sat, dst)         , fcs_pepcparts_data8_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_null(e)                          , fcs_pepcparts_data8_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_inc(e)                           , fcs_pepcparts_data8_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_dec(e)                           , fcs_pepcparts_data8_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_add(e, n)                        , fcs_pepcparts_data8_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_sub(e, n)                        , fcs_pepcparts_data8_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_copy(src, dst)                   , fcs_pepcparts_data8_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_ncopy(src, dst, n)               , fcs_pepcparts_data8_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_nmove(src, dst, n)               , fcs_pepcparts_data8_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data8_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data8_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data8_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_xchange(e0, e1, t)               , fcs_pepcparts_data8_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data8_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data8_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data8_assign(src, dst)                 fcs_pepcparts_data8_assign(src, dst)
+ #define fcs_pepcparts_cc_data8_assign_at(src, sat, dst)         fcs_pepcparts_data8_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data8_null(e)                          fcs_pepcparts_data8_null(e)
+ #define fcs_pepcparts_cc_data8_inc(e)                           fcs_pepcparts_data8_inc(e)
+ #define fcs_pepcparts_cc_data8_dec(e)                           fcs_pepcparts_data8_dec(e)
+ #define fcs_pepcparts_cc_data8_add(e, n)                        fcs_pepcparts_data8_add(e, n)
+ #define fcs_pepcparts_cc_data8_sub(e, n)                        fcs_pepcparts_data8_sub(e, n)
+ #define fcs_pepcparts_cc_data8_copy(src, dst)                   fcs_pepcparts_data8_copy(src, dst)
+ #define fcs_pepcparts_cc_data8_ncopy(src, dst, n)               fcs_pepcparts_data8_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data8_nmove(src, dst, n)               fcs_pepcparts_data8_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data8_copy_at(src, sat, dst, dat)      fcs_pepcparts_data8_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data8_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data8_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data8_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data8_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data8_xchange(e0, e1, t)               fcs_pepcparts_data8_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data8_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data8_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA8 */
+
+ #define fcs_pepcparts_data8_n                                   0
+ #define fcs_pepcparts_data8_byte                                0
+/* #define fcs_pepcparts_data8_ptr(e)*/
+
+ #define fcs_pepcparts_data8_byte_flex                           0
+ #define fcs_pepcparts_data8_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data8_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data8_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data8_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data8_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data8_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data8_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data8_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data8_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data8_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data8_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data8_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data8_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data8_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data8_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data8_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data8_assign(src, dst)
+ #define fcs_pepcparts_cc_data8_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data8_null(e)
+ #define fcs_pepcparts_cc_data8_inc(e)
+ #define fcs_pepcparts_cc_data8_dec(e)
+ #define fcs_pepcparts_cc_data8_add(e, n)
+ #define fcs_pepcparts_cc_data8_sub(e, n)
+ #define fcs_pepcparts_cc_data8_copy(src, dst)
+ #define fcs_pepcparts_cc_data8_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data8_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data8_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data8_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data8_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data8_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data8_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA8 */
+
+#define fcs_pepcparts_data8_cm                                   SLCM_DATA8  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA9 fcs_pepcparts_SL_DATA9_IGNORE fcs_pepcparts_sl_data9_type_c fcs_pepcparts_sl_data9_size_c fcs_pepcparts_sl_data9_type_mpi fcs_pepcparts_sl_data9_size_mpi fcs_pepcparts_sl_data9_memcpy fcs_pepcparts_sl_data9_weight fcs_pepcparts_sl_data9_flex */
+
+#ifdef fcs_pepcparts_SL_DATA9
+
+ #define fcs_pepcparts_sl_data9_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data9_size_c) * sizeof(fcs_pepcparts_sl_data9_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data9_copy
+  #if fcs_pepcparts_sl_data9_size_c <= 9 && !defined(fcs_pepcparts_sl_data9_memcpy)
+   #if fcs_pepcparts_sl_data9_size_c == 1
+    #define fcs_pepcparts_sl_data9_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data9_size_c == 2
+    #define fcs_pepcparts_sl_data9_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data9_size_c == 3
+    #define fcs_pepcparts_sl_data9_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data9_size_c == 4
+    #define fcs_pepcparts_sl_data9_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data9_size_c == 5
+    #define fcs_pepcparts_sl_data9_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data9_size_c == 6
+    #define fcs_pepcparts_sl_data9_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data9_size_c == 7
+    #define fcs_pepcparts_sl_data9_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data9_size_c == 8
+    #define fcs_pepcparts_sl_data9_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data9_size_c == 9
+    #define fcs_pepcparts_sl_data9_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data9_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data9_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data9_ncopy
+  #define fcs_pepcparts_sl_data9_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data9_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data9_nmove
+  #define fcs_pepcparts_sl_data9_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data9_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data9_type_c                              fcs_pepcparts_sl_data9_type_c  /* sl_macro */
+ #define fcs_pepcparts_data9_size_c                              (fcs_pepcparts_sl_data9_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data9_type_mpi                            (fcs_pepcparts_sl_data9_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data9_size_mpi                            (fcs_pepcparts_sl_data9_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data9_idx                                 9  /* sl_macro */
+
+ #define fcs_pepcparts_data9_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data9_byte                                (fcs_pepcparts_sl_data9_byte)  /* sl_macro */
+ #define fcs_pepcparts_data9_ptr(e)                              (e)->data9  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data9_flex
+ # define fcs_pepcparts_data9_byte_flex                          (fcs_pepcparts_sl_data9_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data9_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data9_weight
+ # define fcs_pepcparts_data9_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data9_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data9_assign(src, dst)                    ((dst)->data9 = (src)->data9)  /* sl_macro */
+ #define fcs_pepcparts_data9_assign_at(src, sat, dst)            ((dst)->data9 = &(src)->data9[(sat) * fcs_pepcparts_data9_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data9_null(e)                             ((e)->data9 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data9_inc(e)                              ((e)->data9 += fcs_pepcparts_data9_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data9_dec(e)                              ((e)->data9 -= fcs_pepcparts_data9_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data9_add(e, n)                           ((e)->data9 += (n) * fcs_pepcparts_data9_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data9_sub(e, n)                           ((e)->data9 -= (n) * fcs_pepcparts_data9_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data9_copy(src, dst)                      fcs_pepcparts_sl_data9_copy((src)->data9, (dst)->data9)  /* sl_macro */
+ #define fcs_pepcparts_data9_ncopy(src, dst, n)                  fcs_pepcparts_sl_data9_ncopy((src)->data9, (dst)->data9, n)  /* sl_macro */
+ #define fcs_pepcparts_data9_nmove(src, dst, n)                  fcs_pepcparts_sl_data9_nmove((src)->data9, (dst)->data9, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data9_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data9_copy(&(src)->data9[(sat) * fcs_pepcparts_data9_size_c], &(dst)->data9[(dat) * fcs_pepcparts_data9_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data9_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data9_ncopy(&(src)->data9[(sat) * fcs_pepcparts_data9_size_c], &(dst)->data9[(dat) * fcs_pepcparts_data9_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data9_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data9_nmove(&(src)->data9[(sat) * fcs_pepcparts_data9_size_c], &(dst)->data9[(dat) * fcs_pepcparts_data9_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data9_xchange(e0, e1, t)                  (fcs_pepcparts_data9_copy(e0, t), fcs_pepcparts_data9_copy(e1, e0), fcs_pepcparts_data9_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data9_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data9_copy_at(e0, at0, t, 0), fcs_pepcparts_data9_copy_at(e1, at1, e0, at0), fcs_pepcparts_data9_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data9_assign(src, dst)                 , fcs_pepcparts_data9_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_assign_at(src, sat, dst)         , fcs_pepcparts_data9_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_null(e)                          , fcs_pepcparts_data9_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_inc(e)                           , fcs_pepcparts_data9_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_dec(e)                           , fcs_pepcparts_data9_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_add(e, n)                        , fcs_pepcparts_data9_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_sub(e, n)                        , fcs_pepcparts_data9_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_copy(src, dst)                   , fcs_pepcparts_data9_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_ncopy(src, dst, n)               , fcs_pepcparts_data9_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_nmove(src, dst, n)               , fcs_pepcparts_data9_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data9_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data9_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data9_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_xchange(e0, e1, t)               , fcs_pepcparts_data9_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data9_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data9_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data9_assign(src, dst)                 fcs_pepcparts_data9_assign(src, dst)
+ #define fcs_pepcparts_cc_data9_assign_at(src, sat, dst)         fcs_pepcparts_data9_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data9_null(e)                          fcs_pepcparts_data9_null(e)
+ #define fcs_pepcparts_cc_data9_inc(e)                           fcs_pepcparts_data9_inc(e)
+ #define fcs_pepcparts_cc_data9_dec(e)                           fcs_pepcparts_data9_dec(e)
+ #define fcs_pepcparts_cc_data9_add(e, n)                        fcs_pepcparts_data9_add(e, n)
+ #define fcs_pepcparts_cc_data9_sub(e, n)                        fcs_pepcparts_data9_sub(e, n)
+ #define fcs_pepcparts_cc_data9_copy(src, dst)                   fcs_pepcparts_data9_copy(src, dst)
+ #define fcs_pepcparts_cc_data9_ncopy(src, dst, n)               fcs_pepcparts_data9_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data9_nmove(src, dst, n)               fcs_pepcparts_data9_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data9_copy_at(src, sat, dst, dat)      fcs_pepcparts_data9_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data9_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data9_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data9_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data9_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data9_xchange(e0, e1, t)               fcs_pepcparts_data9_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data9_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data9_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA9 */
+
+ #define fcs_pepcparts_data9_n                                   0
+ #define fcs_pepcparts_data9_byte                                0
+/* #define fcs_pepcparts_data9_ptr(e)*/
+
+ #define fcs_pepcparts_data9_byte_flex                           0
+ #define fcs_pepcparts_data9_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data9_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data9_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data9_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data9_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data9_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data9_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data9_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data9_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data9_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data9_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data9_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data9_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data9_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data9_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data9_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data9_assign(src, dst)
+ #define fcs_pepcparts_cc_data9_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data9_null(e)
+ #define fcs_pepcparts_cc_data9_inc(e)
+ #define fcs_pepcparts_cc_data9_dec(e)
+ #define fcs_pepcparts_cc_data9_add(e, n)
+ #define fcs_pepcparts_cc_data9_sub(e, n)
+ #define fcs_pepcparts_cc_data9_copy(src, dst)
+ #define fcs_pepcparts_cc_data9_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data9_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data9_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data9_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data9_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data9_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data9_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA9 */
+
+#define fcs_pepcparts_data9_cm                                   SLCM_DATA9  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA10 fcs_pepcparts_SL_DATA10_IGNORE fcs_pepcparts_sl_data10_type_c fcs_pepcparts_sl_data10_size_c fcs_pepcparts_sl_data10_type_mpi fcs_pepcparts_sl_data10_size_mpi fcs_pepcparts_sl_data10_memcpy fcs_pepcparts_sl_data10_weight fcs_pepcparts_sl_data10_flex */
+
+#ifdef fcs_pepcparts_SL_DATA10
+
+ #define fcs_pepcparts_sl_data10_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data10_size_c) * sizeof(fcs_pepcparts_sl_data10_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data10_copy
+  #if fcs_pepcparts_sl_data10_size_c <= 9 && !defined(fcs_pepcparts_sl_data10_memcpy)
+   #if fcs_pepcparts_sl_data10_size_c == 1
+    #define fcs_pepcparts_sl_data10_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data10_size_c == 2
+    #define fcs_pepcparts_sl_data10_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data10_size_c == 3
+    #define fcs_pepcparts_sl_data10_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data10_size_c == 4
+    #define fcs_pepcparts_sl_data10_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data10_size_c == 5
+    #define fcs_pepcparts_sl_data10_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data10_size_c == 6
+    #define fcs_pepcparts_sl_data10_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data10_size_c == 7
+    #define fcs_pepcparts_sl_data10_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data10_size_c == 8
+    #define fcs_pepcparts_sl_data10_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data10_size_c == 9
+    #define fcs_pepcparts_sl_data10_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data10_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data10_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data10_ncopy
+  #define fcs_pepcparts_sl_data10_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data10_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data10_nmove
+  #define fcs_pepcparts_sl_data10_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data10_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data10_type_c                              fcs_pepcparts_sl_data10_type_c  /* sl_macro */
+ #define fcs_pepcparts_data10_size_c                              (fcs_pepcparts_sl_data10_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data10_type_mpi                            (fcs_pepcparts_sl_data10_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data10_size_mpi                            (fcs_pepcparts_sl_data10_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data10_idx                                 10  /* sl_macro */
+
+ #define fcs_pepcparts_data10_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data10_byte                                (fcs_pepcparts_sl_data10_byte)  /* sl_macro */
+ #define fcs_pepcparts_data10_ptr(e)                              (e)->data10  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data10_flex
+ # define fcs_pepcparts_data10_byte_flex                          (fcs_pepcparts_sl_data10_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data10_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data10_weight
+ # define fcs_pepcparts_data10_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data10_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data10_assign(src, dst)                    ((dst)->data10 = (src)->data10)  /* sl_macro */
+ #define fcs_pepcparts_data10_assign_at(src, sat, dst)            ((dst)->data10 = &(src)->data10[(sat) * fcs_pepcparts_data10_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data10_null(e)                             ((e)->data10 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data10_inc(e)                              ((e)->data10 += fcs_pepcparts_data10_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data10_dec(e)                              ((e)->data10 -= fcs_pepcparts_data10_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data10_add(e, n)                           ((e)->data10 += (n) * fcs_pepcparts_data10_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data10_sub(e, n)                           ((e)->data10 -= (n) * fcs_pepcparts_data10_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data10_copy(src, dst)                      fcs_pepcparts_sl_data10_copy((src)->data10, (dst)->data10)  /* sl_macro */
+ #define fcs_pepcparts_data10_ncopy(src, dst, n)                  fcs_pepcparts_sl_data10_ncopy((src)->data10, (dst)->data10, n)  /* sl_macro */
+ #define fcs_pepcparts_data10_nmove(src, dst, n)                  fcs_pepcparts_sl_data10_nmove((src)->data10, (dst)->data10, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data10_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data10_copy(&(src)->data10[(sat) * fcs_pepcparts_data10_size_c], &(dst)->data10[(dat) * fcs_pepcparts_data10_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data10_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data10_ncopy(&(src)->data10[(sat) * fcs_pepcparts_data10_size_c], &(dst)->data10[(dat) * fcs_pepcparts_data10_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data10_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data10_nmove(&(src)->data10[(sat) * fcs_pepcparts_data10_size_c], &(dst)->data10[(dat) * fcs_pepcparts_data10_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data10_xchange(e0, e1, t)                  (fcs_pepcparts_data10_copy(e0, t), fcs_pepcparts_data10_copy(e1, e0), fcs_pepcparts_data10_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data10_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data10_copy_at(e0, at0, t, 0), fcs_pepcparts_data10_copy_at(e1, at1, e0, at0), fcs_pepcparts_data10_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data10_assign(src, dst)                 , fcs_pepcparts_data10_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_assign_at(src, sat, dst)         , fcs_pepcparts_data10_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_null(e)                          , fcs_pepcparts_data10_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_inc(e)                           , fcs_pepcparts_data10_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_dec(e)                           , fcs_pepcparts_data10_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_add(e, n)                        , fcs_pepcparts_data10_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_sub(e, n)                        , fcs_pepcparts_data10_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_copy(src, dst)                   , fcs_pepcparts_data10_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_ncopy(src, dst, n)               , fcs_pepcparts_data10_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_nmove(src, dst, n)               , fcs_pepcparts_data10_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data10_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data10_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data10_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_xchange(e0, e1, t)               , fcs_pepcparts_data10_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data10_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data10_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data10_assign(src, dst)                 fcs_pepcparts_data10_assign(src, dst)
+ #define fcs_pepcparts_cc_data10_assign_at(src, sat, dst)         fcs_pepcparts_data10_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data10_null(e)                          fcs_pepcparts_data10_null(e)
+ #define fcs_pepcparts_cc_data10_inc(e)                           fcs_pepcparts_data10_inc(e)
+ #define fcs_pepcparts_cc_data10_dec(e)                           fcs_pepcparts_data10_dec(e)
+ #define fcs_pepcparts_cc_data10_add(e, n)                        fcs_pepcparts_data10_add(e, n)
+ #define fcs_pepcparts_cc_data10_sub(e, n)                        fcs_pepcparts_data10_sub(e, n)
+ #define fcs_pepcparts_cc_data10_copy(src, dst)                   fcs_pepcparts_data10_copy(src, dst)
+ #define fcs_pepcparts_cc_data10_ncopy(src, dst, n)               fcs_pepcparts_data10_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data10_nmove(src, dst, n)               fcs_pepcparts_data10_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data10_copy_at(src, sat, dst, dat)      fcs_pepcparts_data10_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data10_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data10_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data10_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data10_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data10_xchange(e0, e1, t)               fcs_pepcparts_data10_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data10_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data10_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA10 */
+
+ #define fcs_pepcparts_data10_n                                   0
+ #define fcs_pepcparts_data10_byte                                0
+/* #define fcs_pepcparts_data10_ptr(e)*/
+
+ #define fcs_pepcparts_data10_byte_flex                           0
+ #define fcs_pepcparts_data10_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data10_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data10_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data10_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data10_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data10_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data10_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data10_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data10_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data10_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data10_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data10_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data10_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data10_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data10_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data10_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data10_assign(src, dst)
+ #define fcs_pepcparts_cc_data10_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data10_null(e)
+ #define fcs_pepcparts_cc_data10_inc(e)
+ #define fcs_pepcparts_cc_data10_dec(e)
+ #define fcs_pepcparts_cc_data10_add(e, n)
+ #define fcs_pepcparts_cc_data10_sub(e, n)
+ #define fcs_pepcparts_cc_data10_copy(src, dst)
+ #define fcs_pepcparts_cc_data10_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data10_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data10_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data10_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data10_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data10_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data10_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA10 */
+
+#define fcs_pepcparts_data10_cm                                   SLCM_DATA10  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA11 fcs_pepcparts_SL_DATA11_IGNORE fcs_pepcparts_sl_data11_type_c fcs_pepcparts_sl_data11_size_c fcs_pepcparts_sl_data11_type_mpi fcs_pepcparts_sl_data11_size_mpi fcs_pepcparts_sl_data11_memcpy fcs_pepcparts_sl_data11_weight fcs_pepcparts_sl_data11_flex */
+
+#ifdef fcs_pepcparts_SL_DATA11
+
+ #define fcs_pepcparts_sl_data11_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data11_size_c) * sizeof(fcs_pepcparts_sl_data11_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data11_copy
+  #if fcs_pepcparts_sl_data11_size_c <= 9 && !defined(fcs_pepcparts_sl_data11_memcpy)
+   #if fcs_pepcparts_sl_data11_size_c == 1
+    #define fcs_pepcparts_sl_data11_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data11_size_c == 2
+    #define fcs_pepcparts_sl_data11_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data11_size_c == 3
+    #define fcs_pepcparts_sl_data11_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data11_size_c == 4
+    #define fcs_pepcparts_sl_data11_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data11_size_c == 5
+    #define fcs_pepcparts_sl_data11_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data11_size_c == 6
+    #define fcs_pepcparts_sl_data11_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data11_size_c == 7
+    #define fcs_pepcparts_sl_data11_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data11_size_c == 8
+    #define fcs_pepcparts_sl_data11_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data11_size_c == 9
+    #define fcs_pepcparts_sl_data11_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data11_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data11_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data11_ncopy
+  #define fcs_pepcparts_sl_data11_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data11_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data11_nmove
+  #define fcs_pepcparts_sl_data11_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data11_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data11_type_c                              fcs_pepcparts_sl_data11_type_c  /* sl_macro */
+ #define fcs_pepcparts_data11_size_c                              (fcs_pepcparts_sl_data11_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data11_type_mpi                            (fcs_pepcparts_sl_data11_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data11_size_mpi                            (fcs_pepcparts_sl_data11_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data11_idx                                 11  /* sl_macro */
+
+ #define fcs_pepcparts_data11_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data11_byte                                (fcs_pepcparts_sl_data11_byte)  /* sl_macro */
+ #define fcs_pepcparts_data11_ptr(e)                              (e)->data11  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data11_flex
+ # define fcs_pepcparts_data11_byte_flex                          (fcs_pepcparts_sl_data11_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data11_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data11_weight
+ # define fcs_pepcparts_data11_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data11_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data11_assign(src, dst)                    ((dst)->data11 = (src)->data11)  /* sl_macro */
+ #define fcs_pepcparts_data11_assign_at(src, sat, dst)            ((dst)->data11 = &(src)->data11[(sat) * fcs_pepcparts_data11_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data11_null(e)                             ((e)->data11 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data11_inc(e)                              ((e)->data11 += fcs_pepcparts_data11_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data11_dec(e)                              ((e)->data11 -= fcs_pepcparts_data11_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data11_add(e, n)                           ((e)->data11 += (n) * fcs_pepcparts_data11_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data11_sub(e, n)                           ((e)->data11 -= (n) * fcs_pepcparts_data11_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data11_copy(src, dst)                      fcs_pepcparts_sl_data11_copy((src)->data11, (dst)->data11)  /* sl_macro */
+ #define fcs_pepcparts_data11_ncopy(src, dst, n)                  fcs_pepcparts_sl_data11_ncopy((src)->data11, (dst)->data11, n)  /* sl_macro */
+ #define fcs_pepcparts_data11_nmove(src, dst, n)                  fcs_pepcparts_sl_data11_nmove((src)->data11, (dst)->data11, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data11_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data11_copy(&(src)->data11[(sat) * fcs_pepcparts_data11_size_c], &(dst)->data11[(dat) * fcs_pepcparts_data11_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data11_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data11_ncopy(&(src)->data11[(sat) * fcs_pepcparts_data11_size_c], &(dst)->data11[(dat) * fcs_pepcparts_data11_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data11_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data11_nmove(&(src)->data11[(sat) * fcs_pepcparts_data11_size_c], &(dst)->data11[(dat) * fcs_pepcparts_data11_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data11_xchange(e0, e1, t)                  (fcs_pepcparts_data11_copy(e0, t), fcs_pepcparts_data11_copy(e1, e0), fcs_pepcparts_data11_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data11_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data11_copy_at(e0, at0, t, 0), fcs_pepcparts_data11_copy_at(e1, at1, e0, at0), fcs_pepcparts_data11_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data11_assign(src, dst)                 , fcs_pepcparts_data11_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_assign_at(src, sat, dst)         , fcs_pepcparts_data11_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_null(e)                          , fcs_pepcparts_data11_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_inc(e)                           , fcs_pepcparts_data11_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_dec(e)                           , fcs_pepcparts_data11_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_add(e, n)                        , fcs_pepcparts_data11_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_sub(e, n)                        , fcs_pepcparts_data11_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_copy(src, dst)                   , fcs_pepcparts_data11_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_ncopy(src, dst, n)               , fcs_pepcparts_data11_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_nmove(src, dst, n)               , fcs_pepcparts_data11_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data11_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data11_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data11_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_xchange(e0, e1, t)               , fcs_pepcparts_data11_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data11_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data11_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data11_assign(src, dst)                 fcs_pepcparts_data11_assign(src, dst)
+ #define fcs_pepcparts_cc_data11_assign_at(src, sat, dst)         fcs_pepcparts_data11_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data11_null(e)                          fcs_pepcparts_data11_null(e)
+ #define fcs_pepcparts_cc_data11_inc(e)                           fcs_pepcparts_data11_inc(e)
+ #define fcs_pepcparts_cc_data11_dec(e)                           fcs_pepcparts_data11_dec(e)
+ #define fcs_pepcparts_cc_data11_add(e, n)                        fcs_pepcparts_data11_add(e, n)
+ #define fcs_pepcparts_cc_data11_sub(e, n)                        fcs_pepcparts_data11_sub(e, n)
+ #define fcs_pepcparts_cc_data11_copy(src, dst)                   fcs_pepcparts_data11_copy(src, dst)
+ #define fcs_pepcparts_cc_data11_ncopy(src, dst, n)               fcs_pepcparts_data11_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data11_nmove(src, dst, n)               fcs_pepcparts_data11_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data11_copy_at(src, sat, dst, dat)      fcs_pepcparts_data11_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data11_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data11_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data11_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data11_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data11_xchange(e0, e1, t)               fcs_pepcparts_data11_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data11_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data11_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA11 */
+
+ #define fcs_pepcparts_data11_n                                   0
+ #define fcs_pepcparts_data11_byte                                0
+/* #define fcs_pepcparts_data11_ptr(e)*/
+
+ #define fcs_pepcparts_data11_byte_flex                           0
+ #define fcs_pepcparts_data11_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data11_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data11_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data11_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data11_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data11_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data11_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data11_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data11_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data11_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data11_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data11_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data11_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data11_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data11_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data11_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data11_assign(src, dst)
+ #define fcs_pepcparts_cc_data11_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data11_null(e)
+ #define fcs_pepcparts_cc_data11_inc(e)
+ #define fcs_pepcparts_cc_data11_dec(e)
+ #define fcs_pepcparts_cc_data11_add(e, n)
+ #define fcs_pepcparts_cc_data11_sub(e, n)
+ #define fcs_pepcparts_cc_data11_copy(src, dst)
+ #define fcs_pepcparts_cc_data11_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data11_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data11_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data11_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data11_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data11_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data11_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA11 */
+
+#define fcs_pepcparts_data11_cm                                   SLCM_DATA11  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA12 fcs_pepcparts_SL_DATA12_IGNORE fcs_pepcparts_sl_data12_type_c fcs_pepcparts_sl_data12_size_c fcs_pepcparts_sl_data12_type_mpi fcs_pepcparts_sl_data12_size_mpi fcs_pepcparts_sl_data12_memcpy fcs_pepcparts_sl_data12_weight fcs_pepcparts_sl_data12_flex */
+
+#ifdef fcs_pepcparts_SL_DATA12
+
+ #define fcs_pepcparts_sl_data12_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data12_size_c) * sizeof(fcs_pepcparts_sl_data12_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data12_copy
+  #if fcs_pepcparts_sl_data12_size_c <= 9 && !defined(fcs_pepcparts_sl_data12_memcpy)
+   #if fcs_pepcparts_sl_data12_size_c == 1
+    #define fcs_pepcparts_sl_data12_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data12_size_c == 2
+    #define fcs_pepcparts_sl_data12_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data12_size_c == 3
+    #define fcs_pepcparts_sl_data12_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data12_size_c == 4
+    #define fcs_pepcparts_sl_data12_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data12_size_c == 5
+    #define fcs_pepcparts_sl_data12_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data12_size_c == 6
+    #define fcs_pepcparts_sl_data12_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data12_size_c == 7
+    #define fcs_pepcparts_sl_data12_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data12_size_c == 8
+    #define fcs_pepcparts_sl_data12_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data12_size_c == 9
+    #define fcs_pepcparts_sl_data12_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data12_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data12_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data12_ncopy
+  #define fcs_pepcparts_sl_data12_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data12_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data12_nmove
+  #define fcs_pepcparts_sl_data12_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data12_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data12_type_c                              fcs_pepcparts_sl_data12_type_c  /* sl_macro */
+ #define fcs_pepcparts_data12_size_c                              (fcs_pepcparts_sl_data12_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data12_type_mpi                            (fcs_pepcparts_sl_data12_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data12_size_mpi                            (fcs_pepcparts_sl_data12_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data12_idx                                 12  /* sl_macro */
+
+ #define fcs_pepcparts_data12_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data12_byte                                (fcs_pepcparts_sl_data12_byte)  /* sl_macro */
+ #define fcs_pepcparts_data12_ptr(e)                              (e)->data12  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data12_flex
+ # define fcs_pepcparts_data12_byte_flex                          (fcs_pepcparts_sl_data12_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data12_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data12_weight
+ # define fcs_pepcparts_data12_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data12_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data12_assign(src, dst)                    ((dst)->data12 = (src)->data12)  /* sl_macro */
+ #define fcs_pepcparts_data12_assign_at(src, sat, dst)            ((dst)->data12 = &(src)->data12[(sat) * fcs_pepcparts_data12_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data12_null(e)                             ((e)->data12 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data12_inc(e)                              ((e)->data12 += fcs_pepcparts_data12_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data12_dec(e)                              ((e)->data12 -= fcs_pepcparts_data12_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data12_add(e, n)                           ((e)->data12 += (n) * fcs_pepcparts_data12_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data12_sub(e, n)                           ((e)->data12 -= (n) * fcs_pepcparts_data12_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data12_copy(src, dst)                      fcs_pepcparts_sl_data12_copy((src)->data12, (dst)->data12)  /* sl_macro */
+ #define fcs_pepcparts_data12_ncopy(src, dst, n)                  fcs_pepcparts_sl_data12_ncopy((src)->data12, (dst)->data12, n)  /* sl_macro */
+ #define fcs_pepcparts_data12_nmove(src, dst, n)                  fcs_pepcparts_sl_data12_nmove((src)->data12, (dst)->data12, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data12_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data12_copy(&(src)->data12[(sat) * fcs_pepcparts_data12_size_c], &(dst)->data12[(dat) * fcs_pepcparts_data12_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data12_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data12_ncopy(&(src)->data12[(sat) * fcs_pepcparts_data12_size_c], &(dst)->data12[(dat) * fcs_pepcparts_data12_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data12_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data12_nmove(&(src)->data12[(sat) * fcs_pepcparts_data12_size_c], &(dst)->data12[(dat) * fcs_pepcparts_data12_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data12_xchange(e0, e1, t)                  (fcs_pepcparts_data12_copy(e0, t), fcs_pepcparts_data12_copy(e1, e0), fcs_pepcparts_data12_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data12_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data12_copy_at(e0, at0, t, 0), fcs_pepcparts_data12_copy_at(e1, at1, e0, at0), fcs_pepcparts_data12_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data12_assign(src, dst)                 , fcs_pepcparts_data12_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_assign_at(src, sat, dst)         , fcs_pepcparts_data12_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_null(e)                          , fcs_pepcparts_data12_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_inc(e)                           , fcs_pepcparts_data12_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_dec(e)                           , fcs_pepcparts_data12_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_add(e, n)                        , fcs_pepcparts_data12_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_sub(e, n)                        , fcs_pepcparts_data12_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_copy(src, dst)                   , fcs_pepcparts_data12_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_ncopy(src, dst, n)               , fcs_pepcparts_data12_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_nmove(src, dst, n)               , fcs_pepcparts_data12_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data12_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data12_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data12_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_xchange(e0, e1, t)               , fcs_pepcparts_data12_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data12_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data12_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data12_assign(src, dst)                 fcs_pepcparts_data12_assign(src, dst)
+ #define fcs_pepcparts_cc_data12_assign_at(src, sat, dst)         fcs_pepcparts_data12_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data12_null(e)                          fcs_pepcparts_data12_null(e)
+ #define fcs_pepcparts_cc_data12_inc(e)                           fcs_pepcparts_data12_inc(e)
+ #define fcs_pepcparts_cc_data12_dec(e)                           fcs_pepcparts_data12_dec(e)
+ #define fcs_pepcparts_cc_data12_add(e, n)                        fcs_pepcparts_data12_add(e, n)
+ #define fcs_pepcparts_cc_data12_sub(e, n)                        fcs_pepcparts_data12_sub(e, n)
+ #define fcs_pepcparts_cc_data12_copy(src, dst)                   fcs_pepcparts_data12_copy(src, dst)
+ #define fcs_pepcparts_cc_data12_ncopy(src, dst, n)               fcs_pepcparts_data12_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data12_nmove(src, dst, n)               fcs_pepcparts_data12_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data12_copy_at(src, sat, dst, dat)      fcs_pepcparts_data12_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data12_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data12_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data12_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data12_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data12_xchange(e0, e1, t)               fcs_pepcparts_data12_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data12_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data12_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA12 */
+
+ #define fcs_pepcparts_data12_n                                   0
+ #define fcs_pepcparts_data12_byte                                0
+/* #define fcs_pepcparts_data12_ptr(e)*/
+
+ #define fcs_pepcparts_data12_byte_flex                           0
+ #define fcs_pepcparts_data12_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data12_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data12_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data12_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data12_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data12_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data12_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data12_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data12_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data12_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data12_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data12_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data12_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data12_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data12_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data12_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data12_assign(src, dst)
+ #define fcs_pepcparts_cc_data12_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data12_null(e)
+ #define fcs_pepcparts_cc_data12_inc(e)
+ #define fcs_pepcparts_cc_data12_dec(e)
+ #define fcs_pepcparts_cc_data12_add(e, n)
+ #define fcs_pepcparts_cc_data12_sub(e, n)
+ #define fcs_pepcparts_cc_data12_copy(src, dst)
+ #define fcs_pepcparts_cc_data12_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data12_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data12_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data12_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data12_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data12_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data12_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA12 */
+
+#define fcs_pepcparts_data12_cm                                   SLCM_DATA12  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA13 fcs_pepcparts_SL_DATA13_IGNORE fcs_pepcparts_sl_data13_type_c fcs_pepcparts_sl_data13_size_c fcs_pepcparts_sl_data13_type_mpi fcs_pepcparts_sl_data13_size_mpi fcs_pepcparts_sl_data13_memcpy fcs_pepcparts_sl_data13_weight fcs_pepcparts_sl_data13_flex */
+
+#ifdef fcs_pepcparts_SL_DATA13
+
+ #define fcs_pepcparts_sl_data13_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data13_size_c) * sizeof(fcs_pepcparts_sl_data13_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data13_copy
+  #if fcs_pepcparts_sl_data13_size_c <= 9 && !defined(fcs_pepcparts_sl_data13_memcpy)
+   #if fcs_pepcparts_sl_data13_size_c == 1
+    #define fcs_pepcparts_sl_data13_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data13_size_c == 2
+    #define fcs_pepcparts_sl_data13_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data13_size_c == 3
+    #define fcs_pepcparts_sl_data13_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data13_size_c == 4
+    #define fcs_pepcparts_sl_data13_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data13_size_c == 5
+    #define fcs_pepcparts_sl_data13_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data13_size_c == 6
+    #define fcs_pepcparts_sl_data13_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data13_size_c == 7
+    #define fcs_pepcparts_sl_data13_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data13_size_c == 8
+    #define fcs_pepcparts_sl_data13_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data13_size_c == 9
+    #define fcs_pepcparts_sl_data13_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data13_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data13_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data13_ncopy
+  #define fcs_pepcparts_sl_data13_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data13_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data13_nmove
+  #define fcs_pepcparts_sl_data13_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data13_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data13_type_c                              fcs_pepcparts_sl_data13_type_c  /* sl_macro */
+ #define fcs_pepcparts_data13_size_c                              (fcs_pepcparts_sl_data13_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data13_type_mpi                            (fcs_pepcparts_sl_data13_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data13_size_mpi                            (fcs_pepcparts_sl_data13_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data13_idx                                 13  /* sl_macro */
+
+ #define fcs_pepcparts_data13_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data13_byte                                (fcs_pepcparts_sl_data13_byte)  /* sl_macro */
+ #define fcs_pepcparts_data13_ptr(e)                              (e)->data13  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data13_flex
+ # define fcs_pepcparts_data13_byte_flex                          (fcs_pepcparts_sl_data13_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data13_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data13_weight
+ # define fcs_pepcparts_data13_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data13_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data13_assign(src, dst)                    ((dst)->data13 = (src)->data13)  /* sl_macro */
+ #define fcs_pepcparts_data13_assign_at(src, sat, dst)            ((dst)->data13 = &(src)->data13[(sat) * fcs_pepcparts_data13_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data13_null(e)                             ((e)->data13 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data13_inc(e)                              ((e)->data13 += fcs_pepcparts_data13_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data13_dec(e)                              ((e)->data13 -= fcs_pepcparts_data13_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data13_add(e, n)                           ((e)->data13 += (n) * fcs_pepcparts_data13_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data13_sub(e, n)                           ((e)->data13 -= (n) * fcs_pepcparts_data13_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data13_copy(src, dst)                      fcs_pepcparts_sl_data13_copy((src)->data13, (dst)->data13)  /* sl_macro */
+ #define fcs_pepcparts_data13_ncopy(src, dst, n)                  fcs_pepcparts_sl_data13_ncopy((src)->data13, (dst)->data13, n)  /* sl_macro */
+ #define fcs_pepcparts_data13_nmove(src, dst, n)                  fcs_pepcparts_sl_data13_nmove((src)->data13, (dst)->data13, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data13_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data13_copy(&(src)->data13[(sat) * fcs_pepcparts_data13_size_c], &(dst)->data13[(dat) * fcs_pepcparts_data13_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data13_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data13_ncopy(&(src)->data13[(sat) * fcs_pepcparts_data13_size_c], &(dst)->data13[(dat) * fcs_pepcparts_data13_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data13_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data13_nmove(&(src)->data13[(sat) * fcs_pepcparts_data13_size_c], &(dst)->data13[(dat) * fcs_pepcparts_data13_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data13_xchange(e0, e1, t)                  (fcs_pepcparts_data13_copy(e0, t), fcs_pepcparts_data13_copy(e1, e0), fcs_pepcparts_data13_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data13_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data13_copy_at(e0, at0, t, 0), fcs_pepcparts_data13_copy_at(e1, at1, e0, at0), fcs_pepcparts_data13_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data13_assign(src, dst)                 , fcs_pepcparts_data13_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_assign_at(src, sat, dst)         , fcs_pepcparts_data13_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_null(e)                          , fcs_pepcparts_data13_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_inc(e)                           , fcs_pepcparts_data13_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_dec(e)                           , fcs_pepcparts_data13_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_add(e, n)                        , fcs_pepcparts_data13_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_sub(e, n)                        , fcs_pepcparts_data13_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_copy(src, dst)                   , fcs_pepcparts_data13_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_ncopy(src, dst, n)               , fcs_pepcparts_data13_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_nmove(src, dst, n)               , fcs_pepcparts_data13_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data13_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data13_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data13_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_xchange(e0, e1, t)               , fcs_pepcparts_data13_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data13_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data13_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data13_assign(src, dst)                 fcs_pepcparts_data13_assign(src, dst)
+ #define fcs_pepcparts_cc_data13_assign_at(src, sat, dst)         fcs_pepcparts_data13_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data13_null(e)                          fcs_pepcparts_data13_null(e)
+ #define fcs_pepcparts_cc_data13_inc(e)                           fcs_pepcparts_data13_inc(e)
+ #define fcs_pepcparts_cc_data13_dec(e)                           fcs_pepcparts_data13_dec(e)
+ #define fcs_pepcparts_cc_data13_add(e, n)                        fcs_pepcparts_data13_add(e, n)
+ #define fcs_pepcparts_cc_data13_sub(e, n)                        fcs_pepcparts_data13_sub(e, n)
+ #define fcs_pepcparts_cc_data13_copy(src, dst)                   fcs_pepcparts_data13_copy(src, dst)
+ #define fcs_pepcparts_cc_data13_ncopy(src, dst, n)               fcs_pepcparts_data13_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data13_nmove(src, dst, n)               fcs_pepcparts_data13_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data13_copy_at(src, sat, dst, dat)      fcs_pepcparts_data13_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data13_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data13_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data13_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data13_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data13_xchange(e0, e1, t)               fcs_pepcparts_data13_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data13_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data13_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA13 */
+
+ #define fcs_pepcparts_data13_n                                   0
+ #define fcs_pepcparts_data13_byte                                0
+/* #define fcs_pepcparts_data13_ptr(e)*/
+
+ #define fcs_pepcparts_data13_byte_flex                           0
+ #define fcs_pepcparts_data13_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data13_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data13_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data13_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data13_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data13_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data13_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data13_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data13_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data13_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data13_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data13_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data13_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data13_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data13_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data13_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data13_assign(src, dst)
+ #define fcs_pepcparts_cc_data13_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data13_null(e)
+ #define fcs_pepcparts_cc_data13_inc(e)
+ #define fcs_pepcparts_cc_data13_dec(e)
+ #define fcs_pepcparts_cc_data13_add(e, n)
+ #define fcs_pepcparts_cc_data13_sub(e, n)
+ #define fcs_pepcparts_cc_data13_copy(src, dst)
+ #define fcs_pepcparts_cc_data13_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data13_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data13_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data13_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data13_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data13_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data13_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA13 */
+
+#define fcs_pepcparts_data13_cm                                   SLCM_DATA13  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA14 fcs_pepcparts_SL_DATA14_IGNORE fcs_pepcparts_sl_data14_type_c fcs_pepcparts_sl_data14_size_c fcs_pepcparts_sl_data14_type_mpi fcs_pepcparts_sl_data14_size_mpi fcs_pepcparts_sl_data14_memcpy fcs_pepcparts_sl_data14_weight fcs_pepcparts_sl_data14_flex */
+
+#ifdef fcs_pepcparts_SL_DATA14
+
+ #define fcs_pepcparts_sl_data14_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data14_size_c) * sizeof(fcs_pepcparts_sl_data14_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data14_copy
+  #if fcs_pepcparts_sl_data14_size_c <= 9 && !defined(fcs_pepcparts_sl_data14_memcpy)
+   #if fcs_pepcparts_sl_data14_size_c == 1
+    #define fcs_pepcparts_sl_data14_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data14_size_c == 2
+    #define fcs_pepcparts_sl_data14_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data14_size_c == 3
+    #define fcs_pepcparts_sl_data14_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data14_size_c == 4
+    #define fcs_pepcparts_sl_data14_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data14_size_c == 5
+    #define fcs_pepcparts_sl_data14_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data14_size_c == 6
+    #define fcs_pepcparts_sl_data14_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data14_size_c == 7
+    #define fcs_pepcparts_sl_data14_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data14_size_c == 8
+    #define fcs_pepcparts_sl_data14_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data14_size_c == 9
+    #define fcs_pepcparts_sl_data14_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data14_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data14_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data14_ncopy
+  #define fcs_pepcparts_sl_data14_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data14_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data14_nmove
+  #define fcs_pepcparts_sl_data14_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data14_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data14_type_c                              fcs_pepcparts_sl_data14_type_c  /* sl_macro */
+ #define fcs_pepcparts_data14_size_c                              (fcs_pepcparts_sl_data14_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data14_type_mpi                            (fcs_pepcparts_sl_data14_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data14_size_mpi                            (fcs_pepcparts_sl_data14_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data14_idx                                 14  /* sl_macro */
+
+ #define fcs_pepcparts_data14_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data14_byte                                (fcs_pepcparts_sl_data14_byte)  /* sl_macro */
+ #define fcs_pepcparts_data14_ptr(e)                              (e)->data14  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data14_flex
+ # define fcs_pepcparts_data14_byte_flex                          (fcs_pepcparts_sl_data14_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data14_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data14_weight
+ # define fcs_pepcparts_data14_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data14_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data14_assign(src, dst)                    ((dst)->data14 = (src)->data14)  /* sl_macro */
+ #define fcs_pepcparts_data14_assign_at(src, sat, dst)            ((dst)->data14 = &(src)->data14[(sat) * fcs_pepcparts_data14_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data14_null(e)                             ((e)->data14 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data14_inc(e)                              ((e)->data14 += fcs_pepcparts_data14_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data14_dec(e)                              ((e)->data14 -= fcs_pepcparts_data14_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data14_add(e, n)                           ((e)->data14 += (n) * fcs_pepcparts_data14_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data14_sub(e, n)                           ((e)->data14 -= (n) * fcs_pepcparts_data14_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data14_copy(src, dst)                      fcs_pepcparts_sl_data14_copy((src)->data14, (dst)->data14)  /* sl_macro */
+ #define fcs_pepcparts_data14_ncopy(src, dst, n)                  fcs_pepcparts_sl_data14_ncopy((src)->data14, (dst)->data14, n)  /* sl_macro */
+ #define fcs_pepcparts_data14_nmove(src, dst, n)                  fcs_pepcparts_sl_data14_nmove((src)->data14, (dst)->data14, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data14_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data14_copy(&(src)->data14[(sat) * fcs_pepcparts_data14_size_c], &(dst)->data14[(dat) * fcs_pepcparts_data14_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data14_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data14_ncopy(&(src)->data14[(sat) * fcs_pepcparts_data14_size_c], &(dst)->data14[(dat) * fcs_pepcparts_data14_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data14_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data14_nmove(&(src)->data14[(sat) * fcs_pepcparts_data14_size_c], &(dst)->data14[(dat) * fcs_pepcparts_data14_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data14_xchange(e0, e1, t)                  (fcs_pepcparts_data14_copy(e0, t), fcs_pepcparts_data14_copy(e1, e0), fcs_pepcparts_data14_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data14_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data14_copy_at(e0, at0, t, 0), fcs_pepcparts_data14_copy_at(e1, at1, e0, at0), fcs_pepcparts_data14_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data14_assign(src, dst)                 , fcs_pepcparts_data14_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_assign_at(src, sat, dst)         , fcs_pepcparts_data14_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_null(e)                          , fcs_pepcparts_data14_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_inc(e)                           , fcs_pepcparts_data14_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_dec(e)                           , fcs_pepcparts_data14_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_add(e, n)                        , fcs_pepcparts_data14_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_sub(e, n)                        , fcs_pepcparts_data14_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_copy(src, dst)                   , fcs_pepcparts_data14_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_ncopy(src, dst, n)               , fcs_pepcparts_data14_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_nmove(src, dst, n)               , fcs_pepcparts_data14_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data14_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data14_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data14_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_xchange(e0, e1, t)               , fcs_pepcparts_data14_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data14_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data14_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data14_assign(src, dst)                 fcs_pepcparts_data14_assign(src, dst)
+ #define fcs_pepcparts_cc_data14_assign_at(src, sat, dst)         fcs_pepcparts_data14_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data14_null(e)                          fcs_pepcparts_data14_null(e)
+ #define fcs_pepcparts_cc_data14_inc(e)                           fcs_pepcparts_data14_inc(e)
+ #define fcs_pepcparts_cc_data14_dec(e)                           fcs_pepcparts_data14_dec(e)
+ #define fcs_pepcparts_cc_data14_add(e, n)                        fcs_pepcparts_data14_add(e, n)
+ #define fcs_pepcparts_cc_data14_sub(e, n)                        fcs_pepcparts_data14_sub(e, n)
+ #define fcs_pepcparts_cc_data14_copy(src, dst)                   fcs_pepcparts_data14_copy(src, dst)
+ #define fcs_pepcparts_cc_data14_ncopy(src, dst, n)               fcs_pepcparts_data14_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data14_nmove(src, dst, n)               fcs_pepcparts_data14_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data14_copy_at(src, sat, dst, dat)      fcs_pepcparts_data14_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data14_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data14_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data14_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data14_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data14_xchange(e0, e1, t)               fcs_pepcparts_data14_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data14_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data14_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA14 */
+
+ #define fcs_pepcparts_data14_n                                   0
+ #define fcs_pepcparts_data14_byte                                0
+/* #define fcs_pepcparts_data14_ptr(e)*/
+
+ #define fcs_pepcparts_data14_byte_flex                           0
+ #define fcs_pepcparts_data14_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data14_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data14_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data14_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data14_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data14_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data14_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data14_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data14_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data14_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data14_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data14_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data14_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data14_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data14_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data14_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data14_assign(src, dst)
+ #define fcs_pepcparts_cc_data14_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data14_null(e)
+ #define fcs_pepcparts_cc_data14_inc(e)
+ #define fcs_pepcparts_cc_data14_dec(e)
+ #define fcs_pepcparts_cc_data14_add(e, n)
+ #define fcs_pepcparts_cc_data14_sub(e, n)
+ #define fcs_pepcparts_cc_data14_copy(src, dst)
+ #define fcs_pepcparts_cc_data14_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data14_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data14_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data14_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data14_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data14_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data14_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA14 */
+
+#define fcs_pepcparts_data14_cm                                   SLCM_DATA14  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA15 fcs_pepcparts_SL_DATA15_IGNORE fcs_pepcparts_sl_data15_type_c fcs_pepcparts_sl_data15_size_c fcs_pepcparts_sl_data15_type_mpi fcs_pepcparts_sl_data15_size_mpi fcs_pepcparts_sl_data15_memcpy fcs_pepcparts_sl_data15_weight fcs_pepcparts_sl_data15_flex */
+
+#ifdef fcs_pepcparts_SL_DATA15
+
+ #define fcs_pepcparts_sl_data15_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data15_size_c) * sizeof(fcs_pepcparts_sl_data15_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data15_copy
+  #if fcs_pepcparts_sl_data15_size_c <= 9 && !defined(fcs_pepcparts_sl_data15_memcpy)
+   #if fcs_pepcparts_sl_data15_size_c == 1
+    #define fcs_pepcparts_sl_data15_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data15_size_c == 2
+    #define fcs_pepcparts_sl_data15_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data15_size_c == 3
+    #define fcs_pepcparts_sl_data15_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data15_size_c == 4
+    #define fcs_pepcparts_sl_data15_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data15_size_c == 5
+    #define fcs_pepcparts_sl_data15_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data15_size_c == 6
+    #define fcs_pepcparts_sl_data15_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data15_size_c == 7
+    #define fcs_pepcparts_sl_data15_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data15_size_c == 8
+    #define fcs_pepcparts_sl_data15_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data15_size_c == 9
+    #define fcs_pepcparts_sl_data15_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data15_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data15_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data15_ncopy
+  #define fcs_pepcparts_sl_data15_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data15_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data15_nmove
+  #define fcs_pepcparts_sl_data15_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data15_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data15_type_c                              fcs_pepcparts_sl_data15_type_c  /* sl_macro */
+ #define fcs_pepcparts_data15_size_c                              (fcs_pepcparts_sl_data15_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data15_type_mpi                            (fcs_pepcparts_sl_data15_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data15_size_mpi                            (fcs_pepcparts_sl_data15_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data15_idx                                 15  /* sl_macro */
+
+ #define fcs_pepcparts_data15_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data15_byte                                (fcs_pepcparts_sl_data15_byte)  /* sl_macro */
+ #define fcs_pepcparts_data15_ptr(e)                              (e)->data15  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data15_flex
+ # define fcs_pepcparts_data15_byte_flex                          (fcs_pepcparts_sl_data15_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data15_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data15_weight
+ # define fcs_pepcparts_data15_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data15_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data15_assign(src, dst)                    ((dst)->data15 = (src)->data15)  /* sl_macro */
+ #define fcs_pepcparts_data15_assign_at(src, sat, dst)            ((dst)->data15 = &(src)->data15[(sat) * fcs_pepcparts_data15_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data15_null(e)                             ((e)->data15 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data15_inc(e)                              ((e)->data15 += fcs_pepcparts_data15_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data15_dec(e)                              ((e)->data15 -= fcs_pepcparts_data15_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data15_add(e, n)                           ((e)->data15 += (n) * fcs_pepcparts_data15_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data15_sub(e, n)                           ((e)->data15 -= (n) * fcs_pepcparts_data15_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data15_copy(src, dst)                      fcs_pepcparts_sl_data15_copy((src)->data15, (dst)->data15)  /* sl_macro */
+ #define fcs_pepcparts_data15_ncopy(src, dst, n)                  fcs_pepcparts_sl_data15_ncopy((src)->data15, (dst)->data15, n)  /* sl_macro */
+ #define fcs_pepcparts_data15_nmove(src, dst, n)                  fcs_pepcparts_sl_data15_nmove((src)->data15, (dst)->data15, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data15_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data15_copy(&(src)->data15[(sat) * fcs_pepcparts_data15_size_c], &(dst)->data15[(dat) * fcs_pepcparts_data15_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data15_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data15_ncopy(&(src)->data15[(sat) * fcs_pepcparts_data15_size_c], &(dst)->data15[(dat) * fcs_pepcparts_data15_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data15_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data15_nmove(&(src)->data15[(sat) * fcs_pepcparts_data15_size_c], &(dst)->data15[(dat) * fcs_pepcparts_data15_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data15_xchange(e0, e1, t)                  (fcs_pepcparts_data15_copy(e0, t), fcs_pepcparts_data15_copy(e1, e0), fcs_pepcparts_data15_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data15_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data15_copy_at(e0, at0, t, 0), fcs_pepcparts_data15_copy_at(e1, at1, e0, at0), fcs_pepcparts_data15_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data15_assign(src, dst)                 , fcs_pepcparts_data15_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_assign_at(src, sat, dst)         , fcs_pepcparts_data15_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_null(e)                          , fcs_pepcparts_data15_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_inc(e)                           , fcs_pepcparts_data15_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_dec(e)                           , fcs_pepcparts_data15_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_add(e, n)                        , fcs_pepcparts_data15_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_sub(e, n)                        , fcs_pepcparts_data15_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_copy(src, dst)                   , fcs_pepcparts_data15_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_ncopy(src, dst, n)               , fcs_pepcparts_data15_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_nmove(src, dst, n)               , fcs_pepcparts_data15_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data15_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data15_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data15_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_xchange(e0, e1, t)               , fcs_pepcparts_data15_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data15_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data15_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data15_assign(src, dst)                 fcs_pepcparts_data15_assign(src, dst)
+ #define fcs_pepcparts_cc_data15_assign_at(src, sat, dst)         fcs_pepcparts_data15_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data15_null(e)                          fcs_pepcparts_data15_null(e)
+ #define fcs_pepcparts_cc_data15_inc(e)                           fcs_pepcparts_data15_inc(e)
+ #define fcs_pepcparts_cc_data15_dec(e)                           fcs_pepcparts_data15_dec(e)
+ #define fcs_pepcparts_cc_data15_add(e, n)                        fcs_pepcparts_data15_add(e, n)
+ #define fcs_pepcparts_cc_data15_sub(e, n)                        fcs_pepcparts_data15_sub(e, n)
+ #define fcs_pepcparts_cc_data15_copy(src, dst)                   fcs_pepcparts_data15_copy(src, dst)
+ #define fcs_pepcparts_cc_data15_ncopy(src, dst, n)               fcs_pepcparts_data15_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data15_nmove(src, dst, n)               fcs_pepcparts_data15_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data15_copy_at(src, sat, dst, dat)      fcs_pepcparts_data15_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data15_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data15_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data15_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data15_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data15_xchange(e0, e1, t)               fcs_pepcparts_data15_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data15_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data15_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA15 */
+
+ #define fcs_pepcparts_data15_n                                   0
+ #define fcs_pepcparts_data15_byte                                0
+/* #define fcs_pepcparts_data15_ptr(e)*/
+
+ #define fcs_pepcparts_data15_byte_flex                           0
+ #define fcs_pepcparts_data15_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data15_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data15_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data15_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data15_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data15_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data15_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data15_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data15_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data15_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data15_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data15_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data15_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data15_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data15_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data15_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data15_assign(src, dst)
+ #define fcs_pepcparts_cc_data15_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data15_null(e)
+ #define fcs_pepcparts_cc_data15_inc(e)
+ #define fcs_pepcparts_cc_data15_dec(e)
+ #define fcs_pepcparts_cc_data15_add(e, n)
+ #define fcs_pepcparts_cc_data15_sub(e, n)
+ #define fcs_pepcparts_cc_data15_copy(src, dst)
+ #define fcs_pepcparts_cc_data15_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data15_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data15_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data15_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data15_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data15_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data15_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA15 */
+
+#define fcs_pepcparts_data15_cm                                   SLCM_DATA15  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA16 fcs_pepcparts_SL_DATA16_IGNORE fcs_pepcparts_sl_data16_type_c fcs_pepcparts_sl_data16_size_c fcs_pepcparts_sl_data16_type_mpi fcs_pepcparts_sl_data16_size_mpi fcs_pepcparts_sl_data16_memcpy fcs_pepcparts_sl_data16_weight fcs_pepcparts_sl_data16_flex */
+
+#ifdef fcs_pepcparts_SL_DATA16
+
+ #define fcs_pepcparts_sl_data16_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data16_size_c) * sizeof(fcs_pepcparts_sl_data16_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data16_copy
+  #if fcs_pepcparts_sl_data16_size_c <= 9 && !defined(fcs_pepcparts_sl_data16_memcpy)
+   #if fcs_pepcparts_sl_data16_size_c == 1
+    #define fcs_pepcparts_sl_data16_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data16_size_c == 2
+    #define fcs_pepcparts_sl_data16_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data16_size_c == 3
+    #define fcs_pepcparts_sl_data16_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data16_size_c == 4
+    #define fcs_pepcparts_sl_data16_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data16_size_c == 5
+    #define fcs_pepcparts_sl_data16_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data16_size_c == 6
+    #define fcs_pepcparts_sl_data16_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data16_size_c == 7
+    #define fcs_pepcparts_sl_data16_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data16_size_c == 8
+    #define fcs_pepcparts_sl_data16_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data16_size_c == 9
+    #define fcs_pepcparts_sl_data16_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data16_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data16_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data16_ncopy
+  #define fcs_pepcparts_sl_data16_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data16_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data16_nmove
+  #define fcs_pepcparts_sl_data16_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data16_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data16_type_c                              fcs_pepcparts_sl_data16_type_c  /* sl_macro */
+ #define fcs_pepcparts_data16_size_c                              (fcs_pepcparts_sl_data16_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data16_type_mpi                            (fcs_pepcparts_sl_data16_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data16_size_mpi                            (fcs_pepcparts_sl_data16_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data16_idx                                 16  /* sl_macro */
+
+ #define fcs_pepcparts_data16_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data16_byte                                (fcs_pepcparts_sl_data16_byte)  /* sl_macro */
+ #define fcs_pepcparts_data16_ptr(e)                              (e)->data16  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data16_flex
+ # define fcs_pepcparts_data16_byte_flex                          (fcs_pepcparts_sl_data16_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data16_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data16_weight
+ # define fcs_pepcparts_data16_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data16_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data16_assign(src, dst)                    ((dst)->data16 = (src)->data16)  /* sl_macro */
+ #define fcs_pepcparts_data16_assign_at(src, sat, dst)            ((dst)->data16 = &(src)->data16[(sat) * fcs_pepcparts_data16_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data16_null(e)                             ((e)->data16 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data16_inc(e)                              ((e)->data16 += fcs_pepcparts_data16_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data16_dec(e)                              ((e)->data16 -= fcs_pepcparts_data16_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data16_add(e, n)                           ((e)->data16 += (n) * fcs_pepcparts_data16_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data16_sub(e, n)                           ((e)->data16 -= (n) * fcs_pepcparts_data16_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data16_copy(src, dst)                      fcs_pepcparts_sl_data16_copy((src)->data16, (dst)->data16)  /* sl_macro */
+ #define fcs_pepcparts_data16_ncopy(src, dst, n)                  fcs_pepcparts_sl_data16_ncopy((src)->data16, (dst)->data16, n)  /* sl_macro */
+ #define fcs_pepcparts_data16_nmove(src, dst, n)                  fcs_pepcparts_sl_data16_nmove((src)->data16, (dst)->data16, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data16_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data16_copy(&(src)->data16[(sat) * fcs_pepcparts_data16_size_c], &(dst)->data16[(dat) * fcs_pepcparts_data16_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data16_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data16_ncopy(&(src)->data16[(sat) * fcs_pepcparts_data16_size_c], &(dst)->data16[(dat) * fcs_pepcparts_data16_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data16_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data16_nmove(&(src)->data16[(sat) * fcs_pepcparts_data16_size_c], &(dst)->data16[(dat) * fcs_pepcparts_data16_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data16_xchange(e0, e1, t)                  (fcs_pepcparts_data16_copy(e0, t), fcs_pepcparts_data16_copy(e1, e0), fcs_pepcparts_data16_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data16_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data16_copy_at(e0, at0, t, 0), fcs_pepcparts_data16_copy_at(e1, at1, e0, at0), fcs_pepcparts_data16_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data16_assign(src, dst)                 , fcs_pepcparts_data16_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_assign_at(src, sat, dst)         , fcs_pepcparts_data16_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_null(e)                          , fcs_pepcparts_data16_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_inc(e)                           , fcs_pepcparts_data16_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_dec(e)                           , fcs_pepcparts_data16_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_add(e, n)                        , fcs_pepcparts_data16_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_sub(e, n)                        , fcs_pepcparts_data16_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_copy(src, dst)                   , fcs_pepcparts_data16_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_ncopy(src, dst, n)               , fcs_pepcparts_data16_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_nmove(src, dst, n)               , fcs_pepcparts_data16_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data16_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data16_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data16_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_xchange(e0, e1, t)               , fcs_pepcparts_data16_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data16_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data16_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data16_assign(src, dst)                 fcs_pepcparts_data16_assign(src, dst)
+ #define fcs_pepcparts_cc_data16_assign_at(src, sat, dst)         fcs_pepcparts_data16_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data16_null(e)                          fcs_pepcparts_data16_null(e)
+ #define fcs_pepcparts_cc_data16_inc(e)                           fcs_pepcparts_data16_inc(e)
+ #define fcs_pepcparts_cc_data16_dec(e)                           fcs_pepcparts_data16_dec(e)
+ #define fcs_pepcparts_cc_data16_add(e, n)                        fcs_pepcparts_data16_add(e, n)
+ #define fcs_pepcparts_cc_data16_sub(e, n)                        fcs_pepcparts_data16_sub(e, n)
+ #define fcs_pepcparts_cc_data16_copy(src, dst)                   fcs_pepcparts_data16_copy(src, dst)
+ #define fcs_pepcparts_cc_data16_ncopy(src, dst, n)               fcs_pepcparts_data16_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data16_nmove(src, dst, n)               fcs_pepcparts_data16_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data16_copy_at(src, sat, dst, dat)      fcs_pepcparts_data16_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data16_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data16_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data16_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data16_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data16_xchange(e0, e1, t)               fcs_pepcparts_data16_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data16_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data16_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA16 */
+
+ #define fcs_pepcparts_data16_n                                   0
+ #define fcs_pepcparts_data16_byte                                0
+/* #define fcs_pepcparts_data16_ptr(e)*/
+
+ #define fcs_pepcparts_data16_byte_flex                           0
+ #define fcs_pepcparts_data16_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data16_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data16_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data16_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data16_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data16_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data16_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data16_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data16_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data16_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data16_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data16_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data16_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data16_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data16_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data16_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data16_assign(src, dst)
+ #define fcs_pepcparts_cc_data16_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data16_null(e)
+ #define fcs_pepcparts_cc_data16_inc(e)
+ #define fcs_pepcparts_cc_data16_dec(e)
+ #define fcs_pepcparts_cc_data16_add(e, n)
+ #define fcs_pepcparts_cc_data16_sub(e, n)
+ #define fcs_pepcparts_cc_data16_copy(src, dst)
+ #define fcs_pepcparts_cc_data16_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data16_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data16_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data16_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data16_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data16_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data16_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA16 */
+
+#define fcs_pepcparts_data16_cm                                   SLCM_DATA16  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA17 fcs_pepcparts_SL_DATA17_IGNORE fcs_pepcparts_sl_data17_type_c fcs_pepcparts_sl_data17_size_c fcs_pepcparts_sl_data17_type_mpi fcs_pepcparts_sl_data17_size_mpi fcs_pepcparts_sl_data17_memcpy fcs_pepcparts_sl_data17_weight fcs_pepcparts_sl_data17_flex */
+
+#ifdef fcs_pepcparts_SL_DATA17
+
+ #define fcs_pepcparts_sl_data17_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data17_size_c) * sizeof(fcs_pepcparts_sl_data17_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data17_copy
+  #if fcs_pepcparts_sl_data17_size_c <= 9 && !defined(fcs_pepcparts_sl_data17_memcpy)
+   #if fcs_pepcparts_sl_data17_size_c == 1
+    #define fcs_pepcparts_sl_data17_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data17_size_c == 2
+    #define fcs_pepcparts_sl_data17_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data17_size_c == 3
+    #define fcs_pepcparts_sl_data17_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data17_size_c == 4
+    #define fcs_pepcparts_sl_data17_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data17_size_c == 5
+    #define fcs_pepcparts_sl_data17_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data17_size_c == 6
+    #define fcs_pepcparts_sl_data17_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data17_size_c == 7
+    #define fcs_pepcparts_sl_data17_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data17_size_c == 8
+    #define fcs_pepcparts_sl_data17_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data17_size_c == 9
+    #define fcs_pepcparts_sl_data17_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data17_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data17_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data17_ncopy
+  #define fcs_pepcparts_sl_data17_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data17_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data17_nmove
+  #define fcs_pepcparts_sl_data17_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data17_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data17_type_c                              fcs_pepcparts_sl_data17_type_c  /* sl_macro */
+ #define fcs_pepcparts_data17_size_c                              (fcs_pepcparts_sl_data17_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data17_type_mpi                            (fcs_pepcparts_sl_data17_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data17_size_mpi                            (fcs_pepcparts_sl_data17_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data17_idx                                 17  /* sl_macro */
+
+ #define fcs_pepcparts_data17_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data17_byte                                (fcs_pepcparts_sl_data17_byte)  /* sl_macro */
+ #define fcs_pepcparts_data17_ptr(e)                              (e)->data17  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data17_flex
+ # define fcs_pepcparts_data17_byte_flex                          (fcs_pepcparts_sl_data17_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data17_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data17_weight
+ # define fcs_pepcparts_data17_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data17_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data17_assign(src, dst)                    ((dst)->data17 = (src)->data17)  /* sl_macro */
+ #define fcs_pepcparts_data17_assign_at(src, sat, dst)            ((dst)->data17 = &(src)->data17[(sat) * fcs_pepcparts_data17_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data17_null(e)                             ((e)->data17 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data17_inc(e)                              ((e)->data17 += fcs_pepcparts_data17_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data17_dec(e)                              ((e)->data17 -= fcs_pepcparts_data17_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data17_add(e, n)                           ((e)->data17 += (n) * fcs_pepcparts_data17_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data17_sub(e, n)                           ((e)->data17 -= (n) * fcs_pepcparts_data17_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data17_copy(src, dst)                      fcs_pepcparts_sl_data17_copy((src)->data17, (dst)->data17)  /* sl_macro */
+ #define fcs_pepcparts_data17_ncopy(src, dst, n)                  fcs_pepcparts_sl_data17_ncopy((src)->data17, (dst)->data17, n)  /* sl_macro */
+ #define fcs_pepcparts_data17_nmove(src, dst, n)                  fcs_pepcparts_sl_data17_nmove((src)->data17, (dst)->data17, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data17_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data17_copy(&(src)->data17[(sat) * fcs_pepcparts_data17_size_c], &(dst)->data17[(dat) * fcs_pepcparts_data17_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data17_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data17_ncopy(&(src)->data17[(sat) * fcs_pepcparts_data17_size_c], &(dst)->data17[(dat) * fcs_pepcparts_data17_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data17_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data17_nmove(&(src)->data17[(sat) * fcs_pepcparts_data17_size_c], &(dst)->data17[(dat) * fcs_pepcparts_data17_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data17_xchange(e0, e1, t)                  (fcs_pepcparts_data17_copy(e0, t), fcs_pepcparts_data17_copy(e1, e0), fcs_pepcparts_data17_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data17_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data17_copy_at(e0, at0, t, 0), fcs_pepcparts_data17_copy_at(e1, at1, e0, at0), fcs_pepcparts_data17_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data17_assign(src, dst)                 , fcs_pepcparts_data17_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_assign_at(src, sat, dst)         , fcs_pepcparts_data17_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_null(e)                          , fcs_pepcparts_data17_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_inc(e)                           , fcs_pepcparts_data17_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_dec(e)                           , fcs_pepcparts_data17_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_add(e, n)                        , fcs_pepcparts_data17_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_sub(e, n)                        , fcs_pepcparts_data17_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_copy(src, dst)                   , fcs_pepcparts_data17_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_ncopy(src, dst, n)               , fcs_pepcparts_data17_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_nmove(src, dst, n)               , fcs_pepcparts_data17_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data17_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data17_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data17_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_xchange(e0, e1, t)               , fcs_pepcparts_data17_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data17_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data17_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data17_assign(src, dst)                 fcs_pepcparts_data17_assign(src, dst)
+ #define fcs_pepcparts_cc_data17_assign_at(src, sat, dst)         fcs_pepcparts_data17_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data17_null(e)                          fcs_pepcparts_data17_null(e)
+ #define fcs_pepcparts_cc_data17_inc(e)                           fcs_pepcparts_data17_inc(e)
+ #define fcs_pepcparts_cc_data17_dec(e)                           fcs_pepcparts_data17_dec(e)
+ #define fcs_pepcparts_cc_data17_add(e, n)                        fcs_pepcparts_data17_add(e, n)
+ #define fcs_pepcparts_cc_data17_sub(e, n)                        fcs_pepcparts_data17_sub(e, n)
+ #define fcs_pepcparts_cc_data17_copy(src, dst)                   fcs_pepcparts_data17_copy(src, dst)
+ #define fcs_pepcparts_cc_data17_ncopy(src, dst, n)               fcs_pepcparts_data17_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data17_nmove(src, dst, n)               fcs_pepcparts_data17_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data17_copy_at(src, sat, dst, dat)      fcs_pepcparts_data17_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data17_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data17_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data17_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data17_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data17_xchange(e0, e1, t)               fcs_pepcparts_data17_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data17_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data17_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA17 */
+
+ #define fcs_pepcparts_data17_n                                   0
+ #define fcs_pepcparts_data17_byte                                0
+/* #define fcs_pepcparts_data17_ptr(e)*/
+
+ #define fcs_pepcparts_data17_byte_flex                           0
+ #define fcs_pepcparts_data17_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data17_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data17_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data17_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data17_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data17_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data17_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data17_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data17_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data17_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data17_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data17_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data17_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data17_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data17_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data17_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data17_assign(src, dst)
+ #define fcs_pepcparts_cc_data17_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data17_null(e)
+ #define fcs_pepcparts_cc_data17_inc(e)
+ #define fcs_pepcparts_cc_data17_dec(e)
+ #define fcs_pepcparts_cc_data17_add(e, n)
+ #define fcs_pepcparts_cc_data17_sub(e, n)
+ #define fcs_pepcparts_cc_data17_copy(src, dst)
+ #define fcs_pepcparts_cc_data17_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data17_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data17_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data17_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data17_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data17_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data17_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA17 */
+
+#define fcs_pepcparts_data17_cm                                   SLCM_DATA17  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA18 fcs_pepcparts_SL_DATA18_IGNORE fcs_pepcparts_sl_data18_type_c fcs_pepcparts_sl_data18_size_c fcs_pepcparts_sl_data18_type_mpi fcs_pepcparts_sl_data18_size_mpi fcs_pepcparts_sl_data18_memcpy fcs_pepcparts_sl_data18_weight fcs_pepcparts_sl_data18_flex */
+
+#ifdef fcs_pepcparts_SL_DATA18
+
+ #define fcs_pepcparts_sl_data18_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data18_size_c) * sizeof(fcs_pepcparts_sl_data18_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data18_copy
+  #if fcs_pepcparts_sl_data18_size_c <= 9 && !defined(fcs_pepcparts_sl_data18_memcpy)
+   #if fcs_pepcparts_sl_data18_size_c == 1
+    #define fcs_pepcparts_sl_data18_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data18_size_c == 2
+    #define fcs_pepcparts_sl_data18_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data18_size_c == 3
+    #define fcs_pepcparts_sl_data18_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data18_size_c == 4
+    #define fcs_pepcparts_sl_data18_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data18_size_c == 5
+    #define fcs_pepcparts_sl_data18_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data18_size_c == 6
+    #define fcs_pepcparts_sl_data18_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data18_size_c == 7
+    #define fcs_pepcparts_sl_data18_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data18_size_c == 8
+    #define fcs_pepcparts_sl_data18_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data18_size_c == 9
+    #define fcs_pepcparts_sl_data18_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data18_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data18_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data18_ncopy
+  #define fcs_pepcparts_sl_data18_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data18_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data18_nmove
+  #define fcs_pepcparts_sl_data18_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data18_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data18_type_c                              fcs_pepcparts_sl_data18_type_c  /* sl_macro */
+ #define fcs_pepcparts_data18_size_c                              (fcs_pepcparts_sl_data18_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data18_type_mpi                            (fcs_pepcparts_sl_data18_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data18_size_mpi                            (fcs_pepcparts_sl_data18_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data18_idx                                 18  /* sl_macro */
+
+ #define fcs_pepcparts_data18_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data18_byte                                (fcs_pepcparts_sl_data18_byte)  /* sl_macro */
+ #define fcs_pepcparts_data18_ptr(e)                              (e)->data18  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data18_flex
+ # define fcs_pepcparts_data18_byte_flex                          (fcs_pepcparts_sl_data18_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data18_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data18_weight
+ # define fcs_pepcparts_data18_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data18_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data18_assign(src, dst)                    ((dst)->data18 = (src)->data18)  /* sl_macro */
+ #define fcs_pepcparts_data18_assign_at(src, sat, dst)            ((dst)->data18 = &(src)->data18[(sat) * fcs_pepcparts_data18_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data18_null(e)                             ((e)->data18 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data18_inc(e)                              ((e)->data18 += fcs_pepcparts_data18_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data18_dec(e)                              ((e)->data18 -= fcs_pepcparts_data18_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data18_add(e, n)                           ((e)->data18 += (n) * fcs_pepcparts_data18_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data18_sub(e, n)                           ((e)->data18 -= (n) * fcs_pepcparts_data18_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data18_copy(src, dst)                      fcs_pepcparts_sl_data18_copy((src)->data18, (dst)->data18)  /* sl_macro */
+ #define fcs_pepcparts_data18_ncopy(src, dst, n)                  fcs_pepcparts_sl_data18_ncopy((src)->data18, (dst)->data18, n)  /* sl_macro */
+ #define fcs_pepcparts_data18_nmove(src, dst, n)                  fcs_pepcparts_sl_data18_nmove((src)->data18, (dst)->data18, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data18_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data18_copy(&(src)->data18[(sat) * fcs_pepcparts_data18_size_c], &(dst)->data18[(dat) * fcs_pepcparts_data18_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data18_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data18_ncopy(&(src)->data18[(sat) * fcs_pepcparts_data18_size_c], &(dst)->data18[(dat) * fcs_pepcparts_data18_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data18_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data18_nmove(&(src)->data18[(sat) * fcs_pepcparts_data18_size_c], &(dst)->data18[(dat) * fcs_pepcparts_data18_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data18_xchange(e0, e1, t)                  (fcs_pepcparts_data18_copy(e0, t), fcs_pepcparts_data18_copy(e1, e0), fcs_pepcparts_data18_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data18_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data18_copy_at(e0, at0, t, 0), fcs_pepcparts_data18_copy_at(e1, at1, e0, at0), fcs_pepcparts_data18_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data18_assign(src, dst)                 , fcs_pepcparts_data18_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_assign_at(src, sat, dst)         , fcs_pepcparts_data18_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_null(e)                          , fcs_pepcparts_data18_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_inc(e)                           , fcs_pepcparts_data18_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_dec(e)                           , fcs_pepcparts_data18_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_add(e, n)                        , fcs_pepcparts_data18_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_sub(e, n)                        , fcs_pepcparts_data18_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_copy(src, dst)                   , fcs_pepcparts_data18_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_ncopy(src, dst, n)               , fcs_pepcparts_data18_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_nmove(src, dst, n)               , fcs_pepcparts_data18_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data18_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data18_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data18_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_xchange(e0, e1, t)               , fcs_pepcparts_data18_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data18_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data18_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data18_assign(src, dst)                 fcs_pepcparts_data18_assign(src, dst)
+ #define fcs_pepcparts_cc_data18_assign_at(src, sat, dst)         fcs_pepcparts_data18_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data18_null(e)                          fcs_pepcparts_data18_null(e)
+ #define fcs_pepcparts_cc_data18_inc(e)                           fcs_pepcparts_data18_inc(e)
+ #define fcs_pepcparts_cc_data18_dec(e)                           fcs_pepcparts_data18_dec(e)
+ #define fcs_pepcparts_cc_data18_add(e, n)                        fcs_pepcparts_data18_add(e, n)
+ #define fcs_pepcparts_cc_data18_sub(e, n)                        fcs_pepcparts_data18_sub(e, n)
+ #define fcs_pepcparts_cc_data18_copy(src, dst)                   fcs_pepcparts_data18_copy(src, dst)
+ #define fcs_pepcparts_cc_data18_ncopy(src, dst, n)               fcs_pepcparts_data18_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data18_nmove(src, dst, n)               fcs_pepcparts_data18_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data18_copy_at(src, sat, dst, dat)      fcs_pepcparts_data18_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data18_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data18_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data18_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data18_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data18_xchange(e0, e1, t)               fcs_pepcparts_data18_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data18_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data18_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA18 */
+
+ #define fcs_pepcparts_data18_n                                   0
+ #define fcs_pepcparts_data18_byte                                0
+/* #define fcs_pepcparts_data18_ptr(e)*/
+
+ #define fcs_pepcparts_data18_byte_flex                           0
+ #define fcs_pepcparts_data18_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data18_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data18_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data18_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data18_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data18_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data18_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data18_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data18_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data18_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data18_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data18_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data18_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data18_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data18_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data18_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data18_assign(src, dst)
+ #define fcs_pepcparts_cc_data18_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data18_null(e)
+ #define fcs_pepcparts_cc_data18_inc(e)
+ #define fcs_pepcparts_cc_data18_dec(e)
+ #define fcs_pepcparts_cc_data18_add(e, n)
+ #define fcs_pepcparts_cc_data18_sub(e, n)
+ #define fcs_pepcparts_cc_data18_copy(src, dst)
+ #define fcs_pepcparts_cc_data18_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data18_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data18_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data18_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data18_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data18_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data18_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA18 */
+
+#define fcs_pepcparts_data18_cm                                   SLCM_DATA18  /* sl_macro */
+
+
+/* sl_macro fcs_pepcparts_SL_DATA19 fcs_pepcparts_SL_DATA19_IGNORE fcs_pepcparts_sl_data19_type_c fcs_pepcparts_sl_data19_size_c fcs_pepcparts_sl_data19_type_mpi fcs_pepcparts_sl_data19_size_mpi fcs_pepcparts_sl_data19_memcpy fcs_pepcparts_sl_data19_weight fcs_pepcparts_sl_data19_flex */
+
+#ifdef fcs_pepcparts_SL_DATA19
+
+ #define fcs_pepcparts_sl_data19_byte                             ((fcs_pepcparts_slint_t) (fcs_pepcparts_sl_data19_size_c) * sizeof(fcs_pepcparts_sl_data19_type_c))  /* sl_macro */
+
+ #ifndef fcs_pepcparts_sl_data19_copy
+  #if fcs_pepcparts_sl_data19_size_c <= 9 && !defined(fcs_pepcparts_sl_data19_memcpy)
+   #if fcs_pepcparts_sl_data19_size_c == 1
+    #define fcs_pepcparts_sl_data19_copy(src, dst)                (SL_ARRAY1_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data19_size_c == 2
+    #define fcs_pepcparts_sl_data19_copy(src, dst)                (SL_ARRAY2_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data19_size_c == 3
+    #define fcs_pepcparts_sl_data19_copy(src, dst)                (SL_ARRAY3_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data19_size_c == 4
+    #define fcs_pepcparts_sl_data19_copy(src, dst)                (SL_ARRAY4_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data19_size_c == 5
+    #define fcs_pepcparts_sl_data19_copy(src, dst)                (SL_ARRAY5_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data19_size_c == 6
+    #define fcs_pepcparts_sl_data19_copy(src, dst)                (SL_ARRAY6_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data19_size_c == 7
+    #define fcs_pepcparts_sl_data19_copy(src, dst)                (SL_ARRAY7_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data19_size_c == 8
+    #define fcs_pepcparts_sl_data19_copy(src, dst)                (SL_ARRAY8_COPY(src, dst))
+   #elif fcs_pepcparts_sl_data19_size_c == 9
+    #define fcs_pepcparts_sl_data19_copy(src, dst)                (SL_ARRAY9_COPY(src, dst))
+   #endif
+  #else
+   #define fcs_pepcparts_sl_data19_copy(src, dst)                 memcpy(dst, src, fcs_pepcparts_sl_data19_byte)  /* sl_macro */
+  #endif
+ #endif
+ #ifndef fcs_pepcparts_sl_data19_ncopy
+  #define fcs_pepcparts_sl_data19_ncopy(src, dst, n)              memcpy(dst, src, (n) * fcs_pepcparts_sl_data19_byte)  /* sl_macro */
+ #endif
+ #ifndef fcs_pepcparts_sl_data19_nmove
+  #define fcs_pepcparts_sl_data19_nmove(src, dst, n)              memmove(dst, src, (n) * fcs_pepcparts_sl_data19_byte)  /* sl_macro */
+ #endif
+
+ #define fcs_pepcparts_data19_type_c                              fcs_pepcparts_sl_data19_type_c  /* sl_macro */
+ #define fcs_pepcparts_data19_size_c                              (fcs_pepcparts_sl_data19_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data19_type_mpi                            (fcs_pepcparts_sl_data19_type_mpi)  /* sl_macro */
+ #define fcs_pepcparts_data19_size_mpi                            (fcs_pepcparts_sl_data19_size_mpi)  /* sl_macro */
+
+ #define fcs_pepcparts_data19_idx                                 19  /* sl_macro */
+
+ #define fcs_pepcparts_data19_n                                   1  /* sl_macro */
+ #define fcs_pepcparts_data19_byte                                (fcs_pepcparts_sl_data19_byte)  /* sl_macro */
+ #define fcs_pepcparts_data19_ptr(e)                              (e)->data19  /* sl_macro */
+
+ #ifdef fcs_pepcparts_sl_data19_flex
+ # define fcs_pepcparts_data19_byte_flex                          (fcs_pepcparts_sl_data19_byte)  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data19_byte_flex                          0
+ #endif
+
+ #ifdef fcs_pepcparts_sl_data19_weight
+ # define fcs_pepcparts_data19_weight                             1  /* sl_macro */
+ #else
+ # define fcs_pepcparts_data19_weight                             0
+ #endif
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data19_assign(src, dst)                    ((dst)->data19 = (src)->data19)  /* sl_macro */
+ #define fcs_pepcparts_data19_assign_at(src, sat, dst)            ((dst)->data19 = &(src)->data19[(sat) * fcs_pepcparts_data19_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data19_null(e)                             ((e)->data19 = NULL)  /* sl_macro */
+ #define fcs_pepcparts_data19_inc(e)                              ((e)->data19 += fcs_pepcparts_data19_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data19_dec(e)                              ((e)->data19 -= fcs_pepcparts_data19_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data19_add(e, n)                           ((e)->data19 += (n) * fcs_pepcparts_data19_size_c)  /* sl_macro */
+ #define fcs_pepcparts_data19_sub(e, n)                           ((e)->data19 -= (n) * fcs_pepcparts_data19_size_c)  /* sl_macro */
+
+ #define fcs_pepcparts_data19_copy(src, dst)                      fcs_pepcparts_sl_data19_copy((src)->data19, (dst)->data19)  /* sl_macro */
+ #define fcs_pepcparts_data19_ncopy(src, dst, n)                  fcs_pepcparts_sl_data19_ncopy((src)->data19, (dst)->data19, n)  /* sl_macro */
+ #define fcs_pepcparts_data19_nmove(src, dst, n)                  fcs_pepcparts_sl_data19_nmove((src)->data19, (dst)->data19, n)  /* sl_macro */
+
+ #define fcs_pepcparts_data19_copy_at(src, sat, dst, dat)         fcs_pepcparts_sl_data19_copy(&(src)->data19[(sat) * fcs_pepcparts_data19_size_c], &(dst)->data19[(dat) * fcs_pepcparts_data19_size_c])  /* sl_macro */
+ #define fcs_pepcparts_data19_ncopy_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data19_ncopy(&(src)->data19[(sat) * fcs_pepcparts_data19_size_c], &(dst)->data19[(dat) * fcs_pepcparts_data19_size_c], n)  /* sl_macro */
+ #define fcs_pepcparts_data19_nmove_at(src, sat, dst, dat, n)     fcs_pepcparts_sl_data19_nmove(&(src)->data19[(sat) * fcs_pepcparts_data19_size_c], &(dst)->data19[(dat) * fcs_pepcparts_data19_size_c], n)  /* sl_macro */
+
+ #define fcs_pepcparts_data19_xchange(e0, e1, t)                  (fcs_pepcparts_data19_copy(e0, t), fcs_pepcparts_data19_copy(e1, e0), fcs_pepcparts_data19_copy(t, e1))  /* sl_macro */
+ #define fcs_pepcparts_data19_xchange_at(e0, at0, e1, at1, t)     (fcs_pepcparts_data19_copy_at(e0, at0, t, 0), fcs_pepcparts_data19_copy_at(e1, at1, e0, at0), fcs_pepcparts_data19_copy_at(t, 0, e1, at1))  /* sl_macro */
+
+ /* chained command versions */
+#ifdef SL_DATA
+ #define fcs_pepcparts_cc_data19_assign(src, dst)                 , fcs_pepcparts_data19_assign(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_assign_at(src, sat, dst)         , fcs_pepcparts_data19_assign_at(src, sat, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_null(e)                          , fcs_pepcparts_data19_null(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_inc(e)                           , fcs_pepcparts_data19_inc(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_dec(e)                           , fcs_pepcparts_data19_dec(e)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_add(e, n)                        , fcs_pepcparts_data19_add(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_sub(e, n)                        , fcs_pepcparts_data19_sub(e, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_copy(src, dst)                   , fcs_pepcparts_data19_copy(src, dst)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_ncopy(src, dst, n)               , fcs_pepcparts_data19_ncopy(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_nmove(src, dst, n)               , fcs_pepcparts_data19_nmove(src, dst, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_copy_at(src, sat, dst, dat)      , fcs_pepcparts_data19_copy_at(src, sat, dst, dat)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_ncopy_at(src, sat, dst, dat, n)  , fcs_pepcparts_data19_ncopy_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_nmove_at(src, sat, dst, dat, n)  , fcs_pepcparts_data19_nmove_at(src, sat, dst, dat, n)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_xchange(e0, e1, t)               , fcs_pepcparts_data19_xchange(e0, e1, t)  /* sl_macro */
+ #define fcs_pepcparts_cc_data19_xchange_at(e0, at0, e1, at1, t)  , fcs_pepcparts_data19_xchange_at(e0, at0, e1, at1, t)  /* sl_macro */
+#else /* SL_DATA */
+ #define SL_DATA
+ #define fcs_pepcparts_cc_data19_assign(src, dst)                 fcs_pepcparts_data19_assign(src, dst)
+ #define fcs_pepcparts_cc_data19_assign_at(src, sat, dst)         fcs_pepcparts_data19_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data19_null(e)                          fcs_pepcparts_data19_null(e)
+ #define fcs_pepcparts_cc_data19_inc(e)                           fcs_pepcparts_data19_inc(e)
+ #define fcs_pepcparts_cc_data19_dec(e)                           fcs_pepcparts_data19_dec(e)
+ #define fcs_pepcparts_cc_data19_add(e, n)                        fcs_pepcparts_data19_add(e, n)
+ #define fcs_pepcparts_cc_data19_sub(e, n)                        fcs_pepcparts_data19_sub(e, n)
+ #define fcs_pepcparts_cc_data19_copy(src, dst)                   fcs_pepcparts_data19_copy(src, dst)
+ #define fcs_pepcparts_cc_data19_ncopy(src, dst, n)               fcs_pepcparts_data19_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data19_nmove(src, dst, n)               fcs_pepcparts_data19_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data19_copy_at(src, sat, dst, dat)      fcs_pepcparts_data19_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data19_ncopy_at(src, sat, dst, dat, n)  fcs_pepcparts_data19_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data19_nmove_at(src, sat, dst, dat, n)  fcs_pepcparts_data19_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data19_xchange(e0, e1, t)               fcs_pepcparts_data19_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data19_xchange_at(e0, at0, e1, at1, t)  fcs_pepcparts_data19_xchange_at(e0, at0, e1, at1, t)
+#endif /* SL_DATA */
+
+#else /* fcs_pepcparts_SL_DATA19 */
+
+ #define fcs_pepcparts_data19_n                                   0
+ #define fcs_pepcparts_data19_byte                                0
+/* #define fcs_pepcparts_data19_ptr(e)*/
+
+ #define fcs_pepcparts_data19_byte_flex                           0
+ #define fcs_pepcparts_data19_weight                              0
+
+ /* commands for regular use */
+ #define fcs_pepcparts_data19_assign(src, dst)                    Z_NOP()
+ #define fcs_pepcparts_data19_assign_at(src, sat, dst)            Z_NOP()
+ #define fcs_pepcparts_data19_null(e)                             Z_NOP()
+ #define fcs_pepcparts_data19_inc(e)                              Z_NOP()
+ #define fcs_pepcparts_data19_dec(e)                              Z_NOP()
+ #define fcs_pepcparts_data19_add(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data19_sub(e, n)                           Z_NOP()
+ #define fcs_pepcparts_data19_copy(src, dst)                      Z_NOP()
+ #define fcs_pepcparts_data19_ncopy(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data19_nmove(src, dst, n)                  Z_NOP()
+ #define fcs_pepcparts_data19_copy_at(src, sat, dst, dat)         Z_NOP()
+ #define fcs_pepcparts_data19_ncopy_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data19_nmove_at(src, sat, dst, dat, n)     Z_NOP()
+ #define fcs_pepcparts_data19_xchange(e0, e1, t)                  Z_NOP()
+ #define fcs_pepcparts_data19_xchange_at(e0, at0, e1, at1, t)     Z_NOP()
+
+ /* chained command versions */
+ #define fcs_pepcparts_cc_data19_assign(src, dst)
+ #define fcs_pepcparts_cc_data19_assign_at(src, sat, dst)
+ #define fcs_pepcparts_cc_data19_null(e)
+ #define fcs_pepcparts_cc_data19_inc(e)
+ #define fcs_pepcparts_cc_data19_dec(e)
+ #define fcs_pepcparts_cc_data19_add(e, n)
+ #define fcs_pepcparts_cc_data19_sub(e, n)
+ #define fcs_pepcparts_cc_data19_copy(src, dst)
+ #define fcs_pepcparts_cc_data19_ncopy(src, dst, n)
+ #define fcs_pepcparts_cc_data19_nmove(src, dst, n)
+ #define fcs_pepcparts_cc_data19_copy_at(src, sat, dst, dat)
+ #define fcs_pepcparts_cc_data19_ncopy_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data19_nmove_at(src, sat, dst, dat, n)
+ #define fcs_pepcparts_cc_data19_xchange(e0, e1, t)
+ #define fcs_pepcparts_cc_data19_xchange_at(e0, at0, e1, at1, t)
+
+#endif /* fcs_pepcparts_SL_DATA19 */
+
+#define fcs_pepcparts_data19_cm                                   SLCM_DATA19  /* sl_macro */
+
+/* DATAX_TEMPLATE_END */
+
+
+
+
+
+
+
+/* sl_macro fcs_pepcparts_data_nmax */
+#define fcs_pepcparts_data_nmax (0 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+ + 1 \
+)
+
+/* sl_macro fcs_pepcparts_data_n */
+#define fcs_pepcparts_data_n (0 \
+ + (fcs_pepcparts_data0_n) \
+ + (fcs_pepcparts_data1_n) \
+ + (fcs_pepcparts_data2_n) \
+ + (fcs_pepcparts_data3_n) \
+ + (fcs_pepcparts_data4_n) \
+ + (fcs_pepcparts_data5_n) \
+ + (fcs_pepcparts_data6_n) \
+ + (fcs_pepcparts_data7_n) \
+ + (fcs_pepcparts_data8_n) \
+ + (fcs_pepcparts_data9_n) \
+ + (fcs_pepcparts_data10_n) \
+ + (fcs_pepcparts_data11_n) \
+ + (fcs_pepcparts_data12_n) \
+ + (fcs_pepcparts_data13_n) \
+ + (fcs_pepcparts_data14_n) \
+ + (fcs_pepcparts_data15_n) \
+ + (fcs_pepcparts_data16_n) \
+ + (fcs_pepcparts_data17_n) \
+ + (fcs_pepcparts_data18_n) \
+ + (fcs_pepcparts_data19_n) \
+)
+
+/* sl_macro fcs_pepcparts_data_byte */
+#define fcs_pepcparts_data_byte (0 \
+ + (fcs_pepcparts_data0_byte) \
+ + (fcs_pepcparts_data1_byte) \
+ + (fcs_pepcparts_data2_byte) \
+ + (fcs_pepcparts_data3_byte) \
+ + (fcs_pepcparts_data4_byte) \
+ + (fcs_pepcparts_data5_byte) \
+ + (fcs_pepcparts_data6_byte) \
+ + (fcs_pepcparts_data7_byte) \
+ + (fcs_pepcparts_data8_byte) \
+ + (fcs_pepcparts_data9_byte) \
+ + (fcs_pepcparts_data10_byte) \
+ + (fcs_pepcparts_data11_byte) \
+ + (fcs_pepcparts_data12_byte) \
+ + (fcs_pepcparts_data13_byte) \
+ + (fcs_pepcparts_data14_byte) \
+ + (fcs_pepcparts_data15_byte) \
+ + (fcs_pepcparts_data16_byte) \
+ + (fcs_pepcparts_data17_byte) \
+ + (fcs_pepcparts_data18_byte) \
+ + (fcs_pepcparts_data19_byte) \
+)
+
+/* sl_macro fcs_pepcparts_data_byte_flex */
+#define fcs_pepcparts_data_byte_flex (0 \
+ + (fcs_pepcparts_data0_byte_flex) \
+ + (fcs_pepcparts_data1_byte_flex) \
+ + (fcs_pepcparts_data2_byte_flex) \
+ + (fcs_pepcparts_data3_byte_flex) \
+ + (fcs_pepcparts_data4_byte_flex) \
+ + (fcs_pepcparts_data5_byte_flex) \
+ + (fcs_pepcparts_data6_byte_flex) \
+ + (fcs_pepcparts_data7_byte_flex) \
+ + (fcs_pepcparts_data8_byte_flex) \
+ + (fcs_pepcparts_data9_byte_flex) \
+ + (fcs_pepcparts_data10_byte_flex) \
+ + (fcs_pepcparts_data11_byte_flex) \
+ + (fcs_pepcparts_data12_byte_flex) \
+ + (fcs_pepcparts_data13_byte_flex) \
+ + (fcs_pepcparts_data14_byte_flex) \
+ + (fcs_pepcparts_data15_byte_flex) \
+ + (fcs_pepcparts_data16_byte_flex) \
+ + (fcs_pepcparts_data17_byte_flex) \
+ + (fcs_pepcparts_data18_byte_flex) \
+ + (fcs_pepcparts_data19_byte_flex) \
+)
+
+/* sl_macro fcs_pepcparts_data_assign */
+#define fcs_pepcparts_data_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data0_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data1_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data2_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data3_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data4_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data5_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data6_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data7_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data8_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data9_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data10_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data11_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data12_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data13_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data14_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data15_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data16_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data17_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data18_assign(_s_, _d_) \
+ fcs_pepcparts_cc_data19_assign(_s_, _d_) \
+
+/* sl_macro fcs_pepcparts_data_assign_at */
+#define fcs_pepcparts_data_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data0_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data1_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data2_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data3_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data4_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data5_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data6_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data7_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data8_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data9_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data10_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data11_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data12_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data13_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data14_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data15_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data16_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data17_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data18_assign_at(_s_, _sat_, _d_) \
+ fcs_pepcparts_cc_data19_assign_at(_s_, _sat_, _d_) \
+
+/* sl_macro fcs_pepcparts_data_null */
+#define fcs_pepcparts_data_null(_e_) \
+ fcs_pepcparts_cc_data0_null(_e_) \
+ fcs_pepcparts_cc_data1_null(_e_) \
+ fcs_pepcparts_cc_data2_null(_e_) \
+ fcs_pepcparts_cc_data3_null(_e_) \
+ fcs_pepcparts_cc_data4_null(_e_) \
+ fcs_pepcparts_cc_data5_null(_e_) \
+ fcs_pepcparts_cc_data6_null(_e_) \
+ fcs_pepcparts_cc_data7_null(_e_) \
+ fcs_pepcparts_cc_data8_null(_e_) \
+ fcs_pepcparts_cc_data9_null(_e_) \
+ fcs_pepcparts_cc_data10_null(_e_) \
+ fcs_pepcparts_cc_data11_null(_e_) \
+ fcs_pepcparts_cc_data12_null(_e_) \
+ fcs_pepcparts_cc_data13_null(_e_) \
+ fcs_pepcparts_cc_data14_null(_e_) \
+ fcs_pepcparts_cc_data15_null(_e_) \
+ fcs_pepcparts_cc_data16_null(_e_) \
+ fcs_pepcparts_cc_data17_null(_e_) \
+ fcs_pepcparts_cc_data18_null(_e_) \
+ fcs_pepcparts_cc_data19_null(_e_) \
+
+/* sl_macro fcs_pepcparts_data_inc */
+#define fcs_pepcparts_data_inc(_e_) \
+ fcs_pepcparts_cc_data0_inc(_e_) \
+ fcs_pepcparts_cc_data1_inc(_e_) \
+ fcs_pepcparts_cc_data2_inc(_e_) \
+ fcs_pepcparts_cc_data3_inc(_e_) \
+ fcs_pepcparts_cc_data4_inc(_e_) \
+ fcs_pepcparts_cc_data5_inc(_e_) \
+ fcs_pepcparts_cc_data6_inc(_e_) \
+ fcs_pepcparts_cc_data7_inc(_e_) \
+ fcs_pepcparts_cc_data8_inc(_e_) \
+ fcs_pepcparts_cc_data9_inc(_e_) \
+ fcs_pepcparts_cc_data10_inc(_e_) \
+ fcs_pepcparts_cc_data11_inc(_e_) \
+ fcs_pepcparts_cc_data12_inc(_e_) \
+ fcs_pepcparts_cc_data13_inc(_e_) \
+ fcs_pepcparts_cc_data14_inc(_e_) \
+ fcs_pepcparts_cc_data15_inc(_e_) \
+ fcs_pepcparts_cc_data16_inc(_e_) \
+ fcs_pepcparts_cc_data17_inc(_e_) \
+ fcs_pepcparts_cc_data18_inc(_e_) \
+ fcs_pepcparts_cc_data19_inc(_e_) \
+
+/* sl_macro fcs_pepcparts_data_dec */
+#define fcs_pepcparts_data_dec(_e_) \
+ fcs_pepcparts_cc_data0_dec(_e_) \
+ fcs_pepcparts_cc_data1_dec(_e_) \
+ fcs_pepcparts_cc_data2_dec(_e_) \
+ fcs_pepcparts_cc_data3_dec(_e_) \
+ fcs_pepcparts_cc_data4_dec(_e_) \
+ fcs_pepcparts_cc_data5_dec(_e_) \
+ fcs_pepcparts_cc_data6_dec(_e_) \
+ fcs_pepcparts_cc_data7_dec(_e_) \
+ fcs_pepcparts_cc_data8_dec(_e_) \
+ fcs_pepcparts_cc_data9_dec(_e_) \
+ fcs_pepcparts_cc_data10_dec(_e_) \
+ fcs_pepcparts_cc_data11_dec(_e_) \
+ fcs_pepcparts_cc_data12_dec(_e_) \
+ fcs_pepcparts_cc_data13_dec(_e_) \
+ fcs_pepcparts_cc_data14_dec(_e_) \
+ fcs_pepcparts_cc_data15_dec(_e_) \
+ fcs_pepcparts_cc_data16_dec(_e_) \
+ fcs_pepcparts_cc_data17_dec(_e_) \
+ fcs_pepcparts_cc_data18_dec(_e_) \
+ fcs_pepcparts_cc_data19_dec(_e_) \
+
+/* sl_macro fcs_pepcparts_data_add */
+#define fcs_pepcparts_data_add(_e_, _n_) \
+ fcs_pepcparts_cc_data0_add(_e_, _n_) \
+ fcs_pepcparts_cc_data1_add(_e_, _n_) \
+ fcs_pepcparts_cc_data2_add(_e_, _n_) \
+ fcs_pepcparts_cc_data3_add(_e_, _n_) \
+ fcs_pepcparts_cc_data4_add(_e_, _n_) \
+ fcs_pepcparts_cc_data5_add(_e_, _n_) \
+ fcs_pepcparts_cc_data6_add(_e_, _n_) \
+ fcs_pepcparts_cc_data7_add(_e_, _n_) \
+ fcs_pepcparts_cc_data8_add(_e_, _n_) \
+ fcs_pepcparts_cc_data9_add(_e_, _n_) \
+ fcs_pepcparts_cc_data10_add(_e_, _n_) \
+ fcs_pepcparts_cc_data11_add(_e_, _n_) \
+ fcs_pepcparts_cc_data12_add(_e_, _n_) \
+ fcs_pepcparts_cc_data13_add(_e_, _n_) \
+ fcs_pepcparts_cc_data14_add(_e_, _n_) \
+ fcs_pepcparts_cc_data15_add(_e_, _n_) \
+ fcs_pepcparts_cc_data16_add(_e_, _n_) \
+ fcs_pepcparts_cc_data17_add(_e_, _n_) \
+ fcs_pepcparts_cc_data18_add(_e_, _n_) \
+ fcs_pepcparts_cc_data19_add(_e_, _n_) \
+
+/* sl_macro fcs_pepcparts_data_sub */
+#define fcs_pepcparts_data_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data0_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data1_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data2_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data3_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data4_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data5_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data6_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data7_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data8_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data9_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data10_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data11_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data12_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data13_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data14_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data15_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data16_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data17_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data18_sub(_e_, _n_) \
+ fcs_pepcparts_cc_data19_sub(_e_, _n_) \
+
+/* FIXME: add fcs_pepcparts_rti_cadd_moved(_n_,cmd) -> only ifdef SL_DATA else empty (like dataX) */
+
+/* sl_macro fcs_pepcparts_data_copy */
+#define fcs_pepcparts_data_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data0_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data1_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data2_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data3_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data4_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data5_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data6_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data7_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data8_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data9_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data10_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data11_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data12_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data13_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data14_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data15_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data16_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data17_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data18_copy(_s_, _d_) \
+ fcs_pepcparts_cc_data19_copy(_s_, _d_) \
+
+/* sl_macro fcs_pepcparts_data_ncopy */
+#define fcs_pepcparts_data_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data0_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data1_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data2_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data3_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data4_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data5_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data6_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data7_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data8_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data9_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data10_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data11_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data12_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data13_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data14_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data15_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data16_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data17_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data18_ncopy(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data19_ncopy(_s_, _d_, _n_) \
+
+/* sl_macro fcs_pepcparts_data_nmove */
+#define fcs_pepcparts_data_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data0_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data1_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data2_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data3_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data4_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data5_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data6_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data7_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data8_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data9_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data10_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data11_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data12_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data13_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data14_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data15_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data16_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data17_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data18_nmove(_s_, _d_, _n_) \
+ fcs_pepcparts_cc_data19_nmove(_s_, _d_, _n_) \
+
+/* sl_macro fcs_pepcparts_data_copy_at */
+#define fcs_pepcparts_data_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data0_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data1_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data2_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data3_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data4_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data5_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data6_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data7_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data8_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data9_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data10_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data11_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data12_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data13_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data14_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data15_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data16_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data17_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data18_copy_at(_s_, _sat_, _d_, _dat_) \
+ fcs_pepcparts_cc_data19_copy_at(_s_, _sat_, _d_, _dat_) \
+
+/* sl_macro fcs_pepcparts_data_ncopy_at */
+#define fcs_pepcparts_data_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data0_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data1_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data2_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data3_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data4_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data5_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data6_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data7_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data8_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data9_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data10_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data11_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data12_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data13_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data14_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data15_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data16_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data17_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data18_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data19_ncopy_at(_s_, _sat_, _d_, _dat_, _n_) \
+
+/* sl_macro fcs_pepcparts_data_nmove_at */
+#define fcs_pepcparts_data_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data0_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data1_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data2_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data3_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data4_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data5_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data6_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data7_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data8_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data9_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data10_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data11_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data12_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data13_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data14_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data15_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data16_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data17_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data18_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+ fcs_pepcparts_cc_data19_nmove_at(_s_, _sat_, _d_, _dat_, _n_) \
+
+/* sl_macro fcs_pepcparts_data_xchange */
+#define fcs_pepcparts_data_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data0_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data1_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data2_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data3_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data4_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data5_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data6_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data7_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data8_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data9_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data10_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data11_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data12_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data13_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data14_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data15_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data16_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data17_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data18_xchange(_e0_, _e1_, _t_) \
+ fcs_pepcparts_cc_data19_xchange(_e0_, _e1_, _t_) \
+
+/* sl_macro fcs_pepcparts_data_xchange_at */
+#define fcs_pepcparts_data_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data0_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data1_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data2_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data3_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data4_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data5_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data6_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data7_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data8_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data9_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data10_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data11_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data12_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data13_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data14_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data15_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data16_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data17_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data18_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+ fcs_pepcparts_cc_data19_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_) \
+
+/* chained versions */
+#ifdef SL_DATA
+
+ #define fcs_pepcparts_cc_data_assign(_s_, _d_)                           , fcs_pepcparts_data_assign(_s_, _d_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_assign_at(_s_, _sat_, _d_)                 , fcs_pepcparts_data_assign_at(_s_, _sat_, _d_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_null(_e_)                                  , fcs_pepcparts_data_null(_e_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_inc(_e_)                                   , fcs_pepcparts_data_inc(_e_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_dec(_e_)                                   , fcs_pepcparts_data_dec(_e_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_add(_e_, _n_)                              , fcs_pepcparts_data_add(_e_, _n_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_sub(_e_, _n_)                              , fcs_pepcparts_data_sub(_e_, _n_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_copy(_s_, _d_)                             , fcs_pepcparts_data_copy(_s_, _d_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_ncopy(_s_, _d_, _n_)                       , fcs_pepcparts_data_ncopy(_s_, _d_, _n_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_nmove(_s_, _d_, _n_)                       , fcs_pepcparts_data_nmove(_s_, _d_, _n_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_copy_at(_s_, _sat_, _d_, _dat_)            , fcs_pepcparts_data_copy_at(_s_, _sat_, _d_, _dat_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)      , fcs_pepcparts_data_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_nmove_at(_s_, _sat_, _d_, _dat_, _n_)      , fcs_pepcparts_data_nmove_at(_s_, _sat_, _d_, _dat_, _n_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_xchange(_e0_, _e1_, _t_)                   , fcs_pepcparts_data_xchange(_e0_, _e1_, _t_)  /* sl_macro */
+ #define fcs_pepcparts_cc_data_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_)  , fcs_pepcparts_data_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_)  /* sl_macro */
+
+#else /* SL_DATA */
+
+/* #define SL_DATA*/
+ #define fcs_pepcparts_cc_data_assign(_s_, _d_)
+ #define fcs_pepcparts_cc_data_assign_at(_s_, _sat_, _d_)
+ #define fcs_pepcparts_cc_data_null(_e_)
+ #define fcs_pepcparts_cc_data_inc(_e_)
+ #define fcs_pepcparts_cc_data_dec(_e_)
+ #define fcs_pepcparts_cc_data_add(_e_, _n_)
+ #define fcs_pepcparts_cc_data_sub(_e_, _n_)
+ #define fcs_pepcparts_cc_data_copy(_s_, _d_)
+ #define fcs_pepcparts_cc_data_ncopy(_s_, _d_, _n_)
+ #define fcs_pepcparts_cc_data_nmove(_s_, _d_, _n_)
+ #define fcs_pepcparts_cc_data_copy_at(_s_, _sat_, _d_, _dat_)
+ #define fcs_pepcparts_cc_data_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)
+ #define fcs_pepcparts_cc_data_nmove_at(_s_, _sat_, _d_, _dat_, _n_)
+ #define fcs_pepcparts_cc_data_xchange(_e0_, _e1_, _t_)
+ #define fcs_pepcparts_cc_data_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_)
+
+#endif /* SL_DATA */
+
+
+
+#undef SL_DATA
+
+
+#define fcs_pepcparts_elem_n                                          (fcs_pepcparts_key_n + fcs_pepcparts_index_n + fcs_pepcparts_data_n)  /* sl_macro */
+#define fcs_pepcparts_elem_byte                                       (fcs_pepcparts_key_byte + fcs_pepcparts_index_byte + fcs_pepcparts_data_byte)  /* sl_macro */
+
+#define fcs_pepcparts_elem_key_at(_s_, _sat_)                         (fcs_pepcparts_key_at((_s_)->keys, _sat_))  /* sl_macro */
+
+#define fcs_pepcparts_elem_assign(_s_, _d_)                           (*(_d_) = *(_s_))  /* sl_macro */
+#define fcs_pepcparts_elem_assign_at(_s_, _sat_, _d_)                 ((_d_)->size = (_s_)->size - (_sat_), (_d_)->max_size = (_s_)->max_size - (_sat_), \
+                                                         fcs_pepcparts_key_assign_at((_s_)->keys, _sat_, (_d_)->keys) \
+                                                         fcs_pepcparts_cc_index_assign_at((_s_)->indices, _sat_, (_d_)->indices) \
+                                                         fcs_pepcparts_cc_data_assign_at(_s_, _sat_, _d_))  /* sl_macro fcs_pepcparts_elem_assign_at */
+#define fcs_pepcparts_elem_null(_e_)                                  ((_e_)->size = 0, (_e_)->max_size = 0, \
+                                                         fcs_pepcparts_key_null((_e_)->keys) \
+                                                         fcs_pepcparts_cc_index_null((_e_)->indices) \
+                                                         fcs_pepcparts_cc_data_null(_e_))  /* sl_macro fcs_pepcparts_elem_null */
+#define fcs_pepcparts_elem_inc(_e_)                                   (fcs_pepcparts_key_inc((_e_)->keys) \
+                                                         fcs_pepcparts_cc_index_inc((_e_)->indices) \
+                                                         fcs_pepcparts_cc_data_inc(_e_))  /* sl_macro fcs_pepcparts_elem_inc */
+#define fcs_pepcparts_elem_dec(_e_)                                   (fcs_pepcparts_key_dec((_e_)->keys) \
+                                                         fcs_pepcparts_cc_index_dec((_e_)->indices) \
+                                                         fcs_pepcparts_cc_data_dec(_e_))  /* sl_macro fcs_pepcparts_elem_dec */
+#define fcs_pepcparts_elem_add(_e_, _n_)                              (fcs_pepcparts_key_add((_e_)->keys, _n_) \
+                                                         fcs_pepcparts_cc_index_add((_e_)->indices, _n_) \
+                                                         fcs_pepcparts_cc_data_add(_e_, _n_))  /* sl_macro fcs_pepcparts_elem_add */
+#define fcs_pepcparts_elem_sub(_e_, _n_)                              (fcs_pepcparts_key_sub((_e_)->keys, _n_) \
+                                                         fcs_pepcparts_cc_index_sub((_e_)->indices, _n_) \
+                                                         fcs_pepcparts_cc_data_sub(_e_, _n_))  /* sl_macro fcs_pepcparts_elem_sub */
+
+#define fcs_pepcparts_elem_copy(_s_, _d_)                             (fcs_pepcparts_key_copy((_s_)->keys, (_d_)->keys) \
+                                                         fcs_pepcparts_cc_index_copy((_s_)->indices, (_d_)->indices) \
+                                                         fcs_pepcparts_cc_data_copy(_s_, _d_))  /* sl_macro fcs_pepcparts_elem_copy */
+#define fcs_pepcparts_elem_ncopy(_s_, _d_, _n_)                       (fcs_pepcparts_key_ncopy((_s_)->keys, (_d_)->keys, _n_) \
+                                                         fcs_pepcparts_cc_index_ncopy((_s_)->indices, (_d_)->indices, _n_) \
+                                                         fcs_pepcparts_cc_data_ncopy(_s_, _d_, _n_))  /* sl_macro fcs_pepcparts_elem_ncopy */
+#define fcs_pepcparts_elem_nmove(_s_, _d_, _n_)                       (fcs_pepcparts_key_nmove((_s_)->keys, (_d_)->keys, _n_) \
+                                                         fcs_pepcparts_cc_index_nmove((_s_)->indices, (_d_)->indices, _n_) \
+                                                         fcs_pepcparts_cc_data_nmove(_s_, _d_, _n_))  /* sl_macro fcs_pepcparts_elem_nmove */
+
+#define fcs_pepcparts_elem_copy_at(_s_, _sat_, _d_, _dat_)            (fcs_pepcparts_key_copy_at((_s_)->keys, _sat_, (_d_)->keys, _dat_) \
+                                                         fcs_pepcparts_cc_index_copy_at((_s_)->indices, _sat_, (_d_)->indices, _dat_) \
+                                                         fcs_pepcparts_cc_data_copy_at(_s_, _sat_, _d_, _dat_))  /* sl_macro fcs_pepcparts_elem_copy_at */
+#define fcs_pepcparts_elem_ncopy_at(_s_, _sat_, _d_, _dat_, _n_)      (fcs_pepcparts_key_ncopy_at((_s_)->keys, _sat_, (_d_)->keys, _dat_, _n_) \
+                                                         fcs_pepcparts_cc_index_ncopy_at((_s_)->indices, _sat_, (_d_)->indices, _dat_, _n_) \
+                                                         fcs_pepcparts_cc_data_ncopy_at(_s_, _sat_, _d_, _dat_, _n_))  /* sl_macro fcs_pepcparts_elem_ncopy_at */
+#define fcs_pepcparts_elem_nmove_at(_s_, _sat_, _d_, _dat_, _n_)      (fcs_pepcparts_key_nmove_at((_s_)->keys, _sat_, (_d_)->keys, _dat_, _n_) \
+                                                         fcs_pepcparts_cc_index_ncopy_at((_s_)->indices, _sat_, (_d_)->indices, _dat_, _n_) \
+                                                         fcs_pepcparts_cc_data_nmove_at(_s_, _sat_, _d_, _dat_, _n_))  /* sl_macro fcs_pepcparts_elem_nmove_at */
+
+#define fcs_pepcparts_elem_xchange(_e0_, _e1_, _t_)                   (fcs_pepcparts_key_xchange((_e0_)->keys, (_e1_)->keys, (_t_)->keys) \
+                                                         fcs_pepcparts_cc_index_xchange((_e0_)->indices, (_e1_)->indices, (_t_)->indices) \
+                                                         fcs_pepcparts_cc_data_xchange(_e0_, _e1_, _t_))  /* sl_macro fcs_pepcparts_elem_xchange */
+#define fcs_pepcparts_elem_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_)  (fcs_pepcparts_key_xchange_at((_e0_)->keys, _at0_, (_e1_)->keys, _at1_, (_t_)->keys) \
+                                                         fcs_pepcparts_cc_index_xchange_at((_e0_)->indices, _at0_, (_e1_)->indices, _at1_, (_t_)->indices) \
+                                                         fcs_pepcparts_cc_data_xchange_at(_e0_, _at0_, _e1_, _at1_, _t_))  /* sl_macro fcs_pepcparts_elem_xchange_at */
+
+#ifdef fcs_pepcparts_sl_elem_weight
+# define fcs_pepcparts_elem_has_weight                                1  /* sl_macro */
+# define fcs_pepcparts_elem_weight_ifelse(_if_, _el_)                 (_if_)  /* sl_macro */
+# define fcs_pepcparts_elem_weight(_e_, _at_)                         ((fcs_pepcparts_slweight_t) fcs_pepcparts_sl_elem_weight((_e_), (_at_)))  /* sl_macro */
+# define fcs_pepcparts_elem_weight_one(_e_, _at_)                     ((fcs_pepcparts_slweight_t) fcs_pepcparts_sl_elem_weight((_e_), (_at_)))  /* sl_macro */
+# ifdef sl_elem_weight_set
+#  define fcs_pepcparts_elem_weight_set(_e_, _at_, _w_)               sl_elem_weight_set((_e_), (_at_), (_w_))  /* sl_macro */
+# else
+#  define fcs_pepcparts_elem_weight_set(_e_, _at_, _w_)               fcs_pepcparts_sl_elem_weight((_e_), (_at_)) = (_w_)
+# endif
+#else
+# define fcs_pepcparts_elem_has_weight                                0
+# define fcs_pepcparts_elem_weight_ifelse(_if_, _el_)                 (_el_)
+# define fcs_pepcparts_elem_weight_one(_e_, _at_)                     ((fcs_pepcparts_slweight_t) 1)
+# define fcs_pepcparts_elem_weight_set(_e_, _at_, _w_)                Z_NOP()
+#endif
+
+#define fcs_pepcparts_elem_pack(_s_, _d_)                             (fcs_pepcparts_key_copy((_s_)->keys, &(_d_)->elements[0].key) fcs_pepcparts_cc_data_copy(_d_, &(_s_)->elements[0]))  /* sl_macro */
+#define fcs_pepcparts_elem_pack_at(_s_, _sat_, _d_, _dat_)            (fcs_pepcparts_key_copy_at((_s_)->keys, _sat_, &(_d_)->elements[_dat_].key, 0) fcs_pepcparts_cc_data_copy_at(_s_, _sat_, &(_d_)->elements[_dat_], 0))  /* sl_macro */
+
+#define fcs_pepcparts_elem_npack(_s_, _d_, _n_)                       elem_npack_at(_s_, 0, _d_, 0, _n_)  /* sl_macro */
+
+
+
 
 
 
@@ -835,7 +4991,7 @@
 
 enum rti_tid
 {
-  /* src/base_mpi/base_mpi.c */
+  /* base_mpi/base_mpi.c */
   rti_tid_mpi_merge2,
   rti_tid_mpi_merge2_find,
   rti_tid_mpi_merge2_moveright,
@@ -997,6 +5153,118 @@ enum rti_tid
 
 
 
+/* sl_macro fcs_pepcparts_SL_USE_RTI fcs_pepcparts_SL_USE_RTI_CMC fcs_pepcparts_SL_USE_RTI_TIM fcs_pepcparts_SL_USE_RTI_MEM */
+
+#ifndef fcs_pepcparts_SL_USE_RTI
+
+ #undef fcs_pepcparts_SL_USE_RTI_CMC  /* compare-move-counter */
+ #undef fcs_pepcparts_SL_USE_RTI_TIM  /* timing */
+ #undef fcs_pepcparts_SL_USE_RTI_MEM  /* memory */
+
+#endif
+
+#ifdef fcs_pepcparts_SL_USE_RTI_CMC
+
+ /* regular commands */
+ #define fcs_pepcparts_rti_cadd_cmp(n)          (fcs_pepcparts_SL_DEFCON(rti).cmc.cmp += n)  /* sl_macro */
+ #define fcs_pepcparts_rti_cadd_movek(n)        (fcs_pepcparts_SL_DEFCON(rti).cmc.movek += n)  /* sl_macro */
+ #define fcs_pepcparts_rti_cadd_moved(n)        (fcs_pepcparts_SL_DEFCON(rti).cmc.moved += n)  /* sl_macro */
+ #define fcs_pepcparts_rti_cclear_cmp()         (fcs_pepcparts_SL_DEFCON(rti).cmc.cmp = 0)  /* sl_macro */
+ #define fcs_pepcparts_rti_cclear_movek()       (fcs_pepcparts_SL_DEFCON(rti).cmc.movek = 0)  /* sl_macro */
+ #define fcs_pepcparts_rti_cclear_moved()       (fcs_pepcparts_SL_DEFCON(rti).cmc.moved = 0)  /* sl_macro */
+ #define fcs_pepcparts_rti_cclear_all()         (fcs_pepcparts_SL_DEFCON(rti).cmc.cmp = fcs_pepcparts_SL_DEFCON(rti).cmc.movek = fcs_pepcparts_SL_DEFCON(rti).cmc.moved = 0)  /* sl_macro */
+ #define fcs_pepcparts_rti_ccmp()               my_rti_ccmp(fcs_pepcparts_SL_DEFCON(rti))  /* sl_macro */
+ #define fcs_pepcparts_rti_cmovek()             my_rti_cmovek(fcs_pepcparts_SL_DEFCON(rti))  /* sl_macro */
+ #define fcs_pepcparts_rti_cmoved()             my_rti_cmoved(fcs_pepcparts_SL_DEFCON(rti))  /* sl_macro */
+
+ /* chained commands */
+ #define fcs_pepcparts_cc_rti_cadd_cmp(n)       fcs_pepcparts_rti_cadd_cmp(n),  /* sl_macro */
+ #define fcs_pepcparts_cc_rti_cadd_movek(n)     fcs_pepcparts_rti_cadd_movek(n),  /* sl_macro */
+ #define fcs_pepcparts_cc_rti_cadd_moved(n)     fcs_pepcparts_rti_cadd_moved(n),  /* sl_macro */
+
+#else /* fcs_pepcparts_SL_USE_RTI_CMC */
+
+ /* regular commands */
+ #define fcs_pepcparts_rti_cadd_cmp(n)
+ #define fcs_pepcparts_rti_cadd_movek(n)
+ #define fcs_pepcparts_rti_cadd_moved(n)
+ #define fcs_pepcparts_rti_cclear_cmp()
+ #define fcs_pepcparts_rti_cclear_movek()
+ #define fcs_pepcparts_rti_cclear_moved()
+ #define fcs_pepcparts_rti_cclear_all()
+ #define fcs_pepcparts_rti_ccmp()               0
+ #define fcs_pepcparts_rti_cmovek()             0
+ #define fcs_pepcparts_rti_cmoved()             0
+
+ /* chained commands */
+ #define fcs_pepcparts_cc_rti_cadd_cmp(n)
+ #define fcs_pepcparts_cc_rti_cadd_movek(n)
+ #define fcs_pepcparts_cc_rti_cadd_moved(n)
+
+#endif /* fcs_pepcparts_SL_USE_RTI_CMC */
+
+
+#ifdef fcs_pepcparts_SL_USE_RTI_TIM
+
+ #define fcs_pepcparts_rti_tstart(t)            (fcs_pepcparts_SL_DEFCON(rti).tim[t].start = z_time_get_s(), ++fcs_pepcparts_SL_DEFCON(rti).tim[t].num)  /* sl_macro */
+ #define fcs_pepcparts_rti_tstop(t)             (fcs_pepcparts_SL_DEFCON(rti).tim[t].stop = z_time_get_s(), fcs_pepcparts_SL_DEFCON(rti).tim[t].cumu += (fcs_pepcparts_SL_DEFCON(rti).tim[t].last = fcs_pepcparts_SL_DEFCON(rti).tim[t].stop - fcs_pepcparts_SL_DEFCON(rti).tim[t].start))  /* sl_macro */
+ #define fcs_pepcparts_rti_tclear(t)            (fcs_pepcparts_SL_DEFCON(rti).tim[t].last = 0)  /* sl_macro */
+ #define fcs_pepcparts_rti_treset(t)            (fcs_pepcparts_SL_DEFCON(rti).tim[t].last = fcs_pepcparts_SL_DEFCON(rti).tim[t].cumu = 0, fcs_pepcparts_SL_DEFCON(rti).tim[t].num = 0)  /* sl_macro */
+ #define fcs_pepcparts_rti_tlast(t)             my_rti_tlast(fcs_pepcparts_SL_DEFCON(rti), t)  /* sl_macro */
+ #define fcs_pepcparts_rti_tcumu(t)             my_rti_tcumu(fcs_pepcparts_SL_DEFCON(rti), t)  /* sl_macro */
+ #define fcs_pepcparts_rti_tnum(t)              my_rti_tnum(fcs_pepcparts_SL_DEFCON(rti), t)  /* sl_macro */
+
+#else
+
+ #define fcs_pepcparts_rti_tstart(t)            Z_NOP()
+ #define fcs_pepcparts_rti_tstop(t)             Z_NOP()
+ #define fcs_pepcparts_rti_tclear(t)            Z_NOP()
+ #define fcs_pepcparts_rti_treset(t)            Z_NOP()
+ #define fcs_pepcparts_rti_tlast(t)             0
+ #define fcs_pepcparts_rti_tcumu(t)             0
+ #define fcs_pepcparts_rti_tnum(t)              0
+
+#endif
+
+
+#ifdef fcs_pepcparts_SL_USE_RTI_MEM
+
+ #define fcs_pepcparts_rti_minc_alloc()         ++fcs_pepcparts_SL_DEFCON(rti).mem.nalloc  /* sl_macro */
+ #define fcs_pepcparts_rti_minc_free()          ++fcs_pepcparts_SL_DEFCON(rti).mem.nfree  /* sl_macro */
+ #define fcs_pepcparts_rti_malloc(_s_)          (fcs_pepcparts_SL_DEFCON(rti).mem.max = z_max(_s_, fcs_pepcparts_SL_DEFCON(rti).mem.max), fcs_pepcparts_SL_DEFCON(rti).mem.cur += _s_, fcs_pepcparts_SL_DEFCON(rti).mem.cur_max = z_max(fcs_pepcparts_SL_DEFCON(rti).mem.cur, fcs_pepcparts_SL_DEFCON(rti).mem.cur_max))  /* sl_macro */
+ #define fcs_pepcparts_rti_mfree(_s_)           (fcs_pepcparts_SL_DEFCON(rti).mem.cur -= _s_)  /* sl_macro */
+
+ #define fcs_pepcparts_cc_rti_minc_alloc()      fcs_pepcparts_rti_minc_alloc(),  /* sl_macro */
+ #define fcs_pepcparts_cc_rti_minc_free()       fcs_pepcparts_rti_minc_free(),  /* sl_macro */
+ #define fcs_pepcparts_cc_rti_malloc(_s_)       fcs_pepcparts_rti_malloc(_s_),  /* sl_macro */
+ #define fcs_pepcparts_cc_rti_mfree(_s_)        fcs_pepcparts_rti_mfree(_s_),  /* sl_macro */
+
+#else
+
+ #define fcs_pepcparts_rti_minc_alloc()         Z_NOP()
+ #define fcs_pepcparts_rti_minc_free()          Z_NOP()
+ #define fcs_pepcparts_rti_malloc(_s_)          Z_NOP()
+ #define fcs_pepcparts_rti_mfree(_s_)           Z_NOP()
+
+ #define fcs_pepcparts_cc_rti_minc_alloc()
+ #define fcs_pepcparts_cc_rti_minc_free()
+ #define fcs_pepcparts_cc_rti_malloc(_s_)
+ #define fcs_pepcparts_cc_rti_mfree(_s_)
+
+#endif
+
+
+#ifdef fcs_pepcparts_SL_USE_RTI
+ #define fcs_pepcparts_rti_reset()              my_rti_reset(fcs_pepcparts_SL_DEFCON(rti))  /* sl_macro */
+#else
+ #define fcs_pepcparts_rti_reset()              Z_NOP()
+#endif
+
+
+
+
+
+
 #define fcs_pepcparts_SPEC_TLOC
 
 typedef fcs_pepcparts_sl_int_type_c fcs_pepcparts_spec_int_t;
@@ -1030,10 +5298,10 @@ typedef fcs_pepcparts_sl_int_type_c fcs_pepcparts_spec_elem_index_t;
 #define fcs_pepcparts_spec_elem_get_buf(_e_)        (_e_)
 
 #define fcs_pepcparts_spec_elem_copy_at(_se_, _sat_, _de_, _dat_) \
-  elem_copy_at((_se_), (_sat_), (_de_), (_dat_))
+  fcs_pepcparts_elem_copy_at((_se_), (_sat_), (_de_), (_dat_))
 
 #define fcs_pepcparts_spec_elem_exchange_at(_s0_, _s0at_, _s1_, _s1at_, _t_) \
-  elem_xchange_at((_s0_), (_s0at_), (_s1_), (_s1at_), (_t_))
+  fcs_pepcparts_elem_xchange_at((_s0_), (_s0at_), (_s1_), (_s1at_), (_t_))
 
 
 
@@ -1044,11 +5312,12 @@ typedef fcs_pepcparts_sl_int_type_c fcs_pepcparts_spec_elem_index_t;
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROC_COUNT_DB */
 #define fcs_pepcparts_SPEC_DECLARE_TPROC_COUNT_DB \
-  struct { fcs_pepcparts_spec_elem_index_t i; fcs_pepcparts_spec_proc_t p; } spec0cd;
+  struct { fcs_pepcparts_spec_elem_index_t n, i; fcs_pepcparts_spec_proc_t p; } spec0cd;
 
 /* sp_macro fcs_pepcparts_SPEC_DO_TPROC_COUNT_DB */
 #define fcs_pepcparts_SPEC_DO_TPROC_COUNT_DB(_tp_, _tpd_, _b_, _cs_)  do { \
-  for (spec0cd.i = 0; spec0cd.i < fcs_pepcparts_spec_elem_get_n(_b_); ++spec0cd.i) { \
+  spec0cd.n = fcs_pepcparts_spec_elem_get_n(_b_); \
+  for (spec0cd.i = 0; spec0cd.i < spec0cd.n; ++spec0cd.i) { \
     spec0cd.p = (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec0cd.i, _tpd_); \
     if (spec0cd.p == fcs_pepcparts_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec0cd.p]; \
@@ -1056,7 +5325,7 @@ typedef fcs_pepcparts_sl_int_type_c fcs_pepcparts_spec_elem_index_t;
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROC_COUNT_DB */
 #define fcs_pepcparts_SPEC_FUNC_TPROC_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tproc_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts) \
+_s_ void _name_##_tproc_count_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROC_COUNT_DB \
   fcs_pepcparts_SPEC_DO_TPROC_COUNT_DB(_tp_, tproc_data, s, counts); \
@@ -1064,12 +5333,13 @@ _s_ void _name_##_tproc_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spe
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROC_COUNT_IP */
 #define fcs_pepcparts_SPEC_DECLARE_TPROC_COUNT_IP \
-  struct { fcs_pepcparts_spec_elem_index_t i, t; fcs_pepcparts_spec_proc_t p; } spec0ci;
+  struct { fcs_pepcparts_spec_elem_index_t n, t, i; fcs_pepcparts_spec_proc_t p; } spec0ci;
 
 /* sp_macro fcs_pepcparts_SPEC_DO_TPROC_COUNT_IP */
 #define fcs_pepcparts_SPEC_DO_TPROC_COUNT_IP(_tp_, _tpd_, _b_, _cs_)  do { \
+  spec0ci.n = fcs_pepcparts_spec_elem_get_n(_b_); \
   spec0ci.t = 0; \
-  for (spec0ci.i = 0; spec0ci.i < fcs_pepcparts_spec_elem_get_n(_b_); ++spec0ci.i) { \
+  for (spec0ci.i = 0; spec0ci.i < spec0ci.n; ++spec0ci.i) { \
     spec0ci.p = (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec0ci.i, _tpd_); \
     if (spec0ci.p == fcs_pepcparts_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec0ci.p]; \
@@ -1081,7 +5351,7 @@ _s_ void _name_##_tproc_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spe
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROC_COUNT_IP */
 #define fcs_pepcparts_SPEC_FUNC_TPROC_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tproc_count_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts) \
+_s_ void _name_##_tproc_count_ip(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROC_COUNT_IP \
   fcs_pepcparts_SPEC_DO_TPROC_COUNT_IP(_tp_, tproc_data, s, counts); \
@@ -1092,11 +5362,12 @@ _s_ void _name_##_tproc_count_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spe
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_COUNT_DB */
 #define fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_COUNT_DB \
-  struct { fcs_pepcparts_spec_elem_index_t i; fcs_pepcparts_spec_proc_t p; } spec1cd;
+  struct { fcs_pepcparts_spec_elem_index_t n, i; fcs_pepcparts_spec_proc_t p; } spec1cd;
 
 /* sp_macro fcs_pepcparts_SPEC_DO_TPROC_MOD_COUNT_DB */
 #define fcs_pepcparts_SPEC_DO_TPROC_MOD_COUNT_DB(_tp_, _tpd_, _b_, _cs_)  do { \
-  for (spec1cd.i = 0; spec1cd.i < fcs_pepcparts_spec_elem_get_n(_b_); ++spec1cd.i) { \
+  spec1cd.n = fcs_pepcparts_spec_elem_get_n(_b_); \
+  for (spec1cd.i = 0; spec1cd.i < spec1cd.n; ++spec1cd.i) { \
     spec1cd.p = (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec1cd.i, _tpd_, NULL); \
     if (spec1cd.p == fcs_pepcparts_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec1cd.p]; \
@@ -1104,7 +5375,7 @@ _s_ void _name_##_tproc_count_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spe
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROC_MOD_COUNT_DB */
 #define fcs_pepcparts_SPEC_FUNC_TPROC_MOD_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tproc_mod_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts) \
+_s_ void _name_##_tproc_mod_count_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_COUNT_DB \
   fcs_pepcparts_SPEC_DO_TPROC_MOD_COUNT_DB(_tp_, tproc_data, s, counts); \
@@ -1112,12 +5383,13 @@ _s_ void _name_##_tproc_mod_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_COUNT_IP */
 #define fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_COUNT_IP \
-  struct { fcs_pepcparts_spec_elem_index_t i, t; fcs_pepcparts_spec_proc_t p; } spec1ci;
+  struct { fcs_pepcparts_spec_elem_index_t n, t, i; fcs_pepcparts_spec_proc_t p; } spec1ci;
 
 /* sp_macro fcs_pepcparts_SPEC_DO_TPROC_MOD_COUNT_IP */
 #define fcs_pepcparts_SPEC_DO_TPROC_MOD_COUNT_IP(_tp_, _tpd_, _b_, _cs_)  do { \
+  spec1ci.n = fcs_pepcparts_spec_elem_get_n(_b_); \
   spec1ci.t = 0; \
-  for (spec1ci.i = 0; spec1ci.i < fcs_pepcparts_spec_elem_get_n(_b_); ++spec1ci.i) { \
+  for (spec1ci.i = 0; spec1ci.i < spec1ci.n; ++spec1ci.i) { \
     spec1ci.p = (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec1ci.i, _tpd_, NULL); \
     if (spec1ci.p == fcs_pepcparts_SPEC_PROC_NONE) continue; \
     ++(_cs_)[spec1ci.p]; \
@@ -1129,7 +5401,7 @@ _s_ void _name_##_tproc_mod_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROC_MOD_COUNT_IP */
 #define fcs_pepcparts_SPEC_FUNC_TPROC_MOD_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tproc_mod_count_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts) \
+_s_ void _name_##_tproc_mod_count_ip(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_COUNT_IP \
   fcs_pepcparts_SPEC_DO_TPROC_MOD_COUNT_IP(_tp_, tproc_data, s, counts); \
@@ -1140,18 +5412,19 @@ _s_ void _name_##_tproc_mod_count_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROCS_COUNT_DB */
 #define fcs_pepcparts_SPEC_DECLARE_TPROCS_COUNT_DB \
-  struct { fcs_pepcparts_spec_elem_index_t i; fcs_pepcparts_spec_int_t j, n; } spec2cd;
+  struct { fcs_pepcparts_spec_elem_index_t n, i; fcs_pepcparts_spec_int_t j, m; } spec2cd;
 
 /* sp_macro fcs_pepcparts_SPEC_DO_TPROCS_COUNT_DB */
 #define fcs_pepcparts_SPEC_DO_TPROCS_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
-  for (spec2cd.i = 0; spec2cd.i < fcs_pepcparts_spec_elem_get_n(_b_); ++spec2cd.i) { \
-    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec2cd.i, (_tpd_), &spec2cd.n, (_ps_)); \
-    for (spec2cd.j = 0; spec2cd.j < spec2cd.n; ++spec2cd.j) ++(_cs_)[(_ps_)[spec2cd.j]]; \
+  spec2cd.n = fcs_pepcparts_spec_elem_get_n(_b_); \
+  for (spec2cd.i = 0; spec2cd.i < spec2cd.n; ++spec2cd.i) { \
+    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec2cd.i, (_tpd_), &spec2cd.m, (_ps_)); \
+    for (spec2cd.j = 0; spec2cd.j < spec2cd.m; ++spec2cd.j) ++(_cs_)[(_ps_)[spec2cd.j]]; \
   } } while (0)
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROCS_COUNT_DB */
 #define fcs_pepcparts_SPEC_FUNC_TPROCS_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts, fcs_pepcparts_spec_proc_t *procs) \
+_s_ void _name_##_tprocs_count_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts, fcs_pepcparts_spec_proc_t *procs) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROCS_COUNT_DB \
   fcs_pepcparts_SPEC_DO_TPROCS_COUNT_DB(_tp_, tproc_data, s, counts, procs); \
@@ -1159,15 +5432,16 @@ _s_ void _name_##_tprocs_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_sp
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROCS_COUNT_IP */
 #define fcs_pepcparts_SPEC_DECLARE_TPROCS_COUNT_IP \
-  struct { fcs_pepcparts_spec_elem_index_t i, t; fcs_pepcparts_spec_int_t j, n; } spec2ci;
+  struct { fcs_pepcparts_spec_elem_index_t n, t, i; fcs_pepcparts_spec_int_t j, m; } spec2ci;
 
 /* sp_macro fcs_pepcparts_SPEC_DO_TPROCS_COUNT_IP */
 #define fcs_pepcparts_SPEC_DO_TPROCS_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
+  spec2ci.n = fcs_pepcparts_spec_elem_get_n(_b_); \
   spec2ci.t = 0; \
-  for (spec2ci.i = 0; spec2ci.i < fcs_pepcparts_spec_elem_get_n(_b_); ++spec2ci.i) { \
-    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec2ci.i, (_tpd_), &spec2ci.n, (_ps_)); \
-    if (spec2ci.n <= 0) continue; \
-    for (spec2ci.j = 0; spec2ci.j < spec2ci.n; ++spec2ci.j) ++(_cs_)[(_ps_)[spec2ci.j]]; \
+  for (spec2ci.i = 0; spec2ci.i < spec2ci.n; ++spec2ci.i) { \
+    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec2ci.i, (_tpd_), &spec2ci.m, (_ps_)); \
+    if (spec2ci.m <= 0) continue; \
+    for (spec2ci.j = 0; spec2ci.j < spec2ci.m; ++spec2ci.j) ++(_cs_)[(_ps_)[spec2ci.j]]; \
     if (spec2ci.t < spec2ci.i) fcs_pepcparts_spec_elem_copy_at((_b_), spec2ci.i, (_b_), spec2ci.t); \
     ++spec2ci.t; \
   } \
@@ -1176,7 +5450,7 @@ _s_ void _name_##_tprocs_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_sp
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROCS_COUNT_IP */
 #define fcs_pepcparts_SPEC_FUNC_TPROCS_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_count_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts, fcs_pepcparts_spec_proc_t *procs) \
+_s_ void _name_##_tprocs_count_ip(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts, fcs_pepcparts_spec_proc_t *procs) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROCS_COUNT_IP \
   fcs_pepcparts_SPEC_DO_TPROCS_COUNT_IP(_tp_, tproc_data, s, counts, procs); \
@@ -1187,18 +5461,19 @@ _s_ void _name_##_tprocs_count_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_sp
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_DB */
 #define fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_DB \
-  struct { fcs_pepcparts_spec_elem_index_t i; fcs_pepcparts_spec_int_t j, n; } spec3cd;
+  struct { fcs_pepcparts_spec_elem_index_t n, i; fcs_pepcparts_spec_int_t j, m; } spec3cd;
 
 /* sp_macro fcs_pepcparts_SPEC_DO_TPROCS_MOD_COUNT_DB */
 #define fcs_pepcparts_SPEC_DO_TPROCS_MOD_COUNT_DB(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
-  for (spec3cd.i = 0; spec3cd.i < fcs_pepcparts_spec_elem_get_n(_b_); ++spec3cd.i) { \
-    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec3cd.i, (_tpd_), &spec3cd.n, (_ps_), NULL); \
-    for (spec3cd.j = 0; spec3cd.j < spec3cd.n; ++spec3cd.j) ++(_cs_)[(_ps_)[spec3cd.j]]; \
+  spec3cd.n = fcs_pepcparts_spec_elem_get_n(_b_); \
+  for (spec3cd.i = 0; spec3cd.i < spec3cd.n; ++spec3cd.i) { \
+    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec3cd.i, (_tpd_), &spec3cd.m, (_ps_), NULL); \
+    for (spec3cd.j = 0; spec3cd.j < spec3cd.m; ++spec3cd.j) ++(_cs_)[(_ps_)[spec3cd.j]]; \
   } } while (0)
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_DB */
 #define fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts, fcs_pepcparts_spec_proc_t *procs) \
+_s_ void _name_##_tprocs_mod_count_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts, fcs_pepcparts_spec_proc_t *procs) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_DB \
   fcs_pepcparts_SPEC_DO_TPROCS_MOD_COUNT_DB(_tp_, tproc_data, s, counts, procs); \
@@ -1206,15 +5481,16 @@ _s_ void _name_##_tprocs_mod_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcpart
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_IP */
 #define fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_IP \
-  struct { fcs_pepcparts_spec_elem_index_t i, t; fcs_pepcparts_spec_int_t j, n; } spec3ci;
+  struct { fcs_pepcparts_spec_elem_index_t n, t, i; fcs_pepcparts_spec_int_t j, m; } spec3ci;
 
 /* sp_macro fcs_pepcparts_SPEC_DO_TPROCS_MOD_COUNT_IP */
 #define fcs_pepcparts_SPEC_DO_TPROCS_MOD_COUNT_IP(_tp_, _tpd_, _b_, _cs_, _ps_)  do { \
+  spec3ci.n = fcs_pepcparts_spec_elem_get_n(_b_); \
   spec3ci.t = 0; \
-  for (spec3ci.i = 0; spec3ci.i < fcs_pepcparts_spec_elem_get_n(_b_); ++spec3ci.i) { \
-    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec3ci.i, (_tpd_), &spec3ci.n, (_ps_), NULL); \
-    if (spec3ci.n <= 0) continue; \
-    for (spec3ci.j = 0; spec3ci.j < spec3ci.n; ++spec3ci.j) ++(_cs_)[(_ps_)[spec3ci.j]]; \
+  for (spec3ci.i = 0; spec3ci.i < spec3ci.n; ++spec3ci.i) { \
+    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec3ci.i, (_tpd_), &spec3ci.m, (_ps_), NULL); \
+    if (spec3ci.m <= 0) continue; \
+    for (spec3ci.j = 0; spec3ci.j < spec3ci.m; ++spec3ci.j) ++(_cs_)[(_ps_)[spec3ci.j]]; \
     if (spec3ci.t < spec3ci.i) fcs_pepcparts_spec_elem_copy_at((_b_), spec3ci.i, (_b_), spec3ci.t); \
     ++spec3ci.t; \
   } \
@@ -1223,35 +5499,59 @@ _s_ void _name_##_tprocs_mod_count_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcpart
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_IP */
 #define fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_count_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts, fcs_pepcparts_spec_proc_t *procs) \
+_s_ void _name_##_tprocs_mod_count_ip(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts, fcs_pepcparts_spec_proc_t *procs) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_COUNT_IP \
   fcs_pepcparts_SPEC_DO_TPROCS_MOD_COUNT_IP(_tp_, tproc_data, s, counts, procs); \
 }
 
 
+/* un-fixed macros, sp_macro fcs_pepcparts_spec_fixed_default_declare fcs_pepcparts_spec_fixed_default_create fcs_pepcparts_spec_fixed_default_copy_at fcs_pepcparts_spec_fixed_default_exchange_at fcs_pepcparts_spec_fixed_default_destroy */
+#define fcs_pepcparts_spec_fixed_default_declare(_fx_, _fxp_)
+#define fcs_pepcparts_spec_fixed_default_create(_fx_, _fxp_)
+#define fcs_pepcparts_spec_fixed_default_copy_at(_se_, _sat_, _de_, _dat_, _fx_, _fxp_)             fcs_pepcparts_spec_elem_copy_at(_se_, _sat_, _de_, _dat_)
+#define fcs_pepcparts_spec_fixed_default_exchange_at(_s0_, _s0at_, _s1_, _s1at_, _t_, _fx_, _fxp_)  fcs_pepcparts_spec_elem_exchange_at(_s0_, _s0at_, _s1_, _s1at_, _t_)
+#define fcs_pepcparts_spec_fixed_default_destroy(_fx_, _fxp_)
+
+
 /* tproc rearrange */
+
+/* sp_macro fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_REARRANGE_DB(_fxdcl_, _fxp_) \
+  struct { fcs_pepcparts_spec_elem_index_t n, i; fcs_pepcparts_spec_proc_t p; _fxdcl_(fx, _fxp_) } spec0d;
+
+/* sp_macro fcs_pepcparts_SPEC_DO_FIXED_TPROC_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DO_FIXED_TPROC_REARRANGE_DB(_fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _tpd_, _sb_, _db_, _ds_)  do { \
+  _fxc_(spec0d.fx, _fxp_); \
+  spec0d.n = fcs_pepcparts_spec_elem_get_n(_sb_); \
+  for (spec0d.i = 0; spec0d.i < spec0d.n; ++spec0d.i) { \
+    spec0d.p = (_tp_)(fcs_pepcparts_spec_elem_get_buf(_sb_), spec0d.i, _tpd_); \
+    if (spec0d.p == fcs_pepcparts_SPEC_PROC_NONE) continue; \
+    _fxca_((_sb_), spec0d.i, (_db_), (_ds_)[spec0d.p], spec0d.fx, _fxp_); \
+    ++(_ds_)[spec0d.p]; \
+  } \
+  _fxd_(spec0d.fx, _fxp_); \
+  } while (0)
+
+/* sp_macro fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_REARRANGE_DB(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_...) \
+_s_ void _name_##_tproc_rearrange_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, int *displs) \
+{ \
+  fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_REARRANGE_DB(_fxdcl_, _fxp_) \
+  fcs_pepcparts_SPEC_DO_FIXED_TPROC_REARRANGE_DB(_fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, tproc_data, s, d, displs); \
+}
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROC_REARRANGE_DB */
 #define fcs_pepcparts_SPEC_DECLARE_TPROC_REARRANGE_DB \
-  struct { fcs_pepcparts_spec_elem_index_t i; fcs_pepcparts_spec_proc_t p; } spec0d;
+  fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_REARRANGE_DB(fcs_pepcparts_spec_fixed_default_declare, NOPARAM)
 
 /* sp_macro fcs_pepcparts_SPEC_DO_TPROC_REARRANGE_DB */
-#define fcs_pepcparts_SPEC_DO_TPROC_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_)  do { \
-  for (spec0d.i = 0; spec0d.i < fcs_pepcparts_spec_elem_get_n(_sb_); ++spec0d.i) { \
-    spec0d.p = (_tp_)(fcs_pepcparts_spec_elem_get_buf(_sb_), spec0d.i, _tpd_); \
-    if (spec0d.p == fcs_pepcparts_SPEC_PROC_NONE) continue; \
-    fcs_pepcparts_spec_elem_copy_at((_sb_), spec0d.i, (_db_), (_ds_)[spec0d.p]); \
-    ++(_ds_)[spec0d.p]; \
-  } } while (0)
+#define fcs_pepcparts_SPEC_DO_TPROC_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_) \
+  fcs_pepcparts_SPEC_DO_FIXED_TPROC_REARRANGE_DB(NOPARAM, fcs_pepcparts_spec_fixed_default_create, fcs_pepcparts_spec_fixed_default_copy_at, fcs_pepcparts_spec_fixed_default_exchange_at, fcs_pepcparts_spec_fixed_default_destroy, _tp_, _tpd_, _sb_, _db_, _ds_)
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROC_REARRANGE_DB */
 #define fcs_pepcparts_SPEC_FUNC_TPROC_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tproc_rearrange_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs) \
-{ \
-  fcs_pepcparts_SPEC_DECLARE_TPROC_REARRANGE_DB \
-  fcs_pepcparts_SPEC_DO_TPROC_REARRANGE_DB(_tp_, tproc_data, s, d, displs); \
-}
+  fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_REARRANGE_DB(_name_, fcs_pepcparts_spec_fixed_default_declare, NOPARAM, fcs_pepcparts_spec_fixed_default_create, fcs_pepcparts_spec_fixed_default_copy_at, fcs_pepcparts_spec_fixed_default_exchange_at, fcs_pepcparts_spec_fixed_default_destroy, _tp_, _s_)
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROC_REARRANGE_IP */
 #define fcs_pepcparts_SPEC_DECLARE_TPROC_REARRANGE_IP \
@@ -1276,7 +5576,7 @@ _s_ void _name_##_tproc_rearrange_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROC_REARRANGE_IP */
 #define fcs_pepcparts_SPEC_FUNC_TPROC_REARRANGE_IP(_name_, _tp_, _s_) \
-_s_ void _name_##_tproc_rearrange_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_pepcparts_spec_int_t n) \
+_s_ void _name_##_tproc_rearrange_ip(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, int *displs, int *counts, fcs_pepcparts_spec_int_t n) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROC_REARRANGE_IP \
   fcs_pepcparts_SPEC_DO_TPROC_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n); \
@@ -1285,26 +5585,42 @@ _s_ void _name_##_tproc_rearrange_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts
 
 /* tproc_mod rearrange */
 
-/* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_DB */
-#define fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_DB \
-  struct { fcs_pepcparts_spec_elem_index_t i; fcs_pepcparts_spec_proc_t p; } spec1d;
+/* sp_macro fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_MOD_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_MOD_REARRANGE_DB(_fxdcl_, _fxp_) \
+  struct { fcs_pepcparts_spec_elem_index_t n, i; fcs_pepcparts_spec_proc_t p; _fxdcl_(fx, _fxp_) } spec1d;
 
-/* sp_macro fcs_pepcparts_SPEC_DO_TPROC_MOD_REARRANGE_DB */
-#define fcs_pepcparts_SPEC_DO_TPROC_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ib_)  do { \
-  for (spec1d.i = 0; spec1d.i < fcs_pepcparts_spec_elem_get_n(_sb_); ++spec1d.i) { \
+/* sp_macro fcs_pepcparts_SPEC_DO_FIXED_TPROC_MOD_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DO_FIXED_TPROC_MOD_REARRANGE_DB(_fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _tpd_, _sb_, _db_, _ds_, _ib_)  do { \
+  spec1d.n = fcs_pepcparts_spec_elem_get_n(_sb_); \
+  _fxc_(spec0d.fx, _fxp_); \
+  for (spec1d.i = 0; spec1d.i < spec1d.n; ++spec1d.i) { \
     spec1d.p = (_tp_)(fcs_pepcparts_spec_elem_get_buf(_sb_), spec1d.i, _tpd_, fcs_pepcparts_spec_elem_get_buf(_ib_)); \
     if (spec1d.p == fcs_pepcparts_SPEC_PROC_NONE) continue; \
-    fcs_pepcparts_spec_elem_copy_at((_ib_), 0, (_db_), (_ds_)[spec1d.p]); \
+    _fxca_((_ib_), 0, (_db_), (_ds_)[spec1d.p], spec1d.fx, _fxp_); \
     ++(_ds_)[spec1d.p]; \
-  } } while (0)
+  } \
+  _fxd_(spec0d.fx, _fxp_); \
+  } while (0)
+
+/* sp_macro fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_MOD_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_MOD_REARRANGE_DB(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_...) \
+_s_ void _name_##_tproc_mod_rearrange_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, int *displs, fcs_pepcparts_spec_elem_t *mod) \
+{ \
+  fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_MOD_REARRANGE_DB(_fxdcl_, _fxp_) \
+  fcs_pepcparts_SPEC_DO_FIXED_TPROC_MOD_REARRANGE_DB(_fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, tproc_data, s, d, displs, mod); \
+}
+
+/* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_DB \
+  fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_MOD_REARRANGE_DB(fcs_pepcparts_spec_fixed_default_declare, NOPARAM)
+
+/* sp_macro fcs_pepcparts_SPEC_DO_TPROC_MOD_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DO_TPROC_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ib_) \
+  fcs_pepcparts_SPEC_DO_FIXED_TPROC_MOD_REARRANGE_DB(NOPARAM, fcs_pepcparts_spec_fixed_default_create, fcs_pepcparts_spec_fixed_default_copy_at, fcs_pepcparts_spec_fixed_default_exchange_at, fcs_pepcparts_spec_fixed_default_destroy, _tp_, _tpd_, _sb_, _db_, _ds_, _ib_)
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROC_MOD_REARRANGE_DB */
 #define fcs_pepcparts_SPEC_FUNC_TPROC_MOD_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tproc_mod_rearrange_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, fcs_pepcparts_spec_elem_t *mod) \
-{ \
-  fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_DB \
-  fcs_pepcparts_SPEC_DO_TPROC_MOD_REARRANGE_DB(_tp_, tproc_data, s, d, displs, mod); \
-}
+  fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_MOD_REARRANGE_DB(_name_, fcs_pepcparts_spec_fixed_default_declare, NOPARAM, fcs_pepcparts_spec_fixed_default_create, fcs_pepcparts_spec_fixed_default_copy_at, fcs_pepcparts_spec_fixed_default_exchange_at, fcs_pepcparts_spec_fixed_default_destroy, _tp_, _s_)
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP */
 #define fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP \
@@ -1333,7 +5649,7 @@ _s_ void _name_##_tproc_mod_rearrange_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcp
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROC_MOD_REARRANGE_IP */
 #define fcs_pepcparts_SPEC_FUNC_TPROC_MOD_REARRANGE_IP(_name_, _tp_, _s_) \
-_s_ void _name_##_tproc_mod_rearrange_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_elem_t *mod) \
+_s_ void _name_##_tproc_mod_rearrange_ip(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_elem_t *mod) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_REARRANGE_IP \
   fcs_pepcparts_SPEC_DO_TPROC_MOD_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n, mod); \
@@ -1342,27 +5658,43 @@ _s_ void _name_##_tproc_mod_rearrange_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcp
 
 /* tprocs rearrange */
 
-/* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_DB */
-#define fcs_pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_DB \
-  struct { fcs_pepcparts_spec_elem_index_t i; fcs_pepcparts_spec_int_t j, n; } spec2d;
+/* sp_macro fcs_pepcparts_SPEC_DECLARE_FIXED_TPROCS_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DECLARE_FIXED_TPROCS_REARRANGE_DB(_fxdcl_, _fxp_) \
+  struct { fcs_pepcparts_spec_elem_index_t n, i; fcs_pepcparts_spec_int_t j, m; _fxdcl_(fx, _fxp_) } spec2d;
 
-/* sp_macro fcs_pepcparts_SPEC_DO_TPROCS_REARRANGE_DB */
-#define fcs_pepcparts_SPEC_DO_TPROCS_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_)  do { \
-  for (spec2d.i = 0; spec2d.i < fcs_pepcparts_spec_elem_get_n(_sb_); ++spec2d.i) { \
-    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_sb_), spec2d.i, (_tpd_), &spec2d.n, (_ps_)); \
-    for (spec2d.j = 0; spec2d.j < spec2d.n; ++spec2d.j) { \
-      fcs_pepcparts_spec_elem_copy_at((_sb_), spec2d.i, (_db_), (_ds_)[(_ps_)[spec2d.j]]); \
+/* sp_macro fcs_pepcparts_SPEC_DO_FIXED_TPROCS_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DO_FIXED_TPROCS_REARRANGE_DB(_fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _tpd_, _sb_, _db_, _ds_, _ps_)  do { \
+  _fxc_(spec2d.fx, _fxp_); \
+  spec2d.n = fcs_pepcparts_spec_elem_get_n(_sb_); \
+  for (spec2d.i = 0; spec2d.i < spec2d.n; ++spec2d.i) { \
+    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_sb_), spec2d.i, (_tpd_), &spec2d.m, (_ps_)); \
+    for (spec2d.j = 0; spec2d.j < spec2d.m; ++spec2d.j) { \
+      _fxca_((_sb_), spec2d.i, (_db_), (_ds_)[(_ps_)[spec2d.j]], spec2d.fx, _fxp_); \
       ++(_ds_)[(_ps_)[spec2d.j]]; \
     } \
-  } } while (0)
+  } \
+  _fxd_(spec2d.fx, _fxp_); \
+  } while (0)
+
+/* sp_macro fcs_pepcparts_SPEC_FUNC_FIXED_TPROCS_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_FUNC_FIXED_TPROCS_REARRANGE_DB(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_...) \
+_s_ void _name_##_tprocs_rearrange_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, int *displs, fcs_pepcparts_spec_proc_t *procs) \
+{ \
+  fcs_pepcparts_SPEC_DECLARE_FIXED_TPROCS_REARRANGE_DB(_fxdcl_, _fxp_) \
+  fcs_pepcparts_SPEC_DO_FIXED_TPROCS_REARRANGE_DB(_fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, tproc_data, s, d, displs, procs); \
+}
+
+/* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_DB \
+  fcs_pepcparts_SPEC_DECLARE_FIXED_TPROCS_REARRANGE_DB(fcs_pepcparts_spec_fixed_default_declare, NOPARAM)
+
+/* sp_macro fcs_pepcparts_SPEC_DO_TPROCS_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DO_TPROCS_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_) \
+  fcs_pepcparts_SPEC_DO_FIXED_TPROCS_REARRANGE_DB(NOPARAM, fcs_pepcparts_spec_fixed_default_create, fcs_pepcparts_spec_fixed_default_copy_at, fcs_pepcparts_spec_fixed_default_exchange_at, fcs_pepcparts_spec_fixed_default_destroy, _tp_, _tpd_, _sb_, _db_, _ds_, _ps_)
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROCS_REARRANGE_DB */
 #define fcs_pepcparts_SPEC_FUNC_TPROCS_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_rearrange_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, fcs_pepcparts_spec_proc_t *procs) \
-{ \
-  fcs_pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_DB \
-  fcs_pepcparts_SPEC_DO_TPROCS_REARRANGE_DB(_tp_, tproc_data, s, d, displs, procs); \
-}
+  fcs_pepcparts_SPEC_FUNC_FIXED_TPROCS_REARRANGE_DB(_name_, fcs_pepcparts_spec_fixed_default_declare, NOPARAM, fcs_pepcparts_spec_fixed_default_create, fcs_pepcparts_spec_fixed_default_copy_at, fcs_pepcparts_spec_fixed_default_exchange_at, fcs_pepcparts_spec_fixed_default_destroy, _tp_, _s_)
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_IP */
 #define fcs_pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_IP \
@@ -1408,7 +5740,7 @@ _s_ void _name_##_tprocs_rearrange_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcpart
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROCS_REARRANGE_IP */
 #define fcs_pepcparts_SPEC_FUNC_TPROCS_REARRANGE_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_rearrange_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_proc_t *procs) \
+_s_ void _name_##_tprocs_rearrange_ip(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_proc_t *procs) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROCS_REARRANGE_IP \
   fcs_pepcparts_SPEC_DO_TPROCS_REARRANGE_IP(_tp_, tproc_data, s, d, displs, counts, n, procs); \
@@ -1417,27 +5749,43 @@ _s_ void _name_##_tprocs_rearrange_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcpart
 
 /* tprocs_mod rearrange */
 
-/* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB */
-#define fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB \
-  struct { fcs_pepcparts_spec_elem_index_t i; fcs_pepcparts_spec_int_t j, n; } spec3d;
+/* sp_macro fcs_pepcparts_SPEC_DECLARE_FIXED_TPROCS_MOD_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DECLARE_FIXED_TPROCS_MOD_REARRANGE_DB(_fxdcl_, _fxp_) \
+  struct { fcs_pepcparts_spec_elem_index_t n, i; fcs_pepcparts_spec_int_t j, m; _fxdcl_(fx, _fxp_) } spec3d;
 
-/* sp_macro fcs_pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_DB */
-#define fcs_pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_, _ib_)  do { \
-  for (spec3d.i = 0; spec3d.i < fcs_pepcparts_spec_elem_get_n(_sb_); ++spec3d.i) { \
-    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_sb_), spec3d.i, (_tpd_), &spec3d.n, (_ps_), fcs_pepcparts_spec_elem_get_buf(_ib_)); \
-    for (spec3d.j = 0; spec3d.j < spec3d.n; ++spec3d.j) { \
-      fcs_pepcparts_spec_elem_copy_at((_ib_), spec3d.j, (_db_), (_ds_)[(_ps_)[spec3d.j]]); \
+/* sp_macro fcs_pepcparts_SPEC_DO_FIXED_TPROCS_MOD_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DO_FIXED_TPROCS_MOD_REARRANGE_DB(_fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _tpd_, _sb_, _db_, _ds_, _ps_, _ib_)  do { \
+  _fxc_(spec3d.fx, _fxp_); \
+  spec3d.n = fcs_pepcparts_spec_elem_get_n(_sb_); \
+  for (spec3d.i = 0; spec3d.i < spec3d.n; ++spec3d.i) { \
+    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_sb_), spec3d.i, (_tpd_), &spec3d.m, (_ps_), fcs_pepcparts_spec_elem_get_buf(_ib_)); \
+    for (spec3d.j = 0; spec3d.j < spec3d.m; ++spec3d.j) { \
+      _fxca_((_ib_), spec3d.j, (_db_), (_ds_)[(_ps_)[spec3d.j]], spec3d.fx, _fxp_); \
       ++(_ds_)[(_ps_)[spec3d.j]]; \
     } \
-  } } while (0)
+  } \
+  _fxd_(spec3d.fx, _fxp_); \
+  } while (0)
+
+/* sp_macro fcs_pepcparts_SPEC_FUNC_FIXED_TPROCS_MOD_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_FUNC_FIXED_TPROCS_MOD_REARRANGE_DB(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_...) \
+_s_ void _name_##_tprocs_mod_rearrange_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, int *displs, fcs_pepcparts_spec_proc_t *procs, fcs_pepcparts_spec_elem_t *mod) \
+{ \
+  fcs_pepcparts_SPEC_DECLARE_FIXED_TPROCS_MOD_REARRANGE_DB(_fxdcl_, _fxp_) \
+  fcs_pepcparts_SPEC_DO_FIXED_TPROCS_MOD_REARRANGE_DB(_fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, tproc_data, s, d, displs, procs, mod); \
+}
+
+/* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB \
+  fcs_pepcparts_SPEC_DECLARE_FIXED_TPROCS_MOD_REARRANGE_DB(fcs_pepcparts_spec_fixed_default_declare, NOPARAM)
+
+/* sp_macro fcs_pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_DB */
+#define fcs_pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, _tpd_, _sb_, _db_, _ds_, _ps_, _ib_) \
+  fcs_pepcparts_SPEC_DO_FIXED_TPROCS_MOD_REARRANGE_DB(NOPARAM, fcs_pepcparts_spec_fixed_default_create, fcs_pepcparts_spec_fixed_default_copy_at, fcs_pepcparts_spec_fixed_default_exchange_at, fcs_pepcparts_spec_fixed_default_destroy, _tp_, _tpd_, _sb_, _db_, _ds_, _ps_, _ib_)
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_DB */
 #define fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_rearrange_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, fcs_pepcparts_spec_proc_t *procs, fcs_pepcparts_spec_elem_t *mod) \
-{ \
-  fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_DB \
-  fcs_pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_DB(_tp_, tproc_data, s, d, displs, procs, mod); \
-}
+  fcs_pepcparts_SPEC_FUNC_FIXED_TPROCS_MOD_REARRANGE_DB(_name_, fcs_pepcparts_spec_fixed_default_declare, NOPARAM, fcs_pepcparts_spec_fixed_default_create, fcs_pepcparts_spec_fixed_default_copy_at, fcs_pepcparts_spec_fixed_default_exchange_at, fcs_pepcparts_spec_fixed_default_destroy, _tp_, _s_)
 
 /* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP */
 #define fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP \
@@ -1483,7 +5831,7 @@ _s_ void _name_##_tprocs_mod_rearrange_db(fcs_pepcparts_spec_elem_t *s, fcs_pepc
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP */
 #define fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_mod_rearrange_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_proc_t *procs, fcs_pepcparts_spec_elem_t *mod) \
+_s_ void _name_##_tprocs_mod_rearrange_ip(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_proc_t *procs, fcs_pepcparts_spec_elem_t *mod) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_REARRANGE_IP \
   fcs_pepcparts_SPEC_DO_TPROCS_MOD_REARRANGE_IP(_tp_, tproc_data, s, x, displs, counts, n, procs, mod); \
@@ -1507,10 +5855,37 @@ _s_ void _name_##_tprocs_mod_rearrange_ip(fcs_pepcparts_spec_elem_t *s, fcs_pepc
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROC_INDICES_DB */
 #define fcs_pepcparts_SPEC_FUNC_TPROC_INDICES_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tproc_indices_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *indices, int *idispls) \
+_s_ void _name_##_tproc_indices_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *indices, int *idispls) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROC_INDICES_DB \
   fcs_pepcparts_SPEC_DO_TPROC_INDICES_DB(_tp_, tproc_data, s, indices, idispls); \
+}
+
+
+/* tproc_mod indices */
+
+/* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_INDICES_DB */
+#define fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_INDICES_DB \
+  struct { fcs_pepcparts_spec_elem_index_t i, k; fcs_pepcparts_spec_proc_t p; } spec1xd;
+
+/* sp_macro fcs_pepcparts_SPEC_DO_TPROC_MOD_INDICES_DB */
+#define fcs_pepcparts_SPEC_DO_TPROC_MOD_INDICES_DB(_tp_, _tpd_, _b_, _ix_, _id_, _ib_, _d_)  do { \
+  spec1xd.k = 0; \
+  for (spec1xd.i = 0; spec1xd.i < fcs_pepcparts_spec_elem_get_n(_b_); ++spec1xd.i) { \
+    spec1xd.p = (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec1xd.i, (_tpd_), fcs_pepcparts_spec_elem_get_buf(_ib_)); \
+    if (spec1xd.p == fcs_pepcparts_SPEC_PROC_NONE) continue; \
+    fcs_pepcparts_spec_elem_copy_at((_ib_), 0, (_d_), spec1xd.k); \
+    (_ix_)[(_id_)[spec1xd.p]] = spec1xd.k; \
+    ++spec1xd.k; \
+    ++(_id_)[spec1xd.p]; \
+  } } while (0)
+
+/* sp_macro fcs_pepcparts_SPEC_FUNC_TPROC_MOD_INDICES_DB */
+#define fcs_pepcparts_SPEC_FUNC_TPROC_MOD_INDICES_DB(_name_, _tp_, _s_...) \
+_s_ void _name_##_tproc_mod_indices_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *indices, int *idispls, fcs_pepcparts_spec_elem_t *mod, fcs_pepcparts_spec_elem_t *d) \
+{ \
+  fcs_pepcparts_SPEC_DECLARE_TPROC_MOD_INDICES_DB \
+  fcs_pepcparts_SPEC_DO_TPROC_MOD_INDICES_DB(_tp_, tproc_data, s, indices, idispls, mod, d); \
 }
 
 
@@ -1532,11 +5907,92 @@ _s_ void _name_##_tproc_indices_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_s
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TPROCS_INDICES_DB */
 #define fcs_pepcparts_SPEC_FUNC_TPROCS_INDICES_DB(_name_, _tp_, _s_...) \
-_s_ void _name_##_tprocs_indices_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *indices, int *idispls, fcs_pepcparts_spec_proc_t *procs) \
+_s_ void _name_##_tprocs_indices_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *indices, int *idispls, fcs_pepcparts_spec_proc_t *procs) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TPROCS_INDICES_DB \
   fcs_pepcparts_SPEC_DO_TPROCS_INDICES_DB(_tp_, tproc_data, s, indices, idispls, procs); \
 }
+
+
+/* tprocs_mod indices */
+
+/* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_INDICES_DB */
+#define fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_INDICES_DB \
+  struct { fcs_pepcparts_spec_elem_index_t i, k; fcs_pepcparts_spec_int_t j, n; } spec3xd;
+
+/* sp_macro fcs_pepcparts_SPEC_DO_TPROCS_MOD_INDICES_DB */
+#define fcs_pepcparts_SPEC_DO_TPROCS_MOD_INDICES_DB(_tp_, _tpd_, _b_, _ix_, _id_, _ps_, _ib_, _d_)  do { \
+  spec3xd.k = 0; \
+  for (spec3xd.i = 0; spec3xd.i < fcs_pepcparts_spec_elem_get_n(_b_); ++spec3xd.i) { \
+    (_tp_)(fcs_pepcparts_spec_elem_get_buf(_b_), spec3xd.i, (_tpd_), &spec3xd.n, (_ps_), fcs_pepcparts_spec_elem_get_buf(_ib_)); \
+    for (spec3xd.j = 0; spec3xd.j < spec3xd.n; ++spec3xd.j) { \
+      fcs_pepcparts_spec_elem_copy_at((_ib_), spec3xd.j, (_d_), spec3xd.k); \
+      (_ix_)[(_id_)[(_ps_)[spec3xd.j]]] = spec3xd.k; \
+      ++spec3xd.k; \
+      ++(_id_)[(_ps_)[spec3xd.j]]; \
+    } \
+  } } while (0)
+
+/* sp_macro fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_INDICES_DB */
+#define fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_INDICES_DB(_name_, _tp_, _s_...) \
+_s_ void _name_##_tprocs_mod_indices_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *indices, int *idispls, fcs_pepcparts_spec_proc_t *procs, fcs_pepcparts_spec_elem_t *mod, fcs_pepcparts_spec_elem_t *d) \
+{ \
+  fcs_pepcparts_SPEC_DECLARE_TPROCS_MOD_INDICES_DB \
+  fcs_pepcparts_SPEC_DO_TPROCS_MOD_INDICES_DB(_tp_, tproc_data, s, indices, idispls, procs, mod, d); \
+}
+
+
+/* tproc sendrecv */
+
+/* sp_macro fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_SENDRECV_DB */
+#define fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_SENDRECV_DB(_fxdcl_, _fxp_)
+/*#define fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_SENDRECV_DB(_fxdcl_, _fxp_) \
+  struct { _fxdcl_(fx, _fxp_) } spec0srd;*/
+
+/* sp_macro fcs_pepcparts_SPEC_DO_FIXED_TPROC_SENDRECV_DB */
+#define fcs_pepcparts_SPEC_DO_FIXED_TPROC_SENDRECV_DB(_fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _tpd_, _sb_, _rb_, _sc_, _sd_, _rd_, _ab_, _ad_, _as_, _aq_, _aqn_, _aqs_, _r_, _p_)  do { \
+  _fxc_(spec0srd.fx, _fxp_); \
+  while (*(_sd_) < (_sc_)) { \
+    if ((_p_) == fcs_pepcparts_SPEC_PROC_NONE) (_p_) = (_tp_)(fcs_pepcparts_spec_elem_get_buf(_sb_), *(_sd_), (_tpd_)); \
+    if ((_p_) != fcs_pepcparts_SPEC_PROC_NONE) { \
+      if ((_p_) == (_r_)) { \
+        _fxca_((_sb_), *(_sd_), (_rb_), *(_rd_), spec0srd.fx, _fxp_); \
+        ++(*(_rd_)); \
+      } else { \
+        if ((_ad_)[_p_] >= ((_p_) + 1) * (_as_)) break; \
+        _fxca_((_sb_), *(_sd_), (_ab_), (_ad_)[_p_], spec0srd.fx, _fxp_); \
+        ++(_ad_)[_p_]; \
+        if ((_ad_)[_p_] >= ((_p_) + 1) * (_as_)) { \
+          (_aq_)[*(_aqn_)] = (_p_); ++(*(_aqn_)); *(_aqn_) %= (_aqs_); \
+        } \
+      } \
+    } \
+    (_p_) = fcs_pepcparts_SPEC_PROC_NONE; \
+    ++(*(_sd_)); \
+ } \
+ _fxd_(spec0srd.fx, _fxp_); \
+ } while (0)
+
+/* sp_macro fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_SENDRECV_DB */
+#define fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_SENDRECV_DB(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_...) \
+_s_ fcs_pepcparts_spec_proc_t _name_##_tproc_sendrecv_db(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *sb, fcs_pepcparts_spec_elem_t *rb, fcs_pepcparts_spec_int_t scount, fcs_pepcparts_spec_int_t *sdispl, fcs_pepcparts_spec_int_t *rdispl, fcs_pepcparts_spec_elem_t *ax, fcs_pepcparts_spec_int_t *aux_displs, fcs_pepcparts_spec_int_t aux_size_max, fcs_pepcparts_spec_int_t *aux_queue, fcs_pepcparts_spec_int_t *aux_queue_next, fcs_pepcparts_spec_int_t aux_queue_size, fcs_pepcparts_spec_proc_t rank, fcs_pepcparts_spec_proc_t p) \
+{ \
+  fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_SENDRECV_DB(_fxdcl_, _fxp_) \
+  fcs_pepcparts_SPEC_DO_FIXED_TPROC_SENDRECV_DB(_fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, tproc_data, sb, rb, scount, sdispl, rdispl, ax, aux_displs, aux_size_max, aux_queue, aux_queue_next, aux_queue_size, rank, p); \
+  return p; \
+}
+
+/* sp_macro fcs_pepcparts_SPEC_DECLARE_TPROC_SENDRECV_DB */
+#define fcs_pepcparts_SPEC_DECLARE_TPROC_SENDRECV_DB \
+  fcs_pepcparts_SPEC_DECLARE_FIXED_TPROC_SENDRECV_DB(fcs_pepcparts_spec_fixed_default_declare, NOPARAM)
+
+/* sp_macro fcs_pepcparts_SPEC_DO_TPROC_SENDRECV_DB */
+#define fcs_pepcparts_SPEC_DO_TPROC_SENDRECV_DB(_tp_, _tpd_, _sb_, _rb_, _sc_, _sd_, _rd_, _ab_, _ad_, _as_, _aq_, _aqn_, _aqs_, _r_, _p_) \
+  fcs_pepcparts_SPEC_DO_FIXED_TPROC_SENDRECV_DB(NOPARAM, fcs_pepcparts_spec_fixed_default_create, fcs_pepcparts_spec_fixed_default_copy_at, fcs_pepcparts_spec_fixed_default_exchange_at, fcs_pepcparts_spec_fixed_default_destroy, _tp_, _tpd_, _sb_, _rb_, _sc_, _sd_, _rd_, _ab_, _ad_, _as_, _aq_, _aqn_, _aqs_, _r_, _p_)
+
+/* sp_macro fcs_pepcparts_SPEC_FUNC_TPROC_SENDRECV_DB */
+#define fcs_pepcparts_SPEC_FUNC_TPROC_SENDRECV_DB(_name_, _tp_, _s_...) \
+  fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_SENDRECV_DB(_name_, fcs_pepcparts_spec_fixed_default_declare, NOPARAM, fcs_pepcparts_spec_fixed_default_create, fcs_pepcparts_spec_fixed_default_copy_at, fcs_pepcparts_spec_fixed_default_exchange_at, fcs_pepcparts_spec_fixed_default_destroy, _tp_, _s_)
 
 
 /* sp_macro fcs_pepcparts_SPEC_DEFINE_TPROC */
@@ -1545,14 +6001,16 @@ _s_ void _name_##_tprocs_indices_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_
   fcs_pepcparts_SPEC_FUNC_TPROC_COUNT_IP(_name_, _tp_, _s_) \
   fcs_pepcparts_SPEC_FUNC_TPROC_REARRANGE_DB(_name_, _tp_, _s_) \
   fcs_pepcparts_SPEC_FUNC_TPROC_REARRANGE_IP(_name_, _tp_, _s_) \
-  fcs_pepcparts_SPEC_FUNC_TPROC_INDICES_DB(_name_, _tp_, _s_)
+  fcs_pepcparts_SPEC_FUNC_TPROC_INDICES_DB(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROC_SENDRECV_DB(_name_, _tp_, _s_)
 
 /* sp_macro fcs_pepcparts_SPEC_DEFINE_TPROC_MOD */
 #define fcs_pepcparts_SPEC_DEFINE_TPROC_MOD(_name_, _tp_, _s_...) \
   fcs_pepcparts_SPEC_FUNC_TPROC_MOD_COUNT_DB(_name_, _tp_, _s_) \
   fcs_pepcparts_SPEC_FUNC_TPROC_MOD_COUNT_IP(_name_, _tp_, _s_) \
   fcs_pepcparts_SPEC_FUNC_TPROC_MOD_REARRANGE_DB(_name_, _tp_, _s_) \
-  fcs_pepcparts_SPEC_FUNC_TPROC_MOD_REARRANGE_IP(_name_, _tp_, _s_)
+  fcs_pepcparts_SPEC_FUNC_TPROC_MOD_REARRANGE_IP(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROC_MOD_INDICES_DB(_name_, _tp_, _s_)
 
 /* sp_macro fcs_pepcparts_SPEC_DEFINE_TPROCS */
 #define fcs_pepcparts_SPEC_DEFINE_TPROCS(_name_, _tp_, _s_...) \
@@ -1567,47 +6025,125 @@ _s_ void _name_##_tprocs_indices_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_
   fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_DB(_name_, _tp_, _s_) \
   fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_IP(_name_, _tp_, _s_) \
   fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_DB(_name_, _tp_, _s_) \
-  fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP(_name_, _tp_, _s_)
+  fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_INDICES_DB(_name_, _tp_, _s_)
 
-/* sp_macro fcs_pepcparts_SPEC_EXT_PARAM_TPROC fcs_pepcparts_SPEC_EXT_PARAM_TPROC_NULL fcs_pepcparts_SPEC_EXT_PARAM_TPROC_MOD fcs_pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL fcs_pepcparts_SPEC_EXT_PARAM_TPROCS fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_NULL fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_MOD fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL */
-#define fcs_pepcparts_SPEC_EXT_PARAM_TPROC(_name_)       _name_##_tproc_count_db, _name_##_tproc_count_ip, _name_##_tproc_rearrange_db, _name_##_tproc_rearrange_ip, _name_##_tproc_indices_db
-#define fcs_pepcparts_SPEC_EXT_PARAM_TPROC_NULL          NULL, NULL, NULL, NULL, NULL
-#define fcs_pepcparts_SPEC_EXT_PARAM_TPROC_MOD(_name_)   _name_##_tproc_mod_count_db, _name_##_tproc_mod_count_ip, _name_##_tproc_mod_rearrange_db, _name_##_tproc_mod_rearrange_ip
-#define fcs_pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL      NULL, NULL, NULL, NULL
-#define fcs_pepcparts_SPEC_EXT_PARAM_TPROCS(_name_)      _name_##_tprocs_count_db, _name_##_tprocs_count_ip, _name_##_tprocs_rearrange_db, _name_##_tprocs_rearrange_ip, _name_##_tprocs_indices_db
-#define fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_NULL         NULL, NULL, NULL, NULL, NULL
-#define fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_MOD(_name_)  _name_##_tprocs_mod_count_db, _name_##_tprocs_mod_count_ip, _name_##_tprocs_mod_rearrange_db, _name_##_tprocs_mod_rearrange_ip
-#define fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL     NULL, NULL, NULL, NULL
+/* sp_macro fcs_pepcparts_SPEC_DEFINE_FIXED_TPROC */
+#define fcs_pepcparts_SPEC_DEFINE_FIXED_TPROC(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_...) \
+  fcs_pepcparts_SPEC_FUNC_TPROC_COUNT_DB(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROC_COUNT_IP(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_REARRANGE_DB(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROC_REARRANGE_IP(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROC_INDICES_DB(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_SENDRECV_DB(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_)
 
+/* sp_macro fcs_pepcparts_SPEC_DEFINE_FIXED_TPROC_MOD */
+#define fcs_pepcparts_SPEC_DEFINE_FIXED_TPROC_MOD(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_...) \
+  fcs_pepcparts_SPEC_FUNC_TPROC_MOD_COUNT_DB(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROC_MOD_COUNT_IP(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_FIXED_TPROC_MOD_REARRANGE_DB(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROC_MOD_REARRANGE_IP(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROC_MOD_INDICES_DB(_name_, _tp_, _s_)
 
-/* sp_type fcs_pepcparts_spec_tproc_f fcs_pepcparts_spec_tproc_count_f fcs_pepcparts_spec_tproc_rearrange_db_f fcs_pepcparts_spec_tproc_rearrange_ip_f fcs_pepcparts_spec_tproc_indices_db_f */
+/* sp_macro fcs_pepcparts_SPEC_DEFINE_FIXED_TPROCS */
+#define fcs_pepcparts_SPEC_DEFINE_FIXED_TPROCS(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_...) \
+  fcs_pepcparts_SPEC_FUNC_TPROCS_COUNT_DB(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROCS_COUNT_IP(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_FIXED_TPROCS_REARRANGE_DB(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROCS_REARRANGE_IP(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROCS_INDICES_DB(_name_, _tp_, _s_)
+
+/* sp_macro fcs_pepcparts_SPEC_DEFINE_FIXED_TPROCS_MOD */
+#define fcs_pepcparts_SPEC_DEFINE_FIXED_TPROCS_MOD(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_...) \
+  fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_DB(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_COUNT_IP(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_FIXED_TPROCS_MOD_REARRANGE_DB(_name_, _fxdcl_, _fxp_, _fxc_, _fxca_, _fxxa_, _fxd_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_REARRANGE_IP(_name_, _tp_, _s_) \
+  fcs_pepcparts_SPEC_FUNC_TPROCS_MOD_INDICES_DB(_name_, _tp_, _s_)
+
+/* sp_type fcs_pepcparts_spec_tproc_f fcs_pepcparts_spec_tproc_count_f fcs_pepcparts_spec_tproc_rearrange_db_f fcs_pepcparts_spec_tproc_rearrange_ip_f fcs_pepcparts_spec_tproc_indices_db_f fcs_pepcparts_spec_tproc_sendrecv_db_f */
 typedef fcs_pepcparts_spec_proc_t fcs_pepcparts_spec_tproc_f(fcs_pepcparts_spec_elem_buf_t b, fcs_pepcparts_spec_elem_index_t x, fcs_pepcparts_spec_tproc_data_t tproc_data);
-typedef void fcs_pepcparts_spec_tproc_count_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts);
-typedef void fcs_pepcparts_spec_tproc_rearrange_db_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs);
-typedef void fcs_pepcparts_spec_tproc_rearrange_ip_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_pepcparts_spec_int_t n);
-typedef void fcs_pepcparts_spec_tproc_indices_db_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *indices, int *idispls);
+typedef void fcs_pepcparts_spec_tproc_count_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts);
+typedef void fcs_pepcparts_spec_tproc_rearrange_db_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, int *displs);
+typedef void fcs_pepcparts_spec_tproc_rearrange_ip_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, int *displs, int *counts, fcs_pepcparts_spec_int_t n);
+typedef void fcs_pepcparts_spec_tproc_indices_db_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *indices, int *idispls);
+typedef fcs_pepcparts_spec_proc_t fcs_pepcparts_spec_tproc_sendrecv_db_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *sb, fcs_pepcparts_spec_elem_t *rb, fcs_pepcparts_spec_int_t scount, fcs_pepcparts_spec_int_t *sdispl, fcs_pepcparts_spec_int_t *rdispl, fcs_pepcparts_spec_elem_t *ax, fcs_pepcparts_spec_int_t *aux_displs, fcs_pepcparts_spec_int_t aux_size_max, fcs_pepcparts_spec_int_t *aux_queue, fcs_pepcparts_spec_int_t *aux_queue_next, fcs_pepcparts_spec_int_t aux_queue_size, fcs_pepcparts_spec_proc_t rank, fcs_pepcparts_spec_proc_t p);
 
-/* sp_type fcs_pepcparts_spec_tproc_mod_f fcs_pepcparts_spec_tproc_mod_count_f fcs_pepcparts_spec_tproc_mod_rearrange_db_f fcs_pepcparts_spec_tproc_mod_rearrange_ip_f */
+/* sp_type fcs_pepcparts_spec_tproc_mod_f fcs_pepcparts_spec_tproc_mod_count_f fcs_pepcparts_spec_tproc_mod_rearrange_db_f fcs_pepcparts_spec_tproc_mod_rearrange_ip_f fcs_pepcparts_spec_tproc_mod_indices_db_f */
 typedef fcs_pepcparts_spec_proc_t fcs_pepcparts_spec_tproc_mod_f(fcs_pepcparts_spec_elem_buf_t b, fcs_pepcparts_spec_elem_index_t x, fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_buf_t mod);
-typedef void fcs_pepcparts_spec_tproc_mod_count_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts);
-typedef void fcs_pepcparts_spec_tproc_mod_rearrange_db_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, fcs_pepcparts_spec_elem_t *mod);
-typedef void fcs_pepcparts_spec_tproc_mod_rearrange_ip_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_elem_t *mod);
+typedef void fcs_pepcparts_spec_tproc_mod_count_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts);
+typedef void fcs_pepcparts_spec_tproc_mod_rearrange_db_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, int *displs, fcs_pepcparts_spec_elem_t *mod);
+typedef void fcs_pepcparts_spec_tproc_mod_rearrange_ip_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_elem_t *mod);
+typedef void fcs_pepcparts_spec_tproc_mod_indices_db_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *indices, int *idispls, fcs_pepcparts_spec_elem_t *mod, fcs_pepcparts_spec_elem_t *d);
 
 /* sp_type fcs_pepcparts_spec_tprocs_f fcs_pepcparts_spec_tprocs_count_f fcs_pepcparts_spec_tprocs_rearrange_db_f fcs_pepcparts_spec_tprocs_rearrange_ip_f fcs_pepcparts_spec_tprocs_indices_db_f */
 typedef void fcs_pepcparts_spec_tprocs_f(fcs_pepcparts_spec_elem_buf_t b, fcs_pepcparts_spec_elem_index_t x, fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_int_t *nprocs, fcs_pepcparts_spec_proc_t *procs);
-typedef void fcs_pepcparts_spec_tprocs_count_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts, fcs_pepcparts_spec_proc_t *procs);
-typedef void fcs_pepcparts_spec_tprocs_rearrange_db_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, fcs_pepcparts_spec_proc_t *procs);
-typedef void fcs_pepcparts_spec_tprocs_rearrange_ip_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_proc_t *procs);
-typedef void fcs_pepcparts_spec_tprocs_indices_db_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *indices, int *idispls, fcs_pepcparts_spec_proc_t *procs);
+typedef void fcs_pepcparts_spec_tprocs_count_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts, fcs_pepcparts_spec_proc_t *procs);
+typedef void fcs_pepcparts_spec_tprocs_rearrange_db_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, int *displs, fcs_pepcparts_spec_proc_t *procs);
+typedef void fcs_pepcparts_spec_tprocs_rearrange_ip_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_proc_t *procs);
+typedef void fcs_pepcparts_spec_tprocs_indices_db_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *indices, int *idispls, fcs_pepcparts_spec_proc_t *procs);
 
-/* sp_type fcs_pepcparts_spec_tprocs_mod_f fcs_pepcparts_spec_tprocs_mod_count_f fcs_pepcparts_spec_tprocs_mod_rearrange_db_f fcs_pepcparts_spec_tprocs_mod_rearrange_ip_f */
+/* sp_type fcs_pepcparts_spec_tprocs_mod_f fcs_pepcparts_spec_tprocs_mod_count_f fcs_pepcparts_spec_tprocs_mod_rearrange_db_f fcs_pepcparts_spec_tprocs_mod_rearrange_ip_f fcs_pepcparts_spec_tprocs_mod_indices_db_f */
 typedef void fcs_pepcparts_spec_tprocs_mod_f(fcs_pepcparts_spec_elem_buf_t b, fcs_pepcparts_spec_elem_index_t x, fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_int_t *nprocs, fcs_pepcparts_spec_proc_t *procs, fcs_pepcparts_spec_elem_buf_t mod);
-typedef void fcs_pepcparts_spec_tprocs_mod_count_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_tproc_data_t tproc_data, int *counts, fcs_pepcparts_spec_proc_t *procs);
-typedef void fcs_pepcparts_spec_tprocs_mod_rearrange_db_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, fcs_pepcparts_spec_proc_t *procs, fcs_pepcparts_spec_elem_t *mod);
-typedef void fcs_pepcparts_spec_tprocs_mod_rearrange_ip_f(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, fcs_pepcparts_spec_tproc_data_t tproc_data, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_proc_t *procs, fcs_pepcparts_spec_elem_t *mod);
+typedef void fcs_pepcparts_spec_tprocs_mod_count_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *counts, fcs_pepcparts_spec_proc_t *procs);
+typedef void fcs_pepcparts_spec_tprocs_mod_rearrange_db_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, int *displs, fcs_pepcparts_spec_proc_t *procs, fcs_pepcparts_spec_elem_t *mod);
+typedef void fcs_pepcparts_spec_tprocs_mod_rearrange_ip_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *x, int *displs, int *counts, fcs_pepcparts_spec_int_t n, fcs_pepcparts_spec_proc_t *procs, fcs_pepcparts_spec_elem_t *mod);
+typedef void fcs_pepcparts_spec_tprocs_mod_indices_db_f(fcs_pepcparts_spec_tproc_data_t tproc_data, fcs_pepcparts_spec_elem_t *s, int *indices, int *idispls, fcs_pepcparts_spec_proc_t *procs, fcs_pepcparts_spec_elem_t *mod, fcs_pepcparts_spec_elem_t *d);
 
 /* sp_type fcs_pepcparts_spec_tproc_reset_f */
 typedef void fcs_pepcparts_spec_tproc_reset_f(fcs_pepcparts_spec_tproc_data_t tproc_data);
+
+
+/* sp_type fcs_pepcparts__spec_tproc_ext_t fcs_pepcparts_spec_tproc_ext_t */
+typedef struct fcs_pepcparts__spec_tproc_ext_t
+{
+  fcs_pepcparts_spec_tproc_count_f *count_db, *count_ip;
+  fcs_pepcparts_spec_tproc_rearrange_db_f *rearrange_db;
+  fcs_pepcparts_spec_tproc_rearrange_ip_f *rearrange_ip;
+  fcs_pepcparts_spec_tproc_indices_db_f *indices_db;
+  fcs_pepcparts_spec_tproc_sendrecv_db_f *sendrecv_db;
+
+} fcs_pepcparts_spec_tproc_ext_t;
+
+/* sp_type fcs_pepcparts__spec_tproc_mod_ext_tproc_t fcs_pepcparts_spec_tproc_mod_ext_t */
+typedef struct fcs_pepcparts__spec_tproc_mod_ext_tproc_t
+{
+  fcs_pepcparts_spec_tproc_mod_count_f *count_db, *count_ip;
+  fcs_pepcparts_spec_tproc_mod_rearrange_db_f *rearrange_db;
+  fcs_pepcparts_spec_tproc_mod_rearrange_ip_f *rearrange_ip;
+  fcs_pepcparts_spec_tproc_mod_indices_db_f *indices_db;
+
+} fcs_pepcparts_spec_tproc_mod_ext_t;
+
+/* sp_type fcs_pepcparts__spec_tprocs_ext_t fcs_pepcparts_spec_tprocs_ext_t */
+typedef struct fcs_pepcparts__spec_tprocs_ext_t
+{
+  fcs_pepcparts_spec_tprocs_count_f *count_db, *count_ip;
+  fcs_pepcparts_spec_tprocs_rearrange_db_f *rearrange_db;
+  fcs_pepcparts_spec_tprocs_rearrange_ip_f *rearrange_ip;
+  fcs_pepcparts_spec_tprocs_indices_db_f *indices_db;
+
+} fcs_pepcparts_spec_tprocs_ext_t;
+
+/* sp_type fcs_pepcparts__spec_tprocs_mod_ext_t fcs_pepcparts_spec_tprocs_mod_ext_t */
+typedef struct fcs_pepcparts__spec_tprocs_mod_ext_t
+{
+  fcs_pepcparts_spec_tprocs_mod_count_f *count_db, *count_ip;
+  fcs_pepcparts_spec_tprocs_mod_rearrange_db_f *rearrange_db;
+  fcs_pepcparts_spec_tprocs_mod_rearrange_ip_f *rearrange_ip;
+  fcs_pepcparts_spec_tprocs_mod_indices_db_f *indices_db;
+
+} fcs_pepcparts_spec_tprocs_mod_ext_t;
+
+/* sp_macro fcs_pepcparts_SPEC_EXT_PARAM_TPROC fcs_pepcparts_SPEC_EXT_PARAM_TPROC_NULL fcs_pepcparts_SPEC_EXT_PARAM_TPROC_MOD fcs_pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL fcs_pepcparts_SPEC_EXT_PARAM_TPROCS fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_NULL fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_MOD fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL */
+#define fcs_pepcparts_SPEC_EXT_PARAM_TPROC(_name_)       { _name_##_tproc_count_db, _name_##_tproc_count_ip, _name_##_tproc_rearrange_db, _name_##_tproc_rearrange_ip, _name_##_tproc_indices_db, _name_##_tproc_sendrecv_db }
+#define fcs_pepcparts_SPEC_EXT_PARAM_TPROC_NULL          { NULL, NULL, NULL, NULL, NULL, NULL }
+#define fcs_pepcparts_SPEC_EXT_PARAM_TPROC_MOD(_name_)   { _name_##_tproc_mod_count_db, _name_##_tproc_mod_count_ip, _name_##_tproc_mod_rearrange_db, _name_##_tproc_mod_rearrange_ip, _name_##_tproc_mod_indices_db }
+#define fcs_pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL      { NULL, NULL, NULL, NULL, NULL }
+#define fcs_pepcparts_SPEC_EXT_PARAM_TPROCS(_name_)      { _name_##_tprocs_count_db, _name_##_tprocs_count_ip, _name_##_tprocs_rearrange_db, _name_##_tprocs_rearrange_ip, _name_##_tprocs_indices_db }
+#define fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_NULL         { NULL, NULL, NULL, NULL, NULL }
+#define fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_MOD(_name_)  { _name_##_tprocs_mod_count_db, _name_##_tprocs_mod_count_ip, _name_##_tprocs_mod_rearrange_db, _name_##_tprocs_mod_rearrange_ip, _name_##_tprocs_mod_indices_db }
+#define fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_MOD_NULL     { NULL, NULL, NULL, NULL, NULL }
 
 
 /* enable tloc features */
@@ -1632,7 +6168,7 @@ typedef void fcs_pepcparts_spec_tproc_reset_f(fcs_pepcparts_spec_tproc_data_t tp
 
 /* sp_macro fcs_pepcparts_SPEC_FUNC_TLOC_REARRANGE_DB */
 #define fcs_pepcparts_SPEC_FUNC_TLOC_REARRANGE_DB(_name_, _tl_, _s_...) \
-_s_ void _name_##_tloc_rearrange_db(fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d, fcs_pepcparts_spec_tloc_data_t tloc_data) \
+_s_ void _name_##_tloc_rearrange_db(fcs_pepcparts_spec_tloc_data_t tloc_data, fcs_pepcparts_spec_elem_t *s, fcs_pepcparts_spec_elem_t *d) \
 { \
   fcs_pepcparts_SPEC_DECLARE_TLOC_REARRANGE_DB \
   fcs_pepcparts_SPEC_DO_TLOC_REARRANGE_DB(_tl_, tloc_data, s, d); \
@@ -2284,26 +6820,16 @@ typedef struct fcs_pepcparts__split_generic_t
   fcs_pepcparts_slint_t max_tprocs;
 
   fcs_pepcparts_spec_tproc_f *tproc;
-  fcs_pepcparts_spec_tproc_count_f *tproc_count_db, *tproc_count_ip;
-  fcs_pepcparts_spec_tproc_rearrange_db_f *tproc_rearrange_db;
-  fcs_pepcparts_spec_tproc_rearrange_ip_f *tproc_rearrange_ip;
-  fcs_pepcparts_spec_tproc_indices_db_f *tproc_indices_db;
+  fcs_pepcparts_spec_tproc_ext_t tproc_ext;
 
   fcs_pepcparts_spec_tproc_mod_f *tproc_mod;
-  fcs_pepcparts_spec_tproc_mod_count_f *tproc_mod_count_db, *tproc_mod_count_ip;
-  fcs_pepcparts_spec_tproc_mod_rearrange_db_f *tproc_mod_rearrange_db;
-  fcs_pepcparts_spec_tproc_mod_rearrange_ip_f *tproc_mod_rearrange_ip;
+  fcs_pepcparts_spec_tproc_mod_ext_t tproc_mod_ext;
 
   fcs_pepcparts_spec_tprocs_f *tprocs;
-  fcs_pepcparts_spec_tprocs_count_f *tprocs_count_db, *tprocs_count_ip;
-  fcs_pepcparts_spec_tprocs_rearrange_db_f *tprocs_rearrange_db;
-  fcs_pepcparts_spec_tprocs_rearrange_ip_f *tprocs_rearrange_ip;
-  fcs_pepcparts_spec_tprocs_indices_db_f *tprocs_indices_db;
+  fcs_pepcparts_spec_tprocs_ext_t tprocs_ext;
 
   fcs_pepcparts_spec_tprocs_mod_f *tprocs_mod;
-  fcs_pepcparts_spec_tprocs_mod_count_f *tprocs_mod_count_db, *tprocs_mod_count_ip;
-  fcs_pepcparts_spec_tprocs_mod_rearrange_db_f *tprocs_mod_rearrange_db;
-  fcs_pepcparts_spec_tprocs_mod_rearrange_ip_f *tprocs_mod_rearrange_ip;
+  fcs_pepcparts_spec_tprocs_mod_ext_t tprocs_mod_ext;
 
   fcs_pepcparts_spec_tproc_reset_f *reset;
 
@@ -2345,30 +6871,18 @@ typedef void fcs_pepcparts_tproc_reset_f(void *tproc_data);
 /* sl_macro fcs_pepcparts_TPROC_RESET_NULL */
 #define fcs_pepcparts_TPROC_RESET_NULL  NULL
 
-/* sl_type fcs_pepcparts__tproc_t fcs_pepcparts_tproc_t */
-typedef struct fcs_pepcparts__tproc_t *fcs_pepcparts_tproc_t;
+/* sl_type fcs_pepcparts_tproc_t */
+typedef struct fcs_pepcparts__spec_tproc_t *fcs_pepcparts_tproc_t;
 
 /* sl_type fcs_pepcparts__tproc_exdef fcs_pepcparts_tproc_exdef */
-typedef struct fcs_pepcparts__tproc_exdef {
+typedef struct fcs_pepcparts__tproc_exdef
+{
   int type;
 
-  fcs_pepcparts_spec_tproc_count_f *tproc_count_db, *tproc_count_ip;
-  fcs_pepcparts_spec_tproc_rearrange_db_f *tproc_rearrange_db;
-  fcs_pepcparts_spec_tproc_rearrange_ip_f *tproc_rearrange_ip;
-  fcs_pepcparts_spec_tproc_indices_db_f *tproc_indices_db;
-
-  fcs_pepcparts_spec_tproc_mod_count_f *tproc_mod_count_db, *tproc_mod_count_ip;
-  fcs_pepcparts_spec_tproc_mod_rearrange_db_f *tproc_mod_rearrange_db;
-  fcs_pepcparts_spec_tproc_mod_rearrange_ip_f *tproc_mod_rearrange_ip;
-
-  fcs_pepcparts_spec_tprocs_count_f *tprocs_count_db, *tprocs_count_ip;
-  fcs_pepcparts_spec_tprocs_rearrange_db_f *tprocs_rearrange_db;
-  fcs_pepcparts_spec_tprocs_rearrange_ip_f *tprocs_rearrange_ip;
-  fcs_pepcparts_spec_tprocs_indices_db_f *tprocs_indices_db;
-
-  fcs_pepcparts_spec_tprocs_mod_count_f *tprocs_mod_count_db, *tprocs_mod_count_ip;
-  fcs_pepcparts_spec_tprocs_mod_rearrange_db_f *tprocs_mod_rearrange_db;
-  fcs_pepcparts_spec_tprocs_mod_rearrange_ip_f *tprocs_mod_rearrange_ip;
+  fcs_pepcparts_spec_tproc_ext_t tproc_ext;
+  fcs_pepcparts_spec_tproc_mod_ext_t tproc_mod_ext;
+  fcs_pepcparts_spec_tprocs_ext_t tprocs_ext;
+  fcs_pepcparts_spec_tprocs_mod_ext_t tprocs_mod_ext;
 
 } const *fcs_pepcparts_tproc_exdef;
 
@@ -2391,6 +6905,16 @@ typedef struct fcs_pepcparts__tproc_exdef {
 #define fcs_pepcparts_TPROC_EXDEF_DEFINE_TPROCS_MOD(_name_, _tp_, _s_...) \
   fcs_pepcparts_SPEC_DEFINE_TPROCS_MOD(_name_, _tp_, _s_) \
   _s_ const struct fcs_pepcparts__tproc_exdef _##_name_ = { 4, fcs_pepcparts_SPEC_EXT_PARAM_TPROC_NULL, fcs_pepcparts_SPEC_EXT_PARAM_TPROC_MOD_NULL, fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_NULL, fcs_pepcparts_SPEC_EXT_PARAM_TPROCS_MOD(_name_) }, *_name_ = &_##_name_;
+
+
+/* fcs_pepcparts_mpi_elements_alltoall_specific */
+#ifndef SL_MEAS_TYPE_ALLTOALLV
+# define SL_MEAS_TYPE_ALLTOALLV  0
+#endif
+
+#ifndef SL_MEAS_TYPE_SENDRECV
+# define SL_MEAS_TYPE_SENDRECV   1
+#endif
 
 
 /* deprecated, sl_type fcs_pepcparts_k2c_func fcs_pepcparts_pivot_func fcs_pepcparts_sn_func fcs_pepcparts_m2x_func fcs_pepcparts_m2X_func */
@@ -2552,7 +7076,7 @@ typedef struct fcs_pepcparts__partcond_intern_t
   fcs_pepcparts_slint_t pcm;
   fcs_pepcparts_slint_t count_min, count_max;
   fcs_pepcparts_slint_t count_low, count_high;
-#ifdef elem_weight
+#ifdef fcs_pepcparts_elem_weight
   fcs_pepcparts_slweight_t weight_min, weight_max;
   fcs_pepcparts_slweight_t weight_low, weight_high;
 #endif
@@ -2575,7 +7099,7 @@ typedef struct fcs_pepcparts__bin_t
 {
   fcs_pepcparts_elements_t s;
 
-#ifdef elem_weight
+#ifdef fcs_pepcparts_elem_weight
   fcs_pepcparts_slweight_t weight;
 #endif
 
@@ -2636,7 +7160,7 @@ typedef struct fcs_pepcparts__binning_t
   fcs_pepcparts_slint_t sorted;
 
   fcs_pepcparts_slint_t docounts;
-#ifdef elem_weight
+#ifdef fcs_pepcparts_elem_weight
   fcs_pepcparts_slint_t doweights;
 #endif
 
@@ -2654,7 +7178,7 @@ typedef struct fcs_pepcparts__local_bins_t
   fcs_pepcparts_slint_t nelements;
 
   fcs_pepcparts_slint_t docounts;
-#ifdef elem_weight
+#ifdef fcs_pepcparts_elem_weight
   fcs_pepcparts_slint_t doweights;
 #endif
 
@@ -2666,14 +7190,14 @@ typedef struct fcs_pepcparts__local_bins_t
 
   fcs_pepcparts_slint_t *bcws;
 
-#if defined(elem_weight) && defined(fcs_pepcparts_sl_weight_intequiv)
+#if defined(fcs_pepcparts_elem_weight) && defined(fcs_pepcparts_sl_weight_intequiv)
   fcs_pepcparts_slint_t cw_factor, w_index, bin_cw_factor;
   fcs_pepcparts_slweight_t *cws, *bin_cws;
   fcs_pepcparts_slweight_t *prefix_cws;
 #else
   fcs_pepcparts_slint_t *cs, *bin_cs;
   fcs_pepcparts_slint_t *prefix_cs;
-# ifdef elem_weight
+# ifdef fcs_pepcparts_elem_weight
   fcs_pepcparts_slweight_t *ws, *bin_ws;
   fcs_pepcparts_slweight_t *prefix_ws;
 # endif
@@ -2693,13 +7217,13 @@ typedef struct fcs_pepcparts__global_bins_t
 
   fcs_pepcparts_slint_t *bcws;
 
-#if defined(elem_weight) && defined(fcs_pepcparts_sl_weight_intequiv)
+#if defined(fcs_pepcparts_elem_weight) && defined(fcs_pepcparts_sl_weight_intequiv)
   fcs_pepcparts_slweight_t *cws;
   fcs_pepcparts_slweight_t *prefix_cws;
 #else
   fcs_pepcparts_slint_t *cs;
   fcs_pepcparts_slint_t *prefix_cs;
-# ifdef elem_weight
+# ifdef fcs_pepcparts_elem_weight
   fcs_pepcparts_slweight_t *ws;
   fcs_pepcparts_slweight_t *prefix_ws;
 # endif
@@ -2790,7 +7314,7 @@ typedef struct fcs_pepcparts__sl_omp_context_t
 typedef struct fcs_pepcparts__sl_context_t
 {
 
-/* src/base/base.c */
+/* base/base.c */
   struct {
 int dummy_rank;
   } sl;
@@ -2805,7 +7329,7 @@ fcs_pepcparts_slint_t ma_threshold;
   struct {
 fcs_pepcparts_slint_t threshold;
   } sri;
-/* src/base_mpi/base_mpi.c */
+/* base_mpi/base_mpi.c */
 #ifdef SL_USE_MPI
   struct {
 MPI_Datatype int_datatype;
@@ -2828,10 +7352,13 @@ fcs_pepcparts_slint_t sendrecv_replace_mpi_maxsize;
 #ifdef SL_USE_MPI
   struct {
 double t[2];
-fcs_pepcparts_slint_t max_nprocs;
 fcs_pepcparts_slint_t packed;
 fcs_pepcparts_slint_t minalloc;
 double overalloc;
+fcs_pepcparts_slint_t type;
+void *sendrecv_aux;
+fcs_pepcparts_slint_t sendrecv_aux_size;
+fcs_pepcparts_slint_t sendrecv_requests;
   } meas;
 #endif
 #ifdef SL_USE_MPI
@@ -2982,7 +7509,7 @@ fcs_pepcparts_slint_t back_packed;
 
 
 
-/* src/base/base.c */
+/* base/base.c */
 extern fcs_pepcparts_sl_context_t fcs_pepcparts_sl_default_context;
 extern const int fcs_pepcparts_default_sl_dummy_rank;
 #ifdef fcs_pepcparts_SL_USE_RTI
@@ -2993,7 +7520,7 @@ extern const fcs_pepcparts_slint_t fcs_pepcparts_default_sr_db_threshold;
 extern const fcs_pepcparts_slint_t fcs_pepcparts_default_sr_ma_threshold;
 extern const fcs_pepcparts_slint_t fcs_pepcparts_default_sri_threshold;
 
-/* src/base_mpi/base_mpi.c */
+/* base_mpi/base_mpi.c */
 #ifdef SL_USE_MPI
 extern const MPI_Datatype fcs_pepcparts_default_mpi_int_datatype;
 extern const MPI_Datatype fcs_pepcparts_default_mpi_key_datatype;
@@ -3008,10 +7535,13 @@ extern const void *fcs_pepcparts_default_me_sendrecv_replace_mem;
 extern const fcs_pepcparts_slint_t fcs_pepcparts_default_me_sendrecv_replace_memsize;
 extern const fcs_pepcparts_slint_t fcs_pepcparts_default_me_sendrecv_replace_mpi_maxsize;
 extern const double fcs_pepcparts_default_meas_t[];
-extern const fcs_pepcparts_slint_t fcs_pepcparts_default_meas_max_nprocs;
 extern const fcs_pepcparts_slint_t fcs_pepcparts_default_meas_packed;
 extern const fcs_pepcparts_slint_t fcs_pepcparts_default_meas_minalloc;
 extern const double fcs_pepcparts_default_meas_overalloc;
+extern const fcs_pepcparts_slint_t fcs_pepcparts_default_meas_type;
+extern const void *fcs_pepcparts_default_meas_sendrecv_aux;
+extern const fcs_pepcparts_slint_t fcs_pepcparts_default_meas_sendrecv_aux_size;
+extern const fcs_pepcparts_slint_t fcs_pepcparts_default_meas_sendrecv_requests;
 extern const fcs_pepcparts_slint_t fcs_pepcparts_default_mea_packed;
 extern const fcs_pepcparts_slint_t fcs_pepcparts_default_mea_db_packed;
 extern const fcs_pepcparts_slint_t fcs_pepcparts_default_mea_ip_packed;
@@ -3055,7 +7585,7 @@ extern const fcs_pepcparts_slint_t fcs_pepcparts_default_mssp_back_packed;
 
 
 
-/* src/base/base.c */
+/* base/base.c */
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_binning_create)(fcs_pepcparts_local_bins_t *lb, fcs_pepcparts_slint_t max_nbins, fcs_pepcparts_slint_t max_nbinnings, fcs_pepcparts_elements_t *s, fcs_pepcparts_slint_t nelements, fcs_pepcparts_slint_t docounts, fcs_pepcparts_slint_t doweights, fcs_pepcparts_binning_t *bm);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_binning_destroy)(fcs_pepcparts_local_bins_t *lb);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_binning_pre)(fcs_pepcparts_local_bins_t *lb);
@@ -3080,6 +7610,8 @@ fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elements_alloca)(fcs_pepcparts_elem
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elements_freea)(fcs_pepcparts_elements_t *s);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elements_alloc_from_blocks)(fcs_pepcparts_elements_t *s, fcs_pepcparts_slint_t nblocks, void **blocks, fcs_pepcparts_slint_t *blocksizes, fcs_pepcparts_slint_t alignment, fcs_pepcparts_slint_t nmax, slcint_t components);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elements_alloc_from_block)(fcs_pepcparts_elements_t *s, void *block, fcs_pepcparts_slint_t blocksize, fcs_pepcparts_slint_t alignment, fcs_pepcparts_slint_t nmax, slcint_t components);
+fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elements_block_alloc)(fcs_pepcparts_elements_t *s, fcs_pepcparts_slint_t nelements, slcint_t components);
+fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elements_block_free)(fcs_pepcparts_elements_t *s);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elements_alloc_block)(fcs_pepcparts_elements_t *s, void **block, fcs_pepcparts_slint_t *blocksize, fcs_pepcparts_slint_t alignment, fcs_pepcparts_slint_t maxblocksize);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elements_copy)(fcs_pepcparts_elements_t *s, fcs_pepcparts_elements_t *d);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elements_copy_at)(fcs_pepcparts_elements_t *s, fcs_pepcparts_slint_t sat, fcs_pepcparts_elements_t *d, fcs_pepcparts_slint_t dat);
@@ -3188,6 +7720,8 @@ fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_displs2counts)(fcs_pepcparts_slint_
 void SL_PROTO(fcs_pepcparts_get_displcounts_extent)(fcs_pepcparts_slint_t n, int *displs, int *counts, fcs_pepcparts_slint_t *lb, fcs_pepcparts_slint_t *extent);
 void SL_PROTO(fcs_pepcparts_elem_set_data)(fcs_pepcparts_elements_t *e, ...);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elem_get_max_byte)();
+void SL_PROTO(fcs_pepcparts_elem_set)(fcs_pepcparts_elements_t *s, fcs_pepcparts_elements_t *d);
+void SL_PROTO(fcs_pepcparts_elem_set_at)(fcs_pepcparts_elements_t *s, fcs_pepcparts_slint_t sat, fcs_pepcparts_elements_t *d);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elem_reverse)(fcs_pepcparts_elements_t *e, fcs_pepcparts_elements_t *t);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elem_nxchange_at)(fcs_pepcparts_elements_t *e0, fcs_pepcparts_slint_t at0, fcs_pepcparts_elements_t *e1, fcs_pepcparts_slint_t at1, fcs_pepcparts_slint_t n, fcs_pepcparts_elements_t *t);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_elem_nxchange)(fcs_pepcparts_elements_t *e0, fcs_pepcparts_elements_t *e1, fcs_pepcparts_slint_t n, fcs_pepcparts_elements_t *t);
@@ -3245,7 +7779,7 @@ fcs_pepcparts_slint SL_PROTO(fcs_pepcparts_splitk_k2c_count)(fcs_pepcparts_eleme
 
 
 
-/* src/base_mpi/base_mpi.c */
+/* base_mpi/base_mpi.c */
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_mpi_binning_create)(fcs_pepcparts_global_bins_t *gb, fcs_pepcparts_slint_t max_nbins, fcs_pepcparts_slint_t max_nbinnings, fcs_pepcparts_elements_t *s, fcs_pepcparts_slint_t nelements, fcs_pepcparts_slint_t docounts, fcs_pepcparts_slint_t doweights, fcs_pepcparts_binning_t *bm, int size, int rank, MPI_Comm comm);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_mpi_binning_destroy)(fcs_pepcparts_global_bins_t *gb, int size, int rank, MPI_Comm comm);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_mpi_binning_pre)(fcs_pepcparts_global_bins_t *gb, int size, int rank, MPI_Comm comm);
@@ -3275,12 +7809,14 @@ fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_mpi_elements_get_counts)(fcs_pepcpa
 fcs_pepcparts_slweight_t SL_PROTO(fcs_pepcparts_mpi_elements_get_weights)(fcs_pepcparts_elements_t *s, fcs_pepcparts_slweight_t *wlocal, fcs_pepcparts_slweight_t *wglobal, int root, int size, int rank, MPI_Comm comm);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_mpi_elements_get_counts_and_weights)(fcs_pepcparts_elements_t *s, fcs_pepcparts_slint_t nelements, fcs_pepcparts_slint_t *counts, fcs_pepcparts_slweight_t *weights, int root, int size, int rank, MPI_Comm comm);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_mpi_elements_sendrecv_replace)(fcs_pepcparts_elements_t *s, int count, int dest, int sendtag, int source, int recvtag, int size, int rank, MPI_Comm comm);
+fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_mpi_elements_isend_components)(fcs_pepcparts_elements_t *s, fcs_pepcparts_slint_t at, int count, int dest, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm);
+fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_mpi_elements_irecv_components)(fcs_pepcparts_elements_t *s, fcs_pepcparts_slint_t at, int count, int source, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_tproc_create_tproc)(fcs_pepcparts_tproc_t *tproc, fcs_pepcparts_tproc_f *tfn, fcs_pepcparts_tproc_reset_f *rfn, fcs_pepcparts_tproc_exdef exdef);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_tproc_create_tproc_mod)(fcs_pepcparts_tproc_t *tproc, fcs_pepcparts_tproc_mod_f *tfn, fcs_pepcparts_tproc_reset_f *rfn, fcs_pepcparts_tproc_exdef exdef);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_tproc_create_tprocs)(fcs_pepcparts_tproc_t *tproc, fcs_pepcparts_slint_t max_tprocs, fcs_pepcparts_tprocs_f *tfn, fcs_pepcparts_tproc_reset_f *rfn, fcs_pepcparts_tproc_exdef exdef);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_tproc_create_tprocs_mod)(fcs_pepcparts_tproc_t *tproc, fcs_pepcparts_slint_t max_tprocs, fcs_pepcparts_tprocs_mod_f *tfn, fcs_pepcparts_tproc_reset_f *rfn, fcs_pepcparts_tproc_exdef exdef);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_tproc_free)(fcs_pepcparts_tproc_t *tproc);
-fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_tproc_set_proclists)(fcs_pepcparts_tproc_t *tproc, fcs_pepcparts_slint_t nsend_procs, int *send_procs, fcs_pepcparts_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
+fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_tproc_set_proclists)(fcs_pepcparts_tproc_t tproc, fcs_pepcparts_slint_t nsend_procs, int *send_procs, fcs_pepcparts_slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_tproc_verify)(fcs_pepcparts_tproc_t tproc, void *data, fcs_pepcparts_elements_t *s, int proc);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_mpi_elements_alltoall_specific)(fcs_pepcparts_elements_t *sin, fcs_pepcparts_elements_t *sout, fcs_pepcparts_elements_t *xs, fcs_pepcparts_tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 fcs_pepcparts_slint_t SL_PROTO(fcs_pepcparts_mpi_elements_alltoallv_db_packed)(fcs_pepcparts_elements_t *sbuf, int *scounts, int *sdispls, fcs_pepcparts_elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

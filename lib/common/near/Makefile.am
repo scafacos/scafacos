@@ -95,57 +95,9 @@ sl_SOURCE = \
   ../sl/include/z_config.h \
   ../sl/include/z_pack_conf.h \
   ../sl/include/z_pack.h \
-  ../sl/include/z_pack_rename.h \
-  ../sl/extra/include/zmpi_ataip.h \
-  ../sl/extra/include/zmpi_ataip_rename.h \
-  ../sl/extra/include/zmpi_atasp.h \
-  ../sl/extra/include/zmpi_atasp_rename.h \
-  ../sl/extra/include/zmpi_local.h \
-  ../sl/extra/include/zmpi_local_rename.h \
-  ../sl/extra/include/zmpi_tools.h \
-  ../sl/extra/include/zmpi_tools_rename.h
+  ../sl/include/z_pack_rename.h
 
-libfcs_near_near____la_SOURCES = \
-  near.h \
-  z_tools.h \
-  sl_near___/sl_config.h \
-  sl_near___/sl_environment.h \
-  sl_near___/sl_extra.h \
-  sl_near___/sl_tune_auto.h \
-  sl_near___/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_near_near__p_la_SOURCES = \
-  near.h \
-  z_tools.h \
-  sl_near__p/sl_config.h \
-  sl_near__p/sl_environment.h \
-  sl_near__p/sl_extra.h \
-  sl_near__p/sl_tune_auto.h \
-  sl_near__p/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_near_near_f__la_SOURCES = \
-  near.h \
-  z_tools.h \
-  sl_near_f_/sl_config.h \
-  sl_near_f_/sl_environment.h \
-  sl_near_f_/sl_extra.h \
-  sl_near_f_/sl_tune_auto.h \
-  sl_near_f_/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_near_near_fp_la_SOURCES = \
-  near.h \
-  z_tools.h \
-  sl_near_fp/sl_config.h \
-  sl_near_fp/sl_environment.h \
-  sl_near_fp/sl_extra.h \
-  sl_near_fp/sl_tune_auto.h \
-  sl_near_fp/sl_tune.h \
-  $(sl_SOURCE)
-
-libfcs_near_extra_la_SOURCES = \
+sl_extra_SOURCE = \
   ../sl/extra/z_pack/z_config.h \
   ../sl/extra/z_pack/z_pack.c \
   ../sl/extra/z_pack/z_pack_conf.h \
@@ -194,6 +146,62 @@ libfcs_near_extra_la_SOURCES = \
   ../sl/extra/zmpi_atasp/zmpi_atasp.h \
   ../sl/extra/zmpi_atasp/zmpi_atasp_rename.h
 
+sl_extra_include_SOURCE = \
+  ../sl/extra/include/zmpi_ataip.h \
+  ../sl/extra/include/zmpi_ataip_rename.h \
+  ../sl/extra/include/zmpi_atasp.h \
+  ../sl/extra/include/zmpi_atasp_rename.h \
+  ../sl/extra/include/zmpi_local.h \
+  ../sl/extra/include/zmpi_local_rename.h \
+  ../sl/extra/include/zmpi_tools.h \
+  ../sl/extra/include/zmpi_tools_rename.h
+
+libfcs_near_near____la_SOURCES = \
+  near.h \
+  z_tools.h \
+  sl_near___/sl_config.h \
+  sl_near___/sl_environment.h \
+  sl_near___/sl_extra.h \
+  sl_near___/sl_tune_auto.h \
+  sl_near___/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_near_near__p_la_SOURCES = \
+  near.h \
+  z_tools.h \
+  sl_near__p/sl_config.h \
+  sl_near__p/sl_environment.h \
+  sl_near__p/sl_extra.h \
+  sl_near__p/sl_tune_auto.h \
+  sl_near__p/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_near_near_f__la_SOURCES = \
+  near.h \
+  z_tools.h \
+  sl_near_f_/sl_config.h \
+  sl_near_f_/sl_environment.h \
+  sl_near_f_/sl_extra.h \
+  sl_near_f_/sl_tune_auto.h \
+  sl_near_f_/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_near_near_fp_la_SOURCES = \
+  near.h \
+  z_tools.h \
+  sl_near_fp/sl_config.h \
+  sl_near_fp/sl_environment.h \
+  sl_near_fp/sl_extra.h \
+  sl_near_fp/sl_tune_auto.h \
+  sl_near_fp/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_near_extra_la_SOURCES = $(sl_extra_SOURCE)
+
 libfcs_near_mpiwrap_la_SOURCES = \
   include/sl_near_f_.h \
   include/sl_near_fp.h \
@@ -201,4 +209,5 @@ libfcs_near_mpiwrap_la_SOURCES = \
   include/sl_near__p.h \
   near.c \
   near.h \
-  z_tools.h
+  z_tools.h \
+  $(sl_extra_include_SOURCE)

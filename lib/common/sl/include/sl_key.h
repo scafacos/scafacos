@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -33,7 +33,7 @@
 
 #ifndef sl_key_copy
  #ifndef sl_key_memcpy
-  #define sl_key_copy(src, dst)              ARRAY1_COPY(src, dst)
+  #define sl_key_copy(src, dst)              SL_ARRAY1_COPY(src, dst)
  #else
   #define sl_key_copy(src, dst)              memcpy(dst, src, sl_key_byte)  /* sl_macro */
  #endif
@@ -46,94 +46,93 @@
 #endif
 
 
-#define key_type_c                           sl_key_type_c
-#define key_type_mpi                         (sl_key_type_mpi)
-#define key_size_mpi                         (sl_key_size_mpi)
+#define key_type_c                           sl_key_type_c  /* sl_macro */
+#define key_type_mpi                         (sl_key_type_mpi)  /* sl_macro */
+#define key_size_mpi                         (sl_key_size_mpi)  /* sl_macro */
 #ifdef sl_key_type_fmt
-# define key_type_fmt                        sl_key_type_fmt
+# define key_type_fmt                        sl_key_type_fmt  /* sl_macro */
 #endif
-#define key_integer                          sl_key_integer
+#define key_integer                          sl_key_integer  /* sl_macro */
 
-#define key_pure_type_c                      sl_key_pure_type_c
-#define key_pure_type_mpi                    (sl_key_pure_type_mpi)
-#define key_pure_size_mpi                    (sl_key_pure_size_mpi)
+#define key_pure_type_c                      sl_key_pure_type_c  /* sl_macro */
+#define key_pure_type_mpi                    (sl_key_pure_type_mpi)  /* sl_macro */
+#define key_pure_size_mpi                    (sl_key_pure_size_mpi)  /* sl_macro */
 #ifdef sl_key_pure_type_fmt
-# define key_pure_type_fmt                   sl_key_pure_type_fmt
+# define key_pure_type_fmt                   sl_key_pure_type_fmt  /* sl_macro */
 #endif
 
-#define key_purify(k)                        (sl_key_purify(k))
-#define key_get_pure(k)                      (sl_key_get_pure(k))
-#define key_set_pure(k, p)                   (sl_key_set_pure(k, p))
+#define key_purify(k)                        (sl_key_purify(k))  /* sl_macro */
+#define key_get_pure(k)                      (sl_key_get_pure(k))  /* sl_macro */
+#define key_set_pure(k, p)                   (sl_key_set_pure(k, p))  /* sl_macro */
 
 #ifdef key_integer
-# define key_integer_unsigned                (((key_pure_type_c) ~((key_pure_type_c) 0)) >= ((key_pure_type_c) 0))
+# define key_integer_unsigned                (((key_pure_type_c) ~((key_pure_type_c) 0)) >= ((key_pure_type_c) 0))  /* sl_macro */
 #endif
 
-#define key_n                                1
-#define key_byte                             (sl_key_byte)
+#define key_n                                1  /* sl_macro */
+#define key_byte                             (sl_key_byte)  /* sl_macro */
 
-#define key_cmp_eq(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_eq((k0), (k1)))
-#define key_cmp_ne(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_ne((k0), (k1)))
-#define key_cmp_lt(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_lt((k0), (k1)))
-#define key_cmp_le(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_le((k0), (k1)))
-#define key_cmp_gt(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_gt((k0), (k1)))
-#define key_cmp_ge(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_ge((k0), (k1)))
+#define key_cmp_eq(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_eq((k0), (k1)))  /* sl_macro */
+#define key_cmp_ne(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_ne((k0), (k1)))  /* sl_macro */
+#define key_cmp_lt(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_lt((k0), (k1)))  /* sl_macro */
+#define key_cmp_le(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_le((k0), (k1)))  /* sl_macro */
+#define key_cmp_gt(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_gt((k0), (k1)))  /* sl_macro */
+#define key_cmp_ge(k0, k1)                   (cc_rti_cadd_cmp(1) sl_key_cmp_ge((k0), (k1)))  /* sl_macro */
 
-#define key_pure_cmp_eq(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_eq((k0), (k1)))
-#define key_pure_cmp_ne(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_ne((k0), (k1)))
-#define key_pure_cmp_lt(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_lt((k0), (k1)))
-#define key_pure_cmp_le(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_le((k0), (k1)))
-#define key_pure_cmp_gt(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_gt((k0), (k1)))
-#define key_pure_cmp_ge(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_ge((k0), (k1)))
+#define key_pure_cmp_eq(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_eq((k0), (k1)))  /* sl_macro */
+#define key_pure_cmp_ne(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_ne((k0), (k1)))  /* sl_macro */
+#define key_pure_cmp_lt(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_lt((k0), (k1)))  /* sl_macro */
+#define key_pure_cmp_le(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_le((k0), (k1)))  /* sl_macro */
+#define key_pure_cmp_gt(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_gt((k0), (k1)))  /* sl_macro */
+#define key_pure_cmp_ge(k0, k1)              (cc_rti_cadd_cmp(1) sl_key_pure_cmp_ge((k0), (k1)))  /* sl_macro */
 
 #ifdef sl_key_val_srand
-# define key_val_srand(_s_)                  sl_key_val_srand(_s_)
+# define key_val_srand(_s_)                  sl_key_val_srand(_s_)  /* sl_macro */
 #endif
 #ifdef sl_key_val_rand
-# define key_val_rand()                      sl_key_val_rand()
-# define have_key_val_rand                   1
+# define key_val_rand()                      sl_key_val_rand()  /* sl_macro */
+# define have_key_val_rand                   1  /* sl_macro */
 #else
 # define key_val_rand()                      Z_NOP()
 # define have_key_val_rand                   0
 #endif
 #ifdef sl_key_val_rand_minmax
-# define key_val_rand_minmax(_min_, _max_)   sl_key_val_rand_minmax(_min_, _max_)
-# define have_key_val_rand_minmax            1
+# define key_val_rand_minmax(_min_, _max_)   sl_key_val_rand_minmax(_min_, _max_)  /* sl_macro */
+# define have_key_val_rand_minmax            1  /* sl_macro */
 #else
 # define key_val_rand_minmax(_min_, _max_)   Z_NOP()
 # define have_key_val_rand_minmax            0
 #endif
 
 
-#define key_at(_s_, _sat_)                   ((_s_) + (_sat_))
+#define key_at(_s_, _sat_)                   ((_s_) + (_sat_))  /* sl_macro */
 
-#define key_assign(src, dst)                 (dst = src)
-#define key_assign_at(src, sat, dst)         (dst = &src[sat])
-#define key_null(k)                          (k = NULL)
-#define key_inc(k)                           (++k)
-#define key_dec(k)                           (--k)
-#define key_add(k, n)                        (k += n)
-#define key_sub(k, n)                        (k -= n)
+#define key_assign(src, dst)                 (dst = src)  /* sl_macro */
+#define key_assign_at(src, sat, dst)         (dst = &src[sat])  /* sl_macro */
+#define key_null(k)                          (k = NULL)  /* sl_macro */
+#define key_inc(k)                           (++k)  /* sl_macro */
+#define key_dec(k)                           (--k)  /* sl_macro */
+#define key_add(k, n)                        (k += n)  /* sl_macro */
+#define key_sub(k, n)                        (k -= n)  /* sl_macro */
 
-#define key_copy(src, dst)                   (cc_rti_cadd_movek(1) sl_key_copy(src, dst))
-#define key_ncopy(src, dst, n)               (cc_rti_cadd_movek(n) sl_key_ncopy(src, dst, n))
-#define key_nmove(src, dst, n)               (cc_rti_cadd_movek(n) sl_key_nmove(src, dst, n))
+#define key_copy(src, dst)                   (cc_rti_cadd_movek(1) sl_key_copy(src, dst))  /* sl_macro */
+#define key_ncopy(src, dst, n)               (cc_rti_cadd_movek(n) sl_key_ncopy(src, dst, n))  /* sl_macro */
+#define key_nmove(src, dst, n)               (cc_rti_cadd_movek(n) sl_key_nmove(src, dst, n))  /* sl_macro */
 
-#define key_copy_at(src, sat, dst, dat)      key_copy(&(src)[sat], &(dst)[dat])
-#define key_ncopy_at(src, sat, dst, dat, n)  key_ncopy(&(src)[sat], &(dst)[dat], n)
-#define key_nmove_at(src, sat, dst, dat, n)  key_nmove(&(src)[sat], &(dst)[dat], n)
+#define key_copy_at(src, sat, dst, dat)      key_copy(&(src)[sat], &(dst)[dat])  /* sl_macro */
+#define key_ncopy_at(src, sat, dst, dat, n)  key_ncopy(&(src)[sat], &(dst)[dat], n)  /* sl_macro */
+#define key_nmove_at(src, sat, dst, dat, n)  key_nmove(&(src)[sat], &(dst)[dat], n)  /* sl_macro */
 
-#define key_xchange(k0, k1, t)               (key_copy(k0, t), key_copy(k1, k0), key_copy(t, k1))
-#define key_xchange_at(k0, at0, k1, at1, t)  (key_copy_at(k0, at0, t, 0), key_copy_at(k1, at1, k0, at0), key_copy_at(t, 0, k1, at1))
+#define key_xchange(k0, k1, t)               (key_copy(k0, t), key_copy(k1, k0), key_copy(t, k1))  /* sl_macro */
+#define key_xchange_at(k0, at0, k1, at1, t)  (key_copy_at(k0, at0, t, 0), key_copy_at(k1, at1, k0, at0), key_copy_at(t, 0, k1, at1))  /* sl_macro */
 
-#define key_cm                               SLCM_KEYS
+#define key_cm                               SLCM_KEYS  /* sl_macro */
 
 #ifdef key_integer
-# define key_radix_low                       ((slint_t) 0)
-# define key_radix_high                      ((slint_t) (sizeof(key_pure_type_c) * 8 - 1))
-# define key_radix_key2class(_k_, _x_, _y_)  (((_k_) >> (_x_)) & (_y_))
+# define key_radix_low                       ((slint_t) 0)  /* sl_macro */
+# define key_radix_high                      ((slint_t) (sizeof(key_pure_type_c) * 8 - 1))  /* sl_macro */
+# define key_radix_key2class(_k_, _x_, _y_)  (((_k_) >> (_x_)) & (_y_))  /* sl_macro */
 #endif
-
 
 
 #endif /* __SL_KEY_H__ */

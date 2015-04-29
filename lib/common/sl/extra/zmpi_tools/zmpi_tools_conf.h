@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -33,6 +33,9 @@
 
 #define HAVE_ZMPI_ALLTOALL_2STEP
 #define HAVE_ZMPI_ALLTOALLX_PROCLISTS
+#define HAVE_ZMPI_ALLTOALL_INT
+#define HAVE_ZMPI_REDUCE_SCATTER_BLOCK
+#define HAVE_ZMPI_REDUCE_SCATTER_BLOCK_INTSUM
 
 
 #endif /* __ZMPI_TOOLS_CONF_H__ */

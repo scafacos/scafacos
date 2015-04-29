@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -57,8 +57,12 @@
 #define spec_redistribute_counts_type  SP_VAR(spec_redistribute_counts_type)
 #define spec_redistribute_counts_proclists_type  SP_VAR(spec_redistribute_counts_proclists_type)
 #define spec_redistribute_counts  SP_FUNC(spec_redistribute_counts)
-#define spec_redistribute_displs_type  SP_VAR(spec_redistribute_displs_type)
-#define spec_redistribute_displs  SP_FUNC(spec_redistribute_displs)
+#define spec_reduce_scatter_counts_type  SP_VAR(spec_reduce_scatter_counts_type)
+#define spec_reduce_scatter_counts_proclists_type  SP_VAR(spec_reduce_scatter_counts_proclists_type)
+#define spec_reduce_scatter_counts  SP_FUNC(spec_reduce_scatter_counts)
+#define spec_prefix_counts_type  SP_VAR(spec_prefix_counts_type)
+#define spec_prefix_counts_proclists_type  SP_VAR(spec_prefix_counts_proclists_type)
+#define spec_prefix_counts  SP_FUNC(spec_prefix_counts)
 
 /* spec_core.c */
 #define spec_timing  SP_VAR(spec_timing)
@@ -80,10 +84,14 @@
 
 /* spec_put.c */
 #define spec_put_db  SP_FUNC(spec_put_db)
+#define spec_put_2phases_db  SP_FUNC(spec_put_2phases_db)
 
 /* spec_sendrecv.c */
-#define spec_alltoallw_db  SP_FUNC(spec_alltoallw_db)
-#define spec_alltoallw_db  SP_FUNC(spec_alltoallw_db)
+#define spec_sendrecv_aux  SP_VAR(spec_sendrecv_aux)
+#define spec_sendrecv_aux_size  SP_VAR(spec_sendrecv_aux_size)
+#define spec_sendrecv_send_requests  SP_VAR(spec_sendrecv_send_requests)
+#define spec_sendrecv_receive_requests  SP_VAR(spec_sendrecv_receive_requests)
+#define spec_sendrecv_db  SP_FUNC(spec_sendrecv_db)
 
 
 #endif /* __SPEC_RENAME_H__ */

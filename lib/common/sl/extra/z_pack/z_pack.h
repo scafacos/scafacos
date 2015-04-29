@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -26,6 +26,11 @@
 #define __Z_PACK_H__
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #ifndef Z_IGNORE_CONFIG_H
 # ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -33,7 +38,9 @@
 #endif
 
 #ifndef Z_IGNORE_Z_CONFIG_H
-# include "z_config.h"
+# ifdef HAVE_Z_CONFIG_H
+#  include "z_config.h"
+# endif
 #endif
 
 
@@ -46,6 +53,12 @@
 
 #define Z_MOP(_mop_)  do { _mop_ } while (0)
 #define Z_NOP()       Z_MOP()
+
+#define Z_CONCAT(_a_, _b_)           Z_CONCAT_(_a_, _b_)
+#define Z_CONCAT_(_a_, _b_)          _a_##_b_
+
+#define Z_CONCONCAT(_a_, _b_, _c_)   Z_CONCONCAT_(_a_, _b_, _c_)
+#define Z_CONCONCAT_(_a_, _b_, _c_)  _a_##_b_##_c_
 
 
 #ifdef Z_PACK_MPI
@@ -327,6 +340,8 @@ inline static double z_time_wtime()
 # define Z_TIMING_PRINT_PREFIX                    "TIMING: "
 #endif
 
+#include <stdio.h>
+
 inline static void z_timing_print_default(int id, const char *s, z_int_t n, double *v, int rank)
 {
   int i;
@@ -411,7 +426,7 @@ double z_urandom();
 #ifdef Z_PACK_DIGEST
 
 z_int_t z_digest_sum_buffer(const void *buffer, z_int_t length, void *sum);
-#ifdef HAVE_GCRYPT_H
+#if HAVE_GCRYPT_H
 extern int z_digest_hash_gcrypt_algo;
 #endif
 void z_digest_hash_open(void **hdl);
@@ -436,9 +451,9 @@ z_crc32_t z_crc32_buffer(const void *buffer, z_int_t length);
 #endif /* Z_CRC32 */
 
 
-#if defined(Z_PACK_GMP) && defined(HAVE_GMP_H)
+#if defined(Z_PACK_GMP) && HAVE_GMP_H
 
-#ifdef HAVE_GMP_H
+#if HAVE_GMP_H
 # include <gmp.h>
 #endif
 
@@ -448,6 +463,37 @@ unsigned long long z_gmp_mpz_get_ull(mpz_t z);
 long long z_gmp_mpz_get_sll(mpz_t z);
 
 #endif /* Z_PACK_GMP && HAVE_GMP_H */
+
+
+#ifdef Z_PACK_FS
+
+z_int_t z_fs_exists(const char *pathname);
+z_int_t z_fs_is_directory(const char *pathname);
+z_int_t z_fs_is_file(const char *pathname);
+z_int_t z_fs_is_link(const char *pathname);
+z_int_t z_fs_get_file_size(const char *pathname);
+z_int_t z_fs_mkdir(const char *pathname);
+z_int_t z_fs_mkdir_p(const char *pathname);
+z_int_t z_fs_rm(const char *pathname);
+z_int_t z_fs_rm_r(const char *pathname);
+
+#endif /* Z_PACK_FS */
+
+
+#ifdef Z_PACK_STDIO
+
+#if HAVE_STDIO_H
+# include <stdio.h>
+#endif
+
+int z_snscanf(const char *str, size_t size, const char *format, ...);
+
+#endif /* Z_PACK_STDIO */
+
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* __Z_PACK_H__ */

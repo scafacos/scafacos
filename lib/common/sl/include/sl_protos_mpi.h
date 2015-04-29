@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -26,7 +26,7 @@
 #define __SL_PROTOS_MPI_H__
 
 
-/* src/base_mpi/base_mpi.c */
+/* base_mpi/base_mpi.c */
 slint_t SL_PROTO(mpi_binning_create)(global_bins_t *gb, slint_t max_nbins, slint_t max_nbinnings, elements_t *s, slint_t nelements, slint_t docounts, slint_t doweights, binning_t *bm, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_binning_destroy)(global_bins_t *gb, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_binning_pre)(global_bins_t *gb, int size, int rank, MPI_Comm comm);
@@ -56,12 +56,14 @@ slint_t SL_PROTO(mpi_elements_get_counts)(elements_t *s, slint_t *clocal, slint_
 slweight_t SL_PROTO(mpi_elements_get_weights)(elements_t *s, slweight_t *wlocal, slweight_t *wglobal, int root, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_elements_get_counts_and_weights)(elements_t *s, slint_t nelements, slint_t *counts, slweight_t *weights, int root, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_elements_sendrecv_replace)(elements_t *s, int count, int dest, int sendtag, int source, int recvtag, int size, int rank, MPI_Comm comm);
+slint_t SL_PROTO(mpi_elements_isend_components)(elements_t *s, slint_t at, int count, int dest, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm);
+slint_t SL_PROTO(mpi_elements_irecv_components)(elements_t *s, slint_t at, int count, int source, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(tproc_create_tproc)(tproc_t *tproc, tproc_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef);
 slint_t SL_PROTO(tproc_create_tproc_mod)(tproc_t *tproc, tproc_mod_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef);
 slint_t SL_PROTO(tproc_create_tprocs)(tproc_t *tproc, slint_t max_tprocs, tprocs_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef);
 slint_t SL_PROTO(tproc_create_tprocs_mod)(tproc_t *tproc, slint_t max_tprocs, tprocs_mod_f *tfn, tproc_reset_f *rfn, tproc_exdef exdef);
 slint_t SL_PROTO(tproc_free)(tproc_t *tproc);
-slint_t SL_PROTO(tproc_set_proclists)(tproc_t *tproc, slint_t nsend_procs, int *send_procs, slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
+slint_t SL_PROTO(tproc_set_proclists)(tproc_t tproc, slint_t nsend_procs, int *send_procs, slint_t nrecv_procs, int *recv_procs, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(tproc_verify)(tproc_t tproc, void *data, elements_t *s, int proc);
 slint_t SL_PROTO(mpi_elements_alltoall_specific)(elements_t *sin, elements_t *sout, elements_t *xs, tproc_t tproc, void *data, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_elements_alltoallv_db_packed)(elements_t *sbuf, int *scounts, int *sdispls, elements_t *rbuf, int *rcounts, int *rdispls, int size, int rank, MPI_Comm comm);

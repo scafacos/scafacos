@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -41,7 +41,7 @@
 #endif
 
 
-/* src/base/base.c */
+/* base/base.c */
 #define binning_create  SL_FUNC(binning_create)
 #define binning_destroy  SL_FUNC(binning_destroy)
 #define binning_pre  SL_FUNC(binning_pre)
@@ -66,6 +66,8 @@
 #define elements_freea  SL_FUNC(elements_freea)
 #define elements_alloc_from_blocks  SL_FUNC(elements_alloc_from_blocks)
 #define elements_alloc_from_block  SL_FUNC(elements_alloc_from_block)
+#define elements_block_alloc  SL_FUNC(elements_block_alloc)
+#define elements_block_free  SL_FUNC(elements_block_free)
 #define elements_alloc_block  SL_FUNC(elements_alloc_block)
 #define elements_copy  SL_FUNC(elements_copy)
 #define elements_copy_at  SL_FUNC(elements_copy_at)
@@ -178,6 +180,8 @@
 #define get_displcounts_extent  SL_FUNC(get_displcounts_extent)
 #define elem_set_data  SL_FUNC(elem_set_data)
 #define elem_get_max_byte  SL_FUNC(elem_get_max_byte)
+#define elem_set  SL_FUNC(elem_set)
+#define elem_set_at  SL_FUNC(elem_set_at)
 #define elem_reverse_aio  SL_FUNC(elem_reverse_aio)
 #define elem_reverse_obo  SL_FUNC(elem_reverse_obo)
 #define elem_reverse  SL_FUNC(elem_reverse)
@@ -247,7 +251,7 @@
 #define splitk_k2c  SL_FUNC(splitk_k2c)
 #define splitk_k2c_count  SL_FUNC(splitk_k2c_count)
 
-/* src/base_mpi/base_mpi.c */
+/* base_mpi/base_mpi.c */
 #define mpi_binning_create  SL_FUNC(mpi_binning_create)
 #define mpi_binning_destroy  SL_FUNC(mpi_binning_destroy)
 #define mpi_binning_pre  SL_FUNC(mpi_binning_pre)
@@ -288,11 +292,16 @@
 #define mpi_elements_get_weights  SL_FUNC(mpi_elements_get_weights)
 #define mpi_elements_get_counts_and_weights  SL_FUNC(mpi_elements_get_counts_and_weights)
 #define mpi_elements_sendrecv_replace  SL_FUNC(mpi_elements_sendrecv_replace)
+#define mpi_elements_isend_components  SL_FUNC(mpi_elements_isend_components)
+#define mpi_elements_irecv_components  SL_FUNC(mpi_elements_irecv_components)
 #define default_meas_t  SL_VAR(default_meas_t)
-#define default_meas_max_nprocs  SL_VAR(default_meas_max_nprocs)
 #define default_meas_packed  SL_VAR(default_meas_packed)
 #define default_meas_minalloc  SL_VAR(default_meas_minalloc)
 #define default_meas_overalloc  SL_VAR(default_meas_overalloc)
+#define default_meas_type  SL_VAR(default_meas_type)
+#define default_meas_sendrecv_aux  SL_VAR(default_meas_sendrecv_aux)
+#define default_meas_sendrecv_aux_size  SL_VAR(default_meas_sendrecv_aux_size)
+#define default_meas_sendrecv_requests  SL_VAR(default_meas_sendrecv_requests)
 #define tproc_create_tproc  SL_FUNC(tproc_create_tproc)
 #define tproc_create_tproc_mod  SL_FUNC(tproc_create_tproc_mod)
 #define tproc_create_tprocs  SL_FUNC(tproc_create_tprocs)
@@ -397,7 +406,7 @@
 #define mpi_xcounts2ycounts_grouped  SL_FUNC(mpi_xcounts2ycounts_grouped)
 #define mpi_subxdispls2ycounts  SL_FUNC(mpi_subxdispls2ycounts)
 
-/* src/base_mpi/dash.c */
+/* base_mpi/dash.c */
 #define ds_exec_sl_create  SL_FUNC(ds_exec_sl_create)
 #define ds_exec_sl_destroy  SL_FUNC(ds_exec_sl_destroy)
 #define ds_exec_sl_add_address  SL_FUNC(ds_exec_sl_add_address)

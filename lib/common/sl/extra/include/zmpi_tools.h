@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -36,6 +36,9 @@
 
 #define HAVE_ZMPI_ALLTOALL_2STEP
 #define HAVE_ZMPI_ALLTOALLX_PROCLISTS
+#define HAVE_ZMPI_ALLTOALL_INT
+#define HAVE_ZMPI_REDUCE_SCATTER_BLOCK
+#define HAVE_ZMPI_REDUCE_SCATTER_BLOCK_INTSUM
 
 
 
@@ -71,24 +74,31 @@ int ZMPI_Alltoallw_proclists(void *sendbuf, int *sendcounts, int *senddispls, MP
 #endif
 
 #ifdef HAVE_ZMPI_ALLTOALL_INT
-int ZMPI_Alltoall_int_c2c_alltoall(int *sendbuf, int *recvbuf, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_2step(int *sendbuf, int *recvbuf, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_put(int *sendbuf, int *recvbuf, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_put_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_put_2phases(int *sendbuf, int *recvbuf, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_put_2phases_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_put_3phases(int *sendbuf, int *recvbuf, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_put_3phases_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_proclists_isendirecv(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_proclists_alltoallv(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_proclists_put(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_proclists_put_alloc(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_proclists_put_2phases(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
-int ZMPI_Alltoall_int_c2c_proclists_put_2phases_alloc(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+int ZMPI_Alltoall_int_alltoall(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_2step(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_put(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_put_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_put_2phases(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_put_2phases_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_put_3phases(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_put_3phases_alloc(int *sendbuf, int *recvbuf, MPI_Comm comm);
+int ZMPI_Alltoall_int_proclists_isendirecv(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+int ZMPI_Alltoall_int_proclists_alltoallv(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+int ZMPI_Alltoall_int_proclists_put(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+int ZMPI_Alltoall_int_proclists_put_alloc(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+int ZMPI_Alltoall_int_proclists_put_2phases(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
+int ZMPI_Alltoall_int_proclists_put_2phases_alloc(int *sendbuf, int nsprocs, int *sprocs, int *recvbuf, int nrprocs, int *rprocs, MPI_Comm comm);
 #endif
 
 #ifdef HAVE_ZMPI_REDUCE_SCATTER_BLOCK
 int ZMPI_Reduce_scatter_block(const void *sendbuf, void *recvbuf, int recvcount, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
+#endif
+
+#ifdef HAVE_ZMPI_REDUCE_SCATTER_BLOCK_INTSUM
+int ZMPI_Reduce_scatter_block_intsum_accumulate(const int *sendbuf, int *recvbuf, int recvcount, MPI_Comm comm);
+int ZMPI_Reduce_scatter_block_intsum_proclists_isendirecv(const int *sendbuf, int nsendprocs, int *sendprocs, int *recvbuf, int recvcount, int nrecvprocs, int *recvprocs, MPI_Comm comm);
+int ZMPI_Reduce_scatter_block_intsum_proclists_alltoallv(const int *sendbuf, int nsendprocs, int *sendprocs, int *recvbuf, int recvcount, int nrecvprocs, int *recvprocs, MPI_Comm comm);
+int ZMPI_Reduce_scatter_block_intsum_proclists_accumulate(const int *sendbuf, int nsendprocs, int *sendprocs, int *recvbuf, int recvcount, int nrecvprocs, int *recvprocs, MPI_Comm comm);
 #endif
 
 

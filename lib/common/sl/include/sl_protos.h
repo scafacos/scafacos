@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -26,7 +26,7 @@
 #define __SL_PROTOS_H__
 
 
-/* src/base/base.c */
+/* base/base.c */
 slint_t SL_PROTO(binning_create)(local_bins_t *lb, slint_t max_nbins, slint_t max_nbinnings, elements_t *s, slint_t nelements, slint_t docounts, slint_t doweights, binning_t *bm);
 slint_t SL_PROTO(binning_destroy)(local_bins_t *lb);
 slint_t SL_PROTO(binning_pre)(local_bins_t *lb);
@@ -51,6 +51,8 @@ slint_t SL_PROTO(elements_alloca)(elements_t *s, slint_t nelements, slcint_t com
 slint_t SL_PROTO(elements_freea)(elements_t *s);
 slint_t SL_PROTO(elements_alloc_from_blocks)(elements_t *s, slint_t nblocks, void **blocks, slint_t *blocksizes, slint_t alignment, slint_t nmax, slcint_t components);
 slint_t SL_PROTO(elements_alloc_from_block)(elements_t *s, void *block, slint_t blocksize, slint_t alignment, slint_t nmax, slcint_t components);
+slint_t SL_PROTO(elements_block_alloc)(elements_t *s, slint_t nelements, slcint_t components);
+slint_t SL_PROTO(elements_block_free)(elements_t *s);
 slint_t SL_PROTO(elements_alloc_block)(elements_t *s, void **block, slint_t *blocksize, slint_t alignment, slint_t maxblocksize);
 slint_t SL_PROTO(elements_copy)(elements_t *s, elements_t *d);
 slint_t SL_PROTO(elements_copy_at)(elements_t *s, slint_t sat, elements_t *d, slint_t dat);
@@ -159,6 +161,8 @@ slint_t SL_PROTO(displs2counts)(slint_t n, int *displs, int *counts, slint_t tot
 void SL_PROTO(get_displcounts_extent)(slint_t n, int *displs, int *counts, slint_t *lb, slint_t *extent);
 void SL_PROTO(elem_set_data)(elements_t *e, ...);
 slint_t SL_PROTO(elem_get_max_byte)();
+void SL_PROTO(elem_set)(elements_t *s, elements_t *d);
+void SL_PROTO(elem_set_at)(elements_t *s, slint_t sat, elements_t *d);
 slint_t SL_PROTO(elem_reverse)(elements_t *e, elements_t *t);
 slint_t SL_PROTO(elem_nxchange_at)(elements_t *e0, slint_t at0, elements_t *e1, slint_t at1, slint_t n, elements_t *t);
 slint_t SL_PROTO(elem_nxchange)(elements_t *e0, elements_t *e1, slint_t n, elements_t *t);
