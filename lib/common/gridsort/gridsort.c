@@ -1228,7 +1228,7 @@ fcs_int fcs_gridsort_sort_forward(fcs_gridsort_t *gs, fcs_float ghost_range, MPI
 # ifdef GRIDSORT_FRONT_PROCLIST
     if (gs->procs)
     {
-      fcs_forw_tproc_set_proclists(&tproc, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+      fcs_forw_tproc_set_proclists(tproc, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
     }
 # endif
   }
@@ -1961,7 +1961,7 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
       fcs_back_fp_tproc_create_tproc(&tproc0, gridsort_back_fp_tproc, fcs_back_fp_TPROC_RESET_NULL, fcs_back_fp_TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_BACK_PROCLIST
-      if (gs->procs) fcs_back_fp_tproc_set_proclists(&tproc0, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+      if (gs->procs) fcs_back_fp_tproc_set_proclists(tproc0, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
@@ -2033,7 +2033,7 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
       fcs_back_f__tproc_create_tproc(&tproc1, gridsort_back_f__tproc, fcs_back_f__TPROC_RESET_NULL, fcs_back_f__TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_BACK_PROCLIST
-      if (gs->procs) fcs_back_f__tproc_set_proclists(&tproc1, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+      if (gs->procs) fcs_back_f__tproc_set_proclists(tproc1, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
@@ -2102,7 +2102,7 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
       fcs_back__p_tproc_create_tproc(&tproc2, gridsort_back__p_tproc, fcs_back__p_TPROC_RESET_NULL, fcs_back__p_TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_BACK_PROCLIST
-      if (gs->procs) fcs_back__p_tproc_set_proclists(&tproc2, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+      if (gs->procs) fcs_back__p_tproc_set_proclists(tproc2, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
