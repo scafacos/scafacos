@@ -143,7 +143,7 @@ void fcs_gridsort_resort_create(fcs_gridsort_resort_t *gridsort_resort, fcs_grid
   fcs_back_x_tproc_create_tproc(&tproc, gridsort_fcs_back_x_tproc, fcs_back_x_TPROC_RESET_NULL, fcs_back_x_TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_RESORT_PROCLIST
-  if (gs->procs) fcs_back_x_tproc_set_proclists(&tproc, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+  if (gs->procs) fcs_back_x_tproc_set_proclists(tproc, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
@@ -294,7 +294,7 @@ static void resort_1float(fcs_gridsort_resort_t gridsort_resort, fcs_float *src,
   fcs_back__p_tproc_create_tproc(&tproc, gridsort_fcs_back__p_tproc, fcs_back__p_TPROC_RESET_NULL, fcs_back__p_TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_RESORT_PROCLIST
-  if (gridsort_resort->nprocs >= 0) fcs_back__p_tproc_set_proclists(&tproc, gridsort_resort->nprocs, gridsort_resort->procs, gridsort_resort->nprocs, gridsort_resort->procs, comm_size, comm_rank, comm);
+  if (gridsort_resort->nprocs >= 0) fcs_back__p_tproc_set_proclists(tproc, gridsort_resort->nprocs, gridsort_resort->procs, gridsort_resort->nprocs, gridsort_resort->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
@@ -374,7 +374,7 @@ static void resort_3floats(fcs_gridsort_resort_t gridsort_resort, fcs_float *src
   fcs_back_f__tproc_create_tproc(&tproc, gridsort_fcs_back_f__tproc, fcs_back_f__TPROC_RESET_NULL, fcs_back_f__TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_RESORT_PROCLIST
-  if (gridsort_resort->nprocs >= 0) fcs_back_f__tproc_set_proclists(&tproc, gridsort_resort->nprocs, gridsort_resort->procs, gridsort_resort->nprocs, gridsort_resort->procs, comm_size, comm_rank, comm);
+  if (gridsort_resort->nprocs >= 0) fcs_back_f__tproc_set_proclists(tproc, gridsort_resort->nprocs, gridsort_resort->procs, gridsort_resort->nprocs, gridsort_resort->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
