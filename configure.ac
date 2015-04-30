@@ -856,7 +856,7 @@ AC_MSG_NOTICE([ FCS C types                = $fcs_int / $fcs_float])
 AC_MSG_NOTICE([ FCS Fortan types           = $fcs_integer / $fcs_real])
 AC_MSG_NOTICE([ Fortan interface           = $use_fcs_fortran])
 AC_MSG_NOTICE([])
-AC_FOREACH([method], [fftw3_common fftw3_mpi_common pfft pnfft near gridsort resort],
+AC_FOREACH([method], [fftw3 fftw3_mpi pfft pnfft near gridsort resort],
 [
 m=`printf %26s method`
 m="method${m%method}"
