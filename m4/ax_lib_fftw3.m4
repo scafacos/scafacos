@@ -163,6 +163,7 @@ AC_DEFUN([_AX_LIB_FFTW3_CHECK],[
   saved_CFLAGS="$CFLAGS"
   saved_CPPFLAGS="$CPPFLAGS"
   saved_LDFLAGS="$LDFLAGS"
+  saved_LIBS="$LIBS"
   CFLAGS="$CFLAGS $OPENMP_CFLAGS"
   CPPFLAGS="$CPPFLAGS $fftw3_CPPFLAGS"
   LDFLAGS="$LDFLAGS $fftw3_LDFLAGS"
@@ -206,8 +207,6 @@ AC_DEFUN([_AX_LIB_FFTW3_CHECK],[
     AC_CHECK_HEADER([fftw3-mpi.h], [ax_lib_fftw3_mpi=yes])
 
     if test "x$ax_lib_fftw3" = xyes ; then
-      saved_LIBS="$LIBS"
-
       AC_CHECK_LIB([${ax_with_fftw3_prefix}fftw3${ax_type_suffix}], [${ax_with_fftw3_prefix}fftw${ax_type_suffix}_execute], [], [ax_lib_fftw3=no])
       test "x${ax_lib_fftw3}" != xno && fftw3_LIBS="-l${ax_with_fftw3_prefix}fftw3${ax_type_suffix}"
       if test "x$ax_lib_fftw3_threads" = xyes ; then
@@ -218,8 +217,6 @@ AC_DEFUN([_AX_LIB_FFTW3_CHECK],[
         AC_CHECK_LIB([${ax_with_fftw3_prefix}fftw3${ax_type_suffix}_mpi], [${ax_with_fftw3_prefix}fftw${ax_type_suffix}_mpi_init], [], [ax_lib_fftw3_mpi=no])
         test "x${ax_lib_fftw3_mpi}" != xno && fftw3_mpi_LIBS="-l${ax_with_fftw3_prefix}fftw3${ax_type_suffix}_mpi"
       fi
-    
-      LIBS="$saved_LIBS"
     fi
   fi
 
@@ -227,6 +224,7 @@ AC_DEFUN([_AX_LIB_FFTW3_CHECK],[
   CFLAGS="$saved_CFLAGS"
   CPPFLAGS="$saved_CPPFLAGS"
   LDFLAGS="$saved_LDFLAGS"
+  LIBS="$saved_LIBS"
 
   AC_LANG_POP([C])
 

@@ -172,12 +172,8 @@ AC_DEFUN([_AX_LIB_PFFT_CHECK],[
     AC_CHECK_HEADER([pfft.h], [ax_lib_pfft=yes])
 
     if test "x$ax_lib_pfft" = xyes ; then
-      saved_LIBS="$LIBS"
-
       AC_CHECK_LIB([${ax_with_pfft_prefix}pfft${ax_type_suffix}], [${ax_with_pfft_prefix}pfft${ax_type_suffix}_execute], [], [ax_lib_pfft=no])
       test "x${ax_lib_pfft}" != xno && pfft_LIBS="-l${ax_with_pfft_prefix}pfft${ax_type_suffix}"
-
-      LIBS="$saved_LIBS"
     fi
   fi
 
