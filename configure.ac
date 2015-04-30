@@ -646,10 +646,18 @@ if test "x$use_fcs_pfft_common" = xyes ; then
   AX_FCS_PACKAGE_ADD([pfft_LIBS],[-lfcs_pfft${fft_precision}])
   AX_FCS_PACKAGE_ADD([pfft_LIBS_A],[lib/common/pfft/libfcs_pfft${fft_precision}.la])
 fi
+if test "x$use_fcs_pfft" = xyes ; then
+  AX_FCS_PACKAGE_ADD([pfft_USE],[yes])
+  AX_FCS_PACKAGE_ADD([pfft_LDADD],[${pfft_LDFLAGS} ${pfft_LIBS}])
+fi
 if test "x$use_fcs_pnfft_common" = xyes ; then
   AX_FCS_PACKAGE_ADD([pnfft_USE],[yes])
   AX_FCS_PACKAGE_ADD([pnfft_LIBS],[-lfcs_pnfft${fft_precision}])
   AX_FCS_PACKAGE_ADD([pnfft_LIBS_A],[lib/common/pnfft/libfcs_pnfft${fft_precision}.la])
+fi
+if test "x$use_fcs_pnfft" = xyes ; then
+  AX_FCS_PACKAGE_ADD([pnfft_USE],[yes])
+  AX_FCS_PACKAGE_ADD([pnfft_LDADD],[${pnfft_LDFLAGS} ${pnfft_LIBS}])
 fi
 if test "x$use_fcs_fftw3_common" = xyes ; then
   AX_FCS_PACKAGE_ADD([fftw3_common_USE],[yes])
