@@ -4,6 +4,7 @@ import sys, getopt
 import os
 import subprocess
 from scipy.special import lambertw
+from scipy.optimize import fsolve
 from scipy.optimize import minimize_scalar
 from math import *
 import argparse
@@ -20,26 +21,50 @@ def estimate_time_NlogN(t0, N0, N):
 
 # minimize_scalar needs a scalar function,
 # therefore, we set up all the other variables as globals
-def estimate_time_onearg(rc):
-  return estimate_time(t0_near, t0_far_M, t0_far_MlogM, rc_start, M0_start, rc)
+def estimate_time_global_params(rc):
+  return estimate_time(rc, t0_near, t0_far_M3, t0_far_M2, t0_far_MlogM, t0_far_const, rc_start, M0_start, phicut+1, method=="equalize", args.direct)
 
-def estimate_time(t0_near, t0_far_M, t0_far_MlogM, rc_start, M0_start, rc):
+def estimate_time(rc, t0_near, t0_far_M3, t0_far_M2, t0_far_MlogM, t0_far_const, rc_start, M0_start, ghosts, equalize, ewald):
   # set M in dependence of r to fulfill the error bound
   alpha, kc, M, M0, M1, M2, m0, m1, m2, h, epsB = parameter_heuristic(
       rc, L, Q2, N, tol, tol_type, split_tol, P, m, osp, osn)
 
   t_near = estimate_time_N(t0_near, pow(rc_start,3.0), pow(rc,3.0))
-  t_far = estimate_time_N(t0_far_M, pow(M0_start,3.0), pow(M0,3.0)) + estimate_time_NlogN(t0_far_MlogM, pow(M0_start,3.0), pow(M0,3.0))
-  t_sum = t_near + t_far
+  if ewald:
+    t_far =  estimate_time_N(t0_far_M3, pow(M0_start,3.0), pow(M0,3.0))
+  else:
+    t_far_M3    = estimate_time_N(t0_far_M3,
+        pow(M0_start,3.0),
+        pow(M0,3.0))
+    t_far_M2    = estimate_time_N(t0_far_M2, 
+        6*ghosts*pow(ghosts+M0_start,2.0) + 2*pow(ghosts,3.0),
+        6*ghosts*pow(ghosts+M0,2.0)       + 2*pow(ghosts,3.0))
+    t_far_MlogM = estimate_time_NlogN(t0_far_MlogM,
+        pow(M0_start,3.0),
+        pow(M0,3.0))
+    t_far = t_far_M3 + t_far_M2 + t_far_MlogM + t0_far_const
 
-  print("Estimator: "
-      + "rc = " + str('%.4e, '%rc)
-      + "M0 = " + str('%4d, '%M0)
-      + "t_near = " + str('%.4e, '%t_near)
-      + "t_far = " + str('%.4e, '% t_far)
-      + "t_sum = " + str('%.4e, '% t_sum))
-  return t_sum
+    print("M3: " + str(t_far_M3) + ", t0_M3 = " + str(t0_far_M3))
+    print("M2: " + str(t_far_M2) + ", t0_M2 = " + str(t0_far_M2))
+    print("MlogM: " + str(t_far_MlogM) + ", t0 = " + str(t0_far_MlogM))
+  
+  if equalize:
+    t_all = t_near - t_far
+  else:
+    t_all = t_near + t_far
 
+  line  = "Ewald runtime " if ewald else "P2NFFT runtime "
+  line += "diff " if equalize else ""
+  line += "estimator: "
+  line += "rc = " + str('%.4e, '%rc)
+  line += "M0 = " + str('%4d, '%M0)
+  line += "t_near = " + str('%.4e, '%t_near)
+  line += "t_far = " + str('%.4e, '% t_far)
+  line += "t_diff = " if equalize else "t_sum = "
+  line += str('%.4e, '% t_all)
+  print(line)
+
+  return t_all
 
 def filter_p2nfft_runtimes(output):
   rt_tune = search_val(output, "Time:", ":", "")
@@ -47,7 +72,6 @@ def filter_p2nfft_runtimes(output):
   rt_near = search_val(output, "Near field computation takes", "takes", "s")
   rt_far  = search_val(output, "Far field computation takes", "takes", "s")
   return rt_tune, rt_all, rt_near, rt_far 
-
 
 def filter_pnfft_runtimes(output):
   idx = str(int(search_val(output, "np_pnfft(", "", ",")))
@@ -644,7 +668,26 @@ print_errors(M/2.0-1.0)
 # print("Error estimates with kc = M/2-1 = "+ str('%.2e' % (M/2.0-1)) +" predict following errors:")
 # print_errors(M/2.0-1.0)
 
-if not args.direct:
+if args.direct:
+  # set up global parameters of scalar objective function
+  t0_near  = search_val(output, "Near field computation takes", "takes", "s")
+  t0_far_M = search_val(output, "Far field computation takes", "takes", "s")
+  t0_far_MlogM = 0
+  t0_far_const = 0
+  rc_start = rc
+  M0_start = M0
+  phicut = m
+  
+  method = "equalize"
+  rc_opt = fsolve(estimate_time_global_params, rc, (), None, 0, 0, 1e-2)
+  rt_opt = estimate_time_global_params(rc_opt)
+  print("\noptimal rc = "+ str(rc_opt) + " gives estimated runtime diff of " + str('%.4e' % rt_opt))
+
+  method = "optimize"
+  res = minimize_scalar(estimate_time_global_params, bracket=(rc, 1.5*rc), method='brent', tol=1e-2)
+  print("\noptimal rc = "+ str(res.x) + " gives estimated runtime of " + str('%.4e' % res.fun))
+
+else:
   if is_in_text(output, "pnfft_trf_matrix_D("):
     rt_D, rt_F, rt_C, rt_G = filter_pnfft_runtimes(output)
     print("\nPNFFT runtimes:")
@@ -683,19 +726,23 @@ if not args.direct:
         + str('%4d  ' % m0)
         + line + "\n") 
 
-
-    # set up global variables for (scalar) objective function
+    # set up global parameters of scalar objective function
     t0_near = search_val(output, "Near field computation takes", "takes", "s")
-    t0_far_M = rt_F_twiddle + rt_F_3dto2d + rt_F_remap + rt_D + rt_C + rt_G
+    t0_far_M3 = rt_F_twiddle + rt_F_3dto2d + rt_F_remap + rt_D
+    t0_far_M2 = rt_G
     t0_far_MlogM = rt_F_0 + rt_F_1 + rt_F_2
+    t0_far_const = rt_C
     rc_start = rc
     M0_start = M0
+    phicut = m
 
-  #   t = estimate_time(t0_near, t0_far_M, t0_far_MlogM, rc, M0, 0.7)
-  #   print("t = "+ str(t))
+    method = "equalize"
+    rc_opt = fsolve(estimate_time_global_params, rc, (), None, 0, 0, 1e-2)
+    rt_opt = estimate_time_global_params(rc_opt)
+    print("\noptimal rc = "+ str(rc_opt) + " gives estimated runtime diff of " + str('%.4e' % rt_opt))
 
-    res = minimize_scalar(estimate_time_onearg, bracket=(rc, 1.5*rc), method='brent', tol=1e-2)
-
+    method = "optimize"
+    res = minimize_scalar(estimate_time_global_params, bracket=(rc, 1.5*rc), method='brent', tol=1e-2)
     print("\noptimal rc = "+ str(res.x) + " gives estimated runtime of " + str('%.4e' % res.fun))
 
   else:
