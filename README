@@ -12,3 +12,14 @@ After invoking 'make doc', the User's Guide of the ScaFaCoS
 library is found in the file 
 
   doc/manual.pdf
+
+The Git repository at https://github.com/scafacos/scafacos.git uses
+submodules to integrate the sources of the PFFT and PNFFT libraries.
+To clone the entire ScaFaCoS repository including the submodule sources,
+use the command
+
+  git clone --recursive https://github.com/scafacos/scafacos.git
+
+or to update the missing submodules sources (i.e., after normal cloning)
+
+  git submodule update --init --recursive
