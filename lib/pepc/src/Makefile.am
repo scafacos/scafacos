@@ -123,5 +123,3 @@ DISTCLEANFILES = module.deps
 
 # prevent parallel build on nana (workaround for weird jenkins bug)
 $(if $(subst nana,,$(shell uname -n)),,$(eval .NOTPARALLEL:))
-
-#$(eval include $(srcdir)/Makefile.debug)

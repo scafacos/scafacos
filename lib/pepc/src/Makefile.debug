@@ -1,4 +1,0 @@
-ifeq ($(shell uname -n),nana)
-  OLD_SHELL := $(SHELL)
-  SHELL = $(warning [$@ ($^) ($?)])$(OLD_SHELL)
-endif
