@@ -1,10 +1,14 @@
+# Get linker flags from scafacos.mk generated during configure.
+# * The 'indirection' of the @...@ substitution allows to inject an include
+#   command into the Makefile without being expanded by Automake.
+# * The variable definition ensures that Automake adds this line before the
+#   build rules.
+# * Using the command as a variable name 'activates' the deferred expansion of
+#   the SCAFACOS_MK_LDADD and SCAFACOS_MK_DEPS variables from scafacos.mk.
+DUMMY_SCAFACOS_MK_@EVAL_INCLUDE_PACKAGE_SCAFACOS_MK@ = DUMMY
 
 # Get Fortran compile rules that include preprocessing.
 include $(top_srcdir)/build-aux/fortran-rules.am
-
-# Get linker flags from scafacos.mk. (The assignment and evaluation is
-# required to force Automake to include 'scafacos.mk' early enough.)
-DUMMY:=$(eval include $(top_builddir)/package/scafacos.mk)
 
 # Include paths for preprocessor and Fortran compiler.
 #AM_CPPFLAGS = -I$(top_srcdir)/src/fortran -I$(top_builddir)/src/fortran

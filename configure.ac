@@ -832,6 +832,10 @@ AC_FOREACH([solver], subconfigure_solver_methods,
 ac_configure_args="$ac_configure_args --enable-fcs-package-solvers=${enabled_solvers}"
 AC_CONFIG_SUBDIRS([package])
 
+# Support injection of an include command for Makefiles that require the solver library files as prerequisites.
+AC_SUBST([EVAL_INCLUDE_PACKAGE_SCAFACOS_MK], ["\$(eval include \$(top_builddir)/package/scafacos.mk)"])
+AM_SUBST_NOTMAKE([EVAL_INCLUDE_PACKAGE_SCAFACOS_MK])
+
 AC_OUTPUT
 
 AC_MSG_NOTICE([])
