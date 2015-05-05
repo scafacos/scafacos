@@ -1,0 +1,1 @@
+../../build-aux/get_autotools.sh

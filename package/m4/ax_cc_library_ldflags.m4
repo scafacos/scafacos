@@ -1,0 +1,1 @@
+../../m4/ax_cc_library_ldflags.m4
