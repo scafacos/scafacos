@@ -1,0 +1,1 @@
+../../m4/ax_prog_cc_mpi.m4

@@ -1,0 +1,1 @@
+../../../m4/ax_gcc_aligns_stack.m4

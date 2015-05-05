@@ -1,0 +1,1 @@
+../../../../m4/ax_diff_library_ldflags.m4
