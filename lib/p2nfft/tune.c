@@ -413,6 +413,11 @@ FCSResult ifcs_p2nfft_tune(
   }
   d->num_nonperiodic_dims = (periodicity[0]==0) + (periodicity[1]==0) + (periodicity[2]==0);
   d->num_periodic_dims    = (periodicity[0]!=0) + (periodicity[1]!=0) + (periodicity[2]!=0);
+  
+  /* 1d-periodic case */
+  /* check incompl. Bessel function: display tables 1 and 2 from [Slavinsky, Safouhi 2010] */
+//   if (d->num_periodic_dims==1)
+//     ifcs_p2nfft_plot_slavinsky_safouhi_table();
 
   fcs_int reg_near=-1, reg_far=-1;
   if(d->reg_near == FCS_P2NFFT_REG_NEAR_DEFAULT)
