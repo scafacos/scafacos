@@ -33,9 +33,13 @@
 
 #include "bessel_k.h"
 
-/* General recursion formula for coefficients of the G transform.
- * We use this function for debugging only. Otherwise we precompute all coefficients to circumvent
- * repetitive calculation of the same coefficients. */
+/**************************************************************************/
+/* inc. upper Bessel_K function, variant 1, see [Slavinsky, Safouhi 2010] */
+/**************************************************************************/
+
+// /* General recursion formula for coefficients of the G transform.
+//  * We use this function for debugging only. Otherwise we precompute all coefficients to circumvent
+//  * repetitive calculation of the same coefficients. */
 // static fcs_float A(
 //     fcs_float nu, fcs_int i, fcs_int k
 //     )
@@ -51,97 +55,82 @@
 //     return (-nu + i + k-1) * A(nu, i, k-1) + A(nu, i-1, k-1);
 //   }
 // }
-
-/* only needed for variant 1 of ifcs_p2nfft_inc_upper_bessel_k */
-static fcs_float D_tilde(
-    fcs_int n, fcs_float x, fcs_float y, fcs_float nu,
-    fcs_int N, fcs_float *pt, fcs_float *D_Aki
-    )
-{
-  fcs_float sum1, sum2;
-
-  sum1 = 0.0;
-  for(fcs_int r=0; r<=n; r++){
-    sum2 = 0.0;
-    for(fcs_int i=0; i<=r; i++)
-      sum2 += D_Aki[i+(r*(r+1))/2] * fcs_pow(x,i);
-    sum1 += pt[r + (n*(n+1))/2] * fcs_pow(-y,-r) * sum2;
-  }
-  return fcs_pow(-x*y,n) * fcs_pow(x,nu+1) * fcs_exp(x+y) * sum1;
-}
-
-/* only needed for variant 1 of ifcs_p2nfft_inc_upper_bessel_k */
-static fcs_float N_tilde(
-    fcs_int n, fcs_float x, fcs_float y, fcs_float nu,
-    fcs_int N, fcs_float *pt, fcs_float *D_Aki, fcs_float *N_Aki
-    )
-{
-  fcs_float sum1, sum2, sum3;
-
-  sum1 = 0.0;
-  for(fcs_int r=1; r<=n; r++){
-    sum2 = 0.0;
-    for(fcs_int s=0; s<=r-1; s++){
-      sum3 = 0.0;
-      for(fcs_int i=0; i<=s; i++)
-        sum3 += N_Aki[i+(s*(s+1))/2] * fcs_pow(-x,i);
-      sum2 += pt[s + ((r-1)*r)/2] * fcs_pow(y,-s) * sum3;
-    }
-    sum1 += pt[r+ (n*(n+1))/2] * D_tilde(n-r,x,y,nu,N,pt,D_Aki) * fcs_pow(x*y,r) * sum2;
-  }
-
-  return fcs_exp(-x-y)/(fcs_pow(x,nu)*y) * sum1;
-}
-
-/* only needed for variant 1 of ifcs_p2nfft_inc_upper_bessel_k */
-static fcs_float G_tilde(
-    fcs_int n, fcs_float x, fcs_float y, fcs_float nu,
-    fcs_int N, fcs_float *pt, fcs_float *D_Aki, fcs_float *N_Aki
-    )
-{
-  return fcs_pow(x,nu) * (N_tilde(n,x,y,nu,N,pt,D_Aki,N_Aki) / D_tilde(n,x,y,nu,N,pt,D_Aki));
-} 
-
-fcs_float ifcs_p2nfft_bessel_k(
-    fcs_float nu, fcs_float x
-    )
-{
-  return gsl_sf_bessel_Knu(nu,x);
-}
-
-
-/* compute next line of recurrence coefficients */
-/* only needed for variant 1 of ifcs_p2nfft_inc_upper_bessel_k */
-static void precompute_Aki(
-    fcs_float nu, fcs_int k, fcs_int N, fcs_float *Aki
-    )
-{
-  fcs_float *Ai_cur = &Aki[(k*(k+1))/2];
-  fcs_float *Ai_pre = &Aki[((k-1)*k)/2];
-
-  Ai_cur[0] = (k-1-nu)*Ai_pre[0]; 
-  for(fcs_int i=1; i<k; i++)
-    Ai_cur[i] = (i+k-1-nu)*Ai_pre[i] + Ai_pre[i-1];
-  Ai_cur[k] = 1;
-}
-
-/* compute next line of recurrence coefficients */
-/* only needed for variant 1 of ifcs_p2nfft_inc_upper_bessel_k */
-static void precompute_pascals_triangle(
-    fcs_int n, fcs_int N, fcs_float *pt
-    )
-{
-  fcs_float *pt_cur = &pt[(n*(n+1))/2];
-  fcs_float *pt_pre = &pt[((n-1)*n)/2];
-
-  pt_cur[0] = 1;
-  for(fcs_int k=1; k<n; k++)
-    pt_cur[k] = pt_pre[k-1] + pt_pre[k]; 
-  pt_cur[n] = 1;
-}
-
-/* inc. upper Bessel_K function, variant 1, see [Slavinsky, Safouhi 2010] */
-
+// 
+// static fcs_float D_tilde(
+//     fcs_int n, fcs_float x, fcs_float y, fcs_float nu,
+//     fcs_int N, fcs_float *pt, fcs_float *D_Aki
+//     )
+// {
+//   fcs_float sum1, sum2;
+// 
+//   sum1 = 0.0;
+//   for(fcs_int r=0; r<=n; r++){
+//     sum2 = 0.0;
+//     for(fcs_int i=0; i<=r; i++)
+//       sum2 += D_Aki[i+(r*(r+1))/2] * fcs_pow(x,i);
+//     sum1 += pt[r + (n*(n+1))/2] * fcs_pow(-y,-r) * sum2;
+//   }
+//   return fcs_pow(-x*y,n) * fcs_pow(x,nu+1) * fcs_exp(x+y) * sum1;
+// }
+// 
+// static fcs_float N_tilde(
+//     fcs_int n, fcs_float x, fcs_float y, fcs_float nu,
+//     fcs_int N, fcs_float *pt, fcs_float *D_Aki, fcs_float *N_Aki
+//     )
+// {
+//   fcs_float sum1, sum2, sum3;
+// 
+//   sum1 = 0.0;
+//   for(fcs_int r=1; r<=n; r++){
+//     sum2 = 0.0;
+//     for(fcs_int s=0; s<=r-1; s++){
+//       sum3 = 0.0;
+//       for(fcs_int i=0; i<=s; i++)
+//         sum3 += N_Aki[i+(s*(s+1))/2] * fcs_pow(-x,i);
+//       sum2 += pt[s + ((r-1)*r)/2] * fcs_pow(y,-s) * sum3;
+//     }
+//     sum1 += pt[r+ (n*(n+1))/2] * D_tilde(n-r,x,y,nu,N,pt,D_Aki) * fcs_pow(x*y,r) * sum2;
+//   }
+// 
+//   return fcs_exp(-x-y)/(fcs_pow(x,nu)*y) * sum1;
+// }
+// 
+// static fcs_float G_tilde(
+//     fcs_int n, fcs_float x, fcs_float y, fcs_float nu,
+//     fcs_int N, fcs_float *pt, fcs_float *D_Aki, fcs_float *N_Aki
+//     )
+// {
+//   return fcs_pow(x,nu) * (N_tilde(n,x,y,nu,N,pt,D_Aki,N_Aki) / D_tilde(n,x,y,nu,N,pt,D_Aki));
+// } 
+// 
+// /* compute next line of recurrence coefficients */
+// static void precompute_Aki(
+//     fcs_float nu, fcs_int k, fcs_int N, fcs_float *Aki
+//     )
+// {
+//   fcs_float *Ai_cur = &Aki[(k*(k+1))/2];
+//   fcs_float *Ai_pre = &Aki[((k-1)*k)/2];
+// 
+//   Ai_cur[0] = (k-1-nu)*Ai_pre[0]; 
+//   for(fcs_int i=1; i<k; i++)
+//     Ai_cur[i] = (i+k-1-nu)*Ai_pre[i] + Ai_pre[i-1];
+//   Ai_cur[k] = 1;
+// }
+// 
+// /* compute next line of recurrence coefficients */
+// static void precompute_pascals_triangle(
+//     fcs_int n, fcs_int N, fcs_float *pt
+//     )
+// {
+//   fcs_float *pt_cur = &pt[(n*(n+1))/2];
+//   fcs_float *pt_pre = &pt[((n-1)*n)/2];
+// 
+//   pt_cur[0] = 1;
+//   for(fcs_int k=1; k<n; k++)
+//     pt_cur[k] = pt_pre[k-1] + pt_pre[k]; 
+//   pt_cur[n] = 1;
+// }
+// 
 // fcs_float ifcs_p2nfft_inc_upper_bessel_k(
 //     fcs_float nu, fcs_float x, fcs_float y, fcs_float eps
 //     )
@@ -269,7 +258,9 @@ static void precompute_pascals_triangle(
 // }
 
 
+/****************************************************************************************/
 /* inc. upper Bessel_K function, variant 2, see [Slavinsky, Weniger 2015] Algorithm 3.4 */
+/****************************************************************************************/
 
 fcs_float ifcs_p2nfft_inc_upper_bessel_k(
     fcs_float nu, fcs_float x, fcs_float y, fcs_float eps
@@ -413,6 +404,9 @@ fcs_float ifcs_p2nfft_inc_upper_bessel_k(
   return val_new;
 }
 
+/*************************************************/
+/* wrappers for Bessel K and inc. lower Bessel K */
+/*************************************************/
 
 fcs_float ifcs_p2nfft_inc_lower_bessel_k(
     fcs_float nu, fcs_float x, fcs_float y, fcs_float eps
@@ -421,6 +415,18 @@ fcs_float ifcs_p2nfft_inc_lower_bessel_k(
   return ifcs_p2nfft_inc_upper_bessel_k(-nu, y, x, eps);
 }
 
+fcs_float ifcs_p2nfft_bessel_k(
+    fcs_float nu, fcs_float x
+    )
+{
+  return gsl_sf_bessel_Knu(nu,x);
+}
+
+
+
+/*****************************************************/
+/* recreate the table from [Slevinsky, Safouhi 2010] */
+/*****************************************************/
 
 static void plot_value(
     fcs_float x,fcs_float y, fcs_float nu, fcs_float eps
@@ -461,7 +467,6 @@ static void plot_table2(
   plot_value(0.5, 0.5, 12, eps);
 }
 
-/* recreate the table from [Slevinsky, Safouhi 2010] */
 void ifcs_p2nfft_plot_slavinsky_safouhi_table(
     void
     )
