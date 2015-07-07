@@ -83,7 +83,7 @@ doxyfile.stamp: Doxyfile
 	touch doxyfile.stamp
 
 EXTRA_DIST += html man
-CLEANFILES += doxyfile.stamp
+CLEANFILES += doxyfile.stamp doxygen.log doxygen_*
 CLEAN_LOCAL += html man
 
 # I assume, that those should work but dont - that is why we add the two rules below

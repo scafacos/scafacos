@@ -1,15 +1,16 @@
-COPYFILES = setup.py scafacos.pyx test.py
+PYTHONFILES = setup.py scafacos.pyx test.py
 
 EXTRA_DIST = $(COPYFILES)
 
-.PHONY: copy-files
-FORCE:
-copy-files: FORCE
-	for file in $(COPYFILES); do \
-	  if test ! -e $$file || test ! $$file -ef $(abs_srcdir)/$$file; then \
-	    $(INSTALL_DATA) $(abs_srcdir)/$$file $(abs_builddir); \
-	  fi; \
+# install python files in a VPATH build.
+all-local: make-python-files
+make-python-files:
+	-test . != "$(srcdir)" && for file in $(PYTHONFILES); do \
+	  $(INSTALL_DATA) "$(srcdir)/$$file" .; \
 	done
 
-all-local: copy-files
+distclean-local: clean-python-files
+clean-python-files:
+	-test . != "$(srcdir)" && rm -f $(PYTHONFILES)
 
+.PHONY: make-python-files clean-python-files
