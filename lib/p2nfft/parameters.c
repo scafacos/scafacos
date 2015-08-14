@@ -775,7 +775,7 @@ FCSResult ifcs_p2nfft_set_pnfft_window(
   if( rd==NULL )
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
 
-  if((window < 0) || (4 < window) )
+  if((window < 0) || (5 < window) )
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown window function.");
 
   if ( window != d->pnfft_window )
@@ -801,6 +801,8 @@ FCSResult ifcs_p2nfft_set_pnfft_window_by_name(
     window = 3;
   else if (strcmp(window_name,"bessel_i0") == 0)
     window = 4;
+  else if (strcmp(window_name,"gaussian_t") == 0)
+    window = 5;
   else /* unknown window */
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown window function.");
 

@@ -1232,6 +1232,7 @@ static void print_command_line_arguments(
         case 2: printf("sinc,"); break;
         case 3: printf("kaiser,"); break;
         case 4: printf("bessel_i0,"); break;
+        case 5: printf("gaussian_t,"); break;
         default: printf("failure,");
       }
     }
@@ -1516,6 +1517,7 @@ static void init_pnfft(
     case 2: pnfft_flags |= PNFFT_WINDOW_SINC_POWER; break;
     case 3: pnfft_flags |= PNFFT_WINDOW_KAISER_BESSEL; break;
     case 4: pnfft_flags |= PNFFT_WINDOW_BESSEL_I0; break;
+    case 5: pnfft_flags |= PNFFT_WINDOW_GAUSSIAN_T; break;
   }
 
   switch(pnfft_intpol_order){
@@ -1544,7 +1546,9 @@ static void init_pnfft(
 
 #if FCS_ENABLE_INFO
   if(!myrank){
-    if(pnfft_flags & PNFFT_WINDOW_GAUSSIAN)
+    if((pnfft_flags & PNFFT_WINDOW_GAUSSIAN) && (pnfft_flags & PNFFT_USE_FK_GAUSSIAN_T))
+      printf("P2NFFT_INFO: Window function: truncated gaussian (-c pnfft_window_name,gaussian_t)\n");
+    else if(pnfft_flags & PNFFT_WINDOW_GAUSSIAN)
       printf("P2NFFT_INFO: Window function: gaussian (-c pnfft_window_name,gaussian)\n");
     else if(pnfft_flags & PNFFT_WINDOW_BSPLINE)
       printf("P2NFFT_INFO: Window function: bspline (-c pnfft_window_name,bspline)\n");
