@@ -157,6 +157,16 @@ typedef struct _FCS_t
      1 = done by library routine*/
   fcs_int near_field_flag;
 
+  /* local number of dipole particles */
+  fcs_int local_dipole_particles;
+  /* local input and output arrays of dipole particles */
+  fcs_float *dipole_positions, *dipole_moments, *dipole_field, *dipole_potentials;
+
+  /* total number of dipole particles in the system */
+  fcs_int total_dipole_particles;
+  /* maximum number of dipole particles that can be stored in the local arrays provided to fcs_set_dipole_particles */
+  fcs_int max_local_dipole_particles;
+
   /* structures containing the method-specific parameters */
 #ifdef FCS_ENABLE_DIRECT
   fcs_direct_parameters direct_param;
@@ -202,6 +212,8 @@ typedef struct _FCS_t
   FCSResult (*set_r_cut)(FCS handle, fcs_float r_cut);
   FCSResult (*unset_r_cut)(FCS handle);
   FCSResult (*get_r_cut)(FCS handle, fcs_float *r_cut);
+
+  fcs_bool dipole_support;
 
   FCSResult (*set_parameter)(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
   FCSResult (*print_parameters)(FCS handle);
