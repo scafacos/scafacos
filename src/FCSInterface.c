@@ -37,6 +37,16 @@
     return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, _f_, "null handle supplied"); \
   } while (0)
 
+#define CHECK_HANDLE_RETURN_VAL(_h_, _f_, _v_) do { \
+  if (handle == FCS_NULL) { \
+    fprintf(stderr, "%s: null handle supplied, returning " #_v_, fnc_name); \
+    return (_v_); \
+  } } while (0)
+
+#define CHECK_RESULT_RETURN(_r_) do { \
+    if ((_r_) != FCS_RESULT_SUCCESS) return (_r_); \
+  } while (0)
+
 
 /**
  * @brief function to check whether all initial parameters are set
@@ -116,14 +126,18 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
 
   handle->communicator = communicator;
 
-  /* unset common parameters */
-  handle->near_field_flag = -1;
+  handle->dimensions = 0;
+
   handle->box_a[0] = handle->box_a[1] = handle->box_a[2] = 0.0;
   handle->box_b[0] = handle->box_b[1] = handle->box_b[2] = 0.0;
   handle->box_c[0] = handle->box_c[1] = handle->box_c[2] = 0.0;
   handle->box_origin[0] = handle->box_origin[1] = handle->box_origin[2] = 0.0;
+
   handle->periodicity[0] = handle->periodicity[1] = handle->periodicity[2] = 0.0;
-  handle->total_particles = handle->max_local_particles -1;
+
+  handle->total_particles = handle->max_local_particles = -1;
+
+  handle->near_field_flag = 1;
 
 #ifdef FCS_ENABLE_FMM
   handle->fmm_param = NULL;
@@ -155,15 +169,20 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
   handle->values_changed = 0;
 
   handle->destroy = NULL;
+
+  handle->set_tolerance = NULL;
+  handle->get_tolerance = NULL;
+
   handle->set_r_cut = NULL;
   handle->unset_r_cut = NULL;
   handle->get_r_cut = NULL;
-  handle->set_tolerance = NULL;
-  handle->get_tolerance = NULL;
+
   handle->set_parameter = NULL;
   handle->print_parameters = NULL;
+
   handle->tune = NULL;
   handle->run = NULL;
+
   handle->set_compute_virial = NULL;
   handle->get_compute_virial = NULL;
   handle->get_virial = NULL;
@@ -279,11 +298,7 @@ MPI_Comm fcs_get_communicator(FCS handle)
 {
   const char *fnc_name = "fcs_get_communicator";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning MPI_COMM_NULL", fnc_name);
-    return MPI_COMM_NULL;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, MPI_COMM_NULL);
 
   return handle->communicator;
 }
@@ -351,11 +366,7 @@ fcs_int fcs_get_dimensions(FCS handle)
 {
   const char *fnc_name = "fcs_get_dimensions";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning -1", fnc_name);
-    return -1;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
 
   return handle->dimensions;
 }
@@ -385,11 +396,7 @@ fcs_int fcs_get_near_field_flag(FCS handle)
 {
   const char *fnc_name = "fcs_get_near_field_flag";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning -1", fnc_name);
-    return -1;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
 
   return handle->near_field_flag;
 }
@@ -420,15 +427,11 @@ FCSResult fcs_set_box_a(FCS handle, const fcs_float *box_a)
 /**
  * return the first base vector of the system box
  */
-const fcs_float* fcs_get_box_a(FCS handle)
+const fcs_float *fcs_get_box_a(FCS handle)
 {
   const char *fnc_name = "fcs_get_box_a";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning NULL", fnc_name);
-    return NULL;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
 
   return handle->box_a;
 }
@@ -459,15 +462,11 @@ FCSResult fcs_set_box_b(FCS handle, const fcs_float *box_b)
 /**
  * return the second base vector of the system box
  */
-const fcs_float* fcs_get_box_b(FCS handle)
+const fcs_float *fcs_get_box_b(FCS handle)
 {
   const char *fnc_name = "fcs_get_box_b";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning NULL", fnc_name);
-    return NULL;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
 
   return handle->box_b;
 }
@@ -498,15 +497,11 @@ FCSResult fcs_set_box_c(FCS handle, const fcs_float *box_c)
 /**
  * return the third base vector of the system box
  */
-const fcs_float* fcs_get_box_c(FCS handle)
+const fcs_float *fcs_get_box_c(FCS handle)
 {
   const char *fnc_name = "fcs_get_box_c";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning NULL", fnc_name);
-    return NULL;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
 
   return handle->box_c;
 }
@@ -541,11 +536,7 @@ const fcs_float *fcs_get_box_origin(FCS handle)
 {
   const char *fnc_name = "fcs_get_box_origin";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning NULL", fnc_name);
-    return NULL;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
 
   return handle->box_origin;
 }
@@ -580,11 +571,7 @@ const fcs_int* fcs_get_periodicity(FCS handle)
 {
   const char *fnc_name = "fcs_get_periodicity";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning NULL", fnc_name);
-    return NULL;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
 
   return handle->periodicity;
 }
@@ -617,11 +604,7 @@ fcs_int fcs_get_total_particles(FCS handle)
 {
   const char *fnc_name = "fcs_get_total_particles";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning -1", fnc_name);
-    return -1;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
 
   return handle->total_particles;
 }
@@ -651,11 +634,7 @@ fcs_int fcs_get_max_local_particles(FCS handle)
 {
   const char *fnc_name = "fcs_get_max_local_particles";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning -1", fnc_name);
-    return -1;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
 
   return handle->max_local_particles;
 }
@@ -683,11 +662,7 @@ void *fcs_get_method_context(FCS handle)
 {
   const char *fnc_name = "fcs_get_method_context";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning NULL", fnc_name);
-    return NULL;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
 
   return handle->method_context;
 }
@@ -715,11 +690,7 @@ fcs_int fcs_get_values_changed(FCS handle)
 {
   const char *fnc_name = "fcs_get_box_values_changed";
 
-  if (handle == FCS_NULL)
-  {
-    fprintf(stderr, "%s: null handle supplied, returning -1", fnc_name);
-    return -1;
-  }
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
 
   return handle->values_changed;
 }

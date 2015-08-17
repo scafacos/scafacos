@@ -82,31 +82,35 @@
  */
 typedef struct _FCS_t
 {
-  /* list of obligatory parameters for all runs (set in fcs_init) */
-
   /* numerical identifier of the solver method */
   fcs_int method;
   /* name of the solver method */
   char method_name[FCS_MAX_METHOD_NAME_LENGTH];
+
   /* MPI communicator to be used for the parallel execution */
   MPI_Comm communicator;
+
   /* dimensions of the system */
   fcs_int dimensions;
+
+  /* the three base vectors of the system box */
+  fcs_float box_a[3], box_b[3], box_c[3];
+  /* origin vector of the system box */
+  fcs_float box_origin[3];
+
+  /* periodicity of the system in each dimension (value 0: open, value 1: periodic) */
+  fcs_int periodicity[3];
+
+  /* total number of particles in the system */
+  fcs_int total_particles;
+  /* maximum number of particles that can be stored in the local arrays provided to fcs_run */
+  fcs_int max_local_particles;
+
   /* whether near-field computations should be performed
      0 = done by calling routine
      1 = done by library routine*/
   fcs_int near_field_flag;
-  /* the three base vectors of the system box */
-  fcs_float box_a[3];
-  fcs_float box_b[3];
-  fcs_float box_c[3];
-  /* origin vector of the system box */
-  fcs_float box_origin[3];
-  /* total number of particles in the system */
-  fcs_int total_particles, max_local_particles;
-  /* periodicity of the system in each dimension (value 0: open, value 1: periodic) */
-  fcs_int periodicity[3];
-  
+
   /* structures containing the method-specific parameters */
 #ifdef FCS_ENABLE_DIRECT
   fcs_direct_parameters direct_param;
@@ -141,21 +145,26 @@ typedef struct _FCS_t
 
   fcs_int values_changed;
 
+  /* functions and parameters set by the solvers */
   FCSResult (*destroy)(FCS handle);
+
+  FCSResult (*set_tolerance)(FCS handle, fcs_int tolerance_type, fcs_float tolerance);
+  FCSResult (*get_tolerance)(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance);
+
   FCSResult (*set_r_cut)(FCS handle, fcs_float r_cut);
   FCSResult (*unset_r_cut)(FCS handle);
   FCSResult (*get_r_cut)(FCS handle, fcs_float *r_cut);
-  FCSResult (*set_tolerance)(FCS handle, fcs_int tolerance_type, fcs_float tolerance);
-  FCSResult (*get_tolerance)(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance);
+
   FCSResult (*set_parameter)(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
   FCSResult (*print_parameters)(FCS handle);
+
   FCSResult (*tune)(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges);
   FCSResult (*run)(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
+
   FCSResult (*set_compute_virial)(FCS handle, fcs_int compute_virial);
   FCSResult (*get_compute_virial)(FCS handle, fcs_int *compute_virial);
   FCSResult (*get_virial)(FCS handle, fcs_float *virial);
 
-  FCSResult (*set_max_local_particles)(FCS handle, fcs_int max_local_particles);
   FCSResult (*set_max_particle_move)(FCS handle, fcs_float max_particle_move);
   FCSResult (*set_resort)(FCS handle, fcs_int resort);
   FCSResult (*get_resort)(FCS handle, fcs_int *resort);
