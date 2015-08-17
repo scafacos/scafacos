@@ -722,12 +722,10 @@ FCSResult fcs_get_r_cut(FCS handle, fcs_float *r_cut)
  */
 FCSResult fcs_set_dipole_particles(FCS handle, fcs_int local_dipole_particles, fcs_float *dipole_positions, fcs_float *dipole_moments, fcs_float *dipole_field, fcs_float *dipole_potentials)
 {
-  const char *fnc_name = "fcs_set_dipole_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (FCS_IS_FALSE(handle->dipole_support))
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   handle->local_dipole_particles = local_dipole_particles;
   handle->dipole_positions = dipole_positions;
@@ -744,9 +742,7 @@ FCSResult fcs_set_dipole_particles(FCS handle, fcs_int local_dipole_particles, f
  */
 FCSResult fcs_get_dipole_particles(FCS handle, fcs_int *local_dipole_particles, fcs_float **dipole_positions, fcs_float **dipole_moments, fcs_float **dipole_field, fcs_float **dipole_potentials)
 {
-  const char *fnc_name = "fcs_get_dipole_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   *local_dipole_particles = handle->local_dipole_particles;
   *dipole_positions = handle->dipole_positions;
@@ -763,12 +759,10 @@ FCSResult fcs_get_dipole_particles(FCS handle, fcs_int *local_dipole_particles, 
  */
 FCSResult fcs_set_total_dipole_particles(FCS handle, fcs_int total_dipole_particles)
 {
-  const char *fnc_name = "fcs_set_total_dipole_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (FCS_IS_FALSE(handle->dipole_support))
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   handle->total_dipole_particles = total_dipole_particles;
 
@@ -781,9 +775,7 @@ FCSResult fcs_set_total_dipole_particles(FCS handle, fcs_int total_dipole_partic
  */
 fcs_int fcs_get_total_dipole_particles(FCS handle)
 {
-  const char *fnc_name = "fcs_get_total_dipole_particles";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, -1);
 
   return handle->total_dipole_particles;
 }
@@ -794,12 +786,10 @@ fcs_int fcs_get_total_dipole_particles(FCS handle)
  */
 FCSResult fcs_set_max_local_dipole_particles(FCS handle, fcs_int max_local_dipole_particles)
 {
-  const char *fnc_name = "fcs_set_max_local_dipole_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (FCS_IS_FALSE(handle->dipole_support))
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   handle->max_local_dipole_particles = max_local_dipole_particles;
 
@@ -812,9 +802,7 @@ FCSResult fcs_set_max_local_dipole_particles(FCS handle, fcs_int max_local_dipol
  */
 fcs_int fcs_get_max_local_dipole_particles(FCS handle)
 {
-  const char *fnc_name = "fcs_get_max_local_dipole_particles";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, -1);
 
   return handle->max_local_dipole_particles;
 }
