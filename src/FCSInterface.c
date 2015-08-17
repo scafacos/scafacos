@@ -139,6 +139,14 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
 
   handle->near_field_flag = 1;
 
+  handle->local_dipole_particles = 0;
+  handle->dipole_positions = NULL;
+  handle->dipole_moments = NULL;
+  handle->dipole_field = NULL;
+  handle->dipole_potentials = NULL;
+
+  handle->total_dipole_particles = handle->max_local_particles = -1;
+
 #ifdef FCS_ENABLE_FMM
   handle->fmm_param = NULL;
 #endif
@@ -176,6 +184,8 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
   handle->set_r_cut = NULL;
   handle->unset_r_cut = NULL;
   handle->get_r_cut = NULL;
+
+  handle->dipole_support = FCS_FALSE;
 
   handle->set_parameter = NULL;
   handle->print_parameters = NULL;
@@ -776,6 +786,109 @@ FCSResult fcs_get_r_cut(FCS handle, fcs_float *r_cut)
     return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   return handle->get_r_cut(handle, r_cut);
+}
+
+
+/**
+ * set dipole particles for the computations of the FCS solver
+ */
+FCSResult fcs_set_dipole_particles(FCS handle, fcs_int local_dipole_particles, fcs_float *dipole_positions, fcs_float *dipole_moments, fcs_float *dipole_field, fcs_float *dipole_potentials)
+{
+  const char *fnc_name = "fcs_set_dipole_particles";
+
+  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+
+  if (FCS_IS_FALSE(handle->dipole_support))
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
+
+  handle->local_dipole_particles = local_dipole_particles;
+  handle->dipole_positions = dipole_positions;
+  handle->dipole_moments = dipole_moments;
+  handle->dipole_field = dipole_field;
+  handle->dipole_potentials = dipole_potentials;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+/**
+ * return the dipole particles for the computations of the FCS solver
+ */
+FCSResult fcs_get_dipole_particles(FCS handle, fcs_int *local_dipole_particles, fcs_float **dipole_positions, fcs_float **dipole_moments, fcs_float **dipole_field, fcs_float **dipole_potentials)
+{
+  const char *fnc_name = "fcs_get_dipole_particles";
+
+  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+
+  *local_dipole_particles = handle->local_dipole_particles;
+  *dipole_positions = handle->dipole_positions;
+  *dipole_moments = handle->dipole_moments;
+  *dipole_field = handle->dipole_field;
+  *dipole_potentials = handle->dipole_potentials;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+/**
+ * set the total number of dipole particles in the system
+ */
+FCSResult fcs_set_total_dipole_particles(FCS handle, fcs_int total_dipole_particles)
+{
+  const char *fnc_name = "fcs_set_total_dipole_particles";
+
+  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+
+  if (FCS_IS_FALSE(handle->dipole_support))
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
+
+  handle->total_dipole_particles = total_dipole_particles;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+/**
+ * return the total number of dipole particles in the system
+ */
+fcs_int fcs_get_total_dipole_particles(FCS handle)
+{
+  const char *fnc_name = "fcs_get_total_dipole_particles";
+
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
+
+  return handle->total_dipole_particles;
+}
+
+
+/**
+ * set the maximum number of dipole particles that can be stored in the specified local dipole particle data arrays
+ */
+FCSResult fcs_set_max_local_dipole_particles(FCS handle, fcs_int max_local_dipole_particles)
+{
+  const char *fnc_name = "fcs_set_max_local_dipole_particles";
+
+  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+
+  if (FCS_IS_FALSE(handle->dipole_support))
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
+
+  handle->max_local_dipole_particles = max_local_dipole_particles;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+/**
+ * return the maximum number of dipole particles that can be stored in the specified local dipole particle data arrays
+ */
+fcs_int fcs_get_max_local_dipole_particles(FCS handle)
+{
+  const char *fnc_name = "fcs_get_max_local_dipole_particles";
+
+  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
+
+  return handle->max_local_dipole_particles;
 }
 
 

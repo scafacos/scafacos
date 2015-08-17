@@ -287,6 +287,60 @@ FCSResult fcs_unset_r_cut(FCS handle);
 FCSResult fcs_get_r_cut(FCS handle, fcs_float *r_cut);
 
 /**
+ * @brief function to set dipole particles for the computations of the FCS solver (if supported)
+ * @param handle FCS handle representing an FCS solver object
+ * @param dipole_local_particles local number of dipole particles
+ * @param dipole_positions positions of the local dipole particles
+ * @param dipole_moments moments of the local dipole particles
+ * @param dipole_field calculated field values of the local dipole particles
+ * @param dipole_potentials calculated potential values of the local pipole particles
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_set_dipole_particles(FCS handle, fcs_int local_dipole_particles, fcs_float *dipole_positions, fcs_float *dipole_moments, fcs_float *dipole_field, fcs_float *dipole_potentials);
+
+/**
+ * @brief function to return the dipole particles for the computations of the FCS solver (if supported)
+ * @param handle FCS handle representing an FCS solver object
+ * @param dipole_local_particles local number of dipole particles
+ * @param dipole_positions positions of the local dipole particles
+ * @param dipole_moments moments of the local dipole particles
+ * @param dipole_field calculated field values of the local dipole particles
+ * @param dipole_potentials calculated potential values of the local pipole particles
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_get_dipole_particles(FCS handle, fcs_int *local_dipole_particles, fcs_float **dipole_positions, fcs_float **dipole_moments, fcs_float **dipole_field, fcs_float **dipole_potentials);
+
+/**
+ * @brief function to set the total number of dipole particles in the system
+ * @param handle FCS-object representing an FCS solver
+ * @param total_dipole_particles total number of dipole particles in the system
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_set_total_dipole_particles(FCS handle, fcs_int total_dipole_particles);
+
+/**
+ * @brief function to return the total number of dipole particles in the system
+ * @param handle FCS-object representing an FCS solver
+ * @return total number of dipole particles in the system
+ */
+fcs_int fcs_get_total_dipole_particles(FCS handle);
+
+/**
+ * @brief function to set the maximum number of dipole particles that can be stored in the specified local dipole particle data arrays (::set_dipole_paricles)
+ * @param handle FCS-object representing an FCS solver
+ * @param max_local_dipole_particles maximum number of dipole particles that can be stored locally
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_set_max_local_dipole_particles(FCS handle, fcs_int max_local_dipole_particles);
+
+/**
+ * @brief function to return the maximum number of dipole particles that can be stored in the specified local dipole particle data arrays (::set_dipole_paricles)
+ * @param handle FCS-object representing an FCS solver
+ * @return maximum number of dipole particles that can be stored locally
+ */
+fcs_int fcs_get_max_local_dipole_particles(FCS handle);
+
+/**
  * @brief function to set the parameters of the FCS solver based on a parameter string
  * @param handle FCS-object representing an FCS solver
  * @param parameters char* parameter string
