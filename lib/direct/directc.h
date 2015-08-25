@@ -29,6 +29,9 @@ extern "C" {
 #include "common/near/near.h"
 
 
+#define FCS_DIRECT_WITH_DIPOLES  1
+
+
 typedef struct _fcs_directc_t
 {
   fcs_float box_base[3], box_a[3], box_b[3], box_c[3];
@@ -40,8 +43,13 @@ typedef struct _fcs_directc_t
   fcs_int in_nparticles;
   fcs_float *in_positions, *in_charges;
 
-  fcs_int out_nparticles;
-  fcs_float *out_positions, *out_field, *out_potentials;
+/*  fcs_int out_nparticles;
+  fcs_float *out_positions, *out_field, *out_potentials;*/
+
+#if FCS_DIRECT_WITH_DIPOLES
+  fcs_int dipole_nparticles, max_dipole_nparticles;
+  fcs_float *dipole_positions, *dipole_moments, *dipole_field, *dipole_potentials;
+#endif
 
   fcs_float virial[9];
 
@@ -62,7 +70,10 @@ void fcs_directc_destroy(fcs_directc_t *directc);
 void fcs_directc_set_system(fcs_directc_t *directc, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity);
 void fcs_directc_set_particles(fcs_directc_t *directc, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials);
 void fcs_directc_set_in_particles(fcs_directc_t *directc, fcs_int in_nparticles, fcs_float *in_positions, fcs_float *in_charges);
-void fcs_directc_set_out_particles(fcs_directc_t *directc, fcs_int out_nparticles, fcs_float *out_positions, fcs_float *out_field, fcs_float *out_potentials);
+/*void fcs_directc_set_out_particles(fcs_directc_t *directc, fcs_int out_nparticles, fcs_float *out_positions, fcs_float *out_field, fcs_float *out_potentials);*/
+#if FCS_DIRECT_WITH_DIPOLES
+void fcs_directc_set_dipole_particles(fcs_directc_t *directc, fcs_int dipole_nparticles, fcs_int max_dipole_nparticles, fcs_float *dipole_positions, fcs_float *dipole_moments, fcs_float *dipole_field, fcs_float *dipole_potentials);
+#endif
 void fcs_directc_set_periodic_images(fcs_directc_t *directc, fcs_int *periodic_images);
 void fcs_directc_set_cutoff(fcs_directc_t *directc, fcs_float cutoff);
 void fcs_directc_get_cutoff(fcs_directc_t *directc, fcs_float *cutoff);
