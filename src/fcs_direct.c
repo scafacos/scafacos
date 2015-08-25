@@ -83,8 +83,18 @@ FCSResult fcs_direct_init(FCS handle)
   handle->direct_param->metallic_boundary_conditions = 1;
 
   handle->destroy = fcs_direct_destroy;
+
+  handle->dipole_support =
+#if FCS_DIRECT_WITH_DIPOLES
+    FCS_TRUE
+#else
+    FCS_FALSE
+#endif
+    ;
+
   handle->set_parameter = fcs_direct_set_parameter;
   handle->print_parameters = fcs_direct_print_parameters;
+
   handle->tune = fcs_direct_tune;
   handle->run = fcs_direct_run;
   handle->set_compute_virial = fcs_direct_require_virial;
@@ -175,6 +185,10 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positio
   const fcs_int *periodicity;
   fcs_int max_local_particles;
 
+#if FCS_DIRECT_WITH_DIPOLES
+  fcs_int local_dipole_particles, max_local_dipole_particles;
+  fcs_float *dipole_positions, *dipole_moments, *dipole_field, *dipole_potentials;
+#endif
 
   DEBUG_MOP(printf("fcs_direct_run\n"));
 
@@ -194,6 +208,17 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positio
   fcs_directc_set_system(&handle->direct_param->directc, box_base, box_a, box_b, box_c, periodicity);
 
   fcs_directc_set_particles(&handle->direct_param->directc, local_particles, max_local_particles, positions, charges, field, potentials);
+
+#if FCS_DIRECT_WITH_DIPOLES
+  fcs_get_dipole_particles(handle, &local_dipole_particles, &dipole_positions, &dipole_moments, &dipole_field, &dipole_potentials);
+  if (local_dipole_particles >= 0)
+  {
+    max_local_dipole_particles = fcs_get_max_local_dipole_particles(handle);
+    if (local_dipole_particles > max_local_dipole_particles) max_local_dipole_particles = local_dipole_particles;
+
+    fcs_directc_set_dipole_particles(&handle->direct_param->directc, local_dipole_particles, max_local_dipole_particles, dipole_positions, dipole_moments, dipole_field, dipole_potentials);
+  }
+#endif
 
   fcs_directc_run(&handle->direct_param->directc, ctx->comm);
 
