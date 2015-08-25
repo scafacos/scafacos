@@ -103,10 +103,18 @@ void fcs_directc_create(fcs_directc_t *directc)
   directc->in_positions = NULL;
   directc->in_charges = NULL;
 
-  directc->out_nparticles = 0;
+/*  directc->out_nparticles = 0;
   directc->out_positions = NULL;
   directc->out_field = NULL;
-  directc->out_potentials = NULL;
+  directc->out_potentials = NULL;*/
+
+#if FCS_DIRECT_WITH_DIPOLES
+  directc->dipole_nparticles = directc->max_dipole_nparticles = -1;
+  directc->dipole_positions = NULL;
+  directc->dipole_moments = NULL;
+  directc->dipole_field = NULL;
+  directc->dipole_potentials = NULL;
+#endif
 
   directc->periodic_images[0] = directc->periodic_images[1] = directc->periodic_images[2] = 1;
   directc->cutoff = 0.0;
@@ -160,13 +168,26 @@ void fcs_directc_set_in_particles(fcs_directc_t *directc, fcs_int in_nparticles,
 }
 
 
-void fcs_directc_set_out_particles(fcs_directc_t *directc, fcs_int out_nparticles, fcs_float *out_positions, fcs_float *out_field, fcs_float *out_potentials)
+/*void fcs_directc_set_out_particles(fcs_directc_t *directc, fcs_int out_nparticles, fcs_float *out_positions, fcs_float *out_field, fcs_float *out_potentials)
 {
   directc->out_nparticles = out_nparticles;
   directc->out_positions = out_positions;
   directc->out_field = out_field;
   directc->out_potentials = out_potentials;
+}*/
+
+
+#if FCS_DIRECT_WITH_DIPOLES
+void fcs_directc_set_dipole_particles(fcs_directc_t *directc, fcs_int dipole_nparticles, fcs_int max_dipole_nparticles, fcs_float *dipole_positions, fcs_float *dipole_moments, fcs_float *dipole_field, fcs_float *dipole_potentials)
+{
+  directc->dipole_nparticles = dipole_nparticles;
+  directc->max_dipole_nparticles = max_dipole_nparticles;
+  directc->dipole_positions = dipole_positions;
+  directc->dipole_moments = dipole_moments;
+  directc->dipole_field = dipole_field;
+  directc->dipole_potentials = dipole_potentials;
 }
+#endif
 
 
 void fcs_directc_set_periodic_images(fcs_directc_t *directc, fcs_int *periodic_images)
@@ -259,6 +280,474 @@ static void directc_print_particles(fcs_int n, fcs_float *xyz, fcs_float *q, fcs
   }
 }
 #endif
+
+
+#define DIRECT_COMPUTE_NEW  1
+
+#if DIRECT_COMPUTE_NEW
+
+
+typedef struct
+{
+  fcs_int nin;
+  fcs_float *positions, *charges;
+
+  fcs_int nout;
+  fcs_float *field, *potentials;
+
+} charges_t;
+
+
+#if FCS_DIRECT_WITH_DIPOLES
+typedef struct
+{
+  fcs_int nin;
+  fcs_float *positions, *moments;
+
+  fcs_int nout;
+  fcs_float *field, *potentials;
+
+} dipoles_t;
+#endif
+
+
+typedef struct
+{
+  fcs_int *periodic;
+  fcs_float *box_a, *box_b, *box_c;
+
+} periodics_t;
+
+
+#define CHARGE_VS_CHARGE(_p_, _f_, _q_, _ir_, _ir3_, _dx_, _dy_, _dz_) Z_MOP( \
+  (_p_)[0] += (_q_) * (_ir_); \
+  (_f_)[0] += (_q_) * (_ir3_) * (_dx_); \
+  (_f_)[1] += (_q_) * (_ir3_) * (_dy_); \
+  (_f_)[2] += (_q_) * (_ir3_) * (_dz_);)
+
+
+#if FCS_DIRECT_WITH_DIPOLES
+
+#define DIPOLE_VS_DIPOLE(_p_, _f_, _m_, _ir_, _dx_, _dy_, _dz_) Z_MOP( \
+  );
+
+#define CHARGE_VS_DIPOLE(_p_, _f_, _m_, _ir_, _dx_, _dy_, _dz_) Z_MOP( \
+  );
+
+#define DIPOLE_VS_CHARGE(_p_, _f_, _q_, _ir_, _dx_, _dy_, _dz_) Z_MOP( \
+  );
+
+#endif
+
+
+static void compute_charge_charge_loop(charges_t *charges, fcs_float cutoff)
+{
+  fcs_int i, j;
+  fcs_float dx, dy, dz, ir, ir3;
+
+
+  if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
+
+  for (i = 0; i < charges->nout; ++i)
+  {
+    for (j = i + 1; j < charges->nout; ++j)
+    {
+      dx = charges->positions[i * 3 + 0] - charges->positions[j * 3 + 0];
+      dy = charges->positions[i * 3 + 1] - charges->positions[j * 3 + 1];
+      dz = charges->positions[i * 3 + 2] - charges->positions[j * 3 + 2];
+
+      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+
+      if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
+
+      ir3 = ir * ir * ir;
+
+      CHARGE_VS_CHARGE(charges->potentials + i, charges->field + (i * 3), charges->charges[j], ir, ir3, dx, dy, dz);
+
+      CHARGE_VS_CHARGE(charges->potentials + j, charges->field + (j * 3), charges->charges[i], ir, ir3, -dx, -dy, -dz);
+    }
+
+    for (j = charges->nout; j < charges->nin; ++j)
+    {
+      dx = charges->positions[i * 3 + 0] - charges->positions[j * 3 + 0];
+      dy = charges->positions[i * 3 + 1] - charges->positions[j * 3 + 1];
+      dz = charges->positions[i * 3 + 2] - charges->positions[j * 3 + 2];
+
+      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+
+      if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
+
+      ir3 = ir * ir * ir;
+
+      CHARGE_VS_CHARGE(charges->potentials + i, charges->field + (i * 3), charges->charges[j], ir, ir3, dx, dy, dz);
+    }
+  }
+}
+
+
+static void compute_charge_from_charge_loop(charges_t *charges, charges_t *from_charges, periodics_t *periodics, fcs_int skip_origin, fcs_float cutoff)
+{
+  fcs_int i, j, pd[3];
+  fcs_float dx, dy, dz, ir, ir3;
+
+  if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
+
+  for (pd[0] = -periodics->periodic[0]; pd[0] <= periodics->periodic[0]; ++pd[0])
+  for (pd[1] = -periodics->periodic[1]; pd[1] <= periodics->periodic[1]; ++pd[1])
+  for (pd[2] = -periodics->periodic[2]; pd[2] <= periodics->periodic[2]; ++pd[2])
+  {
+    if (skip_origin && pd[0] == 0 && pd[1] == 0 && pd[2] == 0) continue;
+
+    for (i = 0; i < charges->nout; ++i)
+    for (j = 0; j < from_charges->nin; ++j)
+    {
+      dx = charges->positions[i * 3 + 0] - (from_charges->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
+      dy = charges->positions[i * 3 + 1] - (from_charges->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
+      dz = charges->positions[i * 3 + 2] - (from_charges->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
+
+      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+
+      if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
+
+      ir3 = ir * ir * ir;
+
+      CHARGE_VS_CHARGE(charges->potentials + i, charges->field + (i * 3), from_charges->charges[j], ir, ir3, dx, dy, dz);
+    }
+  }
+}
+
+
+#if FCS_DIRECT_WITH_DIPOLES
+
+static void compute_dipole_dipole_loop(dipoles_t *dipoles, fcs_float cutoff)
+{
+  fcs_int i, j;
+  fcs_float dx, dy, dz, ir;
+
+
+  if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
+
+  for (i = 0; i < dipoles->nout; ++i)
+  {
+    for (j = i + 1; j < dipoles->nout; ++j)
+    {
+      dx = dipoles->positions[i * 3 + 0] - dipoles->positions[j * 3 + 0];
+      dy = dipoles->positions[i * 3 + 1] - dipoles->positions[j * 3 + 1];
+      dz = dipoles->positions[i * 3 + 2] - dipoles->positions[j * 3 + 2];
+
+      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+
+      if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
+
+      DIPOLE_VS_DIPOLE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), dipoles->moments + (j * 3), ir, dx, dy, dz);
+
+      DIPOLE_VS_DIPOLE(dipoles->potentials + (j * 3), dipoles->field + (j * 6), dipoles->moments + (i * 3), ir, -dx, -dy, -dz);
+    }
+
+    for (j = dipoles->nout; j < dipoles->nin; ++j)
+    {
+      dx = dipoles->positions[i * 3 + 0] - dipoles->positions[j * 3 + 0];
+      dy = dipoles->positions[i * 3 + 1] - dipoles->positions[j * 3 + 1];
+      dz = dipoles->positions[i * 3 + 2] - dipoles->positions[j * 3 + 2];
+
+      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+
+      if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
+
+      DIPOLE_VS_DIPOLE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), dipoles->moments + (j * 3), ir, dx, dy, dz);
+    }
+  }
+}
+
+
+static void compute_dipole_from_dipole_loop(dipoles_t *dipoles, dipoles_t *from_dipoles, periodics_t *periodics, fcs_int skip_origin, fcs_float cutoff)
+{
+  fcs_int i, j, pd[3];
+  fcs_float dx, dy, dz, ir;
+
+  if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
+
+  for (pd[0] = -periodics->periodic[0]; pd[0] <= periodics->periodic[0]; ++pd[0])
+  for (pd[1] = -periodics->periodic[1]; pd[1] <= periodics->periodic[1]; ++pd[1])
+  for (pd[2] = -periodics->periodic[2]; pd[2] <= periodics->periodic[2]; ++pd[2])
+  {
+    if (skip_origin && pd[0] == 0 && pd[1] == 0 && pd[2] == 0) continue;
+
+    for (i = 0; i < dipoles->nout; ++i)
+    for (j = 0; j < from_dipoles->nin; ++j)
+    {
+      dx = dipoles->positions[i * 3 + 0] - (from_dipoles->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
+      dy = dipoles->positions[i * 3 + 1] - (from_dipoles->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
+      dz = dipoles->positions[i * 3 + 2] - (from_dipoles->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
+
+      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+
+      if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
+
+      DIPOLE_VS_DIPOLE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), from_dipoles->moments + (j * 3), ir, dx, dy, dz);
+    }
+  }
+}
+
+
+static void compute_charge_from_dipole_loop(charges_t *charges, dipoles_t *dipoles, periodics_t *periodics, fcs_float cutoff)
+{
+  fcs_int i, j, pd[3];
+  fcs_float dx, dy, dz, ir;
+
+  if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
+
+  for (pd[0] = -periodics->periodic[0]; pd[0] <= periodics->periodic[0]; ++pd[0])
+  for (pd[1] = -periodics->periodic[1]; pd[1] <= periodics->periodic[1]; ++pd[1])
+  for (pd[2] = -periodics->periodic[2]; pd[2] <= periodics->periodic[2]; ++pd[2])
+  {
+    for (i = 0; i < charges->nout; ++i)
+    for (j = 0; j < dipoles->nin; ++j)
+    {
+      dx = charges->positions[i * 3 + 0] - (dipoles->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
+      dy = charges->positions[i * 3 + 1] - (dipoles->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
+      dz = charges->positions[i * 3 + 2] - (dipoles->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
+
+      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+
+      if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
+
+      CHARGE_VS_DIPOLE(charges->potentials + i, charges->field + (i * 3), dipoles->moments + (j * 3), ir, dx, dy, dz);
+    }
+  }
+}
+
+
+static void compute_dipole_from_charge_loop(dipoles_t *dipoles, charges_t *charges, periodics_t *periodics, fcs_float cutoff)
+{
+  fcs_int i, j, pd[3];
+  fcs_float dx, dy, dz, ir;
+
+  if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
+
+  for (pd[0] = -periodics->periodic[0]; pd[0] <= periodics->periodic[0]; ++pd[0])
+  for (pd[1] = -periodics->periodic[1]; pd[1] <= periodics->periodic[1]; ++pd[1])
+  for (pd[2] = -periodics->periodic[2]; pd[2] <= periodics->periodic[2]; ++pd[2])
+  {
+    for (i = 0; i < dipoles->nout; ++i)
+    for (j = 0; j < charges->nin; ++j)
+    {
+      dx = dipoles->positions[i * 3 + 0] - (charges->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
+      dy = dipoles->positions[i * 3 + 1] - (charges->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
+      dz = dipoles->positions[i * 3 + 2] - (charges->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
+
+      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+
+      if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
+
+      DIPOLE_VS_CHARGE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), charges->charges[j], ir, dx, dy, dz);
+    }
+  }
+}
+
+#endif
+
+
+static void compute_charge_charge(charges_t *charges, periodics_t *periodics, fcs_float cutoff)
+{
+  compute_charge_charge_loop(charges, cutoff);
+
+  compute_charge_from_charge_loop(charges, charges, periodics, 1, cutoff);
+}
+
+
+#if FCS_DIRECT_WITH_DIPOLES
+
+static void compute_dipole_dipole(dipoles_t *dipoles, periodics_t *periodics, fcs_float cutoff)
+{
+  compute_dipole_dipole_loop(dipoles, cutoff);
+
+  compute_dipole_from_dipole_loop(dipoles, dipoles, periodics, 1, cutoff);
+}
+
+
+static void compute_charge_dipole(charges_t *charges, dipoles_t *dipoles, periodics_t *periodics, fcs_float cutoff)
+{
+  compute_charge_from_dipole_loop(charges, dipoles, periodics, cutoff);
+  compute_dipole_from_charge_loop(dipoles, charges, periodics, cutoff);
+}
+
+#endif
+
+
+static void compute_charge_from_charge(charges_t *charges, charges_t *from_charges, periodics_t *periodics, fcs_float cutoff)
+{
+  compute_charge_from_charge_loop(charges, from_charges, periodics, 0, cutoff);
+}
+
+
+#if FCS_DIRECT_WITH_DIPOLES
+
+static void compute_dipole_from_dipole(dipoles_t *dipoles, dipoles_t *from_dipoles, periodics_t *periodics, fcs_float cutoff)
+{
+  compute_dipole_from_dipole_loop(dipoles, from_dipoles, periodics, 0, cutoff);
+}
+
+
+static void compute_charge_from_dipole(charges_t *charges, dipoles_t *dipoles, periodics_t *periodics, fcs_float cutoff)
+{
+  compute_charge_from_dipole_loop(charges, dipoles, periodics, cutoff);
+}
+
+
+static void compute_dipole_from_charge(dipoles_t *dipoles, charges_t *charges, periodics_t *periodics, fcs_float cutoff)
+{
+  compute_dipole_from_charge_loop(dipoles, charges, periodics, cutoff);
+}
+
+#endif
+
+
+static void directc_compute(fcs_directc_t *directc, fcs_int *periodic, int size, int rank, MPI_Comm comm)
+{
+  fcs_int l;
+
+  periodics_t periodics;
+
+  charges_t my_charges, other_charges;
+#if FCS_DIRECT_WITH_DIPOLES
+  dipoles_t my_dipoles, other_dipoles;
+#endif
+
+  periodics.periodic = periodic;
+  periodics.box_a = directc->box_a;
+  periodics.box_b = directc->box_b;
+  periodics.box_c = directc->box_c;
+
+  my_charges.nin = directc->nparticles;
+  my_charges.positions = directc->positions;
+  my_charges.charges = directc->charges;
+  my_charges.nout = directc->nparticles;
+  my_charges.field = directc->field;
+  my_charges.potentials = directc->potentials;
+
+  other_charges.nin = directc->in_nparticles;
+  other_charges.positions = directc->in_positions;
+  other_charges.charges = directc->in_charges;
+  other_charges.nout = 0;
+  other_charges.field = NULL;
+  other_charges.potentials = NULL;
+
+  /* vs. myself */
+  compute_charge_charge(&my_charges, &periodics, directc->cutoff);
+  compute_charge_from_charge(&my_charges, &other_charges, &periodics, directc->cutoff);
+
+#if FCS_DIRECT_WITH_DIPOLES
+  my_dipoles.nin = directc->dipole_nparticles;
+  my_dipoles.positions = directc->dipole_positions;
+  my_dipoles.moments = directc->dipole_moments;
+  my_dipoles.nout = directc->dipole_nparticles;
+  my_dipoles.field = directc->dipole_field;
+  my_dipoles.potentials = directc->dipole_potentials;
+
+  other_dipoles.nin = 0;
+  other_dipoles.positions = NULL;
+  other_dipoles.moments = NULL;
+  other_dipoles.nout = 0;
+  other_dipoles.field = NULL;
+  other_dipoles.potentials = NULL;
+
+  compute_dipole_dipole(&my_dipoles, &periodics, directc->cutoff);
+  compute_charge_dipole(&my_charges, &my_dipoles, &periodics, directc->cutoff);
+  compute_dipole_from_charge(&my_dipoles, &other_charges, &periodics, directc->cutoff);
+#endif
+
+  /* vs. others */
+  if (size > 1)
+  {
+    fcs_int my_n[3], all_n[3 * size], other_max_nfloats;
+
+    my_n[0] = directc->nparticles;
+    my_n[1] = directc->in_nparticles;
+    my_n[2] =
+#if FCS_DIRECT_WITH_DIPOLES
+      directc->dipole_nparticles;
+#else
+      0;
+#endif
+    MPI_Allgather(my_n, 3, FCS_MPI_INT, all_n, 3, FCS_MPI_INT, comm);
+
+    other_max_nfloats = 0;
+    for (l = 0; l < size; ++l)
+    {
+      if (l == rank) continue;
+      other_max_nfloats = z_max(other_max_nfloats, (all_n[3 * l + 0] + all_n[3 * l + 1]) * 4 + all_n[3 * l + 2] * 6);
+    }
+
+    fcs_float *other_floats = malloc(other_max_nfloats * sizeof(fcs_float));
+
+    int prev_rank = (rank - 1 + size) % size;
+    int next_rank = (rank + 1) % size;
+    fcs_int *prev_n = NULL;
+
+    for (l = 1; l < size; ++l)
+    {
+      int other_rank = (rank - l + size) % size;
+      fcs_int *other_n = all_n + 3 * other_rank;
+
+      fcs_float *f = other_floats;
+
+      other_charges.nin = other_n[0] + other_n[1];
+      other_charges.positions = f;
+      f += 3 * other_charges.nin;
+      other_charges.charges = f;
+      f += 1 * other_charges.nin;
+
+#if FCS_DIRECT_WITH_DIPOLES
+      other_dipoles.nin = other_n[2];
+      other_dipoles.positions = f;
+      f += 3 * other_dipoles.nin;
+      other_dipoles.moments = f;
+      f += 3 * other_dipoles.nin;
+#endif
+
+      if (l == 1)
+      {
+        /* first round */
+        MPI_Sendrecv(directc->positions, 3 * my_n[0], FCS_MPI_FLOAT, next_rank, 0, other_charges.positions, 3 * other_n[0], FCS_MPI_FLOAT, prev_rank, 0, comm, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(directc->in_positions, 3 * my_n[1], FCS_MPI_FLOAT, next_rank, 0, other_charges.positions + 3 * other_n[0], 3 * other_n[1], FCS_MPI_FLOAT, prev_rank, 0, comm, MPI_STATUS_IGNORE);
+
+        MPI_Sendrecv(directc->charges, my_n[0], FCS_MPI_FLOAT, next_rank, 0, other_charges.charges, other_n[0], FCS_MPI_FLOAT, prev_rank, 0, comm, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(directc->in_charges, my_n[1], FCS_MPI_FLOAT, next_rank, 0, other_charges.charges + other_n[0], other_n[1], FCS_MPI_FLOAT, prev_rank, 0, comm, MPI_STATUS_IGNORE);
+
+#if FCS_DIRECT_WITH_DIPOLES
+        MPI_Sendrecv(directc->dipole_positions, 3 * my_n[2], FCS_MPI_FLOAT, next_rank, 0, other_dipoles.positions, 3 * other_n[2], FCS_MPI_FLOAT, prev_rank, 0, comm, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(directc->dipole_moments, 3 * my_n[2], FCS_MPI_FLOAT, next_rank, 0, other_dipoles.moments, 3 * other_n[2], FCS_MPI_FLOAT, prev_rank, 0, comm, MPI_STATUS_IGNORE);
+#endif
+      } else
+      {
+        /* further rounds */
+        fcs_int prev_nfloats = (prev_n[0] + prev_n[1]) * 4 + prev_n[2] * 6;
+        fcs_int other_nfloats = (other_n[0] + other_n[1]) * 4 + other_n[2] * 6;
+        fcs_int replace_nfloats = z_min(prev_nfloats, other_nfloats);
+
+        MPI_Sendrecv_replace(other_floats, replace_nfloats, FCS_MPI_FLOAT, next_rank, 0, prev_rank, 0, comm, MPI_STATUS_IGNORE);
+
+        if (replace_nfloats < prev_nfloats) MPI_Send(other_floats + replace_nfloats, prev_nfloats - replace_nfloats, FCS_MPI_FLOAT, next_rank, 0, comm);
+        else if (replace_nfloats < other_nfloats) MPI_Recv(other_floats + replace_nfloats, other_nfloats - replace_nfloats, FCS_MPI_FLOAT, prev_rank, 0, comm, MPI_STATUS_IGNORE);
+      }
+
+      compute_charge_from_charge(&my_charges, &other_charges, &periodics, directc->cutoff);
+#if FCS_DIRECT_WITH_DIPOLES
+      compute_dipole_from_dipole(&my_dipoles, &other_dipoles, &periodics, directc->cutoff);
+      compute_charge_from_dipole(&my_charges, &other_dipoles, &periodics, directc->cutoff);
+      compute_dipole_from_charge(&my_dipoles, &other_charges, &periodics, directc->cutoff);
+#endif
+
+      prev_n = other_n;
+    }
+
+    free(other_floats);
+  }
+}
+
+
+#else /* DIRECT_COMPUTE_NEW */
 
 
 static void directc_local_one(fcs_int nout, fcs_int nin, fcs_float *xyz, fcs_float *q, fcs_float *f, fcs_float *p, fcs_float cutoff)
@@ -429,6 +918,9 @@ static void directc_global(fcs_directc_t *directc, fcs_int *periodic, int size, 
 }
 
 
+#endif /* DIRECT_COMPUTE_NEW */
+
+
 static void directc_virial(fcs_int n, fcs_float *xyz, fcs_float *q, fcs_float *f, fcs_float *v, int size, int rank, MPI_Comm comm)
 {
   fcs_int i;
@@ -502,17 +994,22 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
   INFO_CMD(
     if (comm_rank == MASTER_RANK)
     {
-      printf(INFO_PRINT_PREFIX "nparticles: %" FCS_LMOD_INT "d (max: %" FCS_LMOD_INT "d)\n", directc->nparticles, directc->max_nparticles);
-      printf(INFO_PRINT_PREFIX "positions:  %p\n", directc->positions);
-      printf(INFO_PRINT_PREFIX "charges:    %p\n", directc->charges);
-      printf(INFO_PRINT_PREFIX "field:      %p\n", directc->field);
-      printf(INFO_PRINT_PREFIX "potentials: %p\n", directc->potentials);
       printf(INFO_PRINT_PREFIX "periodicity: [%" FCS_LMOD_INT "d, %" FCS_LMOD_INT "d, %" FCS_LMOD_INT "d]\n", directc->periodicity[0], directc->periodicity[1], directc->periodicity[2]);
       printf(INFO_PRINT_PREFIX "box_base: [%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]\n", directc->box_base[0], directc->box_base[1], directc->box_base[2]);
       printf(INFO_PRINT_PREFIX "box_a: [%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]\n", directc->box_a[0], directc->box_a[1], directc->box_a[2]);
       printf(INFO_PRINT_PREFIX "box_b: [%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]\n", directc->box_b[0], directc->box_b[1], directc->box_b[2]);
       printf(INFO_PRINT_PREFIX "box_c: [%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]\n", directc->box_c[0], directc->box_c[1], directc->box_c[2]);
       printf(INFO_PRINT_PREFIX "cutoff: %" FCS_LMOD_FLOAT "f, with near: %" FCS_LMOD_INT "d\n", directc->cutoff, directc->cutoff_with_near);
+      printf(INFO_PRINT_PREFIX "nparticles: %" FCS_LMOD_INT "d (max: %" FCS_LMOD_INT "d)\n", directc->nparticles, directc->max_nparticles);
+      printf(INFO_PRINT_PREFIX "positions:  %p\n", directc->positions);
+      printf(INFO_PRINT_PREFIX "charges:    %p\n", directc->charges);
+      printf(INFO_PRINT_PREFIX "field:      %p\n", directc->field);
+      printf(INFO_PRINT_PREFIX "potentials: %p\n", directc->potentials);
+      printf(INFO_PRINT_PREFIX "dipole_nparticles: %" FCS_LMOD_INT "d (max: %" FCS_LMOD_INT "d)\n", directc->dipole_nparticles, directc->max_dipole_nparticles);
+      printf(INFO_PRINT_PREFIX "dipole_positions:  %p\n", directc->dipole_positions);
+      printf(INFO_PRINT_PREFIX "dipole_moments:    %p\n", directc->dipole_moments);
+      printf(INFO_PRINT_PREFIX "dipole_field:      %p\n", directc->dipole_field);
+      printf(INFO_PRINT_PREFIX "dipole_potentials: %p\n", directc->dipole_potentials);
     }
   );
 
@@ -564,7 +1061,11 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
 
   } else
   {
+#if DIRECT_COMPUTE_NEW
+    directc_compute(directc, periodic, comm_size, comm_rank, comm);
+#else
     directc_global(directc, periodic, comm_size, comm_rank, comm);
+#endif
   }
 
   TIMING_SYNC(comm); TIMING_STOP(t);
