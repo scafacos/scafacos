@@ -366,14 +366,22 @@ AM_CONDITIONAL([ENABLE_COMMON_FFTW],[test "x$use_fcs_fftw3_common" = xyes])
 
 # Set up pfft.
 use_fcs_pfft_common=no
+
+AC_ARG_WITH(internal-pfft, AS_HELP_STRING([--with-internal-pfft],
+                   [use the contributed pfft]),, with_internal_pfft=no)
+
 if test "x$use_fcs_pfft" = xyes ; then
-  # Search for installed PFFT.
-  if test "x$fcs_float" = "xfloat" ; then
-    AX_LIB_PFFTF_EXT([nobuilt])
-  elif test "x$fcs_float" = "xlong double" ; then
-    AX_LIB_PFFTL_EXT([nobuilt])
-  else
-    AX_LIB_PFFT_EXT([nobuilt])
+  # PFFT is required
+
+  if test "x$with_internal_pfft" != "xyes"; then
+    # Search for installed PFFT.
+    if test "x$fcs_float" = "xfloat" ; then
+      AX_LIB_PFFTF_EXT([nobuilt])
+    elif test "x$fcs_float" = "xlong double" ; then
+      AX_LIB_PFFTL_EXT([nobuilt])
+    else
+      AX_LIB_PFFT_EXT([nobuilt])
+    fi
   fi
 
 #  echo "use_fcs_pfft: $use_fcs_pfft"
@@ -463,14 +471,21 @@ AM_CONDITIONAL([ENABLE_COMMON_PFFT],[test "x$use_fcs_pfft_common" = xyes])
 
 # Set up pnfft.
 use_fcs_pnfft_common=no
+
+AC_ARG_WITH(internal-pnfft, AS_HELP_STRING([--with-internal-pnfft],
+                   [use the contributed pnfft]),, with_internal_pnfft=no)
+
 if test "x$use_fcs_pnfft" = xyes ; then
-  # Search for installed PNFFT.
-  if test "x$fcs_float" = "xfloat" ; then
-    AX_LIB_PNFFTF_EXT([nobuilt])
-  elif test "x$fcs_float" = "xlong double" ; then
-    AX_LIB_PNFFTL_EXT([nobuilt])
-  else
-    AX_LIB_PNFFT_EXT([nobuilt])
+  # PNFFT is required
+
+  if test "x$with_internal_pnfft" != "xyes"; then
+    if test "x$fcs_float" = "xfloat" ; then
+      AX_LIB_PNFFTF_EXT([nobuilt])
+    elif test "x$fcs_float" = "xlong double" ; then
+      AX_LIB_PNFFTL_EXT([nobuilt])
+    else
+      AX_LIB_PNFFT_EXT([nobuilt])
+    fi
   fi
 
 #  echo "use_fcs_pnfft: $use_fcs_pnfft"
