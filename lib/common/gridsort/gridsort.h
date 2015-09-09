@@ -238,10 +238,8 @@ fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MP
 /**
  * @brief separate real (non-ghost) and ghost particles after sorting
  * @param gs fcs_gridsort_t* gridsort object
- * @param real_nparticles fcs_int* pointer to real number of particles
- * @param ghost_nparticles fcs_int* pointer to ghost number of particles
  */
-void fcs_gridsort_separate_ghosts(fcs_gridsort_t *gs, fcs_int *real_nparticles, fcs_int *ghost_nparticles);
+void fcs_gridsort_separate_ghosts(fcs_gridsort_t *gs);
 
 /**
  * @brief separate all particles (real and ghosts) according to their z-coordinate into equidistant slices, the slices are ordered according to their z coordinates, the number of local and ghost slices has to be set with fcs_gridsort_set_zslices

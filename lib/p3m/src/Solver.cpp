@@ -173,9 +173,7 @@ void Solver::decompose(fcs_gridsort_t *gridsort,
             (near_field_flag ? r_cut : 0.0),
             comm.mpicomm);
     P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_forward().\n"));
-    fcs_gridsort_separate_ghosts(gridsort,
-            num_real_particles,
-            num_ghost_particles);
+    fcs_gridsort_separate_ghosts(gridsort);
 
     fcs_gridsort_get_sorted_particles(gridsort,
             &num_particles, NULL, NULL, NULL, NULL);

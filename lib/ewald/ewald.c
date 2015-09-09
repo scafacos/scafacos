@@ -970,8 +970,7 @@ void ewald_compute_rspace(ewald_data_struct* d,
   fcs_gridsort_sort_forward(&gridsort, d->r_cut, d->comm_cart);
   FCS_INFO(fprintf(stderr, "  returning from fcs_gridsort_sort_forward().\n"));
 
-  fcs_gridsort_separate_ghosts(&gridsort, &local_num_real_particles, 
-			       &local_num_ghost_particles);
+  fcs_gridsort_separate_ghosts(&gridsort);
   fcs_gridsort_get_sorted_particles(&gridsort, &local_num_particles, NULL,
 				    NULL, NULL, NULL);
   fcs_gridsort_get_real_particles(&gridsort, &local_num_real_particles,

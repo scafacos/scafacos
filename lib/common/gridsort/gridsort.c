@@ -1568,7 +1568,7 @@ fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MP
 }
 
 
-static void separate_ghosts(fcs_int nparticles, fcs_gridsort_index_t *indices, fcs_float *positions, fcs_float *charges, fcs_int *real_nparticles, fcs_int *ghost_nparticles)
+void fcs_gridsort_separate_ghosts(fcs_gridsort_t *gs)
 {
   fcs_int l, h;
   fcs_gridsort_index_t ti;
@@ -1576,42 +1576,33 @@ static void separate_ghosts(fcs_int nparticles, fcs_gridsort_index_t *indices, f
 
 
   l = 0;
-  h = nparticles - 1;
+  h = gs->nsorted_particles - 1;
 
   while (1)
   {
     while (l < h)
-    if (GRIDSORT_IS_GHOST(indices[l])) break; else ++l;
+    if (GRIDSORT_IS_GHOST(gs->sorted_indices[l])) break; else ++l;
 
     while (l < h)
-    if (GRIDSORT_IS_GHOST(indices[h])) --h; else break;
+    if (GRIDSORT_IS_GHOST(gs->sorted_indices[h])) --h; else break;
 
     if (l >= h) break;
 
-    z_swap(indices[l], indices[h], ti);
+    z_swap(gs->sorted_indices[l], gs->sorted_indices[h], ti);
     
-    z_swap(positions[3 * l + 0], positions[3 * h + 0], tf);
-    z_swap(positions[3 * l + 1], positions[3 * h + 1], tf);
-    z_swap(positions[3 * l + 2], positions[3 * h + 2], tf);
+    z_swap(gs->sorted_positions[3 * l + 0], gs->sorted_positions[3 * h + 0], tf);
+    z_swap(gs->sorted_positions[3 * l + 1], gs->sorted_positions[3 * h + 1], tf);
+    z_swap(gs->sorted_positions[3 * l + 2], gs->sorted_positions[3 * h + 2], tf);
 
-    z_swap(charges[l], charges[h], tf);
+    z_swap(gs->sorted_charges[l], gs->sorted_charges[h], tf);
 
     ++l;
     --h;
   }
 
-  if (l < nparticles) *real_nparticles = l + ((GRIDSORT_IS_GHOST(indices[l]))?0:1);
-  else *real_nparticles = 0;
-  *ghost_nparticles = nparticles - *real_nparticles;
-}
-
-
-void fcs_gridsort_separate_ghosts(fcs_gridsort_t *gs, fcs_int *real_nparticles, fcs_int *ghost_nparticles)
-{
-  separate_ghosts(gs->nsorted_particles, gs->sorted_indices, gs->sorted_positions, gs->sorted_charges, &gs->nsorted_real_particles, &gs->nsorted_ghost_particles);
-
-  if (real_nparticles) *real_nparticles = gs->nsorted_real_particles;
-  if (ghost_nparticles) *ghost_nparticles = gs->nsorted_ghost_particles;
+  if (l < gs->nsorted_particles) gs->nsorted_real_particles = l + ((GRIDSORT_IS_GHOST(gs->sorted_indices[l]))?0:1);
+  else gs->nsorted_real_particles = 0;
+  gs->nsorted_ghost_particles = gs->nsorted_particles - gs->nsorted_real_particles;
 }
 
 
