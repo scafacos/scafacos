@@ -249,10 +249,9 @@ void mmm1d_run(void* rd,
   //printf("rank %d, local_potential 0: %e\n", comm_rank, local_potentials[0]);
   
   /* sort back, clean up and finish */
-  fcs_gridsort_sort_backward(&gridsort,
-              local_fields, local_potentials,
-              fields, potentials, 1,
-              d->comm);
+  fcs_gridsort_set_sorted_results(&gridsort, local_num_particles, local_fields, local_potentials);
+  fcs_gridsort_set_results(&gridsort, max_num_particles, fields, potentials);
+  fcs_gridsort_sort_backward(&gridsort, d->comm);
   
   fcs_gridsort_free(&gridsort);
   

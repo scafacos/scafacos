@@ -400,10 +400,9 @@ void mmm2d_run(void* rd,
   */
   
   /* clean up and finish */
-  fcs_gridsort_sort_backward(&gridsort,
-              local_forces, NULL,
-              forces, NULL, 1,
-              d->comm.mpicomm);
+  fcs_gridsort_set_sorted_results(&gridsort, local_num_particles, local_forces, NULL);
+  fcs_gridsort_set_results(&gridsort, max_num_particles, forces, NULL);
+  fcs_gridsort_sort_backward(&gridsort, d->comm.mpicomm);
   
   fcs_gridsort_free(&gridsort);
   

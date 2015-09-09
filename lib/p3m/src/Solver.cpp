@@ -323,11 +323,10 @@ void Solver::run(
 
     startTimer(COMP);
     /* sort particles back */
+    fcs_gridsort_set_sorted_results(&gridsort, num_real_particles, fields, potentials);
+    fcs_gridsort_set_results(&gridsort, _num_particles, _fields, _potentials);
     P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
-    fcs_gridsort_sort_backward(&gridsort,
-            fields, potentials,
-            _fields, _potentials, 1,
-            comm.mpicomm);
+    fcs_gridsort_sort_backward(&gridsort, comm.mpicomm);
     P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
 
     fcs_gridsort_free(&gridsort);

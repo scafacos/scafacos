@@ -74,6 +74,12 @@ typedef struct _fcs_gridsort_t
 
   fcs_int nsorted_real_particles, nsorted_ghost_particles;
 
+  fcs_int max_nsorted_results;
+  fcs_float *sorted_field, *sorted_potentials;
+
+  fcs_int max_noriginal_results;
+  fcs_float *original_field, *original_potentials;
+
   fcs_int nresort_particles;
 
   fcs_float max_particle_move;
@@ -267,37 +273,40 @@ fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm);
  * @param box_c fcs_float* 3rd base vector of the system box
  */
 void fcs_gridsort_unfold_periodic_particles(fcs_int nparticles, fcs_gridsort_index_t *indices, fcs_float *positions, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c);
- 
+
+/**
+ * @brief set information of results to sort back
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param max_nparticles fcs_int max number of results that can be stored in local result data arrays
+ * @param field fcs_float* array of field values (can be NULL)
+ * @param potentials fcs_float* array of potential values (can be NULL)
+ */
+void fcs_gridsort_set_sorted_results(fcs_gridsort_t *gs, fcs_int max_nresults, fcs_float *field, fcs_float *potentials);
+
+/**
+ * @brief set information for storing results of sort back
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param max_nparticles fcs_int max number of results that can be stored in local result data arrays
+ * @param field fcs_float* array for storing field values (can be NULL)
+ * @param potentials fcs_float* array for storing potential values (can be NULL)
+ */
+void fcs_gridsort_set_results(fcs_gridsort_t *gs, fcs_int max_nresults, fcs_float *field, fcs_float *potentials);
+
 /**
  * @brief sort particle information back into their original order
  * @param gs fcs_gridsort_t* gridsort object
- * @param sorted_field fcs_float* array of field values to sort (can be NULL)
- * @param sorted_potentials fcs_float* array of potential values to sort (can be NULL)
- * @param original_field fcs_float* array to store sorted field values (can be NULL)
- * @param original_potentials fcs_float* array to store sorted potential values (can be NULL)
- * @param set_values fcs_int set (if set_values is non-zero) or add (if set_values is zero) field and potential values to the given arrays
  * @param comm MPI_Comm communicator to use
  */
-fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
-                                   fcs_float *sorted_field, fcs_float *sorted_potentials,
-                                   fcs_float *original_field, fcs_float *original_potentials,
-                                   fcs_int set_values, MPI_Comm comm);
+fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs, MPI_Comm comm);
 
 /**
  * @brief prepare resorting of additional particle data, i.e.
  *   (1) enable creation of gridsort_resort object, and
  *   (2) copy sorted potential and field values locally to original potential and field arrays
  * @param gs fcs_gridsort_t* gridsort object
- * @param sorted_field fcs_float* array of field values to copy (can be NULL)
- * @param sorted_potentials fcs_float* array of potential values to copy (can be NULL)
- * @param original_field fcs_float* array to store field values (can be NULL)
- * @param original_potentials fcs_float* array to store potential values (can be NULL)
  * @param comm MPI_Comm communicator to use
  */
-fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs,
-                                    fcs_float *sorted_field, fcs_float *sorted_potentials,
-                                    fcs_float *original_field, fcs_float *original_potentials,
-                                    MPI_Comm comm);
+fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs, MPI_Comm comm);
 
 /**
  * @brief free arrays allocated by fcs_gridsort_sort_forward (all arrays returned by getters become invalid)

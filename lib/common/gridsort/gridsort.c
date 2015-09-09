@@ -211,6 +211,14 @@ void fcs_gridsort_create(fcs_gridsort_t *gs)
 
   gs->nsorted_real_particles = gs->nsorted_ghost_particles = 0;
 
+  gs->max_nsorted_results = 0;
+  gs->sorted_field = NULL;
+  gs->sorted_potentials = NULL;
+
+  gs->max_noriginal_results = 0;
+  gs->original_field = NULL;
+  gs->original_potentials = NULL;
+
   gs->nresort_particles = -1;
 
   gs->max_particle_move = -1;
@@ -1893,11 +1901,23 @@ void fcs_gridsort_unfold_periodic_particles(fcs_int nparticles, fcs_gridsort_ind
 }
 
 
-fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
-                                   fcs_float *sorted_field, fcs_float *sorted_potentials,
-                                   fcs_float *original_field, fcs_float *original_potentials,
-                                   fcs_int set_values,
-                                   MPI_Comm comm)
+void fcs_gridsort_set_sorted_results(fcs_gridsort_t *gs, fcs_int max_nresults, fcs_float *field, fcs_float *potentials)
+{
+  gs->max_nsorted_results = max_nresults;
+  gs->sorted_field = field;
+  gs->sorted_potentials = potentials;
+}
+
+
+void fcs_gridsort_set_results(fcs_gridsort_t *gs, fcs_int max_nresults, fcs_float *field, fcs_float *potentials)
+{
+  gs->max_noriginal_results = max_nresults;
+  gs->original_field = field;
+  gs->original_potentials = potentials;
+}
+
+
+fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs, MPI_Comm comm)
 {
   int comm_size, comm_rank;
 
@@ -1906,7 +1926,7 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
   fcs_back_fp_elements_t sin0, sout0;
   fcs_back_f__elements_t sin1, sout1;
   fcs_back__p_elements_t sin2, sout2;
-  
+
   fcs_back_fp_tproc_t tproc0;
   fcs_back_f__tproc_t tproc1;
   fcs_back__p_tproc_t tproc2;
@@ -1920,16 +1940,16 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
 #ifdef DO_TIMING
   double t[2] = { 0, 0 };
 #endif
-  
+
 
   TIMING_SYNC(comm); TIMING_START(t[0]);
 
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
 
-  if (original_field && original_potentials) type = 0;
-  else if (original_field && !original_potentials) type = 1;
-  else if (!original_field && original_potentials) type = 2;
+  if (gs->original_field && gs->original_potentials) type = 0;
+  else if (gs->original_field && !gs->original_potentials) type = 1;
+  else if (!gs->original_field && gs->original_potentials) type = 2;
   else type = 3;
 
   switch (type)
@@ -1942,12 +1962,9 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
       fcs_back_fp_elem_set_size(&sin0, gs->nsorted_real_particles);
       fcs_back_fp_elem_set_max_size(&sin0, gs->nsorted_real_particles);
       fcs_back_fp_elem_set_keys(&sin0, gs->sorted_indices);
-      fcs_back_fp_elem_set_data(&sin0, sorted_field, sorted_potentials);
+      fcs_back_fp_elem_set_data(&sin0, gs->sorted_field, gs->sorted_potentials);
 
-      fcs_back_fp_elem_set_size(&sout0, 0);
-      fcs_back_fp_elem_set_max_size(&sout0, 0);
-      fcs_back_fp_elem_set_keys(&sout0, NULL);
-      fcs_back_fp_elem_set_data(&sout0, NULL, NULL);
+      fcs_back_fp_elem_null(&sout0);
 
       fcs_back_fp_tproc_create_tproc(&tproc0, gridsort_back_fp_tproc, fcs_back_fp_TPROC_RESET_NULL, fcs_back_fp_TPROC_EXDEF_NULL);
 
@@ -1972,32 +1989,17 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
       fcs_back_fp_tproc_free(&tproc0);
 
       if (gs->noriginal_particles != sout0.size)
-        fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" fcs_back_fp_slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout0.size);
+        fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got %" fcs_back_fp_slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout0.size);
 
-      if (set_values)
+      for (i = 0; i < sout0.size; ++i)
       {
-        for (i = 0; i < sout0.size; ++i)
-        {
-          j = sout0.keys[i] & index_mask;
+        j = sout0.keys[i] & index_mask;
 
-          original_field[3 * j + 0] = sout0.data0[3 * i + 0];
-          original_field[3 * j + 1] = sout0.data0[3 * i + 1];
-          original_field[3 * j + 2] = sout0.data0[3 * i + 2];
+        gs->original_field[3 * j + 0] = sout0.data0[3 * i + 0];
+        gs->original_field[3 * j + 1] = sout0.data0[3 * i + 1];
+        gs->original_field[3 * j + 2] = sout0.data0[3 * i + 2];
 
-          original_potentials[j] = sout0.data1[i];
-        }
-      } else
-      {
-        for (i = 0; i < sout0.size; ++i)
-        {
-          j = sout0.keys[i] & index_mask;
-
-          original_field[3 * j + 0] += sout0.data0[3 * i + 0];
-          original_field[3 * j + 1] += sout0.data0[3 * i + 1];
-          original_field[3 * j + 2] += sout0.data0[3 * i + 2];
-
-          original_potentials[j] += sout0.data1[i];
-        }
+        gs->original_potentials[j] = sout0.data1[i];
       }
 
       fcs_back_fp_elements_free(&sout0);
@@ -2014,12 +2016,9 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
       fcs_back_f__elem_set_size(&sin1, gs->nsorted_real_particles);
       fcs_back_f__elem_set_max_size(&sin1, gs->nsorted_real_particles);
       fcs_back_f__elem_set_keys(&sin1, gs->sorted_indices);
-      fcs_back_f__elem_set_data(&sin1, sorted_field);
+      fcs_back_f__elem_set_data(&sin1, gs->sorted_field);
 
-      fcs_back_f__elem_set_size(&sout1, 0);
-      fcs_back_f__elem_set_max_size(&sout1, 0);
-      fcs_back_f__elem_set_keys(&sout1, NULL);
-      fcs_back_f__elem_set_data(&sout1, NULL);
+      fcs_back_f__elem_null(&sout1);
 
       fcs_back_f__tproc_create_tproc(&tproc1, gridsort_back_f__tproc, fcs_back_f__TPROC_RESET_NULL, fcs_back_f__TPROC_EXDEF_NULL);
 
@@ -2044,29 +2043,15 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
       fcs_back_f__tproc_free(&tproc1);
 
       if (gs->noriginal_particles != sout1.size)
-        fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" fcs_back_f__slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout1.size);
+        fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got %" fcs_back_f__slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout1.size);
 
-      if (set_values)
+      for (i = 0; i < sout1.size; ++i)
       {
-        for (i = 0; i < sout1.size; ++i)
-        {
-          j = sout1.keys[i] & index_mask;
+        j = sout1.keys[i] & index_mask;
      
-          original_field[3 * j + 0] = sout1.data0[3 * i + 0];
-          original_field[3 * j + 1] = sout1.data0[3 * i + 1];
-          original_field[3 * j + 2] = sout1.data0[3 * i + 2];
-        }
-
-      } else
-      {
-        for (i = 0; i < sout1.size; ++i)
-        {
-          j = sout1.keys[i] & index_mask;
-     
-          original_field[3 * j + 0] += sout1.data0[3 * i + 0];
-          original_field[3 * j + 1] += sout1.data0[3 * i + 1];
-          original_field[3 * j + 2] += sout1.data0[3 * i + 2];
-        }
+        gs->original_field[3 * j + 0] = sout1.data0[3 * i + 0];
+        gs->original_field[3 * j + 1] = sout1.data0[3 * i + 1];
+        gs->original_field[3 * j + 2] = sout1.data0[3 * i + 2];
       }
 
       fcs_back_f__elements_free(&sout1);
@@ -2083,12 +2068,9 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
       fcs_back__p_elem_set_size(&sin2, gs->nsorted_real_particles);
       fcs_back__p_elem_set_max_size(&sin2, gs->nsorted_real_particles);
       fcs_back__p_elem_set_keys(&sin2, gs->sorted_indices);
-      fcs_back__p_elem_set_data(&sin2, sorted_potentials);
+      fcs_back__p_elem_set_data(&sin2, gs->sorted_potentials);
 
-      fcs_back__p_elem_set_size(&sout2, 0);
-      fcs_back__p_elem_set_max_size(&sout2, 0);
-      fcs_back__p_elem_set_keys(&sout2, NULL);
-      fcs_back__p_elem_set_data(&sout2, NULL);
+      fcs_back__p_elem_null(&sout2);
 
       fcs_back__p_tproc_create_tproc(&tproc2, gridsort_back__p_tproc, fcs_back__p_TPROC_RESET_NULL, fcs_back__p_TPROC_EXDEF_NULL);
 
@@ -2115,23 +2097,14 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
       if (gs->noriginal_particles != sout2.size)
         fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" fcs_back__p_slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout2.size);
 
-      if (set_values)
+      for (i = 0; i < sout2.size; ++i)
       {
-        for (i = 0; i < sout2.size; ++i)
-        {
-          j = sout2.keys[i] & index_mask;
-     
-          original_potentials[j] = sout2.data1[i];
-        }
-      } else
-      {
-        for (i = 0; i < sout2.size; ++i)
-        {
-          j = sout2.keys[i] & index_mask;
+        j = sout2.keys[i] & index_mask;
 
-          original_potentials[j] += sout2.data1[i];
-        }
+        gs->original_potentials[j] = sout2.data1[i];
       }
+
+      fcs_back__p_elements_free(&sout2);
 
       fcs_back__p_mpi_datatypes_release();
 
@@ -2149,10 +2122,7 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
 }
 
 
-fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs,
-                                    fcs_float *sorted_field, fcs_float *sorted_potentials,
-                                    fcs_float *original_field, fcs_float *original_potentials,
-                                    MPI_Comm comm)
+fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs, MPI_Comm comm)
 {
   int comm_size, comm_rank;
   fcs_int i, j, nresort_particles;
@@ -2160,8 +2130,8 @@ fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs,
 
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
-  
-  if (sorted_field == NULL && sorted_potentials == NULL)
+
+  if (!gs->sorted_field && !gs->sorted_potentials)
   {
     gs->nresort_particles = gs->nsorted_real_particles;
     return 1;
@@ -2202,11 +2172,11 @@ fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs,
 
     gs->original_charges[j] = gs->sorted_charges[i];
 
-    original_field[3 * j + 0] = sorted_field[3 * i + 0];
-    original_field[3 * j + 1] = sorted_field[3 * i + 1];
-    original_field[3 * j + 2] = sorted_field[3 * i + 2];
+    gs->original_field[3 * j + 0] = gs->sorted_field[3 * i + 0];
+    gs->original_field[3 * j + 1] = gs->sorted_field[3 * i + 1];
+    gs->original_field[3 * j + 2] = gs->sorted_field[3 * i + 2];
 
-    original_potentials[j] = sorted_potentials[i];
+    gs->original_potentials[j] = gs->sorted_potentials[i];
 
     ++j;
   }

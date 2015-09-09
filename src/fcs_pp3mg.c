@@ -233,8 +233,10 @@ FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_particles, fcs_float *position
       sorted_field[3*i+2] = fz[i]/(1.0/(4.0*FCS_PI)*sorted_charges[i]);
       sorted_potentials[i] = sorted_potentials[i]/(1.0/(4.0*FCS_PI)*sorted_charges[i]);
     }
-    
-    fcs_gridsort_sort_backward(&gridsort, sorted_field, sorted_potentials, field, potentials, 1, ctx->parameters->mpi_comm_cart);
+
+    fcs_gridsort_set_sorted_results(&gridsort, sorted_num_particles, sorted_field, sorted_potentials);
+    fcs_gridsort_set_results(&gridsort, max_local_particles, field, potentials);
+    fcs_gridsort_sort_backward(&gridsort, ctx->parameters->mpi_comm_cart);
     
     if (x) free(x);
     if (y) free(y);

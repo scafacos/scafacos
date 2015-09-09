@@ -569,17 +569,20 @@ FCSResult ifcs_p2nfft_run(
   /* Start back sort timing */
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
 
+  fcs_gridsort_set_sorted_results(&gridsort, sorted_num_particles, sorted_field, sorted_potential);
+  fcs_gridsort_set_results(&gridsort, max_local_num_particles, field, potential);
+
   fcs_int resort;
 
-  if (d->resort) resort = fcs_gridsort_prepare_resort(&gridsort, sorted_field, sorted_potential, field, potential, d->cart_comm_3d);
+  if (d->resort) resort = fcs_gridsort_prepare_resort(&gridsort, d->cart_comm_3d);
   else resort = 0;
 
   /* Backsort data into user given ordering (if resort is disabled) */
-  if (!resort) fcs_gridsort_sort_backward(&gridsort, sorted_field, sorted_potential, field, potential, 1, d->cart_comm_3d);
+  if (!resort) fcs_gridsort_sort_backward(&gridsort, d->cart_comm_3d);
 
   fcs_gridsort_resort_destroy(&d->gridsort_resort);
 
-  if (d->resort) fcs_gridsort_resort_create(&d->gridsort_resort, &gridsort, d->cart_comm_3d);
+  if (resort) fcs_gridsort_resort_create(&d->gridsort_resort, &gridsort, d->cart_comm_3d);
   
   d->local_num_particles = local_num_particles;
 
