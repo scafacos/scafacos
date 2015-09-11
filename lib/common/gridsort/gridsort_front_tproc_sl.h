@@ -23,12 +23,14 @@
 
 
 #define GRIDSORT_PREFIX
+#define GRIDSORT_FRONT_TPROC_BASE    gridsort_front_
 #define GRIDSORT_INT_T               fcs_forw_slint_t
 #define GRIDSORT_ELEM_BUF_T          fcs_forw_elements_t
 #define GRIDSORT_ELEM_INDEX_T        fcs_forw_slint_t
 #define GRIDSORT_KEY(_b_, _x_)       (_b_)->keys[_x_]
 #define GRIDSORT_DATA0(_b_, _x_)     (&(_b_)->data0[3 * (_x_)])
 #define GRIDSORT_DATA1(_b_, _x_)     (_b_)->data1[_x_]
+#undef GRIDSORT_DATA1_3
 #define GRIDSORT_XYZ(_b_, _d_, _x_)  GRIDSORT_DATA0(_b_, _x_)
 /*#ifdef GRIDSORT_FRONT_TPROC_EXDEF
 # define DEFINE_GRIDSORT_FRONT_TPROC_EXDEF(_xd_, _tp_, _s_...)       fcs_forw_SPEC_DEFINE_TPROC(_xd_, _tp_, _s_)
@@ -42,11 +44,48 @@
 #undef GRIDSORT_KEY
 #undef GRIDSORT_DATA0
 #undef GRIDSORT_DATA1
+#undef GRIDSORT_DATA1_3
 #undef GRIDSORT_XYZ
 #undef GRIDSORT_INT_T
 #undef GRIDSORT_ELEM_BUF_T
 #undef GRIDSORT_ELEM_INDEX_T
+#undef GRIDSORT_FRONT_TPROC_BASE
 #undef GRIDSORT_PREFIX
+
+
+#if FCS_GRIDSORT_WITH_DIPOLES
+
+#define GRIDSORT_PREFIX
+#define GRIDSORT_FRONT_TPROC_BASE    gridsort_front_dipole_
+#define GRIDSORT_INT_T               fcs_dip_forw_slint_t
+#define GRIDSORT_ELEM_BUF_T          fcs_dip_forw_elements_t
+#define GRIDSORT_ELEM_INDEX_T        fcs_dip_forw_slint_t
+#define GRIDSORT_KEY(_b_, _x_)       (_b_)->keys[_x_]
+#define GRIDSORT_DATA0(_b_, _x_)     (&(_b_)->data0[3 * (_x_)])
+#define GRIDSORT_DATA1(_b_, _x_)     (&(_b_)->data1[3 * (_x_)])
+#define GRIDSORT_DATA1_3
+#define GRIDSORT_XYZ(_b_, _d_, _x_)  GRIDSORT_DATA0(_b_, _x_)
+/*#ifdef GRIDSORT_FRONT_TPROC_EXDEF
+# define DEFINE_GRIDSORT_FRONT_TPROC_EXDEF(_xd_, _tp_, _s_...)       fcs_forw_SPEC_DEFINE_TPROC(_xd_, _tp_, _s_)
+# define DEFINE_GRIDSORT_FRONT_TPROCS_MOD_EXDEF(_xd_, _tp_, _s_...)  fcs_forw_SPEC_DEFINE_TPROCS_MOD(_xd_, _tp_, _s_)
+#endif*/
+
+#include "gridsort_front_tproc_combinations.h"
+
+#undef DEFINE_GRIDSORT_FRONT_TPROC_EXDEF
+#undef DEFINE_GRIDSORT_FRONT_TPROCS_MOD_EXDEF
+#undef GRIDSORT_KEY
+#undef GRIDSORT_DATA0
+#undef GRIDSORT_DATA1
+#undef GRIDSORT_DATA1_3
+#undef GRIDSORT_XYZ
+#undef GRIDSORT_INT_T
+#undef GRIDSORT_ELEM_BUF_T
+#undef GRIDSORT_ELEM_INDEX_T
+#undef GRIDSORT_FRONT_TPROC_BASE
+#undef GRIDSORT_PREFIX
+
+#endif /* FCS_GRIDSORT_WITH_DIPOLES */
 
 
 #endif /* __GRIDSORT_FRONT_TPROC_SL_H__ */
