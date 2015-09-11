@@ -53,6 +53,9 @@ typedef fcs_gridsort_resort_t fcs_near_resort_t;
  */
 typedef struct _fcs_near_t
 {
+  fcs_float box_base[3], box_a[3], box_b[3], box_c[3];
+  fcs_int periodicity[3];
+
   fcs_near_field_f compute_field;
   fcs_near_potential_f compute_potential;
   fcs_near_field_potential_f compute_field_potential;
@@ -62,9 +65,6 @@ typedef struct _fcs_near_t
   fcs_near_field_potential_3diff_f compute_field_potential_3diff;
 
   fcs_near_loop_f compute_loop;
-
-  fcs_float box_base[3], box_a[3], box_b[3], box_c[3];
-  fcs_int periodicity[3];
 
   fcs_int nparticles, max_nparticles;
   fcs_float *positions, *charges;
@@ -94,6 +94,17 @@ void fcs_near_create(fcs_near_t *near);
  * @param near fcs_near_t* near field solver object
  */
 void fcs_near_destroy(fcs_near_t *near);
+
+/**
+ * @brief set particle system properties
+ * @param near fcs_near_t near field solver object
+ * @param box_base fcs_float* origin of the system box
+ * @param box_a fcs_float* 1st base vector of the system box
+ * @param box_b fcs_float* 2nd base vector of the system box
+ * @param box_c fcs_float* 3rd base vector of the system box
+ * @param periodicity fcs_int* periodicity of the system, if NULL then periodicities of the (cartesian) communicator are used
+ */
+void fcs_near_set_system(fcs_near_t *near, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity);
 
 /**
  * @brief set callback function for field computations
@@ -143,17 +154,6 @@ void fcs_near_set_field_potential_3diff(fcs_near_t *near, fcs_near_field_potenti
  * @param compute_loop fcs_near_loop_f callback function for whole loop of computations
  */
 void fcs_near_set_loop(fcs_near_t *near, fcs_near_loop_f compute_loop);
-
-/**
- * @brief set particle system properties
- * @param near fcs_near_t near field solver object
- * @param box_base fcs_float* origin of the system box
- * @param box_a fcs_float* 1st base vector of the system box
- * @param box_b fcs_float* 2nd base vector of the system box
- * @param box_c fcs_float* 3rd base vector of the system box
- * @param periodicity fcs_int* periodicity of the system, if NULL then periodicities of the (cartesian) communicator are used
- */
-void fcs_near_set_system(fcs_near_t *near, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity);
 
 /**
  * @brief set particle information

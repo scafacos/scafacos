@@ -224,6 +224,12 @@ static box_t sfc_BOX_SET(box_t v0, box_t v1, box_t v2)
 
 void fcs_near_create(fcs_near_t *near)
 {
+  near->box_base[0] = near->box_base[1] = near->box_base[2] = 0;
+  near->box_a[0] = near->box_a[1] = near->box_a[2] = 0;
+  near->box_b[0] = near->box_b[1] = near->box_b[2] = 0;
+  near->box_c[0] = near->box_c[1] = near->box_c[2] = 0;
+  near->periodicity[0] = near->periodicity[1] = near->periodicity[2] = -1;
+
   near->compute_field = NULL;
   near->compute_potential = NULL;
   near->compute_field_potential = NULL;
@@ -233,12 +239,6 @@ void fcs_near_create(fcs_near_t *near)
   near->compute_field_potential_3diff = NULL;
 
   near->compute_loop = NULL;
-
-  near->box_base[0] = near->box_base[1] = near->box_base[2] = 0;
-  near->box_a[0] = near->box_a[1] = near->box_a[2] = 0;
-  near->box_b[0] = near->box_b[1] = near->box_b[2] = 0;
-  near->box_c[0] = near->box_c[1] = near->box_c[2] = 0;
-  near->periodicity[0] = near->periodicity[1] = near->periodicity[2] = -1;
 
   near->nparticles = near->max_nparticles = 0;
   near->positions = NULL;
@@ -261,6 +261,12 @@ void fcs_near_create(fcs_near_t *near)
 
 void fcs_near_destroy(fcs_near_t *near)
 {
+  near->box_base[0] = near->box_base[1] = near->box_base[2] = 0;
+  near->box_a[0] = near->box_a[1] = near->box_a[2] = 0;
+  near->box_b[0] = near->box_b[1] = near->box_b[2] = 0;
+  near->box_c[0] = near->box_c[1] = near->box_c[2] = 0;
+  near->periodicity[0] = near->periodicity[1] = near->periodicity[2] = -1;
+
   near->compute_field = NULL;
   near->compute_potential = NULL;
   near->compute_field_potential = NULL;
@@ -270,12 +276,6 @@ void fcs_near_destroy(fcs_near_t *near)
   near->compute_field_potential_3diff = NULL;
 
   near->compute_loop = NULL;
-
-  near->box_base[0] = near->box_base[1] = near->box_base[2] = 0;
-  near->box_a[0] = near->box_a[1] = near->box_a[2] = 0;
-  near->box_b[0] = near->box_b[1] = near->box_b[2] = 0;
-  near->box_c[0] = near->box_c[1] = near->box_c[2] = 0;
-  near->periodicity[0] = near->periodicity[1] = near->periodicity[2] = -1;
 
   near->nparticles = near->max_nparticles = 0;
   near->positions = NULL;
@@ -290,6 +290,23 @@ void fcs_near_destroy(fcs_near_t *near)
   near->ghost_indices = NULL;
 
   fcs_gridsort_resort_destroy(&near->gridsort_resort);
+}
+
+
+void fcs_near_set_system(fcs_near_t *near, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity)
+{
+  fcs_int i;
+
+
+  for (i = 0; i < 3; ++i)
+  {
+    near->box_base[i] = box_base[i];
+    near->box_a[i] = box_a[i];
+    near->box_b[i] = box_b[i];
+    near->box_c[i] = box_c[i];
+
+    if (periodicity) near->periodicity[i] = periodicity[i];
+  }
 }
 
 
@@ -332,23 +349,6 @@ void fcs_near_set_field_potential_3diff(fcs_near_t *near, fcs_near_field_potenti
 void fcs_near_set_loop(fcs_near_t *near, fcs_near_loop_f compute_loop)
 {
   near->compute_loop = compute_loop;
-}
-
-
-void fcs_near_set_system(fcs_near_t *near, const fcs_float *box_base, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_int *periodicity)
-{
-  fcs_int i;
-  
-  
-  for (i = 0; i < 3; ++i)
-  {
-    near->box_base[i] = box_base[i];
-    near->box_a[i] = box_a[i];
-    near->box_b[i] = box_b[i];
-    near->box_c[i] = box_c[i];
-
-    if (periodicity) near->periodicity[i] = periodicity[i];
-  }
 }
 
 
