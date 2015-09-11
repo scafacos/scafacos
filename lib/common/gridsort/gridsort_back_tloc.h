@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
   
   This file is part of ScaFaCoS.
   
@@ -17,30 +17,26 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* GRIDSORT_BACK_TPROC_NAME */
+/* GRIDSORT_BACK_TLOC_NAME */
 
 
 #define CONCAT_(_a_, _b_)  _a_##_b_
 #define CONCAT(_a_, _b_)   CONCAT_(_a_, _b_)
 
 
-static int CONCAT(GRIDSORT_PREFIX, CONCAT(GRIDSORT_BACK_PREFIX, GRIDSORT_BACK_TPROC_NAME))(GRIDSORT_ELEM_BUF_T *s, GRIDSORT_ELEM_INDEX_T x, void *data)
+static GRIDSORT_ELEM_INDEX_T CONCAT(GRIDSORT_PREFIX, CONCAT(GRIDSORT_BACK_PREFIX, GRIDSORT_BACK_TLOC_NAME))(GRIDSORT_ELEM_BUF_T *b, GRIDSORT_ELEM_INDEX_T x, void *tloc_data)
 {
-#ifdef GRIDSORT_INDEX_PTR
-  fcs_gridsort_index_t *index_ptr = data;
+  GRIDSORT_ELEM_INDEX_T r = GRIDSORT_INDEX_GET_POS(GRIDSORT_INDEX(b, tloc_data, x));
+
+#if !SORT_BACKWARD_LOCAL_INPLACE
+  GRIDSORT_INDEX(b, tloc_data, x) = GRIDSORT_INDEX(b, tloc_data, r);
 #endif
 
-  if (!GRIDSORT_INDEX_IS_VALID(GRIDSORT_INDEX(s, index_ptr, x))) return MPI_PROC_NULL;
-
-  return GRIDSORT_INDEX_GET_PROC(GRIDSORT_INDEX(s, index_ptr, x));
+  return r;
 }
-
-#ifdef DEFINE_GRIDSORT_BACK_TPROC_EXDEF
-DEFINE_GRIDSORT_BACK_TPROC_EXDEF(CONCAT(CONCAT(GRIDSORT_PREFIX, CONCAT(GRIDSORT_BACK_PREFIX, GRIDSORT_BACK_TPROC_NAME)), _exdef), CONCAT(GRIDSORT_PREFIX, CONCAT(GRIDSORT_BACK_PREFIX, GRIDSORT_BACK_TPROC_NAME)), static);
-#endif
 
 
 #undef CONCAT_
 #undef CONCAT
 
-#undef GRIDSORT_BACK_TPROC_NAME
+#undef GRIDSORT_BACK_TLOC_NAME

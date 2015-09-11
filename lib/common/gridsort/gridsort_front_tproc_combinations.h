@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
   
   This file is part of ScaFaCoS.
   
@@ -26,35 +26,35 @@
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc
+#define GRIDSORT_FRONT_TPROC_NAME  tproc
 #include "gridsort_front_tproc.h"
 
 #define GRIDSORT_FRONT_TPROC_TRICLINIC
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_tricl
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_tricl
 #include "gridsort_front_tproc.h"
 
 #undef GRIDSORT_FRONT_TPROC_TRICLINIC
 #define GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_bounds
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_bounds
 #include "gridsort_front_tproc.h"
 
 #define GRIDSORT_FRONT_TPROC_TRICLINIC
 #define GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_bounds_tricl
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_bounds_tricl
 #include "gridsort_front_tproc.h"
 
 #undef GRIDSORT_FRONT_TPROC_TRICLINIC
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #define GRIDSORT_FRONT_TPROC_ZSLICES
 #define GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_zslices_zonly
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_zslices_zonly
 #include "gridsort_front_tproc.h"
 
 /* with ghosts and not periodic */
@@ -65,35 +65,35 @@
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_ghost
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_ghost
 #include "gridsort_front_tproc.h"
 
 #define GRIDSORT_FRONT_TPROC_TRICLINIC
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_ghost_tricl
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_ghost_tricl
 #include "gridsort_front_tproc.h"
 
 #undef GRIDSORT_FRONT_TPROC_TRICLINIC
 #define GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_ghost_bounds
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_ghost_bounds
 #include "gridsort_front_tproc.h"
 
 #define GRIDSORT_FRONT_TPROC_TRICLINIC
 #define GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_ghost_bounds_tricl
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_ghost_bounds_tricl
 #include "gridsort_front_tproc.h"
 
 /*#undef GRIDSORT_FRONT_TPROC_TRICLINIC
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #define GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_ghost_zonly
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_ghost_zonly
 #include "gridsort_front_tproc.h"*/
 
 /* no ghosts and periodic */
@@ -104,35 +104,35 @@
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_periodic
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_periodic
 #include "gridsort_front_tproc.h"
 
 #define GRIDSORT_FRONT_TPROC_TRICLINIC
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_periodic_tricl
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_periodic_tricl
 #include "gridsort_front_tproc.h"
 
 #undef GRIDSORT_FRONT_TPROC_TRICLINIC
 #define GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_periodic_bounds
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_periodic_bounds
 #include "gridsort_front_tproc.h"
 
 #define GRIDSORT_FRONT_TPROC_TRICLINIC
 #define GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_periodic_bounds_tricl
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_periodic_bounds_tricl
 #include "gridsort_front_tproc.h"
 
 /*#undef GRIDSORT_FRONT_TPROC_TRICLINIC
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #define GRIDSORT_FRONT_TPROC_ZSLICES
 #define GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_periodic_zslices_zonly
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_periodic_zslices_zonly
 #include "gridsort_front_tproc.h"*/
 
 /* with ghosts and periodic */
@@ -143,33 +143,33 @@
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_ghost_periodic
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_ghost_periodic
 #include "gridsort_front_tproc.h"
 
 #define GRIDSORT_FRONT_TPROC_TRICLINIC
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_ghost_periodic_tricl
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_ghost_periodic_tricl
 #include "gridsort_front_tproc.h"
 
 #undef GRIDSORT_FRONT_TPROC_TRICLINIC
 #define GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_ghost_periodic_bounds
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_ghost_periodic_bounds
 #include "gridsort_front_tproc.h"
 
 #define GRIDSORT_FRONT_TPROC_TRICLINIC
 #define GRIDSORT_FRONT_TPROC_BOUNDS
 #undef GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_ghost_periodic_bounds_tricl
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_ghost_periodic_bounds_tricl
 #include "gridsort_front_tproc.h"
 
 /*#undef GRIDSORT_FRONT_TPROC_TRICLINIC
 #undef GRIDSORT_FRONT_TPROC_BOUNDS
 #define GRIDSORT_FRONT_TPROC_ZSLICES
 #undef GRIDSORT_FRONT_TPROC_ZONLY
-#define GRIDSORT_FRONT_TPROC_NAME  gridsort_front_tproc_ghost_periodic_zslices
+#define GRIDSORT_FRONT_TPROC_NAME  tproc_ghost_periodic_zslices
 #include "gridsort_front_tproc.h"*/
