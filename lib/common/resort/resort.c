@@ -446,7 +446,6 @@ static void resort_ints(fcs_resort_t resort, fcs_int *src, fcs_int *dst, fcs_int
   MPI_Datatype types[2] = { FCS_MPI_RESORT_INDEX, FCS_MPI_INT };
 
   ZMPI_Tproc tproc;
-  int received;
 
 #ifdef DO_TIMING
   double t[4] = { 0, 0, 0, 0 };
@@ -481,7 +480,13 @@ static void resort_ints(fcs_resort_t resort, fcs_int *src, fcs_int *dst, fcs_int
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
 
-  ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, &received, comm);
+  ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, comm,
+#if MPI_VERSION >= 3
+    MPI_STATUS_IGNORE
+#else
+    ZMPI_STATUS_IGNORE
+#endif
+    );
 
   TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
@@ -518,7 +523,6 @@ static void resort_floats(fcs_resort_t resort, fcs_float *src, fcs_float *dst, f
   MPI_Datatype types[2] = { FCS_MPI_RESORT_INDEX, FCS_MPI_FLOAT };
 
   ZMPI_Tproc tproc;
-  int received;
 
 #ifdef DO_TIMING
   double t[4] = { 0, 0, 0, 0 };
@@ -547,7 +551,13 @@ static void resort_floats(fcs_resort_t resort, fcs_float *src, fcs_float *dst, f
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
 
-  ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, &received, comm);
+  ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, comm,
+#if MPI_VERSION >= 3
+    MPI_STATUS_IGNORE
+#else
+    ZMPI_STATUS_IGNORE
+#endif
+    );
 
   TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
@@ -584,7 +594,6 @@ static void resort_bytes(fcs_resort_t resort, void *src, void *dst, fcs_int x, M
   MPI_Datatype types[2] = { FCS_MPI_RESORT_INDEX, MPI_BYTE };
 
   ZMPI_Tproc tproc;
-  int received;
 
 #ifdef DO_TIMING
   double t[4] = { 0, 0, 0, 0 };
@@ -613,7 +622,13 @@ static void resort_bytes(fcs_resort_t resort, void *src, void *dst, fcs_int x, M
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
 
-  ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, &received, comm);
+  ZMPI_Alltoall_specific(send, resort->noriginal_particles, type, recv, resort->nsorted_particles, type, tproc, &type_size, comm,
+#if MPI_VERSION >= 3
+    MPI_STATUS_IGNORE
+#else
+    ZMPI_STATUS_IGNORE
+#endif
+    );
 
   TIMING_SYNC(comm); TIMING_STOP(t[2]);
 

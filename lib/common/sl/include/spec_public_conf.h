@@ -50,6 +50,8 @@ typedef struct _elements_t spec_elem_t;
 
 typedef sl_int_type_c spec_elem_index_t;
 
+#define spec_elem_unset(_e_)          elem_null((_e_))
+
 #define spec_elem_set_n(_e_, _n_)     elem_set_size((_e_), (_n_))
 #define spec_elem_get_n(_e_)          elem_get_size((_e_))
 #define spec_elem_set_nmax(_e_, _n_)  elem_set_max_size((_e_), (_n_))

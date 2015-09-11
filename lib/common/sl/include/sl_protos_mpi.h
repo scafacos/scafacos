@@ -55,6 +55,7 @@ slint_t SL_PROTO(mpi_elements_digest_hash)(elements_t *s, slint_t nelements, slc
 slint_t SL_PROTO(mpi_elements_get_counts)(elements_t *s, slint_t *clocal, slint_t *cglobal, int root, int size, int rank, MPI_Comm comm);
 slweight_t SL_PROTO(mpi_elements_get_weights)(elements_t *s, slweight_t *wlocal, slweight_t *wglobal, int root, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_elements_get_counts_and_weights)(elements_t *s, slint_t nelements, slint_t *counts, slweight_t *weights, int root, int size, int rank, MPI_Comm comm);
+slint_t SL_PROTO(mpi_elements_sendrecv)(elements_t *sb, int sendcount, int dest, int sendtag, elements_t *rb, int recvcount, int recvtag, int source, slint_t *received, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_elements_sendrecv_replace)(elements_t *s, int count, int dest, int sendtag, int source, int recvtag, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_elements_isend_components)(elements_t *s, slint_t at, int count, int dest, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm);
 slint_t SL_PROTO(mpi_elements_irecv_components)(elements_t *s, slint_t at, int count, int source, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm);

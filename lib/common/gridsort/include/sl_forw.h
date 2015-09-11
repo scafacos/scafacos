@@ -5169,6 +5169,8 @@ typedef struct fcs_forw__elements_t fcs_forw_spec_elem_t;
 
 typedef fcs_forw_sl_int_type_c fcs_forw_spec_elem_index_t;
 
+#define fcs_forw_spec_elem_unset(_e_)          fcs_forw_elem_null((_e_))
+
 #define fcs_forw_spec_elem_set_n(_e_, _n_)     fcs_forw_elem_set_size((_e_), (_n_))
 #define fcs_forw_spec_elem_get_n(_e_)          fcs_forw_elem_get_size((_e_))
 #define fcs_forw_spec_elem_set_nmax(_e_, _n_)  fcs_forw_elem_set_max_size((_e_), (_n_))
@@ -7688,6 +7690,7 @@ fcs_forw_slint_t SL_PROTO(fcs_forw_mpi_elements_digest_hash)(fcs_forw_elements_t
 fcs_forw_slint_t SL_PROTO(fcs_forw_mpi_elements_get_counts)(fcs_forw_elements_t *s, fcs_forw_slint_t *clocal, fcs_forw_slint_t *cglobal, int root, int size, int rank, MPI_Comm comm);
 fcs_forw_slweight_t SL_PROTO(fcs_forw_mpi_elements_get_weights)(fcs_forw_elements_t *s, fcs_forw_slweight_t *wlocal, fcs_forw_slweight_t *wglobal, int root, int size, int rank, MPI_Comm comm);
 fcs_forw_slint_t SL_PROTO(fcs_forw_mpi_elements_get_counts_and_weights)(fcs_forw_elements_t *s, fcs_forw_slint_t nelements, fcs_forw_slint_t *counts, fcs_forw_slweight_t *weights, int root, int size, int rank, MPI_Comm comm);
+fcs_forw_slint_t SL_PROTO(fcs_forw_mpi_elements_sendrecv)(fcs_forw_elements_t *sb, int sendcount, int dest, int sendtag, fcs_forw_elements_t *rb, int recvcount, int recvtag, int source, fcs_forw_slint_t *received, int size, int rank, MPI_Comm comm);
 fcs_forw_slint_t SL_PROTO(fcs_forw_mpi_elements_sendrecv_replace)(fcs_forw_elements_t *s, int count, int dest, int sendtag, int source, int recvtag, int size, int rank, MPI_Comm comm);
 fcs_forw_slint_t SL_PROTO(fcs_forw_mpi_elements_isend_components)(fcs_forw_elements_t *s, fcs_forw_slint_t at, int count, int dest, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm);
 fcs_forw_slint_t SL_PROTO(fcs_forw_mpi_elements_irecv_components)(fcs_forw_elements_t *s, fcs_forw_slint_t at, int count, int source, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm);

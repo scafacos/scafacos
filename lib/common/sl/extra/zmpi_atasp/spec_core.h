@@ -47,7 +47,7 @@
 /* sp_type spec_elem_index_t */
 /* sp_macro spec_elem_index_fmt spidx_fmt */
 /* sp_macro spec_elem_alloc_buf spec_elem_free_buf spec_elem_alloc_tmp spec_elem_free_tmp spec_elem_sizefor spec_elem_copy_type */
-/* sp_macro spec_elem_set_n spec_elem_get_n spec_elem_set_nmax spec_elem_get_nmax spec_elem_set_buf spec_elem_get_buf spec_elem_x_get_buf */
+/* sp_macro spec_elem_unset spec_elem_set_n spec_elem_get_n spec_elem_set_nmax spec_elem_get_nmax spec_elem_set_buf spec_elem_get_buf spec_elem_x_get_buf */
 /* sp_macro spec_elem_copy_at spec_elem_ncopy_at spec_elem_exchange_at */
 /* sp_macro spec_elem_alltoallv_db spec_elem_alltoallv_ip spec_elem_alltoallw_indexed_db */
 /* sp_macro spec_elem_alltoallv_proclists_db spec_elem_alltoallv_proclists_ip spec_elem_alltoallw_indexed_proclists_db */

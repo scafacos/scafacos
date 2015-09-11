@@ -137,6 +137,7 @@ cmd_grep="grep"
 cmd_cp="cp"
 #cmd_cpp="cpp"
 cmd_mkdir="mkdir -p"
+cmd_ln="ln"
 
 [ -f "${me_dir}sl_config.cfg" ] && . "${me_dir}sl_config.cfg"
 
@@ -1273,7 +1274,7 @@ link_file()
 
   pprogress -n "    ${dst_file} ..."
 
-  ln -s "${src_file}" "${dst_file}"
+  ${cmd_ln} -f -s "${src_file}" "${dst_file}"
 
   pprogress " done"
 }
@@ -1385,7 +1386,7 @@ create_sl_interface()
    | ${cmd_sed} -e '$a\
 #endif \/\* SL_USE_MPI \*\/\
 ' \
-   | ${cmd_grep} -v "__" \
+   | ${cmd_grep} -a -v "__" \
    | include_include_files "${src_incdir}/" "sl_key.h" "sl_index.h" "sl_data_singles.h" "sl_data.h" "sl_context_struct.h" \
    | ${cmd_far} exec "${far_script}" \
    | ${cmd_sed} -e '/\/\*$/,/ \*\/$/d'                 >> ${dst_file}
@@ -1543,7 +1544,9 @@ if [ "${cfg_source}" = "single" ] ; then
     pprogress ""
     pprogress "   creating extra files ..."
 
-    create_sources "${cfg_source_link}" "${src_sl_extra}" "${current_dst_sl_extra}" "" "*"
+    if [ -n "${cfg_makefile}" ] ; then
+      create_sources "${cfg_source_link}" "${src_sl_extra}" "${current_dst_sl_extra}" "" "Makefile"
+    fi
 
     for x in ${cfg_extras} include ; do
       create_sources "${cfg_source_link}" "${src_sl_extra}" "${current_dst_sl_extra}" "${x}/" "*.[hc]"

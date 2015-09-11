@@ -143,9 +143,29 @@ int ZMPI_Tproc_set_proclists(ZMPI_Tproc tproc, int ndstprocs, int *dstprocs, int
 }
 
 
-static int _ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, int comm_size, int comm_rank, MPI_Comm comm, int type, const char *name)
+#if MPI_VERSION < 3
+
+int ZMPI_Get_elements(const ZMPI_Status *status, MPI_Datatype datatype, int *count)
 {
-  int exit_code;
+  if (status == ZMPI_STATUS_IGNORE) return MPI_ERR_ARG;
+
+  *count = *status;
+
+  return MPI_SUCCESS;
+}
+
+#endif
+
+
+static int _ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int comm_size, int comm_rank, MPI_Comm comm,
+#if MPI_VERSION >= 3
+  MPI_Status
+#else
+  ZMPI_Status
+#endif
+  *status, int type, const char *name)
+{
+  int exit_code, received = 0;
 
   spec_elem_t sb, rb, *b, *xb;
 
@@ -156,14 +176,12 @@ static int _ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, v
     fprintf(ZMPI_ALLTOALL_SPECIFIC_ERROR_FILE, "%d: %s: error: either sbuf or rbuf can be MPI_IN_PLACE!\n", comm_rank, name);
 #endif
     exit_code = ZMPI_FAILURE;
-    *received = 0;
     goto exit;
   }
 
   if (tproc == ZMPI_TPROC_NULL)
   {
     exit_code = MPI_SUCCESS;
-    *received = 0;
     goto exit;
   }
 
@@ -208,7 +226,7 @@ static int _ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, v
         exit_code = ZMPI_FAILURE;
         break;
     }
-    *received = b->count;
+    received = b->count;
 
   } else {
 
@@ -244,7 +262,7 @@ static int _ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, v
         exit_code = ZMPI_FAILURE;
         break;
     }
-    *received = rb.count;
+    received = rb.count;
   }
 
   zmpil_destroy(&sb.zmpil_type);
@@ -253,18 +271,30 @@ static int _ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, v
 
 exit:
 
+#if MPI_VERSION >= 3
+  if (status != MPI_STATUS_IGNORE) MPI_Status_set_elements(status, rtype, received);
+#else
+  if (status != ZMPI_STATUS_IGNORE) *status = received;
+#endif
+
   return exit_code;
 }
 
 
-int ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, MPI_Comm comm) /* zmpi_func ZMPI_Alltoall_specific */
+int ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, MPI_Comm comm,
+#if MPI_VERSION >= 3
+  MPI_Status
+#else
+  ZMPI_Status
+#endif
+  *status) /* zmpi_func ZMPI_Alltoall_specific */
 {
   int comm_size, comm_rank;
 
   MPI_Comm_size(comm, &comm_size);
   MPI_Comm_rank(comm, &comm_rank);
 
-  return _ZMPI_Alltoall_specific(sbuf, scount, stype, rbuf, rcount, rtype, tproc, tproc_data, received, comm_size, comm_rank, comm, ZMPI_Alltoall_specific_type, "ZMPI_Alltoall_specific");
+  return _ZMPI_Alltoall_specific(sbuf, scount, stype, rbuf, rcount, rtype, tproc, tproc_data, comm_size, comm_rank, comm, status, ZMPI_Alltoall_specific_type, "ZMPI_Alltoall_specific");
 }
 
 
@@ -313,7 +343,13 @@ static void destroy_proclists(int **send_procs, int **recv_procs)
 }
 
 
-int ZMPI_Neighbor_alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, MPI_Comm comm) /* zmpi_func ZMPI_Neighbor_alltoall_specific */
+int ZMPI_Neighbor_alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, MPI_Comm comm,
+#if MPI_VERSION >= 3
+  MPI_Status
+#else
+  ZMPI_Status
+#endif
+  *status) /* zmpi_func ZMPI_Neighbor_alltoall_specific */
 {
   int exit_code;
   int comm_size, comm_rank;
@@ -339,7 +375,7 @@ int ZMPI_Neighbor_alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, 
 
   ZMPI_Tproc_set_proclists(newtproc, nsend_procs, send_procs, nrecv_procs, recv_procs, comm);
 
-  exit_code = _ZMPI_Alltoall_specific(sbuf, scount, stype, rbuf, rcount, rtype, newtproc, tproc_data, received, comm_size, comm_rank, comm, ZMPI_Neighbor_alltoall_specific_type, "ZMPI_Neighbor_alltoall_specific");
+  exit_code = _ZMPI_Alltoall_specific(sbuf, scount, stype, rbuf, rcount, rtype, newtproc, tproc_data, comm_size, comm_rank, comm, status, ZMPI_Neighbor_alltoall_specific_type, "ZMPI_Neighbor_alltoall_specific");
 
   destroy_proclists(&send_procs, &recv_procs);
 

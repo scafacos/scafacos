@@ -1684,6 +1684,8 @@ spint_t spec_sendrecv_db(spec_elem_t *sb, spec_elem_t *rb, spec_elem_t *xb, spec
   aux_queue_first = aux_queue_next = 0;
   aux_done = 0;
 
+  spec_elem_unset(&aux);
+
   spec_elem_copy_type(sb, &aux);
 
   spec_elem_set_nmax(&aux, 0);

@@ -4289,11 +4289,11 @@ slint_t permute_generic_db(elements_t *s, elements_t *d, permute_generic_t *pg, 
 {
   SPEC_DECLARE_TLOC_REARRANGE_DB
   SPEC_DECLARE_TLOC_MOD_REARRANGE_DB
-  
-  elements_t mod, *ib = NULL;
-  
-  
-  if (pg->type == 2) { elements_alloc(&mod, 1, SLCM_ALL); ib = &mod; }
+
+  elements_t ib_, *ib = NULL;
+
+
+  if (pg->type == 2) { elements_alloc(&ib_, 1, SLCM_ALL); ib = &ib_; }
 
   switch (pg->type)
   {
@@ -4307,8 +4307,8 @@ slint_t permute_generic_db(elements_t *s, elements_t *d, permute_generic_t *pg, 
       break;
   }
 
-  if (pg->type == 2) elements_free(&mod);
-  
+  if (pg->type == 2) elements_free(&ib_);
+
   return 0;
 }
 
@@ -4318,10 +4318,12 @@ slint_t permute_generic_ip(elements_t *s, elements_t *x, permute_generic_t *pg, 
   SPEC_DECLARE_TLOC_REARRANGE_IP
   SPEC_DECLARE_TLOC_MOD_REARRANGE_IP
 
-  elements_t mod, *ib = NULL;
-  
-  
-  if (pg->type == 2) { elements_alloc(&mod, 1, SLCM_ALL); ib = &mod; }
+  elements_t ib_, *ib = NULL, x_;
+
+
+  if (pg->type == 2) { elements_alloc(&ib_, 1, SLCM_ALL); ib = &ib_; }
+
+  if (!x) { elements_alloc(&x_, 1, SLCM_ALL); x = &x_; }
 
   switch (pg->type)
   {
@@ -4335,7 +4337,9 @@ slint_t permute_generic_ip(elements_t *s, elements_t *x, permute_generic_t *pg, 
       break;
   }
 
-  if (pg->type == 2) elements_free(&mod);
+  if (x == &x_) elements_free(&x_);
+
+  if (pg->type == 2) elements_free(&ib_);
 
   return 0;
 }
