@@ -855,6 +855,24 @@ slint_t mpi_elements_get_counts_and_weights(elements_t *s, slint_t nelements, sl
 }
 
 
+slint_t mpi_elements_sendrecv(elements_t *sb, int sendcount, int dest, int sendtag, elements_t *rb, int recvcount, int recvtag, int source, slint_t *received, int size, int rank, MPI_Comm comm)  /* sl_proto, sl_func mpi_elements_sendrecv */
+{
+  MPI_Status status;
+  int r;
+
+  r = MPI_UNDEFINED;
+
+#define xelem_call \
+  MPI_Sendrecv(xelem_buf(sb), sendcount, xelem_mpi_datatype, dest, sendtag, xelem_buf(rb), recvcount, xelem_mpi_datatype, source, recvtag, comm, &status); \
+  if (r == MPI_UNDEFINED) r = MPI_Get_count(&status, xelem_mpi_datatype, &r);
+#include "sl_xelem_call.h"
+
+  if (received) *received = (r != MPI_UNDEFINED)?r:0;
+
+  return 0;
+}
+
+
 slint_t mpi_elements_sendrecv_replace(elements_t *s, int count, int dest, int sendtag, int source, int recvtag, int size, int rank, MPI_Comm comm)  /* sl_proto, sl_func mpi_elements_sendrecv_replace */
 {
   MPI_Status status;

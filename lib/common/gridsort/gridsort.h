@@ -30,6 +30,9 @@ extern "C" {
 #include <mpi.h>
 
 
+#define FCS_GRIDSORT_WITH_DIPOLES  1
+
+
 /**
  * @brief gridsort index type
  */
@@ -74,7 +77,32 @@ typedef struct _fcs_gridsort_t
 
   fcs_int nsorted_real_particles, nsorted_ghost_particles;
 
+  fcs_int max_nsorted_results;
+  fcs_float *sorted_field, *sorted_potentials;
+
+  fcs_int max_noriginal_results;
+  fcs_float *original_field, *original_potentials;
+
   fcs_int nresort_particles;
+
+#if FCS_GRIDSORT_WITH_DIPOLES
+  fcs_int dipole_noriginal_particles, dipole_max_noriginal_particles;
+  fcs_float *dipole_original_positions, *dipole_original_moments;
+
+  fcs_int dipole_nsorted_particles, dipole_max_nsorted_particles;
+  fcs_float *dipole_sorted_positions, *dipole_sorted_moments;
+  fcs_gridsort_index_t *dipole_sorted_indices;
+
+  fcs_int dipole_nsorted_real_particles, dipole_nsorted_ghost_particles;
+
+  fcs_int dipole_max_nsorted_results;
+  fcs_float *dipole_sorted_field, *dipole_sorted_potentials;
+
+  fcs_int dipole_max_noriginal_results;
+  fcs_float *dipole_original_field, *dipole_original_potentials;
+
+  fcs_int dipole_nresort_particles;
+#endif /* FCS_GRIDSORT_WITH_DIPOLES */
 
   fcs_float max_particle_move;
   fcs_int nprocs;
@@ -169,13 +197,6 @@ void fcs_gridsort_set_overalloc(fcs_gridsort_t *gs, fcs_float overalloc);
 void fcs_gridsort_set_particles(fcs_gridsort_t *gs, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *charges);
 
 /**
- * @brief set max. distance particles are away from the domain of the local process, e.g. because they have moved since the last grid sorting
- * @param gs fcs_gridsort_t* gridsort object
- * @param max_particle_move fcs_float max. distance particles have moved
- */
-void fcs_gridsort_set_max_particle_move(fcs_gridsort_t *gs, fcs_float max_particle_move);
-
-/**
  * @brief get information of sorted particles
  * @param gs fcs_gridsort_t* gridsort object
  * @param nparticles fcs_int* pointer to local number of particles (NULL if not required)
@@ -189,22 +210,74 @@ void fcs_gridsort_get_sorted_particles(fcs_gridsort_t *gs, fcs_int *nparticles, 
 /**
  * @brief get information of real (non-ghost) particles after sorting and separating (with fcs_gridsort_separate_ghosts)
  * @param gs fcs_gridsort_t* gridsort object
- * @param nparticles fcs_int* pointer to real number of particles (NULL if not required)
- * @param positions fcs_float** pointer to real array of particle positions (NULL if not required)
- * @param charges fcs_float** pointer to real array of particle charges (NULL if not required)
- * @param indices fcs_gridsort_index_t** real pointer to array of prickle indices (NULL if not required)
+ * @param nparticles fcs_int* pointer to number of real particles (NULL if not required)
+ * @param positions fcs_float** pointer to array of real particle positions (NULL if not required)
+ * @param charges fcs_float** pointer to array of real particle charges (NULL if not required)
+ * @param indices fcs_gridsort_index_t** pointer to real array of particle indices (NULL if not required)
  */
 void fcs_gridsort_get_real_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_float **positions, fcs_float **charges, fcs_gridsort_index_t **indices);
 
 /**
  * @brief get information of ghost particles after sorting and separating (with fcs_gridsort_separate_ghosts)
  * @param gs fcs_gridsort_t* gridsort object
- * @param nparticles fcs_int* pointer to ghost number of particles (NULL if not required)
- * @param positions fcs_float** pointer to ghost array of particle positions (NULL if not required)
- * @param charges fcs_float** pointer to ghost array of particle charges (NULL if not required)
- * @param indices fcs_gridsort_index_t** ghost pointer to array of prickle indices (NULL if not required)
+ * @param nparticles fcs_int* pointer to number of ghost particles (NULL if not required)
+ * @param positions fcs_float** pointer to array of ghost particle positions (NULL if not required)
+ * @param charges fcs_float** pointer to array of ghost particle charges (NULL if not required)
+ * @param indices fcs_gridsort_index_t** pointer to ghost array of particle indices (NULL if not required)
  */
 void fcs_gridsort_get_ghost_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_float **positions, fcs_float **charges, fcs_gridsort_index_t **indices);
+
+#if FCS_GRIDSORT_WITH_DIPOLES
+
+/**
+ * @brief set information of dipole particles to sort
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param nparticles fcs_int local number of dipole particles
+ * @param max_nparticles fcs_int max number of dipole particles that can be stored in local dipole particle data arrays
+ * @param positions fcs_float* array of local dipole particle positions
+ * @param moments fcs_float* array of local dipole particle moments
+ */
+void fcs_gridsort_set_dipole_particles(fcs_gridsort_t *gs, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *moments);
+
+/**
+ * @brief get information of sorted dipole particles
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param nparticles fcs_int* pointer to local number of dipole particles (NULL if not required)
+ * @param max_nparticles fcs_int* pointer to max number of dipole particles that can be stored in local dipole particle data arrays (NULL if not required)
+ * @param positions fcs_float** pointer to local array of dipole particle positions (NULL if not required)
+ * @param moments fcs_float** pointer to local array of dipole particle moments (NULL if not required)
+ * @param indices fcs_gridsort_index_t** pointer to local array of dipole particle indices (NULL if not required)
+ */
+void fcs_gridsort_get_sorted_dipole_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_int *max_nparticles, fcs_float **positions, fcs_float **moments, fcs_gridsort_index_t **indices);
+
+/**
+ * @brief get information of real (non-ghost) dipole particles after sorting and separating (with fcs_gridsort_separate_ghosts)
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param nparticles fcs_int* pointer to number of real dipole particles (NULL if not required)
+ * @param positions fcs_float** pointer to array of real dipole particle positions (NULL if not required)
+ * @param moments fcs_float** pointer to array of real dipole particle moments (NULL if not required)
+ * @param indices fcs_gridsort_index_t** pointer to array of real dipole particle indices (NULL if not required)
+ */
+void fcs_gridsort_get_real_dipole_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_float **positions, fcs_float **moments, fcs_gridsort_index_t **indices);
+
+/**
+ * @brief get information of ghost dipole particles after sorting and separating (with fcs_gridsort_separate_ghosts)
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param nparticles fcs_int* pointer to number of ghost dipole particles (NULL if not required)
+ * @param positions fcs_float** pointer to array of ghost dipole particle positions (NULL if not required)
+ * @param moments fcs_float** pointer to array of ghost dipole particle moments (NULL if not required)
+ * @param indices fcs_gridsort_index_t** pointer to array of ghost dipole particle indices (NULL if not required)
+ */
+void fcs_gridsort_get_ghost_dipole_particles(fcs_gridsort_t *gs, fcs_int *nparticles, fcs_float **positions, fcs_float **moments, fcs_gridsort_index_t **indices);
+
+#endif
+
+/**
+ * @brief set max. distance particles are away from the domain of the local process, e.g. because they have moved since the last grid sorting
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param max_particle_move fcs_float max. distance particles have moved
+ */
+void fcs_gridsort_set_max_particle_move(fcs_gridsort_t *gs, fcs_float max_particle_move);
 
 /**
  * @brief set gridsort cache to store and reuse gridsort data across several gridsort instances
@@ -238,10 +311,8 @@ fcs_int fcs_gridsort_create_ghosts(fcs_gridsort_t *gs, fcs_float ghost_range, MP
 /**
  * @brief separate real (non-ghost) and ghost particles after sorting
  * @param gs fcs_gridsort_t* gridsort object
- * @param real_nparticles fcs_int* pointer to real number of particles
- * @param ghost_nparticles fcs_int* pointer to ghost number of particles
  */
-void fcs_gridsort_separate_ghosts(fcs_gridsort_t *gs, fcs_int *real_nparticles, fcs_int *ghost_nparticles);
+void fcs_gridsort_separate_ghosts(fcs_gridsort_t *gs);
 
 /**
  * @brief separate all particles (real and ghosts) according to their z-coordinate into equidistant slices, the slices are ordered according to their z coordinates, the number of local and ghost slices has to be set with fcs_gridsort_set_zslices
@@ -269,37 +340,62 @@ fcs_int fcs_gridsort_sort_random(fcs_gridsort_t *gs, MPI_Comm comm);
  * @param box_c fcs_float* 3rd base vector of the system box
  */
 void fcs_gridsort_unfold_periodic_particles(fcs_int nparticles, fcs_gridsort_index_t *indices, fcs_float *positions, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c);
- 
+
+/**
+ * @brief set information of results to sort back
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param max_nparticles fcs_int max number of results that can be stored in local result data arrays
+ * @param field fcs_float* array of field values (can be NULL)
+ * @param potentials fcs_float* array of potential values (can be NULL)
+ */
+void fcs_gridsort_set_sorted_results(fcs_gridsort_t *gs, fcs_int max_nresults, fcs_float *field, fcs_float *potentials);
+
+/**
+ * @brief set information for storing results of sort back
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param max_nparticles fcs_int max number of results that can be stored in local result data arrays
+ * @param field fcs_float* array for storing field values (can be NULL)
+ * @param potentials fcs_float* array for storing potential values (can be NULL)
+ */
+void fcs_gridsort_set_results(fcs_gridsort_t *gs, fcs_int max_nresults, fcs_float *field, fcs_float *potentials);
+
+#if FCS_GRIDSORT_WITH_DIPOLES
+
+/**
+ * @brief set information of dipole results to sort back
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param max_nparticles fcs_int max number of dipole results that can be stored in local dipole result data arrays
+ * @param field fcs_float* array of dipole field values (can be NULL)
+ * @param potentials fcs_float* array of dipole potential values (can be NULL)
+ */
+void fcs_gridsort_set_sorted_dipole_results(fcs_gridsort_t *gs, fcs_int max_nresults, fcs_float *field, fcs_float *potentials);
+
+/**
+ * @brief set information for storing dipole results of sort back
+ * @param gs fcs_gridsort_t* gridsort object
+ * @param max_nparticles fcs_int max number of dipole results that can be stored in local dipole result data arrays
+ * @param field fcs_float* array for storing dipole field values (can be NULL)
+ * @param potentials fcs_float* array for storing dipole potential values (can be NULL)
+ */
+void fcs_gridsort_set_dipole_results(fcs_gridsort_t *gs, fcs_int max_nresults, fcs_float *field, fcs_float *potentials);
+
+#endif
+
 /**
  * @brief sort particle information back into their original order
  * @param gs fcs_gridsort_t* gridsort object
- * @param sorted_field fcs_float* array of field values to sort (can be NULL)
- * @param sorted_potentials fcs_float* array of potential values to sort (can be NULL)
- * @param original_field fcs_float* array to store sorted field values (can be NULL)
- * @param original_potentials fcs_float* array to store sorted potential values (can be NULL)
- * @param set_values fcs_int set (if set_values is non-zero) or add (if set_values is zero) field and potential values to the given arrays
  * @param comm MPI_Comm communicator to use
  */
-fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs,
-                                   fcs_float *sorted_field, fcs_float *sorted_potentials,
-                                   fcs_float *original_field, fcs_float *original_potentials,
-                                   fcs_int set_values, MPI_Comm comm);
+fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs, MPI_Comm comm);
 
 /**
  * @brief prepare resorting of additional particle data, i.e.
  *   (1) enable creation of gridsort_resort object, and
  *   (2) copy sorted potential and field values locally to original potential and field arrays
  * @param gs fcs_gridsort_t* gridsort object
- * @param sorted_field fcs_float* array of field values to copy (can be NULL)
- * @param sorted_potentials fcs_float* array of potential values to copy (can be NULL)
- * @param original_field fcs_float* array to store field values (can be NULL)
- * @param original_potentials fcs_float* array to store potential values (can be NULL)
  * @param comm MPI_Comm communicator to use
  */
-fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs,
-                                    fcs_float *sorted_field, fcs_float *sorted_potentials,
-                                    fcs_float *original_field, fcs_float *original_potentials,
-                                    MPI_Comm comm);
+fcs_int fcs_gridsort_prepare_resort(fcs_gridsort_t *gs, MPI_Comm comm);
 
 /**
  * @brief free arrays allocated by fcs_gridsort_sort_forward (all arrays returned by getters become invalid)

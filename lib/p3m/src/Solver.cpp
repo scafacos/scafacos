@@ -173,9 +173,7 @@ void Solver::decompose(fcs_gridsort_t *gridsort,
             (near_field_flag ? r_cut : 0.0),
             comm.mpicomm);
     P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_forward().\n"));
-    fcs_gridsort_separate_ghosts(gridsort,
-            num_real_particles,
-            num_ghost_particles);
+    fcs_gridsort_separate_ghosts(gridsort);
 
     fcs_gridsort_get_sorted_particles(gridsort,
             &num_particles, NULL, NULL, NULL, NULL);
@@ -325,11 +323,10 @@ void Solver::run(
 
     startTimer(COMP);
     /* sort particles back */
+    fcs_gridsort_set_sorted_results(&gridsort, num_real_particles, fields, potentials);
+    fcs_gridsort_set_results(&gridsort, _num_particles, _fields, _potentials);
     P3M_DEBUG(printf( "  calling fcs_gridsort_sort_backward()...\n"));
-    fcs_gridsort_sort_backward(&gridsort,
-            fields, potentials,
-            _fields, _potentials, 1,
-            comm.mpicomm);
+    fcs_gridsort_sort_backward(&gridsort, comm.mpicomm);
     P3M_DEBUG(printf( "  returning from fcs_gridsort_sort_backward().\n"));
 
     fcs_gridsort_free(&gridsort);

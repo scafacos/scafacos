@@ -807,7 +807,7 @@ void Configuration::decompose_particles(bool alloc_field, bool alloc_potentials,
       fcs_gridsort_set_overalloc(&gridsort, dup_input_overalloc);
       fcs_gridsort_sort_random(&gridsort, communicator);
       fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
-      fcs_gridsort_prepare_resort(&gridsort, NULL, NULL, NULL, NULL, communicator);
+      fcs_gridsort_prepare_resort(&gridsort, communicator);
 
       fcs_gridsort_resort_create(&gridsort_resort, &gridsort, communicator);
       if (have_reference_values[0])
@@ -835,7 +835,7 @@ void Configuration::decompose_particles(bool alloc_field, bool alloc_potentials,
       fcs_gridsort_set_overalloc(&gridsort, dup_input_overalloc);
       fcs_gridsort_sort_forward(&gridsort, 0.0, cart_comm);
       fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
-      fcs_gridsort_prepare_resort(&gridsort, NULL, NULL, NULL, NULL, communicator);
+      fcs_gridsort_prepare_resort(&gridsort, communicator);
 
       fcs_gridsort_resort_create(&gridsort_resort, &gridsort, communicator);
       if (have_reference_values[0])

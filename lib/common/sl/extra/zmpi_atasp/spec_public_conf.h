@@ -65,6 +65,8 @@ typedef MPI_Count spec_elem_index_t;
 typedef long spec_elem_index_t;
 #endif
 
+#define spec_elem_unset(_e_)          ((_e_)->buf = NULL, (_e_)->count = (_e_)->max_count = 0, (_e_)->mpi_type = MPI_DATATYPE_NULL)
+
 #define spec_elem_set_n(_e_, _n_)     (_e_)->count = (_n_)
 #define spec_elem_get_n(_e_)          (_e_)->count
 #define spec_elem_set_nmax(_e_, _n_)  (_e_)->max_count = (_n_)

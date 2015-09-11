@@ -35,24 +35,24 @@
 #endif
 
 
+#if MPI_VERSION >= 3
+# define IF_ELSE_MPI_VERSION_3(_if_, _else_)  _if_
+#else
+# define IF_ELSE_MPI_VERSION_3(_if_, _else_)  _else_
+#endif
+
 typedef struct _spec_tproc_t *ZMPI_Tproc;
 
 #define ZMPI_TPROC_NULL  NULL
 
-#if MPI_VERSION >= 3
-typedef int ZMPI_TPROC_FN(void *b, MPI_Count x, void *tproc_data);
-typedef int ZMPI_TPROC_MOD_FN(void *b, MPI_Count x, void *tproc_data, void *mod);
-typedef void ZMPI_TPROCS_FN(void *b, MPI_Count x, void *tproc_data, int *nprocs, int *procs);
-typedef void ZMPI_TPROCS_MOD_FN(void *b, MPI_Count x, void *tproc_data, int *nprocs, int *procs, void *mod);
-typedef MPI_Count ZMPI_Count;
-#else
+#if MPI_VERSION < 3
 typedef long ZMPI_Count;
-typedef int ZMPI_TPROC_FN(void *b, ZMPI_Count x, void *tproc_data);
-typedef int ZMPI_TPROC_MOD_FN(void *b, ZMPI_Count x, void *tproc_data, void *mod);
-typedef void ZMPI_TPROCS_FN(void *b, ZMPI_Count x, void *tproc_data, int *nprocs, int *procs);
-typedef void ZMPI_TPROCS_MOD_FN(void *b, ZMPI_Count x, void *tproc_data, int *nprocs, int *procs, void *mod);
 #endif
 
+typedef int ZMPI_TPROC_FN(void *b, IF_ELSE_MPI_VERSION_3(MPI_Count, ZMPI_Count) x, void *tproc_data);
+typedef int ZMPI_TPROC_MOD_FN(void *b, IF_ELSE_MPI_VERSION_3(MPI_Count, ZMPI_Count) x, void *tproc_data, void *mod);
+typedef void ZMPI_TPROCS_FN(void *b, IF_ELSE_MPI_VERSION_3(MPI_Count, ZMPI_Count) x, void *tproc_data, int *nprocs, int *procs);
+typedef void ZMPI_TPROCS_MOD_FN(void *b, IF_ELSE_MPI_VERSION_3(MPI_Count, ZMPI_Count) x, void *tproc_data, int *nprocs, int *procs, void *mod);
 
 typedef void ZMPI_TPROC_RESET_FN(void *tproc_data);
 
@@ -120,8 +120,6 @@ int ZMPI_Tproc_free(ZMPI_Tproc *tproc);
 int ZMPI_Tproc_set_neighbors(ZMPI_Tproc tproc, int nneighbors, int *neighbors, MPI_Comm comm);
 int ZMPI_Tproc_set_proclists(ZMPI_Tproc tproc, int ndstprocs, int *dstprocs, int nsrcprocs, int *srcprocs, MPI_Comm comm);
 
-typedef int ZMPI_ALLTOALL_SPECIFIC_FN(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, MPI_Comm comm);
-
 #define ZMPI_ALLTOALL_SPECIFIC_TYPE_ALLTOALLV    0
 #define ZMPI_ALLTOALL_SPECIFIC_TYPE_ALLTOALLW    1
 #define ZMPI_ALLTOALL_SPECIFIC_TYPE_PUT          2
@@ -132,13 +130,21 @@ typedef int ZMPI_ALLTOALL_SPECIFIC_FN(void *sbuf, int scount, MPI_Datatype stype
 
 extern int ZMPI_Alltoall_specific_type;
 
-int ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, MPI_Comm comm);
-
 #define ZMPI_NEIGHBOR_ALLTOALL_SPECIFIC_TYPE_DEFAULT  ZMPI_ALLTOALL_SPECIFIC_TYPE_ALLTOALLV
 
 extern int ZMPI_Neighbor_alltoall_specific_type;
 
-int ZMPI_Neighbor_alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, int *received, MPI_Comm comm);
+#if MPI_VERSION < 3
+typedef int ZMPI_Status;
+int ZMPI_Get_elements(const ZMPI_Status *status, MPI_Datatype datatype, int *count);
+# define ZMPI_STATUS_IGNORE  NULL
+#endif
+
+typedef int ZMPI_ALLTOALL_SPECIFIC_FN(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, MPI_Comm comm, IF_ELSE_MPI_VERSION_3(MPI_Status, ZMPI_Status) *status);
+int ZMPI_Alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, MPI_Comm comm, IF_ELSE_MPI_VERSION_3(MPI_Status, ZMPI_Status) *status);
+int ZMPI_Neighbor_alltoall_specific(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, MPI_Comm comm, IF_ELSE_MPI_VERSION_3(MPI_Status, ZMPI_Status) *status);
+
+#undef IF_ELSE_MPI_VERSION_3
 
 
 #endif /* __ZMPI_ATASP_H__ */

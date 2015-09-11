@@ -10,6 +10,7 @@ spec_elem_alloc_tmp
 spec_elem_free_tmp
 spec_elem_sizefor
 spec_elem_copy_type
+spec_elem_unset
 spec_elem_set_n
 spec_elem_get_n
 spec_elem_set_nmax

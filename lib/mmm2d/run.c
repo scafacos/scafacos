@@ -132,7 +132,6 @@ void mmm2d_run(void* rd,
   
   /* decompose system */
   fcs_int local_num_particles;
-  fcs_int local_num_real_particles;
   fcs_int local_num_ghost_particles;
   fcs_float *local_positions, *local_ghost_positions;
   fcs_float *local_charges, *local_ghost_charges;
@@ -164,8 +163,8 @@ void mmm2d_run(void* rd,
   MPI_Barrier(d->comm.mpicomm);
   //printf("  returning from fcs_gridsort_sort_forward().\n");
   
-  fcs_gridsort_separate_ghosts(&gridsort, &local_num_real_particles, &local_num_ghost_particles);
-  //printf("  rank %d, separate ghosts: %d %d...\n", d->comm.rank, local_num_real_particles, local_num_ghost_particles);
+  fcs_gridsort_separate_ghosts(&gridsort);
+  //printf("  rank %d, separate ghosts\n", d->comm.rank);
   
   //printf("  calling separate zslices\n");
   fcs_gridsort_separate_zslices(&gridsort, &zslices_ghost_nparticles[0], zslices_nparticles, &zslices_ghost_nparticles[1]);
@@ -401,10 +400,9 @@ void mmm2d_run(void* rd,
   */
   
   /* clean up and finish */
-  fcs_gridsort_sort_backward(&gridsort,
-              local_forces, NULL,
-              forces, NULL, 1,
-              d->comm.mpicomm);
+  fcs_gridsort_set_sorted_results(&gridsort, local_num_particles, local_forces, NULL);
+  fcs_gridsort_set_results(&gridsort, max_num_particles, forces, NULL);
+  fcs_gridsort_sort_backward(&gridsort, d->comm.mpicomm);
   
   fcs_gridsort_free(&gridsort);
   

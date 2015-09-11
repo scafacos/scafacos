@@ -8,7 +8,7 @@ else
 lib_LTLIBRARIES += libfcs_gridsort.la
 endif
 
-sl_sub_libs = libfcs_gridsort_back__p.la libfcs_gridsort_back_f_.la libfcs_gridsort_back_fp.la libfcs_gridsort_back_x.la libfcs_gridsort_forw.la libfcs_gridsort_extra.la libfcs_gridsort_mpiwrap.la
+sl_sub_libs = libfcs_gridsort_back__p.la libfcs_gridsort_back_f_.la libfcs_gridsort_back_fp.la libfcs_gridsort_dip_back__p.la libfcs_gridsort_dip_back_f_.la libfcs_gridsort_dip_back_fp.la libfcs_gridsort_dip_forw.la libfcs_gridsort_forw.la libfcs_gridsort_rsrt.la libfcs_gridsort_extra.la libfcs_gridsort_mpiwrap.la
 
 noinst_LTLIBRARIES += $(sl_sub_libs)
 
@@ -21,11 +21,23 @@ libfcs_gridsort_back_f__la_CPPFLAGS = \
 libfcs_gridsort_back_fp_la_CPPFLAGS = \
   -DSL_PREFIX=fcs_back_fp_ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_back_fp -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/extra/include
 
-libfcs_gridsort_back_x_la_CPPFLAGS = \
-  -DSL_PREFIX=fcs_back_x_ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_back_x -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/extra/include
+libfcs_gridsort_dip_back__p_la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_dip_back__p_ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_dip_back__p -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/extra/include
+
+libfcs_gridsort_dip_back_f__la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_dip_back_f__ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_dip_back_f_ -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/extra/include
+
+libfcs_gridsort_dip_back_fp_la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_dip_back_fp_ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_dip_back_fp -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/extra/include
+
+libfcs_gridsort_dip_forw_la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_dip_forw_ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_dip_forw -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/extra/include
 
 libfcs_gridsort_forw_la_CPPFLAGS = \
   -DSL_PREFIX=fcs_forw_ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_forw -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/extra/include
+
+libfcs_gridsort_rsrt_la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_rsrt_ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_rsrt -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_gridsort_ -I$(srcdir)/extra/include
 
 libfcs_gridsort_extra_la_CPPFLAGS = \
   -DZ_PREFIX=fcs_gridsort_ -DZMPI_PREFIX=fcs_gridsort_ -DHAVE_Z_PACK_H -I$(srcdir)/extra/z_pack -DHAVE_ZMPI_LOCAL_H -I$(srcdir)/extra/zmpi_local -DHAVE_ZMPI_TOOLS_H -I$(srcdir)/extra/zmpi_tools
@@ -216,7 +228,7 @@ libfcs_gridsort_back_fp_la_SOURCES = \
   $(sl_SOURCE) \
   $(sl_extra_include_SOURCE)
 
-libfcs_gridsort_back_x_la_SOURCES = \
+libfcs_gridsort_dip_back__p_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
   gridsort_back_tproc.h \
@@ -227,11 +239,68 @@ libfcs_gridsort_back_x_la_SOURCES = \
   gridsort.h \
   gridsort_resort.h \
   z_tools.h \
-  sl_back_x/sl_config.h \
-  sl_back_x/sl_environment.h \
-  sl_back_x/sl_extra.h \
-  sl_back_x/sl_tune_auto.h \
-  sl_back_x/sl_tune.h \
+  sl_dip_back__p/sl_config.h \
+  sl_dip_back__p/sl_environment.h \
+  sl_dip_back__p/sl_extra.h \
+  sl_dip_back__p/sl_tune_auto.h \
+  sl_dip_back__p/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_gridsort_dip_back_f__la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
+  gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_dip_back_f_/sl_config.h \
+  sl_dip_back_f_/sl_environment.h \
+  sl_dip_back_f_/sl_extra.h \
+  sl_dip_back_f_/sl_tune_auto.h \
+  sl_dip_back_f_/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_gridsort_dip_back_fp_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
+  gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_dip_back_fp/sl_config.h \
+  sl_dip_back_fp/sl_environment.h \
+  sl_dip_back_fp/sl_extra.h \
+  sl_dip_back_fp/sl_tune_auto.h \
+  sl_dip_back_fp/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_gridsort_dip_forw_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
+  gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_dip_forw/sl_config.h \
+  sl_dip_forw/sl_environment.h \
+  sl_dip_forw/sl_extra.h \
+  sl_dip_forw/sl_tune_auto.h \
+  sl_dip_forw/sl_tune.h \
   $(sl_SOURCE) \
   $(sl_extra_include_SOURCE)
 
@@ -254,6 +323,25 @@ libfcs_gridsort_forw_la_SOURCES = \
   $(sl_SOURCE) \
   $(sl_extra_include_SOURCE)
 
+libfcs_gridsort_rsrt_la_SOURCES = \
+  bounds_xyz2coords.h \
+  common.h \
+  gridsort_back_tproc.h \
+  gridsort_back_tproc_sl.h \
+  gridsort_front_tproc_combinations.h \
+  gridsort_front_tproc.h \
+  gridsort_front_tproc_sl.h \
+  gridsort.h \
+  gridsort_resort.h \
+  z_tools.h \
+  sl_rsrt/sl_config.h \
+  sl_rsrt/sl_environment.h \
+  sl_rsrt/sl_extra.h \
+  sl_rsrt/sl_tune_auto.h \
+  sl_rsrt/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
 libfcs_gridsort_extra_la_SOURCES = $(sl_extra_SOURCE)
 
 libfcs_gridsort_mpiwrap_la_SOURCES = \
@@ -271,7 +359,11 @@ libfcs_gridsort_mpiwrap_la_SOURCES = \
   include/sl_back_f_.h \
   include/sl_back_fp.h \
   include/sl_back__p.h \
-  include/sl_back_x.h \
+  include/sl_dip_back_f_.h \
+  include/sl_dip_back_fp.h \
+  include/sl_dip_back__p.h \
+  include/sl_dip_forw.h \
   include/sl_forw.h \
+  include/sl_rsrt.h \
   z_tools.h \
   $(sl_extra_include_SOURCE)

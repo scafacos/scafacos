@@ -970,8 +970,7 @@ void ewald_compute_rspace(ewald_data_struct* d,
   fcs_gridsort_sort_forward(&gridsort, d->r_cut, d->comm_cart);
   FCS_INFO(fprintf(stderr, "  returning from fcs_gridsort_sort_forward().\n"));
 
-  fcs_gridsort_separate_ghosts(&gridsort, &local_num_real_particles, 
-			       &local_num_ghost_particles);
+  fcs_gridsort_separate_ghosts(&gridsort);
   fcs_gridsort_get_sorted_particles(&gridsort, &local_num_particles, NULL,
 				    NULL, NULL, NULL);
   fcs_gridsort_get_real_particles(&gridsort, &local_num_real_particles,
@@ -1028,11 +1027,11 @@ void ewald_compute_rspace(ewald_data_struct* d,
   fcs_near_destroy(&near);
 
   /* RECOMPOSE FIELDS AND POTENTIALS */
+  fcs_gridsort_set_sorted_results(&gridsort, local_num_real_particles, local_fields, local_potentials);
+  fcs_gridsort_set_results(&gridsort, max_num_particles, fields, potentials);
+
   FCS_INFO(fprintf(stderr, "  calling fcs_gridsort_sort_backward()...\n"));
-  fcs_gridsort_sort_backward(&gridsort,
-			     local_fields, local_potentials,
-			     fields, potentials, 1,
-			     d->comm_cart);
+  fcs_gridsort_sort_backward(&gridsort, d->comm_cart);
   FCS_INFO(fprintf(stderr, "  returning from fcs_gridsort_sort_backward().\n"));
   
   fcs_gridsort_free(&gridsort);

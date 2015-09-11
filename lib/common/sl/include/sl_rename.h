@@ -291,6 +291,7 @@
 #define mpi_elements_get_counts  SL_FUNC(mpi_elements_get_counts)
 #define mpi_elements_get_weights  SL_FUNC(mpi_elements_get_weights)
 #define mpi_elements_get_counts_and_weights  SL_FUNC(mpi_elements_get_counts_and_weights)
+#define mpi_elements_sendrecv  SL_FUNC(mpi_elements_sendrecv)
 #define mpi_elements_sendrecv_replace  SL_FUNC(mpi_elements_sendrecv_replace)
 #define mpi_elements_isend_components  SL_FUNC(mpi_elements_isend_components)
 #define mpi_elements_irecv_components  SL_FUNC(mpi_elements_irecv_components)

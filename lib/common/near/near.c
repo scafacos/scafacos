@@ -1050,13 +1050,18 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
     printf("%d: %f,%f,%f  %f\n", i, field_s[3 * i + 0], field_s[3 * i + 1], field_s[3 * i + 2], potentials_s[i]);
   }*/
 
+  fcs_gridsort_set_sorted_results(&gridsort, nlocal_s_real, field_s, potentials_s);
+  fcs_gridsort_set_results(&gridsort, near->max_nparticles, near->field, near->potentials);
+
   TIMING_SYNC(comm); TIMING_START(t[3]);
-  if (near->resort) resort = fcs_gridsort_prepare_resort(&gridsort, field_s, potentials_s, near->field, near->potentials, comm);
+  if (near->resort) resort = fcs_gridsort_prepare_resort(&gridsort, comm);
   else resort = 0;
 
-  if (!resort) fcs_gridsort_sort_backward(&gridsort, field_s, potentials_s, near->field, near->potentials, 1, comm);
+  if (!resort) fcs_gridsort_sort_backward(&gridsort, comm);
 
-  if (near->resort) fcs_gridsort_resort_create(&near->gridsort_resort, &gridsort, comm);
+  fcs_gridsort_resort_destroy(&near->gridsort_resort);
+
+  if (resort) fcs_gridsort_resort_create(&near->gridsort_resort, &gridsort, comm);
   TIMING_SYNC(comm); TIMING_STOP(t[3]);
 
   if (field_s) free(field_s);

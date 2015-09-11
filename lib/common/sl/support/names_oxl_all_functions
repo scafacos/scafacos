@@ -227,6 +227,7 @@ mpi_elements_digest_hash
 mpi_elements_get_counts
 mpi_elements_get_weights
 mpi_elements_get_counts_and_weights
+mpi_elements_sendrecv
 mpi_elements_sendrecv_replace
 mpi_elements_isend_components
 mpi_elements_irecv_components

@@ -5185,6 +5185,8 @@ typedef struct fcs_near_____elements_t fcs_near____spec_elem_t;
 
 typedef fcs_near____sl_int_type_c fcs_near____spec_elem_index_t;
 
+#define fcs_near____spec_elem_unset(_e_)          fcs_near____elem_null((_e_))
+
 #define fcs_near____spec_elem_set_n(_e_, _n_)     fcs_near____elem_set_size((_e_), (_n_))
 #define fcs_near____spec_elem_get_n(_e_)          fcs_near____elem_get_size((_e_))
 #define fcs_near____spec_elem_set_nmax(_e_, _n_)  fcs_near____elem_set_max_size((_e_), (_n_))
@@ -7704,6 +7706,7 @@ fcs_near____slint_t SL_PROTO(fcs_near____mpi_elements_digest_hash)(fcs_near____e
 fcs_near____slint_t SL_PROTO(fcs_near____mpi_elements_get_counts)(fcs_near____elements_t *s, fcs_near____slint_t *clocal, fcs_near____slint_t *cglobal, int root, int size, int rank, MPI_Comm comm);
 fcs_near____slweight_t SL_PROTO(fcs_near____mpi_elements_get_weights)(fcs_near____elements_t *s, fcs_near____slweight_t *wlocal, fcs_near____slweight_t *wglobal, int root, int size, int rank, MPI_Comm comm);
 fcs_near____slint_t SL_PROTO(fcs_near____mpi_elements_get_counts_and_weights)(fcs_near____elements_t *s, fcs_near____slint_t nelements, fcs_near____slint_t *counts, fcs_near____slweight_t *weights, int root, int size, int rank, MPI_Comm comm);
+fcs_near____slint_t SL_PROTO(fcs_near____mpi_elements_sendrecv)(fcs_near____elements_t *sb, int sendcount, int dest, int sendtag, fcs_near____elements_t *rb, int recvcount, int recvtag, int source, fcs_near____slint_t *received, int size, int rank, MPI_Comm comm);
 fcs_near____slint_t SL_PROTO(fcs_near____mpi_elements_sendrecv_replace)(fcs_near____elements_t *s, int count, int dest, int sendtag, int source, int recvtag, int size, int rank, MPI_Comm comm);
 fcs_near____slint_t SL_PROTO(fcs_near____mpi_elements_isend_components)(fcs_near____elements_t *s, fcs_near____slint_t at, int count, int dest, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm);
 fcs_near____slint_t SL_PROTO(fcs_near____mpi_elements_irecv_components)(fcs_near____elements_t *s, fcs_near____slint_t at, int count, int source, int tag, MPI_Request *reqs, slcint_t components, int size, int rank, MPI_Comm comm);
