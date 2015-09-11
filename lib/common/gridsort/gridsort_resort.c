@@ -29,9 +29,9 @@
 
 #include <mpi.h>
 
+#include "sl_rsrt.h"
 #include "sl_back_f_.h"
 #include "sl_back__p.h"
-#include "sl_back_x.h"
 
 #ifdef HAVE_ZMPI_ATASP_H
 # include "zmpi_atasp.h"
@@ -66,7 +66,7 @@ static int gridsort_fcs_back__p_tproc(fcs_back__p_elements_t *s, fcs_back__p_sli
 #endif /* RESORT_13FLOATS */
 
 
-static int gridsort_fcs_back_x_tproc(fcs_back_x_elements_t *s, fcs_back_x_slint_t x, void *data)
+static int gridsort_fcs_rsrt_tproc(fcs_rsrt_elements_t *s, fcs_rsrt_slint_t x, void *data)
 {
   if (!GRIDSORT_INDEX_IS_VALID(s->keys[x])) return MPI_PROC_NULL;
 
@@ -80,9 +80,9 @@ void fcs_gridsort_resort_create(fcs_gridsort_resort_t *gridsort_resort, fcs_grid
 
   fcs_int i;
 
-  fcs_back_x_elements_t sin, sout;
+  fcs_rsrt_elements_t sin, sout;
 
-  fcs_back_x_tproc_t tproc;
+  fcs_rsrt_tproc_t tproc;
 
   fcs_resort_index_t *resort_indices;
   
@@ -126,52 +126,52 @@ void fcs_gridsort_resort_create(fcs_gridsort_resort_t *gridsort_resort, fcs_grid
       i, GRIDSORT_INDEX_PARAM(gs->sorted_indices[i]), FCS_RESORT_INDEX_PARAM(resort_indices[i]));
   }*/
   
-  fcs_back_x_SL_DEFCON(mpi.rank) = comm_rank;
+  fcs_rsrt_SL_DEFCON(mpi.rank) = comm_rank;
 
-  fcs_back_x_mpi_datatypes_init();
+  fcs_rsrt_mpi_datatypes_init();
 
-  fcs_back_x_elem_set_size(&sin, gs->nresort_particles);
-  fcs_back_x_elem_set_max_size(&sin, gs->nresort_particles);
-  fcs_back_x_elem_set_keys(&sin, gs->sorted_indices);
-  fcs_back_x_elem_set_data(&sin, resort_indices);
+  fcs_rsrt_elem_set_size(&sin, gs->nresort_particles);
+  fcs_rsrt_elem_set_max_size(&sin, gs->nresort_particles);
+  fcs_rsrt_elem_set_keys(&sin, gs->sorted_indices);
+  fcs_rsrt_elem_set_data(&sin, resort_indices);
 
-  fcs_back_x_elem_set_size(&sout, 0);
-  fcs_back_x_elem_set_max_size(&sout, 0);
-  fcs_back_x_elem_set_keys(&sout, NULL);
-  fcs_back_x_elem_set_data(&sout, NULL);
+  fcs_rsrt_elem_set_size(&sout, 0);
+  fcs_rsrt_elem_set_max_size(&sout, 0);
+  fcs_rsrt_elem_set_keys(&sout, NULL);
+  fcs_rsrt_elem_set_data(&sout, NULL);
 
-  fcs_back_x_tproc_create_tproc(&tproc, gridsort_fcs_back_x_tproc, fcs_back_x_TPROC_RESET_NULL, fcs_back_x_TPROC_EXDEF_NULL);
+  fcs_rsrt_tproc_create_tproc(&tproc, gridsort_fcs_rsrt_tproc, fcs_rsrt_TPROC_RESET_NULL, fcs_rsrt_TPROC_EXDEF_NULL);
 
 #ifdef GRIDSORT_RESORT_PROCLIST
-  if (gs->procs) fcs_back_x_tproc_set_proclists(tproc, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
+  if (gs->procs) fcs_rsrt_tproc_set_proclists(tproc, gs->nprocs, gs->procs, gs->nprocs, gs->procs, comm_size, comm_rank, comm);
 #endif
 
 #ifdef ALLTOALLV_PACKED
   local_packed = ALLTOALLV_PACKED(comm_size, sin.size);
   MPI_Allreduce(&local_packed, &global_packed, 1, FCS_MPI_INT, MPI_SUM, comm);
-  original_packed = fcs_back_x_SL_DEFCON(meas.packed); fcs_back_x_SL_DEFCON(meas.packed) = (global_packed > 0);
+  original_packed = fcs_rsrt_SL_DEFCON(meas.packed); fcs_rsrt_SL_DEFCON(meas.packed) = (global_packed > 0);
 #endif
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
 
-  fcs_back_x_mpi_elements_alltoall_specific(&sin, &sout, NULL, tproc, NULL, comm_size, comm_rank, comm);
+  fcs_rsrt_mpi_elements_alltoall_specific(&sin, &sout, NULL, tproc, NULL, comm_size, comm_rank, comm);
 
   TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
 #ifdef ALLTOALLV_PACKED
-  fcs_back_x_SL_DEFCON(meas.packed) = original_packed;
+  fcs_rsrt_SL_DEFCON(meas.packed) = original_packed;
 #endif
 
-  fcs_back_x_tproc_free(&tproc);
+  fcs_rsrt_tproc_free(&tproc);
 
   fcs_resort_indices_free(resort_indices);
 
   if (gs->noriginal_particles != sout.size)
-    fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" fcs_back_x_slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout.size);
+    fprintf(stderr, "%d: error: wanted %" FCS_LMOD_INT "d particles, but got only %" fcs_rsrt_slint_fmt "!\n", comm_rank, gs->noriginal_particles, sout.size);
 
-  fcs_back_x_mpi_datatypes_release();
+  fcs_rsrt_mpi_datatypes_release();
 
-/*  printf("noriginal_particles = %" fcs_back_x_slint_fmt "\n", sout.size);
+/*  printf("noriginal_particles = %" fcs_rsrt_slint_fmt "\n", sout.size);
   for (i = 0; i < sout.size; ++i)
   {
     printf(" %" FCS_LMOD_INT "d: " GRIDSORT_INDEX_STR "  " FCS_RESORT_INDEX_STR "\n",
@@ -188,7 +188,7 @@ void fcs_gridsort_resort_create(fcs_gridsort_resort_t *gridsort_resort, fcs_grid
 
   TIMING_SYNC(comm); TIMING_STOP(t[3]);
 
-  fcs_back_x_elements_free(&sout);
+  fcs_rsrt_elements_free(&sout);
 
 #ifdef GRIDSORT_RESORT_PROCLIST
   if (gs->procs) fcs_resort_set_proclists(*gridsort_resort, gs->nprocs, gs->procs);

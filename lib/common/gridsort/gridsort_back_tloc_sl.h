@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011, 2012, 2013 Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
   
   This file is part of ScaFaCoS.
   
@@ -18,8 +18,8 @@
 */
 
 
-#ifndef __GRIDSORT_BACK_TPROC_SL_H__
-#define __GRIDSORT_BACK_TPROC_SL_H__
+#ifndef __GRIDSORT_BACK_TLOC_SL_H__
+#define __GRIDSORT_BACK_TLOC_SL_H__
 
 
 #define GRIDSORT_PREFIX
@@ -30,39 +30,39 @@
 /* back_fp */
 #define GRIDSORT_ELEM_BUF_T            fcs_back_fp_elements_t
 #define GRIDSORT_ELEM_INDEX_T          fcs_back_fp_slint_t
-/*#ifdef GRIDSORT_BACK_TPROC_EXDEF
-# define DEFINE_GRIDSORT_BACK_TPROC_EXDEF(_xd_, _tp_, _s_...)  fcs_back_fp_SPEC_DEFINE_TPROC(_xd_, _tp_, _s_)
+/*#ifdef GRIDSORT_BACK_TLOC_EXDEF
+# define DEFINE_GRIDSORT_BACK_TLOC_EXDEF(_xd_, _tp_, _s_...)  fcs_back_fp_SPEC_DEFINE_TLOC(_xd_, _tp_, _s_)
 #endif*/
-#define GRIDSORT_BACK_TPROC_NAME       fp_tproc
-#include "gridsort_back_tproc.h"
+#define GRIDSORT_BACK_TLOC_NAME        fp_tloc
+#include "gridsort_back_tloc.h"
 
-#undef DEFINE_GRIDSORT_BACK_TPROC_EXDEF
+#undef DEFINE_GRIDSORT_BACK_TLOC_EXDEF
 #undef GRIDSORT_ELEM_BUF_T
 #undef GRIDSORT_ELEM_INDEX_T
 
 /* back_f_ */
 #define GRIDSORT_ELEM_BUF_T            fcs_back_f__elements_t
 #define GRIDSORT_ELEM_INDEX_T          fcs_back_f__slint_t
-/*#ifdef GRIDSORT_BACK_TPROC_EXDEF
-# define DEFINE_GRIDSORT_BACK_TPROC_EXDEF(_xd_, _tp_, _s_...)  fcs_back_f__SPEC_DEFINE_TPROC(_xd_, _tp_, _s_)
+/*#ifdef GRIDSORT_BACK_TLOC_EXDEF
+# define DEFINE_GRIDSORT_BACK_TLOC_EXDEF(_xd_, _tp_, _s_...)  fcs_back_f__SPEC_DEFINE_TLOC(_xd_, _tp_, _s_)
 #endif*/
-#define GRIDSORT_BACK_TPROC_NAME       f__tproc
-#include "gridsort_back_tproc.h"
+#define GRIDSORT_BACK_TLOC_NAME        f__tloc
+#include "gridsort_back_tloc.h"
 
-#undef DEFINE_GRIDSORT_BACK_TPROC_EXDEF
+#undef DEFINE_GRIDSORT_BACK_TLOC_EXDEF
 #undef GRIDSORT_ELEM_BUF_T
 #undef GRIDSORT_ELEM_INDEX_T
 
 /* back__p_ */
 #define GRIDSORT_ELEM_BUF_T            fcs_back__p_elements_t
 #define GRIDSORT_ELEM_INDEX_T          fcs_back__p_slint_t
-/*#ifdef GRIDSORT_BACK_TPROC_EXDEF
-# define DEFINE_GRIDSORT_BACK_TPROC_EXDEF(_xd_, _tp_, _s_...)  fcs_back__p_SPEC_DEFINE_TPROC(_xd_, _tp_, _s_)
+/*#ifdef GRIDSORT_BACK_TLOC_EXDEF
+# define DEFINE_GRIDSORT_BACK_TLOC_EXDEF(_xd_, _tp_, _s_...)  fcs_back__p_SPEC_DEFINE_TLOC(_xd_, _tp_, _s_)
 #endif*/
-#define GRIDSORT_BACK_TPROC_NAME       _p_tproc
-#include "gridsort_back_tproc.h"
+#define GRIDSORT_BACK_TLOC_NAME        _p_tloc
+#include "gridsort_back_tloc.h"
 
-#undef DEFINE_GRIDSORT_BACK_TPROC_EXDEF
+#undef DEFINE_GRIDSORT_BACK_TLOC_EXDEF
 #undef GRIDSORT_ELEM_BUF_T
 #undef GRIDSORT_ELEM_INDEX_T
 
@@ -76,39 +76,39 @@
 /* dip_back_fp */
 #define GRIDSORT_ELEM_BUF_T            fcs_dip_back_fp_elements_t
 #define GRIDSORT_ELEM_INDEX_T          fcs_dip_back_fp_slint_t
-/*#ifdef GRIDSORT_BACK_TPROC_EXDEF
-# define DEFINE_GRIDSORT_BACK_TPROC_EXDEF(_xd_, _tp_, _s_...)  fcs_dip_back_fp_SPEC_DEFINE_TPROC(_xd_, _tp_, _s_)
+/*#ifdef GRIDSORT_BACK_TLOC_EXDEF
+# define DEFINE_GRIDSORT_BACK_TLOC_EXDEF(_xd_, _tp_, _s_...)  fcs_dip_back_fp_SPEC_DEFINE_TLOC(_xd_, _tp_, _s_)
 #endif*/
-#define GRIDSORT_BACK_TPROC_NAME       fp_tproc
-#include "gridsort_back_tproc.h"
+#define GRIDSORT_BACK_TLOC_NAME        fp_tloc
+#include "gridsort_back_tloc.h"
 
-#undef DEFINE_GRIDSORT_BACK_TPROC_EXDEF
+#undef DEFINE_GRIDSORT_BACK_TLOC_EXDEF
 #undef GRIDSORT_ELEM_BUF_T
 #undef GRIDSORT_ELEM_INDEX_T
 
 /* dip_back_f_ */
 #define GRIDSORT_ELEM_BUF_T            fcs_dip_back_f__elements_t
 #define GRIDSORT_ELEM_INDEX_T          fcs_dip_back_f__slint_t
-/*#ifdef GRIDSORT_BACK_TPROC_EXDEF
-# define DEFINE_GRIDSORT_BACK_TPROC_EXDEF(_xd_, _tp_, _s_...)  fcs_dip_back_f__SPEC_DEFINE_TPROC(_xd_, _tp_, _s_)
+/*#ifdef GRIDSORT_BACK_TLOC_EXDEF
+# define DEFINE_GRIDSORT_BACK_TLOC_EXDEF(_xd_, _tp_, _s_...)  fcs_dip_back_f__SPEC_DEFINE_TLOC(_xd_, _tp_, _s_)
 #endif*/
-#define GRIDSORT_BACK_TPROC_NAME       f__tproc
-#include "gridsort_back_tproc.h"
+#define GRIDSORT_BACK_TLOC_NAME        f__tloc
+#include "gridsort_back_tloc.h"
 
-#undef DEFINE_GRIDSORT_BACK_TPROC_EXDEF
+#undef DEFINE_GRIDSORT_BACK_TLOC_EXDEF
 #undef GRIDSORT_ELEM_BUF_T
 #undef GRIDSORT_ELEM_INDEX_T
 
 /* dip_back__p_ */
 #define GRIDSORT_ELEM_BUF_T            fcs_dip_back__p_elements_t
 #define GRIDSORT_ELEM_INDEX_T          fcs_dip_back__p_slint_t
-/*#ifdef GRIDSORT_BACK_TPROC_EXDEF
-# define DEFINE_GRIDSORT_BACK_TPROC_EXDEF(_xd_, _tp_, _s_...)  fcs_dip_back__p_SPEC_DEFINE_TPROC(_xd_, _tp_, _s_)
+/*#ifdef GRIDSORT_BACK_TLOC_EXDEF
+# define DEFINE_GRIDSORT_BACK_TLOC_EXDEF(_xd_, _tp_, _s_...)  fcs_dip_back__p_SPEC_DEFINE_TLOC(_xd_, _tp_, _s_)
 #endif*/
-#define GRIDSORT_BACK_TPROC_NAME       _p_tproc
-#include "gridsort_back_tproc.h"
+#define GRIDSORT_BACK_TLOC_NAME        _p_tloc
+#include "gridsort_back_tloc.h"
 
-#undef DEFINE_GRIDSORT_BACK_TPROC_EXDEF
+#undef DEFINE_GRIDSORT_BACK_TLOC_EXDEF
 #undef GRIDSORT_ELEM_BUF_T
 #undef GRIDSORT_ELEM_INDEX_T
 
@@ -121,4 +121,4 @@
 #undef GRIDSORT_PREFIX
 
 
-#endif /* __GRIDSORT_BACK_TPROC_SL_H__ */
+#endif /* __GRIDSORT_BACK_TLOC_SL_H__ */
