@@ -8,9 +8,21 @@ else
 lib_LTLIBRARIES += libfcs_near.la
 endif
 
-sl_sub_libs = libfcs_near_near___.la libfcs_near_near__p.la libfcs_near_near_f_.la libfcs_near_near_fp.la libfcs_near_extra.la libfcs_near_mpiwrap.la
+sl_sub_libs = libfcs_near_dip_near___.la libfcs_near_dip_near__p.la libfcs_near_dip_near_f_.la libfcs_near_dip_near_fp.la libfcs_near_near___.la libfcs_near_near__p.la libfcs_near_near_f_.la libfcs_near_near_fp.la libfcs_near_extra.la libfcs_near_mpiwrap.la
 
 noinst_LTLIBRARIES += $(sl_sub_libs)
+
+libfcs_near_dip_near____la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_dip_near____ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_dip_near___ -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir)/extra/include
+
+libfcs_near_dip_near__p_la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_dip_near__p_ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_dip_near__p -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir)/extra/include
+
+libfcs_near_dip_near_f__la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_dip_near_f__ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_dip_near_f_ -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir)/extra/include
+
+libfcs_near_dip_near_fp_la_CPPFLAGS = \
+  -DSL_PREFIX=fcs_dip_near_fp_ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_dip_near_fp -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir)/extra/include
 
 libfcs_near_near____la_CPPFLAGS = \
   -DSL_PREFIX=fcs_near____ -DSL_USE_MPI -I$(srcdir)/src/include -I$(srcdir)/sl_near___ -DSL_EXTRA -DSL_EXTRA_PREFIX=fcs_near_ -I$(srcdir)/extra/include
@@ -156,6 +168,50 @@ sl_extra_include_SOURCE = \
   extra/include/zmpi_tools.h \
   extra/include/zmpi_tools_rename.h
 
+libfcs_near_dip_near____la_SOURCES = \
+  near.h \
+  z_tools.h \
+  sl_dip_near___/sl_config.h \
+  sl_dip_near___/sl_environment.h \
+  sl_dip_near___/sl_extra.h \
+  sl_dip_near___/sl_tune_auto.h \
+  sl_dip_near___/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_near_dip_near__p_la_SOURCES = \
+  near.h \
+  z_tools.h \
+  sl_dip_near__p/sl_config.h \
+  sl_dip_near__p/sl_environment.h \
+  sl_dip_near__p/sl_extra.h \
+  sl_dip_near__p/sl_tune_auto.h \
+  sl_dip_near__p/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_near_dip_near_f__la_SOURCES = \
+  near.h \
+  z_tools.h \
+  sl_dip_near_f_/sl_config.h \
+  sl_dip_near_f_/sl_environment.h \
+  sl_dip_near_f_/sl_extra.h \
+  sl_dip_near_f_/sl_tune_auto.h \
+  sl_dip_near_f_/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
+libfcs_near_dip_near_fp_la_SOURCES = \
+  near.h \
+  z_tools.h \
+  sl_dip_near_fp/sl_config.h \
+  sl_dip_near_fp/sl_environment.h \
+  sl_dip_near_fp/sl_extra.h \
+  sl_dip_near_fp/sl_tune_auto.h \
+  sl_dip_near_fp/sl_tune.h \
+  $(sl_SOURCE) \
+  $(sl_extra_include_SOURCE)
+
 libfcs_near_near____la_SOURCES = \
   near.h \
   z_tools.h \
@@ -203,6 +259,10 @@ libfcs_near_near_fp_la_SOURCES = \
 libfcs_near_extra_la_SOURCES = $(sl_extra_SOURCE)
 
 libfcs_near_mpiwrap_la_SOURCES = \
+  include/sl_dip_near_f_.h \
+  include/sl_dip_near_fp.h \
+  include/sl_dip_near___.h \
+  include/sl_dip_near__p.h \
   include/sl_near_f_.h \
   include/sl_near_fp.h \
   include/sl_near___.h \
