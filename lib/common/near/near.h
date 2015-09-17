@@ -31,6 +31,10 @@ extern "C" {
 
 #include "common/gridsort/gridsort.h"
 
+
+#define FCS_NEAR_WITH_DIPOLES  1
+
+
 typedef fcs_float (*fcs_near_field_f)(const void *param, fcs_float dist);
 typedef fcs_float (*fcs_near_potential_f)(const void *param, fcs_float dist);
 typedef void (*fcs_near_field_potential_f)(const void *param, fcs_float dist, fcs_float *f, fcs_float *p);
@@ -41,6 +45,15 @@ typedef void (*fcs_near_field_potential_3diff_f)(const void *param, fcs_float di
 
 typedef void (*fcs_near_loop_f)(fcs_float *positions0, fcs_float *charges0, fcs_float *field0, fcs_float *potentials0, fcs_int start0, fcs_int size0,
                                 fcs_float *positions1, fcs_float *charges1, fcs_int start1, fcs_int size1, fcs_float cutoff, const void *near_param);
+
+#if FCS_NEAR_WITH_DIPOLES
+
+/* FIXME: add correct callback functions */
+typedef fcs_float (*fcs_near_dipole_field_f)(const void *param, fcs_float dist);
+typedef fcs_float (*fcs_near_dipole_potential_f)(const void *param, fcs_float dist);
+typedef void (*fcs_near_dipole_field_potential_f)(const void *param, fcs_float dist, fcs_float *f, fcs_float *p);
+
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
 
 typedef fcs_gridsort_resort_t fcs_near_resort_t;
@@ -74,6 +87,22 @@ typedef struct _fcs_near_t
   fcs_int nghosts;
   fcs_float *ghost_positions, *ghost_charges;
   fcs_gridsort_index_t *ghost_indices;
+
+#if FCS_NEAR_WITH_DIPOLES
+  /* FIXME: add correct callback functions */
+  fcs_near_dipole_field_f dipole_compute_field;
+  fcs_near_dipole_potential_f dipole_compute_potential;
+  fcs_near_dipole_field_potential_f dipole_compute_field_potential;
+
+  fcs_int dipole_nparticles, dipole_max_nparticles;
+  fcs_float *dipole_positions, *dipole_moments;
+  fcs_gridsort_index_t *dipole_indices;
+  fcs_float *dipole_field, *dipole_potentials;
+
+  fcs_int dipole_nghosts;
+  fcs_float *dipole_ghost_positions, *dipole_ghost_moments;
+  fcs_gridsort_index_t *dipole_ghost_indices;
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
   fcs_float max_particle_move;
 
@@ -177,6 +206,56 @@ void fcs_near_set_particles(fcs_near_t *near, fcs_int nparticles, fcs_int max_np
  * @param indices fcs_gridsort_index_t* array of ghost particle indices (created by gridsort)
  */
 void fcs_near_set_ghosts(fcs_near_t *near, fcs_int nghosts, fcs_float *positions, fcs_float *charges, fcs_gridsort_index_t *indices);
+
+#if FCS_NEAR_WITH_DIPOLES
+
+/* FIXME: add correct callback functions */
+
+/**
+ * @brief set callback function for dipole field computations
+ * @param near fcs_near_t near field solver object
+ * @param compute_field fcs_near_dipole_field_f callback function for dipole field computations
+ */
+void fcs_near_set_dipole_field(fcs_near_t *near, fcs_near_dipole_field_f compute_field);
+
+/**
+ * @brief set callback function for dipole potential computations
+ * @param near fcs_near_t near field solver object
+ * @param compute_potential fcs_near_dipole_potential_f callback function for dipole potential computations
+ */
+void fcs_near_set_dipole_potential(fcs_near_t *near, fcs_near_dipole_potential_f compute_potential);
+
+/**
+ * @brief set callback function for combined dipole field and potential computations
+ * @param near fcs_near_t near field solver object
+ * @param compute_field_potential fcs_near_dipole_field_potential_f callback function for combined dipole field and potential computations
+ */
+void fcs_near_set_dipole_field_potential(fcs_near_t *near, fcs_near_dipole_field_potential_f compute_field_potential);
+
+/**
+ * @brief set dipole particle information
+ * @param near fcs_near_t near field solver object
+ * @param nparticles fcs_int local number of dipole particles
+ * @param max_nparticles fcs_int max number of dipole particles that can be stored in local dipole particle data arrays
+ * @param positions fcs_float* array of dipole particle positions
+ * @param moments fcs_float* array of dipole particle moments
+ * @param indices fcs_gridsort_index_t* array of dipole particle indices (created by gridsort or NULL)
+ * @param field fcs_float* array of dipole field values, computed near field values are added, can be NULL if not required
+ * @param potentials fcs_float* array of dipole potential values, computed near field values are added, can be NULL if not required
+ */
+void fcs_near_set_dipole_particles(fcs_near_t *near, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *moments, fcs_gridsort_index_t *indices, fcs_float *field, fcs_float *potentials);
+
+/**
+ * @brief set dipole ghost particle information
+ * @param near fcs_near_t near field solver object
+ * @param nghosts fcs_int local number of dipole ghost particles
+ * @param positions fcs_float* array of dipole ghost particle positions
+ * @param moments fcs_float* array of dipole ghost particle moments
+ * @param indices fcs_gridsort_index_t* array of dipole ghost particle indices (created by gridsort)
+ */
+void fcs_near_set_dipole_ghosts(fcs_near_t *near, fcs_int nghosts, fcs_float *positions, fcs_float *moments, fcs_gridsort_index_t *indices);
+
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
 /**
  * @brief set max. distance particles are away from the domain of the local process, e.g. because they have moved since the last call to fcs_near_field_solver

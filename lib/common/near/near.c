@@ -32,13 +32,20 @@
 
 #include "common/gridsort/gridsort.h"
 
+#include "z_tools.h"
+#include "near.h"
+
 #include "sl_near_fp.h"
 #include "sl_near_f_.h"
 #include "sl_near__p.h"
 #include "sl_near___.h"
 
-#include "z_tools.h"
-#include "near.h"
+#if FCS_NEAR_WITH_DIPOLES
+#include "sl_dip_near_fp.h"
+#include "sl_dip_near_f_.h"
+#include "sl_dip_near__p.h"
+#include "sl_dip_near___.h"
+#endif
 
 
 #if defined(FCS_ENABLE_DEBUG_NEAR)
@@ -252,6 +259,24 @@ void fcs_near_create(fcs_near_t *near)
   near->ghost_charges = NULL;
   near->ghost_indices = NULL;
 
+#if FCS_NEAR_WITH_DIPOLES
+  near->dipole_compute_field = NULL;
+  near->dipole_compute_potential = NULL;
+  near->dipole_compute_field_potential = NULL;
+
+  near->dipole_nparticles = near->dipole_max_nparticles = 0;
+  near->dipole_positions = NULL;
+  near->dipole_moments = NULL;
+  near->dipole_indices = NULL;
+  near->dipole_field = NULL;
+  near->dipole_potentials = NULL;
+
+  near->dipole_nghosts = 0;
+  near->dipole_ghost_positions = NULL;
+  near->dipole_ghost_moments = NULL;
+  near->dipole_ghost_indices = NULL;
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
   near->max_particle_move = -1;
 
   near->resort = 0;
@@ -261,34 +286,6 @@ void fcs_near_create(fcs_near_t *near)
 
 void fcs_near_destroy(fcs_near_t *near)
 {
-  near->box_base[0] = near->box_base[1] = near->box_base[2] = 0;
-  near->box_a[0] = near->box_a[1] = near->box_a[2] = 0;
-  near->box_b[0] = near->box_b[1] = near->box_b[2] = 0;
-  near->box_c[0] = near->box_c[1] = near->box_c[2] = 0;
-  near->periodicity[0] = near->periodicity[1] = near->periodicity[2] = -1;
-
-  near->compute_field = NULL;
-  near->compute_potential = NULL;
-  near->compute_field_potential = NULL;
-
-  near->compute_field_3diff = NULL;
-  near->compute_potential_3diff = NULL;
-  near->compute_field_potential_3diff = NULL;
-
-  near->compute_loop = NULL;
-
-  near->nparticles = near->max_nparticles = 0;
-  near->positions = NULL;
-  near->charges = NULL;
-  near->indices = NULL;
-  near->field = NULL;
-  near->potentials = NULL;
-
-  near->nghosts = 0;
-  near->ghost_positions = NULL;
-  near->ghost_charges = NULL;
-  near->ghost_indices = NULL;
-
   fcs_gridsort_resort_destroy(&near->gridsort_resort);
 }
 
@@ -373,6 +370,49 @@ void fcs_near_set_ghosts(fcs_near_t *near, fcs_int nghosts, fcs_float *positions
 }
 
 
+#if FCS_NEAR_WITH_DIPOLES
+
+void fcs_near_set_dipole_field(fcs_near_t *near, fcs_near_dipole_field_f compute_field)
+{
+  near->dipole_compute_field = compute_field;
+}
+
+
+void fcs_near_set_dipole_potential(fcs_near_t *near, fcs_near_dipole_potential_f compute_potential)
+{
+  near->dipole_compute_potential = compute_potential;
+}
+
+
+void fcs_near_set_dipole_field_potential(fcs_near_t *near, fcs_near_field_potential_f compute_field_potential)
+{
+  near->dipole_compute_field_potential = compute_field_potential;
+}
+
+
+void fcs_near_set_dipole_particles(fcs_near_t *near, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *moments, fcs_gridsort_index_t *indices, fcs_float *field, fcs_float *potentials)
+{
+  near->dipole_nparticles = nparticles;
+  near->dipole_max_nparticles = max_nparticles;
+  near->dipole_positions = positions;
+  near->dipole_moments = moments;
+  near->dipole_indices = indices;
+  near->dipole_field = field;
+  near->dipole_potentials = potentials;
+}
+
+
+void fcs_near_set_dipole_ghosts(fcs_near_t *near, fcs_int nghosts, fcs_float *positions, fcs_float *moments, fcs_gridsort_index_t *indices)
+{
+  near->dipole_nghosts = nghosts;
+  near->dipole_ghost_positions = positions;
+  near->dipole_ghost_moments = moments;
+  near->dipole_ghost_indices = indices;
+}
+
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
+
 void fcs_near_set_max_particle_move(fcs_near_t *near, fcs_float max_particle_move)
 {
   near->max_particle_move = max_particle_move;
@@ -386,7 +426,7 @@ void fcs_near_set_resort(fcs_near_t *near, fcs_int resort)
 
 
 #ifdef PRINT_PARTICLES
-static void print_particles(fcs_int n, fcs_float *xyz, int size, int rank, MPI_Comm comm)
+static void print_particles(fcs_int n, fcs_float *xyz, const char *intro, int size, int rank, MPI_Comm comm)
 {
   const int root = 0;
   fcs_int max_n, i, j;
@@ -401,6 +441,8 @@ static void print_particles(fcs_int n, fcs_float *xyz, int size, int rank, MPI_C
 
   if (rank == root)
   {
+    if (intro) printf("%s\n", intro);
+
     for (i = 0; i < size; ++i)
     {
       if (i == root) MPI_Sendrecv(xyz, 3 * n, FCS_MPI_FLOAT, root, 0, in_xyz, 3 * max_n, FCS_MPI_FLOAT, root, 0, comm, &status);
@@ -449,6 +491,22 @@ static void create_boxes(fcs_int nlocal, box_t *boxes, fcs_float *positions, fcs
 }
 
 
+#define CONCAT_(_a_, _b_)  _a_##_b_
+#define CONCAT(_a_, _b_)   CONCAT_(_a_, _b_)
+
+#define FCS_NEAR(_x_)  CONCAT(FCS_NEAR_PREFIX, _x_)
+
+#define SORT_INTO_BOXES(_s_, _sx_, _n_, _b_, _pos_, _data_...) do { \
+  FCS_NEAR(elem_set_size)((_s_), _n_); \
+  FCS_NEAR(elem_set_max_size)((_s_), _n_); \
+  FCS_NEAR(elem_set_keys)((_s_), _b_); \
+  FCS_NEAR(elem_set_data)((_s_), _pos_, _data_); \
+  FCS_NEAR(elements_alloc)((_sx_), FCS_NEAR(elem_get_size)(_s_), SLCM_ALL); \
+  FCS_NEAR(sort_radix)((_s_), (_sx_), -1, -1, -1); \
+  FCS_NEAR(elements_free)(_sx_); \
+} while (0)
+  
+
 static void sort_into_boxes(fcs_int nlocal, box_t *boxes, fcs_float *positions, fcs_float *charges, fcs_gridsort_index_t *indices, fcs_float *field, fcs_float *potentials)
 {
   fcs_near_fp_elements_t s0, sx0;
@@ -456,63 +514,89 @@ static void sort_into_boxes(fcs_int nlocal, box_t *boxes, fcs_float *positions, 
   fcs_near__p_elements_t s2, sx2;
   fcs_near____elements_t s3, sx3;
 
+  int type = -1;
 
-  if (field && potentials)
+
+  if (field && potentials) type = 0;
+  else if (field && !potentials) type = 1;
+  else if (!field && potentials) type = 2;
+  else type = 3;
+
+  switch (type)
   {
-    fcs_near_fp_elem_set_size(&s0, nlocal);
-    fcs_near_fp_elem_set_max_size(&s0, nlocal);
-    fcs_near_fp_elem_set_keys(&s0, boxes);
-    fcs_near_fp_elem_set_data(&s0, positions, charges, indices, field, potentials);
+    case 0:
+#define FCS_NEAR_PREFIX  fcs_near_fp_
+      SORT_INTO_BOXES(&s0, &sx0, nlocal, boxes, positions, charges, indices, field, potentials);
+#undef FCS_NEAR_PREFIX
+      break;
 
-    fcs_near_fp_elements_alloc(&sx0, s0.size, SLCM_ALL);
+    case 1:
+#define FCS_NEAR_PREFIX  fcs_near_f__
+      SORT_INTO_BOXES(&s1, &sx1, nlocal, boxes, positions, charges, indices, field);
+#undef FCS_NEAR_PREFIX
+      break;
 
-    fcs_near_fp_sort_radix(&s0, &sx0, -1, -1, -1);
+    case 2:
+#define FCS_NEAR_PREFIX  fcs_near__p_
+      SORT_INTO_BOXES(&s2, &sx2, nlocal, boxes, positions, charges, indices, potentials);
+#undef FCS_NEAR_PREFIX
+      break;
 
-    fcs_near_fp_elements_free(&sx0);
-  }
-
-  if (field && potentials == NULL)
-  {
-    fcs_near_f__elem_set_size(&s1, nlocal);
-    fcs_near_f__elem_set_max_size(&s1, nlocal);
-    fcs_near_f__elem_set_keys(&s1, boxes);
-    fcs_near_f__elem_set_data(&s1, positions, charges, indices, field);
-
-    fcs_near_f__elements_alloc(&sx1, s1.size, SLCM_ALL);
-
-    fcs_near_f__sort_radix(&s1, &sx1, -1, -1, -1);
-
-    fcs_near_f__elements_free(&sx1);
-  }
-
-  if (field == NULL && potentials)
-  {
-    fcs_near__p_elem_set_size(&s2, nlocal);
-    fcs_near__p_elem_set_max_size(&s2, nlocal);
-    fcs_near__p_elem_set_keys(&s2, boxes);
-    fcs_near__p_elem_set_data(&s2, positions, charges, indices, potentials);
-
-    fcs_near__p_elements_alloc(&sx2, s2.size, SLCM_ALL);
-
-    fcs_near__p_sort_radix(&s2, &sx2, -1, -1, -1);
-
-    fcs_near__p_elements_free(&sx2);
-  }
-
-  if (field == NULL && potentials == NULL)
-  {
-    fcs_near____elem_set_size(&s3, nlocal);
-    fcs_near____elem_set_max_size(&s3, nlocal);
-    fcs_near____elem_set_keys(&s3, boxes);
-    fcs_near____elem_set_data(&s3, positions, charges, indices);
-
-    fcs_near____elements_alloc(&sx3, s3.size, SLCM_ALL);
-
-    fcs_near____sort_radix(&s3, &sx3, -1, -1, -1);
-
-    fcs_near____elements_free(&sx3);
+    case 3:
+#define FCS_NEAR_PREFIX  fcs_near____
+      SORT_INTO_BOXES(&s3, &sx3, nlocal, boxes, positions, charges, indices);
+#undef FCS_NEAR_PREFIX
+      break;
   }
 }
+
+
+#if FCS_NEAR_WITH_DIPOLES
+
+static void dipole_sort_into_boxes(fcs_int nlocal, box_t *boxes, fcs_float *positions, fcs_float *moments, fcs_gridsort_index_t *indices, fcs_float *field, fcs_float *potentials)
+{
+  fcs_dip_near_fp_elements_t s0, sx0;
+  fcs_dip_near_f__elements_t s1, sx1;
+  fcs_dip_near__p_elements_t s2, sx2;
+  fcs_dip_near____elements_t s3, sx3;
+
+  int type = -1;
+
+
+  if (field && potentials) type = 0;
+  else if (field && !potentials) type = 1;
+  else if (!field && potentials) type = 2;
+  else type = 3;
+
+  switch (type)
+  {
+    case 0:
+#define FCS_NEAR_PREFIX  fcs_dip_near_fp_
+      SORT_INTO_BOXES(&s0, &sx0, nlocal, boxes, positions, moments, indices, field, potentials);
+#undef FCS_NEAR_PREFIX
+      break;
+
+    case 1:
+#define FCS_NEAR_PREFIX  fcs_dip_near_f__
+      SORT_INTO_BOXES(&s1, &sx1, nlocal, boxes, positions, moments, indices, field);
+#undef FCS_NEAR_PREFIX
+      break;
+
+    case 2:
+#define FCS_NEAR_PREFIX  fcs_dip_near__p_
+      SORT_INTO_BOXES(&s2, &sx2, nlocal, boxes, positions, moments, indices, potentials);
+#undef FCS_NEAR_PREFIX
+      break;
+
+    case 3:
+#define FCS_NEAR_PREFIX  fcs_dip_near____
+      SORT_INTO_BOXES(&s3, &sx3, nlocal, boxes, positions, moments, indices);
+#undef FCS_NEAR_PREFIX
+      break;
+  }
+}
+
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
 
 #ifdef BOX_SKIP_FORMAT
@@ -551,10 +635,12 @@ static void make_boxes_skip_format(fcs_int nlocal, box_t *boxes)
 
 
 #ifdef PRINT_PARTICLES
-static void print_boxes(fcs_int nlocal, box_t *boxes)
+static void print_boxes(fcs_int nlocal, box_t *boxes, const char *intro)
 {
   fcs_int i;
 
+
+  if (intro) printf("%s\n", intro);
 
   for (i = 0; i < nlocal; ++i)
   {
@@ -671,6 +757,241 @@ static void compute_near(fcs_float *positions0, fcs_float *charges0, fcs_float *
 }
 
 
+typedef struct
+{
+  fcs_int nin;
+  fcs_float *positions, *charges;
+
+  fcs_int nout;
+  fcs_float *field, *potentials;
+
+} charges_t;
+
+
+#if FCS_NEAR_WITH_DIPOLES
+typedef struct
+{
+  fcs_int nin;
+  fcs_float *positions, *moments;
+
+  fcs_int nout;
+  fcs_float *field, *potentials;
+
+} dipoles_t;
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
+
+void compute_charge_self(charges_t *charges, fcs_int charges_start, fcs_int charges_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
+{
+  compute_near(charges->positions, charges->charges, charges->field, charges->potentials, charges_start, charges_size,
+    NULL, NULL, charges_start, charges_size, cutoff, near, near_param);
+}
+
+
+void compute_charge_from_charge(charges_t *charges, fcs_int charges_start, fcs_int charges_size, charges_t *from_charges, fcs_int from_charges_start, fcs_int from_charges_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
+{
+  compute_near(charges->positions, charges->charges, charges->field, charges->potentials, charges_start, charges_size,
+    from_charges->positions, from_charges->charges, from_charges_start, from_charges_size, cutoff, near, near_param);
+}
+
+
+void compute_charge_vs_charge(charges_t *charges0, fcs_int charges0_start, fcs_int charges0_size, charges_t *charges1, fcs_int charges1_start, fcs_int charges1_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
+{
+  if (charges0->positions == charges1->positions &&
+      charges0->charges == charges1->charges &&
+      charges0->field == charges1->field &&
+      charges0->potentials == charges1->potentials)
+  {
+    compute_near(charges0->positions, charges0->charges, charges0->field, charges0->potentials, charges0_start, charges0_size,
+      NULL, NULL, charges1_start, charges1_size, cutoff, near, near_param);
+
+  } else
+  {
+    compute_charge_from_charge(charges0, charges0_start, charges0_size, charges1, charges1_start, charges1_size, cutoff, near, near_param);
+    compute_charge_from_charge(charges1, charges1_start, charges1_size, charges0, charges0_start, charges0_size, cutoff, near, near_param);
+  }
+}
+
+
+#if FCS_NEAR_WITH_DIPOLES
+
+void compute_dipole_self(dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipoles_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
+{
+  fcs_int i, j;
+  fcs_float d[3], r_ij, f, p;
+
+
+  for (i = dipoles_start; i < dipoles_start + dipoles_size; ++i)
+  for (j = i + 1; j < dipoles_start + dipoles_size; ++j)
+  {
+    d[0] = dipoles->positions[3 * j + 0] - dipoles->positions[3 * i + 0];
+    d[1] = dipoles->positions[3 * j + 1] - dipoles->positions[3 * i + 1];
+    d[2] = dipoles->positions[3 * j + 2] - dipoles->positions[3 * i + 2];
+
+    r_ij = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+
+    if (r_ij > cutoff) continue;
+
+    /* dipole[i] <-> dipole[j] */
+
+    /* FIXME: use correct callback functions */
+    f = 0.0;
+
+    dipoles->field[6 * i + 0] += f / r_ij * dipoles->moments[3 * j + 0] * d[0];
+    dipoles->field[6 * i + 1] += f / r_ij * dipoles->moments[3 * j + 1] * d[1];
+    dipoles->field[6 * i + 2] += f / r_ij * dipoles->moments[3 * j + 2] * d[2];
+    dipoles->field[6 * i + 3] += f / r_ij * dipoles->moments[3 * j + 0] * d[0];
+    dipoles->field[6 * i + 4] += f / r_ij * dipoles->moments[3 * j + 1] * d[1];
+    dipoles->field[6 * i + 5] += f / r_ij * dipoles->moments[3 * j + 2] * d[2];
+
+    dipoles->field[6 * j + 0] += -f / r_ij * dipoles->moments[3 * i + 0] * d[0];
+    dipoles->field[6 * j + 1] += -f / r_ij * dipoles->moments[3 * i + 1] * d[1];
+    dipoles->field[6 * j + 2] += -f / r_ij * dipoles->moments[3 * i + 2] * d[2];
+    dipoles->field[6 * j + 3] += -f / r_ij * dipoles->moments[3 * i + 0] * d[0];
+    dipoles->field[6 * j + 4] += -f / r_ij * dipoles->moments[3 * i + 1] * d[1];
+    dipoles->field[6 * j + 5] += -f / r_ij * dipoles->moments[3 * i + 2] * d[2];
+
+    p = 0.0;
+
+    dipoles->potentials[3 * i + 0] += p / r_ij * dipoles->moments[3 * j + 0] * d[0];
+    dipoles->potentials[3 * i + 1] += p / r_ij * dipoles->moments[3 * j + 1] * d[1];
+    dipoles->potentials[3 * i + 2] += p / r_ij * dipoles->moments[3 * j + 2] * d[2];
+
+    dipoles->potentials[3 * j + 0] += -p / r_ij * dipoles->moments[3 * i + 0] * d[0];
+    dipoles->potentials[3 * j + 1] += -p / r_ij * dipoles->moments[3 * i + 1] * d[1];
+    dipoles->potentials[3 * j + 2] += -p / r_ij * dipoles->moments[3 * i + 2] * d[2];
+  }
+}
+
+
+void compute_dipole_from_dipole(dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipoles_size, dipoles_t *from_dipoles, fcs_int from_dipoles_start, fcs_int from_dipoles_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
+{
+  fcs_int i, j;
+  fcs_float d[3], r_ij, f, p;
+
+
+  for (i = dipoles_start; i < dipoles_start + dipoles_size; ++i)
+  for (j = from_dipoles_start; j < from_dipoles_size + from_dipoles_size; ++j)
+  {
+    d[0] = from_dipoles->positions[3 * j + 0] - dipoles->positions[3 * i + 0];
+    d[1] = from_dipoles->positions[3 * j + 1] - dipoles->positions[3 * i + 1];
+    d[2] = from_dipoles->positions[3 * j + 2] - dipoles->positions[3 * i + 2];
+
+    r_ij = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+
+    if (r_ij > cutoff) continue;
+
+    /* dipole[i] <- dipole[j] */
+
+    /* FIXME: use correct callback functions */
+    f = 0.0;
+
+    dipoles->field[6 * i + 0] += f / r_ij * dipoles->moments[3 * j + 0] * d[0];
+    dipoles->field[6 * i + 1] += f / r_ij * dipoles->moments[3 * j + 1] * d[1];
+    dipoles->field[6 * i + 2] += f / r_ij * dipoles->moments[3 * j + 2] * d[2];
+    dipoles->field[6 * i + 3] += f / r_ij * dipoles->moments[3 * j + 0] * d[0];
+    dipoles->field[6 * i + 4] += f / r_ij * dipoles->moments[3 * j + 1] * d[1];
+    dipoles->field[6 * i + 5] += f / r_ij * dipoles->moments[3 * j + 2] * d[2];
+
+    p = 0.0;
+
+    dipoles->potentials[3 * i + 0] += p / r_ij * dipoles->moments[3 * j + 0] * d[0];
+    dipoles->potentials[3 * i + 1] += p / r_ij * dipoles->moments[3 * j + 1] * d[1];
+    dipoles->potentials[3 * i + 2] += p / r_ij * dipoles->moments[3 * j + 2] * d[2];
+  }
+}
+
+
+void compute_dipole_vs_dipole(dipoles_t *dipoles0, fcs_int dipoles0_start, fcs_int dipoles0_size, dipoles_t *dipoles1, fcs_int dipoles1_start, fcs_int dipoles1_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
+{
+  /* TODO: both at once */
+  compute_dipole_from_dipole(dipoles0, dipoles0_start, dipoles0_size, dipoles1, dipoles1_start, dipoles1_size, cutoff, near, near_param);
+  compute_dipole_from_dipole(dipoles1, dipoles1_start, dipoles1_size, dipoles0, dipoles0_start, dipoles0_size, cutoff, near, near_param);
+}
+
+
+void compute_charge_from_dipole(charges_t *charges, fcs_int charges_start, fcs_int charges_size, dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipoles_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
+{
+  fcs_int i, j;
+  fcs_float d[3], r_ij, f, p;
+
+
+  for (i = charges_start; i < charges_start + charges_size; ++i)
+  for (j = dipoles_start; j < dipoles_start + dipoles_size; ++j)
+  {
+    d[0] = dipoles->positions[3 * j + 0] - charges->positions[3 * i + 0];
+    d[1] = dipoles->positions[3 * j + 1] - charges->positions[3 * i + 1];
+    d[2] = dipoles->positions[3 * j + 2] - charges->positions[3 * i + 2];
+
+    r_ij = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+
+    if (r_ij > cutoff) continue;
+
+    /* charge[i] <- dipole[j] */
+
+    /* FIXME: use correct callback functions */
+    f = 0.0;
+
+    charges->field[3 * i + 0] += f / r_ij * dipoles->moments[3 * j + 0] * d[0];
+    charges->field[3 * i + 1] += f / r_ij * dipoles->moments[3 * j + 1] * d[1];
+    charges->field[3 * i + 2] += f / r_ij * dipoles->moments[3 * j + 2] * d[2];
+
+    p = 0.0;
+
+    charges->potentials[i] += p / r_ij * dipoles->moments[3 * j + 0];
+  }
+}
+
+
+void compute_dipole_from_charge(dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipoles_size, charges_t *charges, fcs_int charges_start, fcs_int charges_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
+{
+  fcs_int i, j;
+  fcs_float d[3], r_ij, f, p;
+
+
+  for (i = dipoles_start; i < dipoles_start + dipoles_size; ++i)
+  for (j = charges_start; j < charges_start + charges_size; ++j)
+  {
+    d[0] = charges->positions[3 * j + 0] - dipoles->positions[3 * i + 0];
+    d[1] = charges->positions[3 * j + 1] - dipoles->positions[3 * i + 1];
+    d[2] = charges->positions[3 * j + 2] - dipoles->positions[3 * i + 2];
+
+    r_ij = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+
+    if (r_ij > cutoff) continue;
+
+    /* dipole[i] <- charge[j] */
+
+    /* FIXME: use correct callback functions */
+    f = 0.0;
+
+    dipoles->field[6 * i + 0] += f / r_ij * charges->charges[j] * d[0];
+    dipoles->field[6 * i + 1] += f / r_ij * charges->charges[j] * d[1];
+    dipoles->field[6 * i + 2] += f / r_ij * charges->charges[j] * d[2];
+    dipoles->field[6 * i + 3] += f / r_ij * charges->charges[j] * d[0];
+    dipoles->field[6 * i + 4] += f / r_ij * charges->charges[j] * d[1];
+    dipoles->field[6 * i + 5] += f / r_ij * charges->charges[j] * d[2];
+
+    p = 0.0;
+
+    dipoles->potentials[3 * i + 0] += p / r_ij * charges->charges[j] * d[0];
+    dipoles->potentials[3 * i + 1] += p / r_ij * charges->charges[j] * d[1];
+    dipoles->potentials[3 * i + 2] += p / r_ij * charges->charges[j] * d[2];
+  }
+}
+
+
+void compute_charge_vs_dipole(charges_t *charges, fcs_int charges_start, fcs_int charges_size, dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipoles_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
+{
+  /* TODO: both at once */
+  compute_charge_from_dipole(charges, charges_start, charges_size, dipoles, dipoles_start, dipoles_size, cutoff, near, near_param);
+  compute_dipole_from_charge(dipoles, dipoles_start, dipoles_size, charges, charges_start, charges_size, cutoff, near, near_param);
+}
+
+
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
+
 fcs_int fcs_near_compute(fcs_near_t *near,
                          fcs_float cutoff,
                          const void *compute_param,
@@ -680,13 +1001,28 @@ fcs_int fcs_near_compute(fcs_near_t *near,
 
   fcs_int i;
 
-  box_t *real_boxes, *ghost_boxes, current_box;
-  const fcs_int max_nboxes = 27;
-  fcs_int current_last, current_start, current_size;
-  fcs_int real_lasts[max_nboxes], real_starts[max_nboxes], real_sizes[max_nboxes];
-  fcs_int ghost_lasts[max_nboxes], ghost_starts[max_nboxes], ghost_sizes[max_nboxes];
   fcs_int periodicity[3];
   int cart_dims[3], cart_periods[3], cart_coords[3], topo_status;
+
+  const fcs_int max_nboxes = 27;
+
+  charges_t real_charges, ghost_charges;
+
+  box_t *real_boxes, *ghost_boxes, current_box;
+  fcs_int real_lasts[max_nboxes], real_starts[max_nboxes], real_sizes[max_nboxes];
+  fcs_int ghost_lasts[max_nboxes], ghost_starts[max_nboxes], ghost_sizes[max_nboxes];
+  fcs_int current_last, current_start, current_size;
+  fcs_int do_charges;
+
+#if FCS_NEAR_WITH_DIPOLES
+  dipoles_t real_dipoles, ghost_dipoles;
+
+  box_t *dipole_real_boxes, *dipole_ghost_boxes, dipole_current_box;
+  fcs_int dipole_real_lasts[max_nboxes], dipole_real_starts[max_nboxes], dipole_real_sizes[max_nboxes];
+  fcs_int dipole_ghost_lasts[max_nboxes], dipole_ghost_starts[max_nboxes], dipole_ghost_sizes[max_nboxes];
+  fcs_int dipole_current_last, dipole_current_start, dipole_current_size;
+  fcs_int do_dipoles;
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
 #ifdef DO_TIMING
   double _t, t[7] = { 0, 0, 0, 0, 0, 0, 0 };
@@ -747,13 +1083,8 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 #ifdef PRINT_PARTICLES
-  printf("real:\n");
-  print_particles(near->nparticles, near->positions, comm_size, comm_rank, comm);
-  if (ghost_boxes)
-  {
-    printf("ghost:\n");
-    print_particles(near->nghosts, near->ghost_positions, comm_size, comm_rank, comm);
-  }
+  print_particles(near->nparticles, near->positions, "real particles:", comm_size, comm_rank, comm);
+  if (ghost_boxes) print_particles(near->nghosts, near->ghost_positions, "ghost particles:", comm_size, comm_rank, comm);
 #endif
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
@@ -767,60 +1098,224 @@ fcs_int fcs_near_compute(fcs_near_t *near,
 #endif
 
 #ifdef PRINT_PARTICLES
-  print_boxes(near->nparticles, real_boxes);
+  print_boxes(near->nparticles, real_boxes, "real boxes:");
+  if (ghost_boxes) print_boxes(near->nghosts, ghost_boxes, "ghost boxes:");
 #endif
-
-/*  for (i = 0; i < nlocal_particles; ++i)
-    printf("%" FCS_LMOD_INT "d: %f,%f,%f  " box_fmt "  %lld\n", i, positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2], box_val(&boxes[3 * i]), indices[i]);*/
 
   current_last = 0;
   for (i = 0; i < max_nboxes; ++i) real_lasts[i] = ghost_lasts[i] = 0;
 
-  TIMING_SYNC(comm); TIMING_START(t[3]);
-  do
-  {
+#if FCS_NEAR_WITH_DIPOLES
+
+  dipole_real_boxes = malloc((near->dipole_nparticles + 1) * sizeof(box_t)); /* + 1 for a sentinel */
+  if (near->dipole_nghosts > 0) dipole_ghost_boxes = malloc((near->dipole_nghosts + 1) * sizeof(box_t)); /* + 1 for a sentinel */
+  else dipole_ghost_boxes = NULL;
+
+  TIMING_SYNC(comm); TIMING_START(t[1]);
+  create_boxes(near->dipole_nparticles, dipole_real_boxes, near->dipole_positions, near->dipole_indices, near->box_base, near->box_a, near->box_b, near->box_c, periodicity, cutoff);
+  if (dipole_ghost_boxes) create_boxes(near->dipole_nghosts, dipole_ghost_boxes, near->dipole_ghost_positions, near->dipole_ghost_indices, near->box_base, near->box_a, near->box_b, near->box_c, periodicity, cutoff);
+  TIMING_SYNC(comm); TIMING_STOP(t[1]);
+
+#ifdef PRINT_PARTICLES
+  print_particles(near->dipole_nparticles, near->dipole_positions, "dipole real particles:", comm_size, comm_rank, comm);
+  if (dipole_ghost_boxes) print_particles(near->dipole_nghosts, near->dipole_ghost_positions, "dipole ghost particles:", comm_size, comm_rank, comm);
+#endif
+
+  TIMING_SYNC(comm); TIMING_START(t[2]);
+  dipole_sort_into_boxes(near->dipole_nparticles, dipole_real_boxes, near->dipole_positions, near->dipole_moments, near->dipole_indices, near->dipole_field, near->dipole_potentials);
+  if (dipole_ghost_boxes) dipole_sort_into_boxes(near->dipole_nghosts, dipole_ghost_boxes, near->dipole_ghost_positions, near->dipole_ghost_moments, near->dipole_ghost_indices, NULL, NULL);
+  TIMING_SYNC(comm); TIMING_STOP(t[2]);
+
+#ifdef BOX_SKIP_FORMAT
+  make_boxes_skip_format(near->dipole_nparticles, dipole_real_boxes);
+  if (dipole_ghost_boxes) make_boxes_skip_format(near->dipole_nghosts, dipole_ghost_boxes);
+#endif
+
+#ifdef PRINT_PARTICLES
+  print_boxes(near->dipole_nparticles, dipole_real_boxes, "dipole real boxes:");
+  if (dipole_ghost_boxes) print_boxes(near->dipole_nghosts, dipole_ghost_boxes, "dipole ghost boxes:");
+#endif
+
+  dipole_current_last = 0;
+  for (i = 0; i < max_nboxes; ++i) dipole_real_lasts[i] = dipole_ghost_lasts[i] = 0;
+
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
+  real_charges.nin = near->nparticles;
+  real_charges.positions = near->positions;
+  real_charges.charges = near->charges;
+  real_charges.nout = near->nparticles;
+  real_charges.field = near->field;
+  real_charges.potentials = near->potentials;
+
+  ghost_charges.nin = near->nghosts;
+  ghost_charges.positions = near->ghost_positions;
+  ghost_charges.charges = near->ghost_charges;
+  ghost_charges.nout = 0;
+  ghost_charges.field = NULL;
+  ghost_charges.potentials = NULL;
+
+#if FCS_NEAR_WITH_DIPOLES
+  real_dipoles.nin = near->dipole_nparticles;
+  real_dipoles.positions = near->dipole_positions;
+  real_dipoles.moments = near->dipole_moments;
+  real_dipoles.nout = near->dipole_nparticles;
+  real_dipoles.field = near->dipole_field;
+  real_dipoles.potentials = near->dipole_potentials;
+
+  ghost_dipoles.nin = near->dipole_nghosts;
+  ghost_dipoles.positions = near->dipole_ghost_positions;
+  ghost_dipoles.moments = near->dipole_ghost_moments;
+  ghost_dipoles.nout = 0;
+  ghost_dipoles.field = NULL;
+  ghost_dipoles.potentials = NULL;
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
+  current_last = 0;
+#if FCS_NEAR_WITH_DIPOLES
+  dipole_current_last = 0;
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
+  do {
+
     current_box = real_boxes[current_last];
+#if FCS_NEAR_WITH_DIPOLES
+    dipole_current_box = dipole_real_boxes[dipole_current_last];
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
-    TIMING_START(_t);
-    find_box(real_boxes, near->nparticles, current_box, current_last, &current_start, &current_size);
-    TIMING_STOP_ADD(_t, t[4]);
+#if FCS_NEAR_WITH_DIPOLES
+    do_charges = (current_box <= dipole_current_box);
+    do_dipoles = (current_box >= dipole_current_box);
+#else 
+    do_charges = 1;
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
-/*    printf("box: " box_fmt ", start: %" FCS_LMOD_INT "d, size: %" FCS_LMOD_INT "d\n",
-      box_val(current_box), current_start, current_size);*/
+    /* search */
 
-    TIMING_START(_t);
-    find_neighbours(nreal_neighbours, real_neighbours, real_boxes, near->nparticles, current_box, real_lasts, real_starts, real_sizes);
-    if (ghost_boxes) find_neighbours(nghost_neighbours, ghost_neighbours, ghost_boxes, near->nghosts, current_box, ghost_lasts, ghost_starts, ghost_sizes);
-    TIMING_STOP_ADD(_t, t[5]);
-
-    TIMING_START(_t);
-    compute_near(near->positions, near->charges, near->field, near->potentials, current_start, current_size, NULL, NULL, current_start, current_size, cutoff, near, compute_param);
-    for (i = 0; i < nreal_neighbours; ++i)
+    if (do_charges)
     {
-/*      printf("  real-neighbour %" FCS_LMOD_INT "d: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", i, current_starts[i], current_sizes[i]);*/
+      /* search current particle box */
+      TIMING_START(_t);
+      find_box(real_boxes, near->nparticles, current_box, current_last, &current_start, &current_size);
+      TIMING_STOP_ADD(_t, t[4]);
 
-      compute_near(near->positions, near->charges, near->field, near->potentials, current_start, current_size, NULL, NULL, real_starts[i], real_sizes[i], cutoff, near, compute_param);
+/*      printf("box: " box_fmt ", start: %" FCS_LMOD_INT "d, size: %" FCS_LMOD_INT "d\n",
+        box_val(current_box), current_start, current_size);*/
 
-      real_lasts[i] = real_starts[i] + real_sizes[i];
+      TIMING_START(_t);
+      find_neighbours(nreal_neighbours, real_neighbours, real_boxes, near->nparticles, current_box, real_lasts, real_starts, real_sizes);
+      if (ghost_boxes) find_neighbours(nghost_neighbours, ghost_neighbours, ghost_boxes, near->nghosts, current_box, ghost_lasts, ghost_starts, ghost_sizes);
+      TIMING_STOP_ADD(_t, t[5]);
     }
 
-    if (ghost_boxes)
-    for (i = 0; i < nghost_neighbours; ++i)
+#if FCS_NEAR_WITH_DIPOLES
+
+    if (do_dipoles)
     {
-/*      printf("  ghost-neighbour %" FCS_LMOD_INT "d: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", i, ghost_starts[i], ghost_sizes[i]);*/
+      /* search current dipole particle box */
+      TIMING_START(_t);
+      find_box(dipole_real_boxes, near->dipole_nparticles, dipole_current_box, dipole_current_last, &dipole_current_start, &dipole_current_size);
+      TIMING_STOP_ADD(_t, t[4]);
 
-      compute_near(near->positions, near->charges, near->field, near->potentials, current_start, current_size, near->ghost_positions, near->ghost_charges, ghost_starts[i], ghost_sizes[i], cutoff, near, compute_param);
-
-      ghost_lasts[i] = ghost_starts[i] + ghost_sizes[i];
+      TIMING_START(_t);
+      find_neighbours(nreal_neighbours, real_neighbours, dipole_real_boxes, near->dipole_nparticles, dipole_current_box, dipole_real_lasts, dipole_real_starts, dipole_real_sizes);
+      if (dipole_ghost_boxes) find_neighbours(nghost_neighbours, ghost_neighbours, dipole_ghost_boxes, near->dipole_nghosts, dipole_current_box, dipole_ghost_lasts, dipole_ghost_starts, dipole_ghost_sizes);
+      TIMING_STOP_ADD(_t, t[5]);
     }
-    current_last = current_start + current_size;
-    TIMING_STOP_ADD(_t, t[6]);
 
-  } while (current_last < near->nparticles);
-  TIMING_SYNC(comm); TIMING_STOP(t[3]);
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
+    /* compute */
+
+    if (do_charges)
+    {
+      /* charge vs. charge */
+
+      /* inside box */
+      compute_charge_self(&real_charges, current_start, current_size, cutoff, near, compute_param);
+      current_last = current_start + current_size;
+
+      /* neighbor boxes */
+      for (i = 0; i < nreal_neighbours; ++i)
+      {
+        compute_charge_vs_charge(&real_charges, current_start, current_size, &real_charges, real_starts[i], real_sizes[i], cutoff, near, compute_param);
+        real_lasts[i] = real_starts[i] + real_sizes[i];
+      }
+
+      /* ghost boxes */
+      if (ghost_boxes)
+      for (i = 0; i < nghost_neighbours; ++i)
+      {
+        compute_charge_from_charge(&real_charges, current_start, current_size, &ghost_charges, ghost_starts[i], ghost_sizes[i], cutoff, near, compute_param);
+        ghost_lasts[i] = ghost_starts[i] + ghost_sizes[i];
+      }
+    }
+
+#if FCS_NEAR_WITH_DIPOLES
+
+    if (do_dipoles)
+    {
+      /* dipole vs. dipole */
+
+      /* inside box */
+      compute_dipole_self(&real_dipoles, dipole_current_start, dipole_current_size, cutoff, near, compute_param);
+      dipole_current_last = dipole_current_start + dipole_current_size;
+
+      /* neighbor boxes */
+      for (i = 0; i < nreal_neighbours; ++i)
+      {
+        compute_dipole_vs_dipole(&real_dipoles, dipole_current_start, dipole_current_size, &real_dipoles, dipole_real_starts[i], dipole_real_sizes[i], cutoff, near, compute_param);
+        dipole_real_lasts[i] = dipole_real_starts[i] + dipole_real_sizes[i];
+      }
+
+      /* ghost boxes */
+      if (dipole_ghost_boxes)
+      for (i = 0; i < nghost_neighbours; ++i)
+      {
+        compute_dipole_from_dipole(&real_dipoles, dipole_current_start, dipole_current_size, &ghost_dipoles, dipole_ghost_starts[i], dipole_ghost_sizes[i], cutoff, near, compute_param);
+        dipole_ghost_lasts[i] = dipole_ghost_starts[i] + dipole_ghost_sizes[i];
+      }
+    }
+
+    if (do_charges && do_dipoles)
+    {
+      /* charge vs. dipole */
+      compute_charge_vs_dipole(&real_charges, current_start, current_size, &real_dipoles, dipole_current_start, dipole_current_size, cutoff, near, compute_param);
+
+      /* neighbor boxes */
+      for (i = 0; i < nreal_neighbours; ++i)
+      {
+        compute_charge_vs_dipole(&real_charges, current_start, current_size, &real_dipoles, dipole_real_starts[i], dipole_real_sizes[i], cutoff, near, compute_param);
+
+        compute_charge_vs_dipole(&real_charges, real_starts[i], real_sizes[i], &real_dipoles, dipole_current_start, dipole_current_size, cutoff, near, compute_param);
+      }
+
+      /* ghost boxes */
+      for (i = 0; i < nghost_neighbours; ++i)
+      {
+        if (dipole_ghost_boxes)
+          compute_charge_from_dipole(&real_charges, current_start, current_size, &ghost_dipoles, dipole_ghost_starts[i], dipole_ghost_sizes[i], cutoff, near, compute_param);
+
+        if (ghost_boxes)
+          compute_dipole_from_charge(&real_dipoles, dipole_current_start, dipole_current_size, &ghost_charges, ghost_starts[i], ghost_sizes[i], cutoff, near, compute_param);
+      }
+    }
+
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
+  } while (current_last < near->nparticles
+#if FCS_NEAR_WITH_DIPOLES
+    || dipole_current_last < near->dipole_nparticles
+#endif /* FCS_NEAR_WITH_DIPOLES */
+    );
 
   free(real_boxes);
   if (ghost_boxes) free(ghost_boxes);
+
+#if FCS_NEAR_WITH_DIPOLES
+  free(dipole_real_boxes);
+  if (dipole_ghost_boxes) free(dipole_ghost_boxes);
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
 exit:
   TIMING_SYNC(comm); TIMING_STOP(t[0]);
