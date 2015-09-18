@@ -2381,21 +2381,21 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs, MPI_Comm comm)
       gridsort_back_fp_sort(
         gs->nsorted_real_particles, gs->sorted_indices, gs->sorted_field, gs->sorted_potentials,
         gs->noriginal_particles, NULL, gs->original_field, gs->original_potentials,
-        gs->nprocs, gs->procs, &t[1], comm_size, comm_rank, comm);
+        gs->nprocs, gs->procs, TIMING_IFELSE(&t[1], NULL), comm_size, comm_rank, comm);
       break;
 
     case 1:
       gridsort_back_f__sort(
         gs->nsorted_real_particles, gs->sorted_indices, gs->sorted_field, gs->sorted_potentials,
         gs->noriginal_particles, NULL, gs->original_field, gs->original_potentials,
-        gs->nprocs, gs->procs, &t[1], comm_size, comm_rank, comm);
+        gs->nprocs, gs->procs, TIMING_IFELSE(&t[1], NULL), comm_size, comm_rank, comm);
       break;
 
     case 2:
       gridsort_back__p_sort(
         gs->nsorted_real_particles, gs->sorted_indices, gs->sorted_field, gs->sorted_potentials,
         gs->noriginal_particles, NULL, gs->original_field, gs->original_potentials,
-        gs->nprocs, gs->procs, &t[1], comm_size, comm_rank, comm);
+        gs->nprocs, gs->procs, TIMING_IFELSE(&t[1], NULL), comm_size, comm_rank, comm);
       break;
   }
 
@@ -2412,21 +2412,21 @@ fcs_int fcs_gridsort_sort_backward(fcs_gridsort_t *gs, MPI_Comm comm)
       gridsort_back_dipole_fp_sort(
         gs->dipole_nsorted_real_particles, gs->dipole_sorted_indices, gs->dipole_sorted_field, gs->dipole_sorted_potentials,
         gs->dipole_noriginal_particles, NULL, gs->dipole_original_field, gs->dipole_original_potentials,
-        gs->nprocs, gs->procs, &t[1], comm_size, comm_rank, comm);
+        gs->nprocs, gs->procs, TIMING_IFELSE(&t[1], NULL), comm_size, comm_rank, comm);
       break;
 
     case 1:
       gridsort_back_dipole_f__sort(
         gs->dipole_nsorted_real_particles, gs->dipole_sorted_indices, gs->dipole_sorted_field, gs->dipole_sorted_potentials,
         gs->dipole_noriginal_particles, NULL, gs->dipole_original_field, gs->dipole_original_potentials,
-        gs->nprocs, gs->procs, &t[1], comm_size, comm_rank, comm);
+        gs->nprocs, gs->procs, TIMING_IFELSE(&t[1], NULL), comm_size, comm_rank, comm);
       break;
 
     case 2:
       gridsort_back_dipole__p_sort(
         gs->dipole_nsorted_real_particles, gs->dipole_sorted_indices, gs->dipole_sorted_field, gs->dipole_sorted_potentials,
         gs->dipole_noriginal_particles, NULL, gs->dipole_original_field, gs->dipole_original_potentials,
-        gs->nprocs, gs->procs, &t[1], comm_size, comm_rank, comm);
+        gs->nprocs, gs->procs, TIMING_IFELSE(&t[1], NULL), comm_size, comm_rank, comm);
       break;
   }
 

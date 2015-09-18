@@ -20,25 +20,31 @@
 
 #if defined(FCS_ENABLE_DEBUG_GRIDSORT)
 # define DO_DEBUG
-# define DEBUG_CMD(_cmd_)  Z_MOP(_cmd_)
+# define DEBUG_CMD(_cmd_)            Z_MOP(_cmd_)
+# define DEBUG_IFELSE(_if_, _else_)  (_if_)
 #else
-# define DEBUG_CMD(_cmd_)  Z_NOP()
+# define DEBUG_CMD(_cmd_)            Z_NOP()
+# define DEBUG_IFELSE(_if_, _else_)  (_else_)
 #endif
 #define DEBUG_PRINT_PREFIX  "GRIDSORT_DEBUG: "
 
 #if defined(FCS_ENABLE_INFO_GRIDSORT)
 # define DO_INFO
-# define INFO_CMD(_cmd_)  Z_MOP(_cmd_)
+# define INFO_CMD(_cmd_)            Z_MOP(_cmd_)
+# define INFO_IFELSE(_if_, _else_)  (_if_)
 #else
-# define INFO_CMD(_cmd_)  Z_NOP()
+# define INFO_CMD(_cmd_)             Z_NOP()
+# define INFO_IFELSE(_if_, _else_)  (_else_)
 #endif
 #define INFO_PRINT_PREFIX  "GRIDSORT_INFO: "
 
 #if defined(FCS_ENABLE_TIMING_GRIDSORT)
 # define DO_TIMING
-# define TIMING_CMD(_cmd_)  Z_MOP(_cmd_)
+# define TIMING_CMD(_cmd_)            Z_MOP(_cmd_)
+# define TIMING_IFELSE(_if_, _else_)  (_if_)
 #else
-# define TIMING_CMD(_cmd_)  Z_NOP()
+# define TIMING_CMD(_cmd_)            Z_NOP()
+# define TIMING_IFELSE(_if_, _else_)  (_else_)
 #endif
 #define TIMING_PRINT_PREFIX  "GRIDSORT_TIMING: "
 
