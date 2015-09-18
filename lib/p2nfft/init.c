@@ -196,6 +196,8 @@ static ifcs_p2nfft_data_struct* mkplan_p2nfft(
 
   /* set PNFFT plan to NULL to avoid senseless references */
   d->pnfft = NULL;
+  d->charges = NULL;
+  d->dipoles = NULL;
 
   /* initialize pointer to interpolation table */
   d->interpolation_order = 3;

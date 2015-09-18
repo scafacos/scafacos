@@ -143,6 +143,9 @@ typedef struct {
   int np[3];                  /**< @brief Procmesh size */
   FCS_PNFFT(plan) pnfft;      /**< @brief Pointer to the PNFFT plan used
                                 for all NDFTs. */
+  FCS_PNFFT(nodes) charges;   /**< @brief Pointer to the PNFFT nodes of charges. */
+  FCS_PNFFT(nodes) dipoles;   /**< @brief Pointer to the PNFFT nodes of charges. */
+
   ptrdiff_t N[3];             /**< @brief The dimensions of the frequency grid. */
   ptrdiff_t local_N[3];       /**< @brief Local dimensions of the grid. */
   ptrdiff_t local_N_start[3]; /**< @brief Local offsets of the grid. */

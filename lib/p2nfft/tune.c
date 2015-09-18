@@ -1739,8 +1739,6 @@ static void init_pnfft(
     MPI_Comm cart_comm_pnfft
     )
 {
-  ptrdiff_t no_particles = 0;
-
 #if FCS_ENABLE_INFO
   int myrank;
   MPI_Comm_rank(cart_comm_pnfft, &myrank);
@@ -1822,10 +1820,10 @@ static void init_pnfft(
   
   /* finalize, if memory has been already allocated */
   if(*ths != NULL)
-    FCS_PNFFT(finalize)(*ths, PNFFT_FREE_F_HAT| PNFFT_FREE_F| PNFFT_FREE_X| PNFFT_FREE_GRAD_F);
+    FCS_PNFFT(finalize)(*ths, PNFFT_FREE_F_HAT);
 
   /* call PNFFT planer */
-  *ths = FCS_PNFFT(init_guru)(dim, N, n, x_max, no_particles, m, pnfft_flags, pfft_flags, cart_comm_pnfft);
+  *ths = FCS_PNFFT(init_guru)(dim, N, n, x_max, m, pnfft_flags, pfft_flags, cart_comm_pnfft);
   
   /* Finish timing of PNFFT tuning */
   FCS_P2NFFT_FINISH_TIMING(cart_comm_pnfft, "PNFFT tuning");
@@ -3219,7 +3217,6 @@ static fcs_float p2nfft_k_space_error_general_window(
 {
   /* some dummy variables, since we want to use PNFFT data decomposition */
   ptrdiff_t local_N[3], local_N_start[3];
-  ptrdiff_t local_M = 1;
   fcs_float lower_border[3], upper_border[3];
   fcs_float x_max[3] = {0.5, 0.5, 0.5};
   /* PNFFT calculates with real space cutoff 2*m+2
@@ -3234,7 +3231,7 @@ static fcs_float p2nfft_k_space_error_general_window(
 
   /* Fast initialize of PNFFT, since we want to get the inverse Fourier coefficients.
    * Do not allocate arrays and do not tune PFFT */
-  FCS_PNFFT(init_guru)(&pnfft, 3, N, N, x_max, local_M, m,
+  FCS_PNFFT(init_guru)(&pnfft, 3, N, N, x_max, m,
       PNFFT_TRANSPOSED_F_HAT | window_flag, PFFT_ESTIMATE, comm);
 
   for(k[0]=local_N_start[0]; k[0]<local_N_start[0]+local_N[0]; k[0]++){
