@@ -286,7 +286,7 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
   \item \verb!p2nfft_k_cut! -
     Spherical cutoff distance in Fourier space. If this parameter is set to a positive float $k_c>0$, all Fourier coefficients $\hat f_{\mathbf k}$ with
     $\|\mathbf k\|_2 > kc$ will be set to zero, i.e., the approximation in Fourier space uses a spherical cutoff scheme.
-    This is usefull, e.g., for comparision of results to classical Ewald summation.
+    This is useful, e.g., for comparison of results to classical Ewald summation.
     Feasible values are any positive float (enable spherical cutoff) or any negative float (disable spherical cutoff).
     The spherical cutoff is not applied per default, since FFTs naturally use a box shaped cutoff scheme.
   \item \verb!p2nfft_ignore_tolerance! -
@@ -307,7 +307,7 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
 \begin{itemize}
   \item \verb!pnfft_N! (acronym: \verb!p2nfft_grid!) -
     Size of the FFT grid. Can be automatically tuned.
-    Feasible values are three comma separated, even, positve integers, e.g., \verb!pnfft_N,16,32,12!.
+    Feasible values are three comma separated, even, positive integers, e.g., \verb!pnfft_N,16,32,12!.
     Optimal values are in the order of $M^{1/3}$, \ie, one grid point for each particle.
     The grid size may be any even, positive integer, but powers of
     two are recommended. The larger the grid, the smaller the
@@ -338,7 +338,7 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     (\verb!cao!) of the P3M solver!}
   \item \verb!pnfft_b! -
     Shape parameter of the NFFT window function corresponding to the three dimensions. Can be automatically tuned.
-    Feasible values are three comma separated positiv floating point numbers, e.g., \verb!pnfft_b,0.5,1.0,3.2!.
+    Feasible values are three comma separated positive floating point numbers, e.g., \verb!pnfft_b,0.5,1.0,3.2!.
     Choosing an optimal value for b is not that easy but influences the error a lot.
     Therefore, you should only change the default value if you know what you do.
   \item \verb!pnfft_intpol_order! -
@@ -346,7 +346,7 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     Feasible values are $-1$ (direct evaluation of window function without interpolation), $0$, (constant interpolation), $1$ (linear interpolation), $2$ (quadratic interpolation) and $3$ (cubic interpolation).
     Default value is $3$ (cubic interpolation).
   \item \verb!pnfft_direct! -
-    Flag to enable plain NDFT instead of the fast approximative NFFT algorithms. 
+    Flag to enable plain NDFT instead of the fast approximate NFFT algorithms. 
     Feasible values are $0$ (use NFFT), or any other integer \verb!pnfft_direct!$\ne0$ (use NDFT). Default value is \verb!pnfft_direct!$=0$ (use NFFT).
   \item \verb!pnfft_pre_phi_hat! -
     Flag to enable precomputed Fourier coefficients for faster computation of the diagonal matrix in the NFFT algorithm.
@@ -354,7 +354,7 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     Default value is $1$ (enable pre-computation).
   \item \verb!pnfft_fast_gaussian! -
     Set PNFFT flag \verb!PNFFT_FAST_GAUSSIAN!. Only Gaussian window function we can use Fast Gaussian Gridding in order to speed up the evaluation of the window function.
-    Feasible values are $0$ (switch Fast Gaussian gridding off), or any other integer \verb!pnfft_fast_gaussian!$\ne0$ (use Fast Gaussian gridding).
+    Feasible values are $0$ (switch Fast Gaussian Gridding off), or any other integer \verb!pnfft_fast_gaussian!$\ne0$ (use Fast Gaussian Gridding).
     Default value is $0$ (since B-Spline is the default window function).
   \item \verb!pnfft_fft_in_place! -
     Set PNFFT flag \verb!PNFFT_FFT_IN_PLACE!. This causes the PNFFT planner to use in-place-FFTs, which saves about half of the memory for FFT but may sacrifices some performance.
