@@ -114,6 +114,7 @@ FCSResult ifcs_p2nfft_init(
 #endif
 
   d->pnfft_flags = PNFFT_MALLOC_F_HAT| PNFFT_PRE_PHI_HAT | PNFFT_FFT_OUT_OF_PLACE | PNFFT_TRANSPOSED_F_HAT;
+  d->pnfft_precompute_flags = PNFFT_PRE_NONE;
   d->pnfft_interpolation_order = 3;
   d->pnfft_window = FCS_P2NFFT_DEFAULT_PNFFT_WINDOW;
   d->pnfft_direct = 0;

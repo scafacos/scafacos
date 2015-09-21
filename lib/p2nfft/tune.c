@@ -1254,12 +1254,18 @@ static void print_command_line_arguments(
       printf("pnfft_interlaced,%d,", (d->pnfft_flags & PNFFT_INTERLACED) ? 1 : 0);
     if(verbose || (d->pnfft_flags & PNFFT_REAL_F) )
       printf("pnfft_real_f,%d,", (d->pnfft_flags & PNFFT_REAL_F) ? 1 : 0);
-    if(d->pnfft_flags & PNFFT_GRAD_IK)
-      printf("pnfft_grad_ik,%d,", (d->pnfft_flags & PNFFT_GRAD_IK) ? 1 : 0);
-    else if(d->pnfft_flags & PNFFT_GRAD_NONE)
-      printf("pnfft_grad_none,%d,", (d->pnfft_flags & PNFFT_GRAD_NONE) ? 1 : 0);
-    else if(verbose)
-      printf("pnfft_grad_ik,0,");
+
+    /* TODO: upadte to diff_ik */
+//     if(d->compute_flags & PNFFT_GRAD_F) ...
+//     if(d->pnfft_flags & PNFFT_DIFF_IK)
+//       printf("pnfft_diff_ik,%d,", (d->pnfft_flags & PNFFT_DIFF_IK) ? 1 : 0);
+//
+//     if(d->pnfft_flags & PNFFT_GRAD_IK)
+//       printf("pnfft_grad_ik,%d,", (d->pnfft_flags & PNFFT_GRAD_IK) ? 1 : 0);
+//     else if(d->pnfft_flags & PNFFT_GRAD_NONE)
+//       printf("pnfft_grad_none,%d,", (d->pnfft_flags & PNFFT_GRAD_NONE) ? 1 : 0);
+//     else if(verbose)
+//       printf("pnfft_grad_ik,0,");
 
     /* print PFFT specific parameters */
     if(verbose || (d->pfft_patience != FCS_P2NFFT_DEFAULT_PFFT_PATIENCE) ){
