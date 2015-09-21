@@ -55,8 +55,8 @@ static const char CONFIGURATION_TAG[] = "configuration";
 static const char DUPLICATE_TAG[] = "duplicate";
 
 
-Configuration::Configuration() {
-
+Configuration::Configuration()
+{
   params.box_origin[0] = params.box_origin[1] = params.box_origin[2] = 0.0;
   params.box_a[0] = params.box_a[1] = params.box_a[2] = 0.0;
   params.box_b[0] = params.box_b[1] = params.box_b[2] = 0.0;
@@ -68,7 +68,7 @@ Configuration::Configuration() {
   params.periodic_duplications[0] = params.periodic_duplications[1] = params.periodic_duplications[2] = 1;
 
   total_duplications[0] = total_duplications[1] = total_duplications[2] = total_duplication = 0;
-  
+
   unscale_box[0] = unscale_box[1] = unscale_box[2] = 1.0;
 
   input_plain_nparticles = 0;
@@ -76,30 +76,28 @@ Configuration::Configuration() {
   input_file_nparticles = 0;
 
   input_generator_nparticles = 0;
-  
+
   input_ref_nparticles = 0;
 
-  dup_input_total_nparticles = 0;
-  dup_input_nparticles = dup_input_nparticles_allocated = 0;
-  dup_input_overalloc = 0;
-  dup_input_positions = 0;
-  dup_input_charges = 0;
-  dup_input_field = 0;
-  dup_input_potentials = 0;
+  input_particles_allocated = false;
 
   have_reference_values[0] = have_reference_values[1] = 0;
   have_result_values[0] = have_result_values[1] = 0;
 
-  decomp_total_nparticles = 0;
-  decomp_nparticles = 0;
-  decomp_positions = 0;
-  decomp_charges = 0;
-  decomp_potentials = 0;
-  decomp_field = 0;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  dipole_have_reference_values[0] = dipole_have_reference_values[1] = 0;
+  dipole_have_result_values[0] = dipole_have_result_values[1] = 0;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
   decomp_comm = MPI_COMM_NULL;
 
   reference_potentials = 0;
   reference_field = 0;
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+  dipole_reference_potentials = 0;
+  dipole_reference_field = 0;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
   field_correction[0] = field_correction[1] = field_correction[2] = 0;
   energy_correction = 0;
@@ -107,76 +105,14 @@ Configuration::Configuration() {
   cart_comm = MPI_COMM_NULL;
 }
 
-Configuration::~Configuration() {
-
-  free_dup_input_particles();
+Configuration::~Configuration()
+{
+  input_particles.particles.free();
+  input_particles.particles.free();
   
   free_decomp_particles(true);
 }
 
-
-void Configuration::realloc_dup_input_particles(fcs_int new_nparticles)
-{
-  const fcs_int min_alloc_step = 1;
-
-  if (new_nparticles > dup_input_nparticles_allocated) {
-
-    dup_input_nparticles_allocated = z_max(new_nparticles, dup_input_nparticles_allocated + min_alloc_step);
-
-    dup_input_positions  = (fcs_float *) realloc(dup_input_positions,  dup_input_nparticles_allocated * 3 * sizeof(fcs_float));
-    dup_input_charges    = (fcs_float *) realloc(dup_input_charges,    dup_input_nparticles_allocated *     sizeof(fcs_float));
-    dup_input_potentials = (fcs_float *) realloc(dup_input_potentials, dup_input_nparticles_allocated *     sizeof(fcs_float));
-    dup_input_field      = (fcs_float *) realloc(dup_input_field,      dup_input_nparticles_allocated * 3 * sizeof(fcs_float));
- }
-
-  if(dup_input_field == NULL || dup_input_positions == NULL || dup_input_charges == NULL || dup_input_potentials == NULL){
-    
-    cerr << "ERROR in Configuration::realloc_dup_input_particles: "<< strerror(errno) << endl;
-    MPI_Abort(communicator, 1);
-  }
-}
-
-
-fcs_int Configuration::add_dup_input_particles(fcs_int add_nparticles)
-{
-  fcs_int i, new_alloc;
-
-
-  new_alloc = (dup_input_overalloc < 0)?(round((dup_input_nparticles + add_nparticles) * (1.0 - dup_input_overalloc))):(dup_input_nparticles + add_nparticles + dup_input_overalloc);
-
-  realloc_dup_input_particles(new_alloc);
-
-  for (i = dup_input_nparticles; i < dup_input_nparticles + add_nparticles; ++i)
-  {
-    dup_input_positions[3 * i + 0] = 0.0;
-    dup_input_positions[3 * i + 1] = 0.0;
-    dup_input_positions[3 * i + 2] = 0.0;
-
-    dup_input_charges[i] = 0.0;
-
-    dup_input_potentials[i] = NAN;
-
-    dup_input_field[3 * i + 0] = NAN;
-    dup_input_field[3 * i + 1] = NAN;
-    dup_input_field[3 * i + 2] = NAN;
-  }
-
-  return (dup_input_nparticles += add_nparticles) - add_nparticles;
-}
-
-void Configuration::free_dup_input_particles()
-{
-  if (dup_input_positions != input_plain.positions) free(dup_input_positions);
-  if (dup_input_charges != input_plain.charges) free(dup_input_charges);
-  if (dup_input_potentials != input_plain.potentials) free(dup_input_potentials);
-  if (dup_input_field != input_plain.field) free(dup_input_field);
-
-  dup_input_nparticles = 0;
-  dup_input_positions = 0;
-  dup_input_charges = 0;
-  dup_input_field = 0;
-  dup_input_potentials = 0;
-}
 
 void Configuration::read_config(xml_node<> *config_node, const char *basename)
 {
@@ -323,27 +259,30 @@ void Configuration::write_config(xml_document<> *doc, xml_node<> *config_node, c
   {
     xml_node<> *particles_node = input_duplication.write_config(doc, config_node);
 
-    if (comm_rank == MASTER_RANK)
-      PlainParticles::write_config(doc, particles_node, NULL, input_plain.get_total_nparticles(), input_plain.nparticles,
-        input_plain.positions, input_plain.charges, NULL, NULL, comm_size, comm_rank, communicator);
-    else
-      PlainParticles::write_config(NULL, NULL, NULL, input_plain.get_total_nparticles(), 0,
-        (fcs_float *) 1, (fcs_float *) 1, NULL, NULL, comm_size, comm_rank, communicator);
+    particles_t particles;
+
+    particles.total_nparticles = input_plain.get_total_nparticles();
+    particles.particles = input_plain.local_particles;
+#if SCAFACOS_TEST_WITH_DIPOLES
+    particles.dipole_total_nparticles = input_plain.get_dipole_total_nparticles();
+    particles.dipole_particles = input_plain.dipole_local_particles;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+    PlainParticles::write_config(doc, particles_node, NULL, &particles, comm_size, comm_rank, communicator);
 
     if (binfilename)
     {
-      FileParticles::write_config<FormatBinary>(doc, config_node, REFERENCES_TAG, binfilename, dup_input_total_nparticles, dup_input_nparticles,
+      FileParticles::write_config<FormatBinary>(doc, config_node, REFERENCES_TAG, binfilename, input_particles.total_nparticles, input_particles.particles.n,
         NULL, NULL,
-        (have_reference_values[0] || have_result_values[0])?(dup_input_potentials?dup_input_potentials:(fcs_float *) 1):NULL,
-        (have_reference_values[1] || have_result_values[1])?(dup_input_field?dup_input_field:(fcs_float *) 1):NULL,
+        (have_reference_values[0] || have_result_values[0])?(input_particles.particles.potentials?input_particles.particles.potentials:(fcs_float *) 1):NULL,
+        (have_reference_values[1] || have_result_values[1])?(input_particles.particles.field?input_particles.particles.field:(fcs_float *) 1):NULL,
         comm_size, comm_rank, communicator);
 
     } else if (portable_filename)
     {
-      FileParticles::write_config<FormatPortable>(doc, config_node, REFERENCES_TAG, portable_filename, dup_input_total_nparticles, dup_input_nparticles,
+      FileParticles::write_config<FormatPortable>(doc, config_node, REFERENCES_TAG, portable_filename, input_particles.total_nparticles, input_particles.particles.n,
         NULL, NULL,
-        (have_reference_values[0] || have_result_values[0])?(dup_input_potentials?dup_input_potentials:(fcs_float *) 1):NULL,
-        (have_reference_values[1] || have_result_values[1])?(dup_input_field?dup_input_field:(fcs_float *) 1):NULL,
+        (have_reference_values[0] || have_result_values[0])?(input_particles.particles.potentials?input_particles.particles.potentials:(fcs_float *) 1):NULL,
+        (have_reference_values[1] || have_result_values[1])?(input_particles.particles.field?input_particles.particles.field:(fcs_float *) 1):NULL,
         comm_size, comm_rank, communicator);
 
     } else {
@@ -354,25 +293,28 @@ void Configuration::write_config(xml_document<> *doc, xml_node<> *config_node, c
   } else {
 
     if (binfilename)
-      FileParticles::write_config<FormatBinary>(doc, config_node, BINARY_TAG, binfilename, dup_input_total_nparticles, dup_input_nparticles,
-        dup_input_positions?dup_input_positions:(fcs_float *) 1,
-        dup_input_charges?dup_input_charges:(fcs_float *) 1,
-        (have_reference_values[0] || have_result_values[0])?(dup_input_potentials?dup_input_potentials:(fcs_float *) 1):NULL,
-        (have_reference_values[1] || have_result_values[1])?(dup_input_field?dup_input_field:(fcs_float *) 1):NULL,
+      FileParticles::write_config<FormatBinary>(doc, config_node, BINARY_TAG, binfilename, input_particles.total_nparticles, input_particles.particles.n,
+        input_particles.particles.positions?input_particles.particles.positions:(fcs_float *) 1,
+        input_particles.particles.props?input_particles.particles.props:(fcs_float *) 1,
+        (have_reference_values[0] || have_result_values[0])?(input_particles.particles.potentials?input_particles.particles.potentials:(fcs_float *) 1):NULL,
+        (have_reference_values[1] || have_result_values[1])?(input_particles.particles.field?input_particles.particles.field:(fcs_float *) 1):NULL,
         comm_size, comm_rank, communicator);
     else if (portable_filename)
-      FileParticles::write_config<FormatPortable>(doc, config_node, PORTABLE_TAG, portable_filename, dup_input_total_nparticles, dup_input_nparticles,
-        dup_input_positions?dup_input_positions:(fcs_float *) 1,
-        dup_input_charges?dup_input_charges:(fcs_float *) 1,
-        (have_reference_values[0] || have_result_values[0])?(dup_input_potentials?dup_input_potentials:(fcs_float *) 1):NULL,
-        (have_reference_values[1] || have_result_values[1])?(dup_input_field?dup_input_field:(fcs_float *) 1):NULL,
+      FileParticles::write_config<FormatPortable>(doc, config_node, PORTABLE_TAG, portable_filename, input_particles.total_nparticles, input_particles.particles.n,
+        input_particles.particles.positions?input_particles.particles.positions:(fcs_float *) 1,
+        input_particles.particles.props?input_particles.particles.props:(fcs_float *) 1,
+        (have_reference_values[0] || have_result_values[0])?(input_particles.particles.potentials?input_particles.particles.potentials:(fcs_float *) 1):NULL,
+        (have_reference_values[1] || have_result_values[1])?(input_particles.particles.field?input_particles.particles.field:(fcs_float *) 1):NULL,
         comm_size, comm_rank, communicator);
     else
-      PlainParticles::write_config(doc, config_node, NULL, dup_input_total_nparticles, dup_input_nparticles,
-        dup_input_positions, dup_input_charges,
-        (have_reference_values[0] || have_result_values[0])?(dup_input_potentials?dup_input_potentials:(fcs_float *) 1):NULL,
-        (have_reference_values[1] || have_result_values[1])?(dup_input_field?dup_input_field:(fcs_float *) 1):NULL,
-        comm_size, comm_rank, communicator);
+    {
+      particles_t particles = input_particles;
+
+      if (!(have_reference_values[0] || have_result_values[0])) particles.particles.potentials = NULL;
+      if (!(have_reference_values[1] || have_result_values[1])) particles.particles.field = NULL;
+      
+      PlainParticles::write_config(doc, config_node, NULL, &particles, comm_size, comm_rank, communicator);
+    }
   }
 }
 
@@ -434,7 +376,7 @@ void Configuration::broadcast_input()
   determine_total_duplication();
 
   // Broadcast plain particle information
-  input_plain.broadcast_config(MASTER_RANK, communicator, (total_duplication > 1 && params.decomposition != DECOMPOSE_ALL_ON_MASTER && params.decomposition != DECOMPOSE_ALMOST_ALL_ON_MASTER));
+  input_plain.broadcast_config(MASTER_RANK, communicator);
 
   fcs_int n;
 
@@ -456,7 +398,7 @@ void Configuration::broadcast_input()
   input_ref.broadcast_config(MASTER_RANK, communicator);
 }
 
-void Configuration::generate_input_particles()
+void Configuration::generate_input_particles(fcs_float minalloc, fcs_float overalloc)
 {
   broadcast_input();
   
@@ -464,92 +406,6 @@ void Configuration::generate_input_particles()
 
   for (fcs_int i = -2; i < (fcs_int) input_generators.size(); ++i)
   {
-    fcs_int my_first, my_count, my_modulo;
-
-    if (i == -2)
-    {
-      if (input_plain.get_total_nparticles() <= 0) continue;
-
-      if (total_duplication == 1 && !all_on_master)
-      {
-        int scounts[comm_size], sdispls[comm_size], scounts3[comm_size], sdispls3[comm_size];
-
-        make_equal_counts_and_displs(input_plain.get_total_nparticles(), comm_size, scounts, sdispls, scounts3, sdispls3);
-
-        DEBUG(cout << comm_rank << ": scattering input: first: " << sdispls[comm_rank] << ", count: " << scounts[comm_rank] << endl);
-
-        fcs_int pid = add_dup_input_particles(scounts[comm_rank]);
-
-        MPI_Scatterv(input_plain.positions, scounts3, sdispls3, FCS_MPI_FLOAT, dup_input_positions + 3 * pid, scounts3[comm_rank], FCS_MPI_FLOAT, MASTER_RANK, communicator);
-        MPI_Scatterv(input_plain.charges, scounts, sdispls, FCS_MPI_FLOAT, dup_input_charges + pid, scounts[comm_rank], FCS_MPI_FLOAT, MASTER_RANK, communicator);
-        MPI_Scatterv(input_plain.potentials, scounts, sdispls, FCS_MPI_FLOAT, dup_input_potentials + pid, scounts[comm_rank], FCS_MPI_FLOAT, MASTER_RANK, communicator);
-        MPI_Scatterv(input_plain.field, scounts3, sdispls3, FCS_MPI_FLOAT, dup_input_field + 3 * pid, scounts3[comm_rank], FCS_MPI_FLOAT, MASTER_RANK, communicator);
-
-        if (input_plain.have_potentials()) have_reference_values[0] = 1;
-        if (input_plain.have_field()) have_reference_values[1] = 1;
-
-        continue;
-      }
-
-      my_modulo = input_plain.get_total_nparticles();
-
-      fcs_int total_count = total_duplication * input_plain.get_total_nparticles();
-
-      if (all_on_master)
-      {
-        my_first = 0;
-        my_count = (comm_rank == MASTER_RANK)?total_count:0;
-
-      } else
-      {
-        my_first = (fcs_int) (((fcs_float) (comm_rank + 0) * (fcs_float) total_count / (fcs_float) comm_size) + 0.5);
-        my_count = (fcs_int) (((fcs_float) (comm_rank + 1) * (fcs_float) total_count / (fcs_float) comm_size) + 0.5) - my_first;
-      }
-
-      DEBUG(cout << comm_rank << ": get from input: first: " << my_first << ", count: " << my_count << ", total: " << total_count << endl);
-
-    } else if (i == -1)
-    {
-      if (input_files.size() < 1) continue;
-
-      my_modulo = input_files[0].get_local_nparticles(all_on_master, comm_size, comm_rank, communicator);
-
-      my_first = 0;
-      my_count = total_duplication * my_modulo;
-
-      DEBUG(cout << comm_rank << ": get from file #" << i << ": first: " << my_first << ", count: " << my_count << endl);
-
-    } else
-    {
-      input_generators[i].set_box(params.box_origin, params.box_a, params.box_b, params.box_c);
-
-      my_modulo = input_generators[i].get_local_nparticles(all_on_master, comm_size, comm_rank, communicator);
-
-      my_first = 0;
-      my_count = total_duplication * my_modulo;
-
-      DEBUG(cout << comm_rank << ": get from generator #" << i << ": first: " << my_first << ", count: " << my_count << endl);
-    }
-
-    fcs_int plow, dlow[4], phigh, dhigh[4], x;
-
-    x = my_first;
-    plow = x % my_modulo; x /= my_modulo;
-    dlow[0] = x % total_duplications[0]; x /= total_duplications[0];
-    dlow[1] = x % total_duplications[1]; x /= total_duplications[1];
-    dlow[2] = x % total_duplications[2]; x /= total_duplications[2];
-    dlow[3] = x;
-
-    x = my_first + my_count;
-    phigh = x % my_modulo; x /= my_modulo;
-    dhigh[0] = x % total_duplications[0]; x /= total_duplications[0];
-    dhigh[1] = x % total_duplications[1]; x /= total_duplications[1];
-    dhigh[2] = x % total_duplications[2]; x /= total_duplications[2];
-    dhigh[3] = x;
-
-    DEBUG(cout << comm_rank << ": low: " << plow << " @ " << dlow[0] << "," << dlow[1] << "," << dlow[2] << "," << dlow[3] << endl);
-    DEBUG(cout << comm_rank << ": high: " << phigh << " @ " << dhigh[0] << "," << dhigh[1] << "," << dhigh[2] << "," << dhigh[3] << endl);
-
     fcs_float scale[3] = { 1.0, 1.0, 1.0 };
     if (input_duplication.params.rescale)
     {
@@ -558,124 +414,136 @@ void Configuration::generate_input_particles()
       scale[2] = 1.0 / input_duplication.params.times[2];
     }
 
-    fcs_int pid = add_dup_input_particles(my_count);
+    fcs_int local_nparticles;
+#if SCAFACOS_TEST_WITH_DIPOLES
+    fcs_int dipole_local_nparticles;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
-    bool first = true;
-    fcs_int first_pid;
-    
-    for (fcs_int d3 = dlow[3]; d3 <= dhigh[3]; ++d3)
+    if (i == -2)
     {
-//      cout << "d3 = " << d3 << endl;
-      for (fcs_int d2 = dlow[2]; d2 <= ((d3 == dhigh[3])?dhigh[2]:(total_duplications[2] - 1)); ++d2)
-      {
-//        cout << "d2 = " << d2 << endl;
-        for (fcs_int d1 = dlow[1]; d1 <= ((d3 == dhigh[3] && d2 == dhigh[2])?dhigh[1]:(total_duplications[1] - 1)); ++d1)
-        {
-//          cout << "d1 = " << d1 << endl;
-          for (fcs_int d0 = dlow[0]; d0 <= ((d3 == dhigh[3] && d2 == dhigh[2] && d1 == dhigh[1])?dhigh[0]:(total_duplications[0] - 1)); ++d0)
-          {
-//            cout << "d0 = " << d0 << endl;
-            fcs_int x_low = plow;
-            fcs_int x_high = (d3 == dhigh[3] && d2 == dhigh[2] && d1 == dhigh[1] && d0 == dhigh[0])?phigh:my_modulo;
+      local_nparticles = input_plain.get_local_nparticles(all_on_master, comm_size, comm_rank, communicator);
+      DEBUG(cout << comm_rank << ": get from plain: " << local_nparticles << endl);
+#if SCAFACOS_TEST_WITH_DIPOLES
+      dipole_local_nparticles = input_plain.get_dipole_local_nparticles(all_on_master, comm_size, comm_rank, communicator);
+      DEBUG(cout << comm_rank << ": get dipoles from plain: " << dipole_local_nparticles << endl);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
-//            cout << "x_low = " << x_low << ", x_high = " << x_high << endl;
+    } else if (i == -1)
+    {
+      if (input_files.size() < 1) continue;
 
-            if (i == -2)
-            {
-              for (x = x_low; x < x_high; ++x)
-              {
-//               cout << "duplicate particle #" << x << endl;
+      local_nparticles = input_files[0].get_local_nparticles(all_on_master, comm_size, comm_rank, communicator);
+      DEBUG(cout << comm_rank << ": get from file #" << i << ": local_nparticles: " << local_nparticles << endl);
 
-                // Make duplicated particle positions and scale if necessary
-                dup_input_positions[3 * pid + 0] = params.box_origin[0] * (1.0 - scale[0]) +
-                  scale[0] * (input_plain.positions[3 * x + 0] + d0 * params.box_a[0] +  d1 * params.box_b[0] +  d2 * params.box_c[0]);
-                dup_input_positions[3 * pid + 1] = params.box_origin[1] * (1.0 - scale[1]) +
-                  scale[1] * (input_plain.positions[3 * x + 1] + d0 * params.box_a[1] +  d1 * params.box_b[1] +  d2 * params.box_c[1]);
-                dup_input_positions[3 * pid + 2] = params.box_origin[2] * (1.0 - scale[2]) +
-                  scale[2] * (input_plain.positions[3 * x + 2] + d0 * params.box_a[2] +  d1 * params.box_b[2] +  d2 * params.box_c[2]);
-
-                // Duplicated particles have the same charge as their orignals
-                dup_input_charges[pid] = input_plain.charges[x];
-
-                // Use same reference potential and field values
-                dup_input_potentials[pid] = input_plain.potentials[x];
-                dup_input_field[3 * pid + 0] = input_plain.field[3 * x + 0];
-                dup_input_field[3 * pid + 1] = input_plain.field[3 * x + 1];
-                dup_input_field[3 * pid + 2] = input_plain.field[3 * x + 2];
-
-/*                cout << "duplicated particle #" << pid << ": " << dup_input_positions[3 * pid + 0] << ","
-                                                << dup_input_positions[3 * pid + 1] << ","
-                                                << dup_input_positions[3 * pid + 2] << " " << dup_input_charges[pid] << endl;*/
-
-                ++pid;
-              }
-
-              if (input_plain.have_potentials()) have_reference_values[0] = 1;
-              if (input_plain.have_field()) have_reference_values[1] = 1;
-
-            } else
-            {
-              if (first)
-              {
-                first = false;
-                first_pid = pid;
-
-                if (i < 0)
-                {
-                  input_files[0].get_local_particles(&dup_input_positions[3 * first_pid], &dup_input_charges[first_pid], &dup_input_potentials[first_pid], &dup_input_field[3 * first_pid],
-                    all_on_master, comm_size, comm_rank, communicator);
-
-                  if (input_files[0].have_potentials()) have_reference_values[0] = 1;
-                  if (input_files[0].have_field()) have_reference_values[1] = 1;
-
-                } else
-                {
-                  input_generators[i].get_local_particles(&dup_input_positions[3 * first_pid], &dup_input_charges[first_pid], &dup_input_potentials[first_pid], &dup_input_field[3 * first_pid],
-                    all_on_master, comm_size, comm_rank, communicator);
-
-                  if (input_generators[i].have_potentials()) have_reference_values[0] = 1;
-                  if (input_generators[i].have_field()) have_reference_values[1] = 1;
-                }
-              }
-
-              for (x = x_low; x < x_high; ++x)
-              {
-//                cout << "duplicate particle #" << x << endl;
-
-                dup_input_positions[3 * pid + 0] = params.box_origin[0] * (1.0 - scale[0]) +
-                  scale[0] * (dup_input_positions[3 * (first_pid + x) + 0] + d0 * params.box_a[0] +  d1 * params.box_b[0] +  d2 * params.box_c[0]);
-                dup_input_positions[3 * pid + 1] = params.box_origin[1] * (1.0 - scale[1]) +
-                  scale[1] * (dup_input_positions[3 * (first_pid + x) + 1] + d0 * params.box_a[1] +  d1 * params.box_b[1] +  d2 * params.box_c[1]);
-                dup_input_positions[3 * pid + 2] = params.box_origin[2] * (1.0 - scale[2]) +
-                  scale[2] * (dup_input_positions[3 * (first_pid + x) + 2] + d0 * params.box_a[2] +  d1 * params.box_b[2] +  d2 * params.box_c[2]);
-
-                dup_input_charges[pid] = dup_input_charges[first_pid + x];
-
-                dup_input_potentials[pid] = dup_input_potentials[first_pid + x];
-
-                dup_input_field[3 * pid + 0] = dup_input_field[3 * (first_pid + x) + 0];
-                dup_input_field[3 * pid + 1] = dup_input_field[3 * (first_pid + x) + 1];
-                dup_input_field[3 * pid + 2] = dup_input_field[3 * (first_pid + x) + 2];
-
-/*                cout << "duplicated particle #" << pid << ": "
-                                                << dup_input_positions[3 * pid + 0] << "," << dup_input_positions[3 * pid + 1] << "," << dup_input_positions[3 * pid + 2] << " "
-                                                << dup_input_charges[pid] << " "
-                                                << dup_input_potentials[pid] << " "
-                                                << dup_input_field[3 * pid + 0] << "," << dup_input_field[3 * pid + 1] << "," << dup_input_field[3 * pid + 2] << endl;*/
-
-                ++pid;
-              }
-            }
-
-            plow = 0;
-          }
-          dlow[0] = 0;
-        }
-        dlow[1] = 0;
-      }
-      dlow[2] = 0;
+    } else
+    {
+      input_generators[i].set_box(params.box_origin, params.box_a, params.box_b, params.box_c);
+      local_nparticles = input_generators[i].get_local_nparticles(all_on_master, comm_size, comm_rank, communicator);
+      DEBUG(cout << comm_rank << ": get from generator #" << i << ": local_nparticles: " << local_nparticles << endl);
     }
-    dlow[3] = 0;
+
+    input_particles.particles.realloc(input_particles.particles.n + (local_nparticles * total_duplication));
+    fcs_int pid = input_particles.particles.n;
+    fcs_int first_pid = pid;
+#if SCAFACOS_TEST_WITH_DIPOLES
+    input_particles.dipole_particles.realloc(input_particles.dipole_particles.n + (dipole_local_nparticles * total_duplication));
+    fcs_int dipole_pid = input_particles.dipole_particles.n;
+    fcs_int dipole_first_pid = dipole_pid;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+    if (i == -2)
+    {
+      input_plain.get_local_particles(&input_particles.particles, all_on_master, comm_size, comm_rank, communicator);
+
+      if (input_plain.have(PDT_CHARGE_POTENTIALS)) have_reference_values[0] = 1;
+      if (input_plain.have(PDT_CHARGE_FIELD)) have_reference_values[1] = 1;
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+      input_plain.get_dipole_local_particles(&input_particles.dipole_particles, all_on_master, comm_size, comm_rank, communicator);
+
+      if (input_plain.have(PDT_DIPOLE_POTENTIALS)) dipole_have_reference_values[0] = 1;
+      if (input_plain.have(PDT_DIPOLE_FIELD)) dipole_have_reference_values[1] = 1;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+    } else if (i == -1)
+    {
+      input_files[0].get_local_particles(&input_particles.particles, all_on_master, comm_size, comm_rank, communicator);
+
+      if (input_files[0].have_potentials()) have_reference_values[0] = 1;
+      if (input_files[0].have_field()) have_reference_values[1] = 1;
+
+    } else
+    {
+      input_generators[i].get_local_particles(&input_particles.particles, all_on_master, comm_size, comm_rank, communicator);
+
+      if (input_generators[i].have_potentials()) have_reference_values[0] = 1;
+      if (input_generators[i].have_field()) have_reference_values[1] = 1;
+    }
+
+    for (fcs_int d2 = 0; d2 < total_duplications[2]; ++d2)
+    {
+      for (fcs_int d1 = 0; d1 < total_duplications[1]; ++d1)
+      {
+        for (fcs_int d0 = 0; d0 < total_duplications[0]; ++d0)
+        {
+/*          cout << "d0 = " << d0 << ", d1 = " << d1 << ", d2 = " << d2 << endl;*/
+
+          fcs_float offset[3];
+
+          offset[0] = params.box_origin[0] * (1.0 - scale[0]) + scale[0] * (d0 * params.box_a[0] +  d1 * params.box_b[0] +  d2 * params.box_c[0]);
+          offset[1] = params.box_origin[1] * (1.0 - scale[1]) + scale[1] * (d0 * params.box_a[1] +  d1 * params.box_b[1] +  d2 * params.box_c[1]);
+          offset[2] = params.box_origin[2] * (1.0 - scale[2]) + scale[2] * (d0 * params.box_a[2] +  d1 * params.box_b[2] +  d2 * params.box_c[2]);
+
+          for (fcs_int x = 0; x < local_nparticles; ++x)
+          {
+/*            cout << "rescale/duplicate particle #" << first_pid + x << " to new #" << pid << endl;*/
+
+            input_particles.particles.copy(first_pid + x, pid);
+
+            fcs_float *pos = input_particles.particles.positions_at(pid);
+
+            pos[0] = offset[0] + (pos[0] * scale[0]);
+            pos[1] = offset[1] + (pos[1] * scale[1]);
+            pos[2] = offset[2] + (pos[2] * scale[2]);
+
+/*            cout << "rescaled/duplicated particle #" << pid << ": ";
+            input_particles.particles.print(pid);
+            cout << endl;*/
+
+            ++pid;
+          }
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+          for (fcs_int x = 0; x < dipole_local_nparticles; ++x)
+          {
+/*            cout << "rescale/duplicate dipole particle #" << dipole_first_pid + x << " to new #" << dipole_pid << endl;*/
+
+            input_particles.dipole_particles.copy(dipole_first_pid + x, dipole_pid);
+
+            fcs_float *pos = input_particles.dipole_particles.positions_at(dipole_pid);
+
+            pos[0] = offset[0] + (pos[0] * scale[0]);
+            pos[1] = offset[1] + (pos[1] * scale[1]);
+            pos[2] = offset[2] + (pos[2] * scale[2]);
+
+/*            cout << "rescaled/duplicated dipole particle #" << dipole_pid << ": ";
+            input_particles.dipole_particles.print(dipole_pid);
+            cout << endl;*/
+
+            ++dipole_pid;
+          }
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+          if (d0 + d1 + d2 > 0)
+          {
+            input_particles.particles.n += local_nparticles;
+#if SCAFACOS_TEST_WITH_DIPOLES
+            input_particles.dipole_particles.n += dipole_local_nparticles;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+          }
+        }
+      }
+    }
   }
 
   params.box_a[0] *= total_duplications[0]; params.box_a[1] *= total_duplications[0]; params.box_a[2] *= total_duplications[0];
@@ -697,18 +565,51 @@ void Configuration::generate_input_particles()
     unscale_box[2] *= input_duplication.params.times[2];
   }
 
-  DEBUG(cout << comm_rank << ": local input particles: " << dup_input_nparticles << endl);
+  DEBUG(cout << comm_rank << ": local input particles: " << input_particles.particles.n << endl);
 
-  MPI_Allreduce(&dup_input_nparticles, &dup_input_total_nparticles, 1, FCS_MPI_INT, MPI_SUM, communicator);
+  fcs_int nlocals[2], ntotals[2];
+
+  nlocals[0] = input_particles.particles.n;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  nlocals[1] = input_particles.dipole_particles.n;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+  MPI_Allreduce(nlocals, ntotals, 2, FCS_MPI_INT, MPI_SUM, communicator);
+
+  input_particles.total_nparticles = ntotals[0];
+#if SCAFACOS_TEST_WITH_DIPOLES
+  input_particles.dipole_total_nparticles = ntotals[1];
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
   if (input_ref.get_total_nparticles() > 0)
   {
-    input_ref.get_local_particles(dup_input_positions, dup_input_charges, dup_input_potentials, dup_input_field,
-      dup_input_nparticles, comm_size, comm_rank, communicator);
+    fcs_int n = input_particles.particles.n;
+
+    input_particles.particles.n = 0;
+
+    input_ref.get_local_particles(&input_particles.particles, n, comm_size, comm_rank, communicator);
 
     if (input_ref.have_potentials()) have_reference_values[0] = 1;
     if (input_ref.have_field()) have_reference_values[1] = 1;
   }
+
+#if SCAFACOS_TEST_WITH_DIPOLES && 0
+  /* FIXME: */
+  if (input_ref.get_total_nparticles() > 0)
+  {
+    fcs_int n = input_particles.particles.n;
+
+    input_particles.particles.n = 0;
+
+    input_ref.get_local_particles(&input_particles.particles, n, comm_size, comm_rank, communicator);
+
+    if (input_ref.have_potentials()) have_reference_values[0] = 1;
+    if (input_ref.have_field()) have_reference_values[1] = 1;
+  }
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+  /* FIXME: minalloc and overalloc */
+/*  input_particles.particles.realloc();*/
 }
 
 void Configuration::create_cart_comm()
@@ -735,91 +636,125 @@ void Configuration::destroy_cart_comm()
   if (cart_comm != MPI_COMM_NULL) MPI_Comm_free(&cart_comm);
 }
 
-void Configuration::decompose_particles(bool alloc_field, bool alloc_potentials, fcs_float minalloc, fcs_float overalloc)
+static fcs_int absolute_minalloc(fcs_float minalloc, fcs_int decomposition, fcs_int ntotal, int comm_size)
 {
-  fcs_int dup_input_minalloc;
-  fcs_gridsort_resort_t gridsort_resort;
+  fcs_int n = 0;
 
-  if (params.decomposition == DECOMPOSE_ALL_ON_MASTER || params.decomposition == DECOMPOSE_ATOMISTIC) dup_input_overalloc = overalloc;
-  else dup_input_overalloc = 0;
+  if (minalloc < 0) n = (fcs_int) fcs_ceil(ntotal / comm_size * -minalloc);
+  else n = (fcs_int) fcs_ceil(minalloc);
 
-  generate_input_particles();
+  if (decomposition == DECOMPOSE_RANDOM_EQUAL) n = z_max(n, (fcs_int) fcs_ceil(ntotal / comm_size));
 
-  if (minalloc < 0) dup_input_minalloc = (fcs_int) fcs_ceil(dup_input_total_nparticles / comm_size * -minalloc);
-  else dup_input_minalloc = (fcs_int) fcs_ceil(minalloc);
+  return n;
+}
 
-  if (params.decomposition == DECOMPOSE_RANDOM_EQUAL) dup_input_minalloc = z_max(dup_input_minalloc, (fcs_int) fcs_ceil(dup_input_total_nparticles / comm_size));
+void Configuration::decompose_particles(bool alloc_potentials, bool alloc_field, fcs_float minalloc, fcs_float overalloc)
+{
+  bool decompose_separate = (params.decomposition == DECOMPOSE_RANDOM || params.decomposition == DECOMPOSE_RANDOM_EQUAL || params.decomposition == DECOMPOSE_DOMAIN);
 
-  if (params.decomposition == DECOMPOSE_ALL_ON_MASTER || params.decomposition == DECOMPOSE_ATOMISTIC) realloc_dup_input_particles(dup_input_minalloc);
-
-  dup_input_overalloc = overalloc;
-
-  /* wrap particle positions of periodic dimensions */
-  fcs_wrap_positions(dup_input_nparticles, dup_input_positions, params.box_a, params.box_b, params.box_c, params.box_origin, params.periodicity);
-  
-  /* increase particle system in open dimensions to enclose all particles */
-  fcs_expand_system_box(dup_input_nparticles, dup_input_positions, params.box_a, params.box_b, params.box_c, params.box_origin, params.periodicity);
-
+  generate_input_particles(decompose_separate?0:minalloc, decompose_separate?0:overalloc);
   MPI_Bcast(have_reference_values, 2, FCS_MPI_INT, MASTER_RANK, communicator);
 
   decomp_comm = communicator;
+
+  decomp_particles.clear();
+
+  fcs_int input_particles_minalloc = absolute_minalloc(minalloc, params.decomposition, input_particles.total_nparticles, comm_size);
+
+  /* wrap particle positions of periodic dimensions */
+  fcs_wrap_positions(input_particles.particles.n, input_particles.particles.positions, params.box_a, params.box_b, params.box_c, params.box_origin, params.periodicity);
   
-  decomp_total_nparticles = dup_input_total_nparticles;
+  /* increase particle system in open dimensions to enclose all particles */
+  fcs_expand_system_box(input_particles.particles.n, input_particles.particles.positions, params.box_a, params.box_b, params.box_c, params.box_origin, params.periodicity);
+
+  decomp_particles.total_nparticles = input_particles.total_nparticles;
 
   reference_potentials = 0;
   reference_field = 0;
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+/*  fcs_int dipole_input_particles_minalloc = absolute_minalloc(minalloc, params.decomposition, input_particles.dipole_total_nparticles, comm_size);*/
+
+  /* wrap particle positions of periodic dimensions */
+  fcs_wrap_positions(input_particles.dipole_particles.n, input_particles.dipole_particles.positions, params.box_a, params.box_b, params.box_c, params.box_origin, params.periodicity);
+  
+  /* increase particle system in open dimensions to enclose all particles */
+  fcs_expand_system_box(input_particles.dipole_particles.n, input_particles.dipole_particles.positions, params.box_a, params.box_b, params.box_c, params.box_origin, params.periodicity);
+
+  decomp_particles.dipole_total_nparticles = input_particles.dipole_total_nparticles;
+
+  dipole_reference_potentials = 0;
+  dipole_reference_field = 0;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+  fcs_gridsort_resort_t gridsort_resort;
 
   switch (params.decomposition)
   {
     case DECOMPOSE_ALL_ON_MASTER:
     case DECOMPOSE_ALMOST_ALL_ON_MASTER:
       INFO_MASTER(cout << "Decomposing system (" << ((params.decomposition == DECOMPOSE_ALMOST_ALL_ON_MASTER)?"almost-":"") << "all-on-master)..." << endl);
-      if (comm_rank == 0) {
-        decomp_nparticles = dup_input_nparticles;
-        decomp_max_nparticles = dup_input_nparticles_allocated;
-        decomp_positions = dup_input_positions;
-        decomp_charges = dup_input_charges;
-        if (have_reference_values[0]) reference_potentials = dup_input_potentials;
-        if (have_reference_values[1]) reference_field = dup_input_field;
-      } else {
-        decomp_nparticles = 0;
-        decomp_max_nparticles = 0;
-        decomp_positions = 0;
-        decomp_charges = 0;
-      }
+      decomp_particles.particles = input_particles.particles;
+      if (have_reference_values[0]) reference_potentials = input_particles.particles.potentials;
+      if (have_reference_values[1]) reference_field = input_particles.particles.field;
+#if SCAFACOS_TEST_WITH_DIPOLES
+      decomp_particles.dipole_particles = input_particles.dipole_particles;
+      if (dipole_have_reference_values[0]) dipole_reference_potentials = input_particles.dipole_particles.potentials;
+      if (dipole_have_reference_values[1]) dipole_reference_field = input_particles.dipole_particles.field;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
       if (params.decomposition == DECOMPOSE_ALMOST_ALL_ON_MASTER) almost_master_particles();
       break;
     case DECOMPOSE_ATOMISTIC:
       INFO_MASTER(cout << "Decomposing system (atomistic)..." << endl);
-      decomp_nparticles = dup_input_nparticles;
-      decomp_max_nparticles = dup_input_nparticles_allocated;
-      decomp_positions = dup_input_positions;
-      decomp_charges = dup_input_charges;
-      if (have_reference_values[0]) reference_potentials = dup_input_potentials;
-      if (have_reference_values[1]) reference_field = dup_input_field;
+      decomp_particles.particles = input_particles.particles;
+      if (have_reference_values[0]) reference_potentials = input_particles.particles.potentials;
+      if (have_reference_values[1]) reference_field = input_particles.particles.field;
+#if SCAFACOS_TEST_WITH_DIPOLES
+      decomp_particles.dipole_particles = input_particles.dipole_particles;
+      if (dipole_have_reference_values[0]) dipole_reference_potentials = input_particles.dipole_particles.potentials;
+      if (dipole_have_reference_values[1]) dipole_reference_field = input_particles.dipole_particles.field;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
       break;
     case DECOMPOSE_RANDOM:
     case DECOMPOSE_RANDOM_EQUAL:
       INFO_MASTER(cout << "Decomposing system (random" << ((params.decomposition == DECOMPOSE_RANDOM_EQUAL)?"-equal":"") << ")..." << endl);
       fcs_gridsort_create(&gridsort);
-      fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_nparticles, dup_input_positions, dup_input_charges);
-      fcs_gridsort_set_minalloc(&gridsort, dup_input_minalloc);
-      fcs_gridsort_set_overalloc(&gridsort, dup_input_overalloc);
+      fcs_gridsort_set_particles(&gridsort, input_particles.particles.n, input_particles.particles.n, input_particles.particles.positions, input_particles.particles.props);
+#if SCAFACOS_TEST_WITH_DIPOLES
+      fcs_gridsort_set_dipole_particles(&gridsort, input_particles.dipole_particles.n, input_particles.dipole_particles.n, input_particles.dipole_particles.positions, input_particles.dipole_particles.props);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+      fcs_gridsort_set_minalloc(&gridsort, input_particles_minalloc);
+      fcs_gridsort_set_overalloc(&gridsort, overalloc);
       fcs_gridsort_sort_random(&gridsort, communicator);
-      fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
+      fcs_gridsort_get_sorted_particles(&gridsort, &decomp_particles.particles.n, &decomp_particles.particles.max_n, &decomp_particles.particles.positions, &decomp_particles.particles.props, NULL);
+#if SCAFACOS_TEST_WITH_DIPOLES
+      fcs_gridsort_get_sorted_dipole_particles(&gridsort, &decomp_particles.dipole_particles.n, &decomp_particles.dipole_particles.max_n, &decomp_particles.dipole_particles.positions, &decomp_particles.dipole_particles.props, NULL);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
       fcs_gridsort_prepare_resort(&gridsort, communicator);
 
       fcs_gridsort_resort_create(&gridsort_resort, &gridsort, communicator);
       if (have_reference_values[0])
       {
-        reference_potentials = new fcs_float[decomp_max_nparticles];
-        fcs_gridsort_resort_floats(gridsort_resort, dup_input_potentials, reference_potentials, 1, communicator);
+        reference_potentials = new fcs_float[decomp_particles.particles.max_n * decomp_particles.particles.POTENTIAL_SIZE];
+        fcs_gridsort_resort_floats(gridsort_resort, input_particles.particles.potentials, reference_potentials, decomp_particles.particles.POTENTIAL_SIZE, communicator);
       }
       if (have_reference_values[1])
       {
-        reference_field = new fcs_float[3 * decomp_max_nparticles];
-        fcs_gridsort_resort_floats(gridsort_resort, dup_input_field, reference_field, 3, communicator);
+        reference_field = new fcs_float[decomp_particles.particles.max_n * decomp_particles.particles.FIELD_SIZE];
+        fcs_gridsort_resort_floats(gridsort_resort, input_particles.particles.field, reference_field, decomp_particles.particles.FIELD_SIZE, communicator);
       }
+#if SCAFACOS_TEST_WITH_DIPOLES
+      if (dipole_have_reference_values[0])
+      {
+        dipole_reference_potentials = new fcs_float[decomp_particles.dipole_particles.max_n * decomp_particles.dipole_particles.POTENTIAL_SIZE];
+        fcs_gridsort_resort_floats(gridsort_resort, input_particles.dipole_particles.potentials, dipole_reference_potentials, decomp_particles.dipole_particles.POTENTIAL_SIZE, communicator);
+      }
+      if (dipole_have_reference_values[1])
+      {
+        dipole_reference_field = new fcs_float[decomp_particles.dipole_particles.max_n * decomp_particles.dipole_particles.FIELD_SIZE];
+        fcs_gridsort_resort_floats(gridsort_resort, input_particles.dipole_particles.field, dipole_reference_field, decomp_particles.dipole_particles.FIELD_SIZE, communicator);
+      }
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
       fcs_gridsort_resort_destroy(&gridsort_resort);
       if (params.decomposition == DECOMPOSE_RANDOM_EQUAL) equalize_particles();
       break;
@@ -830,75 +765,99 @@ void Configuration::decompose_particles(bool alloc_field, bool alloc_potentials,
 
       fcs_gridsort_create(&gridsort);
       fcs_gridsort_set_system(&gridsort, params.box_origin, params.box_a, params.box_b, params.box_c, params.periodicity);
-      fcs_gridsort_set_particles(&gridsort, dup_input_nparticles, dup_input_nparticles, dup_input_positions, dup_input_charges);
-      fcs_gridsort_set_minalloc(&gridsort, dup_input_minalloc);
-      fcs_gridsort_set_overalloc(&gridsort, dup_input_overalloc);
+      fcs_gridsort_set_particles(&gridsort, input_particles.particles.n, input_particles.particles.n, input_particles.particles.positions, input_particles.particles.props);
+#if SCAFACOS_TEST_WITH_DIPOLES
+      fcs_gridsort_set_dipole_particles(&gridsort, input_particles.dipole_particles.n, input_particles.dipole_particles.n, input_particles.dipole_particles.positions, input_particles.dipole_particles.props);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+      fcs_gridsort_set_minalloc(&gridsort, input_particles_minalloc);
+      fcs_gridsort_set_overalloc(&gridsort, overalloc);
       fcs_gridsort_sort_forward(&gridsort, 0.0, cart_comm);
-      fcs_gridsort_get_sorted_particles(&gridsort, &decomp_nparticles, &decomp_max_nparticles, &decomp_positions, &decomp_charges, NULL);
+      fcs_gridsort_get_sorted_particles(&gridsort, &decomp_particles.particles.n, &decomp_particles.particles.max_n, &decomp_particles.particles.positions, &decomp_particles.particles.props, NULL);
+#if SCAFACOS_TEST_WITH_DIPOLES
+      fcs_gridsort_get_sorted_dipole_particles(&gridsort, &decomp_particles.dipole_particles.n, &decomp_particles.dipole_particles.max_n, &decomp_particles.dipole_particles.positions, &decomp_particles.dipole_particles.props, NULL);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
       fcs_gridsort_prepare_resort(&gridsort, communicator);
 
       fcs_gridsort_resort_create(&gridsort_resort, &gridsort, communicator);
       if (have_reference_values[0])
       {
-        reference_potentials = new fcs_float[decomp_max_nparticles];
-        fcs_gridsort_resort_floats(gridsort_resort, dup_input_potentials, reference_potentials, 1, communicator);
+        reference_potentials = new fcs_float[decomp_particles.particles.max_n * decomp_particles.particles.POTENTIAL_SIZE];
+        fcs_gridsort_resort_floats(gridsort_resort, input_particles.particles.potentials, reference_potentials, decomp_particles.particles.POTENTIAL_SIZE, communicator);
       }
       if (have_reference_values[1])
       {
-        reference_field = new fcs_float[3 * decomp_max_nparticles];
-        fcs_gridsort_resort_floats(gridsort_resort, dup_input_field, reference_field, 3, communicator);
+        reference_field = new fcs_float[decomp_particles.particles.max_n * decomp_particles.particles.FIELD_SIZE];
+        fcs_gridsort_resort_floats(gridsort_resort, input_particles.particles.field, reference_field, decomp_particles.particles.FIELD_SIZE, communicator);
       }
+#if SCAFACOS_TEST_WITH_DIPOLES
+      if (dipole_have_reference_values[0])
+      {
+        dipole_reference_potentials = new fcs_float[decomp_particles.dipole_particles.max_n * decomp_particles.dipole_particles.POTENTIAL_SIZE];
+        fcs_gridsort_resort_floats(gridsort_resort, input_particles.dipole_particles.potentials, dipole_reference_potentials, decomp_particles.dipole_particles.POTENTIAL_SIZE, communicator);
+      }
+      if (dipole_have_reference_values[1])
+      {
+        dipole_reference_field = new fcs_float[decomp_particles.dipole_particles.max_n * decomp_particles.dipole_particles.FIELD_SIZE];
+        fcs_gridsort_resort_floats(gridsort_resort, input_particles.dipole_particles.field, dipole_reference_field, decomp_particles.dipole_particles.FIELD_SIZE, communicator);
+      }
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
       fcs_gridsort_resort_destroy(&gridsort_resort);
       break;
     default:
       break;
   }
 
-  if (decomp_max_nparticles > 0)
+  if (decomp_particles.particles.max_n > 0)
   {
-    if (alloc_field)
-    {
-      decomp_field = new fcs_float[3 * decomp_max_nparticles];
-      for (fcs_int i = 0; i < decomp_nparticles; ++i) decomp_field[3 * i + 0] = decomp_field[3 * i + 1] = decomp_field[3 * i + 2] = NAN;
-
-    } else decomp_field = NULL;
-
     if (alloc_potentials)
     {
-      decomp_potentials = new fcs_float[decomp_max_nparticles];
-      for (fcs_int i = 0; i < decomp_nparticles; ++i) decomp_potentials[i] = NAN;
+      decomp_particles.particles.potentials = new fcs_float[decomp_particles.particles.max_n * particle_data_t::POTENTIAL_SIZE];
+      values_set<fcs_float, particle_data_t::POTENTIAL_SIZE>(decomp_particles.particles.potentials, NAN, decomp_particles.particles.n);
 
-    } else decomp_potentials = NULL;
+    } else decomp_particles.particles.potentials = NULL;
+
+    if (alloc_field)
+    {
+      decomp_particles.particles.field = new fcs_float[decomp_particles.particles.max_n * particle_data_t::FIELD_SIZE];
+      values_set<fcs_float, particle_data_t::FIELD_SIZE>(decomp_particles.particles.field, NAN, decomp_particles.particles.n);
+
+    } else decomp_particles.particles.field = NULL;
 
   } else
   {
-    decomp_potentials = (fcs_float *) 1;
-    decomp_field = (fcs_float *) 1;
+    decomp_particles.particles.potentials = (fcs_float *) 1;
+    decomp_particles.particles.field = (fcs_float *) 1;
   }
 }
 
 
 void Configuration::almost_master_particles()
 {
-  if (comm_rank == 0 && decomp_nparticles < comm_size)
+  /* FIXME: only on particles (not dipoles?) */
+
+  if (comm_rank == 0 && decomp_particles.particles.n < comm_size)
   {
     cout << "ERROR: not enough particles for almost-all-on-master setup " << endl;
     MPI_Abort(communicator, 1);
   }
 
-  fcs_float *new_positions = new fcs_float[3];
-  fcs_float *new_charges = new fcs_float[1];
-  fcs_float *new_potentials = new fcs_float[1];
-  fcs_float *new_field = new fcs_float[3];
+  fcs_float *new_positions = new fcs_float[particle_data_t::POSITION_SIZE];
+  fcs_float *new_charges = new fcs_float[particle_data_t::PROP_SIZE];
+  fcs_float *new_potentials = new fcs_float[particle_data_t::POTENTIAL_SIZE];
+  fcs_float *new_field = new fcs_float[particle_data_t::FIELD_SIZE];
 
-  MPI_Scatter(decomp_positions + (decomp_nparticles - comm_size) * 3, 3, FCS_MPI_FLOAT, new_positions, 3, FCS_MPI_FLOAT, 0, communicator);
-  MPI_Scatter(decomp_charges   + (decomp_nparticles - comm_size) * 1, 1, FCS_MPI_FLOAT, new_charges,   1, FCS_MPI_FLOAT, 0, communicator);
-  if (have_reference_values[0]) MPI_Scatter(reference_potentials + (decomp_nparticles - comm_size) * 1, 1, FCS_MPI_FLOAT, new_potentials, 1, FCS_MPI_FLOAT, 0, communicator);
-  if (have_reference_values[1]) MPI_Scatter(reference_field      + (decomp_nparticles - comm_size) * 3, 3, FCS_MPI_FLOAT, new_field,      3, FCS_MPI_FLOAT, 0, communicator);
+  fcs_int offset = decomp_particles.particles.n - comm_size;
+
+  MPI_Scatter(decomp_particles.particles.positions_at(offset), particle_data_t::POSITION_SIZE, FCS_MPI_FLOAT, new_positions, particle_data_t::POSITION_SIZE, FCS_MPI_FLOAT, MASTER_RANK, communicator);
+  MPI_Scatter(decomp_particles.particles.props_at(offset), particle_data_t::PROP_SIZE, FCS_MPI_FLOAT, new_charges, particle_data_t::PROP_SIZE, FCS_MPI_FLOAT, MASTER_RANK, communicator);
+  if (have_reference_values[0])
+    MPI_Scatter(reference_potentials + (offset * particle_data_t::POTENTIAL_SIZE), particle_data_t::POTENTIAL_SIZE, FCS_MPI_FLOAT, new_potentials, particle_data_t::POTENTIAL_SIZE, FCS_MPI_FLOAT, MASTER_RANK, communicator);
+  if (have_reference_values[1])
+    MPI_Scatter(reference_field + (offset * particle_data_t::FIELD_SIZE), particle_data_t::FIELD_SIZE, FCS_MPI_FLOAT, new_field, particle_data_t::FIELD_SIZE, FCS_MPI_FLOAT, MASTER_RANK, communicator);
 
   if (comm_rank == 0)
   {
-    decomp_nparticles -= comm_size - 1;
+    decomp_particles.particles.n -= comm_size - 1;
     delete[] new_positions;
     delete[] new_charges;
     delete[] new_potentials;
@@ -906,10 +865,10 @@ void Configuration::almost_master_particles()
 
   } else
   {
-    decomp_nparticles = 1;
-    decomp_max_nparticles = 1;
-    decomp_positions = new_positions;
-    decomp_charges = new_charges;
+    decomp_particles.particles.n = 1;
+    decomp_particles.particles.max_n = 1;
+    decomp_particles.particles.positions = new_positions;
+    decomp_particles.particles.props = new_charges;
     if (have_reference_values[0]) reference_potentials = new_potentials; else delete[] new_potentials;
     if (have_reference_values[1]) reference_field = new_field; else delete[] new_field;
   }
@@ -922,9 +881,9 @@ void Configuration::equalize_particles()
   int sr, rr;
   
 
-  nparticles = (decomp_total_nparticles / comm_size) + ((decomp_total_nparticles % comm_size < comm_rank)?1:0);
-  nparticles = z_min(nparticles, decomp_max_nparticles);
-  my_diff = decomp_nparticles - nparticles;
+  nparticles = (decomp_particles.total_nparticles / comm_size) + ((decomp_particles.total_nparticles % comm_size < comm_rank)?1:0);
+  nparticles = z_min(nparticles, decomp_particles.particles.max_n);
+  my_diff = decomp_particles.particles.n - nparticles;
   
   MPI_Allgather(&my_diff, 1, FCS_MPI_INT, all_diffs, 1, FCS_MPI_INT, communicator);
   
@@ -942,20 +901,23 @@ void Configuration::equalize_particles()
 
       if (comm_rank == sr)
       {
-        MPI_Send(decomp_positions     + 3 * (decomp_nparticles - n), 3 * n, FCS_MPI_FLOAT, rr, 0, communicator);
-        MPI_Send(decomp_charges       + 1 * (decomp_nparticles - n), 1 * n, FCS_MPI_FLOAT, rr, 0, communicator);
-        MPI_Send(reference_potentials + 1 * (decomp_nparticles - n), 1 * n, FCS_MPI_FLOAT, rr, 0, communicator);
-        MPI_Send(reference_field      + 3 * (decomp_nparticles - n), 3 * n, FCS_MPI_FLOAT, rr, 0, communicator);
-        decomp_nparticles -= n;
+        fcs_int offset = decomp_particles.particles.n - n;
+
+        MPI_Send(decomp_particles.particles.positions_at(offset), particle_data_t::POSITION_SIZE * n, FCS_MPI_FLOAT, rr, 0, communicator);
+        MPI_Send(decomp_particles.particles.props_at(offset), particle_data_t::PROP_SIZE * n, FCS_MPI_FLOAT, rr, 0, communicator);
+        MPI_Send(reference_potentials + (offset * particle_data_t::POTENTIAL_SIZE), particle_data_t::POTENTIAL_SIZE * n, FCS_MPI_FLOAT, rr, 0, communicator);
+        MPI_Send(reference_field + (offset * particle_data_t::FIELD_SIZE), particle_data_t::FIELD_SIZE * n, FCS_MPI_FLOAT, rr, 0, communicator);
+        decomp_particles.particles.n -= n;
 
       } else if (comm_rank == rr)
       {
-        MPI_Status status;
-        MPI_Recv(decomp_positions     + 3 * decomp_nparticles, 3 * n, FCS_MPI_FLOAT, sr, 0, communicator, &status);
-        MPI_Recv(decomp_charges       + 1 * decomp_nparticles, 1 * n, FCS_MPI_FLOAT, sr, 0, communicator, &status);
-        MPI_Recv(reference_potentials + 1 * decomp_nparticles, 1 * n, FCS_MPI_FLOAT, sr, 0, communicator, &status);
-        MPI_Recv(reference_field      + 3 * decomp_nparticles, 3 * n, FCS_MPI_FLOAT, sr, 0, communicator, &status);
-        decomp_nparticles += n;
+        fcs_int offset = decomp_particles.particles.n;
+
+        MPI_Recv(decomp_particles.particles.positions_at(offset), particle_data_t::POSITION_SIZE * n, FCS_MPI_FLOAT, sr, 0, communicator, MPI_STATUS_IGNORE);
+        MPI_Recv(decomp_particles.particles.props_at(offset), particle_data_t::PROP_SIZE * n, FCS_MPI_FLOAT, sr, 0, communicator, MPI_STATUS_IGNORE);
+        MPI_Recv(reference_potentials + (offset * particle_data_t::POTENTIAL_SIZE), particle_data_t::POTENTIAL_SIZE * n, FCS_MPI_FLOAT, sr, 0, communicator, MPI_STATUS_IGNORE);
+        MPI_Recv(reference_field + (offset * particle_data_t::FIELD_SIZE), particle_data_t::FIELD_SIZE * n, FCS_MPI_FLOAT, sr, 0, communicator, MPI_STATUS_IGNORE);
+        decomp_particles.particles.n += n;
       }
 
       all_diffs[rr] += n;
@@ -964,11 +926,11 @@ void Configuration::equalize_particles()
   }
 }
 
-bool Configuration::compute_errors(errors_t *e) {
-
-  ::compute_errors(e, decomp_nparticles, decomp_positions, decomp_charges,
+bool Configuration::compute_errors(errors_t *e)
+{
+  ::compute_errors(e, decomp_particles.particles.n, decomp_particles.particles.positions, decomp_particles.particles.props,
     have_reference_values[0]?reference_potentials:NULL, have_reference_values[1]?reference_field:NULL,
-    have_result_values[0]?decomp_potentials:NULL, have_result_values[1]?decomp_field:NULL,
+    have_result_values[0]?decomp_particles.particles.potentials:NULL, have_result_values[1]?decomp_particles.particles.field:NULL,
     field_correction, energy_correction,
     decomp_comm);
 
@@ -982,13 +944,6 @@ void Configuration::free_decomp_particles(bool quiet)
     case DECOMPOSE_ALL_ON_MASTER:
     case DECOMPOSE_ALMOST_ALL_ON_MASTER:
       if (!quiet) INFO_MASTER(cout << "Freeing data (" << ((params.decomposition == DECOMPOSE_ALMOST_ALL_ON_MASTER)?"almost-":"") << "all-on-master)..." << endl);
-      if (params.decomposition == DECOMPOSE_ALMOST_ALL_ON_MASTER && comm_rank != 0)
-      {
-        delete[] decomp_positions;
-        delete[] decomp_charges;
-        if (have_reference_values[0]) delete[] reference_potentials;
-        if (have_reference_values[1]) delete[] reference_field;
-      }
       break;
     case DECOMPOSE_ATOMISTIC:
       if (!quiet) INFO_MASTER(cout << "Freeing data (atomistic)..." << endl);
@@ -1013,17 +968,13 @@ void Configuration::free_decomp_particles(bool quiet)
       break;
   }
 
-  if (decomp_max_nparticles > 0)
+  if (decomp_particles.particles.max_n > 0)
   {
-    delete[] decomp_potentials;
-    delete[] decomp_field;
+    delete[] decomp_particles.particles.potentials;
+    delete[] decomp_particles.particles.field;
   }
 
-  decomp_nparticles = 0;
-  decomp_positions = 0;
-  decomp_charges = 0;
-  decomp_potentials = 0;
-  decomp_field = 0;
+  decomp_particles.clear();
 
   decomp_comm = MPI_COMM_NULL;
 

@@ -51,6 +51,25 @@ fcs_int parse_sequence(string s, fcs_int nmax, fcs_float *rv, char *cv) {
 }
 
 
+int get_equal_distribution_count(fcs_int total_count, int size, int rank)
+{
+  return static_cast<int>(total_count / size) + (total_count % size > rank);
+}
+
+
+void get_equal_distribution(fcs_int total_count, int size, int *counts, int *displs)
+{
+  counts[0] = get_equal_distribution_count(total_count, size, 0);
+  displs[0] = 0;
+
+  for (int i = 1; i < size; ++i)
+  {
+    counts[i] = get_equal_distribution_count(total_count, size, i);
+    displs[i] = displs[i - 1] + counts[i - 1];
+  }
+}
+
+
 void make_equal_counts_and_displs(fcs_int total_count, fcs_int ncounts, int *counts, int *displs, int *counts3, int *displs3) {
   fcs_int i;
 

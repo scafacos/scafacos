@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012 Olaf Lenz, Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2014, 2015 Olaf Lenz, Michael Hofmann
   
   This file is part of ScaFaCoS.
   
@@ -31,6 +31,7 @@
 
 #include "common/gridsort/gridsort.h"
 
+#include "particles.hpp"
 #include "common.hpp"
 #include "Generator.hpp"
 
@@ -76,25 +77,22 @@ public:
   FileParticles input_ref;
   fcs_int input_ref_nparticles;
 
-  fcs_int dup_input_total_nparticles;
-  fcs_int dup_input_nparticles, dup_input_nparticles_allocated;
-  fcs_float dup_input_overalloc;
-  fcs_float *dup_input_positions;
-  fcs_float *dup_input_charges;
-  fcs_float *dup_input_potentials;
-  fcs_float *dup_input_field;
+  particles_t input_particles;
+  bool input_particles_allocated;
 
   fcs_int have_reference_values[2], have_result_values[2];
+#if SCAFACOS_TEST_WITH_DIPOLES
+  fcs_int dipole_have_reference_values[2], dipole_have_result_values[2];
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
-  fcs_int decomp_total_nparticles;
-  fcs_int decomp_nparticles, decomp_max_nparticles;
-  fcs_float *decomp_positions;
-  fcs_float *decomp_charges;
-  fcs_float *decomp_potentials;
-  fcs_float *decomp_field;
+  particles_t decomp_particles;
+
   MPI_Comm decomp_comm;
 
   fcs_float *reference_potentials, *reference_field;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  fcs_float *dipole_reference_potentials, *dipole_reference_field;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
   
   fcs_float field_correction[3], energy_correction;
 
@@ -103,10 +101,6 @@ public:
 
   Configuration();
   ~Configuration();
-
-  void realloc_dup_input_particles(fcs_int new_nparticles);
-  fcs_int add_dup_input_particles(fcs_int add_nparticles);
-  void free_dup_input_particles();
 
   void read_config(xml_node<> *config_node, const char *basename);
   void write_config(xml_document<> *doc, xml_node<> *config_node, const char *binfilename = NULL, const char* portable_filename = NULL, bool keep_dupgen = false);
@@ -118,12 +112,12 @@ public:
   void broadcast_config();
 
   void broadcast_input();
-  void generate_input_particles();
+  void generate_input_particles(fcs_float minalloc, fcs_float overalloc);
 
   void create_cart_comm();
   void destroy_cart_comm();
 
-  void decompose_particles(bool alloc_field, bool alloc_potentials, fcs_float minalloc = 0, fcs_float overalloc = 0);
+  void decompose_particles(bool alloc_potentials, bool alloc_field, fcs_float minalloc = 0, fcs_float overalloc = 0);
   void equalize_particles();
   void almost_master_particles();
   void gather_particles();

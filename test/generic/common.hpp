@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012,2013,2014 Olaf Lenz, Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2014, 2015 Olaf Lenz, Michael Hofmann
   
   This file is part of ScaFaCoS.
   
@@ -17,8 +17,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 
-#ifndef _PARSER_HPP
-#define _PARSER_HPP
+#ifndef __COMMON_HPP__
+#define __COMMON_HPP__
 
 
 #include <stdexcept>
@@ -35,6 +35,9 @@
 using namespace std;
 
 
+#define SCAFACOS_TEST_WITH_DIPOLES  1
+
+
 #define z_max(_a_, _b_)           (((_a_)>(_b_))?(_a_):(_b_))
 #define z_min(_a_, _b_)           (((_a_)<(_b_))?(_a_):(_b_))
 
@@ -48,6 +51,43 @@ static inline void swap(T *x, T *y)
     y[i] = t;
   }
 }
+
+
+template<typename T, int N>
+static inline void values_swap(T *x, T *y)
+{
+  swap<T, N>(x, y);
+}
+
+
+template<typename T>
+static inline void values_set(T *x, T v, fcs_int M = 1)
+{
+  for (fcs_int i = 0; i < M; ++i) x[i] = v;
+}
+
+
+template<typename T, int N>
+static inline void values_set(T *x, T v, fcs_int M = 1)
+{
+  for (fcs_int i = 0; i < N * M; ++i) x[i] = v;
+}
+
+
+template<typename T, int N>
+static inline void values_copy(T *x, T *y, fcs_int M)
+{
+  memcpy(x, y, sizeof(T) * M * N);
+}
+
+
+template<int N>
+static inline bool values_isnan(fcs_float *x)
+{
+  for (int i = 0; i < N; ++i) if (isnan(x[i])) return true;
+  return false;
+}
+
 
 template<bool> class StaticAssert;
 template<> class StaticAssert<true> {};
@@ -63,8 +103,8 @@ template<> class StaticAssert<true> {};
   MPI_DATATYPE_NULL)))))
 #endif
 
-//#define FCS_ENABLE_INFO
-//#define FCS_ENABLE_DEBUG
+/*#define FCS_ENABLE_INFO  1*/
+/*#define FCS_ENABLE_DEBUG  1*/
 
 #define MASTER(cmd)  do { if (comm_rank == MASTER_RANK) { cmd; } } while (0)
 
@@ -152,6 +192,18 @@ fcs_int parse_sequence(string s, fcs_int nmax, fcs_int *rv, char *cv = 0);
 fcs_int parse_sequence(string s, fcs_int nmax, fcs_float *rv, char *cv = 0);
 
 
+template<typename T>
+static void print_sequence(fcs_int n, T *v, string &s) {
+  ostringstream os;
+  os.precision(16);
+  for (fcs_int i = 0; i < n; ++i) os << ((i > 0)?" ":"") << v[i];
+  s = os.str();
+}
+
+
+int get_equal_distribution_count(fcs_int total_count, int size, int rank);
+void get_equal_distribution(fcs_int total_count, int size, int *counts, int *displs);
+
 void make_equal_counts_and_displs(fcs_int total_count, fcs_int ncounts, int *counts, int *displs, int *counts3, int *displs3);
 
 typedef struct _errors_t
@@ -221,4 +273,4 @@ void compute_errors(errors_t *e, fcs_int nparticles,
 void print_errors(errors_t *e, const char *prefix = "");
 
 
-#endif /* _PARSER_HPP */
+#endif /* __COMMON_HPP__ */
