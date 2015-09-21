@@ -239,8 +239,6 @@ FCSResult ifcs_p2nfft_run(
   }
 
   /* Finish near field timing */
-//  tm_timer += MPI_Wtime();
-//  printf("P2NFFT_TIMING: rank = %d, Near field computation takes %e s\n", myrank, tm_timer);
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Near field computation");
   
   /* Checksum: global sum of nearfield energy */
@@ -269,26 +267,27 @@ FCSResult ifcs_p2nfft_run(
     if (myrank == 0) fprintf(stderr, "E_NEAR(0) = %" FCS_LMOD_FLOAT "e\n", sorted_field[0]);
 #endif
       
-  /* Reinit PNFFT corresponding to number of sorted nodes */
-  unsigned pnfft_malloc_flags = PNFFT_MALLOC_X;
-  if(compute_potential) pnfft_malloc_flags |= PNFFT_MALLOC_F;
-  if(compute_field)     pnfft_malloc_flags |= PNFFT_MALLOC_GRAD_F;
+  /* Reinit PNFFT nodes: Number and positions of nodes typically change between runs */
+  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
+  {
+    unsigned pnfft_malloc_flags = PNFFT_MALLOC_X;
+    if(compute_potential) pnfft_malloc_flags |= PNFFT_MALLOC_F;
+    if(compute_field)     pnfft_malloc_flags |= PNFFT_MALLOC_GRAD_F;
+    FCS_PNFFT(free_nodes)(d->charges, PNFFT_FREE_ALL);
+    d->charges = FCS_PNFFT(init_nodes)(sorted_num_particles, pnfft_malloc_flags);
+  }
+  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Reinit nodes");
 
-//   FCS_PNFFT(init_nodes)(d->pnfft, sorted_num_particles,
-//       pnfft_malloc_flags,
-//       PNFFT_FREE_X|   PNFFT_FREE_F|   PNFFT_FREE_GRAD_F);
-
-  /* reinitialize nodes */
-  FCS_PNFFT(free_nodes)(d->charges, PNFFT_FREE_ALL);
-  d->charges = FCS_PNFFT(init_nodes)(sorted_num_particles, pnfft_malloc_flags);
-
-  fcs_pnfft_complex *f_hat, *f, *grad_f;
-  fcs_float *x;
+  /* catch data pointers from PNFFT opaque plans */
+  fcs_pnfft_complex *f_hat;
+  fcs_pnfft_complex *charges_f, *charges_grad_f;
+  fcs_float *charges_x;
 
   f_hat  = FCS_PNFFT(get_f_hat)(d->pnfft);
-  f      = FCS_PNFFT(get_f)(d->charges);
-  grad_f = FCS_PNFFT(get_grad_f)(d->charges);
-  x      = FCS_PNFFT(get_x)(d->charges);
+
+  charges_f      = FCS_PNFFT(get_f)(d->charges);
+  charges_grad_f = FCS_PNFFT(get_grad_f)(d->charges);
+  charges_x      = FCS_PNFFT(get_x)(d->charges);
 
   /* Set NFFT nodes within [-0.5,0.5]^3 */
   for (fcs_int j = 0; j < sorted_num_particles; ++j)
@@ -299,23 +298,13 @@ FCSResult ifcs_p2nfft_run(
     pos[1] = sorted_positions[3*j + 1] - d->box_base[1];
     pos[2] = sorted_positions[3*j + 2] - d->box_base[2];
 
-    x[3 * j + 0] = ( XYZ2TRI(0, pos, d->box_inv) - 0.5 ) / d->box_expand[0];
-    x[3 * j + 1] = ( XYZ2TRI(1, pos, d->box_inv) - 0.5 ) / d->box_expand[1];
-    x[3 * j + 2] = ( XYZ2TRI(2, pos, d->box_inv) - 0.5 ) / d->box_expand[2];
+    charges_x[3 * j + 0] = ( XYZ2TRI(0, pos, d->box_inv) - 0.5 ) / d->box_expand[0];
+    charges_x[3 * j + 1] = ( XYZ2TRI(1, pos, d->box_inv) - 0.5 ) / d->box_expand[1];
+    charges_x[3 * j + 2] = ( XYZ2TRI(2, pos, d->box_inv) - 0.5 ) / d->box_expand[2];
   }
     
   /* Set NFFT values */
-  for (fcs_int j = 0; j < sorted_num_particles; ++j) f[j] = sorted_charges[j];
-
-
-  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
-  if(d->precompute_pnfft){
-    unsigned precompute_flags = d->pnfft_precompute_flags;
-    if(compute_potential) precompute_flags |= PNFFT_PRE_PSI;
-    if(compute_field)     precompute_flags |= PNFFT_PRE_PSI | PNFFT_PRE_GRAD_PSI;
-    FCS_PNFFT(precompute_psi)(d->pnfft, d->charges, );
-  }
-  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "pnfft_precompute_psi");
+  for (fcs_int j = 0; j < sorted_num_particles; ++j) charges_f[j] = sorted_charges[j];
 
   /* Reset pnfft timer (delete timings from fcs_init and fcs_tune) */  
 #if FCS_ENABLE_INFO && !FCS_P2NFFT_DISABLE_PNFFT_INFO
@@ -326,13 +315,13 @@ FCSResult ifcs_p2nfft_run(
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   rsum = 0.0;
   for (fcs_int j = 0; j < 3*sorted_num_particles; ++j)
-    rsum += fabs(x[j]);
+    rsum += fabs(charges_x[j]);
   MPI_Reduce(&rsum, &rsum_global, 1, MPI_DOUBLE, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: checksum of x: %" FCS_LMOD_FLOAT "e\n", rsum_global);
 
   csum = 0.0;
   for (fcs_int j = 0; j < sorted_num_particles; ++j)
-    csum += fabs(creal(f[j])) + _Complex_I * fabs(cimag(f[j]));
+    csum += fabs(creal(charges_f[j])) + _Complex_I * fabs(cimag(charges_f[j]));
   MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: checksum of NFFT^H input: %e + I* %e\n", creal(csum_global), cimag(csum_global));
 #endif
@@ -340,11 +329,10 @@ FCSResult ifcs_p2nfft_run(
   /* Start far field timing */
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
 
-  unsigned compute_flags_adj = 0;
-  if(compute_potential) compute_flags |= PNFFT_COMPUTE_F;
-  if(d->pnfft_direct)   compute_flags |= PNFFT_COMPUTE_DIRECT;
-
   /* Perform adjoint NFFT */
+  unsigned compute_flags_adj = 0;
+  if(compute_potential) compute_flags_adj |= PNFFT_COMPUTE_F;
+  if(d->pnfft_direct)   compute_flags_adj |= PNFFT_COMPUTE_DIRECT;
   FCS_PNFFT(adj)(d->pnfft, d->charges, compute_flags_adj);
 
   /* Checksum: Output of adjoint NFFT */  
@@ -377,25 +365,24 @@ FCSResult ifcs_p2nfft_run(
   MPI_Reduce(&csum, &csum_global, 2, MPI_DOUBLE, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: checksum of Fourier coefficients after convolution: %e + I* %e\n", creal(csum_global), cimag(csum_global));
 #endif
-    
-  unsigned compute_flags_trf = 0;
-  if(compute_potential) compute_flags |= PNFFT_COMPUTE_F;
-  if(compute_field)     compute_flags |= PNFFT_COMPUTE_GRAD_F;
-  if(d->pnfft_direct)   compute_flags |= PNFFT_COMPUTE_DIRECT;
 
   /* Perform NFFT */
+  unsigned compute_flags_trf = 0;
+  if(compute_potential) compute_flags_trf |= PNFFT_COMPUTE_F;
+  if(compute_field)     compute_flags_trf |= PNFFT_COMPUTE_GRAD_F;
+  if(d->pnfft_direct)   compute_flags_trf |= PNFFT_COMPUTE_DIRECT;
   FCS_PNFFT(trafo)(d->pnfft, d->charges, compute_flags_trf);
 
   /* Copy the results to the output vector and rescale with L^{-T} */
   if(compute_potential)
     for (fcs_int j = 0; j < sorted_num_particles; ++j)
-      sorted_potential[j] += creal(f[j]);
+      sorted_potential[j] += creal(charges_f[j]);
 
   if(compute_field){
     for (fcs_int j = 0; j < sorted_num_particles; ++j){
-      sorted_field[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 0) );
-      sorted_field[3 * j + 1] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 1) );
-      sorted_field[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*j, 2) );
+      sorted_field[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, charges_grad_f + 3*j, 0) );
+      sorted_field[3 * j + 1] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, charges_grad_f + 3*j, 1) );
+      sorted_field[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, charges_grad_f + 3*j, 2) );
     }
   }
 
@@ -411,7 +398,7 @@ FCSResult ifcs_p2nfft_run(
   }
 
   if(compute_field){
-    if (myrank == 0) fprintf(stderr, "E_FAR(0) = %" FCS_LMOD_FLOAT "e\n", -fcs_creal( At_TIMES_VEC(d->ebox_inv, grad_f + 3*0, 0) ));
+    if (myrank == 0) fprintf(stderr, "E_FAR(0) = %" FCS_LMOD_FLOAT "e\n", -fcs_creal( At_TIMES_VEC(d->ebox_inv, charges_grad_f + 3*0, 0) ));
     if (myrank == 0) fprintf(stderr, "E_NEAR_FAR(0) = %" FCS_LMOD_FLOAT "e\n", sorted_field[0]);
   }
 #endif
@@ -432,7 +419,7 @@ FCSResult ifcs_p2nfft_run(
   fcs_float far_global;
 
   for(fcs_int j = 0; j < sorted_num_particles; ++j)
-    far_energy += 0.5 * sorted_charges[j] * f[j];
+    far_energy += 0.5 * sorted_charges[j] * charges_f[j];
 
   MPI_Reduce(&far_energy, &far_global, 1, FCS_MPI_FLOAT, MPI_SUM, 0, d->cart_comm_3d);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: far field energy: %" FCS_LMOD_FLOAT "f\n", far_global);

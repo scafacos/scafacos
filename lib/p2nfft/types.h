@@ -200,7 +200,6 @@ typedef struct {
   fcs_int m;
 
   unsigned pnfft_flags;
-  unsigned pnfft_precompute_flags;
   fcs_int  pnfft_interpolation_order;
   fcs_int  pnfft_window;
   fcs_int  pnfft_direct;

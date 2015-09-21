@@ -107,15 +107,11 @@ FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_direct, pnfft_direct, fcs_int, pnfft_direct)
 
 /* Getters and Setters for PNFFT flags */
 FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_pre_phi_hat,     pnfft_pre_phi_hat,     fcs_int, yes_or_no)
-FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_fg_psi,          pnfft_fg_psi,          fcs_int, yes_or_no)
+FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_fast_gaussian,   pnfft_fast_gaussian,   fcs_int, yes_or_no)
 FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_fft_in_place,    pnfft_fft_in_place,    fcs_int, yes_or_no)
 FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_sort_nodes,      pnfft_sort_nodes,      fcs_int, yes_or_no)
 FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_interlaced,      pnfft_interlaced,      fcs_int, yes_or_no)
-FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_grad_ik,         pnfft_grad_ik,         fcs_int, yes_or_no)
-FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_pre_psi,         pnfft_pre_psi,         fcs_int, yes_or_no)
-FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_pre_fg_psi,      pnfft_pre_fg_psi,      fcs_int, yes_or_no)
-FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_pre_full_psi,    pnfft_pre_full_psi,    fcs_int, yes_or_no)
-FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_pre_full_fg_psi, pnfft_pre_full_fg_psi, fcs_int, yes_or_no)
+FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_diff_ik,         pnfft_diff_ik,         fcs_int, yes_or_no)
 FCS_P2NFFT_SET_GET_WRAPPER_1(pnfft_real_f,          pnfft_real_f,          fcs_int, yes_or_no)
 
 

@@ -286,7 +286,7 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
   \item \verb!p2nfft_k_cut! -
     Spherical cutoff distance in Fourier space. If this parameter is set to a positive float $k_c>0$, all Fourier coefficients $\hat f_{\mathbf k}$ with
     $\|\mathbf k\|_2 > kc$ will be set to zero, i.e., the approximation in Fourier space uses a spherical cutoff scheme.
-    This is usefull, e.g., for comparision of results to classical Ewald summation.
+    This is useful, e.g., for comparison of results to classical Ewald summation.
     Feasible values are any positive float (enable spherical cutoff) or any negative float (disable spherical cutoff).
     The spherical cutoff is not applied per default, since FFTs naturally use a box shaped cutoff scheme.
   \item \verb!p2nfft_ignore_tolerance! -
@@ -307,7 +307,7 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
 \begin{itemize}
   \item \verb!pnfft_N! (acronym: \verb!p2nfft_grid!) -
     Size of the FFT grid. Can be automatically tuned.
-    Feasible values are three comma separated, even, positve integers, e.g., \verb!pnfft_N,16,32,12!.
+    Feasible values are three comma separated, even, positive integers, e.g., \verb!pnfft_N,16,32,12!.
     Optimal values are in the order of $M^{1/3}$, \ie, one grid point for each particle.
     The grid size may be any even, positive integer, but powers of
     two are recommended. The larger the grid, the smaller the
@@ -338,7 +338,7 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     (\verb!cao!) of the P3M solver!}
   \item \verb!pnfft_b! -
     Shape parameter of the NFFT window function corresponding to the three dimensions. Can be automatically tuned.
-    Feasible values are three comma separated positiv floating point numbers, e.g., \verb!pnfft_b,0.5,1.0,3.2!.
+    Feasible values are three comma separated positive floating point numbers, e.g., \verb!pnfft_b,0.5,1.0,3.2!.
     Choosing an optimal value for b is not that easy but influences the error a lot.
     Therefore, you should only change the default value if you know what you do.
   \item \verb!pnfft_intpol_order! -
@@ -346,15 +346,15 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     Feasible values are $-1$ (direct evaluation of window function without interpolation), $0$, (constant interpolation), $1$ (linear interpolation), $2$ (quadratic interpolation) and $3$ (cubic interpolation).
     Default value is $3$ (cubic interpolation).
   \item \verb!pnfft_direct! -
-    Flag to enable plain NDFT instead of the fast approximative NFFT algorithms. 
+    Flag to enable plain NDFT instead of the fast approximate NFFT algorithms. 
     Feasible values are $0$ (use NFFT), or any other integer \verb!pnfft_direct!$\ne0$ (use NDFT). Default value is \verb!pnfft_direct!$=0$ (use NFFT).
   \item \verb!pnfft_pre_phi_hat! -
     Flag to enable precomputed Fourier coefficients for faster computation of the diagonal matrix in the NFFT algorithm.
     Feasible values are $0$ (turn off pre-computation), or any other integer \verb!pnfft_pre_phi_hat!$\ne0$ (enable pre-computation).
     Default value is $1$ (enable pre-computation).
-  \item \verb!pnfft_fg_psi! -
-    Set PNFFT flag \verb!PNFFT_FG_PSI!. Only Gaussian window function we can use Fast Gaussian Gridding in order to speed up the evaluation of the window function.
-    Feasible values are $0$ (switch Fast Gaussian gridding off), or any other integer \verb!pnfft_fg_psi!$\ne0$ (use Gaussian gridding).
+  \item \verb!pnfft_fast_gaussian! -
+    Set PNFFT flag \verb!PNFFT_FAST_GAUSSIAN!. Only Gaussian window function we can use Fast Gaussian Gridding in order to speed up the evaluation of the window function.
+    Feasible values are $0$ (switch Fast Gaussian Gridding off), or any other integer \verb!pnfft_fast_gaussian!$\ne0$ (use Fast Gaussian Gridding).
     Default value is $0$ (since B-Spline is the default window function).
   \item \verb!pnfft_fft_in_place! -
     Set PNFFT flag \verb!PNFFT_FFT_IN_PLACE!. This causes the PNFFT planner to use in-place-FFTs, which saves about half of the memory for FFT but may sacrifices some performance.
@@ -368,33 +368,33 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     Set PNFFT flag \verb!PNFFT_INTERLACED!. Chooses whether PNFFT uses interlacing. This gives better accuracy at the price of more operations.
     Feasible values are $0$ (omit interlacing), or any other integer \verb!pnfft_interlaced!$\ne0$ (enable interlacing).
     Default value is \verb!pnfft_interlaced!$=0$ (omit interlacing).
-  \item \verb!pnfft_grad_ik! -
-    Set PNFFT flag \verb!PNFFT_GRAD_IK!. Chooses whether PNFFT computes the gradient through multiplication with $-2\pi\textrm{i}\mathbf{k}$ in Fourier space.
+  \item \verb!pnfft_diff_ik! -
+    Set PNFFT flag \verb!PNFFT_DIFF_IK!. Chooses whether PNFFT computes the gradient through multiplication with $-2\pi\textrm{i}\mathbf{k}$ in Fourier space.
     This gives better accuracy in comparison to analytic differentiation at the price of more operations. Especially, we have to call four backward FFTs (instead of one for analytic differentiation).
-    Feasible values are $0$ (use analytic differentiation), or any other integer \verb!pnfft_grad_ik!$\ne0$ (use Fourier space differentiation).
-    Default value is \verb!pnfft_grad_ik!$=0$ (use analytic differentiation).
-  \item \verb!pnfft_pre_psi! -
-    Set PNFFT flag \verb!PNFFT_PRE_PSI!. Tensor product based precomputation of the window function. This option reduces the amount of repeated evaluations of the window function at the cost of
-    $6(2m+1)M$ floats (or $3(2m+1)M$ floats if the gradient is not needed).
-    Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
-    Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_psi!$\ne0$ (switch on precomputation).
-    Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_full_psi!.
-  \item \verb!pnfft_pre_fg_psi! -
-    Set PNFFT flags \verb!PNFFT_FG_PSI! and \verb!PNFFT_PRE_PSI!, i.e., use Fast Gaussian Gridding for tensor product based precomputation.
-    Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
-    Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_fg_psi!$\ne0$ (switch on precomputation).
-    Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_full_psi!.
-  \item \verb!pnfft_pre_full_psi! -
-    Set PNFFT flag \verb!PNFFT_PRE_FULL_PSI!. Full precomputation of the window function. This option reduces the amount of repeated evaluations of the window function at the cost of
-    $4(2m+1)^3M$ floats (or $(2m+1)^3M$ floats if the gradient is not needed).
-    Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
-    Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_psi!$\ne0$ (switch on precomputation).
-    Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_full_psi!.
-  \item \verb!pnfft_pre_full_fg_psi! -
-    Set PNFFT flags \verb!PNFFT_FULL_FG_PSI! and \verb!PNFFT_PRE_FULL_PSI!, i.e., use Fast Gaussian Gridding for full window function precomputation.
-    Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
-    Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_full_fg_psi!$\ne0$ (switch on precomputation).
-    Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_psi!.
+    Feasible values are $0$ (use analytic differentiation), or any other integer \verb!pnfft_diff_ik!$\ne0$ (use Fourier space differentiation).
+    Default value is \verb!pnfft_diff_ik!$=0$ (use analytic differentiation).
+%   \item \verb!pnfft_pre_psi! -
+%     Set PNFFT flag \verb!PNFFT_PRE_PSI!. Tensor product based precomputation of the window function. This option reduces the amount of repeated evaluations of the window function at the cost of
+%     $6(2m+1)M$ floats (or $3(2m+1)M$ floats if the gradient is not needed).
+%     Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
+%     Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_psi!$\ne0$ (switch on precomputation).
+%     Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_full_psi!.
+%   \item \verb!pnfft_pre_fg_psi! -
+%     Set PNFFT flags \verb!PNFFT_FG_PSI! and \verb!PNFFT_PRE_PSI!, i.e., use Fast Gaussian Gridding for tensor product based precomputation.
+%     Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
+%     Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_fg_psi!$\ne0$ (switch on precomputation).
+%     Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_full_psi!.
+%   \item \verb!pnfft_pre_full_psi! -
+%     Set PNFFT flag \verb!PNFFT_PRE_FULL_PSI!. Full precomputation of the window function. This option reduces the amount of repeated evaluations of the window function at the cost of
+%     $4(2m+1)^3M$ floats (or $(2m+1)^3M$ floats if the gradient is not needed).
+%     Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
+%     Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_psi!$\ne0$ (switch on precomputation).
+%     Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_full_psi!.
+%   \item \verb!pnfft_pre_full_fg_psi! -
+%     Set PNFFT flags \verb!PNFFT_FULL_FG_PSI! and \verb!PNFFT_PRE_FULL_PSI!, i.e., use Fast Gaussian Gridding for full window function precomputation.
+%     Since the this kind of precomputation depends on the nodes $\mathbf x_j$, it must be performed during \verb!fcs_run! instead of \verb!fcs_tune!.
+%     Feasible values are $0$ (switch off precomputation), or any other integer \verb!pnfft_pre_full_fg_psi!$\ne0$ (switch on precomputation).
+%     Default value is $0$ (no precomputation). This flag can not be used together with \verb!pnfft_pre_psi!.
   \item \verb!pnfft_real_f! -
     Set PNFFT flag \verb!PNFFT_REAL_F!. Normally, PNFFT works on complex valued inputs. This flag enables some optimizations for real valued inputs, e.g., substituting complex additions and multiplications with real ones.
     However, this comes at the price of strided memory access and does not always improve performance.
@@ -644,12 +644,12 @@ FCSResult fcs_p2nfft_get_pnfft_pre_phi_hat(
     Set/retrieve flag \verb!pnfft_pre_phi_hat! (optional, default = 0).
   \item
 \begin{alltt}
-FCSResult fcs_p2nfft_set_pnfft_fg_psi(
+FCSResult fcs_p2nfft_set_pnfft_fast_gaussian(
     FCS handle, fcs_int yes_or_no);
-FCSResult fcs_p2nfft_get_pnfft_fg_psi(
+FCSResult fcs_p2nfft_get_pnfft_fast_gaussian(
     FCS handle, fcs_int* yes_or_no);
 \end{alltt}
-    Set/retrieve flag \verb!pnfft_fg_psi! (optional, default = 0).
+    Set/retrieve flag \verb!pnfft_fast_gaussian! (optional, default = 0).
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_pnfft_fft_in_place(
@@ -676,44 +676,44 @@ FCSResult fcs_p2nfft_get_pnfft_interlaced(
     Set/retrieve flag \verb!pnfft_interlaced! (optional, default = 0).
   \item
 \begin{alltt}
-FCSResult fcs_p2nfft_set_pnfft_grad_ik(
+FCSResult fcs_p2nfft_set_pnfft_diff_ik(
     FCS handle, fcs_int yes_or_no);
-FCSResult fcs_p2nfft_get_pnfft_grad_ik(
+FCSResult fcs_p2nfft_get_pnfft_diff_ik(
     FCS handle, fcs_int* yes_or_no);
 \end{alltt}
-    Set/retrieve flag \verb!pnfft_grad_ik! (optional, default = 0).
-  \item
-\begin{alltt}
-FCSResult fcs_p2nfft_set_pnfft_pre_psi(
-    FCS handle, fcs_int yes_or_no);
-FCSResult fcs_p2nfft_get_pnfft_pre_psi(
-    FCS handle, fcs_int* yes_or_no);
-\end{alltt}
-    Set/retrieve flag \verb!pnfft_pre_psi! (optional, default = 0).
-  \item
-\begin{alltt}
-FCSResult fcs_p2nfft_set_pnfft_pre_fg_psi(
-    FCS handle, fcs_int yes_or_no);
-FCSResult fcs_p2nfft_get_pnfft_pre_fg_psi(
-    FCS handle, fcs_int* yes_or_no);
-\end{alltt}
-    Set/retrieve flag \verb!pnfft_pre_fg_psi! (optional, default = 0).
-  \item
-\begin{alltt}
-FCSResult fcs_p2nfft_set_pnfft_pre_full_psi(
-    FCS handle, fcs_int yes_or_no);
-FCSResult fcs_p2nfft_get_pnfft_pre_full_psi(
-    FCS handle, fcs_int* yes_or_no);
-\end{alltt}
-    Set/retrieve flag \verb!pnfft_pre_full_psi! (optional, default = 0).
-  \item
-\begin{alltt}
-FCSResult fcs_p2nfft_set_pnfft_pre_full_fg_psi(
-    FCS handle, fcs_int yes_or_no);
-FCSResult fcs_p2nfft_get_pnfft_pre_full_fg_psi(
-    FCS handle, fcs_int* yes_or_no);
-\end{alltt}
-    Set/retrieve flag \verb!pnfft_pre_full_fg_psi! (optional, default = 0).
+    Set/retrieve flag \verb!pnfft_diff_ik! (optional, default = 0).
+%   \item
+% \begin{alltt}
+% FCSResult fcs_p2nfft_set_pnfft_pre_psi(
+%     FCS handle, fcs_int yes_or_no);
+% FCSResult fcs_p2nfft_get_pnfft_pre_psi(
+%     FCS handle, fcs_int* yes_or_no);
+% \end{alltt}
+%     Set/retrieve flag \verb!pnfft_pre_psi! (optional, default = 0).
+%   \item
+% \begin{alltt}
+% FCSResult fcs_p2nfft_set_pnfft_pre_fg_psi(
+%     FCS handle, fcs_int yes_or_no);
+% FCSResult fcs_p2nfft_get_pnfft_pre_fg_psi(
+%     FCS handle, fcs_int* yes_or_no);
+% \end{alltt}
+%     Set/retrieve flag \verb!pnfft_pre_fg_psi! (optional, default = 0).
+%   \item
+% \begin{alltt}
+% FCSResult fcs_p2nfft_set_pnfft_pre_full_psi(
+%     FCS handle, fcs_int yes_or_no);
+% FCSResult fcs_p2nfft_get_pnfft_pre_full_psi(
+%     FCS handle, fcs_int* yes_or_no);
+% \end{alltt}
+%     Set/retrieve flag \verb!pnfft_pre_full_psi! (optional, default = 0).
+%   \item
+% \begin{alltt}
+% FCSResult fcs_p2nfft_set_pnfft_pre_full_fg_psi(
+%     FCS handle, fcs_int yes_or_no);
+% FCSResult fcs_p2nfft_get_pnfft_pre_full_fg_psi(
+%     FCS handle, fcs_int* yes_or_no);
+% \end{alltt}
+%     Set/retrieve flag \verb!pnfft_pre_full_fg_psi! (optional, default = 0).
   \item
 \begin{alltt}
 FCSResult fcs_p2nfft_set_pnfft_real_f(

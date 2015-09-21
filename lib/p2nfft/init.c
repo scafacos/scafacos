@@ -114,7 +114,6 @@ FCSResult ifcs_p2nfft_init(
 #endif
 
   d->pnfft_flags = PNFFT_MALLOC_F_HAT| PNFFT_PRE_PHI_HAT | PNFFT_FFT_OUT_OF_PLACE | PNFFT_TRANSPOSED_F_HAT;
-  d->pnfft_precompute_flags = PNFFT_PRE_NONE;
   d->pnfft_interpolation_order = 3;
   d->pnfft_window = FCS_P2NFFT_DEFAULT_PNFFT_WINDOW;
   d->pnfft_direct = 0;
@@ -229,8 +228,12 @@ void ifcs_p2nfft_destroy(
     return;
  
   /* finalize PNFFT */
-  if (d->pnfft != NULL)
-    FCS_PNFFT(finalize)(d->pnfft, PNFFT_FREE_F_HAT|PNFFT_FREE_F|PNFFT_FREE_X|PNFFT_FREE_GRAD_F);
+  if(d->pnfft)
+    FCS_PNFFT(finalize)(d->pnfft, PNFFT_FREE_F_HAT);
+  if(d->charges)
+    FCS_PNFFT(free_nodes)(d->charges, PNFFT_FREE_ALL);
+  if(d->dipoles)
+    FCS_PNFFT(free_nodes)(d->dipoles, PNFFT_FREE_ALL);
 
   /* free interpolation tables */
   if(d->near_interpolation_table_potential != NULL)
