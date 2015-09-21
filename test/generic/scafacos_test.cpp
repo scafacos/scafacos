@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012 Olaf Lenz, Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2014, 2015 Olaf Lenz, Michael Hofmann
   
   This file is part of ScaFaCoS.
   
@@ -34,7 +34,10 @@
 #include "common/fcs-common/FCSCommon.h"
 #include "common/gridsort/gridsort.h"
 
+#define MAIN_COMPILATION_UNIT  1
+
 #include "common.hpp"
+#include "particles.hpp"
 #include "Testcase.hpp"
 #include "Integration.hpp"
 
@@ -433,70 +436,116 @@ static void broadcast_global_parameters() {
 }
 
 
-typedef struct
+struct input_particles_t: particles_t
 {
-  fcs_int total_nparticles, nparticles, max_nparticles;
-  fcs_float *positions, *charges, *field, *potentials;
-
   fcs_float *reference_field, *reference_potentials;
-
   fcs_int *shuffles;
 
   fcs_int total_in_nparticles, in_nparticles;
   fcs_float *in_positions, *in_charges;
 
-} particles_t;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  fcs_float *dipole_reference_field, *dipole_reference_potentials;
+  fcs_int *dipole_shuffles;
+
+  fcs_int dipole_total_in_nparticles, dipole_in_nparticles;
+  fcs_float *dipole_in_positions, *dipole_in_moments;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+};
 
 
-static void prepare_particles(particles_t *parts)
+fcs_int absolute_total_results(fcs_float result_particles, fcs_int total_nparticles)
 {
-  fcs_int result_nparticles, total_result_nparticles;
+  fcs_int n;
 
-  if (global_params.result_particles < 0) total_result_nparticles = round((fcs_float) current_config->decomp_total_nparticles * -global_params.result_particles);
-  else total_result_nparticles = global_params.result_particles;
+  if (result_particles < 0) n = round((fcs_float) total_nparticles * -result_particles);
+  else n = result_particles;
   
-  if (total_result_nparticles > current_config->decomp_total_nparticles) total_result_nparticles = current_config->decomp_total_nparticles;
+  if (n > total_nparticles) n = total_nparticles;
 
-  fcs_int decomp_prefix = 0;
-  MPI_Exscan(&current_config->decomp_nparticles, &decomp_prefix, 1, FCS_MPI_INT, MPI_SUM, communicator);
+  return n;
+}
 
-  result_nparticles = round((fcs_float) total_result_nparticles * (decomp_prefix + current_config->decomp_nparticles) / (fcs_float) current_config->decomp_total_nparticles)
-                    - round((fcs_float) total_result_nparticles * decomp_prefix / (fcs_float) current_config->decomp_total_nparticles);
+
+static void prepare_particles(input_particles_t *parts)
+{
+  fcs_int total_result_nparticles = absolute_total_results(global_params.result_particles, current_config->decomp_particles.total_nparticles);
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+  fcs_int dipole_total_result_nparticles = absolute_total_results(global_params.result_particles, current_config->decomp_particles.dipole_total_nparticles);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+  fcs_int decomp_prefix[2] = { 0, 0 };
+  MPI_Exscan(&current_config->decomp_particles.particles.n, decomp_prefix, 2, FCS_MPI_INT, MPI_SUM, communicator);
+
+  fcs_int result_nparticles = 0;
+  if (current_config->decomp_particles.total_nparticles > 0)
+    result_nparticles = round((fcs_float) total_result_nparticles * (decomp_prefix[0] + current_config->decomp_particles.particles.n) / (fcs_float) current_config->decomp_particles.total_nparticles)
+                      - round((fcs_float) total_result_nparticles * decomp_prefix[0] / (fcs_float) current_config->decomp_particles.total_nparticles);
 
   parts->shuffles = 0;
 
-  if (result_nparticles < current_config->decomp_nparticles)
+  if (result_nparticles < current_config->decomp_particles.particles.n)
   {
     parts->shuffles = new fcs_int[result_nparticles];
 
     for (fcs_int i = 0; i < result_nparticles; ++i)
     {
-      parts->shuffles[i] = random() % (current_config->decomp_nparticles - i);
+      parts->shuffles[i] = random() % (current_config->decomp_particles.particles.n - i);
 
-      swap<fcs_float, 3>(current_config->decomp_positions + 3 * i, current_config->decomp_positions + 3 * parts->shuffles[i]);
-      swap<fcs_float, 1>(current_config->decomp_charges + i, current_config->decomp_charges + parts->shuffles[i]);
-      swap<fcs_float, 3>(current_config->decomp_field + 3 * i, current_config->decomp_field + 3 * parts->shuffles[i]);
-      swap<fcs_float, 1>(current_config->decomp_potentials + i, current_config->decomp_potentials + parts->shuffles[i]);
+      current_config->decomp_particles.particles.swap(i, parts->shuffles[i]);
     }
   }
 
-  parts->total_nparticles = total_result_nparticles;
-  parts->nparticles = result_nparticles;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  fcs_int dipole_result_nparticles = 0;
+  if (current_config->decomp_particles.dipole_total_nparticles > 0)
+    dipole_result_nparticles = round((fcs_float) dipole_total_result_nparticles * (decomp_prefix[1] + current_config->decomp_particles.dipole_particles.n) / (fcs_float) current_config->decomp_particles.dipole_total_nparticles)
+                             - round((fcs_float) dipole_total_result_nparticles * decomp_prefix[1] / (fcs_float) current_config->decomp_particles.dipole_total_nparticles);
 
-  parts->max_nparticles = current_config->decomp_max_nparticles;
-  parts->positions = current_config->decomp_positions;
-  parts->charges = current_config->decomp_charges;
-  parts->field = current_config->decomp_field;
-  parts->potentials = current_config->decomp_potentials;
+  parts->dipole_shuffles = 0;
+
+  if (dipole_result_nparticles < current_config->decomp_particles.dipole_particles.n)
+  {
+    parts->dipole_shuffles = new fcs_int[dipole_result_nparticles];
+
+    for (fcs_int i = 0; i < dipole_result_nparticles; ++i)
+    {
+      parts->dipole_shuffles[i] = random() % (current_config->decomp_particles.dipole_particles.n - i);
+
+      current_config->decomp_particles.dipole_particles.swap(i, parts->dipole_shuffles[i]);
+    }
+  }
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+  parts->total_nparticles = total_result_nparticles;
+  parts->particles = current_config->decomp_particles.particles;
+  parts->particles.n = result_nparticles;
   
   parts->reference_field = current_config->reference_field;
   parts->reference_potentials = current_config->reference_potentials;
 
-  parts->total_in_nparticles = current_config->decomp_total_nparticles - parts->total_nparticles;
-  parts->in_nparticles = current_config->decomp_nparticles - parts->nparticles;
+  parts->total_in_nparticles = current_config->decomp_particles.total_nparticles - parts->total_nparticles;
+  parts->in_nparticles = current_config->decomp_particles.particles.n - parts->particles.n;
 
-  parts->in_positions = parts->positions + 3 * parts->nparticles;
-  parts->in_charges = parts->charges + parts->nparticles;
+  parts->in_positions = parts->particles.positions_at(parts->particles.n);
+  parts->in_charges = parts->particles.props_at(parts->particles.n);
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+  parts->dipole_total_nparticles = dipole_total_result_nparticles;
+  parts->dipole_particles = current_config->decomp_particles.dipole_particles;
+  parts->dipole_particles.n = dipole_result_nparticles;
+
+  parts->dipole_reference_field = current_config->dipole_reference_field;
+  parts->dipole_reference_potentials = current_config->dipole_reference_potentials;
+
+  parts->dipole_total_in_nparticles = current_config->decomp_particles.dipole_total_nparticles - parts->dipole_total_nparticles;
+  parts->dipole_in_nparticles = current_config->decomp_particles.dipole_particles.n - parts->dipole_particles.n;
+
+  parts->dipole_in_positions = parts->dipole_particles.positions_at(parts->dipole_particles.n);
+  parts->dipole_in_moments = parts->dipole_particles.props_at(parts->dipole_particles.n);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
 /*  cout << "IN: " << parts->total_nparticles << " / " << parts->total_in_nparticles << endl;
   for (fcs_int i = 0; i < current_config->decomp_nparticles; ++i)
@@ -510,9 +559,12 @@ static void prepare_particles(particles_t *parts)
   }*/
 }
 
-static void unprepare_particles(particles_t *parts)
+static void unprepare_particles(input_particles_t *parts)
 {
-  current_config->decomp_nparticles = parts->nparticles;
+  current_config->decomp_particles.particles.n = parts->particles.n;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  current_config->decomp_particles.dipole_particles.n = parts->dipole_particles.n;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
 /*  cout << "OUT: " << parts->total_nparticles << " / " << parts->total_in_nparticles << endl;
   for (fcs_int i = 0; i < current_config->decomp_nparticles; ++i)
@@ -527,19 +579,31 @@ static void unprepare_particles(particles_t *parts)
 
   if (parts->shuffles)
   {
-    fcs_int result_nparticles = parts->nparticles;
+    fcs_int result_nparticles = parts->particles.n;
 
     for (fcs_int i = result_nparticles - 1; i >= 0; --i)
     {
-      swap<fcs_float, 3>(current_config->decomp_positions + 3 * parts->shuffles[i], current_config->decomp_positions + 3 * i);
-      swap<fcs_float, 1>(current_config->decomp_charges + parts->shuffles[i], current_config->decomp_charges + i);
-      swap<fcs_float, 3>(current_config->decomp_field + 3 * parts->shuffles[i], current_config->decomp_field + 3 * i);
-      swap<fcs_float, 1>(current_config->decomp_potentials + parts->shuffles[i], current_config->decomp_potentials + i);
+      current_config->decomp_particles.particles.swap(parts->shuffles[i], i);
     }
 
     delete[] parts->shuffles;
-    parts->shuffles = 0;
+    parts->shuffles = NULL;
   }
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+  if (parts->dipole_shuffles)
+  {
+    fcs_int result_nparticles = parts->dipole_particles.n;
+
+    for (fcs_int i = result_nparticles - 1; i >= 0; --i)
+    {
+      current_config->decomp_particles.dipole_particles.swap(parts->dipole_shuffles[i], i);
+    }
+
+    delete[] parts->dipole_shuffles;
+    parts->dipole_shuffles = NULL;
+  }
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 }
 
 static double determine_total_energy(fcs_int nparticles, fcs_float *charges, fcs_float *potentials)
@@ -557,27 +621,25 @@ static double determine_total_energy(fcs_int nparticles, fcs_float *charges, fcs
   return total;
 }
 
-#define BACKUP_POSITIONS
-#define BACKUP_CHARGES
+#define BACKUP_INPUT
 
 /*#define PRINT_PARTICLES*/
 
 #ifdef PRINT_PARTICLES
-static void print_particles(fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
+template<typename P>
+static void print_particles(generic_particle_data_t<P> *particles)
 {
-  for (fcs_int i = 0; i < nparticles; ++i) printf(" %" FCS_LMOD_INT "d: [%f %f %f] [%f] [%f %f %f] [%f]\n",
-    i, positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2], charges[i], field[3 * i + 0], field[3 * i + 1], field[3 * i + 2], potentials[i]);
+  for (fcs_int i = 0; i < particles->n; ++i)
+  {
+    cout << " " << i << ": ";
+    particles->print(i);
+    cout << endl;
+  }
 }
 #endif
 
-static void run_method(FCS fcs, particles_t *parts)
+static void run_method(FCS fcs, input_particles_t *parts)
 {
-#ifdef BACKUP_POSITIONS
-  fcs_float *original_positions;
-#endif
-#ifdef BACKUP_CHARGES
-  fcs_float *original_charges;
-#endif
   FCSResult result;
 
   double t, run_time_sum;
@@ -587,10 +649,21 @@ static void run_method(FCS fcs, particles_t *parts)
 
   MASTER(cout << "  Setting basic parameters..." << endl);
   MASTER(cout << "    Total number of particles: " << parts->total_nparticles + parts->total_in_nparticles << " (" << parts->total_in_nparticles << " input-only particles)" << endl);
+#if SCAFACOS_TEST_WITH_DIPOLES
+  MASTER(cout << "    Total number of dipole particles: " << parts->dipole_total_nparticles + parts->dipole_total_in_nparticles << " (" << parts->dipole_total_in_nparticles << " input-only particles)" << endl);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
   result = fcs_set_common(fcs, (fcs_get_near_field_flag(fcs) == 0)?0:1,
     current_config->params.box_a, current_config->params.box_b, current_config->params.box_c, current_config->params.box_origin, current_config->params.periodicity, 
     parts->total_nparticles);
   if (!check_result(result)) return;
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+  if (parts->dipole_total_nparticles + parts->dipole_total_in_nparticles > 0)
+  {
+    result = fcs_set_total_dipole_particles(fcs, parts->dipole_total_nparticles);
+    if (!check_result(result)) return;
+  }
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
   if (resort)
   {
@@ -600,8 +673,7 @@ static void run_method(FCS fcs, particles_t *parts)
   }
 
   // Compute dipole moment
-//  result = fcs_compute_dipole_correction(fcs, parts->total_nparticles + parts->total_in_nparticles,
-  result = fcs_compute_dipole_correction(fcs, parts->nparticles, parts->positions, parts->charges,
+  result = fcs_compute_dipole_correction(fcs, parts->particles.n, parts->particles.positions, parts->particles.props,
     current_config->params.epsilon, current_config->field_correction, &current_config->energy_correction);
   MASTER(cout << "  Dipole correction:" << endl);
   MASTER(cout << "    Field correction: "
@@ -613,25 +685,47 @@ static void run_method(FCS fcs, particles_t *parts)
 
 #ifdef FCS_ENABLE_DIRECT
   if (fcs_get_method(fcs) == FCS_METHOD_DIRECT) fcs_direct_set_in_particles(fcs, parts->in_nparticles, parts->in_positions, parts->in_charges);
+# if SCAFACOS_TEST_WITH_DIPOLES && 0
+  /* FIXME: enable if input particles for dipoles is available */
+  if (parts->dipole_total_nparticles + parts->dipole_total_in_nparticles > 0)
+  {
+    if (fcs_get_method(fcs) == FCS_METHOD_DIRECT) fcs_direct_set_dipole_in_particles(fcs, parts->dipole_in_nparticles, parts->dipole_in_positions, parts->dipole_in_moments);
+  }
+# endif /* SCAFACOS_TEST_WITH_DIPOLES */
 #endif
 
   /* create copies of the original positions and charges, as fcs_tune and fcs_run may modify them */
-#ifdef BACKUP_POSITIONS
-  original_positions = (fcs_float *) malloc(3 * parts->nparticles * sizeof(fcs_float));
-  memcpy(original_positions, parts->positions, 3 * parts->nparticles * sizeof(fcs_float));
-#endif
-#ifdef BACKUP_CHARGES
-  original_charges = (fcs_float *) malloc(parts->nparticles * sizeof(fcs_float));
-  memcpy(original_charges, parts->charges, parts->nparticles * sizeof(fcs_float));
+#ifdef BACKUP_INPUT
+  fcs_float *original_positions = new fcs_float[CHARGES::POSITION_SIZE * parts->particles.n];
+  values_copy<fcs_float, CHARGES::POSITION_SIZE>(original_positions, parts->particles.positions, parts->particles.n);
+
+  fcs_float *original_charges = new fcs_float[CHARGES::PROP_SIZE * parts->particles.n];
+  values_copy<fcs_float, CHARGES::PROP_SIZE>(original_charges, parts->particles.props, parts->particles.n);
+# if SCAFACOS_TEST_WITH_DIPOLES
+  fcs_float *dipole_original_positions = new fcs_float[DIPOLES::POSITION_SIZE * parts->dipole_particles.n];
+  values_copy<fcs_float, DIPOLES::POSITION_SIZE>(dipole_original_positions, parts->dipole_particles.positions, parts->dipole_particles.n);
+
+  fcs_float *dipole_original_moments = new fcs_float[DIPOLES::PROP_SIZE * parts->dipole_particles.n];
+  values_copy<fcs_float, DIPOLES::PROP_SIZE>(dipole_original_moments, parts->dipole_particles.props, parts->dipole_particles.n);
+# endif /* SCAFACOS_TEST_WITH_DIPOLES */
 #endif
 
-  fcs_set_max_local_particles(fcs, parts->max_nparticles);
+  fcs_set_max_local_particles(fcs, parts->particles.max_n);
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+  if (parts->dipole_total_nparticles + parts->dipole_total_in_nparticles > 0)
+  {
+    fcs_set_max_local_dipole_particles(fcs, parts->dipole_particles.max_n);
+
+    fcs_set_dipole_particles(fcs, parts->dipole_particles.n, parts->dipole_particles.positions, parts->dipole_particles.props, NULL, NULL);
+  }
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
   // Tune and time method
   MASTER(cout << "  Tuning method..." << endl);
   MPI_Barrier(communicator);
   t = MPI_Wtime();
-  result = fcs_tune(fcs, parts->nparticles, parts->positions, parts->charges);
+  result = fcs_tune(fcs, parts->particles.n, parts->particles.positions, parts->particles.props);
   fcs_print_parameters(fcs);
   if (!check_result(result)) return;
   MPI_Barrier(communicator);
@@ -640,71 +734,107 @@ static void run_method(FCS fcs, particles_t *parts)
   
   // Run and time method
   MASTER(cout << "  Running method..." << endl);
-  DEBUG(cout << comm_rank << ": local number of particles: " << parts->nparticles << "(" << parts->in_nparticles << " input-only)" << endl);
+  DEBUG(cout << comm_rank << ": local number of particles: " << parts->particles.n << " (" << parts->in_nparticles << " input-only)" << endl);
+#if SCAFACOS_TEST_WITH_DIPOLES
+  DEBUG(cout << comm_rank << ": local number of dipole particles: " << parts->dipole_particles.n << " (" << parts->dipole_in_nparticles << " input-only)" << endl);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
   run_time_sum = 0;
 
   for (fcs_int i = 0; i < global_params.iterations; ++i)
   {
     /* restore original positions and charges, as fcs_tune and fcs_run may have modified them */
-#ifdef BACKUP_POSITIONS
-    memcpy(parts->positions, original_positions, 3 * parts->nparticles * sizeof(fcs_float));
-#endif
-#ifdef BACKUP_CHARGES
-    memcpy(parts->charges, original_charges, parts->nparticles * sizeof(fcs_float));
+#ifdef BACKUP_INPUT
+    values_copy<fcs_float, CHARGES::POSITION_SIZE>(parts->particles.positions, original_positions, parts->particles.n);
+    values_copy<fcs_float, CHARGES::PROP_SIZE>(parts->particles.props, original_charges, parts->particles.n);
+# if SCAFACOS_TEST_WITH_DIPOLES
+    values_copy<fcs_float, DIPOLES::POSITION_SIZE>(parts->dipole_particles.positions, dipole_original_positions, parts->dipole_particles.n);
+    values_copy<fcs_float, DIPOLES::PROP_SIZE>(parts->dipole_particles.props, dipole_original_moments, parts->dipole_particles.n);
+# endif /* SCAFACOS_TEST_WITH_DIPOLES */
 #endif
 
 #ifdef PRINT_PARTICLES
-    MASTER(cout << "Particles before fcs_run: " << parts->nparticles << endl);
-    print_particles(parts->nparticles, parts->positions, parts->charges,
-            parts->field, parts->potentials);
+    MASTER(cout << "Particles before fcs_run: " << parts->particles.n << endl);
+    print_particles<CHARGES>(&parts->particles);
+# if SCAFACOS_TEST_WITH_DIPOLES
+    MASTER(cout << "Dipole particles before fcs_run: " << parts->dipole_particles.n << endl);
+    print_particles<DIPOLES>(&parts->dipole_particles);
+# endif /* SCAFACOS_TEST_WITH_DIPOLES */
 #endif
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+    if (parts->dipole_total_nparticles + parts->dipole_total_in_nparticles > 0)
+    {
+      fcs_set_dipole_particles(fcs, parts->dipole_particles.n, parts->dipole_particles.positions, parts->dipole_particles.props, parts->dipole_particles.field, parts->dipole_particles.potentials);
+    }
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
     MPI_Barrier(communicator);
     t = MPI_Wtime();
-    result = fcs_run(fcs, parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+    result = fcs_run(fcs, parts->particles.n, parts->particles.positions, parts->particles.props, parts->particles.field, parts->particles.potentials);
     if (!check_result(result)) return;
     MPI_Barrier(communicator);
     t = MPI_Wtime() - t;
     MASTER(cout << "    #" << i << " time: " << scientific << t << endl);
 
 #ifdef PRINT_PARTICLES
-    MASTER(cout << "Particles after fcs_run: " << parts->nparticles << endl);
-    print_particles(parts->nparticles, parts->positions, parts->charges,
-            parts->field, parts->potentials);
+    MASTER(cout << "Particles after fcs_run: " << parts->particles.n << endl);
+    print_particles<CHARGES>(&parts->particles);
+# if SCAFACOS_TEST_WITH_DIPOLES
+    MASTER(cout << "Dipole particles after fcs_run: " << parts->dipole_particles.n << endl);
+    print_particles<DIPOLES>(&parts->dipole_particles);
+# endif /* SCAFACOS_TEST_WITH_DIPOLES */
 #endif
 
     run_time_sum += t;
   }
 
-#ifdef BACKUP_POSITIONS
-  free(original_positions);
-#endif
-#ifdef BACKUP_CHARGES
-  free(original_charges);
+#ifdef BACKUP_INPUT
+  delete[] original_positions;
+  delete[] original_charges;
+# if SCAFACOS_TEST_WITH_DIPOLES
+  delete[] dipole_original_positions;
+  delete[] dipole_original_moments;
+# endif /* SCAFACOS_TEST_WITH_DIPOLES */
 #endif
 
   MASTER(cout << "    Average time: " << scientific << run_time_sum / global_params.iterations << endl);
   MASTER(cout << "    Total time:   " << scientific << run_time_sum << endl);
 
-  current_config->have_result_values[0] = 1;  // have potentials results
-  current_config->have_result_values[1] = 1;  // have field results
+  current_config->have_result_values[0] = 1;
+  current_config->have_result_values[1] = 1;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  current_config->dipole_have_result_values[0] = 1;
+  current_config->dipole_have_result_values[1] = 1;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
   fcs_get_resort_availability(fcs, &resort_availability);
   if (resort_availability)
   {
-    fcs_get_resort_particles(fcs, &parts->nparticles);
+    fcs_get_resort_particles(fcs, &parts->particles.n);
 
     MASTER(cout << "    Resorting reference potential and field values..." << endl);
 
     t = MPI_Wtime();
-    if (parts->reference_potentials != NULL)
-        fcs_resort_floats(fcs, parts->reference_potentials, NULL, 1);
-    if (parts->reference_field != NULL)
-        fcs_resort_floats(fcs, parts->reference_field, NULL, 3);
+    if (parts->reference_potentials) fcs_resort_floats(fcs, parts->reference_potentials, NULL, CHARGES::POTENTIAL_SIZE);
+    if (parts->reference_field) fcs_resort_floats(fcs, parts->reference_field, NULL, CHARGES::FIELD_SIZE);
     t = MPI_Wtime() - t;
 
     MASTER(printf("     = %f second(s)\n", t));
+
+#if SCAFACOS_TEST_WITH_DIPOLES && 0
+    /* FIXME: enable if resort for dipoles is available */
+    fcs_get_resort_dipole_particles(fcs, &parts->dipole_particles.n);
+
+    MASTER(cout << "    Resorting dipole reference potential and field values..." << endl);
+
+    t = MPI_Wtime();
+    if (parts->dipole_reference_potentials) fcs_resort_dipole_floats(fcs, parts->dipole_reference_potentials, NULL, DIPOLES::POTENTIAL_SIZE);
+    if (parts->dipole_reference_field) fcs_resort_dipole_floats(fcs, parts->dipole_reference_field, NULL, DIPOLES::FIELD_SIZE);
+    t = MPI_Wtime() - t;
+
+    MASTER(printf("     = %f second(s)\n", t));
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
   } else if (resort) MASTER(cout << "    Resorting enabled, but failed!" << endl);
 
@@ -716,14 +846,14 @@ static void run_method(FCS fcs, particles_t *parts)
                       << parts->field[3 * i + 1] << ", "
                       << parts->field[3 * i + 2] << "  " << parts->potentials[i] << endl;*/
 
-  if (parts->field)
+  if (parts->particles.field)
   {
     // apply dipole correction to the fields
-    for (fcs_int pid = 0; pid < parts->nparticles; pid++)
+    for (fcs_int pid = 0; pid < parts->particles.n; pid++)
     {
-      parts->field[3*pid] += current_config->field_correction[0];
-      parts->field[3*pid+1] += current_config->field_correction[1];
-      parts->field[3*pid+2] += current_config->field_correction[2];
+      parts->particles.field[3 * pid + 0] += current_config->field_correction[0];
+      parts->particles.field[3 * pid + 1] += current_config->field_correction[1];
+      parts->particles.field[3 * pid + 2] += current_config->field_correction[2];
     }
   }
 }
@@ -733,14 +863,14 @@ static void no_method() {
   current_config->have_result_values[1] = 0;  // no field results
 }
 
-static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
+static void run_integration(FCS fcs, input_particles_t *parts, Testcase *testcase)
 {
   integration_t integ;
 
   fcs_int resort_availability, resort = global_params.resort;
 
   fcs_float *v_cur, *f_old, *f_cur, e, max_particle_move;
-#ifdef BACKUP_POSITIONS
+#ifdef BACKUP_INPUT
   fcs_float *xyz_old;
 #endif
   FCSResult result;
@@ -751,18 +881,23 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
 
   MASTER(cout << "  Integration with " << global_params.time_steps << " time step(s) " << (resort?"with":"without") << " utilization of resort support" << endl);
 
-  if (!parts->field)
+  if (!parts->particles.field)
   {
     MASTER(cout << "  ERROR: Performing integration requires computing of field values!" << endl);
     return;
   }
 
-  v_cur = new fcs_float[3 * parts->max_nparticles];
-  f_old = new fcs_float[3 * parts->max_nparticles];
-  f_cur = parts->field;
+#if SCAFACOS_TEST_WITH_DIPOLES
+    /* FIXME: enable if resort for dipoles is available */
+    MASTER(cout << "  WARNING: Performing integration with dipoles is currently not supported!" << endl);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+  v_cur = new fcs_float[3 * parts->particles.max_n];
+  f_old = new fcs_float[3 * parts->particles.max_n];
+  f_cur = parts->particles.field;
   
-#ifdef BACKUP_POSITIONS
-  xyz_old = new fcs_float[3 * parts->max_nparticles];
+#ifdef BACKUP_INPUT
+  xyz_old = new fcs_float[3 * parts->particles.max_n];
 #endif
 
   /* setup integration parameters */
@@ -775,7 +910,7 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
   );
 
   /* init integration (incl. velocity and field values) */
-  integ_init(&integ, parts->nparticles, v_cur, f_cur);
+  integ_init(&integ, parts->particles.n, v_cur, f_cur);
 
   if (fcs != FCS_NULL)
   {
@@ -788,7 +923,7 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
 
   } else
   {
-    for (fcs_int i = 0; i < parts->nparticles; ++i) parts->field[3 * i + 0] = parts->field[3 * i + 1] = parts->field[3 * i + 2] = parts->potentials[i] = 0.0;
+    values_set<fcs_float, CHARGES::FIELD_SIZE>(parts->particles.field, 0.0, parts->particles.n);
   }
 
   MASTER(cout << "  Initial step" << endl);
@@ -798,22 +933,22 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
   while (1)
   {
     /* store previous field values */
-    for (fcs_int i = 0; i < 3 * parts->nparticles; ++i) f_old[i] = f_cur[i];
+    values_copy<fcs_float, 3>(f_old, f_cur, parts->particles.n);
 
 #ifdef PRINT_PARTICLES
-    MASTER(cout << "Particles before fcs_run: " << parts->nparticles << endl);
-    print_particles(parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+    MASTER(cout << "Particles before fcs_run: " << parts->particles.n << endl);
+    print_particles<CHARGES>(&parts->particles);
 #endif
 
     if (fcs != FCS_NULL)
     {
-      fcs_set_max_local_particles(fcs, parts->max_nparticles);
+      fcs_set_max_local_particles(fcs, parts->particles.max_n);
 
       /* tune method */
       MASTER(cout << "    Tune method..." << endl);
       MPI_Barrier(communicator);
       t = MPI_Wtime();
-      result = fcs_tune(fcs, parts->nparticles, parts->positions, parts->charges);
+      result = fcs_tune(fcs, parts->particles.n, parts->particles.positions, parts->particles.props);
       MPI_Barrier(communicator);
       t = MPI_Wtime() - t;
       if (!check_result(result)) return;
@@ -822,14 +957,14 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
       tune_time_sum += t;
 
       /* store old positions */
-#ifdef BACKUP_POSITIONS
-      memcpy(xyz_old, parts->positions, parts->nparticles * 3 * sizeof(fcs_float));
+#ifdef BACKUP_INPUT
+      values_copy<fcs_float, CHARGES::POSITION_SIZE>(xyz_old, parts->particles.positions, parts->particles.n);
 #endif
 
       MASTER(cout << "    Run method..." << endl);
       MPI_Barrier(communicator);
       t = MPI_Wtime();
-      result = fcs_run(fcs, parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+      result = fcs_run(fcs, parts->particles.n, parts->particles.positions, parts->particles.props, parts->particles.field, parts->particles.potentials);
       MPI_Barrier(communicator);
       t = MPI_Wtime() - t;
       if (!check_result(result)) return;
@@ -838,15 +973,15 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
       run_time_sum += t;
 
       /* restore old positions */
-#ifdef BACKUP_POSITIONS
-      memcpy(parts->positions, xyz_old, parts->nparticles * 3 * sizeof(fcs_float));
+#ifdef BACKUP_INPUT
+      values_copy<fcs_float, CHARGES::POSITION_SIZE>(parts->particles.positions, xyz_old, parts->particles.n);
 #endif
     }
 
     fcs_get_resort_availability(fcs, &resort_availability);
     if (resort_availability)
     {
-      fcs_get_resort_particles(fcs, &parts->nparticles);
+      fcs_get_resort_particles(fcs, &parts->particles.n);
 
       MASTER(cout << "    Resorting old velocity and field values..." << endl);
 
@@ -863,22 +998,22 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
       MASTER(cout << "    Resorting reference potential and field values..." << endl);
 
       t = MPI_Wtime();
-      if (parts->reference_potentials != NULL) fcs_resort_floats(fcs, parts->reference_potentials, NULL, 1);
-      if (parts->reference_field != NULL) fcs_resort_floats(fcs, parts->reference_field, NULL, 3);
+      if (parts->reference_potentials) fcs_resort_floats(fcs, parts->reference_potentials, NULL, CHARGES::POTENTIAL_SIZE);
+      if (parts->reference_field) fcs_resort_floats(fcs, parts->reference_field, NULL, CHARGES::FIELD_SIZE);
       t = MPI_Wtime() - t;
 
       MASTER(printf("     = %f second(s)\n", t));
 
       /* resort the restored old positions */
-#ifdef BACKUP_POSITIONS
-      fcs_resort_floats(fcs, parts->positions, NULL, 3);
+#ifdef BACKUP_INPUT
+      fcs_resort_floats(fcs, parts->particles.positions, NULL, CHARGES::POSITION_SIZE);
 #endif
 
     } else if (resort) MASTER(cout << "    Resorting enabled, but failed!" << endl);
 
 #ifdef PRINT_PARTICLES
-    MASTER(cout << "Particles after fcs_run: " << parts->nparticles << endl);
-    print_particles(parts->nparticles, parts->positions, parts->charges, parts->field, parts->potentials);
+    MASTER(cout << "Particles after fcs_run: " << parts->particles.n << endl);
+    print_particles<CHARGES>(&parts->particles);
 #endif
 
     if (0 != integ.output_steps && global_params.have_outfile) {
@@ -916,11 +1051,11 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
     if (r > 0)
     {
       MASTER(cout << "    Update velocities..." << endl);
-      integ_update_velocities(&integ, parts->nparticles, v_cur, f_old, f_cur, parts->charges);
+      integ_update_velocities(&integ, parts->particles.n, v_cur, f_old, f_cur, parts->particles.props);
     }
 
     MASTER(cout << "    Determine total energy..." << endl);
-    e = determine_total_energy(parts->nparticles, parts->charges, parts->potentials);
+    e = determine_total_energy(parts->particles.n, parts->particles.props, parts->particles.potentials);
     MASTER(cout << "      total energy = " << scientific << e << endl);
 
     if (r >= global_params.time_steps) break;
@@ -930,7 +1065,7 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
     MASTER(cout << "  Time-step #" << r << endl);
 
     MASTER(cout << "    Update positions..." << endl);
-    integ_update_positions(&integ, parts->nparticles, parts->positions, NULL, v_cur, f_cur, parts->charges, &max_particle_move);
+    integ_update_positions(&integ, parts->particles.n, parts->particles.positions, NULL, v_cur, f_cur, parts->particles.props, &max_particle_move);
 
     if (resort_availability && integ.max_move)
     {
@@ -946,7 +1081,7 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
       }
     }
 
-    integ_correct_positions(&integ, parts->nparticles, parts->positions);
+    integ_correct_positions(&integ, parts->particles.n, parts->particles.positions);
     fcs_set_box_a(fcs, integ.box_a);
     fcs_set_box_b(fcs, integ.box_b);
     fcs_set_box_c(fcs, integ.box_c);
@@ -965,7 +1100,7 @@ static void run_integration(FCS fcs, particles_t *parts, Testcase *testcase)
   delete[] v_cur;
   delete[] f_old;
 
-#ifdef BACKUP_POSITIONS
+#ifdef BACKUP_INPUT
   delete[] xyz_old;
 #endif
 }
@@ -1137,9 +1272,9 @@ int main(int argc, char* argv[])
     }
 
     // Distribute particles
-    current_config->decompose_particles(global_params.compute_field, global_params.compute_potentials, global_params.resort?global_params.minalloc:0, global_params.resort?global_params.overalloc:0);
+    current_config->decompose_particles(global_params.compute_potentials, global_params.compute_field, global_params.resort?global_params.minalloc:0, global_params.resort?global_params.overalloc:0);
 
-    particles_t parts;
+    input_particles_t parts;
     prepare_particles(&parts);
 
     if (global_params.integrate) run_integration(fcs, &parts, testcase);
@@ -1162,9 +1297,15 @@ int main(int argc, char* argv[])
     if (global_params.have_outfile) {
       // Write the computed data as new references into the testcase
       if (current_config->have_result_values[0])
-        memcpy(current_config->dup_input_potentials, current_config->decomp_potentials, current_config->dup_input_nparticles*sizeof(fcs_float));
+        values_copy<fcs_float, CHARGES::POTENTIAL_SIZE>(current_config->input_particles.particles.potentials, current_config->decomp_particles.particles.potentials, current_config->input_particles.particles.n);
       if (current_config->have_result_values[1])
-        memcpy(current_config->dup_input_field, current_config->decomp_field, current_config->dup_input_nparticles*3*sizeof(fcs_float));
+        values_copy<fcs_float, CHARGES::FIELD_SIZE>(current_config->input_particles.particles.field, current_config->decomp_particles.particles.field, current_config->input_particles.particles.n);
+#if SCAFACOS_TEST_WITH_DIPOLES
+      if (current_config->dipole_have_result_values[0])
+        values_copy<fcs_float, DIPOLES::POTENTIAL_SIZE>(current_config->input_particles.dipole_particles.potentials, current_config->decomp_particles.dipole_particles.potentials, current_config->input_particles.dipole_particles.n);
+      if (current_config->dipole_have_result_values[1])
+        values_copy<fcs_float, DIPOLES::FIELD_SIZE>(current_config->input_particles.dipole_particles.field, current_config->decomp_particles.dipole_particles.field, current_config->input_particles.dipole_particles.n);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
     }
 
     // Free particles

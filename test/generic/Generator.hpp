@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012 Olaf Lenz, Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2014, 2015 Olaf Lenz, Michael Hofmann
   
   This file is part of ScaFaCoS.
   
@@ -29,6 +29,7 @@
 #include "rapidxml/rapidxml.hpp"
 
 #include "common.hpp"
+#include "particles.hpp"
 
 #define POINTSEQUENCEINT_T  fcs_int
 #include "PointSequence.hpp"
@@ -105,20 +106,6 @@ struct simple_generator_params {
 };
 
 
-struct generator_params {
-  fcs_int nlocal;
-  fcs_int nntotals, ntotals[3];
-  bool mult_ntotals[3];
-
-  generator_type::type_t positions_type;
-  generator_shape::type_t positions_shape;
-
-  simple_generator_params charges, potentials, field;
-
-  bool have_positions, have_charges, have_potentials, have_field;
-};
-
-
 class Generator {
 public:
   Generator();
@@ -129,7 +116,7 @@ public:
 //  static void write_config(xml_document<> *doc, xml_node<> *config_node);
 
   fcs_int get_local_nparticles(bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm);
-  fcs_int get_local_particles(fcs_float *positions, fcs_float *charges, fcs_float *potentials, fcs_float *field, bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm);
+  fcs_int get_local_particles(particle_data_t *particle_data, bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm);
 
   bool have_positions() { return params.have_positions; }
   bool have_charges() { return params.have_charges; }
@@ -139,7 +126,19 @@ public:
   void set_box(fcs_float *box_base, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c);
 
 private:
-  generator_params params;
+  struct {
+    fcs_int nlocal;
+    fcs_int nntotals, ntotals[3];
+    bool mult_ntotals[3];
+
+    generator_type::type_t positions_type;
+    generator_shape::type_t positions_shape;
+
+    simple_generator_params charges, potentials, field;
+
+    bool have_positions, have_charges, have_potentials, have_field;
+
+  } params;
 
   fcs_float *box_base, *box_a, *box_b, *box_c;
 
@@ -178,34 +177,41 @@ private:
 class PlainParticles
 {
 public:
-  fcs_int nparticles, allocated_nparticles;
-  fcs_float *positions, *charges, *potentials, *field;
+  particle_data_t local_particles;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  dipole_particle_data_t dipole_local_particles;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
   PlainParticles();
 
   void read_config(xml_node<> *node, const char *basename);
-  void broadcast_config(int root, MPI_Comm comm, bool particles);
+  void broadcast_config(int root, MPI_Comm comm);
   void print_config(const char *prefix = "");
 
-  static void write_config(xml_document<> *doc, xml_node<> *config_node, const char *filename, fcs_int ntotal, fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *potentials, fcs_float *field, int comm_size, int comm_rank, MPI_Comm comm);
+  static void write_config(xml_document<> *doc, xml_node<> *config_node, const char *filename, particles_t *particles, int comm_size, int comm_rank, MPI_Comm comm);
 
-  fcs_int get_local_nparticles(bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm);
+  bool have(particle_data_type_t pdt) { return params.haves[pdt]; };
 
-  bool have_positions() { return params.have_positions; }
-  bool have_charges() { return params.have_charges; }
-  bool have_potentials() { return params.have_potentials; }
-  bool have_field() { return params.have_field; }
   fcs_int get_total_nparticles() { return params.total_nparticles; }
+  fcs_int get_local_nparticles(bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm);
+  void get_local_particles(particle_data_t *particle_data, bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm);
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+  fcs_int get_dipole_total_nparticles() { return params.dipole_total_nparticles; }
+  fcs_int get_dipole_local_nparticles(bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm);
+  void get_dipole_local_particles(dipole_particle_data_t *particle_data, bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
 private:
   struct {
     fcs_int total_nparticles;
-    bool have_positions, have_charges, have_potentials, have_field;
+#if SCAFACOS_TEST_WITH_DIPOLES
+    fcs_int dipole_total_nparticles;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+    bool haves[PDT_LAST];
 
   } params;
-
-  fcs_int add_particles(fcs_int add_nparticles);
-  void free_input_particles();
 };
 
 typedef long long sparse_int_t;
@@ -247,8 +253,8 @@ public:
   static void write_config(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, fcs_int ntotal, fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *potentials, fcs_float *field, int comm_size, int comm_rank, MPI_Comm comm);
 
   fcs_int get_local_nparticles(bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm);
-  fcs_int get_local_particles(fcs_float *positions, fcs_float *charges, fcs_float *potentials, fcs_float *field, bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm);
-  fcs_int get_local_particles(fcs_float *positions, fcs_float *charges, fcs_float *potentials, fcs_float *field, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm);
+  fcs_int get_local_particles(particle_data_t *particle_data, bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm);
+  fcs_int get_local_particles(particle_data_t *particle_data, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm);
 
   bool have_positions() { return params.have_positions; }
   bool have_charges() { return params.have_charges; }
