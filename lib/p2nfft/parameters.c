@@ -1030,11 +1030,6 @@ IFCS_P2NFFT_SET_GET_FLAG(pnfft_, interlaced,       PNFFT_INTERLACED)
 IFCS_P2NFFT_SET_GET_FLAG(pnfft_, diff_ik,          PNFFT_DIFF_IK)
 IFCS_P2NFFT_SET_GET_FLAG(pnfft_, real_f,           PNFFT_REAL_F)
 
-IFCS_P2NFFT_SET_GET_FLAG(pnfft_pre_, pre_psi,          PNFFT_PRE_PSI)
-IFCS_P2NFFT_SET_GET_FLAG(pnfft_pre_, pre_grad_psi,     PNFFT_PRE_GRAD_PSI)
-IFCS_P2NFFT_SET_GET_FLAG(pnfft_pre_, pre_hessian_psi,  PNFFT_PRE_HESSIAN_PSI)
-IFCS_P2NFFT_SET_GET_FLAG(pnfft_pre_, pre_full,         PNFFT_PRE_FULL)
-
 /***************************************************
  *  Setters and getter for PFFT specific parameters 
  ***************************************************/
