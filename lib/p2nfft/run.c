@@ -270,47 +270,26 @@ FCSResult ifcs_p2nfft_run(
 #endif
       
   /* Reinit PNFFT corresponding to number of sorted nodes */
-  unsigned pnfft_malloc_flags = PNFFT_MALLOC_X | PNFFT_MALLOC_F;
-  if(compute_field)
-    pnfft_malloc_flags |= PNFFT_MALLOC_GRAD_F;
+  unsigned pnfft_malloc_flags = PNFFT_MALLOC_X;
+  if(compute_potential) pnfft_malloc_flags |= PNFFT_MALLOC_F;
+  if(compute_field)     pnfft_malloc_flags |= PNFFT_MALLOC_GRAD_F;
 
-  FCS_PNFFT(init_nodes)(d->pnfft, sorted_num_particles,
-      pnfft_malloc_flags,
-      PNFFT_FREE_X|   PNFFT_FREE_F|   PNFFT_FREE_GRAD_F);
+//   FCS_PNFFT(init_nodes)(d->pnfft, sorted_num_particles,
+//       pnfft_malloc_flags,
+//       PNFFT_FREE_X|   PNFFT_FREE_F|   PNFFT_FREE_GRAD_F);
+
+  /* reinitialize nodes */
+  FCS_PNFFT(free_nodes)(d->charges, PNFFT_FREE_ALL);
+  d->charges = FCS_PNFFT(init_nodes)(sorted_num_particles, pnfft_malloc_flags);
 
   fcs_pnfft_complex *f_hat, *f, *grad_f;
   fcs_float *x;
 
   f_hat  = FCS_PNFFT(get_f_hat)(d->pnfft);
-  f      = FCS_PNFFT(get_f)(d->pnfft);
-  grad_f = FCS_PNFFT(get_grad_f)(d->pnfft);
-  x      = FCS_PNFFT(get_x)(d->pnfft);
+  f      = FCS_PNFFT(get_f)(d->charges);
+  grad_f = FCS_PNFFT(get_grad_f)(d->charges);
+  x      = FCS_PNFFT(get_x)(d->charges);
 
-// #if FCS_ENABLE_INFO
-//   fcs_float min[3], max[3], gmin[3], gmax[3];
-// 
-//   /* initialize */
-//   for(fcs_int t=0; t<3; t++)
-//     min[t] = (sorted_num_particles >0) ? sorted_positions[t] : 1e16;
-//   for(fcs_int t=0; t<3; t++)
-//     max[t] = (sorted_num_particles >0) ? sorted_positions[t] : -1e16;
-// 
-//   for (fcs_int j = 1; j < sorted_num_particles; ++j){
-//     for(fcs_int t=0; t<3; t++){
-//       if(sorted_positions[3*j+t] < min[t])
-// 	min[t] = sorted_positions[3*j+t];
-//       if(sorted_positions[3*j+t] > max[t])
-// 	max[t] = sorted_positions[3*j+t];
-//     }
-//   }
-//       
-//   MPI_Reduce(&min, &gmin, 3, FCS_MPI_FLOAT, MPI_MIN, 0, d->cart_comm_3d);
-//   MPI_Reduce(&max, &gmax, 3, FCS_MPI_FLOAT, MPI_MAX, 0, d->cart_comm_3d);
-//   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: min range of particles: (%e, %e, %e)\n", gmin[0], gmin[1], gmin[2]);
-//   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: max range of particles: (%e, %e, %e)\n", gmax[0], gmax[1], gmax[2]);
-//   fprintf(stderr, "myrank = %d, sorted_num_particles = %d\n", myrank, sorted_num_particles);
-// #endif
-  
   /* Set NFFT nodes within [-0.5,0.5]^3 */
   for (fcs_int j = 0; j < sorted_num_particles; ++j)
   {
@@ -328,33 +307,14 @@ FCSResult ifcs_p2nfft_run(
   /* Set NFFT values */
   for (fcs_int j = 0; j < sorted_num_particles; ++j) f[j] = sorted_charges[j];
 
-// #if FCS_ENABLE_INFO
-//   fcs_float min[3], max[3], gmin[3], gmax[3];
-// 
-//   /* initialize */
-//   for(fcs_int t=0; t<3; t++)
-//     min[t] = (sorted_num_particles >0) ? x[t] : 1e16;
-//   for(fcs_int t=0; t<3; t++)
-//     max[t] = (sorted_num_particles >0) ? x[t] : -1e16;
-// 
-//   for (fcs_int j = 1; j < sorted_num_particles; ++j){
-//     for(fcs_int t=0; t<3; t++){
-//       if(x[3*j+t] < min[t])
-// 	min[t] = x[3*j+t];
-//       if(x[3*j+t] > max[t])
-// 	max[t] = x[3*j+t];
-//     }
-//   }
-//       
-//   MPI_Reduce(&min, &gmin, 3, FCS_MPI_FLOAT, MPI_MIN, 0, d->cart_comm_3d);
-//   MPI_Reduce(&max, &gmax, 3, FCS_MPI_FLOAT, MPI_MAX, 0, d->cart_comm_3d);
-//   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: min range of particles: (%e, %e, %e)\n", gmin[0], gmin[1], gmin[2]);
-//   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: max range of particles: (%e, %e, %e)\n", gmax[0], gmax[1], gmax[2]);
-//   fprintf(stderr, "myrank = %d, sorted_num_particles = %d\n", myrank, sorted_num_particles);
-// #endif
 
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
-  FCS_PNFFT(precompute_psi)(d->pnfft);
+  if(d->precompute_pnfft){
+    unsigned precompute_flags = d->pnfft_precompute_flags;
+    if(compute_potential) precompute_flags |= PNFFT_PRE_PSI;
+    if(compute_field)     precompute_flags |= PNFFT_PRE_PSI | PNFFT_PRE_GRAD_PSI;
+    FCS_PNFFT(precompute_psi)(d->pnfft, d->charges, );
+  }
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "pnfft_precompute_psi");
 
   /* Reset pnfft timer (delete timings from fcs_init and fcs_tune) */  
@@ -380,11 +340,12 @@ FCSResult ifcs_p2nfft_run(
   /* Start far field timing */
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
 
+  unsigned compute_flags_adj = 0;
+  if(compute_potential) compute_flags |= PNFFT_COMPUTE_F;
+  if(d->pnfft_direct)   compute_flags |= PNFFT_COMPUTE_DIRECT;
+
   /* Perform adjoint NFFT */
-  if(!d->pnfft_direct)
-    FCS_PNFFT(adj)(d->pnfft);
-  else
-    FCS_PNFFT(direct_adj)(d->pnfft);
+  FCS_PNFFT(adj)(d->pnfft, d->charges, compute_flags_adj);
 
   /* Checksum: Output of adjoint NFFT */  
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
@@ -417,11 +378,13 @@ FCSResult ifcs_p2nfft_run(
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: checksum of Fourier coefficients after convolution: %e + I* %e\n", creal(csum_global), cimag(csum_global));
 #endif
     
+  unsigned compute_flags_trf = 0;
+  if(compute_potential) compute_flags |= PNFFT_COMPUTE_F;
+  if(compute_field)     compute_flags |= PNFFT_COMPUTE_GRAD_F;
+  if(d->pnfft_direct)   compute_flags |= PNFFT_COMPUTE_DIRECT;
+
   /* Perform NFFT */
-  if(!d->pnfft_direct)
-    FCS_PNFFT(trafo)(d->pnfft);
-  else
-    FCS_PNFFT(direct_trafo)(d->pnfft);
+  FCS_PNFFT(trafo)(d->pnfft, d->charges, compute_flags_trf);
 
   /* Copy the results to the output vector and rescale with L^{-T} */
   if(compute_potential)
