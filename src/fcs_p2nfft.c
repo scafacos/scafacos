@@ -232,8 +232,11 @@ FCSResult fcs_p2nfft_run(
   fcs_int max_local_particles = fcs_get_max_local_particles(handle);
   if (local_particles > max_local_particles) max_local_particles = local_particles;
 
-  result = ifcs_p2nfft_run(handle->method_context, local_particles, max_local_particles,
-      positions, charges, potentials, field);
+  result = ifcs_p2nfft_run(handle->method_context,
+      local_particles, max_local_particles,
+      positions, charges, potentials, field,
+      handle->local_dipole_particles, handle->max_local_dipole_particles,
+      handle->dipole_positions, handle->dipole_moments, handle->dipole_potentials, handle->dipole_field);
 
   return result;
 }
