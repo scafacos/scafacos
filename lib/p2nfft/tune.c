@@ -2288,9 +2288,6 @@ static int pnfft_is_up_to_date(
   fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date: plan_pnfft_flags = %u, pnfft_flags = %u\n", plan_pnfft_flags, pnfft_flags);
 #endif
 
-  /* remove flags that do not imply retuning */
-  plan_pnfft_flags &= ~(PNFFT_MALLOC_X| PNFFT_MALLOC_F| PNFFT_MALLOC_GRAD_F);
-
   /* check PNFFT flags */
   if(plan_pnfft_flags != pnfft_flags)
     return 0;
