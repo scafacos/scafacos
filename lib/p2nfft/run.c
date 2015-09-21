@@ -307,16 +307,6 @@ FCSResult ifcs_p2nfft_run(
   /* Set NFFT values */
   for (fcs_int j = 0; j < sorted_num_particles; ++j) f[j] = sorted_charges[j];
 
-
-  FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
-  if(d->precompute_pnfft){
-    unsigned precompute_flags = d->pnfft_precompute_flags;
-    if(compute_potential) precompute_flags |= PNFFT_PRE_PSI;
-    if(compute_field)     precompute_flags |= PNFFT_PRE_PSI | PNFFT_PRE_GRAD_PSI;
-    FCS_PNFFT(precompute_psi)(d->pnfft, d->charges, );
-  }
-  FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "pnfft_precompute_psi");
-
   /* Reset pnfft timer (delete timings from fcs_init and fcs_tune) */  
 #if FCS_ENABLE_INFO && !FCS_P2NFFT_DISABLE_PNFFT_INFO
   FCS_PNFFT(reset_timer)(d->pnfft);
@@ -341,8 +331,8 @@ FCSResult ifcs_p2nfft_run(
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
 
   unsigned compute_flags_adj = 0;
-  if(compute_potential) compute_flags |= PNFFT_COMPUTE_F;
-  if(d->pnfft_direct)   compute_flags |= PNFFT_COMPUTE_DIRECT;
+  if(compute_potential) compute_flags_adj |= PNFFT_COMPUTE_F;
+  if(d->pnfft_direct)   compute_flags_adj |= PNFFT_COMPUTE_DIRECT;
 
   /* Perform adjoint NFFT */
   FCS_PNFFT(adj)(d->pnfft, d->charges, compute_flags_adj);
@@ -379,9 +369,9 @@ FCSResult ifcs_p2nfft_run(
 #endif
     
   unsigned compute_flags_trf = 0;
-  if(compute_potential) compute_flags |= PNFFT_COMPUTE_F;
-  if(compute_field)     compute_flags |= PNFFT_COMPUTE_GRAD_F;
-  if(d->pnfft_direct)   compute_flags |= PNFFT_COMPUTE_DIRECT;
+  if(compute_potential) compute_flags_trf |= PNFFT_COMPUTE_F;
+  if(compute_field)     compute_flags_trf |= PNFFT_COMPUTE_GRAD_F;
+  if(d->pnfft_direct)   compute_flags_trf |= PNFFT_COMPUTE_DIRECT;
 
   /* Perform NFFT */
   FCS_PNFFT(trafo)(d->pnfft, d->charges, compute_flags_trf);
