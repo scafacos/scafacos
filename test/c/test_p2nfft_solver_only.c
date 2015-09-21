@@ -79,7 +79,7 @@ int main (int argc, char** argv) {
     printf("Trying tolerance %" FCS_LMOD_FLOAT "f.\n", tolerance);
     fcs_p2nfft_set_tolerance(rd, FCS_TOLERANCE_TYPE_FIELD, tolerance);
     ifcs_p2nfft_tune(rd, periodicity, num_particles, positions, charges, box_a, box_b, box_c, offset, near_field_flag);
-    ifcs_p2nfft_run(rd, num_particles, num_particles, positions, charges, potentials, field);
+    ifcs_p2nfft_run(rd, num_particles, num_particles, positions, charges, potentials, field, 0, 0, NULL, NULL, NULL, NULL);
 
     printf("Potentials via P2NFFT\n");
 //    for(i = 0; i<num_particles; ++i) {

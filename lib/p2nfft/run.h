@@ -34,9 +34,13 @@
  *  @returns
  */
 FCSResult ifcs_p2nfft_run(
-    void *rd, fcs_int num_particles, fcs_int max_local_num_particles,
+    void *rd, 
+    fcs_int local_num_particles, fcs_int max_local_num_particles,
     fcs_float *positions, fcs_float *charges,
-    fcs_float *potentials, fcs_float *field);
+    fcs_float *potential, fcs_float *field,
+    fcs_int local_num_dipole_particles, fcs_int max_local_num_dipole_particles,
+    fcs_float *dipole_positions, fcs_float *dipole_moments,
+    fcs_float *dipole_potential, fcs_float *dipole_field);
 
 void ifcs_p2nfft_set_max_particle_move(void *rd, fcs_float max_particle_move);
 void ifcs_p2nfft_set_resort(void *rd, fcs_int resort);

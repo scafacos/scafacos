@@ -83,9 +83,13 @@ static fcs_int box_not_large_enough(
 
 
 FCSResult ifcs_p2nfft_run(
-    void *rd, fcs_int local_num_particles, fcs_int max_local_num_particles,
+    void *rd, 
+    fcs_int local_num_particles, fcs_int max_local_num_particles,
     fcs_float *positions, fcs_float *charges,
-    fcs_float *potential, fcs_float *field
+    fcs_float *potential, fcs_float *field,
+    fcs_int local_num_dipole_particles, fcs_int max_local_num_dipole_particles,
+    fcs_float *dipole_positions, fcs_float *dipole_moments,
+    fcs_float *dipole_potential, fcs_float *dipole_field
     )
 {
   const char* fnc_name = "ifcs_p2nfft_run";
@@ -110,6 +114,9 @@ FCSResult ifcs_p2nfft_run(
   if(box_not_large_enough(local_num_particles, positions, d->box_base, d->box_inv, d->periodicity))
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box.");
 
+  if(box_not_large_enough(local_num_dipole_particles, dipole_positions, d->box_base, d->box_inv, d->periodicity))
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some dipole particles left the box.");
+
   /* TODO: implement additional scaling of particles to ensure x \in [0,L)
    * Idea: use allreduce to get min and max coordinates, adapt scaling of particles for every time step */
 
@@ -123,6 +130,10 @@ FCSResult ifcs_p2nfft_run(
   fcs_float *sorted_positions, *ghost_positions;
   fcs_float *sorted_charges, *ghost_charges;
   fcs_gridsort_index_t *sorted_indices, *ghost_indices;
+  fcs_int sorted_num_dipole_particles, ghost_num_dipole_particles;
+  fcs_float *sorted_dipole_positions, *ghost_dipole_positions;
+  fcs_float *sorted_dipole_moments, *ghost_dipole_moments;
+  fcs_gridsort_index_t *sorted_dipole_indices, *ghost_dipole_indices;
   fcs_gridsort_t gridsort;
 
   fcs_gridsort_create(&gridsort);
@@ -132,6 +143,8 @@ FCSResult ifcs_p2nfft_run(
   fcs_gridsort_set_bounds(&gridsort, d->lower_border, d->upper_border);
 
   fcs_gridsort_set_particles(&gridsort, local_num_particles, max_local_num_particles, positions, charges);
+
+  fcs_gridsort_set_dipole_particles(&gridsort, local_num_dipole_particles, max_local_num_dipole_particles, dipole_positions, dipole_moments);
 
   fcs_gridsort_set_max_particle_move(&gridsort, d->max_particle_move);
 
@@ -151,7 +164,10 @@ FCSResult ifcs_p2nfft_run(
   fcs_gridsort_separate_ghosts(&gridsort);
 
   fcs_gridsort_get_real_particles(&gridsort, &sorted_num_particles, &sorted_positions, &sorted_charges, &sorted_indices);
+  fcs_gridsort_get_real_dipole_particles(&gridsort, &sorted_num_dipole_particles, &sorted_dipole_positions, &sorted_dipole_moments, &sorted_dipole_indices);
+
   fcs_gridsort_get_ghost_particles(&gridsort, &ghost_num_particles, &ghost_positions, &ghost_charges, &ghost_indices);
+  fcs_gridsort_get_ghost_dipole_particles(&gridsort, &ghost_num_dipole_particles, &ghost_dipole_positions, &ghost_dipole_moments, &ghost_dipole_indices);
 
   /* Finish forw sort timing */
 #if CREATE_GHOSTS_SEPARATE
@@ -164,6 +180,7 @@ FCSResult ifcs_p2nfft_run(
   /* For periodic boundary conditions: just fold them back.
    * We change sorted_positions (and not positions), since we are allowed to overwrite them. */
   fcs_wrap_positions(sorted_num_particles, sorted_positions, d->box_a, d->box_b, d->box_c, d->box_base, d->periodicity);
+  fcs_wrap_positions(sorted_num_dipole_particles, sorted_dipole_positions, d->box_a, d->box_b, d->box_c, d->box_base, d->periodicity);
 
   /* Start near field timing */
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
@@ -174,22 +191,36 @@ FCSResult ifcs_p2nfft_run(
   /* additional switchs to turn off computation of field / potential */
   if(d->flags & FCS_P2NFFT_IGNORE_FIELD)     field     = NULL;
   if(d->flags & FCS_P2NFFT_IGNORE_POTENTIAL) potential = NULL;
+  if(d->flags & FCS_P2NFFT_IGNORE_FIELD)     dipole_field     = NULL;
+  if(d->flags & FCS_P2NFFT_IGNORE_POTENTIAL) dipole_potential = NULL;
 
   fcs_int compute_field     = (field != NULL);
   fcs_int compute_potential = (potential != NULL);
+  fcs_int compute_dipole_field     = (dipole_field != NULL);
+  fcs_int compute_dipole_potential = (dipole_potential != NULL);
 
   fcs_float *sorted_field     = (compute_field)     ? malloc(sizeof(fcs_float)*3*sorted_num_particles) : NULL;
   fcs_float *sorted_potential = (compute_potential) ? malloc(sizeof(fcs_float)*sorted_num_particles) : NULL;
+  fcs_float *sorted_dipole_field     = (compute_dipole_field)     ? malloc(sizeof(fcs_float)*6*sorted_num_dipole_particles) : NULL;
+  fcs_float *sorted_dipole_potential = (compute_dipole_potential) ? malloc(sizeof(fcs_float)*3*sorted_num_dipole_particles) : NULL;
 
   /* Initialize all the potential */
   if(compute_potential)
     for (fcs_int j = 0; j < sorted_num_particles; ++j)
       sorted_potential[j] = 0;
+
+  if(compute_dipole_potential)
+    for (fcs_int j = 0; j < 3 * sorted_num_dipole_particles; ++j)
+      sorted_dipole_potential[j] = 0;
   
   /* Initialize all the forces */
   if(compute_field)
     for (fcs_int j = 0; j < 3 * sorted_num_particles; ++j)
       sorted_field[j] = 0;
+
+  if(compute_dipole_field)
+    for (fcs_int j = 0; j < 6 * sorted_num_particles; ++j)
+      sorted_dipole_field[j] = 0;
 
   if(d->short_range_flag){
     fcs_near_create(&near);
@@ -217,8 +248,11 @@ FCSResult ifcs_p2nfft_run(
   
     fcs_near_set_particles(&near, sorted_num_particles, sorted_num_particles, sorted_positions, sorted_charges, sorted_indices,
         (compute_field)?sorted_field:NULL, (compute_potential)?sorted_potential:NULL);
+    fcs_near_set_dipole_particles(&near, sorted_num_dipole_particles, sorted_num_dipole_particles, sorted_dipole_positions, sorted_dipole_moments, sorted_dipole_indices,
+        (compute_dipole_field)?sorted_dipole_field:NULL, (compute_dipole_potential)?sorted_dipole_potential:NULL);
   
     fcs_near_set_ghosts(&near, ghost_num_particles, ghost_positions, ghost_charges, ghost_indices);
+    fcs_near_set_dipole_ghosts(&near, ghost_num_dipole_particles, ghost_dipole_positions, ghost_dipole_moments, ghost_dipole_indices);
   
     if(d->interpolation_order >= 0){
       ifcs_p2nfft_near_params near_params;
