@@ -307,8 +307,14 @@ FCSResult ifcs_p2nfft_run(
   /* Set NFFT values */
   for (fcs_int j = 0; j < sorted_num_particles; ++j) f[j] = sorted_charges[j];
 
+
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
-  FCS_PNFFT(precompute_psi)(d->pnfft);
+  if(d->precompute_pnfft){
+    unsigned precompute_flags = d->pnfft_precompute_flags;
+    if(compute_potential) precompute_flags |= PNFFT_PRE_PSI;
+    if(compute_field)     precompute_flags |= PNFFT_PRE_PSI | PNFFT_PRE_GRAD_PSI;
+    FCS_PNFFT(precompute_psi)(d->pnfft, d->charges, );
+  }
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "pnfft_precompute_psi");
 
   /* Reset pnfft timer (delete timings from fcs_init and fcs_tune) */  
