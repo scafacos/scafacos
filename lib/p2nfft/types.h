@@ -258,7 +258,7 @@ typedef struct {
 
   /* resort parameters */
   fcs_float max_particle_move;
-  fcs_int resort, local_num_particles;
+  fcs_int resort, local_num_particles, local_num_dipole_particles;
   fcs_gridsort_resort_t gridsort_resort;
 
   /* gridsort cache */
