@@ -128,7 +128,7 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
   handle->dipole_field = NULL;
   handle->dipole_potentials = NULL;
 
-  handle->total_dipole_particles = handle->max_local_particles = -1;
+  handle->total_dipole_particles = handle->max_local_dipole_particles = -1;
 
 #ifdef FCS_ENABLE_FMM
   handle->fmm_param = NULL;
