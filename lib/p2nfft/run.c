@@ -461,9 +461,12 @@ FCSResult ifcs_p2nfft_run(
   /* Rescale all (symmetric) Hessian via L^{-T} * Hf * L^{-1} */
   if(compute_dipole_field){
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
-      sorted_dipole_field[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, charges_grad_f + 3*j, 0) );
-      sorted_dipole_field[3 * j + 1] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, charges_grad_f + 3*j, 1) );
-      sorted_dipole_field[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, charges_grad_f + 3*j, 2) );
+      sorted_dipole_field[6 * j + 0] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0) );
+      sorted_dipole_field[6 * j + 1] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1) );
+      sorted_dipole_field[6 * j + 2] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 2) );
+      sorted_dipole_field[6 * j + 3] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 3) );
+      sorted_dipole_field[6 * j + 4] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 4) );
+      sorted_dipole_field[6 * j + 5] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 5) );
     }
   }
 
