@@ -645,7 +645,7 @@ static void directc_compute(fcs_directc_t *directc, fcs_int *periodic, int size,
   /* vs. others */
   if (size > 1)
   {
-    fcs_int my_n[3], all_n[3 * size], other_max_nfloats;
+    fcs_int my_n[3], all_n[3 * size], all_min_nfloats, other_max_nfloats;
 
     my_n[0] = directc->nparticles;
     my_n[1] = directc->in_nparticles;
@@ -657,11 +657,13 @@ static void directc_compute(fcs_directc_t *directc, fcs_int *periodic, int size,
 #endif
     MPI_Allgather(my_n, 3, FCS_MPI_INT, all_n, 3, FCS_MPI_INT, comm);
 
+    all_min_nfloats = (all_n[3 * 0 + 0] + all_n[3 * 0 + 1]) * 4 + all_n[3 * 0 + 2] * 6;
     other_max_nfloats = 0;
     for (l = 0; l < size; ++l)
     {
-      if (l == rank) continue;
-      other_max_nfloats = z_max(other_max_nfloats, (all_n[3 * l + 0] + all_n[3 * l + 1]) * 4 + all_n[3 * l + 2] * 6);
+      all_min_nfloats = z_min(all_min_nfloats, (all_n[3 * l + 0] + all_n[3 * l + 1]) * 4 + all_n[3 * l + 2] * 6);
+
+      if (l != rank) other_max_nfloats = z_max(other_max_nfloats, (all_n[3 * l + 0] + all_n[3 * l + 1]) * 4 + all_n[3 * l + 2] * 6);
     }
 
     fcs_float *other_floats = malloc(other_max_nfloats * sizeof(fcs_float));
@@ -709,12 +711,11 @@ static void directc_compute(fcs_directc_t *directc, fcs_int *periodic, int size,
         /* further rounds */
         fcs_int prev_nfloats = (prev_n[0] + prev_n[1]) * 4 + prev_n[2] * 6;
         fcs_int other_nfloats = (other_n[0] + other_n[1]) * 4 + other_n[2] * 6;
-        fcs_int replace_nfloats = z_min(prev_nfloats, other_nfloats);
 
-        MPI_Sendrecv_replace(other_floats, replace_nfloats, FCS_MPI_FLOAT, next_rank, 0, prev_rank, 0, comm, MPI_STATUS_IGNORE);
+        MPI_Sendrecv_replace(other_floats, all_min_nfloats, FCS_MPI_FLOAT, next_rank, 0, prev_rank, 0, comm, MPI_STATUS_IGNORE);
 
-        if (replace_nfloats < prev_nfloats) MPI_Send(other_floats + replace_nfloats, prev_nfloats - replace_nfloats, FCS_MPI_FLOAT, next_rank, 0, comm);
-        else if (replace_nfloats < other_nfloats) MPI_Recv(other_floats + replace_nfloats, other_nfloats - replace_nfloats, FCS_MPI_FLOAT, prev_rank, 0, comm, MPI_STATUS_IGNORE);
+        if (all_min_nfloats < prev_nfloats) MPI_Send(other_floats + all_min_nfloats, prev_nfloats - all_min_nfloats, FCS_MPI_FLOAT, next_rank, 0, comm);
+        else if (all_min_nfloats < other_nfloats) MPI_Recv(other_floats + all_min_nfloats, other_nfloats - all_min_nfloats, FCS_MPI_FLOAT, prev_rank, 0, comm, MPI_STATUS_IGNORE);
       }
 
       compute_charge_from_charge(&my_charges, &other_charges, &periodics, directc->cutoff);
