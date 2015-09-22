@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012 Olaf Lenz, Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2014, 2015 Olaf Lenz, Michael Hofmann
   
   This file is part of ScaFaCoS.
   
@@ -36,29 +36,68 @@
 using namespace std;
 
 
-Generator::Generator()
+ParticleSource::ParticleSource()
 {
+  base_params.decomposition = DECOMPOSE_ATOMISTIC;
+
+  base_params.total_nparticles = 0;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  base_params.dipole_total_nparticles = 0;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+  values_set<bool, PDT_LAST>(base_params.haves, false);
+}
+
+
+void ParticleSource::broadcast_config(int root, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  MPI_Bcast(&base_params, sizeof(base_params), MPI_BYTE, root, comm);
+}
+
+
+void ParticleSource::print_config(const char *prefix, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  cout << prefix << "total_nparticles: " << base_params.total_nparticles << endl;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  cout << prefix << "dipole total nparticles: " << base_params.dipole_total_nparticles << endl;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+}
+
+
+Generator::Generator()
+  :ParticleSource()
+{
+  params.type = -1;
+
   params.nlocal = -1;
   params.nntotals = 0;
   params.ntotals[0] = params.ntotals[1] = params.ntotals[2] = -1;
   params.mult_ntotals[0] = params.mult_ntotals[1] = params.mult_ntotals[2] = false;
   
-  
   params.positions_type = generator_type::TYPE_NONE;
   params.positions_shape = generator_shape::SHAPE_NONE;
-
-  params.have_positions = params.have_charges = params.have_potentials = params.have_field = false;
 }
 
 
-void Generator::read_config(xml_node<> *config_node)
+bool Generator::read_config(xml_node<> *config_node, const char *basename, int comm_size, int comm_rank, MPI_Comm comm)
 {
-  for (xml_attribute<> *attr = config_node->first_attribute(); attr; attr = attr->next_attribute()) {
+  string type = "charge";
+
+  for (xml_attribute<> *attr = config_node->first_attribute(); attr; attr = attr->next_attribute())
+  {
     string aname = attr->name();
-    if (aname == "nlocal") {
+
+    if (aname == "type")
+    {
+      type = attr->value();
+
+    } else if (aname == "nlocal")
+    {
       parse_value(attr->value(), params.nlocal);
       params.nntotals = 0;
+
     } else if (aname == "ntotal") {
+
       char cv[] = { '_', '_', '_' };
       params.nntotals = parse_sequence(attr->value(), 3, params.ntotals, cv);
       for (fcs_int i = 0; i < params.nntotals; ++i) params.mult_ntotals[i] = (cv[i] == 'p');
@@ -66,24 +105,55 @@ void Generator::read_config(xml_node<> *config_node)
     }
   }
 
-  for (xml_node<> *node = config_node->first_node(); node; node = node->next_sibling()) {
+  if (type == "" || type == "charge") params.type = CHARGES::ID;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  else if (type == "dipole") params.type = DIPOLES::ID;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+  else
+  {
+    cerr << "ERROR: ignoring unknown particle type '" << type << "'" << endl;
+    return false;
+  }
+
+  for (xml_node<> *node = config_node->first_node(); node; node = node->next_sibling())
+  {
     string nname = node->name();
+
     if (nname == "positions") read_positions(node);
-    else if (nname == "charges") read_simple(&params.charges, node);
+    else if (nname == "charges"
+#if SCAFACOS_TEST_WITH_DIPOLES
+      || nname == "moments"
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+      ) read_simple(&params.props, node);
     else if (nname == "potentials") read_simple(&params.potentials, node);
     else if (nname == "field") read_simple(&params.field, node);
   }
+
+  if (params.type == CHARGES::ID) get_numbers(&base_params.total_nparticles, NULL, NULL, NULL, comm_size, comm_rank, comm);
+#if SCAFACOS_TEST_WITH_DIPOLES
+  else if (params.type == DIPOLES::ID) get_numbers(&base_params.dipole_total_nparticles, NULL, NULL, NULL, comm_size, comm_rank, comm);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+  return true;
 }
 
 
-void Generator::broadcast_config(int root, MPI_Comm comm)
+void Generator::broadcast_config(int root, int comm_size, int comm_rank, MPI_Comm comm)
 {
+  ParticleSource::broadcast_config(root, comm_size, comm_rank, comm);
+
   MPI_Bcast(&params, sizeof(params), MPI_BYTE, root, comm);
 }
 
 
-void Generator::print_config(const char *prefix)
+void Generator::print_config(const char *prefix, int comm_size, int comm_rank, MPI_Comm comm)
 {
+  if (comm_rank != MASTER_RANK) return;
+
+  if (params.type == CHARGES::ID) cout << prefix << "type: charge" << endl;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  else if (params.type == DIPOLES::ID) cout << prefix << "type: dipole" << endl;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
   cout << prefix << "nlocal = " << params.nlocal << ", ntotal =";
   for (fcs_int i = 0; i < params.nntotals; ++i) cout << " " << params.ntotals[i] << (params.mult_ntotals[i]?"p":"");
   if (params.nntotals < 1) cout << " (none)";
@@ -91,15 +161,25 @@ void Generator::print_config(const char *prefix)
 
   cout << prefix << "positions: type: " << generator_type::tostr(params.positions_type) << ", shape: " << generator_shape::tostr(params.positions_shape) << endl;
 
-  print_simple(&params.charges, "charges", prefix);
+  if (params.type == CHARGES::ID) print_simple(&params.props, "charges", prefix);
+#if SCAFACOS_TEST_WITH_DIPOLES
+  else if (params.type == DIPOLES::ID) print_simple(&params.props, "moments", prefix);
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
   print_simple(&params.potentials, "potentials", prefix);
   print_simple(&params.field, "field", prefix);
 }
 
 
-void Generator::read_positions(xml_node<> *config_node)
+bool Generator::write_config(xml_document<> *doc, xml_node<> *config_node, int comm_size, int comm_rank, MPI_Comm comm)
 {
-  for (xml_attribute<> *attr = config_node->first_attribute(); attr; attr = attr->next_attribute()) {
+  return false;
+}
+
+
+void Generator::read_positions(xml_node<> *node)
+{
+  for (xml_attribute<> *attr = node->first_attribute(); attr; attr = attr->next_attribute()) {
     string aname = attr->name();
     string aval = attr->value();
     if (aname == "type") {
@@ -120,38 +200,31 @@ void Generator::read_positions(xml_node<> *config_node)
 }
 
 
-fcs_int Generator::get_local_nparticles(bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm)
+bool Generator::get_numbers(fcs_int *ntotal, fcs_int *low, fcs_int *high, fcs_int *gridsize, int comm_size, int comm_rank, MPI_Comm comm)
 {
-  return get_local_particles(NULL, all_on_master, comm_size, comm_rank, comm);
-}
+  fcs_int ntotal_, low_, high_, gridsize_[3];
 
-fcs_int Generator::get_local_particles(particle_data_t *particle_data, bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm)
-{
-  fcs_float *positions, *charges, *potentials, *field;
+  if (!ntotal) ntotal = &ntotal_;
+  if (!low) low = &low_;
+  if (!high) high = &high_;
+  if (!gridsize) gridsize = gridsize_;
 
-  if (particle_data)
-  {
-    positions = particle_data->positions_at(particle_data->n);
-    charges = particle_data->props_at(particle_data->n);
-    potentials = particle_data->potentials_at(particle_data->n);
-    field = particle_data->field_at(particle_data->n);
-
-  } else positions = charges = potentials = field = NULL;
-
-  fcs_int low = 0, high = 0;
-  fcs_int gridsize[3] = { 1, 1, 1 };
-
-//  print_config();
+  *ntotal = 0;
+  *low = *high = 0;
+  gridsize[0] = gridsize[1] = gridsize[2] = 1;
 
   if (params.nlocal >= 0)
   {
-    if (all_on_master)
+    *ntotal = comm_size * params.nlocal;
+
+    if (all_on_master())
     {
-      if (comm_rank == MASTER_RANK) { low = 0; high = params.nlocal * comm_size; }
+      if (comm_rank == MASTER_RANK) { *low = 0; *high = *ntotal; }
 
     } else {
-      low = comm_rank * params.nlocal;
-      high = (comm_rank + 1) * params.nlocal;
+
+      *low = comm_rank * params.nlocal;
+      *high = (comm_rank + 1) * params.nlocal;
     }
 
     /* FIXME: make a better grid when nlocal is given (currently: 2d grid: nlocal x nproc) */
@@ -160,115 +233,185 @@ fcs_int Generator::get_local_particles(particle_data_t *particle_data, bool all_
 
   } else if (params.nntotals >= 0)
   {
-    fcs_int ntotals = 1;
+    *ntotal = 1;
 
-    for (fcs_int i = 0; i < params.nntotals; ++i) ntotals *= (gridsize[i] = params.ntotals[i] * (params.mult_ntotals[i]?comm_size:1));
+    for (fcs_int i = 0; i < params.nntotals; ++i) *ntotal *= (gridsize[i] = params.ntotals[i] * (params.mult_ntotals[i]?comm_size:1));
     
-    if (all_on_master)
+    if (all_on_master())
     {
-      if (comm_rank == MASTER_RANK) { low = 0; high = ntotals; }
+      if (comm_rank == MASTER_RANK) { *low = 0; *high = *ntotal; }
 
     } else {
-      low = (fcs_int) (((fcs_float) ntotals * (fcs_float) comm_rank) / (fcs_float) comm_size);
-      high = (fcs_int) (((fcs_float) ntotals * (fcs_float) (comm_rank + 1)) / (fcs_float) comm_size);
+
+      *low = (fcs_int) (((fcs_float) *ntotal * (fcs_float) comm_rank) / (fcs_float) comm_size);
+      *high = (fcs_int) (((fcs_float) *ntotal * (fcs_float) (comm_rank + 1)) / (fcs_float) comm_size);
     }
 
-  } else cout << "ERROR: neither valid local nor total numbers of particles available" << endl;
+  } else
+  {
+    cout << "ERROR: neither valid local nor total numbers of particles available" << endl;
+    return false;
+  }
+
+  return true;
+}
+
+
+template<typename P>
+bool Generator::make_local_particles(generic_particle_data_t<P> *particle_data, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  if (params.type != P::ID) return true;
+
+  fcs_int low, high, gridsize[3];
+
+  get_numbers(NULL, &low, &high, gridsize, comm_size, comm_rank, comm);
 
 /*  cout << "generating " << high - low << " particles (" << low << "-" << high << ") on node " << comm_rank << endl;*/
 
-  if (positions == NULL) return high - low;
+  fcs_float *positions = particle_data->positions_at(particle_data->n);
 
-  if (params.positions_shape == generator_shape::SHAPE_BOX)
-  switch (params.positions_type)
+  switch (params.positions_shape)
   {
-    case generator_type::TYPE_RANDOM:
-      make_box<RandomPointSequence>(high - low, low, positions);
+    case generator_shape::SHAPE_BOX:
+      switch (params.positions_type)
+      {
+        case generator_type::TYPE_RANDOM:
+          make_box<RandomPointSequence>(high - low, low, positions);
+          break;
+        case generator_type::TYPE_HAMMERSLEY:
+          make_box<HammersleyPointSequence>(high - low, low, positions);
+          break;
+        case generator_type::TYPE_HALTON:
+          make_box<HaltonPointSequence>(high - low, low, positions);
+          break;
+        default:
+          break;
+      }
       break;
-    case generator_type::TYPE_HAMMERSLEY:
-      make_box<HammersleyPointSequence>(high - low, low, positions);
+
+    case generator_shape::SHAPE_BALL:
+      switch (params.positions_type)
+      {
+        case generator_type::TYPE_RANDOM:
+          make_ball<RandomPointSequence>(high - low, low, positions);
+          break;
+        case generator_type::TYPE_HAMMERSLEY:
+          make_ball<HammersleyPointSequence>(high - low, low, positions);
+          break;
+        case generator_type::TYPE_HALTON:
+          make_ball<HaltonPointSequence>(high - low, low, positions);
+          break;
+        default:
+          break;
+      }
       break;
-    case generator_type::TYPE_HALTON:
-      make_box<HaltonPointSequence>(high - low, low, positions);
+
+    case generator_shape::SHAPE_SPHERE:
+      switch (params.positions_type)
+      {
+        case generator_type::TYPE_RANDOM:
+          make_sphere<RandomPointSequence>(high - low, low, positions);
+          break;
+        case generator_type::TYPE_HAMMERSLEY:
+          make_sphere<HammersleyPointSequence>(high - low, low, positions);
+          break;
+        case generator_type::TYPE_HALTON:
+          make_sphere<HaltonPointSequence>(high - low, low, positions);
+          break;
+        default:
+          break;
+      }
       break;
+
+    case generator_shape::SHAPE_PLUMMER_BALL:
+      switch (params.positions_type)
+      {
+        case generator_type::TYPE_RANDOM:
+          make_plummer_ball<RandomPointSequence>(high - low, low, positions);
+          break;
+        case generator_type::TYPE_HAMMERSLEY:
+          make_plummer_ball<HammersleyPointSequence>(high - low, low, positions);
+          break;
+        case generator_type::TYPE_HALTON:
+          make_plummer_ball<HaltonPointSequence>(high - low, low, positions);
+          break;
+        default:
+          break;
+      }
+      break;
+
+    case generator_shape::SHAPE_PLUMMER:
+      switch (params.positions_type)
+      {
+        case generator_type::TYPE_RANDOM:
+          make_plummer<RandomPointSequence>(high - low, low, positions);
+          break;
+        case generator_type::TYPE_HAMMERSLEY:
+          make_plummer<HammersleyPointSequence>(high - low, low, positions);
+          break;
+        case generator_type::TYPE_HALTON:
+          make_plummer<HaltonPointSequence>(high - low, low, positions);
+          break;
+        default:
+          break;
+      }
+      break;
+
     default:
+      if (params.positions_type == generator_type::TYPE_GRID) make_grid(high - low, low, positions, gridsize);
       break;
   }
 
-  if (params.positions_shape == generator_shape::SHAPE_BALL)
-  switch (params.positions_type)
-  {
-    case generator_type::TYPE_RANDOM:
-      make_ball<RandomPointSequence>(high - low, low, positions);
-      break;
-    case generator_type::TYPE_HAMMERSLEY:
-      make_ball<HammersleyPointSequence>(high - low, low, positions);
-      break;
-    case generator_type::TYPE_HALTON:
-      make_ball<HaltonPointSequence>(high - low, low, positions);
-      break;
-    default:
-      break;
-  }
+  make_simple<P::PROP_SIZE, fcs_float>(&params.props, high - low, low, particle_data->props_at(particle_data->n), (params.positions_type == generator_type::TYPE_GRID)?gridsize:0);
 
-  if (params.positions_shape == generator_shape::SHAPE_SPHERE)
-  switch (params.positions_type)
-  {
-    case generator_type::TYPE_RANDOM:
-      make_sphere<RandomPointSequence>(high - low, low, positions);
-      break;
-    case generator_type::TYPE_HAMMERSLEY:
-      make_sphere<HammersleyPointSequence>(high - low, low, positions);
-      break;
-    case generator_type::TYPE_HALTON:
-      make_sphere<HaltonPointSequence>(high - low, low, positions);
-      break;
-    default:
-      break;
-  }
+  base_params.haves[PDT_CHARGE_POTENTIALS] = make_simple<P::POTENTIAL_SIZE, fcs_float>(&params.potentials, high - low, low, particle_data->potentials_at(particle_data->n), (params.positions_type == generator_type::TYPE_GRID)?gridsize:0);
 
-  if (params.positions_shape == generator_shape::SHAPE_PLUMMER_BALL)
-  switch (params.positions_type)
-  {
-    case generator_type::TYPE_RANDOM:
-      make_plummer_ball<RandomPointSequence>(high - low, low, positions);
-      break;
-    case generator_type::TYPE_HAMMERSLEY:
-      make_plummer_ball<HammersleyPointSequence>(high - low, low, positions);
-      break;
-    case generator_type::TYPE_HALTON:
-      make_plummer_ball<HaltonPointSequence>(high - low, low, positions);
-      break;
-    default:
-      break;
-  }
+  base_params.haves[PDT_CHARGE_FIELD] = make_simple<P::FIELD_SIZE, fcs_float>(&params.field, high - low, low, particle_data->field_at(particle_data->n), (params.positions_type == generator_type::TYPE_GRID)?gridsize:0);
 
-  if (params.positions_shape == generator_shape::SHAPE_PLUMMER)
-  switch (params.positions_type)
-  {
-    case generator_type::TYPE_RANDOM:
-      make_plummer<RandomPointSequence>(high - low, low, positions);
-      break;
-    case generator_type::TYPE_HAMMERSLEY:
-      make_plummer<HammersleyPointSequence>(high - low, low, positions);
-      break;
-    case generator_type::TYPE_HALTON:
-      make_plummer<HaltonPointSequence>(high - low, low, positions);
-      break;
-    default:
-      break;
-  }
+  particle_data->n += (high - low);
 
-  if (params.positions_type == generator_type::TYPE_GRID) make_grid(high - low, low, positions, gridsize);
+  return true;
+}
 
-  make_simple<1, fcs_float>(&params.charges, high - low, low, charges, (params.positions_type == generator_type::TYPE_GRID)?gridsize:0);
-  params.have_potentials = make_simple<1, fcs_float>(&params.potentials, high - low, low, potentials, (params.positions_type == generator_type::TYPE_GRID)?gridsize:0);
-  params.have_field = make_simple<3, fcs_float>(&params.field, high - low, low, field, (params.positions_type == generator_type::TYPE_GRID)?gridsize:0);
 
-  if (particle_data) particle_data->n += (high - low);
+fcs_int Generator::get_local_nparticles(int comm_size, int comm_rank, MPI_Comm comm)
+{
+  if (params.type != CHARGES::ID) return 0;
+
+  fcs_int low, high;
+
+  get_numbers(NULL, &low, &high, NULL, comm_size, comm_rank, comm);
 
   return high - low;
 }
+
+
+bool Generator::make_local_particles(particle_data_t *particle_data, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  return make_local_particles<CHARGES>(particle_data, comm_size, comm_rank, comm);
+}
+
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+
+fcs_int Generator::get_dipole_local_nparticles(int comm_size, int comm_rank, MPI_Comm comm)
+{
+  if (params.type != DIPOLES::ID) return 0;
+
+  fcs_int low, high;
+
+  get_numbers(NULL, &low, &high, NULL, comm_size, comm_rank, comm);
+
+  return high - low;
+}
+
+
+bool Generator::make_dipole_local_particles(dipole_particle_data_t *particle_data, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  return make_local_particles<DIPOLES>(particle_data, comm_size, comm_rank, comm);
+}
+
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
 
 void Generator::set_box(fcs_float *box_base, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c)
@@ -280,9 +423,9 @@ void Generator::set_box(fcs_float *box_base, fcs_float *box_a, fcs_float *box_b,
 }
 
 
-void Generator::read_simple(simple_generator_params *p, xml_node<> *config_node)
+void Generator::read_simple(simple_generator_params *p, xml_node<> *node)
 {
-  for (xml_attribute<> *attr = config_node->first_attribute(); attr; attr = attr->next_attribute()) {
+  for (xml_attribute<> *attr = node->first_attribute(); attr; attr = attr->next_attribute()) {
     string aname = attr->name();
     string aval = attr->value();
     if (aname == "type") {
@@ -576,21 +719,14 @@ bool Generator::make_simple(simple_generator_params *p, fcs_int n, fcs_int offse
 
 
 PlainParticles::PlainParticles()
+  :ParticleSource()
 {
-  params.total_nparticles = 0;
-#if SCAFACOS_TEST_WITH_DIPOLES
-  params.dipole_total_nparticles = 0;
-#endif /* SCAFACOS_TEST_WITH_DIPOLES */
-
-  values_set<bool, PDT_LAST>(params.haves, false);
 }
 
 
-static const char PARTICLE_TAG[] = "particle";
-
-void PlainParticles::read_config(xml_node<> *node, const char *basename)
+bool PlainParticles::read_config(xml_node<> *config_node, const char *basename, int comm_size, int comm_rank, MPI_Comm comm)
 {
-  for (xml_node<> *particle_node = node->first_node(PARTICLE_TAG); particle_node; particle_node = particle_node->next_sibling(PARTICLE_TAG))
+  for (xml_node<> *particle_node = config_node->first_node(PARTICLE_TAG); particle_node; particle_node = particle_node->next_sibling(PARTICLE_TAG))
   {
     xml_attribute<> *attr = particle_node->first_attribute("type");
 
@@ -629,22 +765,22 @@ void PlainParticles::read_config(xml_node<> *node, const char *basename)
           if (s == "position")
           {
             parse_sequence(attr->value(), particle_data_t::POSITION_SIZE, local_particles.positions_at(pid));
-            params.haves[PDT_CHARGE_POSITIONS] = true;
+            base_params.haves[PDT_CHARGE_POSITIONS] = true;
 
           } else if (s == "charge" || s == "q")
           {
             parse_sequence(attr->value(), particle_data_t::PROP_SIZE, local_particles.props_at(pid));
-            params.haves[PDT_CHARGE_CHARGES] = true;
+            base_params.haves[PDT_CHARGE_CHARGES] = true;
 
           } else if (s == "potential")
           {
             parse_sequence(attr->value(), particle_data_t::POTENTIAL_SIZE, local_particles.potentials_at(pid));
-            params.haves[PDT_CHARGE_POTENTIALS] = true;
+            base_params.haves[PDT_CHARGE_POTENTIALS] = true;
 
           } else if (s == "field")
           {
             parse_sequence(attr->value(), particle_data_t::FIELD_SIZE, local_particles.field_at(pid));
-            params.haves[PDT_CHARGE_FIELD] = true;
+            base_params.haves[PDT_CHARGE_FIELD] = true;
 
           } else cerr << "ERROR: ignoring unknown particle data '" << s << "'" << endl;
 
@@ -655,22 +791,22 @@ void PlainParticles::read_config(xml_node<> *node, const char *basename)
           if (s == "position")
           {
             parse_sequence(attr->value(), dipole_particle_data_t::POSITION_SIZE, dipole_local_particles.positions_at(pid));
-            params.haves[PDT_DIPOLE_POSITIONS] = true;
+            base_params.haves[PDT_DIPOLE_POSITIONS] = true;
 
           } else if (s == "moment")
           {
             parse_sequence(attr->value(), dipole_particle_data_t::PROP_SIZE, dipole_local_particles.props_at(pid));
-            params.haves[PDT_DIPOLE_MOMENTS] = true;
+            base_params.haves[PDT_DIPOLE_MOMENTS] = true;
 
           } else if (s == "potential")
           {
             parse_sequence(attr->value(), dipole_particle_data_t::POTENTIAL_SIZE, dipole_local_particles.potentials_at(pid));
-            params.haves[PDT_DIPOLE_POTENTIALS] = true;
+            base_params.haves[PDT_DIPOLE_POTENTIALS] = true;
 
           } else if (s == "field")
           {
             parse_sequence(attr->value(), dipole_particle_data_t::FIELD_SIZE, dipole_local_particles.field_at(pid));
-            params.haves[PDT_DIPOLE_FIELD] = true;
+            base_params.haves[PDT_DIPOLE_FIELD] = true;
 
           } else cerr << "ERROR: ignoring unknown dipole particle data '" << s << "'" << endl;
 
@@ -679,6 +815,7 @@ void PlainParticles::read_config(xml_node<> *node, const char *basename)
       }
     }
 
+#if 0
     if (type == particle_data_t::ID)
     {
       cout << "reading particle #" << pid << ": ";
@@ -693,23 +830,34 @@ void PlainParticles::read_config(xml_node<> *node, const char *basename)
       cout << endl;
     }
 #endif /* SCAFACOS_TEST_WITH_DIPOLES */
+#endif
   }
-  
+
   params.total_nparticles = local_particles.n;
 #if SCAFACOS_TEST_WITH_DIPOLES
   params.dipole_total_nparticles = dipole_local_particles.n;
 #endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+  return true;
 }
 
 
-void PlainParticles::broadcast_config(int root, MPI_Comm comm)
+void PlainParticles::broadcast_config(int root, int comm_size, int comm_rank, MPI_Comm comm)
 {
+  ParticleSource::broadcast_config(root, comm_size, comm_rank, comm);
+
   MPI_Bcast(&params, sizeof(params), MPI_BYTE, root, comm);
 }
 
 
-void PlainParticles::print_config(const char *prefix)
+void PlainParticles::print_config(const char *prefix, int comm_size, int comm_rank, MPI_Comm comm)
 {
+}
+
+
+bool PlainParticles::write_config(xml_document<> *doc, xml_node<> *node, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  return false;
 }
 
 
@@ -827,27 +975,23 @@ void PlainParticles::write_config(xml_document<> *doc, xml_node<> *config_node, 
 }
 
 
-fcs_int PlainParticles::get_local_nparticles(bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm)
+fcs_int PlainParticles::get_local_nparticles(int comm_size, int comm_rank, MPI_Comm comm)
 {
-  if (all_on_master)
-  {
-    if (comm_rank == MASTER_RANK) return params.total_nparticles;
-    else return 0;
-  }
+  if (all_on_master()) return (comm_rank == MASTER_RANK)?params.total_nparticles:0;
 
   return get_equal_distribution_count(params.total_nparticles, comm_size, comm_rank);
 }
 
 
-void PlainParticles::get_local_particles(particle_data_t *particle_data, bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm)
+bool PlainParticles::make_local_particles(particle_data_t *particle_data, int comm_size, int comm_rank, MPI_Comm comm)
 {
-  if (all_on_master)
+  if (all_on_master())
   {
     particle_data->append(&local_particles);
 
   } else
   {
-    fcs_int n = get_local_nparticles(all_on_master, comm_size, comm_rank, comm);
+    fcs_int n = get_local_nparticles(comm_size, comm_rank, comm);
 
     fcs_int i = particle_data->add(n);
 
@@ -888,32 +1032,30 @@ void PlainParticles::get_local_particles(particle_data_t *particle_data, bool al
       MPI_Type_free(&t);
     }
   }
+
+  return true;
 }
 
 
 #if SCAFACOS_TEST_WITH_DIPOLES
 
-fcs_int PlainParticles::get_dipole_local_nparticles(bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm)
+fcs_int PlainParticles::get_dipole_local_nparticles(int comm_size, int comm_rank, MPI_Comm comm)
 {
-  if (all_on_master)
-  {
-    if (comm_rank == MASTER_RANK) return params.dipole_total_nparticles;
-    else return 0;
-  }
+  if (all_on_master()) return (comm_rank == MASTER_RANK)?params.dipole_total_nparticles:0;
 
   return get_equal_distribution_count(params.dipole_total_nparticles, comm_size, comm_rank);
 }
 
 
-void PlainParticles::get_dipole_local_particles(dipole_particle_data_t *particle_data, bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm)
+bool PlainParticles::make_dipole_local_particles(dipole_particle_data_t *particle_data, int comm_size, int comm_rank, MPI_Comm comm)
 {
-  if (all_on_master)
+  if (all_on_master())
   {
     particle_data->append(&dipole_local_particles);
 
   } else
   {
-    fcs_int n = get_dipole_local_nparticles(all_on_master, comm_size, comm_rank, comm);
+    fcs_int n = get_dipole_local_nparticles(comm_size, comm_rank, comm);
 
     fcs_int i = particle_data->add(n);
 
@@ -954,6 +1096,8 @@ void PlainParticles::get_dipole_local_particles(dipole_particle_data_t *particle
       MPI_Type_free(&t);
     }
   }
+
+  return true;
 }
 
 #endif /* SCAFACOS_TEST_WITH_DIPOLES */
@@ -1111,73 +1255,143 @@ char *FormatPortable::write_sparse(char *buf, sparse_int_t pid, fcs_float *data,
 
 
 FileParticles::FileParticles()
+  :ParticleSource()
 {
+  params.type = -1;
   params.format = 0;
 
   params.offset = -1;
   strcpy(params.filename, "");
 
-  params.total_nparticles = 0;
-
-  params.have_positions = params.have_charges = params.have_potentials = params.have_field = false;
-  
   params.nsparse_potentials = params.nsparse_field = -1;
 }
 
-void FileParticles::read_config(xml_node<> *config_node, const char *basename)
+
+bool FileParticles::read_config(xml_node<> *config_node, const char *basename, int comm_size, int comm_rank, MPI_Comm comm)
 {
   if (config_node->name() == string("portable")) params.format = 1;
 
-  for (xml_attribute<> *attr = config_node->first_attribute(); attr; attr = attr->next_attribute()) {
+  string type = "charge";
+  fcs_int ntotal;
+
+  for (xml_attribute<> *attr = config_node->first_attribute(); attr; attr = attr->next_attribute())
+  {
     string aname = attr->name();
     string aval = attr->value();
-    if (aname == "file") {
+
+    if (aname == "type")
+    {
+      type = aval;
+
+    } else if (aname == "file")
+    {
       if (aval.c_str()[0] != '/')
         snprintf(params.filename, MAX_FILENAME_LENGTH, "%s%s", basename, aval.c_str());
       else
         strncpy(params.filename, aval.c_str(), MAX_FILENAME_LENGTH);
-    } else if (aname == "format") {
+
+    } else if (aname == "format")
+    {
       params.format = atoll(aval.c_str());
-    } else if (aname == "offset") {
+
+    } else if (aname == "offset")
+    {
       params.offset = atoll(aval.c_str());
-    } else if (aname == "ntotal") {
-      parse_value(aval, params.total_nparticles);
+
+    } else if (aname == "ntotal")
+    {
+      parse_value(aval, ntotal);
     }
   }
 
-  for (xml_node<> *node = config_node->first_node(); node; node = node->next_sibling()) {
+  if (type == "" || type == "charge") params.type = CHARGES::ID;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  else if (type == "dipole") params.type = DIPOLES::ID;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+  else
+  {
+    cerr << "ERROR: ignoring unknown particle type '" << type << "'" << endl;
+    return false;
+  }
+
+  bool haves[4] = { false, false, false, false };
+
+  for (xml_node<> *node = config_node->first_node(); node; node = node->next_sibling())
+  {
     string nname = node->name();
-    if (nname == "positions") params.have_positions = true;
-    else if (nname == "charges") params.have_charges = true;
+    if (nname == "positions") haves[0] = true;
+    else if (nname == "charges") haves[1] = true;
     else if (nname == "potentials")
     {
-      params.have_potentials = true;
+      haves[2] = true;
       
       xml_attribute<> *attr = node->first_attribute("nsparse");
       if (attr) params.nsparse_potentials = atol(attr->value());
 
     } else if (nname == "field")
     {
-      params.have_field = true;
+      haves[3] = true;
 
       xml_attribute<> *attr = node->first_attribute("nsparse");
       if (attr) params.nsparse_field = atol(attr->value());
     }
   }
+
+  if (params.type == CHARGES::ID)
+  {
+    base_params.total_nparticles = ntotal;
+
+    base_params.haves[PDT_CHARGE_POSITIONS] = haves[0];
+    base_params.haves[PDT_CHARGE_CHARGES] = haves[1];
+    base_params.haves[PDT_CHARGE_POTENTIALS] = haves[2];
+    base_params.haves[PDT_CHARGE_FIELD] = haves[3];
+  }
+#if SCAFACOS_TEST_WITH_DIPOLES
+  else if (params.type == DIPOLES::ID)
+  {
+    base_params.dipole_total_nparticles = ntotal;
+
+    base_params.haves[PDT_DIPOLE_POSITIONS] = haves[0];
+    base_params.haves[PDT_DIPOLE_MOMENTS] = haves[1];
+    base_params.haves[PDT_DIPOLE_POTENTIALS] = haves[2];
+    base_params.haves[PDT_DIPOLE_FIELD] = haves[3];
+  }
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+  return true;
 }
 
-void FileParticles::broadcast_config(int root, MPI_Comm comm)
+
+void FileParticles::broadcast_config(int root, int comm_size, int comm_rank, MPI_Comm comm)
 {
+  ParticleSource::broadcast_config(root, comm_size, comm_rank, comm);
+
   MPI_Bcast(&params, sizeof(params), MPI_BYTE, root, comm);
 }
 
-void FileParticles::print_config(const char *prefix)
+
+void FileParticles::print_config(const char *prefix, int comm_size, int comm_rank, MPI_Comm comm)
 {
+  if (comm_rank != MASTER_RANK) return;
+
+  ParticleSource::print_config(prefix, comm_size, comm_rank, comm);
+
+  if (params.type == CHARGES::ID) cout << prefix << "type: charge" << endl;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  else if (params.type == DIPOLES::ID) cout << prefix << "type: dipole" << endl;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
   cout << prefix << "file: " << params.filename << endl;
   cout << prefix << "format: " << params.format << endl;
   cout << prefix << "offset: " << params.offset << endl;
-  cout << prefix << "ntotal: " << params.total_nparticles << endl;
 }
+
+
+bool FileParticles::write_config(xml_document<> *doc, xml_node<> *config_node, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  return false;
+}
+
 
 template<class F>
 static long long write_data_full(MPI_File file, fcs_float *data, fcs_int s, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm)
@@ -1231,6 +1445,7 @@ static long long write_data_full(MPI_File file, fcs_float *data, fcs_int s, fcs_
   return write_size;
 }
 
+
 template<class F>
 static void read_data_full(MPI_File file, fcs_float *data, fcs_int s, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm)
 {
@@ -1277,6 +1492,7 @@ static void read_data_full(MPI_File file, fcs_float *data, fcs_int s, fcs_int nl
   MPI_Bcast(&displ, 1, MPI_OFFSET, comm_size - 1, comm);
   MPI_File_seek(file, displ, MPI_SEEK_SET);
 }
+
 
 template<class F>
 static long long write_data_sparse(MPI_File file, fcs_float *data, fcs_int s, fcs_int nlocal, fcs_int &nsparse, int comm_size, int comm_rank, MPI_Comm comm)
@@ -1480,8 +1696,15 @@ static void read_data(int format, MPI_File file, fcs_float *data, fcs_int s, fcs
 }
 
 template<class F>
-void FileParticles::write_config(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, fcs_int ntotal, fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *potentials, fcs_float *field, int comm_size, int comm_rank, MPI_Comm comm)
+void FileParticles::write_config(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, particles_t *particles, int comm_size, int comm_rank, MPI_Comm comm)
 {
+  fcs_int ntotal = particles->total_nparticles;
+  fcs_int nparticles = particles->particles.n;
+  fcs_float *positions = particles->particles.positions;
+  fcs_float *charges = particles->particles.props;
+  fcs_float *potentials = particles->particles.potentials;
+  fcs_float *field = particles->particles.field;
+
   MPI_File file;
   MPI_Offset offset;
 
@@ -1608,73 +1831,110 @@ void FileParticles::write_config(xml_document<> *doc, xml_node<> *parent_node, c
   MPI_File_close(&file);
 }
 
-template void FileParticles::write_config<FormatBinary>(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, fcs_int ntotal, fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *potentials, fcs_float *field, int comm_size, int comm_rank, MPI_Comm comm);
+template void FileParticles::write_config<FormatBinary>(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, particles_t *particles, int comm_size, int comm_rank, MPI_Comm comm);
 
-template void FileParticles::write_config<FormatPortable>(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, fcs_int ntotal, fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *potentials, fcs_float *field, int comm_size, int comm_rank, MPI_Comm comm);
+template void FileParticles::write_config<FormatPortable>(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, particles_t *particles, int comm_size, int comm_rank, MPI_Comm comm);
 
-fcs_int FileParticles::get_local_nparticles(bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm)
+
+template<typename P>
+bool FileParticles::make_local_particles(generic_particle_data_t<P> *particle_data, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm)
 {
-  return get_local_particles(NULL, all_on_master, comm_size, comm_rank, comm);
+  MPI_File file;
+  
+  MPI_File_open(comm, params.filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &file);
+
+  if (params.offset >= 0) MPI_File_seek(file, params.offset, MPI_SEEK_SET);
+
+  if (have(PDT_CHARGE_POSITIONS)
+#if SCAFACOS_TEST_WITH_DIPOLES
+    || have(PDT_DIPOLE_POSITIONS)
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+    ) read_data(params.format, file, particle_data->positions_at(particle_data->n), P::POSITION_SIZE, nlocal, -1, comm_size, comm_rank, comm);
+
+  if (have(PDT_CHARGE_CHARGES)
+#if SCAFACOS_TEST_WITH_DIPOLES
+    || have(PDT_DIPOLE_MOMENTS)
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+    ) read_data(params.format, file, particle_data->props_at(particle_data->n), P::PROP_SIZE, nlocal, -1, comm_size, comm_rank, comm);
+
+  if (have(PDT_CHARGE_POTENTIALS)
+#if SCAFACOS_TEST_WITH_DIPOLES
+    || have(PDT_DIPOLE_POTENTIALS)
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+    ) read_data(params.format, file, particle_data->potentials_at(particle_data->n), P::POTENTIAL_SIZE, nlocal, params.nsparse_potentials, comm_size, comm_rank, comm);
+
+  if (have(PDT_CHARGE_FIELD)
+#if SCAFACOS_TEST_WITH_DIPOLES
+    || have(PDT_DIPOLE_FIELD)
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+    ) read_data(params.format, file, particle_data->field_at(particle_data->n), P::FIELD_SIZE, nlocal, params.nsparse_field, comm_size, comm_rank, comm);
+
+  MPI_File_close(&file);
+
+  particle_data->n += nlocal;
+
+  return true;
 }
 
-fcs_int FileParticles::get_local_particles(particle_data_t *particle_data, bool all_on_master, int comm_size, int comm_rank, MPI_Comm comm)
+
+fcs_int FileParticles::get_local_nparticles(int comm_size, int comm_rank, MPI_Comm comm)
 {
   fcs_int low = 0, high = 0;
 
-  if (all_on_master)
+  if (all_on_master())
   {
-    if (comm_rank == MASTER_RANK) { low = 0; high = params.total_nparticles; }
+    if (comm_rank == MASTER_RANK) { low = 0; high = base_params.total_nparticles; }
 
   } else {
 
-    low = (fcs_int) (((fcs_float) params.total_nparticles * (fcs_float) comm_rank) / (fcs_float) comm_size);
-    high = (fcs_int) (((fcs_float) params.total_nparticles * (fcs_float) (comm_rank + 1)) / (fcs_float) comm_size);
+    low = (fcs_int) (((fcs_float) base_params.total_nparticles * (fcs_float) comm_rank) / (fcs_float) comm_size);
+    high = (fcs_int) (((fcs_float) base_params.total_nparticles * (fcs_float) (comm_rank + 1)) / (fcs_float) comm_size);
   }
 
-  return get_local_particles(particle_data, (fcs_int) (high - low), comm_size, comm_rank, comm);
+  return (high - low);
 }
 
-fcs_int FileParticles::get_local_particles(particle_data_t *particle_data, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm)
+
+bool FileParticles::make_local_particles(particle_data_t *particle_data, int comm_size, int comm_rank, MPI_Comm comm)
 {
-  fcs_float *positions, *charges, *potentials, *field;
+  if (params.type != CHARGES::ID) return 0;
 
-  if (particle_data)
+  fcs_int n = get_local_nparticles(comm_size, comm_rank, comm);
+
+  return make_local_particles<CHARGES>(particle_data, n, comm_size, comm_rank, comm);
+}
+
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+
+fcs_int FileParticles::get_dipole_local_nparticles(int comm_size, int comm_rank, MPI_Comm comm)
+{
+  fcs_int low = 0, high = 0;
+
+  if (all_on_master())
   {
-    positions = particle_data->positions_at(particle_data->n);
-    charges = particle_data->props_at(particle_data->n);
-    potentials = particle_data->potentials_at(particle_data->n);
-    field = particle_data->field_at(particle_data->n);
+    if (comm_rank == MASTER_RANK) { low = 0; high = base_params.dipole_total_nparticles; }
 
-  } else positions = charges = potentials = field = NULL;
+  } else {
 
-
-  if (positions != NULL)
-  {
-    MPI_File file;
-  
-    MPI_File_open(comm, params.filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &file);
-
-    if (params.offset >= 0) MPI_File_seek(file, params.offset, MPI_SEEK_SET);
-
-    // read positions
-    if (params.have_positions) read_data(params.format, file, positions, 3, nlocal, -1, comm_size, comm_rank, comm);
-
-    // read charges
-    if (params.have_charges) read_data(params.format, file, charges, 1, nlocal, -1, comm_size, comm_rank, comm);
-
-    // read potentials
-    if (params.have_potentials) read_data(params.format, file, potentials, 1, nlocal, params.nsparse_potentials, comm_size, comm_rank, comm);
-
-    // read field
-    if (params.have_field) read_data(params.format, file, field, 3, nlocal, params.nsparse_field, comm_size, comm_rank, comm);
-
-    MPI_File_close(&file);
+    low = (fcs_int) (((fcs_float) base_params.dipole_total_nparticles * (fcs_float) comm_rank) / (fcs_float) comm_size);
+    high = (fcs_int) (((fcs_float) base_params.dipole_total_nparticles * (fcs_float) (comm_rank + 1)) / (fcs_float) comm_size);
   }
 
-  if (particle_data) particle_data->n += nlocal;
-
-  return nlocal;
+  return (high - low);
 }
+
+
+bool FileParticles::make_dipole_local_particles(dipole_particle_data_t *particle_data, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  if (params.type != DIPOLES::ID) return 0;
+
+  fcs_int n = get_dipole_local_nparticles(comm_size, comm_rank, comm);
+
+  return make_local_particles<DIPOLES>(particle_data, n, comm_size, comm_rank, comm);
+}
+
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
 
 Duplicate::Duplicate()
@@ -1683,12 +1943,12 @@ Duplicate::Duplicate()
   params.rescale = 0;
 }
 
-void Duplicate::read_config(xml_node<> *node, const char *basename)
+void Duplicate::read_config(xml_node<> *config_node, const char *basename)
 {
   xml_attribute<> *attr;
   string aname;
 
-  for (attr = node->first_attribute(); attr; attr = attr->next_attribute()) {
+  for (attr = config_node->first_attribute(); attr; attr = attr->next_attribute()) {
     aname = attr->name();
     if (aname == "times") parse_sequence(attr->value(), 3, params.times);
     else if (aname == "rescale") parse_value(attr->value(), params.rescale);
@@ -1706,9 +1966,9 @@ void Duplicate::print_config(const char *prefix)
        << " " << ((params.rescale)?"with":"without") << " rescaling" << endl;
 }
 
-xml_node<> *Duplicate::write_config(xml_document<> *doc, xml_node<> *node)
+xml_node<> *Duplicate::write_config(xml_document<> *doc, xml_node<> *config_node)
 {
-  if (params.times[0] == 1 && params.times[1] == 1 && params.times[2] == 1) return node;
+  if (params.times[0] == 1 && params.times[1] == 1 && params.times[2] == 1) return config_node;
 
   xml_node<> *new_node = NULL;
 
@@ -1719,7 +1979,7 @@ xml_node<> *Duplicate::write_config(xml_document<> *doc, xml_node<> *node)
     char* s;
 
     new_node = doc->allocate_node(node_element, "duplicate");
-    node->append_node(new_node);
+    config_node->append_node(new_node);
 
     os.str(string(""));
     os << params.times[0] << " " << params.times[1] << " " << params.times[2];
