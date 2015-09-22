@@ -205,6 +205,10 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
   handle->resort_ints = NULL;
   handle->resort_floats = NULL;
   handle->resort_bytes = NULL;
+  handle->get_resort_dipole_particles = NULL;
+  handle->resort_dipole_ints = NULL;
+  handle->resort_dipole_floats = NULL;
+  handle->resort_dipole_bytes = NULL;
 
   *new_handle = handle;
 
@@ -596,9 +600,6 @@ FCSResult fcs_set_total_particles(FCS handle, fcs_int total_particles)
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
-  if (total_particles < 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "total number of particles must be at least 1");
-  
   handle->total_particles = total_particles;
 
   fcs_set_values_changed(handle, 1);
@@ -807,6 +808,8 @@ FCSResult fcs_set_dipole_particles(FCS handle, fcs_int local_dipole_particles, f
   handle->dipole_field = dipole_field;
   handle->dipole_potentials = dipole_potentials;
 
+  fcs_set_values_changed(handle, 1);
+
   return FCS_RESULT_SUCCESS;
 }
 
@@ -844,6 +847,8 @@ FCSResult fcs_set_total_dipole_particles(FCS handle, fcs_int total_dipole_partic
 
   handle->total_dipole_particles = total_dipole_particles;
 
+  fcs_set_values_changed(handle, 1);
+
   return FCS_RESULT_SUCCESS;
 }
 
@@ -874,6 +879,8 @@ FCSResult fcs_set_max_local_dipole_particles(FCS handle, fcs_int max_local_dipol
     return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   handle->max_local_dipole_particles = max_local_dipole_particles;
+
+  fcs_set_values_changed(handle, 1);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -928,22 +935,23 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
 /*    printf("param: %s\n", param);
     printf("cur: %s\n", cur);*/
 
-    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_a",                   set_box_a,           FCS_PARSE_SEQ(fcs_float, 3));
-    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_b",                   set_box_b,           FCS_PARSE_SEQ(fcs_float, 3));
-    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_c",                   set_box_c,           FCS_PARSE_SEQ(fcs_float, 3));
-    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("offset",                  set_box_origin,      FCS_PARSE_SEQ(fcs_float, 3));
-    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("periodicity",             set_periodicity,     FCS_PARSE_SEQ(fcs_int, 3));
-    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("near_field_flag",         set_near_field_flag, FCS_PARSE_VAL(fcs_int));
-    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("total_particles",         set_total_particles, FCS_PARSE_VAL(fcs_int));
-    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("r_cut",                   set_r_cut,           FCS_PARSE_VAL(fcs_float));
-    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("require_virial",          set_compute_virial,  FCS_PARSE_VAL(fcs_int));
-    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("",                        set_tolerance,       FCS_PARSE_VAL(fcs_int),                                     FCS_PARSE_VAL(fcs_float));
-    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy",        set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_ENERGY),        FCS_PARSE_VAL(fcs_float));
-    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy_rel",    set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_ENERGY_REL),    FCS_PARSE_VAL(fcs_float));
-    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential",     set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL),     FCS_PARSE_VAL(fcs_float));
-    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential_rel", set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL_REL), FCS_PARSE_VAL(fcs_float));
-    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field",         set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_FIELD),         FCS_PARSE_VAL(fcs_float));
-    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field_rel",     set_tolerance,       FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_FIELD_REL),     FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_a",                   set_box_a,                  FCS_PARSE_SEQ(fcs_float, 3));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_b",                   set_box_b,                  FCS_PARSE_SEQ(fcs_float, 3));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("box_c",                   set_box_c,                  FCS_PARSE_SEQ(fcs_float, 3));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("offset",                  set_box_origin,             FCS_PARSE_SEQ(fcs_float, 3));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("periodicity",             set_periodicity,            FCS_PARSE_SEQ(fcs_int, 3));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("near_field_flag",         set_near_field_flag,        FCS_PARSE_VAL(fcs_int));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("total_particles",         set_total_particles,        FCS_PARSE_VAL(fcs_int));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("total_dipole_particles",  set_total_dipole_particles, FCS_PARSE_VAL(fcs_int));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("r_cut",                   set_r_cut,                  FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("require_virial",          set_compute_virial,         FCS_PARSE_VAL(fcs_int));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("",                        set_tolerance,              FCS_PARSE_VAL(fcs_int),                                     FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy",        set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_ENERGY),        FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy_rel",    set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_ENERGY_REL),    FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential",     set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL),     FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential_rel", set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL_REL), FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field",         set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_FIELD),         FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_field_rel",     set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_FIELD_REL),     FCS_PARSE_VAL(fcs_float));
 
     if (handle->set_parameter)
     {
@@ -990,6 +998,7 @@ FCSResult fcs_print_parameters(FCS handle)
     fcs_get_box_origin(handle)[0], fcs_get_box_origin(handle)[1], fcs_get_box_origin(handle)[2]);
   printf("periodicity: %c %c %c\n", ((fcs_get_periodicity(handle)[0] == 1)?'T':'F'), ((fcs_get_periodicity(handle)[1] == 1)?'T':'F'),((fcs_get_periodicity(handle)[2] == 1)?'T':'F'));
   printf("total particles: %" FCS_LMOD_INT "d\n", fcs_get_total_particles(handle));
+  printf("total dipole particles: %" FCS_LMOD_INT "d\n", fcs_get_total_dipole_particles(handle));
   printf("------------------------");
   printf("solver specific data:\n");
 
@@ -1430,6 +1439,70 @@ FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n)
     return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
 
   return handle->resort_bytes(handle, src, dst, n, fcs_get_communicator(handle));
+}
+
+
+/**
+ * return the new local number of dipole particles
+ */
+FCSResult fcs_get_resort_dipole_particles(FCS handle, fcs_int *resort_particles)
+{
+  const char *fnc_name = "fcs_get_resort_dipole_particles";
+
+  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+
+  if (handle->get_resort_dipole_particles == NULL)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+
+  return handle->get_resort_dipole_particles(handle, resort_particles);
+}
+
+
+/**
+ * sort additional integer dipole particle data
+ */
+FCSResult fcs_resort_dipole_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n)
+{
+  const char *fnc_name = "fcs_resort_dipole_ints";
+
+  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+
+  if (handle->resort_dipole_ints == NULL)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+
+  return handle->resort_dipole_ints(handle, src, dst, n, fcs_get_communicator(handle));
+}
+
+
+/**
+ * sort additional float dipole particle data
+ */
+FCSResult fcs_resort_dipole_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n)
+{
+  const char* fnc_name = "fcs_resort_dipole_floats";
+
+  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+
+  if (handle->resort_dipole_floats == NULL)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+
+  return handle->resort_dipole_floats(handle, src, dst, n, fcs_get_communicator(handle));
+}
+
+
+/**
+ * sort additional byte dipole particle data
+ */
+FCSResult fcs_resort_dipole_bytes(FCS handle, void *src, void *dst, fcs_int n)
+{
+  const char *fnc_name = "fcs_resort_dipole_bytes";
+
+  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+
+  if (handle->resort_dipole_bytes == NULL)
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+
+  return handle->resort_dipole_bytes(handle, src, dst, n, fcs_get_communicator(handle));
 }
 
 
