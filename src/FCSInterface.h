@@ -233,6 +233,10 @@ typedef struct _FCS_t
   FCSResult (*resort_ints)(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
   FCSResult (*resort_floats)(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
   FCSResult (*resort_bytes)(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm);
+  FCSResult (*get_resort_dipole_particles)(FCS handle, fcs_int *resort_particles);
+  FCSResult (*resort_dipole_ints)(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
+  FCSResult (*resort_dipole_floats)(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
+  FCSResult (*resort_dipole_bytes)(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm);
 
 } FCS_t;
 

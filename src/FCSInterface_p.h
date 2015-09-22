@@ -555,6 +555,44 @@ FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int 
  */
 FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n);
 
+/**
+ * @brief function to return the new local number of dipole particles
+ * @param handle FCS-object representing an FCS solver
+ * @param resort_particles new local number of dipole particles
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_get_resort_dipole_particles(FCS handle, fcs_int *resort_particles);
+
+/**
+ * @brief function to sort additional integer dipole particle data into the new sorted dipole particle order
+ * @param handle FCS-object representing an FCS solver
+ * @param src array of integer values in unsorted (original) order
+ * @param dst array to store the sorted integer values
+ * @param n number of integer values for each dipole particle
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_resort_dipole_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n);
+
+/**
+ * @brief function to sort additional float dipole particle data into the new sorted dipole particle order
+ * @param handle FCS-object representing an FCS solver
+ * @param src array of float values in unsorted (original) order
+ * @param dst array to store the sorted float values
+ * @param n fcs_int number of float values for each dipole particle
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_resort_dipole_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n);
+
+/**
+ * @brief function to sort additional byte dipole particle data into the new sorted dipole particle order
+ * @param handle FCS-object representing an FCS solver
+ * @param src array of byte values in unsorted (original) order
+ * @param dst array to store the sorted byte values
+ * @param n fcs_int number of byte values for each dipole particle
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_resort_dipole_bytes(FCS handle, void *src, void *dst, fcs_int n);
+
 
 #ifdef FCS_ENABLE_DEPRECATED
 #define fcs_set_dimension    fcs_set_dimensions
