@@ -786,17 +786,19 @@ typedef struct
 
 void compute_charge_self(charges_t *charges, fcs_int charges_start, fcs_int charges_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
 {
+  fcs_int i, j;
+  fcs_float d[3], r_ij, ir_ij, t;
+  fcs_near_interaction_data_t iad;
+
+
+/*  printf("S compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges_start, charges_size, -1, -1);*/
+
   if (!near->compute_charge_charge)
   {
     compute_near(charges->positions, charges->charges, charges->field, charges->potentials, charges_start, charges_size,
       NULL, NULL, charges_start, charges_size, cutoff, near, near_param);
     return;
   }
-
-  fcs_int i, j;
-  fcs_float d[3], r_ij, ir_ij, t;
-  fcs_near_interaction_data_t iad;
-
 
   for (i = charges_start; i < charges_start + charges_size; ++i)
   for (j = i + 1; j < charges_start + charges_size; ++j)
@@ -834,26 +836,65 @@ void compute_charge_self(charges_t *charges, fcs_int charges_start, fcs_int char
 
 void compute_charge_from_charge(charges_t *charges, fcs_int charges_start, fcs_int charges_size, charges_t *from_charges, fcs_int from_charges_start, fcs_int from_charges_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
 {
-  compute_near(charges->positions, charges->charges, charges->field, charges->potentials, charges_start, charges_size,
-    from_charges->positions, from_charges->charges, from_charges_start, from_charges_size, cutoff, near, near_param);
+  fcs_int i, j;
+  fcs_float d[3], r_ij, ir_ij, t;
+  fcs_near_interaction_data_t iad;
+
+
+/*  printf("F compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges_start, charges_size, from_charges_start, from_charges_size);*/
+
+  if (!near->compute_charge_charge)
+  {
+    compute_near(charges->positions, charges->charges, charges->field, charges->potentials, charges_start, charges_size,
+      from_charges->positions, from_charges->charges, from_charges_start, from_charges_size, cutoff, near, near_param);
+    return;
+  }
+
+  for (i = charges_start; i < charges_start + charges_size; ++i)
+  for (j = from_charges_start; j < from_charges_start + from_charges_size; ++j)
+  {
+    d[0] = from_charges->positions[3 * j + 0] - charges->positions[3 * i + 0];
+    d[1] = from_charges->positions[3 * j + 1] - charges->positions[3 * i + 1];
+    d[2] = from_charges->positions[3 * j + 2] - charges->positions[3 * i + 2];
+
+    r_ij = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+
+    if (r_ij > cutoff) continue;
+
+    /* charge[i] <- charge[j] */
+
+    ir_ij = 1.0 / r_ij;
+
+    near->compute_charge_charge(near_param, r_ij, ir_ij, &iad);
+
+    t = FCS_NEAR_INTERACTION_DATA_F1(iad) * charges->charges[j] * ir_ij;
+    charges->field[i + 0] += t * d[0];
+    charges->field[i + 1] += t * d[1];
+    charges->field[i + 2] += t * d[2];
+
+    charges->potentials[i] += FCS_NEAR_INTERACTION_DATA_F0(iad) * charges->charges[j];
+  }
 }
 
 
 void compute_charge_vs_charge(charges_t *charges0, fcs_int charges0_start, fcs_int charges0_size, charges_t *charges1, fcs_int charges1_start, fcs_int charges1_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
 {
-  if (charges0->positions == charges1->positions &&
+  if (!near->compute_charge_charge &&
+      charges0->positions == charges1->positions &&
       charges0->charges == charges1->charges &&
       charges0->field == charges1->field &&
       charges0->potentials == charges1->potentials)
   {
+/*    printf("F compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges0_start, charges0_size, charges1_start, charges1_size);
+    printf("F compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges1_start, charges1_size, charges0_start, charges0_size);*/
+
     compute_near(charges0->positions, charges0->charges, charges0->field, charges0->potentials, charges0_start, charges0_size,
       NULL, NULL, charges1_start, charges1_size, cutoff, near, near_param);
-
-  } else
-  {
-    compute_charge_from_charge(charges0, charges0_start, charges0_size, charges1, charges1_start, charges1_size, cutoff, near, near_param);
-    compute_charge_from_charge(charges1, charges1_start, charges1_size, charges0, charges0_start, charges0_size, cutoff, near, near_param);
+    return;
   }
+
+  compute_charge_from_charge(charges0, charges0_start, charges0_size, charges1, charges1_start, charges1_size, cutoff, near, near_param);
+  compute_charge_from_charge(charges1, charges1_start, charges1_size, charges0, charges0_start, charges0_size, cutoff, near, near_param);
 }
 
 
@@ -920,7 +961,7 @@ void compute_dipole_from_dipole(dipoles_t *dipoles, fcs_int dipoles_start, fcs_i
 
 
   for (i = dipoles_start; i < dipoles_start + dipoles_size; ++i)
-  for (j = from_dipoles_start; j < from_dipoles_size + from_dipoles_size; ++j)
+  for (j = from_dipoles_start; j < from_dipoles_start + from_dipoles_size; ++j)
   {
     d[0] = from_dipoles->positions[3 * j + 0] - dipoles->positions[3 * i + 0];
     d[1] = from_dipoles->positions[3 * j + 1] - dipoles->positions[3 * i + 1];
@@ -1416,13 +1457,31 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
   fcs_float *positions_s_real, *charges_s_real;
   fcs_gridsort_index_t *indices_s_real;
   
-  fcs_int resort;
-
 #ifdef SEPARATE_GHOSTS
   fcs_int nlocal_s_ghost;
   fcs_float *positions_s_ghost, *charges_s_ghost;
   fcs_gridsort_index_t *indices_s_ghost;
 #endif
+
+#if FCS_NEAR_WITH_DIPOLES
+  fcs_int dipole_nlocal_s;
+  fcs_float *dipole_positions_s, *dipole_moments_s;
+  fcs_gridsort_index_t *dipole_indices_s;
+  fcs_float *dipole_field_s;
+  fcs_float *dipole_potentials_s;
+
+  fcs_int dipole_nlocal_s_real;
+  fcs_float *dipole_positions_s_real, *dipole_moments_s_real;
+  fcs_gridsort_index_t *dipole_indices_s_real;
+
+#ifdef SEPARATE_GHOSTS
+  fcs_int dipole_nlocal_s_ghost;
+  fcs_float *dipole_positions_s_ghost, *dipole_moments_s_ghost;
+  fcs_gridsort_index_t *dipole_indices_s_ghost;
+#endif
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
+  fcs_int resort;
 
   fcs_gridsort_t gridsort;
 
@@ -1515,6 +1574,9 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
 #endif
 
   fcs_gridsort_set_particles(&gridsort, near->nparticles, near->max_nparticles, near->positions, near->charges);
+#if FCS_NEAR_WITH_DIPOLES
+  fcs_gridsort_set_dipole_particles(&gridsort, near->dipole_nparticles, near->dipole_max_nparticles, near->dipole_positions, near->dipole_moments);
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
   fcs_gridsort_set_max_particle_move(&gridsort, near->max_particle_move);
 
@@ -1528,18 +1590,30 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
   fcs_gridsort_get_sorted_particles(&gridsort, &nlocal_s, NULL, &positions_s, &charges_s, &indices_s);
+#if FCS_NEAR_WITH_DIPOLES
+  fcs_gridsort_get_sorted_dipole_particles(&gridsort, &dipole_nlocal_s, NULL, &dipole_positions_s, &dipole_moments_s, &dipole_indices_s);
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
 #ifdef SEPARATE_GHOSTS
-  fcs_gridsort_separate_ghosts(&gridsort, &nlocal_s_real, &nlocal_s_ghost);
+  fcs_gridsort_separate_ghosts(&gridsort);
   fcs_gridsort_get_ghost_particles(&gridsort, &nlocal_s_ghost, &positions_s_ghost, &charges_s_ghost, &indices_s_ghost);
+#if FCS_NEAR_WITH_DIPOLES
+  fcs_gridsort_get_ghost_dipole_particles(&gridsort, &dipole_nlocal_s_ghost, &dipole_positions_s_ghost, &dipole_moments_s_ghost, &dipole_indices_s_ghost);
+#endif /* FCS_NEAR_WITH_DIPOLES */
 #endif
 
 #ifdef SEPARATE_ZSLICES
   fcs_int zslices_nparticles[SEPARATE_ZSLICES];
   fcs_gridsort_separate_zslices(&gridsort, SEPARATE_ZSLICES, zslices_nparticles);
+#if FCS_NEAR_WITH_DIPOLES
+  /* FIXME: z-slices not supported for dipoles */
+#endif /* FCS_NEAR_WITH_DIPOLES */
 #endif
 
   fcs_gridsort_get_real_particles(&gridsort, &nlocal_s_real, &positions_s_real, &charges_s_real, &indices_s_real);
+#if FCS_NEAR_WITH_DIPOLES
+  fcs_gridsort_get_real_dipole_particles(&gridsort, &dipole_nlocal_s_real, &dipole_positions_s_real, &dipole_moments_s_real, &dipole_indices_s_real);
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
 /*  printf("%d: sorted (real) = %" FCS_LMOD_INT "d\n", comm_rank, nlocal_s_real);
   for (int i = 0; i < nlocal_s_real; ++i)
@@ -1570,6 +1644,30 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
     if (potentials_s) for (i = 0; i < nlocal_s_real; ++i) potentials_s[i] = 0;
   }
 
+#if FCS_NEAR_WITH_DIPOLES
+  if (near->dipole_field) dipole_field_s = malloc(dipole_nlocal_s_real * 6 * sizeof(fcs_float));
+  else dipole_field_s = NULL;
+  if (near->dipole_potentials) dipole_potentials_s = malloc(dipole_nlocal_s_real * 3 * sizeof(fcs_float));
+  else dipole_potentials_s = NULL;
+
+  if (dipole_field_s && dipole_potentials_s)
+  {
+    for (i = 0; i < dipole_nlocal_s_real; ++i)
+      dipole_field_s[6 * i + 0] = dipole_field_s[6 * i + 1] = dipole_field_s[6 * i + 2] = dipole_field_s[6 * i + 3] = dipole_field_s[6 * i + 4] = dipole_field_s[6 * i + 5] = 
+        dipole_potentials_s[3 * i + 0] = dipole_potentials_s[3 * i + 1] = dipole_potentials_s[3 * i + 2] = 0;
+
+  } else
+  {
+    if (dipole_field_s)
+      for (i = 0; i < dipole_nlocal_s_real; ++i)
+        dipole_field_s[6 * i + 0] = dipole_field_s[6 * i + 1] = dipole_field_s[6 * i + 2] = dipole_field_s[6 * i + 3] = dipole_field_s[6 * i + 4] = dipole_field_s[6 * i + 5] = 0;
+    if (dipole_potentials_s)
+      for (i = 0; i < dipole_nlocal_s_real; ++i)
+        dipole_potentials_s[3 * i + 0] = dipole_potentials_s[3 * i + 1] = dipole_potentials_s[3 * i + 2] = 0;
+  }
+
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
   fcs_near_create(&near_s);
 
   fcs_near_set_field(&near_s, near->compute_field);
@@ -1582,15 +1680,28 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
 
   fcs_near_set_loop(&near_s, near->compute_loop);
 
+  fcs_near_set_charge_charge(&near_s, near->compute_charge_charge);
+
+#if FCS_NEAR_WITH_DIPOLES
+  fcs_near_set_dipole_dipole(&near_s, near->compute_dipole_dipole);
+  fcs_near_set_charge_dipole(&near_s, near->compute_charge_dipole);
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
   if (near->periodicity[0] < 0 || near->periodicity[1] < 0 || near->periodicity[2] < 0)
     fcs_near_set_system(&near_s, near->box_base, near->box_a, near->box_b, near->box_c, NULL);
   else
     fcs_near_set_system(&near_s, near->box_base, near->box_a, near->box_b, near->box_c, near->periodicity);
 
   fcs_near_set_particles(&near_s, nlocal_s_real, nlocal_s_real, positions_s_real, charges_s_real, indices_s_real, field_s, potentials_s);
+#if FCS_NEAR_WITH_DIPOLES
+  fcs_near_set_dipole_particles(&near_s, dipole_nlocal_s_real, dipole_nlocal_s_real, dipole_positions_s_real, dipole_moments_s_real, dipole_indices_s_real, dipole_field_s, dipole_potentials_s);
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
 #ifdef SEPARATE_GHOSTS
   fcs_near_set_ghosts(&near_s, nlocal_s_ghost, positions_s_ghost, charges_s_ghost, indices_s_ghost);
+#if FCS_NEAR_WITH_DIPOLES
+  fcs_near_set_dipole_ghosts(&near_s, dipole_nlocal_s_ghost, dipole_positions_s_ghost, dipole_moments_s_ghost, dipole_indices_s_ghost);
+#endif /* FCS_NEAR_WITH_DIPOLES */
 #endif
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
@@ -1607,6 +1718,10 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
 
   fcs_gridsort_set_sorted_results(&gridsort, nlocal_s_real, field_s, potentials_s);
   fcs_gridsort_set_results(&gridsort, near->max_nparticles, near->field, near->potentials);
+#if FCS_NEAR_WITH_DIPOLES
+  fcs_gridsort_set_sorted_dipole_results(&gridsort, dipole_nlocal_s_real, dipole_field_s, dipole_potentials_s);
+  fcs_gridsort_set_dipole_results(&gridsort, near->dipole_max_nparticles, near->dipole_field, near->dipole_potentials);
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
   TIMING_SYNC(comm); TIMING_START(t[3]);
   if (near->resort) resort = fcs_gridsort_prepare_resort(&gridsort, comm);
@@ -1621,6 +1736,10 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
 
   if (field_s) free(field_s);
   if (potentials_s) free(potentials_s);
+#if FCS_NEAR_WITH_DIPOLES
+  if (dipole_field_s) free(dipole_field_s);
+  if (dipole_potentials_s) free(dipole_potentials_s);
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
   fcs_gridsort_free(&gridsort);
 
