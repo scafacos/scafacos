@@ -65,12 +65,21 @@ public:
 
   PlainParticles input_plain;
   fcs_int input_plain_nparticles;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  fcs_int dipole_input_plain_nparticles;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
   vector<FileParticles> input_files;
   fcs_int input_file_nparticles;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  fcs_int dipole_input_file_nparticles;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
   vector<Generator> input_generators;
   fcs_int input_generator_nparticles;
+#if SCAFACOS_TEST_WITH_DIPOLES
+  fcs_int dipole_input_generator_nparticles;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
   
   Duplicate input_duplication;
 
