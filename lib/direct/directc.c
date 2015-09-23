@@ -951,13 +951,33 @@ static fcs_float get_periodic_factor(fcs_float *v0, fcs_float *v1, fcs_float *v2
 }
 
 
+#define CHARGE_CHARGE_NEW  1
+
+#if FCS_DIRECT_WITH_DIPOLES && CHARGE_CHARGE_NEW
+
+static void directc_coulomb_interaction(const void *param, fcs_float dist, fcs_float idist, fcs_near_interaction_data_t *iad)
+{
+/*  printf("dist: %f, idist: %f\n", dist, idist);*/
+
+  FCS_NEAR_INTERACTION_DATA_F0(*iad) = idist;
+  FCS_NEAR_INTERACTION_DATA_F1(*iad) = -1.0 * FCS_NEAR_INTERACTION_DATA_F0(*iad) * FCS_NEAR_INTERACTION_DATA_F0(*iad);
+  FCS_NEAR_INTERACTION_DATA_F2(*iad) = -2.0 * FCS_NEAR_INTERACTION_DATA_F1(*iad) * FCS_NEAR_INTERACTION_DATA_F0(*iad);
+  FCS_NEAR_INTERACTION_DATA_F3(*iad) = -3.0 * FCS_NEAR_INTERACTION_DATA_F2(*iad) * FCS_NEAR_INTERACTION_DATA_F0(*iad);
+}
+
+#else /* FCS_DIRECT_WITH_DIPOLES */
+
 static void directc_coulomb_field_potential(const void *param, fcs_float dist, fcs_float *f, fcs_float *p)
 {
   *p = 1.0 / dist;
   *f = -(*p) * (*p);
+
+/*  printf("dist: %f, idist: %f\n", dist, *p);*/
 }
 
 static FCS_NEAR_LOOP_FP(directc_coulomb_loop_fp, directc_coulomb_field_potential)
+
+#endif /* FCS_DIRECT_WITH_DIPOLES */
 
 
 void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
@@ -1027,7 +1047,13 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
   {
     fcs_near_create(&near);
 
+#if FCS_DIRECT_WITH_DIPOLES && CHARGE_CHARGE_NEW
+    fcs_near_set_charge_charge(&near, directc_coulomb_interaction);
+    fcs_near_set_dipole_dipole(&near, directc_coulomb_interaction);
+    fcs_near_set_charge_dipole(&near, directc_coulomb_interaction);
+#else /* FCS_DIRECT_WITH_DIPOLES */
     fcs_near_set_loop(&near, directc_coulomb_loop_fp);
+#endif /* FCS_DIRECT_WITH_DIPOLES */
     fcs_near_set_system(&near, directc->box_base, directc->box_a, directc->box_b, directc->box_c, periodic);
     fcs_near_set_particles(&near, directc->nparticles, directc->max_nparticles, directc->positions, directc->charges, NULL, directc->field, directc->potentials);
     fcs_near_set_max_particle_move(&near, directc->max_particle_move);
