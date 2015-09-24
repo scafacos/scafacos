@@ -30,8 +30,8 @@
 #include "utils.h"
 #include "nearfield.h"
 #include "interpolation.h"
-#include <common/near/near.h>
 //#include "constants.h"
+#include <common/near/near.h>
 
 #define FCS_P2NFFT_DISABLE_PNFFT_INFO 1
 #define CREATE_GHOSTS_SEPARATE 0
@@ -228,7 +228,13 @@ FCSResult ifcs_p2nfft_run(
 
   if(d->short_range_flag){
     fcs_near_create(&near);
-  
+
+    /* set scalar functions for dipole interactions */
+    fcs_near_set_charge_charge(&near, ifcs_p2nfft_compute_near_charge_charge);
+    fcs_near_set_charge_dipole(&near, ifcs_p2nfft_compute_near_charge_dipole);
+    fcs_near_set_dipole_dipole(&near, ifcs_p2nfft_compute_near_dipole_dipole);
+    /* TODO: implement interpolation and loops for dipoles */
+
     if(d->interpolation_order >= 0){
       switch(d->interpolation_order){
         case 0: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_const_loop); break;
@@ -268,9 +274,7 @@ FCSResult ifcs_p2nfft_run(
       near_params.one_over_r_cut = d->one_over_r_cut;
 
       fcs_near_compute(&near, d->r_cut, &near_params, d->cart_comm_3d);
-    } else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)
-      fcs_near_compute(&near, d->r_cut, &(d->alpha), d->cart_comm_3d);
-    else
+    } else
       fcs_near_compute(&near, d->r_cut, rd, d->cart_comm_3d);
   
     fcs_near_destroy(&near);

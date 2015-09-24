@@ -232,3 +232,33 @@ static fcs_float evaluate_sin_polynomial_1d(
   return value;
 }
 
+
+void ifcs_p2nfft_compute_near_charge_charge(
+    const void *param, fcs_float dist, fcs_float idist,
+    fcs_near_interaction_data_t *iad
+    )
+{
+  FCS_NEAR_INTERACTION_DATA_F0(*iad) = ifcs_p2nfft_compute_near_potential(param, dist);
+  FCS_NEAR_INTERACTION_DATA_F1(*iad) = ifcs_p2nfft_compute_near_field(param, dist);
+}
+
+void ifcs_p2nfft_compute_near_charge_dipole(
+    const void *param, fcs_float dist, fcs_float idist,
+    fcs_near_interaction_data_t *iad
+    )
+{
+  /* FIXME: implement derivatives of nearfield interaction */
+  FCS_NEAR_INTERACTION_DATA_F1(*iad) = ifcs_p2nfft_compute_near_potential(param, dist);
+  FCS_NEAR_INTERACTION_DATA_F2(*iad) = ifcs_p2nfft_compute_near_field(param, dist);
+}
+
+void ifcs_p2nfft_compute_near_dipole_dipole(
+    const void *param, fcs_float dist, fcs_float idist,
+    fcs_near_interaction_data_t *iad
+    )
+{
+  /* FIXME: implement derivatives of nearfield interaction */
+  FCS_NEAR_INTERACTION_DATA_F1(*iad) = ifcs_p2nfft_compute_near_potential(param, dist);
+  FCS_NEAR_INTERACTION_DATA_F2(*iad) = ifcs_p2nfft_compute_near_potential(param, dist);
+  FCS_NEAR_INTERACTION_DATA_F3(*iad) = ifcs_p2nfft_compute_near_potential(param, dist);
+}

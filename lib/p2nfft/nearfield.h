@@ -27,8 +27,11 @@
 #include <math.h>
 #include "FCSCommon.h"
 #include "constants.h"
+#include "types.h"
 #include "regularization.h"
 #include "interpolation.h"
+#include <common/near/near.h>
+#include "nearfield_p.h"
 
 
 typedef struct {
@@ -40,15 +43,15 @@ typedef struct {
 } ifcs_p2nfft_near_params;
 
 
-fcs_float ifcs_p2nfft_compute_self_potential(
-    const void* param);
-fcs_float ifcs_p2nfft_compute_near_potential(
-    const void* param, fcs_float dist);
-fcs_float ifcs_p2nfft_compute_near_field(
-    const void* param, fcs_float dist);
-void ifcs_p2nfft_compute_near_field_and_potential(
-    const void* param, fcs_float dist, 
-    fcs_float *potential, fcs_float *field);
+void ifcs_p2nfft_compute_near_charge_charge(
+    const void *param, fcs_float dist, fcs_float idist,
+    fcs_near_interaction_data_t *iad);
+void ifcs_p2nfft_compute_near_charge_dipole(
+    const void *param, fcs_float dist, fcs_float idist,
+    fcs_near_interaction_data_t *iad);
+void ifcs_p2nfft_compute_near_dipole_dipole(
+    const void *param, fcs_float dist, fcs_float idist,
+    fcs_near_interaction_data_t *iad);
 
 
 /* callback functions for near field computations */
@@ -57,7 +60,8 @@ ifcs_p2nfft_compute_near_potential_periodic_erfc(
     const void *param, fcs_float dist
     )
 {
-  fcs_float alpha = *((fcs_float *) param);
+  ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
+  fcs_float alpha = d->alpha;
   fcs_float adist = alpha * dist;
   return (1.0 - erf(adist)) / dist; /* use erf instead of erfc to fix ICC performance problems */
 }
@@ -67,7 +71,8 @@ ifcs_p2nfft_compute_near_field_periodic_erfc(
     const void *param, fcs_float dist
     )
 {
-  fcs_float alpha = *((fcs_float *) param);
+  ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
+  fcs_float alpha = d->alpha;
   fcs_float inv_dist = 1.0/dist;
   fcs_float adist = alpha * dist;
   fcs_float erfc_part_ri = (1.0 - erf(adist)) * inv_dist; /* use erf instead of erfc to fix ICC performance problems */
@@ -81,7 +86,8 @@ ifcs_p2nfft_compute_near_periodic_erfc(
     fcs_float *f, fcs_float *p
     )
 {
-  fcs_float alpha = *((fcs_float *) param);
+  ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
+  fcs_float alpha = d->alpha;
   fcs_float inv_dist = 1.0/dist;
   fcs_float adist = alpha * dist;
   fcs_float erfc_part_ri = (1.0 - erf(adist)) * inv_dist; /* use erf instead of erfc to fix ICC performance problems */
@@ -121,7 +127,8 @@ ifcs_p2nfft_compute_near_field_periodic_approx_erfc(
     const void *param, fcs_float dist
     )
 {
-  fcs_float alpha = *((fcs_float *) param);
+  ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
+  fcs_float alpha = d->alpha;
   fcs_float inv_dist = 1.0/dist;
   fcs_float adist = alpha * dist;
   fcs_float erfc_part_ri = ifcs_p2nfft_approx_erfc(adist) *inv_dist;
@@ -134,7 +141,8 @@ ifcs_p2nfft_compute_near_periodic_approx_erfc(
     fcs_float *f, fcs_float *p
     )
 {
-  fcs_float alpha = *((fcs_float *) param);
+  ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
+  fcs_float alpha = d->alpha;
   fcs_float inv_dist = 1.0/dist;
   fcs_float adist = alpha * dist;
   fcs_float erfc_part_ri = ifcs_p2nfft_approx_erfc(adist) *inv_dist;

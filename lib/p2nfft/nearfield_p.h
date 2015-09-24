@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2011-2013 Michael Pippig
- * Copyright (C) 2011 Sebastian Banert
+ * Copyright (C) 2015 Michael Pippig
  *
  * This file is part of ScaFaCoS.
  * 
@@ -18,18 +17,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _P2NFFT_P2NFFT_H
-#define _P2NFFT_P2NFFT_H
+#ifndef _P2NFFT_NEARFIELD_P_H
+#define _P2NFFT_NEARFIELD_P_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "init.h"
-#include "tune.h"
-#include "run.h"
-#include "parameters.h"
-#include "nearfield_p.h"
+fcs_float ifcs_p2nfft_compute_self_potential(
+    const void* param);
+fcs_float ifcs_p2nfft_compute_near_potential(
+    const void* param, fcs_float dist);
+fcs_float ifcs_p2nfft_compute_near_field(
+    const void* param, fcs_float dist);
+void ifcs_p2nfft_compute_near_field_and_potential(
+    const void* param, fcs_float dist, 
+    fcs_float *potential, fcs_float *field);
 
 #endif
-

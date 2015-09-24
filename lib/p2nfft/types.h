@@ -25,7 +25,7 @@
 #include <config.h>
 #endif
 #include <complex.h>
-#include "pnfft.h"
+#include <pnfft.h>
 #include <float.h>
 
 #include "common/gridsort/gridsort.h"
