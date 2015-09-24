@@ -1108,12 +1108,12 @@ void compute_dipole_from_charge(dipoles_t *dipoles, fcs_int dipoles_start, fcs_i
     fcs_float ir3 = ir2 * ir;
 
     /* compute dipole-charge field */
-    dipoles->field[6 * i + 0] += charges->charges[0] * ( f2 * xxT[0] * ir2 + f1 * ( ir - xxT[0] * ir3 ) );
-    dipoles->field[6 * i + 1] += charges->charges[1] * ( f2 * xxT[1] * ir2 + f1 * (    - xxT[1] * ir3 ) );
-    dipoles->field[6 * i + 2] += charges->charges[2] * ( f2 * xxT[2] * ir2 + f1 * (    - xxT[2] * ir3 ) );
-    dipoles->field[6 * i + 3] += charges->charges[3] * ( f2 * xxT[3] * ir2 + f1 * ( ir - xxT[3] * ir3 ) );
-    dipoles->field[6 * i + 4] += charges->charges[4] * ( f2 * xxT[4] * ir2 + f1 * (    - xxT[4] * ir3 ) );
-    dipoles->field[6 * i + 5] += charges->charges[5] * ( f2 * xxT[5] * ir2 + f1 * ( ir - xxT[5] * ir3 ) );
+    dipoles->field[6 * i + 0] += charges->charges[0] * ( -f2 * xxT[0] * ir2 + f1 * ( -ir + xxT[0] * ir3 ) );
+    dipoles->field[6 * i + 1] += charges->charges[1] * ( -f2 * xxT[1] * ir2 + f1 * (     + xxT[1] * ir3 ) );
+    dipoles->field[6 * i + 2] += charges->charges[2] * ( -f2 * xxT[2] * ir2 + f1 * (     + xxT[2] * ir3 ) );
+    dipoles->field[6 * i + 3] += charges->charges[3] * ( -f2 * xxT[3] * ir2 + f1 * ( -ir + xxT[3] * ir3 ) );
+    dipoles->field[6 * i + 4] += charges->charges[4] * ( -f2 * xxT[4] * ir2 + f1 * (     + xxT[4] * ir3 ) );
+    dipoles->field[6 * i + 5] += charges->charges[5] * ( -f2 * xxT[5] * ir2 + f1 * ( -ir + xxT[5] * ir3 ) );
 
     /* compute dipole-charge potential */
     dipoles->potentials[3 * i + 0] += charges->charges[j] * f1 * d[0] * ir;
