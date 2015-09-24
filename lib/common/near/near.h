@@ -46,14 +46,14 @@ typedef void (*fcs_near_field_potential_3diff_f)(const void *param, fcs_float di
 typedef void (*fcs_near_loop_f)(fcs_float *positions0, fcs_float *charges0, fcs_float *field0, fcs_float *potentials0, fcs_int start0, fcs_int size0,
                                 fcs_float *positions1, fcs_float *charges1, fcs_int start1, fcs_int size1, fcs_float cutoff, const void *near_param);
 
-#if FCS_NEAR_WITH_DIPOLES
+typedef fcs_float fcs_near_interaction_data_t[4];
 
-/* FIXME: add correct callback functions */
-typedef fcs_float (*fcs_near_dipole_field_f)(const void *param, fcs_float dist);
-typedef fcs_float (*fcs_near_dipole_potential_f)(const void *param, fcs_float dist);
-typedef void (*fcs_near_dipole_field_potential_f)(const void *param, fcs_float dist, fcs_float *f, fcs_float *p);
+#define FCS_NEAR_INTERACTION_DATA_F0(_iad_)  (_iad_)[0]
+#define FCS_NEAR_INTERACTION_DATA_F1(_iad_)  (_iad_)[1]
+#define FCS_NEAR_INTERACTION_DATA_F2(_iad_)  (_iad_)[2]
+#define FCS_NEAR_INTERACTION_DATA_F3(_iad_)  (_iad_)[3]
 
-#endif /* FCS_NEAR_WITH_DIPOLES */
+typedef void (*fcs_near_interaction_f)(const void *param, fcs_float dist, fcs_float idist, fcs_near_interaction_data_t *iad);
 
 
 typedef fcs_gridsort_resort_t fcs_near_resort_t;
@@ -79,6 +79,8 @@ typedef struct _fcs_near_t
 
   fcs_near_loop_f compute_loop;
 
+  fcs_near_interaction_f compute_charge_charge;
+
   fcs_int nparticles, max_nparticles;
   fcs_float *positions, *charges;
   fcs_gridsort_index_t *indices;
@@ -89,10 +91,7 @@ typedef struct _fcs_near_t
   fcs_gridsort_index_t *ghost_indices;
 
 #if FCS_NEAR_WITH_DIPOLES
-  /* FIXME: add correct callback functions */
-  fcs_near_dipole_field_f dipole_compute_field;
-  fcs_near_dipole_potential_f dipole_compute_potential;
-  fcs_near_dipole_field_potential_f dipole_compute_field_potential;
+  fcs_near_interaction_f compute_dipole_dipole, compute_charge_dipole;
 
   fcs_int dipole_nparticles, dipole_max_nparticles;
   fcs_float *dipole_positions, *dipole_moments;
@@ -185,6 +184,13 @@ void fcs_near_set_field_potential_3diff(fcs_near_t *near, fcs_near_field_potenti
 void fcs_near_set_loop(fcs_near_t *near, fcs_near_loop_f compute_loop);
 
 /**
+ * @brief set callback function to compute charge-charge interactions, i.e. interaction data F0 and F1
+ * @param near fcs_near_t near field solver object
+ * @param compute_charge_charge fcs_near_interaction_f callback function
+ */
+void fcs_near_set_charge_charge(fcs_near_t *near, fcs_near_interaction_f compute_charge_charge);
+
+/**
  * @brief set particle information
  * @param near fcs_near_t near field solver object
  * @param nparticles fcs_int local number of particles
@@ -209,28 +215,19 @@ void fcs_near_set_ghosts(fcs_near_t *near, fcs_int nghosts, fcs_float *positions
 
 #if FCS_NEAR_WITH_DIPOLES
 
-/* FIXME: add correct callback functions */
+/**
+ * @brief set callback function to compute dipole-dipole interactions, i.e. interaction data F1, F2, and F3
+ * @param near fcs_near_t near field solver object
+ * @param compute_charge_dipole fcs_near_interaction_f callback function
+ */
+void fcs_near_set_dipole_dipole(fcs_near_t *near, fcs_near_interaction_f compute_dipole_dipole);
 
 /**
- * @brief set callback function for dipole field computations
+ * @brief set callback function to compute charge-dipole and dipole-charge interactions, i.e. interaction data F1 and F2
  * @param near fcs_near_t near field solver object
- * @param compute_field fcs_near_dipole_field_f callback function for dipole field computations
+ * @param compute_charge_dipole fcs_near_interaction_f callback function
  */
-void fcs_near_set_dipole_field(fcs_near_t *near, fcs_near_dipole_field_f compute_field);
-
-/**
- * @brief set callback function for dipole potential computations
- * @param near fcs_near_t near field solver object
- * @param compute_potential fcs_near_dipole_potential_f callback function for dipole potential computations
- */
-void fcs_near_set_dipole_potential(fcs_near_t *near, fcs_near_dipole_potential_f compute_potential);
-
-/**
- * @brief set callback function for combined dipole field and potential computations
- * @param near fcs_near_t near field solver object
- * @param compute_field_potential fcs_near_dipole_field_potential_f callback function for combined dipole field and potential computations
- */
-void fcs_near_set_dipole_field_potential(fcs_near_t *near, fcs_near_dipole_field_potential_f compute_field_potential);
+void fcs_near_set_charge_dipole(fcs_near_t *near, fcs_near_interaction_f compute_charge_dipole);
 
 /**
  * @brief set dipole particle information
