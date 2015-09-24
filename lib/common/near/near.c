@@ -900,10 +900,14 @@ void compute_charge_vs_charge(charges_t *charges0, fcs_int charges0_start, fcs_i
 
 #if FCS_NEAR_WITH_DIPOLES
 
+/* compute the symmetric product of two vectors v1, v2 via v1*v2^T + v2*v1^T */
+#define SYMPROD(a, b) \
+  { 2*(a)[0]*(b)[0], (a)[0]*(b)[1] + (a)[1]*(b)[0], (a)[0]*(b)[2] + (a)[2]*(b)[0], 2*(a)[1]*(b)[1], (a)[1]*(b)[2] + (a)[2]*(b)[1], 2*(a)[2]*(b)[2] }
+
 void compute_dipole_self(dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipoles_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
 {
   fcs_int i, j;
-  fcs_float d[3], r_ij, ir_ij;
+  fcs_float d[3], r, ir;
   fcs_near_interaction_data_t iad;
 
 
@@ -914,51 +918,70 @@ void compute_dipole_self(dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipo
     d[1] = dipoles->positions[3 * j + 1] - dipoles->positions[3 * i + 1];
     d[2] = dipoles->positions[3 * j + 2] - dipoles->positions[3 * i + 2];
 
-    r_ij = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    r = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
 
-    if (r_ij > cutoff) continue;
+    if (r > cutoff) continue;
 
     /* dipole[i] <-> dipole[j] */
 
-    ir_ij = 1.0 / r_ij;
+    ir = 1.0 / r;
 
-    near->compute_dipole_dipole(near_param, r_ij, ir_ij, &iad);
+    near->compute_dipole_dipole(near_param, r, ir, &iad);
 
-    /* FIXME: compute dipole-dipole field using FCS_NEAR_INTERACTION_DATA_F1(iad), FCS_NEAR_INTERACTION_DATA_F2(iad), and FCS_NEAR_INTERACTION_DATA_F3(iad) */
+    fcs_float f1 = FCS_NEAR_INTERACTION_DATA_F1(iad);
+    fcs_float f2 = FCS_NEAR_INTERACTION_DATA_F2(iad);
+    fcs_float f3 = FCS_NEAR_INTERACTION_DATA_F3(iad);
 
-    dipoles->field[6 * i + 0] += 0.0 * ir_ij * dipoles->moments[3 * j + 0] * d[0];
-    dipoles->field[6 * i + 1] += 0.0 * ir_ij * dipoles->moments[3 * j + 1] * d[1];
-    dipoles->field[6 * i + 2] += 0.0 * ir_ij * dipoles->moments[3 * j + 2] * d[2];
-    dipoles->field[6 * i + 3] += 0.0 * ir_ij * dipoles->moments[3 * j + 0] * d[0];
-    dipoles->field[6 * i + 4] += 0.0 * ir_ij * dipoles->moments[3 * j + 1] * d[1];
-    dipoles->field[6 * i + 5] += 0.0 * ir_ij * dipoles->moments[3 * j + 2] * d[2];
+    fcs_float muTx =  dipoles->moments[3*j + 0] * d[0] + dipoles->moments[3*j + 1] * d[1] +  dipoles->moments[3*j + 2] * d[2]; 
+    fcs_float xxT[6]  = {d[0]*d[0], d[0]*d[1], d[0]*d[2], d[1]*d[1], d[1]*d[2], d[2]*d[2]};
+    fcs_float sym_muxT[6] = SYMPROD(dipoles->moments + 3*j, d);
+    fcs_float ir2 = ir  * ir;
+    fcs_float ir3 = ir2 * ir;
+    fcs_float ir4 = ir2 * ir2;
+    fcs_float ir5 = ir3 * ir2; 
 
-    dipoles->field[6 * j + 0] += 0.0 * -ir_ij * dipoles->moments[3 * i + 0] * d[0];
-    dipoles->field[6 * j + 1] += 0.0 * -ir_ij * dipoles->moments[3 * i + 1] * d[1];
-    dipoles->field[6 * j + 2] += 0.0 * -ir_ij * dipoles->moments[3 * i + 2] * d[2];
-    dipoles->field[6 * j + 3] += 0.0 * -ir_ij * dipoles->moments[3 * i + 0] * d[0];
-    dipoles->field[6 * j + 4] += 0.0 * -ir_ij * dipoles->moments[3 * i + 1] * d[1];
-    dipoles->field[6 * j + 5] += 0.0 * -ir_ij * dipoles->moments[3 * i + 2] * d[2];
+    /* compute dipole-dipole field */
+    fcs_float field0 = f3 * muTx * ir3 * xxT[0] + f2 * ( ir - 3 * muTx * ir4 * xxT[0] + sym_muxT[0] * ir2) + f1 * ( -ir3 - sym_muxT[0] * ir3 + 3*ir5 * muTx * xxT[0]);
+    fcs_float field1 = f3 * muTx * ir3 * xxT[1] + f2 * (    - 3 * muTx * ir4 * xxT[1] + sym_muxT[1] * ir2) + f1 * (      - sym_muxT[1] * ir3 + 3*ir5 * muTx * xxT[1]);
+    fcs_float field2 = f3 * muTx * ir3 * xxT[2] + f2 * (    - 3 * muTx * ir4 * xxT[2] + sym_muxT[2] * ir2) + f1 * (      - sym_muxT[2] * ir3 + 3*ir5 * muTx * xxT[2]);
+    fcs_float field3 = f3 * muTx * ir3 * xxT[3] + f2 * ( ir - 3 * muTx * ir4 * xxT[3] + sym_muxT[3] * ir2) + f1 * ( -ir3 - sym_muxT[3] * ir3 + 3*ir5 * muTx * xxT[3]);
+    fcs_float field4 = f3 * muTx * ir3 * xxT[4] + f2 * (    - 3 * muTx * ir4 * xxT[4] + sym_muxT[4] * ir2) + f1 * (      - sym_muxT[4] * ir3 + 3*ir5 * muTx * xxT[4]);
+    fcs_float field5 = f3 * muTx * ir3 * xxT[5] + f2 * ( ir - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) + f1 * ( -ir3 - sym_muxT[5] * ir3 + 3*ir5 * muTx * xxT[5]);
 
-    /* FIXME: compute dipole-dipole potential using FCS_NEAR_INTERACTION_DATA_F1(iad), and FCS_NEAR_INTERACTION_DATA_F2(iad) */
+    dipoles->field[6 * i + 0] += field0;
+    dipoles->field[6 * i + 1] += field1;
+    dipoles->field[6 * i + 2] += field2;
+    dipoles->field[6 * i + 3] += field3;
+    dipoles->field[6 * i + 4] += field4;
+    dipoles->field[6 * i + 5] += field5;
 
-    dipoles->potentials[3 * i + 0] += 0.0 * ir_ij * dipoles->moments[3 * j + 0] * d[0];
-    dipoles->potentials[3 * i + 1] += 0.0 * ir_ij * dipoles->moments[3 * j + 1] * d[1];
-    dipoles->potentials[3 * i + 2] += 0.0 * ir_ij * dipoles->moments[3 * j + 2] * d[2];
+    dipoles->field[6 * j + 0] -= field0;
+    dipoles->field[6 * j + 1] -= field1;
+    dipoles->field[6 * j + 2] -= field2;
+    dipoles->field[6 * j + 3] -= field3;
+    dipoles->field[6 * j + 4] -= field4;
+    dipoles->field[6 * j + 5] -= field5;
 
-    dipoles->potentials[3 * j + 0] += 0.0 * ir_ij * dipoles->moments[3 * i + 0] * d[0];
-    dipoles->potentials[3 * j + 1] += 0.0 * ir_ij * dipoles->moments[3 * i + 1] * d[1];
-    dipoles->potentials[3 * j + 2] += 0.0 * ir_ij * dipoles->moments[3 * i + 2] * d[2];
+    /* compute dipole-dipole potential using */
+    fcs_float p0 = f2 * muTx * ir2 * d[0] + f1 * ( dipoles->moments[3*j + 0] * ir - muTx * ir3 * d[0]);
+    fcs_float p1 = f2 * muTx * ir2 * d[1] + f1 * ( dipoles->moments[3*j + 1] * ir - muTx * ir3 * d[1]);
+    fcs_float p2 = f2 * muTx * ir2 * d[2] + f1 * ( dipoles->moments[3*j + 2] * ir - muTx * ir3 * d[2]);
+
+    dipoles->potentials[3 * i + 0] += p0;
+    dipoles->potentials[3 * i + 1] += p1;
+    dipoles->potentials[3 * i + 2] += p2;
+
+    dipoles->potentials[3 * j + 0] += p0;
+    dipoles->potentials[3 * j + 1] += p1;
+    dipoles->potentials[3 * j + 2] += p2;
   }
 }
-
 
 void compute_dipole_from_dipole(dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipoles_size, dipoles_t *from_dipoles, fcs_int from_dipoles_start, fcs_int from_dipoles_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
 {
   fcs_int i, j;
-  fcs_float d[3], r_ij, ir_ij;
+  fcs_float d[3], r, ir;
   fcs_near_interaction_data_t iad;
-
 
   for (i = dipoles_start; i < dipoles_start + dipoles_size; ++i)
   for (j = from_dipoles_start; j < from_dipoles_start + from_dipoles_size; ++j)
@@ -967,30 +990,40 @@ void compute_dipole_from_dipole(dipoles_t *dipoles, fcs_int dipoles_start, fcs_i
     d[1] = from_dipoles->positions[3 * j + 1] - dipoles->positions[3 * i + 1];
     d[2] = from_dipoles->positions[3 * j + 2] - dipoles->positions[3 * i + 2];
 
-    r_ij = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    r = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
 
-    if (r_ij > cutoff) continue;
+    if (r > cutoff) continue;
 
     /* dipole[i] <- dipole[j] */
 
-    ir_ij = 1.0 / r_ij;
+    ir  = 1.0 / r;
 
-    near->compute_dipole_dipole(near_param, r_ij, ir_ij, &iad);
+    near->compute_dipole_dipole(near_param, r, ir, &iad);
 
-    /* FIXME: compute dipole-dipole field using FCS_NEAR_INTERACTION_DATA_F1(iad), FCS_NEAR_INTERACTION_DATA_F2(iad), and FCS_NEAR_INTERACTION_DATA_F3(iad) */
+    fcs_float f1 = FCS_NEAR_INTERACTION_DATA_F1(iad);
+    fcs_float f2 = FCS_NEAR_INTERACTION_DATA_F2(iad);
+    fcs_float f3 = FCS_NEAR_INTERACTION_DATA_F3(iad);
 
-    dipoles->field[6 * i + 0] += 0.0 * ir_ij * dipoles->moments[3 * j + 0] * d[0];
-    dipoles->field[6 * i + 1] += 0.0 * ir_ij * dipoles->moments[3 * j + 1] * d[1];
-    dipoles->field[6 * i + 2] += 0.0 * ir_ij * dipoles->moments[3 * j + 2] * d[2];
-    dipoles->field[6 * i + 3] += 0.0 * ir_ij * dipoles->moments[3 * j + 0] * d[0];
-    dipoles->field[6 * i + 4] += 0.0 * ir_ij * dipoles->moments[3 * j + 1] * d[1];
-    dipoles->field[6 * i + 5] += 0.0 * ir_ij * dipoles->moments[3 * j + 2] * d[2];
+    fcs_float muTx =  dipoles->moments[3*j + 0] * d[0] + dipoles->moments[3*j + 1] * d[1] +  dipoles->moments[3*j + 2] * d[2]; 
+    fcs_float xxT[6]  = {d[0]*d[0], d[0]*d[1], d[0]*d[2], d[1]*d[1], d[1]*d[2], d[2]*d[2]};
+    fcs_float sym_muxT[6] = SYMPROD(dipoles->moments + 3*j, d);
+    fcs_float ir2 = ir  * ir;
+    fcs_float ir3 = ir2 * ir;
+    fcs_float ir4 = ir2 * ir2;
+    fcs_float ir5 = ir3 * ir2; 
 
-    /* FIXME: compute dipole-dipole potential using FCS_NEAR_INTERACTION_DATA_F1(iad), and FCS_NEAR_INTERACTION_DATA_F2(iad) */
+    /* compute dipole-dipole field */
+    dipoles->field[6 * i + 0] += f3 * muTx * ir3 * xxT[0] + f2 * ( ir - 3 * muTx * ir4 * xxT[0] + sym_muxT[0] * ir2) + f1 * ( -ir3 - sym_muxT[0] * ir3 + 3*ir5 * muTx * xxT[0]);
+    dipoles->field[6 * i + 1] += f3 * muTx * ir3 * xxT[1] + f2 * (    - 3 * muTx * ir4 * xxT[1] + sym_muxT[1] * ir2) + f1 * (      - sym_muxT[1] * ir3 + 3*ir5 * muTx * xxT[1]);
+    dipoles->field[6 * i + 2] += f3 * muTx * ir3 * xxT[2] + f2 * (    - 3 * muTx * ir4 * xxT[2] + sym_muxT[2] * ir2) + f1 * (      - sym_muxT[2] * ir3 + 3*ir5 * muTx * xxT[2]);
+    dipoles->field[6 * i + 3] += f3 * muTx * ir3 * xxT[3] + f2 * ( ir - 3 * muTx * ir4 * xxT[3] + sym_muxT[3] * ir2) + f1 * ( -ir3 - sym_muxT[3] * ir3 + 3*ir5 * muTx * xxT[3]);
+    dipoles->field[6 * i + 4] += f3 * muTx * ir3 * xxT[4] + f2 * (    - 3 * muTx * ir4 * xxT[4] + sym_muxT[4] * ir2) + f1 * (      - sym_muxT[4] * ir3 + 3*ir5 * muTx * xxT[4]);
+    dipoles->field[6 * i + 5] += f3 * muTx * ir3 * xxT[5] + f2 * ( ir - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) + f1 * ( -ir3 - sym_muxT[5] * ir3 + 3*ir5 * muTx * xxT[5]);
 
-    dipoles->potentials[3 * i + 0] += 0.0 * ir_ij * dipoles->moments[3 * j + 0] * d[0];
-    dipoles->potentials[3 * i + 1] += 0.0 * ir_ij * dipoles->moments[3 * j + 1] * d[1];
-    dipoles->potentials[3 * i + 2] += 0.0 * ir_ij * dipoles->moments[3 * j + 2] * d[2];
+    /* compute dipole-dipole potential */
+    dipoles->potentials[3 * i + 0] += f2 * muTx * ir2 * d[0] + f1 * ( dipoles->moments[3*j + 0] * ir - muTx * ir3 * d[0]);
+    dipoles->potentials[3 * i + 1] += f2 * muTx * ir2 * d[1] + f1 * ( dipoles->moments[3*j + 1] * ir - muTx * ir3 * d[1]);
+    dipoles->potentials[3 * i + 2] += f2 * muTx * ir2 * d[2] + f1 * ( dipoles->moments[3*j + 2] * ir - muTx * ir3 * d[2]);
   }
 }
 
@@ -1006,9 +1039,8 @@ void compute_dipole_vs_dipole(dipoles_t *dipoles0, fcs_int dipoles0_start, fcs_i
 void compute_charge_from_dipole(charges_t *charges, fcs_int charges_start, fcs_int charges_size, dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipoles_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
 {
   fcs_int i, j;
-  fcs_float d[3], r_ij, ir_ij;
+  fcs_float d[3], r, ir;
   fcs_near_interaction_data_t iad;
-
 
   for (i = charges_start; i < charges_start + charges_size; ++i)
   for (j = dipoles_start; j < dipoles_start + dipoles_size; ++j)
@@ -1017,25 +1049,30 @@ void compute_charge_from_dipole(charges_t *charges, fcs_int charges_start, fcs_i
     d[1] = dipoles->positions[3 * j + 1] - charges->positions[3 * i + 1];
     d[2] = dipoles->positions[3 * j + 2] - charges->positions[3 * i + 2];
 
-    r_ij = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    r = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
 
-    if (r_ij > cutoff) continue;
+    if (r > cutoff) continue;
 
     /* charge[i] <- dipole[j] */
 
-    ir_ij = 1.0 / r_ij;
+    ir = 1.0 / r;
 
-    near->compute_charge_dipole(near_param, r_ij, ir_ij, &iad);
+    near->compute_charge_dipole(near_param, r, ir, &iad);
 
-    /* FIXME: compute charge-dipole field using FCS_NEAR_INTERACTION_DATA_F1(iad), and FCS_NEAR_INTERACTION_DATA_F2(iad) */
+    fcs_float f1 = FCS_NEAR_INTERACTION_DATA_F1(iad);
+    fcs_float f2 = FCS_NEAR_INTERACTION_DATA_F2(iad);
 
-    charges->field[3 * i + 0] += 0.0 * ir_ij * dipoles->moments[3 * j + 0] * d[0];
-    charges->field[3 * i + 1] += 0.0 * ir_ij * dipoles->moments[3 * j + 1] * d[1];
-    charges->field[3 * i + 2] += 0.0 * ir_ij * dipoles->moments[3 * j + 2] * d[2];
+    fcs_float muTx =  dipoles->moments[3*j + 0] * d[0] + dipoles->moments[3*j + 1] * d[1] +  dipoles->moments[3*j + 2] * d[2]; 
+    fcs_float ir2 = ir  * ir;
+    fcs_float ir3 = ir2 * ir;
 
-    /* FIXME: compute charge-dipole potential using FCS_NEAR_INTERACTION_DATA_F1(iad) */
+    /* compute charge-dipole field */
+    charges->field[3 * i + 0] += f2 * muTx * ir2 * d[0] + f1 * (dipoles->moments[3 * j + 0] * ir - muTx * ir3 * d[0]);
+    charges->field[3 * i + 1] += f2 * muTx * ir2 * d[1] + f1 * (dipoles->moments[3 * j + 1] * ir - muTx * ir3 * d[1]);
+    charges->field[3 * i + 2] += f2 * muTx * ir2 * d[2] + f1 * (dipoles->moments[3 * j + 2] * ir - muTx * ir3 * d[2]);
 
-    charges->potentials[i] += 0.0 * ir_ij * dipoles->moments[3 * j + 0];
+    /* compute charge-dipole potential */
+    charges->potentials[i] += f1 * muTx * ir;
   }
 }
 
@@ -1043,9 +1080,8 @@ void compute_charge_from_dipole(charges_t *charges, fcs_int charges_start, fcs_i
 void compute_dipole_from_charge(dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipoles_size, charges_t *charges, fcs_int charges_start, fcs_int charges_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
 {
   fcs_int i, j;
-  fcs_float d[3], r_ij, ir_ij;
+  fcs_float d[3], r, ir;
   fcs_near_interaction_data_t iad;
-
 
   for (i = dipoles_start; i < dipoles_start + dipoles_size; ++i)
   for (j = charges_start; j < charges_start + charges_size; ++j)
@@ -1054,30 +1090,35 @@ void compute_dipole_from_charge(dipoles_t *dipoles, fcs_int dipoles_start, fcs_i
     d[1] = charges->positions[3 * j + 1] - dipoles->positions[3 * i + 1];
     d[2] = charges->positions[3 * j + 2] - dipoles->positions[3 * i + 2];
 
-    r_ij = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    r = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
 
-    if (r_ij > cutoff) continue;
+    if (r > cutoff) continue;
 
     /* dipole[i] <- charge[j] */
 
-    ir_ij = 1.0 / r_ij;
+    ir  = 1.0 / r;
 
-    near->compute_charge_dipole(near_param, r_ij, ir_ij, &iad);
+    near->compute_charge_dipole(near_param, r, ir, &iad);
 
-    /* FIXME: compute dipole-charge field using FCS_NEAR_INTERACTION_DATA_F1(iad), and FCS_NEAR_INTERACTION_DATA_F2(iad) */
+    fcs_float f1 = FCS_NEAR_INTERACTION_DATA_F1(iad);
+    fcs_float f2 = FCS_NEAR_INTERACTION_DATA_F2(iad);
 
-    dipoles->field[6 * i + 0] += 0.0 * ir_ij * charges->charges[j] * d[0];
-    dipoles->field[6 * i + 1] += 0.0 * ir_ij * charges->charges[j] * d[1];
-    dipoles->field[6 * i + 2] += 0.0 * ir_ij * charges->charges[j] * d[2];
-    dipoles->field[6 * i + 3] += 0.0 * ir_ij * charges->charges[j] * d[0];
-    dipoles->field[6 * i + 4] += 0.0 * ir_ij * charges->charges[j] * d[1];
-    dipoles->field[6 * i + 5] += 0.0 * ir_ij * charges->charges[j] * d[2];
+    fcs_float xxT[6]  = {d[0]*d[0], d[0]*d[1], d[0]*d[2], d[1]*d[1], d[1]*d[2], d[2]*d[2]};
+    fcs_float ir2 = ir  * ir;
+    fcs_float ir3 = ir2 * ir;
 
-    /* FIXME: compute dipole-charge potential using FCS_NEAR_INTERACTION_DATA_F1(iad) */
+    /* compute dipole-charge field */
+    dipoles->field[6 * i + 0] += charges->charges[0] * ( f2 * xxT[0] * ir2 + f1 * ( ir - xxT[0] * ir3 ) );
+    dipoles->field[6 * i + 1] += charges->charges[1] * ( f2 * xxT[1] * ir2 + f1 * (    - xxT[1] * ir3 ) );
+    dipoles->field[6 * i + 2] += charges->charges[2] * ( f2 * xxT[2] * ir2 + f1 * (    - xxT[2] * ir3 ) );
+    dipoles->field[6 * i + 3] += charges->charges[3] * ( f2 * xxT[3] * ir2 + f1 * ( ir - xxT[3] * ir3 ) );
+    dipoles->field[6 * i + 4] += charges->charges[4] * ( f2 * xxT[4] * ir2 + f1 * (    - xxT[4] * ir3 ) );
+    dipoles->field[6 * i + 5] += charges->charges[5] * ( f2 * xxT[5] * ir2 + f1 * ( ir - xxT[5] * ir3 ) );
 
-    dipoles->potentials[3 * i + 0] += 0.0 * ir_ij * charges->charges[j] * d[0];
-    dipoles->potentials[3 * i + 1] += 0.0 * ir_ij * charges->charges[j] * d[1];
-    dipoles->potentials[3 * i + 2] += 0.0 * ir_ij * charges->charges[j] * d[2];
+    /* compute dipole-charge potential */
+    dipoles->potentials[3 * i + 0] += charges->charges[j] * f1 * d[0] * ir;
+    dipoles->potentials[3 * i + 1] += charges->charges[j] * f1 * d[1] * ir;
+    dipoles->potentials[3 * i + 2] += charges->charges[j] * f1 * d[2] * ir;
   }
 }
 

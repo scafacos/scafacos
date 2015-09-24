@@ -199,7 +199,7 @@ static fcs_float compute_near_field_nonperiodic(
 }
 
 
-void ifcs_p2nfft_compute_near(
+void ifcs_p2nfft_compute_near_field_and_potential(
     const void* param, fcs_float dist,
     fcs_float *f, fcs_float *p
     )
