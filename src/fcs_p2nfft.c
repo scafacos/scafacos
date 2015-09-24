@@ -92,6 +92,7 @@ FCSResult fcs_p2nfft_init(
 
   handle->shift_positions = 0;
 
+  handle->dipole_support = FCS_TRUE;
   handle->destroy = fcs_p2nfft_destroy;
   handle->set_r_cut = fcs_p2nfft_set_r_cut;
   handle->unset_r_cut = fcs_p2nfft_set_r_cut_tune;
