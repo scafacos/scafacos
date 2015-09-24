@@ -409,7 +409,7 @@ void fcs_p2nfft_compute_near(
     fcs_float *potential, fcs_float *field
     )
 {
-  ifcs_p2nfft_compute_near(handle->method_context, dist, field, potential);
+  ifcs_p2nfft_compute_near_field_and_potential(handle->method_context, dist, field, potential);
 }
 
 /************************************************************

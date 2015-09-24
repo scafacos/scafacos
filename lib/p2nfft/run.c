@@ -54,6 +54,10 @@ static void convolution(
 /* compute d-th component of A^T * v */
 #define At_TIMES_VEC(_A_, _v_, _d_) ( (_v_)[0] * (_A_)[_d_] + (_v_)[1] * (_A_)[_d_ + 3] + (_v_)[2] * (_A_)[_d_ + 6] )
 
+#define At_TIMES_SYMMAT_TIMES_A(A, S, i, j) \
+  (   (A)[  i] * ( (S)[0] * (A)[j] + (S)[1] * (A)[3+j] + (S)[2] * (A)[6+j]) \
+    + (A)[3+i] * ( (S)[1] * (A)[j] + (S)[3] * (A)[3+j] + (S)[4] * (A)[6+j]) \
+    + (A)[6+i] * ( (S)[2] * (A)[j] + (S)[4] * (A)[3+j] + (S)[5] * (A)[6+j]) )
 
 static fcs_int box_not_large_enough(
     fcs_int npart, const fcs_float *pos_with_offset, const fcs_float *box_base, const fcs_float *ibox, const fcs_int *periodicity
@@ -219,7 +223,7 @@ FCSResult ifcs_p2nfft_run(
       sorted_field[j] = 0;
 
   if(compute_dipole_field)
-    for (fcs_int j = 0; j < 6 * sorted_num_particles; ++j)
+    for (fcs_int j = 0; j < 6 * sorted_num_dipole_particles; ++j)
       sorted_dipole_field[j] = 0;
 
   if(d->short_range_flag){
@@ -241,6 +245,7 @@ FCSResult ifcs_p2nfft_run(
     } else {
       fcs_near_set_field(&near, ifcs_p2nfft_compute_near_field);
       fcs_near_set_potential(&near, ifcs_p2nfft_compute_near_potential);
+      fcs_near_set_field_potential(&near, ifcs_p2nfft_compute_near_field_and_potential);
     }
 
     // fcs_int *periodicity = NULL; /* sorter uses periodicity of the communicator */
@@ -316,7 +321,7 @@ FCSResult ifcs_p2nfft_run(
     unsigned pnfft_malloc_flags = PNFFT_MALLOC_X | PNFFT_MALLOC_GRAD_F;
     if(compute_dipole_field)     pnfft_malloc_flags |= PNFFT_MALLOC_HESSIAN_F;
     FCS_PNFFT(free_nodes)(d->dipoles, PNFFT_FREE_ALL);
-    d->charges = FCS_PNFFT(init_nodes)(sorted_num_dipole_particles, pnfft_malloc_flags);
+    d->dipoles = FCS_PNFFT(init_nodes)(sorted_num_dipole_particles, pnfft_malloc_flags);
   }
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Reinit dipoles");
 
@@ -326,8 +331,8 @@ FCSResult ifcs_p2nfft_run(
   fcs_pnfft_complex *charges_f         = FCS_PNFFT(get_f)(d->charges);
   fcs_pnfft_complex *charges_grad_f    = FCS_PNFFT(get_grad_f)(d->charges);
   fcs_float         *charges_x         = FCS_PNFFT(get_x)(d->charges);
-  fcs_pnfft_complex *dipoles_grad_f    = FCS_PNFFT(get_f)(d->dipoles);
-  fcs_pnfft_complex *dipoles_hessian_f = FCS_PNFFT(get_grad_f)(d->dipoles);
+  fcs_pnfft_complex *dipoles_grad_f    = FCS_PNFFT(get_grad_f)(d->dipoles);
+  fcs_pnfft_complex *dipoles_hessian_f = FCS_PNFFT(get_hessian_f)(d->dipoles);
   fcs_float         *dipoles_x         = FCS_PNFFT(get_x)(d->dipoles);
 
   /* Set NFFT nodes within [-0.5,0.5]^3 */
@@ -343,7 +348,7 @@ FCSResult ifcs_p2nfft_run(
     charges_x[3 * j + 1] = ( XYZ2TRI(1, pos, d->box_inv) - 0.5 ) / d->box_expand[1];
     charges_x[3 * j + 2] = ( XYZ2TRI(2, pos, d->box_inv) - 0.5 ) / d->box_expand[2];
   }
-  for (fcs_int j = 0; j < sorted_num_dipoles_particles; ++j)
+  for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
   {
     fcs_float pos[3];
 
@@ -425,7 +430,7 @@ FCSResult ifcs_p2nfft_run(
   /* Perform NFFT for charges and dipoles */
   {
     unsigned direct_flag = (d->pnfft_direct) ? PNFFT_COMPUTE_DIRECT : 0;
-    unsigned compute_flags_cahrges = 0;
+    unsigned compute_flags_charges = 0;
     if(compute_potential) compute_flags_charges |= PNFFT_COMPUTE_F;
     if(compute_field)     compute_flags_charges |= PNFFT_COMPUTE_GRAD_F;
     FCS_PNFFT(trafo)(d->pnfft, d->charges, direct_flag | compute_flags_charges);
@@ -461,12 +466,12 @@ FCSResult ifcs_p2nfft_run(
   /* Rescale all (symmetric) Hessian via L^{-T} * Hf * L^{-1} */
   if(compute_dipole_field){
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
-      sorted_dipole_field[6 * j + 0] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0) );
-      sorted_dipole_field[6 * j + 1] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1) );
-      sorted_dipole_field[6 * j + 2] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 2) );
-      sorted_dipole_field[6 * j + 3] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 3) );
-      sorted_dipole_field[6 * j + 4] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 4) );
-      sorted_dipole_field[6 * j + 5] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 5) );
+      sorted_dipole_field[6 * j + 0] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 0) );
+      sorted_dipole_field[6 * j + 1] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 1) );
+      sorted_dipole_field[6 * j + 2] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 2) );
+      sorted_dipole_field[6 * j + 3] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1, 1) );
+      sorted_dipole_field[6 * j + 4] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1, 2) );
+      sorted_dipole_field[6 * j + 5] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 2, 2) );
     }
   }
 
@@ -693,6 +698,12 @@ void ifcs_p2nfft_get_resort_availability(void *rd, fcs_int *availability)
   *availability = fcs_gridsort_resort_is_available(d->gridsort_resort);
 }
 
+
+
+
+
+
+
 void ifcs_p2nfft_get_resort_particles(void *rd, fcs_int *resort_particles)
 {
   ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) rd;
@@ -732,3 +743,4 @@ void ifcs_p2nfft_resort_bytes(void *rd, void *src, void *dst, fcs_int n, MPI_Com
   
   fcs_gridsort_resort_bytes(d->gridsort_resort, src, dst, n, comm);
 }
+

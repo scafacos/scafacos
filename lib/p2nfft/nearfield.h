@@ -46,7 +46,7 @@ fcs_float ifcs_p2nfft_compute_near_potential(
     const void* param, fcs_float dist);
 fcs_float ifcs_p2nfft_compute_near_field(
     const void* param, fcs_float dist);
-void ifcs_p2nfft_compute_near(
+void ifcs_p2nfft_compute_near_field_and_potential(
     const void* param, fcs_float dist, 
     fcs_float *potential, fcs_float *field);
 
