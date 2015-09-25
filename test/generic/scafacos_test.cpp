@@ -624,9 +624,9 @@ static double determine_total_energy(fcs_int nparticles, fcs_float *charges, fcs
 
 #define BACKUP_INPUT
 
-/*#define PRINT_PARTICLES*/
+#define PRINT_PARTICLES  0
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
 template<typename P>
 static void print_particles(generic_particle_data_t<P> *particles)
 {
@@ -754,7 +754,7 @@ static void run_method(FCS fcs, input_particles_t *parts)
 # endif /* SCAFACOS_TEST_WITH_DIPOLES */
 #endif
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
     MASTER(cout << "Particles before fcs_run: " << parts->particles.n << endl);
     print_particles<CHARGES>(&parts->particles);
 # if SCAFACOS_TEST_WITH_DIPOLES
@@ -778,7 +778,7 @@ static void run_method(FCS fcs, input_particles_t *parts)
     t = MPI_Wtime() - t;
     MASTER(cout << "    #" << i << " time: " << scientific << t << endl);
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
     MASTER(cout << "Particles after fcs_run: " << parts->particles.n << endl);
     print_particles<CHARGES>(&parts->particles);
 # if SCAFACOS_TEST_WITH_DIPOLES
@@ -859,9 +859,19 @@ static void run_method(FCS fcs, input_particles_t *parts)
   }
 }
 
-static void no_method() {
+static void no_method(input_particles_t *parts)
+{
   current_config->have_result_values[0] = 0;  // no potentials results
   current_config->have_result_values[1] = 0;  // no field results
+
+#if PRINT_PARTICLES
+    MASTER(cout << "Particles: " << parts->particles.n << endl);
+    print_particles<CHARGES>(&parts->particles);
+# if SCAFACOS_TEST_WITH_DIPOLES
+    MASTER(cout << "Dipole particles: " << parts->dipole_particles.n << endl);
+    print_particles<DIPOLES>(&parts->dipole_particles);
+# endif /* SCAFACOS_TEST_WITH_DIPOLES */
+#endif
 }
 
 static void run_integration(FCS fcs, input_particles_t *parts, Testcase *testcase)
@@ -936,7 +946,7 @@ static void run_integration(FCS fcs, input_particles_t *parts, Testcase *testcas
     /* store previous field values */
     values_copy<fcs_float, 3>(f_old, f_cur, parts->particles.n);
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
     MASTER(cout << "Particles before fcs_run: " << parts->particles.n << endl);
     print_particles<CHARGES>(&parts->particles);
 #endif
@@ -1012,7 +1022,7 @@ static void run_integration(FCS fcs, input_particles_t *parts, Testcase *testcas
 
     } else if (resort) MASTER(cout << "    Resorting enabled, but failed!" << endl);
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
     MASTER(cout << "Particles after fcs_run: " << parts->particles.n << endl);
     print_particles<CHARGES>(&parts->particles);
 #endif
@@ -1282,7 +1292,7 @@ int main(int argc, char* argv[])
     else {
       // Run method or do nothing
       if (global_params.have_method) run_method(fcs, &parts);
-      else no_method();
+      else no_method(&parts);
     }
 
     unprepare_particles(&parts);

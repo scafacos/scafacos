@@ -297,6 +297,13 @@ void Configuration::write_config(xml_document<> *doc, xml_node<> *config_node, c
       particles.particles.potentials = (have_reference_values[0] || have_result_values[0])?(input_particles.particles.potentials?input_particles.particles.potentials:(fcs_float *) 1):NULL;
       particles.particles.field = (have_reference_values[1] || have_result_values[1])?(input_particles.particles.field?input_particles.particles.field:(fcs_float *) 1):NULL;
 
+#if SCAFACOS_TEST_WITH_DIPOLES
+      particles.dipole_particles.positions = NULL;
+      particles.dipole_particles.props = NULL;
+      particles.dipole_particles.potentials = (have_reference_values[0] || have_result_values[0])?(input_particles.dipole_particles.potentials?input_particles.dipole_particles.potentials:(fcs_float *) 1):NULL;
+      particles.dipole_particles.field = (have_reference_values[1] || have_result_values[1])?(input_particles.dipole_particles.field?input_particles.dipole_particles.field:(fcs_float *) 1):NULL;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
       FileParticles::write_config<FormatBinary>(doc, config_node, REFERENCES_TAG, binfilename, &particles, comm_size, comm_rank, communicator);
 
     } else if (portable_filename)
@@ -307,6 +314,13 @@ void Configuration::write_config(xml_document<> *doc, xml_node<> *config_node, c
       particles.particles.props = NULL;
       particles.particles.potentials = (have_reference_values[0] || have_result_values[0])?(input_particles.particles.potentials?input_particles.particles.potentials:(fcs_float *) 1):NULL;
       particles.particles.field = (have_reference_values[1] || have_result_values[1])?(input_particles.particles.field?input_particles.particles.field:(fcs_float *) 1):NULL;
+
+#if SCAFACOS_TEST_WITH_DIPOLES
+      particles.dipole_particles.positions = NULL;
+      particles.dipole_particles.props = NULL;
+      particles.dipole_particles.potentials = (have_reference_values[0] || have_result_values[0])?(input_particles.dipole_particles.potentials?input_particles.dipole_particles.potentials:(fcs_float *) 1):NULL;
+      particles.dipole_particles.field = (have_reference_values[1] || have_result_values[1])?(input_particles.dipole_particles.field?input_particles.dipole_particles.field:(fcs_float *) 1):NULL;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
       FileParticles::write_config<FormatPortable>(doc, config_node, REFERENCES_TAG, portable_filename, &particles, comm_size, comm_rank, communicator);
 
@@ -326,6 +340,13 @@ void Configuration::write_config(xml_document<> *doc, xml_node<> *config_node, c
       particles.particles.potentials = (have_reference_values[0] || have_result_values[0])?(input_particles.particles.potentials?input_particles.particles.potentials:(fcs_float *) 1):NULL;
       particles.particles.field = (have_reference_values[1] || have_result_values[1])?(input_particles.particles.field?input_particles.particles.field:(fcs_float *) 1):NULL;
 
+#if SCAFACOS_TEST_WITH_DIPOLES
+      particles.dipole_particles.positions = input_particles.dipole_particles.positions?input_particles.dipole_particles.positions:(fcs_float *) 1;
+      particles.dipole_particles.props = input_particles.dipole_particles.props?input_particles.dipole_particles.props:(fcs_float *) 1;
+      particles.dipole_particles.potentials = (have_reference_values[0] || have_result_values[0])?(input_particles.dipole_particles.potentials?input_particles.dipole_particles.potentials:(fcs_float *) 1):NULL;
+      particles.dipole_particles.field = (have_reference_values[1] || have_result_values[1])?(input_particles.dipole_particles.field?input_particles.dipole_particles.field:(fcs_float *) 1):NULL;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
       FileParticles::write_config<FormatBinary>(doc, config_node, BINARY_TAG, binfilename, &particles, comm_size, comm_rank, communicator);
 
     } else if (portable_filename)
@@ -337,6 +358,13 @@ void Configuration::write_config(xml_document<> *doc, xml_node<> *config_node, c
       particles.particles.potentials = (have_reference_values[0] || have_result_values[0])?(input_particles.particles.potentials?input_particles.particles.potentials:(fcs_float *) 1):NULL;
       particles.particles.field = (have_reference_values[1] || have_result_values[1])?(input_particles.particles.field?input_particles.particles.field:(fcs_float *) 1):NULL;
 
+#if SCAFACOS_TEST_WITH_DIPOLES
+      particles.dipole_particles.positions = input_particles.dipole_particles.positions?input_particles.dipole_particles.positions:(fcs_float *) 1;
+      particles.dipole_particles.props = input_particles.dipole_particles.props?input_particles.dipole_particles.props:(fcs_float *) 1;
+      particles.dipole_particles.potentials = (have_reference_values[0] || have_result_values[0])?(input_particles.dipole_particles.potentials?input_particles.dipole_particles.potentials:(fcs_float *) 1):NULL;
+      particles.dipole_particles.field = (have_reference_values[1] || have_result_values[1])?(input_particles.dipole_particles.field?input_particles.dipole_particles.field:(fcs_float *) 1):NULL;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
       FileParticles::write_config<FormatPortable>(doc, config_node, PORTABLE_TAG, portable_filename, &particles, comm_size, comm_rank, communicator);
 
     } else
@@ -345,6 +373,11 @@ void Configuration::write_config(xml_document<> *doc, xml_node<> *config_node, c
 
       if (!(have_reference_values[0] || have_result_values[0])) particles.particles.potentials = NULL;
       if (!(have_reference_values[1] || have_result_values[1])) particles.particles.field = NULL;
+      
+#if SCAFACOS_TEST_WITH_DIPOLES
+      if (!(have_reference_values[0] || have_result_values[0])) particles.dipole_particles.potentials = NULL;
+      if (!(have_reference_values[1] || have_result_values[1])) particles.dipole_particles.field = NULL;
+#endif /* SCAFACOS_TEST_WITH_DIPOLES */
       
       PlainParticles::write_config(doc, config_node, NULL, &particles, comm_size, comm_rank, communicator);
     }
