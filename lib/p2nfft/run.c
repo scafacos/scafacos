@@ -452,11 +452,20 @@ FCSResult ifcs_p2nfft_run(
 
   /* Rescale all gradients L^{-T} * grad_f */
   if(compute_dipole_potential){
+
+for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
+  for(int t=0; t<3; t++)
+    fprintf(stderr, "near_pot[%d, %d] = %.6e\n", j, t, sorted_dipole_potential[3*j+t]);
+
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
-      sorted_dipole_potential[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 0) );
-      sorted_dipole_potential[3 * j + 1] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 1) );
-      sorted_dipole_potential[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 2) );
+      sorted_dipole_potential[3 * j + 0] += fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 0) );
+      sorted_dipole_potential[3 * j + 1] += fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 1) );
+      sorted_dipole_potential[3 * j + 2] += fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 2) );
     }
+
+for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
+  for(int t=0; t<3; t++)
+    fprintf(stderr, "near_far_pot[%d, %d] = %.6e\n", j, t, sorted_dipole_potential[3*j+t]);
   }
 
   if(compute_field){
@@ -470,12 +479,12 @@ FCSResult ifcs_p2nfft_run(
   /* Rescale all (symmetric) Hessian via L^{-T} * Hf * L^{-1} */
   if(compute_dipole_field){
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
-      sorted_dipole_field[6 * j + 0] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 0) );
-      sorted_dipole_field[6 * j + 1] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 1) );
-      sorted_dipole_field[6 * j + 2] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 2) );
-      sorted_dipole_field[6 * j + 3] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1, 1) );
-      sorted_dipole_field[6 * j + 4] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1, 2) );
-      sorted_dipole_field[6 * j + 5] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 2, 2) );
+      sorted_dipole_field[6 * j + 0] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 0) );
+      sorted_dipole_field[6 * j + 1] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 1) );
+      sorted_dipole_field[6 * j + 2] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 2) );
+      sorted_dipole_field[6 * j + 3] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1, 1) );
+      sorted_dipole_field[6 * j + 4] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1, 2) );
+      sorted_dipole_field[6 * j + 5] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 2, 2) );
     }
   }
 
@@ -522,9 +531,24 @@ FCSResult ifcs_p2nfft_run(
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
 
   /* Calculate self-interactions */
-  if(compute_potential)
+  if(compute_potential){
+    fcs_float self = ifcs_p2nfft_compute_self_potential(rd);
     for (fcs_int j = 0; j < sorted_num_particles; ++j)
-      sorted_potential[j] -= sorted_charges[j] * ifcs_p2nfft_compute_self_potential(rd);
+      sorted_potential[j] -= sorted_charges[j] * self;
+  }
+
+  if(compute_dipole_potential){
+    fcs_float self = ifcs_p2nfft_compute_self_dipole_potential(rd);
+    for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
+      sorted_dipole_potential[3 * j + 0] += sorted_dipole_moments[3 * j + 0] * self; 
+      sorted_dipole_potential[3 * j + 1] += sorted_dipole_moments[3 * j + 1] * self;
+      sorted_dipole_potential[3 * j + 2] += sorted_dipole_moments[3 * j + 2] * self;
+    }
+
+for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
+  for(int t=0; t<3; t++)
+    fprintf(stderr, "near_far_self_pot[%d, %d] = %.6e\n", j, t, sorted_dipole_potential[3*j+t]);
+  }
 
   /* Finish self interaction timing */
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "self interaction calculation");

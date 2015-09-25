@@ -89,6 +89,20 @@ static fcs_float compute_self_potential_nonperiodic(
     return 0.0;
 }
 
+fcs_float ifcs_p2nfft_compute_self_dipole_potential(
+    const void* param
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*) param;
+  return 4.0/3.0 * d->alpha * d->alpha * d->alpha * FCS_P2NFFT_1_SQRTPI;
+
+/* TODO: implement other splitting functions and interpolation,
+ * at the moment only Ewald splitting is supported */
+//   if(d->num_periodic_dims == 0)
+//     return compute_self_dipole_potential_nonperiodic(param);
+//   else
+//     return compute_self_dipole_potential_periodic(param);
+}
 
 
 fcs_float ifcs_p2nfft_compute_near_potential(

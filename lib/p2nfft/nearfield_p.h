@@ -26,6 +26,8 @@
 
 fcs_float ifcs_p2nfft_compute_self_potential(
     const void* param);
+fcs_float ifcs_p2nfft_compute_self_dipole_potential(
+    const void* param);
 fcs_float ifcs_p2nfft_compute_near_potential(
     const void* param, fcs_float dist);
 fcs_float ifcs_p2nfft_compute_near_field(
