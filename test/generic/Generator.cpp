@@ -874,6 +874,8 @@ static void write_plain_full_particle_data(xml_document<> *doc, xml_node<> *conf
 
     string s;
 
+    particle_node->append_attribute(doc->allocate_attribute("type", P::TYPE_TAG));
+
     if (particle_data->positions)
     {
       print_sequence<fcs_float>(P::POSITION_SIZE, particle_data->positions_at(pid), s);
