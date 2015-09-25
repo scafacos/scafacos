@@ -64,7 +64,7 @@
 
 #define MASTER_RANK  0
 
-/*#define PRINT_PARTICLES*/
+#define PRINT_PARTICLES  0
 
 #define DO_TIMING_SYNC
 
@@ -253,17 +253,47 @@ void fcs_directc_get_resort_particles(fcs_directc_t *directc, fcs_int *resort_pa
 }
 
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
+
 static void directc_print_particles(fcs_int n, fcs_float *xyz, fcs_float *q, fcs_float *f, fcs_float *p)
 {
   fcs_int i;
 
   for (i = 0; i < n; ++i)
   {
-    printf("  %" FCS_LMOD_INT "d: [%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f] [%" FCS_LMOD_FLOAT "f] -> [%.2" FCS_LMOD_FLOAT "f,%.2" FCS_LMOD_FLOAT "f,%.2" FCS_LMOD_FLOAT "f] [%.2" FCS_LMOD_FLOAT "f]\n",
-      i, xyz[i * 3 + 0], xyz[i * 3 + 1], xyz[i * 3 + 2], q[i], f[i * 3 + 0], f[i * 3 + 1], f[i * 3 + 2], p[i]);
+    printf("  %" FCS_LMOD_INT "d: "
+           "[%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f] "
+           "[%" FCS_LMOD_FLOAT "f] -> "
+           "[%.2" FCS_LMOD_FLOAT "f,%.2" FCS_LMOD_FLOAT "f,%.2" FCS_LMOD_FLOAT "f] "
+           "[%.2" FCS_LMOD_FLOAT "f]\n",
+           i,
+           xyz[i * 3 + 0], xyz[i * 3 + 1], xyz[i * 3 + 2],
+           q[i],
+           f[i * 3 + 0], f[i * 3 + 1], f[i * 3 + 2],
+           p[i]);
   }
 }
+
+
+static void directc_print_dipole_particles(fcs_int n, fcs_float *xyz, fcs_float *m, fcs_float *f, fcs_float *p)
+{
+  fcs_int i;
+
+  for (i = 0; i < n; ++i)
+  {
+    printf("  %" FCS_LMOD_INT "d: "
+           "[%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f] "
+           "[%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f] -> "
+           "[%.2" FCS_LMOD_FLOAT "f,%.2" FCS_LMOD_FLOAT "f,%.2" FCS_LMOD_FLOAT "f,%.2" FCS_LMOD_FLOAT "f,%.2" FCS_LMOD_FLOAT "f,%.2" FCS_LMOD_FLOAT "f] "
+           "[%.2" FCS_LMOD_FLOAT "f,%.2" FCS_LMOD_FLOAT "f,%.2" FCS_LMOD_FLOAT "f]\n",
+           i,
+           xyz[i * 3 + 0], xyz[i * 3 + 1], xyz[i * 3 + 2],
+           m[i * 3 + 0], m[i * 3 + 1], m[i * 3 + 2],
+           f[i * 3 + 0], f[i * 3 + 1], f[i * 3 + 2], f[i * 3 + 3], f[i * 3 + 4], f[i * 3 + 5],
+           p[i * 3 + 0], p[i * 3 + 1], p[i * 3 + 2]);
+  }
+}
+
 #endif
 
 
@@ -303,6 +333,8 @@ typedef struct
 
 } periodics_t;
 
+#define COMPUTE_INTERACTION(_ir_, _iad_) \
+  ((_iad_)[0] = (_ir_), (_iad_)[1] = -1.0 * (_iad_)[0] * (_ir_), (_iad_)[2] = -2.0 * (_iad_)[1] * (_ir_), (_iad_)[3] = -3.0 * (_iad_)[2] * (_ir_))
 
 #define CHARGE_VS_CHARGE(_p_, _f_, _q_, _ir_, _ir3_, _dx_, _dy_, _dz_) Z_MOP( \
   (_p_)[0] += (_q_) * (_ir_); \
@@ -313,8 +345,43 @@ typedef struct
 
 #if FCS_DIRECT_WITH_DIPOLES
 
-#define DIPOLE_VS_DIPOLE(_p_, _f_, _m_, _ir_, _dx_, _dy_, _dz_) Z_MOP( \
-  );
+#define SYMPROD(a, b) \
+  { 2*(a)[0]*(b)[0], (a)[0]*(b)[1] + (a)[1]*(b)[0], (a)[0]*(b)[2] + (a)[2]*(b)[0], 2*(a)[1]*(b)[1], (a)[1]*(b)[2] + (a)[2]*(b)[1], 2*(a)[2]*(b)[2] }
+
+#define DIPOLE_VS_DIPOLE(_p_, _f_, _m_, _ir_, _d_, _fpm_) do { \
+  fcs_float iad[4]; \
+  COMPUTE_INTERACTION(_ir_, iad); \
+\
+  fcs_float muTx =  (_m_)[0] * (_d_)[0] + (_m_)[1] * (_d_)[1] +  (_m_)[2] * (_d_)[2]; \
+  fcs_float xxT[6]  = { (_d_)[0] * (_d_)[0], (_d_)[0] * (_d_)[1], (_d_)[0] * (_d_)[2], (_d_)[1] * (_d_)[1], (_d_)[1] * (_d_)[2], (_d_)[2] * (_d_)[2] }; \
+  fcs_float sym_muxT[6] = SYMPROD((_m_), (_d_)); \
+  fcs_float ir2 = (_ir_)  * (_ir_); \
+  fcs_float ir3 = ir2 * (_ir_); \
+  fcs_float ir4 = ir2 * ir2; \
+  fcs_float ir5 = ir3 * ir2; \
+\
+  fcs_float field0 = -iad[3] * muTx * ir3 * xxT[0] - iad[2] * ( ir - 3 * muTx * ir4 * xxT[0] + sym_muxT[0] * ir2) + iad[1] * ( ir3 + sym_muxT[0] * ir3 - 3*ir5 * muTx * xxT[0]); \
+  fcs_float field1 = -iad[3] * muTx * ir3 * xxT[1] - iad[2] * (    - 3 * muTx * ir4 * xxT[1] + sym_muxT[1] * ir2) + iad[1] * (     + sym_muxT[1] * ir3 - 3*ir5 * muTx * xxT[1]); \
+  fcs_float field2 = -iad[3] * muTx * ir3 * xxT[2] - iad[2] * (    - 3 * muTx * ir4 * xxT[2] + sym_muxT[2] * ir2) + iad[1] * (     + sym_muxT[2] * ir3 - 3*ir5 * muTx * xxT[2]); \
+  fcs_float field3 = -iad[3] * muTx * ir3 * xxT[3] - iad[2] * ( ir - 3 * muTx * ir4 * xxT[3] + sym_muxT[3] * ir2) + iad[1] * ( ir3 + sym_muxT[3] * ir3 - 3*ir5 * muTx * xxT[3]); \
+  fcs_float field4 = -iad[3] * muTx * ir3 * xxT[4] - iad[2] * (    - 3 * muTx * ir4 * xxT[4] + sym_muxT[4] * ir2) + iad[1] * (     + sym_muxT[4] * ir3 - 3*ir5 * muTx * xxT[4]); \
+  fcs_float field5 = -iad[3] * muTx * ir3 * xxT[5] - iad[2] * ( ir - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) + iad[1] * ( ir3 + sym_muxT[5] * ir3 - 3*ir5 * muTx * xxT[5]); \
+\
+  (_f_)[0] += field0 * (_fpm_); \
+  (_f_)[1] += field1 * (_fpm_); \
+  (_f_)[2] += field2 * (_fpm_); \
+  (_f_)[3] += field3 * (_fpm_); \
+  (_f_)[4] += field4 * (_fpm_); \
+  (_f_)[5] += field5 * (_fpm_); \
+\
+  fcs_float p0 = iad[2] * muTx * ir2 * d[0] + iad[1] * ((_m_)[0] * ir - muTx * ir3 * d[0]); \
+  fcs_float p1 = iad[2] * muTx * ir2 * d[1] + iad[1] * ((_m_)[1] * ir - muTx * ir3 * d[1]); \
+  fcs_float p2 = iad[2] * muTx * ir2 * d[2] + iad[1] * ((_m_)[2] * ir - muTx * ir3 * d[2]); \
+\
+  (_p_)[0] += p0; \
+  (_p_)[1] += p1; \
+  (_p_)[2] += p2; \
+  } while (0)
 
 #define CHARGE_VS_DIPOLE(_p_, _f_, _m_, _ir_, _dx_, _dy_, _dz_) Z_MOP( \
   );
@@ -407,7 +474,7 @@ static void compute_charge_from_charge_loop(charges_t *charges, charges_t *from_
 static void compute_dipole_dipole_loop(dipoles_t *dipoles, fcs_float cutoff)
 {
   fcs_int i, j;
-  fcs_float dx, dy, dz, ir;
+  fcs_float d[3], ir;
 
 
   if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
@@ -416,30 +483,30 @@ static void compute_dipole_dipole_loop(dipoles_t *dipoles, fcs_float cutoff)
   {
     for (j = i + 1; j < dipoles->nout; ++j)
     {
-      dx = dipoles->positions[i * 3 + 0] - dipoles->positions[j * 3 + 0];
-      dy = dipoles->positions[i * 3 + 1] - dipoles->positions[j * 3 + 1];
-      dz = dipoles->positions[i * 3 + 2] - dipoles->positions[j * 3 + 2];
+      d[0] = dipoles->positions[i * 3 + 0] - dipoles->positions[j * 3 + 0];
+      d[1] = dipoles->positions[i * 3 + 1] - dipoles->positions[j * 3 + 1];
+      d[2] = dipoles->positions[i * 3 + 2] - dipoles->positions[j * 3 + 2];
 
-      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+      ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
       if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
 
-      DIPOLE_VS_DIPOLE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), dipoles->moments + (j * 3), ir, dx, dy, dz);
+      DIPOLE_VS_DIPOLE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), dipoles->moments + (j * 3), ir, d, 1.0);
 
-      DIPOLE_VS_DIPOLE(dipoles->potentials + (j * 3), dipoles->field + (j * 6), dipoles->moments + (i * 3), ir, -dx, -dy, -dz);
+      DIPOLE_VS_DIPOLE(dipoles->potentials + (j * 3), dipoles->field + (j * 6), dipoles->moments + (i * 3), ir, d, -1.0);
     }
 
     for (j = dipoles->nout; j < dipoles->nin; ++j)
     {
-      dx = dipoles->positions[i * 3 + 0] - dipoles->positions[j * 3 + 0];
-      dy = dipoles->positions[i * 3 + 1] - dipoles->positions[j * 3 + 1];
-      dz = dipoles->positions[i * 3 + 2] - dipoles->positions[j * 3 + 2];
+      d[0] = dipoles->positions[i * 3 + 0] - dipoles->positions[j * 3 + 0];
+      d[1] = dipoles->positions[i * 3 + 1] - dipoles->positions[j * 3 + 1];
+      d[2] = dipoles->positions[i * 3 + 2] - dipoles->positions[j * 3 + 2];
 
-      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+      ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
       if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
 
-      DIPOLE_VS_DIPOLE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), dipoles->moments + (j * 3), ir, dx, dy, dz);
+      DIPOLE_VS_DIPOLE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), dipoles->moments + (j * 3), ir, d, 1.0);
     }
   }
 }
@@ -448,7 +515,7 @@ static void compute_dipole_dipole_loop(dipoles_t *dipoles, fcs_float cutoff)
 static void compute_dipole_from_dipole_loop(dipoles_t *dipoles, dipoles_t *from_dipoles, periodics_t *periodics, fcs_int skip_origin, fcs_float cutoff)
 {
   fcs_int i, j, pd[3];
-  fcs_float dx, dy, dz, ir;
+  fcs_float d[3], ir;
 
   if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
 
@@ -461,15 +528,15 @@ static void compute_dipole_from_dipole_loop(dipoles_t *dipoles, dipoles_t *from_
     for (i = 0; i < dipoles->nout; ++i)
     for (j = 0; j < from_dipoles->nin; ++j)
     {
-      dx = dipoles->positions[i * 3 + 0] - (from_dipoles->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
-      dy = dipoles->positions[i * 3 + 1] - (from_dipoles->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
-      dz = dipoles->positions[i * 3 + 2] - (from_dipoles->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
+      d[0] = dipoles->positions[i * 3 + 0] - (from_dipoles->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
+      d[1] = dipoles->positions[i * 3 + 1] - (from_dipoles->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
+      d[2] = dipoles->positions[i * 3 + 2] - (from_dipoles->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
 
-      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+      ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
       if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
 
-      DIPOLE_VS_DIPOLE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), from_dipoles->moments + (j * 3), ir, dx, dy, dz);
+      DIPOLE_VS_DIPOLE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), from_dipoles->moments + (j * 3), ir, d, 1.0);
     }
   }
 }
@@ -1034,11 +1101,22 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
     if (comm_rank == MASTER_RANK) printf(INFO_PRINT_PREFIX "periodic: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", periodic[0], periodic[1], periodic[2]);
   );
 
-  for (i = 0; i < directc->nparticles; ++i) directc->field[i * 3 + 0] = directc->field[i * 3 + 1] = directc->field[i * 3 + 2] = directc->potentials[i] = 0.0;
+  for (i = 0; i < directc->nparticles; ++i)
+    directc->field[i * 3 + 0] = directc->field[i * 3 + 1] = directc->field[i * 3 + 2] =
+    directc->potentials[i] = 0.0;
+#if FCS_DIRECT_WITH_DIPOLES
+  for (i = 0; i < directc->dipole_nparticles; ++i)
+    directc->dipole_field[i * 3 + 0] = directc->dipole_field[i * 3 + 1] = directc->dipole_field[i * 3 + 2] = directc->dipole_field[i * 3 + 3] = directc->dipole_field[i * 3 + 4] = directc->dipole_field[i * 3 + 5] =
+    directc->dipole_potentials[i * 3 + 0] = directc->dipole_potentials[i * 3 + 1] = directc->dipole_potentials[i * 3 + 2] = 0.0;
+#endif /* FCS_DIRECT_WITH_DIPOLES */
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
   printf("%d:   particles IN:\n", comm_rank);
   directc_print_particles(directc->nparticles, directc->positions, directc->charges, directc->field, directc->potentials);
+#if FCS_DIRECT_WITH_DIPOLES
+  printf("%d:   dipole particles IN:\n", comm_rank);
+  directc_print_dipole_particles(directc->dipole_nparticles, directc->dipole_positions, directc->dipole_moments, directc->dipole_field, directc->dipole_potentials);
+#endif /* FCS_DIRECT_WITH_DIPOLES */
 #endif
 
   TIMING_SYNC(comm); TIMING_START(t);
@@ -1084,9 +1162,13 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
 
   directc_virial(directc->nparticles, directc->positions, directc->charges, directc->field, directc->virial, comm_size, comm_rank, comm);
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
   printf("%d:   particles OUT:\n", comm_rank);
   directc_print_particles(directc->nparticles, directc->positions, directc->charges, directc->field, directc->potentials);
+#if FCS_DIRECT_WITH_DIPOLES
+  printf("%d:   dipole particles OUT:\n", comm_rank);
+  directc_print_dipole_particles(directc->dipole_nparticles, directc->dipole_positions, directc->dipole_moments, directc->dipole_field, directc->dipole_potentials);
+#endif /* FCS_DIRECT_WITH_DIPOLES */
 #endif
 
   TIMING_CMD(
