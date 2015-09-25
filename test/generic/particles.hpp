@@ -52,6 +52,8 @@ struct CHARGES
   static const fcs_int POTENTIAL_SIZE = 1;
   static const fcs_int FIELD_SIZE = 3;
 
+  static const char *TYPE_TAG;
+
   static const char *POSITION_TAG;
   static const char *PROP_TAG;
   static const char *POTENTIAL_TAG;
@@ -59,6 +61,7 @@ struct CHARGES
 };
 
 #if MAIN_COMPILATION_UNIT
+const char *CHARGES::TYPE_TAG = "charge";
 const char *CHARGES::POSITION_TAG = "position";
 const char *CHARGES::PROP_TAG = "charge";
 const char *CHARGES::POTENTIAL_TAG = "potential";
@@ -76,6 +79,8 @@ struct DIPOLES
   static const fcs_int POTENTIAL_SIZE = 3;
   static const fcs_int FIELD_SIZE = 6;
 
+  static const char *TYPE_TAG;
+
   static const char *POSITION_TAG;
   static const char *PROP_TAG;
   static const char *POTENTIAL_TAG;
@@ -83,6 +88,7 @@ struct DIPOLES
 };
 
 #if MAIN_COMPILATION_UNIT
+const char *DIPOLES::TYPE_TAG = "dipole";
 const char *DIPOLES::POSITION_TAG = "position";
 const char *DIPOLES::PROP_TAG = "moment";
 const char *DIPOLES::POTENTIAL_TAG = "potential";
