@@ -941,12 +941,12 @@ void compute_dipole_self(dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipo
     fcs_float ir5 = ir3 * ir2; 
 
     /* compute dipole-dipole field */
-    fcs_float field0 = -f3 * muTx * ir3 * xxT[0] - f2 * ( ir - 3 * muTx * ir4 * xxT[0] + sym_muxT[0] * ir2) + f1 * ( ir3 + sym_muxT[0] * ir3 - 3*ir5 * muTx * xxT[0]);
-    fcs_float field1 = -f3 * muTx * ir3 * xxT[1] - f2 * (    - 3 * muTx * ir4 * xxT[1] + sym_muxT[1] * ir2) + f1 * (     + sym_muxT[1] * ir3 - 3*ir5 * muTx * xxT[1]);
-    fcs_float field2 = -f3 * muTx * ir3 * xxT[2] - f2 * (    - 3 * muTx * ir4 * xxT[2] + sym_muxT[2] * ir2) + f1 * (     + sym_muxT[2] * ir3 - 3*ir5 * muTx * xxT[2]);
-    fcs_float field3 = -f3 * muTx * ir3 * xxT[3] - f2 * ( ir - 3 * muTx * ir4 * xxT[3] + sym_muxT[3] * ir2) + f1 * ( ir3 + sym_muxT[3] * ir3 - 3*ir5 * muTx * xxT[3]);
-    fcs_float field4 = -f3 * muTx * ir3 * xxT[4] - f2 * (    - 3 * muTx * ir4 * xxT[4] + sym_muxT[4] * ir2) + f1 * (     + sym_muxT[4] * ir3 - 3*ir5 * muTx * xxT[4]);
-    fcs_float field5 = -f3 * muTx * ir3 * xxT[5] - f2 * ( ir - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) + f1 * ( ir3 + sym_muxT[5] * ir3 - 3*ir5 * muTx * xxT[5]);
+    fcs_float field0 = -f3 * muTx * ir3 * xxT[0] - f2 * ( muTx * ir2 - 3 * muTx * ir4 * xxT[0] + sym_muxT[0] * ir2) + f1 * ( muTx * ir3 + sym_muxT[0] * ir3 - 3*ir5 * muTx * xxT[0]);
+    fcs_float field1 = -f3 * muTx * ir3 * xxT[1] - f2 * (            - 3 * muTx * ir4 * xxT[1] + sym_muxT[1] * ir2) + f1 * (            + sym_muxT[1] * ir3 - 3*ir5 * muTx * xxT[1]);
+    fcs_float field2 = -f3 * muTx * ir3 * xxT[2] - f2 * (            - 3 * muTx * ir4 * xxT[2] + sym_muxT[2] * ir2) + f1 * (            + sym_muxT[2] * ir3 - 3*ir5 * muTx * xxT[2]);
+    fcs_float field3 = -f3 * muTx * ir3 * xxT[3] - f2 * ( muTx * ir2 - 3 * muTx * ir4 * xxT[3] + sym_muxT[3] * ir2) + f1 * ( muTx * ir3 + sym_muxT[3] * ir3 - 3*ir5 * muTx * xxT[3]);
+    fcs_float field4 = -f3 * muTx * ir3 * xxT[4] - f2 * (            - 3 * muTx * ir4 * xxT[4] + sym_muxT[4] * ir2) + f1 * (            + sym_muxT[4] * ir3 - 3*ir5 * muTx * xxT[4]);
+    fcs_float field5 = -f3 * muTx * ir3 * xxT[5] - f2 * ( muTx * ir2 - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) + f1 * ( muTx * ir3 + sym_muxT[5] * ir3 - 3*ir5 * muTx * xxT[5]);
 
     dipoles->field[6 * i + 0] += field0;
     dipoles->field[6 * i + 1] += field1;
@@ -1013,12 +1013,12 @@ void compute_dipole_from_dipole(dipoles_t *dipoles, fcs_int dipoles_start, fcs_i
     fcs_float ir5 = ir3 * ir2; 
 
     /* compute dipole-dipole field */
-    dipoles->field[6 * i + 0] += -f3 * muTx * ir3 * xxT[0] - f2 * ( ir - 3 * muTx * ir4 * xxT[0] + sym_muxT[0] * ir2) + f1 * ( ir3 + sym_muxT[0] * ir3 - 3*ir5 * muTx * xxT[0]);
-    dipoles->field[6 * i + 1] += -f3 * muTx * ir3 * xxT[1] - f2 * (    - 3 * muTx * ir4 * xxT[1] + sym_muxT[1] * ir2) + f1 * (     + sym_muxT[1] * ir3 - 3*ir5 * muTx * xxT[1]);
-    dipoles->field[6 * i + 2] += -f3 * muTx * ir3 * xxT[2] - f2 * (    - 3 * muTx * ir4 * xxT[2] + sym_muxT[2] * ir2) + f1 * (     + sym_muxT[2] * ir3 - 3*ir5 * muTx * xxT[2]);
-    dipoles->field[6 * i + 3] += -f3 * muTx * ir3 * xxT[3] - f2 * ( ir - 3 * muTx * ir4 * xxT[3] + sym_muxT[3] * ir2) + f1 * ( ir3 + sym_muxT[3] * ir3 - 3*ir5 * muTx * xxT[3]);
-    dipoles->field[6 * i + 4] += -f3 * muTx * ir3 * xxT[4] - f2 * (    - 3 * muTx * ir4 * xxT[4] + sym_muxT[4] * ir2) + f1 * (     + sym_muxT[4] * ir3 - 3*ir5 * muTx * xxT[4]);
-    dipoles->field[6 * i + 5] += -f3 * muTx * ir3 * xxT[5] - f2 * ( ir - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) + f1 * ( ir3 + sym_muxT[5] * ir3 - 3*ir5 * muTx * xxT[5]);
+    dipoles->field[6 * i + 0] += -f3 * muTx * ir3 * xxT[0] - f2 * ( muTx * ir2 - 3 * muTx * ir4 * xxT[0] + sym_muxT[0] * ir2) + f1 * ( muTx * ir3 + sym_muxT[0] * ir3 - 3*ir5 * muTx * xxT[0]);
+    dipoles->field[6 * i + 1] += -f3 * muTx * ir3 * xxT[1] - f2 * (            - 3 * muTx * ir4 * xxT[1] + sym_muxT[1] * ir2) + f1 * (            + sym_muxT[1] * ir3 - 3*ir5 * muTx * xxT[1]);
+    dipoles->field[6 * i + 2] += -f3 * muTx * ir3 * xxT[2] - f2 * (            - 3 * muTx * ir4 * xxT[2] + sym_muxT[2] * ir2) + f1 * (            + sym_muxT[2] * ir3 - 3*ir5 * muTx * xxT[2]);
+    dipoles->field[6 * i + 3] += -f3 * muTx * ir3 * xxT[3] - f2 * ( muTx * ir2 - 3 * muTx * ir4 * xxT[3] + sym_muxT[3] * ir2) + f1 * ( muTx * ir3 + sym_muxT[3] * ir3 - 3*ir5 * muTx * xxT[3]);
+    dipoles->field[6 * i + 4] += -f3 * muTx * ir3 * xxT[4] - f2 * (            - 3 * muTx * ir4 * xxT[4] + sym_muxT[4] * ir2) + f1 * (            + sym_muxT[4] * ir3 - 3*ir5 * muTx * xxT[4]);
+    dipoles->field[6 * i + 5] += -f3 * muTx * ir3 * xxT[5] - f2 * ( muTx * ir2 - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) + f1 * ( muTx * ir3 + sym_muxT[5] * ir3 - 3*ir5 * muTx * xxT[5]);
 
     /* compute dipole-dipole potential */
     dipoles->potentials[3 * i + 0] += f2 * muTx * ir2 * d[0] + f1 * ( dipoles->moments[3*j + 0] * ir - muTx * ir3 * d[0]);
