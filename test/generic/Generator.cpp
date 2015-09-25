@@ -723,6 +723,8 @@ PlainParticles::PlainParticles()
 }
 
 
+#define PRINT_PARTICLE  0
+
 bool PlainParticles::read_config(xml_node<> *config_node, const char *basename, int comm_size, int comm_rank, MPI_Comm comm)
 {
   for (xml_node<> *particle_node = config_node->first_node(PARTICLE_TAG); particle_node; particle_node = particle_node->next_sibling(PARTICLE_TAG))
@@ -814,7 +816,7 @@ bool PlainParticles::read_config(xml_node<> *config_node, const char *basename, 
       }
     }
 
-#if 0
+#if PRINT_PARTICLE
     if (type == particle_data_t::ID)
     {
       cout << "reading particle #" << pid << ": ";
@@ -840,6 +842,7 @@ bool PlainParticles::read_config(xml_node<> *config_node, const char *basename, 
   return true;
 }
 
+#undef PRINT_PARTICLE
 
 void PlainParticles::broadcast_config(int root, int comm_size, int comm_rank, MPI_Comm comm)
 {
@@ -873,25 +876,25 @@ static void write_plain_full_particle_data(xml_document<> *doc, xml_node<> *conf
     if (particle_data->positions)
     {
       print_sequence<fcs_float>(P::POSITION_SIZE, particle_data->positions_at(pid), s);
-      particle_node->append_attribute(doc->allocate_attribute(P::POSITION_TAG, s.c_str()));
+      particle_node->append_attribute(doc->allocate_attribute(P::POSITION_TAG, doc->allocate_string(s.c_str())));
     }
 
     if (particle_data->props)
     {
       print_sequence<fcs_float>(P::PROP_SIZE, particle_data->props_at(pid), s);
-      particle_node->append_attribute(doc->allocate_attribute(P::PROP_TAG, s.c_str()));
+      particle_node->append_attribute(doc->allocate_attribute(P::PROP_TAG, doc->allocate_string(s.c_str())));
     }
 
     if (particle_data->potentials && !values_isnan<P::POTENTIAL_SIZE>(particle_data->potentials_at(pid)))
     {
       print_sequence<fcs_float>(P::POTENTIAL_SIZE, particle_data->potentials_at(pid), s);
-      particle_node->append_attribute(doc->allocate_attribute(P::POTENTIAL_TAG, s.c_str()));
+      particle_node->append_attribute(doc->allocate_attribute(P::POTENTIAL_TAG, doc->allocate_string(s.c_str())));
     }
 
     if (particle_data->field && !values_isnan<P::FIELD_SIZE>(particle_data->field_at(pid)))
     {
       print_sequence<fcs_float>(P::FIELD_SIZE, particle_data->field_at(pid), s);
-      particle_node->append_attribute(doc->allocate_attribute(P::FIELD_TAG, s.c_str()));
+      particle_node->append_attribute(doc->allocate_attribute(P::FIELD_TAG, doc->allocate_string(s.c_str())));
     }
   }
 }
@@ -1067,7 +1070,7 @@ bool PlainParticles::make_dipole_local_particles(dipole_particle_data_t *particl
     {
       MPI_Type_contiguous(dipole_local_particles.POSITION_SIZE, FCS_MPI_FLOAT, &t);
       MPI_Type_commit(&t);
-      MPI_Scatterv(dipole_local_particles.positions, counts, displs, FCS_MPI_FLOAT, particle_data->positions_at(i), counts[comm_rank], FCS_MPI_FLOAT, MASTER_RANK, comm);
+      MPI_Scatterv(dipole_local_particles.positions, counts, displs, t, particle_data->positions_at(i), counts[comm_rank], t, MASTER_RANK, comm);
       MPI_Type_free(&t);
     }
 
@@ -1075,7 +1078,7 @@ bool PlainParticles::make_dipole_local_particles(dipole_particle_data_t *particl
     {
       MPI_Type_contiguous(dipole_local_particles.PROP_SIZE, FCS_MPI_FLOAT, &t);
       MPI_Type_commit(&t);
-      MPI_Scatterv(dipole_local_particles.props, counts, displs, FCS_MPI_FLOAT, particle_data->props_at(i), counts[comm_rank], FCS_MPI_FLOAT, MASTER_RANK, comm);
+      MPI_Scatterv(dipole_local_particles.props, counts, displs, t, particle_data->props_at(i), counts[comm_rank], t, MASTER_RANK, comm);
       MPI_Type_free(&t);
     }
 
@@ -1083,7 +1086,7 @@ bool PlainParticles::make_dipole_local_particles(dipole_particle_data_t *particl
     {
       MPI_Type_contiguous(dipole_local_particles.POTENTIAL_SIZE, FCS_MPI_FLOAT, &t);
       MPI_Type_commit(&t);
-      MPI_Scatterv(dipole_local_particles.potentials, counts, displs, FCS_MPI_FLOAT, particle_data->potentials_at(i), counts[comm_rank], FCS_MPI_FLOAT, MASTER_RANK, comm);
+      MPI_Scatterv(dipole_local_particles.potentials, counts, displs, t, particle_data->potentials_at(i), counts[comm_rank], t, MASTER_RANK, comm);
       MPI_Type_free(&t);
     }
 
@@ -1091,7 +1094,7 @@ bool PlainParticles::make_dipole_local_particles(dipole_particle_data_t *particl
     {
       MPI_Type_contiguous(dipole_local_particles.FIELD_SIZE, FCS_MPI_FLOAT, &t);
       MPI_Type_commit(&t);
-      MPI_Scatterv(dipole_local_particles.field, counts, displs, FCS_MPI_FLOAT, particle_data->field_at(i), counts[comm_rank], FCS_MPI_FLOAT, MASTER_RANK, comm);
+      MPI_Scatterv(dipole_local_particles.field, counts, displs, t, particle_data->field_at(i), counts[comm_rank], t, MASTER_RANK, comm);
       MPI_Type_free(&t);
     }
   }
