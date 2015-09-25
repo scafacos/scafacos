@@ -360,12 +360,12 @@ typedef struct
   fcs_float ir4 = ir2 * ir2; \
   fcs_float ir5 = ir3 * ir2; \
 \
-  fcs_float field0 = -iad[3] * muTx * ir3 * xxT[0] - iad[2] * ( ir - 3 * muTx * ir4 * xxT[0] + sym_muxT[0] * ir2) + iad[1] * ( ir3 + sym_muxT[0] * ir3 - 3*ir5 * muTx * xxT[0]); \
-  fcs_float field1 = -iad[3] * muTx * ir3 * xxT[1] - iad[2] * (    - 3 * muTx * ir4 * xxT[1] + sym_muxT[1] * ir2) + iad[1] * (     + sym_muxT[1] * ir3 - 3*ir5 * muTx * xxT[1]); \
-  fcs_float field2 = -iad[3] * muTx * ir3 * xxT[2] - iad[2] * (    - 3 * muTx * ir4 * xxT[2] + sym_muxT[2] * ir2) + iad[1] * (     + sym_muxT[2] * ir3 - 3*ir5 * muTx * xxT[2]); \
-  fcs_float field3 = -iad[3] * muTx * ir3 * xxT[3] - iad[2] * ( ir - 3 * muTx * ir4 * xxT[3] + sym_muxT[3] * ir2) + iad[1] * ( ir3 + sym_muxT[3] * ir3 - 3*ir5 * muTx * xxT[3]); \
-  fcs_float field4 = -iad[3] * muTx * ir3 * xxT[4] - iad[2] * (    - 3 * muTx * ir4 * xxT[4] + sym_muxT[4] * ir2) + iad[1] * (     + sym_muxT[4] * ir3 - 3*ir5 * muTx * xxT[4]); \
-  fcs_float field5 = -iad[3] * muTx * ir3 * xxT[5] - iad[2] * ( ir - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) + iad[1] * ( ir3 + sym_muxT[5] * ir3 - 3*ir5 * muTx * xxT[5]); \
+  fcs_float field0 = -iad[3] * muTx * ir3 * xxT[0] - iad[2] * ( muTx * ir2 - 3 * muTx * ir4 * xxT[0] + sym_muxT[0] * ir2) + iad[1] * ( muTx * ir3 + sym_muxT[0] * ir3 - 3*ir5 * muTx * xxT[0]); \
+  fcs_float field1 = -iad[3] * muTx * ir3 * xxT[1] - iad[2] * (            - 3 * muTx * ir4 * xxT[1] + sym_muxT[1] * ir2) + iad[1] * (            + sym_muxT[1] * ir3 - 3*ir5 * muTx * xxT[1]); \
+  fcs_float field2 = -iad[3] * muTx * ir3 * xxT[2] - iad[2] * (            - 3 * muTx * ir4 * xxT[2] + sym_muxT[2] * ir2) + iad[1] * (            + sym_muxT[2] * ir3 - 3*ir5 * muTx * xxT[2]); \
+  fcs_float field3 = -iad[3] * muTx * ir3 * xxT[3] - iad[2] * ( muTx * ir2 - 3 * muTx * ir4 * xxT[3] + sym_muxT[3] * ir2) + iad[1] * ( muTx * ir3 + sym_muxT[3] * ir3 - 3*ir5 * muTx * xxT[3]); \
+  fcs_float field4 = -iad[3] * muTx * ir3 * xxT[4] - iad[2] * (            - 3 * muTx * ir4 * xxT[4] + sym_muxT[4] * ir2) + iad[1] * (            + sym_muxT[4] * ir3 - 3*ir5 * muTx * xxT[4]); \
+  fcs_float field5 = -iad[3] * muTx * ir3 * xxT[5] - iad[2] * ( muTx * ir2 - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) + iad[1] * ( muTx * ir3 + sym_muxT[5] * ir3 - 3*ir5 * muTx * xxT[5]); \
 \
   (_f_)[0] += field0 * (_fpm_); \
   (_f_)[1] += field1 * (_fpm_); \
