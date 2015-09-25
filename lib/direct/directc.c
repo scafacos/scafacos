@@ -304,7 +304,7 @@ static void directc_print_dipole_particles(fcs_int n, fcs_float *xyz, fcs_float 
            i,
            xyz[i * 3 + 0], xyz[i * 3 + 1], xyz[i * 3 + 2],
            m[i * 3 + 0], m[i * 3 + 1], m[i * 3 + 2],
-           f[i * 3 + 0], f[i * 3 + 1], f[i * 3 + 2], f[i * 3 + 3], f[i * 3 + 4], f[i * 3 + 5],
+           f[i * 6 + 0], f[i * 6 + 1], f[i * 6 + 2], f[i * 6 + 3], f[i * 6 + 4], f[i * 6 + 5],
            p[i * 3 + 0], p[i * 3 + 1], p[i * 3 + 2]);
   }
 }
@@ -1121,7 +1121,7 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
     directc->potentials[i] = 0.0;
 #if FCS_DIRECT_WITH_DIPOLES
   for (i = 0; i < directc->dipole_nparticles; ++i)
-    directc->dipole_field[i * 3 + 0] = directc->dipole_field[i * 3 + 1] = directc->dipole_field[i * 3 + 2] = directc->dipole_field[i * 3 + 3] = directc->dipole_field[i * 3 + 4] = directc->dipole_field[i * 3 + 5] =
+    directc->dipole_field[i * 6 + 0] = directc->dipole_field[i * 6 + 1] = directc->dipole_field[i * 6 + 2] = directc->dipole_field[i * 6 + 3] = directc->dipole_field[i * 6 + 4] = directc->dipole_field[i * 6 + 5] =
     directc->dipole_potentials[i * 3 + 0] = directc->dipole_potentials[i * 3 + 1] = directc->dipole_potentials[i * 3 + 2] = 0.0;
 #endif /* FCS_DIRECT_WITH_DIPOLES */
 
