@@ -158,6 +158,10 @@ static void fcs_determine_position_extents(fcs_int nparticles, fcs_float *positi
 
   invert_3x3(box_a, box_b, box_c, ibox);
 
+  min[0] = max[0] = 0.0;
+  min[1] = max[1] = 0.0;
+  min[2] = max[2] = 0.0;
+
   for (i = 0; i < nparticles; ++i)
   {
     x[0] = positions[3 * i + 0] - offset[0];
