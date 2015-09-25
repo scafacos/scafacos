@@ -864,12 +864,17 @@ static void no_method(input_particles_t *parts)
   current_config->have_result_values[0] = 0;  // no potentials results
   current_config->have_result_values[1] = 0;  // no field results
 
-#if PRINT_PARTICLES
-    MASTER(cout << "Particles: " << parts->particles.n << endl);
-    print_particles<CHARGES>(&parts->particles);
 # if SCAFACOS_TEST_WITH_DIPOLES
-    MASTER(cout << "Dipole particles: " << parts->dipole_particles.n << endl);
-    print_particles<DIPOLES>(&parts->dipole_particles);
+  current_config->dipole_have_result_values[0] = 0;  // no potentials results
+  current_config->dipole_have_result_values[1] = 0;  // no field results
+# endif /* SCAFACOS_TEST_WITH_DIPOLES */
+
+#if PRINT_PARTICLES
+  MASTER(cout << "Particles: " << parts->particles.n << endl);
+  print_particles<CHARGES>(&parts->particles);
+# if SCAFACOS_TEST_WITH_DIPOLES
+  MASTER(cout << "Dipole particles: " << parts->dipole_particles.n << endl);
+  print_particles<DIPOLES>(&parts->dipole_particles);
 # endif /* SCAFACOS_TEST_WITH_DIPOLES */
 #endif
 }
