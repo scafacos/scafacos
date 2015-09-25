@@ -48,7 +48,7 @@
 #endif
 
 
-#if defined(FCS_ENABLE_DEBUG_NEAR)
+#if defined(FCS_ENABLE_DEBUG_NEAR) || 0
 # define DO_DEBUG
 # define DEBUG_CMD(_cmd_)  Z_MOP(_cmd_)
 #else
@@ -56,7 +56,7 @@
 #endif
 #define DEBUG_PRINT_PREFIX  "NEAR_DEBUG: "
 
-#if defined(FCS_ENABLE_INFO_NEAR)
+#if defined(FCS_ENABLE_INFO_NEAR) || 0
 # define DO_INFO
 # define INFO_CMD(_cmd_)  Z_MOP(_cmd_)
 #else
@@ -72,7 +72,7 @@
 #endif
 #define TIMING_PRINT_PREFIX  "NEAR_TIMING: "
 
-/*#define PRINT_PARTICLES*/
+#define PRINT_PARTICLES  0
 
 /* Z-curve ordering of boxes disabled (leads to insane costs for neighbor box search) */
 /*#define BOX_SFC*/
@@ -426,43 +426,220 @@ void fcs_near_set_resort(fcs_near_t *near, fcs_int resort)
 }
 
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
 
-static void print_particles(fcs_int n, fcs_float *xyz, const char *intro, int size, int rank, MPI_Comm comm)
+static void fcs_print_local_particles(fcs_int nparticles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials, const char *prefix)
+{
+  fcs_int i;
+
+  if (field && potentials)
+  {
+    for (i = 0; i < nparticles; ++i)
+      printf("%s%" FCS_LMOD_INT "d  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f]"
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f]"
+             "\n", prefix, i
+             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+             , charges[i]
+             , field[i * 3 + 0], field[i * 3 + 1], field[i * 3 + 2]
+             , potentials[i]
+             );
+
+  } else if (field && !potentials)
+  {
+    for (i = 0; i < nparticles; ++i)
+      printf("%s%" FCS_LMOD_INT "d  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f]"
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "\n", prefix, i
+             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+             , charges[i]
+             , field[i * 3 + 0], field[i * 3 + 1], field[i * 3 + 2]
+             );
+
+  } else if (!field && potentials)
+  {
+    for (i = 0; i < nparticles; ++i)
+      printf("%s%" FCS_LMOD_INT "d  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f]"
+             "[%" FCS_LMOD_FLOAT "f]"
+             "\n", prefix, i
+             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+             , charges[i]
+             , potentials[i]
+             );
+
+  } else if (!field && !potentials)
+  {
+    for (i = 0; i < nparticles; ++i)
+      printf("%s%" FCS_LMOD_INT "d  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f]"
+             "\n", prefix, i
+             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+             , charges[i]
+             );
+  }
+}
+
+
+static void fcs_print_global_particles(fcs_int nparticles, fcs_float *positions, fcs_float *charges, const char *prefix, int size, int rank, MPI_Comm comm)
 {
   const int root = 0;
-  fcs_int max_n, i, j;
-  fcs_float *in_xyz;
+  fcs_int max_nparticles, i;
+  fcs_float *in_positions, *in_charges;
   MPI_Status status;
-  int in_count;
+  int in_nparticles;
+  char prefix2[16];
 
 
-  MPI_Reduce(&n, &max_n, 1, FCS_MPI_INT, MPI_MAX, root, comm);
+  MPI_Reduce(&nparticles, &max_nparticles, 1, FCS_MPI_INT, MPI_MAX, root, comm);
 
-  in_xyz = malloc(max_n * 3 * sizeof(fcs_float));
+  in_positions = malloc(max_nparticles * 3 * sizeof(fcs_float));
+  in_charges = malloc(max_nparticles * 1 * sizeof(fcs_float));
 
   if (rank == root)
   {
-    if (intro) printf("%s\n", intro);
-
     for (i = 0; i < size; ++i)
     {
-      if (i == root) MPI_Sendrecv(xyz, 3 * n, FCS_MPI_FLOAT, root, 0, in_xyz, 3 * max_n, FCS_MPI_FLOAT, root, 0, comm, &status);
-      else MPI_Recv(in_xyz, 3 * max_n, FCS_MPI_FLOAT, i, 0, comm, &status);
-      MPI_Get_count(&status, FCS_MPI_FLOAT, &in_count);
-      
-      in_count /= 3;
-      
-      for (j = 0; j < in_count; ++j) printf("%" FCS_LMOD_INT "d  %" FCS_LMOD_FLOAT "f  %" FCS_LMOD_FLOAT "f  %" FCS_LMOD_FLOAT "f\n", i, in_xyz[j * 3 + 0], in_xyz[j * 3 + 1], in_xyz[j * 3 + 2]);
+      sprintf(prefix2, "%s%d: ", (prefix)?prefix:"", i);
+
+      if (i != rank)
+      {
+        MPI_Recv(in_positions, 3 * max_nparticles, FCS_MPI_FLOAT, i, 0, comm, &status);
+
+        MPI_Get_count(&status, FCS_MPI_FLOAT, &in_nparticles);
+        in_nparticles /= 3;
+
+        MPI_Recv(in_charges, max_nparticles, FCS_MPI_FLOAT, i, 0, comm, MPI_STATUS_IGNORE);
+
+      } else in_nparticles = nparticles;
+
+      fcs_print_local_particles(in_nparticles, (i != rank)?in_positions:positions, (i != rank)?in_charges:charges, NULL, NULL, prefix2);
     }
 
   } else
   {
-    MPI_Send(xyz, 3 * n, FCS_MPI_FLOAT, root, 0, comm);
+    MPI_Send(positions, 3 * nparticles, FCS_MPI_FLOAT, root, 0, comm);
+    MPI_Send(charges, nparticles, FCS_MPI_FLOAT, root, 0, comm);
   }
-  
-  free(in_xyz);
+
+  free(in_positions);
+  free(in_charges);
 }
+
+
+#if FCS_NEAR_WITH_DIPOLES
+
+static void fcs_print_local_dipole_particles(fcs_int nparticles, fcs_float *positions, fcs_float *moments, fcs_float *field, fcs_float *potentials, const char *prefix)
+{
+  fcs_int i;
+
+  if (field && potentials)
+  {
+    for (i = 0; i < nparticles; ++i)
+      printf("%s%" FCS_LMOD_INT "d  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "\n", prefix, i
+             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+             , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
+             , field[i * 6 + 0], field[i * 6 + 1], field[i * 6 + 2], field[i * 6 + 3], field[i * 6 + 4], field[i * 6 + 5]
+             , potentials[i * 3 + 0], potentials[i * 3 + 1], potentials[i * 3 + 2]
+             );
+
+  } else if (field && !potentials)
+  {
+    for (i = 0; i < nparticles; ++i)
+      printf("%s%" FCS_LMOD_INT "d  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "\n", prefix, i
+             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+             , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
+             , field[i * 6 + 0], field[i * 6 + 1], field[i * 6 + 2], field[i * 6 + 3], field[i * 6 + 4], field[i * 6 + 5]
+             );
+
+  } else if (!field && potentials)
+  {
+    for (i = 0; i < nparticles; ++i)
+      printf("%s%" FCS_LMOD_INT "d  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "\n", prefix, i
+             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+             , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
+             , potentials[i * 3 + 0], potentials[i * 3 + 1], potentials[i * 3 + 2]
+             );
+
+  } else if (!field && !potentials)
+  {
+    for (i = 0; i < nparticles; ++i)
+      printf("%s%" FCS_LMOD_INT "d  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
+             "\n", prefix, i
+             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+             , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
+             );
+  }
+}
+
+
+static void fcs_print_global_dipole_particles(fcs_int nparticles, fcs_float *positions, fcs_float *moments, const char *prefix, int size, int rank, MPI_Comm comm)
+{
+  const int root = 0;
+  fcs_int max_nparticles, i;
+  fcs_float *in_positions, *in_moments;
+  MPI_Status status;
+  int in_nparticles;
+  char prefix2[16];
+
+
+  MPI_Reduce(&nparticles, &max_nparticles, 1, FCS_MPI_INT, MPI_MAX, root, comm);
+
+  in_positions = malloc(max_nparticles * 3 * sizeof(fcs_float));
+  in_moments = malloc(max_nparticles * 3 * sizeof(fcs_float));
+
+  if (rank == root)
+  {
+    for (i = 0; i < size; ++i)
+    {
+      sprintf(prefix2, "%s%d: ", (prefix)?prefix:"", i);
+
+      if (i != rank)
+      {
+        MPI_Recv(in_positions, 3 * max_nparticles, FCS_MPI_FLOAT, i, 0, comm, &status);
+
+        MPI_Get_count(&status, FCS_MPI_FLOAT, &in_nparticles);
+        in_nparticles /= 3;
+
+        MPI_Recv(in_moments, max_nparticles, FCS_MPI_FLOAT, i, 0, comm, MPI_STATUS_IGNORE);
+
+      } else in_nparticles = nparticles;
+
+      fcs_print_local_dipole_particles(in_nparticles, (i != rank)?in_positions:positions, (i != rank)?in_moments:moments, NULL, NULL, prefix2);
+    }
+
+  } else
+  {
+    MPI_Send(positions, 3 * nparticles, FCS_MPI_FLOAT, root, 0, comm);
+    MPI_Send(moments, 3 * nparticles, FCS_MPI_FLOAT, root, 0, comm);
+  }
+
+  free(in_positions);
+  free(in_moments);
+}
+
+#endif /* FCS_NEAR_WITH_DIPOLES */
 
 #endif /* PRINT_PARTICLES */
 
@@ -637,7 +814,8 @@ static void make_boxes_skip_format(fcs_int nlocal, box_t *boxes)
 #endif
 
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
+
 static void print_boxes(fcs_int nlocal, box_t *boxes, const char *intro)
 {
   fcs_int i;
@@ -650,6 +828,7 @@ static void print_boxes(fcs_int nlocal, box_t *boxes, const char *intro)
     printf("%5" FCS_LMOD_INT "d: " box_fmt "\n", i, box_val(boxes[i]));
   }
 }
+
 #endif
 
 
@@ -1224,9 +1403,14 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   if (ghost_boxes) create_boxes(near->nghosts, ghost_boxes, near->ghost_positions, near->ghost_indices, near->box_base, near->box_a, near->box_b, near->box_c, periodicity, cutoff);
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
-#ifdef PRINT_PARTICLES
-  print_particles(near->nparticles, near->positions, "real particles:", comm_size, comm_rank, comm);
-  if (ghost_boxes) print_particles(near->nghosts, near->ghost_positions, "ghost particles:", comm_size, comm_rank, comm);
+#if PRINT_PARTICLES
+  printf("real particles:\n");
+  fcs_print_global_particles(near->nparticles, near->positions, near->charges, "  ", comm_size, comm_rank, comm);
+  if (ghost_boxes)
+  {
+    printf("ghost particles:\n");
+    fcs_print_global_particles(near->nghosts, near->ghost_positions, near->ghost_charges, "  ", comm_size, comm_rank, comm);
+  }
 #endif
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
@@ -1234,12 +1418,22 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   if (ghost_boxes) sort_into_boxes(near->nghosts, ghost_boxes, near->ghost_positions, near->ghost_charges, near->ghost_indices, NULL, NULL);
   TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
+#if PRINT_PARTICLES
+  printf("real particles sorted:\n");
+  fcs_print_global_particles(near->nparticles, near->positions, near->charges, "  ", comm_size, comm_rank, comm);
+  if (ghost_boxes)
+  {
+    printf("ghost particles sorted:\n");
+    fcs_print_global_particles(near->nghosts, near->ghost_positions, near->ghost_charges, "  ", comm_size, comm_rank, comm);
+  }
+#endif
+
 #ifdef BOX_SKIP_FORMAT
   make_boxes_skip_format(near->nparticles, real_boxes);
   if (ghost_boxes) make_boxes_skip_format(near->nghosts, ghost_boxes);
 #endif
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
   print_boxes(near->nparticles, real_boxes, "real boxes:");
   if (ghost_boxes) print_boxes(near->nghosts, ghost_boxes, "ghost boxes:");
 #endif
@@ -1258,9 +1452,14 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   if (dipole_ghost_boxes) create_boxes(near->dipole_nghosts, dipole_ghost_boxes, near->dipole_ghost_positions, near->dipole_ghost_indices, near->box_base, near->box_a, near->box_b, near->box_c, periodicity, cutoff);
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
-#ifdef PRINT_PARTICLES
-  print_particles(near->dipole_nparticles, near->dipole_positions, "dipole real particles:", comm_size, comm_rank, comm);
-  if (dipole_ghost_boxes) print_particles(near->dipole_nghosts, near->dipole_ghost_positions, "dipole ghost particles:", comm_size, comm_rank, comm);
+#if PRINT_PARTICLES
+  printf("dipole real particles:\n");
+  fcs_print_global_dipole_particles(near->dipole_nparticles, near->dipole_positions, near->dipole_moments, "  ", comm_size, comm_rank, comm);
+  if (dipole_ghost_boxes)
+  {
+    printf("dipole ghost particles:\n");
+    fcs_print_global_dipole_particles(near->dipole_nghosts, near->dipole_ghost_positions, near->dipole_ghost_moments, "  ", comm_size, comm_rank, comm);
+  }
 #endif
 
   TIMING_SYNC(comm); TIMING_START(t[2]);
@@ -1268,12 +1467,22 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   if (dipole_ghost_boxes) dipole_sort_into_boxes(near->dipole_nghosts, dipole_ghost_boxes, near->dipole_ghost_positions, near->dipole_ghost_moments, near->dipole_ghost_indices, NULL, NULL);
   TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
+#if PRINT_PARTICLES
+  printf("dipole real particles sorted:\n");
+  fcs_print_global_dipole_particles(near->dipole_nparticles, near->dipole_positions, near->dipole_moments, "  ", comm_size, comm_rank, comm);
+  if (dipole_ghost_boxes)
+  {
+    printf("dipole ghost particles sorted:\n");
+    fcs_print_global_dipole_particles(near->dipole_nghosts, near->dipole_ghost_positions, near->dipole_ghost_moments, "  ", comm_size, comm_rank, comm);
+  }
+#endif
+
 #ifdef BOX_SKIP_FORMAT
   make_boxes_skip_format(near->dipole_nparticles, dipole_real_boxes);
   if (dipole_ghost_boxes) make_boxes_skip_format(near->dipole_nghosts, dipole_ghost_boxes);
 #endif
 
-#ifdef PRINT_PARTICLES
+#if PRINT_PARTICLES
   print_boxes(near->dipole_nparticles, dipole_real_boxes, "dipole real boxes:");
   if (dipole_ghost_boxes) print_boxes(near->dipole_nghosts, dipole_ghost_boxes, "dipole ghost boxes:");
 #endif
