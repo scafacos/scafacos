@@ -109,7 +109,7 @@ void fcs_directc_create(fcs_directc_t *directc)
   directc->out_potentials = NULL;*/
 
 #if FCS_DIRECT_WITH_DIPOLES
-  directc->dipole_nparticles = directc->max_dipole_nparticles = -1;
+  directc->dipole_nparticles = directc->dipole_max_nparticles = -1;
   directc->dipole_positions = NULL;
   directc->dipole_moments = NULL;
   directc->dipole_field = NULL;
@@ -178,15 +178,17 @@ void fcs_directc_set_in_particles(fcs_directc_t *directc, fcs_int in_nparticles,
 
 
 #if FCS_DIRECT_WITH_DIPOLES
-void fcs_directc_set_dipole_particles(fcs_directc_t *directc, fcs_int dipole_nparticles, fcs_int max_dipole_nparticles, fcs_float *dipole_positions, fcs_float *dipole_moments, fcs_float *dipole_field, fcs_float *dipole_potentials)
+
+void fcs_directc_set_dipole_particles(fcs_directc_t *directc, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *moments, fcs_float *field, fcs_float *potentials)
 {
-  directc->dipole_nparticles = dipole_nparticles;
-  directc->max_dipole_nparticles = max_dipole_nparticles;
-  directc->dipole_positions = dipole_positions;
-  directc->dipole_moments = dipole_moments;
-  directc->dipole_field = dipole_field;
-  directc->dipole_potentials = dipole_potentials;
+  directc->dipole_nparticles = nparticles;
+  directc->dipole_max_nparticles = max_nparticles;
+  directc->dipole_positions = positions;
+  directc->dipole_moments = moments;
+  directc->dipole_field = field;
+  directc->dipole_potentials = potentials;
 }
+
 #endif
 
 
@@ -1093,7 +1095,7 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
       printf(INFO_PRINT_PREFIX "charges:    %p\n", directc->charges);
       printf(INFO_PRINT_PREFIX "field:      %p\n", directc->field);
       printf(INFO_PRINT_PREFIX "potentials: %p\n", directc->potentials);
-      printf(INFO_PRINT_PREFIX "dipole_nparticles: %" FCS_LMOD_INT "d (max: %" FCS_LMOD_INT "d)\n", directc->dipole_nparticles, directc->max_dipole_nparticles);
+      printf(INFO_PRINT_PREFIX "dipole_nparticles: %" FCS_LMOD_INT "d (max: %" FCS_LMOD_INT "d)\n", directc->dipole_nparticles, directc->dipole_max_nparticles);
       printf(INFO_PRINT_PREFIX "dipole_positions:  %p\n", directc->dipole_positions);
       printf(INFO_PRINT_PREFIX "dipole_moments:    %p\n", directc->dipole_moments);
       printf(INFO_PRINT_PREFIX "dipole_field:      %p\n", directc->dipole_field);
@@ -1149,6 +1151,9 @@ void fcs_directc_run(fcs_directc_t *directc, MPI_Comm comm)
 #endif /* FCS_DIRECT_WITH_DIPOLES */
     fcs_near_set_system(&near, directc->box_base, directc->box_a, directc->box_b, directc->box_c, periodic);
     fcs_near_set_particles(&near, directc->nparticles, directc->max_nparticles, directc->positions, directc->charges, NULL, directc->field, directc->potentials);
+#if FCS_DIRECT_WITH_DIPOLES
+    fcs_near_set_dipole_particles(&near, directc->dipole_nparticles, directc->dipole_max_nparticles, directc->dipole_positions, directc->dipole_moments, NULL, directc->dipole_field, directc->dipole_potentials);
+#endif /* FCS_DIRECT_WITH_DIPOLES */
     fcs_near_set_max_particle_move(&near, directc->max_particle_move);
     fcs_near_set_resort(&near, directc->resort);
 

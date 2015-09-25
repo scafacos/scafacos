@@ -1942,9 +1942,9 @@ void fcs_gridsort_separate_ghosts(fcs_gridsort_t *gs)
     z_swap(gs->dipole_sorted_positions[3 * l + 1], gs->dipole_sorted_positions[3 * h + 1], tf);
     z_swap(gs->dipole_sorted_positions[3 * l + 2], gs->dipole_sorted_positions[3 * h + 2], tf);
 
-    z_swap(gs->dipole_sorted_moments[3 * l + 0], gs->dipole_sorted_moments[3 * l + 0], tf);
-    z_swap(gs->dipole_sorted_moments[3 * l + 1], gs->dipole_sorted_moments[3 * l + 1], tf);
-    z_swap(gs->dipole_sorted_moments[3 * l + 2], gs->dipole_sorted_moments[3 * l + 2], tf);
+    z_swap(gs->dipole_sorted_moments[3 * l + 0], gs->dipole_sorted_moments[3 * h + 0], tf);
+    z_swap(gs->dipole_sorted_moments[3 * l + 1], gs->dipole_sorted_moments[3 * h + 1], tf);
+    z_swap(gs->dipole_sorted_moments[3 * l + 2], gs->dipole_sorted_moments[3 * h + 2], tf);
 
     ++l;
     --h;

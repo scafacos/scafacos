@@ -47,7 +47,7 @@ typedef struct _fcs_directc_t
   fcs_float *out_positions, *out_field, *out_potentials;*/
 
 #if FCS_DIRECT_WITH_DIPOLES
-  fcs_int dipole_nparticles, max_dipole_nparticles;
+  fcs_int dipole_nparticles, dipole_max_nparticles;
   fcs_float *dipole_positions, *dipole_moments, *dipole_field, *dipole_potentials;
 #endif
 
@@ -72,7 +72,7 @@ void fcs_directc_set_particles(fcs_directc_t *directc, fcs_int nparticles, fcs_i
 void fcs_directc_set_in_particles(fcs_directc_t *directc, fcs_int in_nparticles, fcs_float *in_positions, fcs_float *in_charges);
 /*void fcs_directc_set_out_particles(fcs_directc_t *directc, fcs_int out_nparticles, fcs_float *out_positions, fcs_float *out_field, fcs_float *out_potentials);*/
 #if FCS_DIRECT_WITH_DIPOLES
-void fcs_directc_set_dipole_particles(fcs_directc_t *directc, fcs_int dipole_nparticles, fcs_int max_dipole_nparticles, fcs_float *dipole_positions, fcs_float *dipole_moments, fcs_float *dipole_field, fcs_float *dipole_potentials);
+void fcs_directc_set_dipole_particles(fcs_directc_t *directc, fcs_int nparticles, fcs_int max_nparticles, fcs_float *positions, fcs_float *moments, fcs_float *field, fcs_float *potentials);
 #endif
 void fcs_directc_set_periodic_images(fcs_directc_t *directc, fcs_int *periodic_images);
 void fcs_directc_get_periodic_images(fcs_directc_t *directc, fcs_int *periodic_images);
