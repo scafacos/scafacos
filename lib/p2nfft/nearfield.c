@@ -234,31 +234,65 @@ static fcs_float evaluate_sin_polynomial_1d(
 
 
 void ifcs_p2nfft_compute_near_charge_charge(
-    const void *param, fcs_float dist, fcs_float idist,
+    const void *param, fcs_float r, fcs_float ir,
     fcs_near_interaction_data_t *iad
     )
 {
-  FCS_NEAR_INTERACTION_DATA_F0(*iad) = ifcs_p2nfft_compute_near_potential(param, dist);
-  FCS_NEAR_INTERACTION_DATA_F1(*iad) = ifcs_p2nfft_compute_near_field(param, dist);
+  ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
+  fcs_float a = d->alpha;
+  fcs_float erfcar_r = fcs_erfc(a * r) * ir;
+  fcs_float a2 = a * a;
+  fcs_float ex = FCS_2_SQRTPI * a * fcs_exp(-2*a2*r*r);
+
+  fcs_float f0 =       erfcar_r;
+  fcs_float f1 = -     erfcar_r * ir  - ex * ir;
+//   fcs_float f2 =   2 * erfcar_r * ir2 + ex * ( 2*a2      + 2*ir2 );
+//   fcs_float f3 = - 6 * erfcar_r * ir3 - ex * ( 4*a2*a2*r + 4*a2*ir + 6*ir3); 
+
+  FCS_NEAR_INTERACTION_DATA_F0(*iad) = f0;
+  FCS_NEAR_INTERACTION_DATA_F1(*iad) = f1;
 }
 
 void ifcs_p2nfft_compute_near_charge_dipole(
-    const void *param, fcs_float dist, fcs_float idist,
+    const void *param, fcs_float r, fcs_float ir,
     fcs_near_interaction_data_t *iad
     )
 {
-  /* FIXME: implement derivatives of nearfield interaction */
-  FCS_NEAR_INTERACTION_DATA_F1(*iad) = ifcs_p2nfft_compute_near_potential(param, dist);
-  FCS_NEAR_INTERACTION_DATA_F2(*iad) = ifcs_p2nfft_compute_near_field(param, dist);
+  ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
+  fcs_float a = d->alpha;
+  fcs_float erfcar_r = fcs_erfc(a * r) * ir;
+  fcs_float a2 = a * a;
+  fcs_float ir2 = ir * ir;
+  fcs_float ex = FCS_2_SQRTPI * a * fcs_exp(-2*a2*r*r);
+
+//   fcs_float f0 =       erfcar_r;
+  fcs_float f1 = -     erfcar_r * ir  - ex * ir;
+  fcs_float f2 =   2 * erfcar_r * ir2 + ex * ( 2*a2      + 2*ir2 );
+//   fcs_float f3 = - 6 * erfcar_r * ir3 - exp * ( 4*a2*a2*r + 4*a2*ir + 6*ir3); 
+
+  FCS_NEAR_INTERACTION_DATA_F1(*iad) = f1;
+  FCS_NEAR_INTERACTION_DATA_F2(*iad) = f2;
 }
 
 void ifcs_p2nfft_compute_near_dipole_dipole(
-    const void *param, fcs_float dist, fcs_float idist,
+    const void *param, fcs_float r, fcs_float ir,
     fcs_near_interaction_data_t *iad
     )
 {
-  /* FIXME: implement derivatives of nearfield interaction */
-  FCS_NEAR_INTERACTION_DATA_F1(*iad) = ifcs_p2nfft_compute_near_potential(param, dist);
-  FCS_NEAR_INTERACTION_DATA_F2(*iad) = ifcs_p2nfft_compute_near_potential(param, dist);
-  FCS_NEAR_INTERACTION_DATA_F3(*iad) = ifcs_p2nfft_compute_near_potential(param, dist);
+  ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
+  fcs_float a = d->alpha;
+  fcs_float erfcar_r = fcs_erfc(a * r) * ir;
+  fcs_float a2 = a * a;
+  fcs_float ir2 = ir * ir;
+  fcs_float ir3 = ir * ir2;
+  fcs_float ex = FCS_2_SQRTPI * a * fcs_exp(-2*a2*r*r);
+
+//   fcs_float f0 =       erfcar_r;
+  fcs_float f1 = -     erfcar_r * ir  - ex * ir;
+  fcs_float f2 =   2 * erfcar_r * ir2 + ex * ( 2*a2      + 2*ir2 );
+  fcs_float f3 = - 6 * erfcar_r * ir3 - ex * ( 4*a2*a2*r + 4*a2*ir + 6*ir3); 
+
+  FCS_NEAR_INTERACTION_DATA_F1(*iad) = f1;
+  FCS_NEAR_INTERACTION_DATA_F2(*iad) = f2;
+  FCS_NEAR_INTERACTION_DATA_F3(*iad) = f3;
 }
