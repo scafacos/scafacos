@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011, 2012, 2013 Olaf Lenz, Rene Halver, Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2014, 2015 Olaf Lenz, Rene Halver, Michael Hofmann
   
   This file is part of ScaFaCoS.
   
@@ -437,7 +437,7 @@ static void fcs_print_local_particles(fcs_int nparticles, fcs_float *positions, 
     for (i = 0; i < nparticles; ++i)
       printf("%s%" FCS_LMOD_INT "d  "
              "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f]"
+             "[%" FCS_LMOD_FLOAT "f]  "
              "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
              "[%" FCS_LMOD_FLOAT "f]"
              "\n", prefix, i
@@ -452,7 +452,7 @@ static void fcs_print_local_particles(fcs_int nparticles, fcs_float *positions, 
     for (i = 0; i < nparticles; ++i)
       printf("%s%" FCS_LMOD_INT "d  "
              "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f]"
+             "[%" FCS_LMOD_FLOAT "f]  "
              "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
              "\n", prefix, i
              , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
@@ -465,7 +465,7 @@ static void fcs_print_local_particles(fcs_int nparticles, fcs_float *positions, 
     for (i = 0; i < nparticles; ++i)
       printf("%s%" FCS_LMOD_INT "d  "
              "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f]"
+             "[%" FCS_LMOD_FLOAT "f]  "
              "[%" FCS_LMOD_FLOAT "f]"
              "\n", prefix, i
              , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
@@ -966,7 +966,7 @@ typedef struct
 void compute_charge_self(charges_t *charges, fcs_int charges_start, fcs_int charges_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
 {
   fcs_int i, j;
-  fcs_float d[3], r_ij, ir_ij, t;
+  fcs_float d[3], r, ir, t;
   fcs_near_interaction_data_t iad;
 
 
@@ -986,22 +986,22 @@ void compute_charge_self(charges_t *charges, fcs_int charges_start, fcs_int char
     d[1] = charges->positions[3 * j + 1] - charges->positions[3 * i + 1];
     d[2] = charges->positions[3 * j + 2] - charges->positions[3 * i + 2];
 
-    r_ij = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    r = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
 
-    if (r_ij > cutoff) continue;
+    if (r > cutoff) continue;
 
-    /* charge[i] <-> charge[j] */
+    /* charges[i] <-> charges[j] */
 
-    ir_ij = 1.0 / r_ij;
+    ir = 1.0 / r;
 
-    near->compute_charge_charge(near_param, r_ij, ir_ij, &iad);
+    near->compute_charge_charge(near_param, r, ir, &iad);
 
-    t = FCS_NEAR_INTERACTION_DATA_F1(iad) * charges->charges[j] * ir_ij;
+    t = FCS_NEAR_INTERACTION_DATA_F1(iad) * charges->charges[j] * ir;
     charges->field[i + 0] += t * d[0];
     charges->field[i + 1] += t * d[1];
     charges->field[i + 2] += t * d[2];
 
-    t = FCS_NEAR_INTERACTION_DATA_F1(iad) * charges->charges[i] * ir_ij;
+    t = FCS_NEAR_INTERACTION_DATA_F1(iad) * charges->charges[i] * ir;
     charges->field[j + 0] -= t * d[0];
     charges->field[j + 1] -= t * d[1];
     charges->field[j + 2] -= t * d[2];
@@ -1016,7 +1016,7 @@ void compute_charge_self(charges_t *charges, fcs_int charges_start, fcs_int char
 void compute_charge_from_charge(charges_t *charges, fcs_int charges_start, fcs_int charges_size, charges_t *from_charges, fcs_int from_charges_start, fcs_int from_charges_size, fcs_float cutoff, fcs_near_t *near, const void *near_param)
 {
   fcs_int i, j;
-  fcs_float d[3], r_ij, ir_ij, t;
+  fcs_float d[3], r, ir, t;
   fcs_near_interaction_data_t iad;
 
 
@@ -1036,22 +1036,22 @@ void compute_charge_from_charge(charges_t *charges, fcs_int charges_start, fcs_i
     d[1] = from_charges->positions[3 * j + 1] - charges->positions[3 * i + 1];
     d[2] = from_charges->positions[3 * j + 2] - charges->positions[3 * i + 2];
 
-    r_ij = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    r = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
 
-    if (r_ij > cutoff) continue;
+    if (r > cutoff) continue;
 
-    /* charge[i] <- charge[j] */
+    /* charges[i] <- from_charges[j] */
 
-    ir_ij = 1.0 / r_ij;
+    ir = 1.0 / r;
 
-    near->compute_charge_charge(near_param, r_ij, ir_ij, &iad);
+    near->compute_charge_charge(near_param, r, ir, &iad);
 
-    t = FCS_NEAR_INTERACTION_DATA_F1(iad) * charges->charges[j] * ir_ij;
+    t = FCS_NEAR_INTERACTION_DATA_F1(iad) * from_charges->charges[j] * ir;
     charges->field[i + 0] += t * d[0];
     charges->field[i + 1] += t * d[1];
     charges->field[i + 2] += t * d[2];
 
-    charges->potentials[i] += FCS_NEAR_INTERACTION_DATA_F0(iad) * charges->charges[j];
+    charges->potentials[i] += FCS_NEAR_INTERACTION_DATA_F0(iad) * from_charges->charges[j];
   }
 }
 
@@ -1101,7 +1101,7 @@ void compute_dipole_self(dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipo
 
     if (r > cutoff) continue;
 
-    /* dipole[i] <-> dipole[j] */
+    /* dipoles[i] <-> dipoles[j] */
 
     ir = 1.0 / r;
 
@@ -1111,9 +1111,9 @@ void compute_dipole_self(dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipo
     fcs_float f2 = FCS_NEAR_INTERACTION_DATA_F2(iad);
     fcs_float f3 = FCS_NEAR_INTERACTION_DATA_F3(iad);
 
-    fcs_float muTx =  dipoles->moments[3*j + 0] * d[0] + dipoles->moments[3*j + 1] * d[1] +  dipoles->moments[3*j + 2] * d[2]; 
+    fcs_float muTx =  dipoles->moments[3 * j + 0] * d[0] + dipoles->moments[3 * j + 1] * d[1] +  dipoles->moments[3 * j + 2] * d[2]; 
     fcs_float xxT[6]  = {d[0]*d[0], d[0]*d[1], d[0]*d[2], d[1]*d[1], d[1]*d[2], d[2]*d[2]};
-    fcs_float sym_muxT[6] = SYMPROD(dipoles->moments + 3*j, d);
+    fcs_float sym_muxT[6] = SYMPROD(dipoles->moments + 3 * j, d);
     fcs_float ir2 = ir  * ir;
     fcs_float ir3 = ir2 * ir;
     fcs_float ir4 = ir2 * ir2;
@@ -1142,9 +1142,9 @@ void compute_dipole_self(dipoles_t *dipoles, fcs_int dipoles_start, fcs_int dipo
     dipoles->field[6 * j + 5] -= field5;
 
     /* compute dipole-dipole potential using */
-    fcs_float p0 = f2 * muTx * ir2 * d[0] + f1 * ( dipoles->moments[3*j + 0] * ir - muTx * ir3 * d[0]);
-    fcs_float p1 = f2 * muTx * ir2 * d[1] + f1 * ( dipoles->moments[3*j + 1] * ir - muTx * ir3 * d[1]);
-    fcs_float p2 = f2 * muTx * ir2 * d[2] + f1 * ( dipoles->moments[3*j + 2] * ir - muTx * ir3 * d[2]);
+    fcs_float p0 = f2 * muTx * ir2 * d[0] + f1 * ( dipoles->moments[3 * j + 0] * ir - muTx * ir3 * d[0]);
+    fcs_float p1 = f2 * muTx * ir2 * d[1] + f1 * ( dipoles->moments[3 * j + 1] * ir - muTx * ir3 * d[1]);
+    fcs_float p2 = f2 * muTx * ir2 * d[2] + f1 * ( dipoles->moments[3 * j + 2] * ir - muTx * ir3 * d[2]);
 
     dipoles->potentials[3 * i + 0] += p0;
     dipoles->potentials[3 * i + 1] += p1;
@@ -1173,7 +1173,7 @@ void compute_dipole_from_dipole(dipoles_t *dipoles, fcs_int dipoles_start, fcs_i
 
     if (r > cutoff) continue;
 
-    /* dipole[i] <- dipole[j] */
+    /* dipoles[i] <- from_dipoles[j] */
 
     ir  = 1.0 / r;
 
@@ -1183,9 +1183,9 @@ void compute_dipole_from_dipole(dipoles_t *dipoles, fcs_int dipoles_start, fcs_i
     fcs_float f2 = FCS_NEAR_INTERACTION_DATA_F2(iad);
     fcs_float f3 = FCS_NEAR_INTERACTION_DATA_F3(iad);
 
-    fcs_float muTx =  dipoles->moments[3*j + 0] * d[0] + dipoles->moments[3*j + 1] * d[1] +  dipoles->moments[3*j + 2] * d[2]; 
+    fcs_float muTx =  from_dipoles->moments[3 * j + 0] * d[0] + from_dipoles->moments[3 * j + 1] * d[1] +  from_dipoles->moments[3 * j + 2] * d[2]; 
     fcs_float xxT[6]  = {d[0]*d[0], d[0]*d[1], d[0]*d[2], d[1]*d[1], d[1]*d[2], d[2]*d[2]};
-    fcs_float sym_muxT[6] = SYMPROD(dipoles->moments + 3*j, d);
+    fcs_float sym_muxT[6] = SYMPROD(from_dipoles->moments + 3 * j, d);
     fcs_float ir2 = ir  * ir;
     fcs_float ir3 = ir2 * ir;
     fcs_float ir4 = ir2 * ir2;
@@ -1200,9 +1200,9 @@ void compute_dipole_from_dipole(dipoles_t *dipoles, fcs_int dipoles_start, fcs_i
     dipoles->field[6 * i + 5] += -f3 * muTx * ir3 * xxT[5] - f2 * ( muTx * ir2 - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) + f1 * ( muTx * ir3 + sym_muxT[5] * ir3 - 3*ir5 * muTx * xxT[5]);
 
     /* compute dipole-dipole potential */
-    dipoles->potentials[3 * i + 0] += f2 * muTx * ir2 * d[0] + f1 * ( dipoles->moments[3*j + 0] * ir - muTx * ir3 * d[0]);
-    dipoles->potentials[3 * i + 1] += f2 * muTx * ir2 * d[1] + f1 * ( dipoles->moments[3*j + 1] * ir - muTx * ir3 * d[1]);
-    dipoles->potentials[3 * i + 2] += f2 * muTx * ir2 * d[2] + f1 * ( dipoles->moments[3*j + 2] * ir - muTx * ir3 * d[2]);
+    dipoles->potentials[3 * i + 0] += f2 * muTx * ir2 * d[0] + f1 * ( from_dipoles->moments[3 * j + 0] * ir - muTx * ir3 * d[0]);
+    dipoles->potentials[3 * i + 1] += f2 * muTx * ir2 * d[1] + f1 * ( from_dipoles->moments[3 * j + 1] * ir - muTx * ir3 * d[1]);
+    dipoles->potentials[3 * i + 2] += f2 * muTx * ir2 * d[2] + f1 * ( from_dipoles->moments[3 * j + 2] * ir - muTx * ir3 * d[2]);
   }
 }
 
@@ -1232,7 +1232,7 @@ void compute_charge_from_dipole(charges_t *charges, fcs_int charges_start, fcs_i
 
     if (r > cutoff) continue;
 
-    /* charge[i] <- dipole[j] */
+    /* charges[i] <- dipoles[j] */
 
     ir = 1.0 / r;
 
@@ -1273,7 +1273,7 @@ void compute_dipole_from_charge(dipoles_t *dipoles, fcs_int dipoles_start, fcs_i
 
     if (r > cutoff) continue;
 
-    /* dipole[i] <- charge[j] */
+    /* dipoles[i] <- charges[j] */
 
     ir  = 1.0 / r;
 
@@ -1394,6 +1394,11 @@ fcs_int fcs_near_compute(fcs_near_t *near,
     }
   );
 
+  DEBUG_CMD(
+    printf(DEBUG_PRINT_PREFIX "%d: nparticles: %" FCS_LMOD_INT "d\n", comm_rank, near->nparticles);
+    printf(DEBUG_PRINT_PREFIX "%d: nghosts: %" FCS_LMOD_INT "d\n", comm_rank, near->nghosts);
+  );
+
   real_boxes = malloc((near->nparticles + 1) * sizeof(box_t)); /* + 1 for a sentinel */
   if (near->nghosts > 0) ghost_boxes = malloc((near->nghosts + 1) * sizeof(box_t)); /* + 1 for a sentinel */
   else ghost_boxes = NULL;
@@ -1442,6 +1447,11 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   for (i = 0; i < max_nboxes; ++i) real_lasts[i] = ghost_lasts[i] = 0;
 
 #if FCS_NEAR_WITH_DIPOLES
+
+  DEBUG_CMD(
+    printf(DEBUG_PRINT_PREFIX "%d: dipole_nparticles: %" FCS_LMOD_INT "d\n", comm_rank, near->dipole_nparticles);
+    printf(DEBUG_PRINT_PREFIX "%d: dipole_nghosts: %" FCS_LMOD_INT "d\n", comm_rank, near->dipole_nghosts);
+  );
 
   dipole_real_boxes = malloc((near->dipole_nparticles + 1) * sizeof(box_t)); /* + 1 for a sentinel */
   if (near->dipole_nghosts > 0) dipole_ghost_boxes = malloc((near->dipole_nghosts + 1) * sizeof(box_t)); /* + 1 for a sentinel */
@@ -1660,6 +1670,16 @@ fcs_int fcs_near_compute(fcs_near_t *near,
 #endif /* FCS_NEAR_WITH_DIPOLES */
     );
 
+#if PRINT_PARTICLES
+  printf("particle results:\n");
+  fcs_print_local_particles(near->nparticles, near->positions, near->charges, near->field, near->potentials, "  ");
+# if FCS_NEAR_WITH_DIPOLES
+  printf("dipole particle results:\n");
+  fcs_print_local_particles(near->dipole_nparticles, near->dipole_positions, near->dipole_moments, near->dipole_field, near->dipole_potentials, "  ");
+# endif /* FCS_NEAR_WITH_DIPOLES */
+#endif
+
+
   free(real_boxes);
   if (ghost_boxes) free(ghost_boxes);
 
@@ -1682,7 +1702,7 @@ exit:
 
 /*#define SORT_FORWARD_BOUNDS*/
 /*#define CREATE_GHOSTS_SEPARATE*/
-/*#define SEPARATE_GHOSTS*/
+#define SEPARATE_GHOSTS
 /*#define SEPARATE_ZSLICES  7*/
 
 
