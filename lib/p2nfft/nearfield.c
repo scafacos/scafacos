@@ -256,7 +256,7 @@ void ifcs_p2nfft_compute_near_charge_charge(
   fcs_float a = d->alpha;
   fcs_float erfcar_r = fcs_erfc(a * r) * ir;
   fcs_float a2 = a * a;
-  fcs_float ex = FCS_2_SQRTPI * a * fcs_exp(-2*a2*r*r);
+  fcs_float ex = FCS_2_SQRTPI * a * fcs_exp(-a2*r*r);
 
   fcs_float f0 =       erfcar_r;
   fcs_float f1 = -     erfcar_r * ir  - ex * ir;
@@ -277,7 +277,7 @@ void ifcs_p2nfft_compute_near_charge_dipole(
   fcs_float erfcar_r = fcs_erfc(a * r) * ir;
   fcs_float a2 = a * a;
   fcs_float ir2 = ir * ir;
-  fcs_float ex = FCS_2_SQRTPI * a * fcs_exp(-2*a2*r*r);
+  fcs_float ex = FCS_2_SQRTPI * a * fcs_exp(-a2*r*r);
 
 //   fcs_float f0 =       erfcar_r;
   fcs_float f1 = -     erfcar_r * ir  - ex * ir;
@@ -299,7 +299,7 @@ void ifcs_p2nfft_compute_near_dipole_dipole(
   fcs_float a2 = a * a;
   fcs_float ir2 = ir * ir;
   fcs_float ir3 = ir * ir2;
-  fcs_float ex = FCS_2_SQRTPI * a * fcs_exp(-2*a2*r*r);
+  fcs_float ex = FCS_2_SQRTPI * a * fcs_exp(-a2*r*r);
 
 //   fcs_float f0 =       erfcar_r;
   fcs_float f1 = -     erfcar_r * ir  - ex * ir;
