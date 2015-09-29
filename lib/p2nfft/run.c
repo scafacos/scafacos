@@ -229,13 +229,9 @@ FCSResult ifcs_p2nfft_run(
   if(d->short_range_flag){
     fcs_near_create(&near);
 
-    /* set scalar functions for dipole interactions */
-    fcs_near_set_charge_charge(&near, ifcs_p2nfft_compute_near_charge_charge);
-    fcs_near_set_charge_dipole(&near, ifcs_p2nfft_compute_near_charge_dipole);
-    fcs_near_set_dipole_dipole(&near, ifcs_p2nfft_compute_near_dipole_dipole);
-    /* TODO: implement interpolation and loops for dipoles */
-
-    if(d->interpolation_order >= 0){
+    if(d->interpolation_order >= 0 && !compute_dipole_potential && !compute_dipole_field ){
+      /* interpolation loop only works for charge-charge interactions */
+      /* TODO: implement interpolation and loops for dipoles */
       switch(d->interpolation_order){
         case 0: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_const_loop); break;
         case 1: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_lin_loop); break;
@@ -243,15 +239,22 @@ FCSResult ifcs_p2nfft_run(
         case 3: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_cub_loop); break;
         default: return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
       } 
-    } else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD) {
-      if(d->interpolation_order == -1)
-        fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_periodic_erfc_loop);
-      else
+    } else if(d->num_periodic_dims > 0 &&  !compute_dipole_potential && !compute_dipole_field ){
+      /* near field loop only works for charge-charge interactions */
+      /* TODO: implement approx erfc interactions for dipoles */
+      if(d->interpolation_order < -1 && !compute_dipole_potential && !compute_dipole_field )
         fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_periodic_approx_erfc_loop);
+      else /* d->interpolation_order = -1 */
+        fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_periodic_erfc_loop);
     } else {
-      fcs_near_set_field(&near, ifcs_p2nfft_compute_near_field);
-      fcs_near_set_potential(&near, ifcs_p2nfft_compute_near_potential);
-      fcs_near_set_field_potential(&near, ifcs_p2nfft_compute_near_field_and_potential);
+      /* set scalar functions for dipole interactions */
+      fcs_near_set_charge_charge(&near, ifcs_p2nfft_compute_near_charge_charge);
+      fcs_near_set_charge_dipole(&near, ifcs_p2nfft_compute_near_charge_dipole);
+      fcs_near_set_dipole_dipole(&near, ifcs_p2nfft_compute_near_dipole_dipole);
+
+//       fcs_near_set_field(&near, ifcs_p2nfft_compute_near_field);
+//       fcs_near_set_potential(&near, ifcs_p2nfft_compute_near_potential);
+//       fcs_near_set_field_potential(&near, ifcs_p2nfft_compute_near_field_and_potential);
     }
 
     // fcs_int *periodicity = NULL; /* sorter uses periodicity of the communicator */
@@ -265,7 +268,10 @@ FCSResult ifcs_p2nfft_run(
     fcs_near_set_ghosts(&near, ghost_num_particles, ghost_positions, ghost_charges, ghost_indices);
     fcs_near_set_dipole_ghosts(&near, ghost_num_dipole_particles, ghost_dipole_positions, ghost_dipole_moments, ghost_dipole_indices);
   
-    if(d->interpolation_order >= 0){
+    if(d->interpolation_order >= 0 && !compute_dipole_potential && !compute_dipole_field ){
+      /* interpolation loop only works for charge-charge interactions */
+      /* TODO: implement interpolation for dipole interactions */
+
       ifcs_p2nfft_near_params near_params;
       near_params.interpolation_order = d->interpolation_order;
       near_params.interpolation_num_nodes = d->near_interpolation_num_nodes;
@@ -278,7 +284,6 @@ FCSResult ifcs_p2nfft_run(
       fcs_near_compute(&near, d->r_cut, rd, d->cart_comm_3d);
   
     fcs_near_destroy(&near);
-
   }
 
   /* Finish near field timing */
