@@ -523,9 +523,9 @@ static void compute_dipole_dipole_loop(dipoles_t *dipoles, fcs_float cutoff)
   {
     for (j = i + 1; j < dipoles->nout; ++j)
     {
-      d[0] = dipoles->positions[i * 3 + 0] - dipoles->positions[j * 3 + 0];
-      d[1] = dipoles->positions[i * 3 + 1] - dipoles->positions[j * 3 + 1];
-      d[2] = dipoles->positions[i * 3 + 2] - dipoles->positions[j * 3 + 2];
+      d[0] = dipoles->positions[j * 3 + 0] - dipoles->positions[i * 3 + 0];
+      d[1] = dipoles->positions[j * 3 + 1] - dipoles->positions[i * 3 + 1];
+      d[2] = dipoles->positions[j * 3 + 2] - dipoles->positions[i * 3 + 2];
 
       ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
@@ -538,9 +538,9 @@ static void compute_dipole_dipole_loop(dipoles_t *dipoles, fcs_float cutoff)
 
     for (j = dipoles->nout; j < dipoles->nin; ++j)
     {
-      d[0] = dipoles->positions[i * 3 + 0] - dipoles->positions[j * 3 + 0];
-      d[1] = dipoles->positions[i * 3 + 1] - dipoles->positions[j * 3 + 1];
-      d[2] = dipoles->positions[i * 3 + 2] - dipoles->positions[j * 3 + 2];
+      d[0] = dipoles->positions[j * 3 + 0] - dipoles->positions[i * 3 + 0];
+      d[1] = dipoles->positions[j * 3 + 1] - dipoles->positions[i * 3 + 1];
+      d[2] = dipoles->positions[j * 3 + 2] - dipoles->positions[i * 3 + 2];
 
       ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
@@ -568,9 +568,9 @@ static void compute_dipole_from_dipole_loop(dipoles_t *dipoles, dipoles_t *from_
     for (i = 0; i < dipoles->nout; ++i)
     for (j = 0; j < from_dipoles->nin; ++j)
     {
-      d[0] = dipoles->positions[i * 3 + 0] - (from_dipoles->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
-      d[1] = dipoles->positions[i * 3 + 1] - (from_dipoles->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
-      d[2] = dipoles->positions[i * 3 + 2] - (from_dipoles->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
+      d[0] = dipoles->positions[j * 3 + 0] - (from_dipoles->positions[i * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
+      d[1] = dipoles->positions[j * 3 + 1] - (from_dipoles->positions[i * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
+      d[2] = dipoles->positions[j * 3 + 2] - (from_dipoles->positions[i * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
 
       ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
