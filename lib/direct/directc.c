@@ -338,11 +338,13 @@ typedef struct
 #define COMPUTE_INTERACTION(_ir_, _iad_) \
   ((_iad_)[0] = (_ir_), (_iad_)[1] = -1.0 * (_iad_)[0] * (_ir_), (_iad_)[2] = -2.0 * (_iad_)[1] * (_ir_), (_iad_)[3] = -3.0 * (_iad_)[2] * (_ir_))
 
-#define CHARGE_VS_CHARGE(_p_, _f_, _q_, _ir_, _ir3_, _dx_, _dy_, _dz_) Z_MOP( \
+#define CHARGE_VS_CHARGE(_p_, _f_, _q_, _ir_, _ir3_, _d_, _fpm_) do { \
   (_p_)[0] += (_q_) * (_ir_); \
-  (_f_)[0] += (_q_) * (_ir3_) * (_dx_); \
-  (_f_)[1] += (_q_) * (_ir3_) * (_dy_); \
-  (_f_)[2] += (_q_) * (_ir3_) * (_dz_);)
+  (_f_)[0] += (_fpm_) * (_q_) * (_ir3_) * (_d_)[0]; \
+  (_f_)[1] += (_fpm_) * (_q_) * (_ir3_) * (_d_)[1]; \
+  (_f_)[2] += (_fpm_) * (_q_) * (_ir3_) * (_d_)[2]; \
+\
+  } while (0)
 
 
 #if FCS_DIRECT_WITH_DIPOLES
@@ -362,34 +364,55 @@ typedef struct
   fcs_float ir4 = ir2 * ir2; \
   fcs_float ir5 = ir3 * ir2; \
 \
-  fcs_float field0 = -iad[3] * muTx * ir3 * xxT[0] - iad[2] * ( muTx * ir2 - 3 * muTx * ir4 * xxT[0] + sym_muxT[0] * ir2) + iad[1] * ( muTx * ir3 + sym_muxT[0] * ir3 - 3*ir5 * muTx * xxT[0]); \
-  fcs_float field1 = -iad[3] * muTx * ir3 * xxT[1] - iad[2] * (            - 3 * muTx * ir4 * xxT[1] + sym_muxT[1] * ir2) + iad[1] * (            + sym_muxT[1] * ir3 - 3*ir5 * muTx * xxT[1]); \
-  fcs_float field2 = -iad[3] * muTx * ir3 * xxT[2] - iad[2] * (            - 3 * muTx * ir4 * xxT[2] + sym_muxT[2] * ir2) + iad[1] * (            + sym_muxT[2] * ir3 - 3*ir5 * muTx * xxT[2]); \
-  fcs_float field3 = -iad[3] * muTx * ir3 * xxT[3] - iad[2] * ( muTx * ir2 - 3 * muTx * ir4 * xxT[3] + sym_muxT[3] * ir2) + iad[1] * ( muTx * ir3 + sym_muxT[3] * ir3 - 3*ir5 * muTx * xxT[3]); \
-  fcs_float field4 = -iad[3] * muTx * ir3 * xxT[4] - iad[2] * (            - 3 * muTx * ir4 * xxT[4] + sym_muxT[4] * ir2) + iad[1] * (            + sym_muxT[4] * ir3 - 3*ir5 * muTx * xxT[4]); \
-  fcs_float field5 = -iad[3] * muTx * ir3 * xxT[5] - iad[2] * ( muTx * ir2 - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) + iad[1] * ( muTx * ir3 + sym_muxT[5] * ir3 - 3*ir5 * muTx * xxT[5]); \
+  (_f_)[0] -= (_fpm_) * (iad[3] * muTx * ir3 * xxT[0] + iad[2] * ( muTx * ir2 - 3 * muTx * ir4 * xxT[0] + sym_muxT[0] * ir2) - iad[1] * ( muTx * ir3 + sym_muxT[0] * ir3 - 3 * ir5 * muTx * xxT[0])); \
+  (_f_)[1] -= (_fpm_) * (iad[3] * muTx * ir3 * xxT[1] + iad[2] * (            - 3 * muTx * ir4 * xxT[1] + sym_muxT[1] * ir2) - iad[1] * (            + sym_muxT[1] * ir3 - 3 * ir5 * muTx * xxT[1])); \
+  (_f_)[2] -= (_fpm_) * (iad[3] * muTx * ir3 * xxT[2] + iad[2] * (            - 3 * muTx * ir4 * xxT[2] + sym_muxT[2] * ir2) - iad[1] * (            + sym_muxT[2] * ir3 - 3 * ir5 * muTx * xxT[2])); \
+  (_f_)[3] -= (_fpm_) * (iad[3] * muTx * ir3 * xxT[3] + iad[2] * ( muTx * ir2 - 3 * muTx * ir4 * xxT[3] + sym_muxT[3] * ir2) - iad[1] * ( muTx * ir3 + sym_muxT[3] * ir3 - 3 * ir5 * muTx * xxT[3])); \
+  (_f_)[4] -= (_fpm_) * (iad[3] * muTx * ir3 * xxT[4] + iad[2] * (            - 3 * muTx * ir4 * xxT[4] + sym_muxT[4] * ir2) - iad[1] * (            + sym_muxT[4] * ir3 - 3 * ir5 * muTx * xxT[4])); \
+  (_f_)[5] -= (_fpm_) * (iad[3] * muTx * ir3 * xxT[5] + iad[2] * ( muTx * ir2 - 3 * muTx * ir4 * xxT[5] + sym_muxT[5] * ir2) - iad[1] * ( muTx * ir3 + sym_muxT[5] * ir3 - 3 * ir5 * muTx * xxT[5])); \
 \
-  (_f_)[0] += field0 * (_fpm_); \
-  (_f_)[1] += field1 * (_fpm_); \
-  (_f_)[2] += field2 * (_fpm_); \
-  (_f_)[3] += field3 * (_fpm_); \
-  (_f_)[4] += field4 * (_fpm_); \
-  (_f_)[5] += field5 * (_fpm_); \
+  (_p_)[0] += iad[2] * muTx * ir2 * d[0] + iad[1] * ((_m_)[0] * (_ir_) - muTx * ir3 * d[0]); \
+  (_p_)[1] += iad[2] * muTx * ir2 * d[1] + iad[1] * ((_m_)[1] * (_ir_) - muTx * ir3 * d[1]); \
+  (_p_)[2] += iad[2] * muTx * ir2 * d[2] + iad[1] * ((_m_)[2] * (_ir_) - muTx * ir3 * d[2]); \
 \
-  fcs_float p0 = iad[2] * muTx * ir2 * d[0] + iad[1] * ((_m_)[0] * ir - muTx * ir3 * d[0]); \
-  fcs_float p1 = iad[2] * muTx * ir2 * d[1] + iad[1] * ((_m_)[1] * ir - muTx * ir3 * d[1]); \
-  fcs_float p2 = iad[2] * muTx * ir2 * d[2] + iad[1] * ((_m_)[2] * ir - muTx * ir3 * d[2]); \
-\
-  (_p_)[0] += p0; \
-  (_p_)[1] += p1; \
-  (_p_)[2] += p2; \
   } while (0)
 
-#define CHARGE_VS_DIPOLE(_p_, _f_, _m_, _ir_, _dx_, _dy_, _dz_) Z_MOP( \
-  );
+#define CHARGE_VS_DIPOLE(_p_, _f_, _m_, _ir_, _d_) do { \
+  fcs_float iad[4]; \
+  COMPUTE_INTERACTION(_ir_, iad); \
+\
+  fcs_float muTx =  (_m_)[0] * (_d_)[0] + (_m_)[1] * (_d_)[1] +  (_m_)[2] * (_d_)[2]; \
+  fcs_float ir2 = (_ir_)  * (_ir_); \
+  fcs_float ir3 = ir2 * (_ir_); \
+\
+  (_f_)[0] += iad[2] * muTx * ir2 * (_d_)[0] + iad[1] * ((_m_)[0] * (_ir_) - muTx * ir3 * (_d_)[0]); \
+  (_f_)[1] += iad[2] * muTx * ir2 * (_d_)[1] + iad[1] * ((_m_)[1] * (_ir_) - muTx * ir3 * (_d_)[1]); \
+  (_f_)[2] += iad[2] * muTx * ir2 * (_d_)[2] + iad[1] * ((_m_)[2] * (_ir_) - muTx * ir3 * (_d_)[2]); \
+\
+  (_p_)[0] += iad[1] * muTx * (_ir_); \
+\
+  } while (0)
 
-#define DIPOLE_VS_CHARGE(_p_, _f_, _q_, _ir_, _dx_, _dy_, _dz_) Z_MOP( \
-  );
+#define DIPOLE_VS_CHARGE(_p_, _f_, _q_, _ir_, _d_) do { \
+  fcs_float iad[4]; \
+  COMPUTE_INTERACTION(_ir_, iad); \
+\
+  fcs_float xxT[6]  = { (_d_)[0] * (_d_)[0], (_d_)[0] * (_d_)[1], (_d_)[0] * (_d_)[2], (_d_)[1] * (_d_)[1], (_d_)[1] * (_d_)[2], (_d_)[2] * (_d_)[2] }; \
+  fcs_float ir2 = (_ir_)  * (_ir_); \
+  fcs_float ir3 = ir2 * (_ir_); \
+\
+  (_f_)[0] += (_q_) * ( -iad[2] * xxT[0] * ir2 + iad[1] * ( -(_ir_) + xxT[0] * ir3 ) ); \
+  (_f_)[1] += (_q_) * ( -iad[2] * xxT[1] * ir2 + iad[1] * (         + xxT[1] * ir3 ) ); \
+  (_f_)[2] += (_q_) * ( -iad[2] * xxT[2] * ir2 + iad[1] * (         + xxT[2] * ir3 ) ); \
+  (_f_)[3] += (_q_) * ( -iad[2] * xxT[3] * ir2 + iad[1] * ( -(_ir_) + xxT[3] * ir3 ) ); \
+  (_f_)[4] += (_q_) * ( -iad[2] * xxT[4] * ir2 + iad[1] * (         + xxT[4] * ir3 ) ); \
+  (_f_)[5] += (_q_) * ( -iad[2] * xxT[5] * ir2 + iad[1] * ( -(_ir_) + xxT[5] * ir3 ) ); \
+\
+  (_p_)[0] += (_q_) * iad[1] * (_d_)[0] * (_ir_); \
+  (_p_)[1] += (_q_) * iad[1] * (_d_)[1] * (_ir_); \
+  (_p_)[2] += (_q_) * iad[1] * (_d_)[2] * (_ir_); \
+\
+  } while (0)
 
 #endif
 
@@ -397,7 +420,7 @@ typedef struct
 static void compute_charge_charge_loop(charges_t *charges, fcs_float cutoff)
 {
   fcs_int i, j;
-  fcs_float dx, dy, dz, ir, ir3;
+  fcs_float d[3], ir, ir3;
 
 
   if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
@@ -406,34 +429,34 @@ static void compute_charge_charge_loop(charges_t *charges, fcs_float cutoff)
   {
     for (j = i + 1; j < charges->nout; ++j)
     {
-      dx = charges->positions[i * 3 + 0] - charges->positions[j * 3 + 0];
-      dy = charges->positions[i * 3 + 1] - charges->positions[j * 3 + 1];
-      dz = charges->positions[i * 3 + 2] - charges->positions[j * 3 + 2];
+      d[0] = charges->positions[i * 3 + 0] - charges->positions[j * 3 + 0];
+      d[1] = charges->positions[i * 3 + 1] - charges->positions[j * 3 + 1];
+      d[2] = charges->positions[i * 3 + 2] - charges->positions[j * 3 + 2];
 
-      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+      ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
       if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
 
       ir3 = ir * ir * ir;
 
-      CHARGE_VS_CHARGE(charges->potentials + i, charges->field + (i * 3), charges->charges[j], ir, ir3, dx, dy, dz);
+      CHARGE_VS_CHARGE(charges->potentials + i, charges->field + (i * 3), charges->charges[j], ir, ir3, d, 1.0);
 
-      CHARGE_VS_CHARGE(charges->potentials + j, charges->field + (j * 3), charges->charges[i], ir, ir3, -dx, -dy, -dz);
+      CHARGE_VS_CHARGE(charges->potentials + j, charges->field + (j * 3), charges->charges[i], ir, ir3, d, -1.0);
     }
 
     for (j = charges->nout; j < charges->nin; ++j)
     {
-      dx = charges->positions[i * 3 + 0] - charges->positions[j * 3 + 0];
-      dy = charges->positions[i * 3 + 1] - charges->positions[j * 3 + 1];
-      dz = charges->positions[i * 3 + 2] - charges->positions[j * 3 + 2];
+      d[0] = charges->positions[i * 3 + 0] - charges->positions[j * 3 + 0];
+      d[1] = charges->positions[i * 3 + 1] - charges->positions[j * 3 + 1];
+      d[2] = charges->positions[i * 3 + 2] - charges->positions[j * 3 + 2];
 
-      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+      ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
       if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
 
       ir3 = ir * ir * ir;
 
-      CHARGE_VS_CHARGE(charges->potentials + i, charges->field + (i * 3), charges->charges[j], ir, ir3, dx, dy, dz);
+      CHARGE_VS_CHARGE(charges->potentials + i, charges->field + (i * 3), charges->charges[j], ir, ir3, d, 1.0);
     }
   }
 }
@@ -442,7 +465,7 @@ static void compute_charge_charge_loop(charges_t *charges, fcs_float cutoff)
 static void compute_charge_from_charge_loop(charges_t *charges, charges_t *from_charges, periodics_t *periodics, fcs_int skip_origin, fcs_float cutoff)
 {
   fcs_int i, j, pd[3];
-  fcs_float dx, dy, dz, ir, ir3;
+  fcs_float d[3], ir, ir3;
 
   if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
 
@@ -455,17 +478,17 @@ static void compute_charge_from_charge_loop(charges_t *charges, charges_t *from_
     for (i = 0; i < charges->nout; ++i)
     for (j = 0; j < from_charges->nin; ++j)
     {
-      dx = charges->positions[i * 3 + 0] - (from_charges->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
-      dy = charges->positions[i * 3 + 1] - (from_charges->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
-      dz = charges->positions[i * 3 + 2] - (from_charges->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
+      d[0] = charges->positions[i * 3 + 0] - (from_charges->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
+      d[1] = charges->positions[i * 3 + 1] - (from_charges->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
+      d[2] = charges->positions[i * 3 + 2] - (from_charges->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
 
-      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+      ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
       if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
 
       ir3 = ir * ir * ir;
 
-      CHARGE_VS_CHARGE(charges->potentials + i, charges->field + (i * 3), from_charges->charges[j], ir, ir3, dx, dy, dz);
+      CHARGE_VS_CHARGE(charges->potentials + i, charges->field + (i * 3), from_charges->charges[j], ir, ir3, d, 1.0);
     }
   }
 }
@@ -547,7 +570,7 @@ static void compute_dipole_from_dipole_loop(dipoles_t *dipoles, dipoles_t *from_
 static void compute_charge_from_dipole_loop(charges_t *charges, dipoles_t *dipoles, periodics_t *periodics, fcs_float cutoff)
 {
   fcs_int i, j, pd[3];
-  fcs_float dx, dy, dz, ir;
+  fcs_float d[3], ir;
 
   if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
 
@@ -558,15 +581,15 @@ static void compute_charge_from_dipole_loop(charges_t *charges, dipoles_t *dipol
     for (i = 0; i < charges->nout; ++i)
     for (j = 0; j < dipoles->nin; ++j)
     {
-      dx = charges->positions[i * 3 + 0] - (dipoles->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
-      dy = charges->positions[i * 3 + 1] - (dipoles->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
-      dz = charges->positions[i * 3 + 2] - (dipoles->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
+      d[0] = charges->positions[i * 3 + 0] - (dipoles->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
+      d[1] = charges->positions[i * 3 + 1] - (dipoles->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
+      d[2] = charges->positions[i * 3 + 2] - (dipoles->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
 
-      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+      ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
       if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
 
-      CHARGE_VS_DIPOLE(charges->potentials + i, charges->field + (i * 3), dipoles->moments + (j * 3), ir, dx, dy, dz);
+      CHARGE_VS_DIPOLE(charges->potentials + i, charges->field + (i * 3), dipoles->moments + (j * 3), ir, d);
     }
   }
 }
@@ -575,7 +598,7 @@ static void compute_charge_from_dipole_loop(charges_t *charges, dipoles_t *dipol
 static void compute_dipole_from_charge_loop(dipoles_t *dipoles, charges_t *charges, periodics_t *periodics, fcs_float cutoff)
 {
   fcs_int i, j, pd[3];
-  fcs_float dx, dy, dz, ir;
+  fcs_float d[3], ir;
 
   if (fcs_fabs(cutoff) > 0) cutoff = 1.0 / cutoff;
 
@@ -586,15 +609,15 @@ static void compute_dipole_from_charge_loop(dipoles_t *dipoles, charges_t *charg
     for (i = 0; i < dipoles->nout; ++i)
     for (j = 0; j < charges->nin; ++j)
     {
-      dx = dipoles->positions[i * 3 + 0] - (charges->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
-      dy = dipoles->positions[i * 3 + 1] - (charges->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
-      dz = dipoles->positions[i * 3 + 2] - (charges->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
+      d[0] = dipoles->positions[i * 3 + 0] - (charges->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
+      d[1] = dipoles->positions[i * 3 + 1] - (charges->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
+      d[2] = dipoles->positions[i * 3 + 2] - (charges->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
 
-      ir = 1.0 / fcs_sqrt(z_sqr(dx) + z_sqr(dy) + z_sqr(dz));
+      ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
       if ((cutoff > 0 && cutoff > ir) || (cutoff < 0 && -cutoff < ir)) continue;
 
-      DIPOLE_VS_CHARGE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), charges->charges[j], ir, dx, dy, dz);
+      DIPOLE_VS_CHARGE(dipoles->potentials + (i * 3), dipoles->field + (i * 6), charges->charges[j], ir, d);
     }
   }
 }
