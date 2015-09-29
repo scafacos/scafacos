@@ -581,9 +581,9 @@ static void compute_charge_from_dipole_loop(charges_t *charges, dipoles_t *dipol
     for (i = 0; i < charges->nout; ++i)
     for (j = 0; j < dipoles->nin; ++j)
     {
-      d[0] = charges->positions[i * 3 + 0] - (dipoles->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
-      d[1] = charges->positions[i * 3 + 1] - (dipoles->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
-      d[2] = charges->positions[i * 3 + 2] - (dipoles->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
+      d[0] =  (dipoles->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0])) - charges->positions[i * 3 + 0];
+      d[1] =  (dipoles->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1])) - charges->positions[i * 3 + 1];
+      d[2] =  (dipoles->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2])) - charges->positions[i * 3 + 2];
 
       ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
@@ -609,9 +609,9 @@ static void compute_dipole_from_charge_loop(dipoles_t *dipoles, charges_t *charg
     for (i = 0; i < dipoles->nout; ++i)
     for (j = 0; j < charges->nin; ++j)
     {
-      d[0] = dipoles->positions[i * 3 + 0] - (charges->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0]));
-      d[1] = dipoles->positions[i * 3 + 1] - (charges->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1]));
-      d[2] = dipoles->positions[i * 3 + 2] - (charges->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2]));
+      d[0] =  (charges->positions[j * 3 + 0] + (pd[0] * periodics->box_a[0]) + (pd[1] * periodics->box_b[0]) + (pd[2] * periodics->box_c[0])) - dipoles->positions[i * 3 + 0];
+      d[1] =  (charges->positions[j * 3 + 1] + (pd[0] * periodics->box_a[1]) + (pd[1] * periodics->box_b[1]) + (pd[2] * periodics->box_c[1])) - dipoles->positions[i * 3 + 1];
+      d[2] =  (charges->positions[j * 3 + 2] + (pd[0] * periodics->box_a[2]) + (pd[1] * periodics->box_b[2]) + (pd[2] * periodics->box_c[2])) - dipoles->positions[i * 3 + 2];
 
       ir = 1.0 / fcs_sqrt(z_sqr(d[0]) + z_sqr(d[1]) + z_sqr(d[2]));
 
