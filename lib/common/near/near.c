@@ -997,14 +997,14 @@ void compute_charge_self(charges_t *charges, fcs_int charges_start, fcs_int char
     near->compute_charge_charge(near_param, r, ir, &iad);
 
     t = FCS_NEAR_INTERACTION_DATA_F1(iad) * charges->charges[j] * ir;
-    charges->field[i + 0] += t * d[0];
-    charges->field[i + 1] += t * d[1];
-    charges->field[i + 2] += t * d[2];
+    charges->field[3 * i + 0] += t * d[0];
+    charges->field[3 * i + 1] += t * d[1];
+    charges->field[3 * i + 2] += t * d[2];
 
     t = FCS_NEAR_INTERACTION_DATA_F1(iad) * charges->charges[i] * ir;
-    charges->field[j + 0] -= t * d[0];
-    charges->field[j + 1] -= t * d[1];
-    charges->field[j + 2] -= t * d[2];
+    charges->field[3 * j + 0] -= t * d[0];
+    charges->field[3 * j + 1] -= t * d[1];
+    charges->field[3 * j + 2] -= t * d[2];
 
     charges->potentials[i] += FCS_NEAR_INTERACTION_DATA_F0(iad) * charges->charges[j];
 
@@ -1047,9 +1047,9 @@ void compute_charge_from_charge(charges_t *charges, fcs_int charges_start, fcs_i
     near->compute_charge_charge(near_param, r, ir, &iad);
 
     t = FCS_NEAR_INTERACTION_DATA_F1(iad) * from_charges->charges[j] * ir;
-    charges->field[i + 0] += t * d[0];
-    charges->field[i + 1] += t * d[1];
-    charges->field[i + 2] += t * d[2];
+    charges->field[3 * i + 0] += t * d[0];
+    charges->field[3 * i + 1] += t * d[1];
+    charges->field[3 * i + 2] += t * d[2];
 
     charges->potentials[i] += FCS_NEAR_INTERACTION_DATA_F0(iad) * from_charges->charges[j];
   }
