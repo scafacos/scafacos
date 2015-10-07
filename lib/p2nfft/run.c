@@ -484,12 +484,12 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
   /* Rescale all (symmetric) Hessian via L^{-T} * Hf * L^{-1} */
   if(compute_dipole_field){
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
-      sorted_dipole_field[6 * j + 0] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 0) );
-      sorted_dipole_field[6 * j + 1] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 1) );
-      sorted_dipole_field[6 * j + 2] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 2) );
-      sorted_dipole_field[6 * j + 3] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1, 1) );
-      sorted_dipole_field[6 * j + 4] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1, 2) );
-      sorted_dipole_field[6 * j + 5] += fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 2, 2) );
+      sorted_dipole_field[6 * j + 0] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 0) );
+      sorted_dipole_field[6 * j + 1] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 1) );
+      sorted_dipole_field[6 * j + 2] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 0, 2) );
+      sorted_dipole_field[6 * j + 3] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1, 1) );
+      sorted_dipole_field[6 * j + 4] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 1, 2) );
+      sorted_dipole_field[6 * j + 5] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 2, 2) );
     }
   }
 
@@ -545,9 +545,9 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
   if(compute_dipole_potential){
     fcs_float self = ifcs_p2nfft_compute_self_dipole_potential(rd);
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
-      sorted_dipole_potential[3 * j + 0] += sorted_dipole_moments[3 * j + 0] * self; 
-      sorted_dipole_potential[3 * j + 1] += sorted_dipole_moments[3 * j + 1] * self;
-      sorted_dipole_potential[3 * j + 2] += sorted_dipole_moments[3 * j + 2] * self;
+      sorted_dipole_potential[3 * j + 0] = - sorted_dipole_potential[3 * j + 0] + sorted_dipole_moments[3 * j + 0] * self; 
+      sorted_dipole_potential[3 * j + 1] = - sorted_dipole_potential[3 * j + 1] + sorted_dipole_moments[3 * j + 1] * self;
+      sorted_dipole_potential[3 * j + 2] = - sorted_dipole_potential[3 * j + 2] + sorted_dipole_moments[3 * j + 2] * self;
     }
 
 for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
