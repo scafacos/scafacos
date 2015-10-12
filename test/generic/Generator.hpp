@@ -158,10 +158,12 @@ public:
   virtual void print_config(const char *prefix, int comm_size, int comm_rank, MPI_Comm comm);
   virtual bool write_config(xml_document<> *doc, xml_node<> *config_node, int comm_size, int comm_rank, MPI_Comm comm);
 
+private:
   bool get_numbers(fcs_int *ntotal, fcs_int *low, fcs_int *high, fcs_int *gridsize, int comm_size, int comm_rank, MPI_Comm comm);
   template<typename P>
   bool make_local_particles(generic_particle_data_t<P> *particle_data, int comm_size, int comm_rank, MPI_Comm comm);
 
+public:
   virtual fcs_int get_local_nparticles(int comm_size, int comm_rank, MPI_Comm comm);
   virtual bool make_local_particles(particle_data_t *particle_data, int comm_size, int comm_rank, MPI_Comm comm);
 
@@ -295,18 +297,27 @@ public:
   virtual void print_config(const char *prefix, int comm_size, int comm_rank, MPI_Comm comm);
   virtual bool write_config(xml_document<> *doc, xml_node<> *config_node, int comm_size, int comm_rank, MPI_Comm comm);
 
+private:
   template<class F>
   static void write_config(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, particles_t *particles, int comm_size, int comm_rank, MPI_Comm comm);
 
+public:
+  static void write_config_binary(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, particles_t *particles, int comm_size, int comm_rank, MPI_Comm comm);
+  static void write_config_portable(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, particles_t *particles, int comm_size, int comm_rank, MPI_Comm comm);
+
+private:
   template<typename P>
   bool make_local_particles(generic_particle_data_t<P> *particle_data, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm);
 
+public:
   virtual fcs_int get_local_nparticles(int comm_size, int comm_rank, MPI_Comm comm);
   virtual bool make_local_particles(particle_data_t *particle_data, int comm_size, int comm_rank, MPI_Comm comm);
+  bool make_local_particles(particle_data_t *particle_data, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm);
 
 #if SCAFACOS_TEST_WITH_DIPOLES
   virtual fcs_int get_dipole_local_nparticles(int comm_size, int comm_rank, MPI_Comm comm);
   virtual bool make_dipole_local_particles(dipole_particle_data_t *particle_data, int comm_size, int comm_rank, MPI_Comm comm);
+  bool make_dipole_local_particles(dipole_particle_data_t *particle_data, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm);
 #endif /* SCAFACOS_TEST_WITH_DIPOLES */
 
 private:
