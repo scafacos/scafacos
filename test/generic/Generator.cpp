@@ -1835,9 +1835,17 @@ void FileParticles::write_config(xml_document<> *doc, xml_node<> *parent_node, c
   MPI_File_close(&file);
 }
 
-template void FileParticles::write_config<FormatBinary>(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, particles_t *particles, int comm_size, int comm_rank, MPI_Comm comm);
 
-template void FileParticles::write_config<FormatPortable>(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, particles_t *particles, int comm_size, int comm_rank, MPI_Comm comm);
+void FileParticles::write_config_binary(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, particles_t *particles, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  write_config<FormatBinary>(doc, parent_node, node_name, filename, particles, comm_size, comm_rank, comm);
+}
+
+
+void FileParticles::write_config_portable(xml_document<> *doc, xml_node<> *parent_node, const char *node_name, const char *filename, particles_t *particles, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  write_config<FormatPortable>(doc, parent_node, node_name, filename, particles, comm_size, comm_rank, comm);
+}
 
 
 template<typename P>
@@ -1909,6 +1917,12 @@ bool FileParticles::make_local_particles(particle_data_t *particle_data, int com
 }
 
 
+bool FileParticles::make_local_particles(particle_data_t *particle_data, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  return make_local_particles<CHARGES>(particle_data, nlocal, comm_size, comm_rank, comm);
+}
+
+
 #if SCAFACOS_TEST_WITH_DIPOLES
 
 fcs_int FileParticles::get_dipole_local_nparticles(int comm_size, int comm_rank, MPI_Comm comm)
@@ -1936,6 +1950,12 @@ bool FileParticles::make_dipole_local_particles(dipole_particle_data_t *particle
   fcs_int n = get_dipole_local_nparticles(comm_size, comm_rank, comm);
 
   return make_local_particles<DIPOLES>(particle_data, n, comm_size, comm_rank, comm);
+}
+
+
+bool FileParticles::make_dipole_local_particles(dipole_particle_data_t *particle_data, fcs_int nlocal, int comm_size, int comm_rank, MPI_Comm comm)
+{
+  return make_local_particles<DIPOLES>(particle_data, nlocal, comm_size, comm_rank, comm);
 }
 
 #endif /* SCAFACOS_TEST_WITH_DIPOLES */
