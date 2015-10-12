@@ -371,8 +371,17 @@ FCSResult ifcs_p2nfft_run(
   }
     
   /* Set NFFT values */
-  for (fcs_int j = 0; j < sorted_num_particles; ++j) charges_f[j] = sorted_charges[j];
-  for (fcs_int j = 0; j < 3*sorted_num_dipole_particles; ++j) dipoles_grad_f[j] = sorted_dipole_moments[j];
+  for (fcs_int j = 0; j < sorted_num_particles; ++j)
+    charges_f[j] = sorted_charges[j];
+  
+//   for (fcs_int j = 0; j < 3*sorted_num_dipole_particles; ++j)
+//     dipoles_grad_f[j] = sorted_dipole_moments[j];
+  
+  for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
+    dipoles_grad_f[3 * j + 0] = XYZ2TRI(0, sorted_dipole_moments + 3*j, d->box_inv);
+    dipoles_grad_f[3 * j + 1] = XYZ2TRI(1, sorted_dipole_moments + 3*j, d->box_inv);
+    dipoles_grad_f[3 * j + 2] = XYZ2TRI(2, sorted_dipole_moments + 3*j, d->box_inv);
+  }
 
   /* Reset pnfft timer (delete timings from fcs_init and fcs_tune) */  
 #if FCS_ENABLE_INFO && !FCS_P2NFFT_DISABLE_PNFFT_INFO
