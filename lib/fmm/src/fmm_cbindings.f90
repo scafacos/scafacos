@@ -232,6 +232,7 @@ module fmm_cbindings
       ! compute wigner matrices subroutine for the C interface
       subroutine fmm_ccomputewigner(wignerptr,handle,dotune) bind(c)
       use mp_wrapper, only : diffcpointers
+      use mod_fullfmm
       implicit none
       type(c_ptr), value :: wignerptr,handle
       type(FMM_internal_params_t), pointer :: FMM_internal_params
