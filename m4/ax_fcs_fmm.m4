@@ -68,7 +68,7 @@ if test "x${enable_fcs_fmm_comm}" = xauto ; then
       enable_fcs_fmm_comm=simple-armci
       ;;
     *)
-      enable_fcs_fmm_comm=armci
+      enable_fcs_fmm_comm=armci-mpi
       ;;
   esac
 fi
@@ -121,15 +121,20 @@ case "${enable_fcs_fmm_comm}" in
     esac
     AC_MSG_NOTICE([using SIMPLE-ARMCI communication library with device '${enable_simple_armci_device}'])
     ;;
+  armci-mpi)
+    AC_MSG_NOTICE([using ARMCIMPI communication library])
+    FMM_MP="FMM_MP_ARMCIMPI"
+    ;;
   *)
     AC_MSG_FAILURE([unknown communication library ${enable_fcs_fmm_comm} (use armci, a1 or auto)])
     ;;
 esac
-AC_DEFINE_UNQUOTED([FMM_MP],[${FMM_MP}],[Define to the communication library to use (FMM_MP_ARMCI or FMM_MP_A1).])
+AC_DEFINE_UNQUOTED([FMM_MP],[${FMM_MP}],[Define to the communication library to use (FMM_MP_ARMCI, FMM_MP_ARMCIMPI or FMM_MP_A1).])
 AM_CONDITIONAL(ENABLE_FMM_ARMCI,[test "x${FMM_MP}" = xFMM_MP_ARMCI -o "x${enable_dist}" = xyes])
 AM_CONDITIONAL(ENABLE_FMM_A1,[test "x${FMM_MP}" = xFMM_MP_A1 -o "x${enable_dist}" = xyes])
 AM_CONDITIONAL(ENABLE_FMM_MPI,[test "x${FMM_MP}" = xFMM_MP_MPI])
 AM_CONDITIONAL(ENABLE_FMM_SIMPLE_ARMCI,[test "x${FMM_MP}" = xFMM_MP_SIMPLE_ARMCI -o "x${enable_dist}" = xyes])
+AM_CONDITIONAL(ENABLE_FMM_ARMCIMPI,[test "x${FMM_MP}" = xFMM_MP_ARMCIMPI -o "x${enable_dist}" = xyes])
 if test "x${FMM_MP}" = xFMM_MP_ARMCI -o "x${enable_dist}" = xyes ; then
   AC_CONFIG_SUBDIRS([armci])
 fi
@@ -143,6 +148,9 @@ if test "x${FMM_MP}" = xFMM_MP_SIMPLE_ARMCI -o "x${enable_dist}" = xyes ; then
     simple-armci/generic/Makefile
     simple-armci/dcmfd/Makefile
     simple-armci/pamid/Makefile])
+fi
+if test "x${FMM_MP}" = xFMM_MP_ARMCIMPI -o "x${enable_dist}" = xyes ; then
+  AC_CONFIG_SUBDIRS([armci-mpi])
 fi
 ])
 

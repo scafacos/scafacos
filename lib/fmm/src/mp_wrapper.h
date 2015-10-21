@@ -6,6 +6,7 @@
 #define FMM_MP_A1 2
 #define FMM_MP_MPI 3
 #define FMM_MP_SIMPLE_ARMCI 4
+#define FMM_MP_ARMCIMPI 5
 
 ! enable warnings if a sendbuffer is larger than 2GB
 #undef FMM_CHECKSIZE

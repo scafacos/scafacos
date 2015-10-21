@@ -19,6 +19,9 @@
 ! Define if IBM intrinsics can be used.
 #undef HAVE_IBM_INTRINSICS
 
+! Define SSE2 intrinsics
+#define HAVE_SSE2_C_INTRINSICS
+
 ! Fortran type that matches a C pointer.
 #define FCS_PTR integer*SIZEOF_INT_P
 
@@ -48,7 +51,7 @@
 ! Define to the ISO C kind of fcs_integer.
 #undef fcs_integer_kind_isoc
 
-! Define to the communication library to use (FMM_MP_ARMCI or FMM_MP_A1).
+! Define to the communication library to use (FMM_MP_ARMCI, FMM_MP_ARMCIMPI or FMM_MP_A1).
 #undef FMM_MP
 
 ! Define if info output is enabled.

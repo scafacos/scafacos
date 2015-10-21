@@ -17,6 +17,9 @@ endif
 if ENABLE_FMM_SIMPLE_ARMCI
 SUBDIRS += simple-armci
 endif
+if ENABLE_FMM_ARMCIMPI
+SUBDIRS += armci-mpi
+endif
 SUBDIRS += sl_fmm src
 
 DIST_SUBDIRS = $(SUBDIRS)
@@ -45,6 +48,11 @@ endif
 if ENABLE_FMM_SIMPLE_ARMCI
 fmmlibs += \
 	simple-armci/libsimple_armci.a
+endif
+
+if ENABLE_FMM_ARMCIMPI
+fmmlibs += \
+	armci-mpi/libarmci.la
 endif
 
 

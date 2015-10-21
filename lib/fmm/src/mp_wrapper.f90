@@ -19,10 +19,10 @@ implicit none
     integer (c_long) :: bytes
   end type armci_giov_t
 
-  ! armci defines as c_long, A1 as c_int
-# if FMM_MP == FMM_MP_ARMCI
+  ! armci and amrci-mpi define it as c_long, A1 as c_int
+# if (FMM_MP == FMM_MP_ARMCI) || (FMM_MP == FMM_MP_ARMCIMPI)
   integer, parameter :: armci_size_t = c_long
-# elif FMM_MP == FMM_MP_A1
+# elif (FMM_MP == FMM_MP_A1)
   integer, parameter :: armci_size_t = c_int
 # else
 # error "communication library not supported"
@@ -131,7 +131,7 @@ implicit none
     module procedure mp_put_real8
     module procedure mp_put_real8_1d
     module procedure mp_put_real8_2d
-  end interface mp_put	
+  end interface mp_put
 
 contains
   subroutine mp_fence(proc)
@@ -771,7 +771,7 @@ implicit none
 !MPI Notify/NotifyWait on BGP
 !==================================================================
 
-#if FMM_MP == FMM_MP_A1
+#if FMM_MP == FMM_MP_A1 || FMM_MP == FMM_MP_ARMCIMPI
 	subroutine mp_notify(proc)
 	implicit none
 	integer (FMM_INTEGER) :: proc
@@ -843,7 +843,7 @@ implicit none
 	public :: mp_rank
 	public :: mp_nnodes
 	public :: mp_allocate
-	public :: mp_deallocate	
+	public :: mp_deallocate
 	public :: mp_finalize
 	public :: mp_notify,mp_notifywait
 	public :: mp_barrier
@@ -1000,7 +1000,7 @@ contains
 !			if (ierr2.ne.0) call mp_error(ierr2)
 !		endif
 		
-#if FMM_MP == FMM_MP_A1
+#if FMM_MP == FMM_MP_A1 || FMM_MP == FMM_MP_ARMCIMPI
 		elems = 10042
 		if(attached.eq.0) then
 			call mpi_buffer_attach(notifyerbuffer,elems,ierr1)
@@ -1096,7 +1096,7 @@ contains
 	integer (MyARMCI_Errorcode) :: ierr_tmp
 
 	  if(MPI_COMM_WORLD.eq.MP_ALLNODES) then
-#if FMM_MP == FMM_MP_A1
+#if FMM_MP == FMM_MP_A1 || FMM_MP == FMM_MP_ARMCIMPI
       ierr_tmp = armci_free(ptr)
 #elif FMM_MP == FMM_MP_ARMCI
         if(ierr.eq.0) then
@@ -1121,7 +1121,7 @@ contains
 	implicit none
 	integer (MyMPI_Errorcode) :: ierr
 	integer (4) :: elems	
-#if FMM_MP == FMM_MP_A1
+#if FMM_MP == FMM_MP_A1 || FMM_MP == FMM_MP_ARMCIMPI
 		elems = 10042
 		if (attached.eq.1) then
 			call mpi_buffer_detach(notifyerbuffer,elems,ierr)

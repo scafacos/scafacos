@@ -196,6 +196,9 @@ fi
 if test "x${FMM_MP}" = xFMM_MP_A1 ; then
   AX_FCS_PACKAGE_ADD([SUB_PACKAGES],[a1])
 fi
+if test "x${FMM_MP}" = xFMM_MP_ARMCIMPI ; then
+  AX_FCS_PACKAGE_ADD([SUB_PACKAGES],[armci-mpi])
+fi
 # The following is currently not required, because -lpami is automatically detected as one of the required MPI libraries.
 #if test "x${FMM_MP}" = xFMM_MP_SIMPLE_ARMCI -a "x${enable_simple_armci_device}" = xpamid ; then
 #  AX_FCS_PACKAGE_ADD([fmm_LIBS],[-lpami])
