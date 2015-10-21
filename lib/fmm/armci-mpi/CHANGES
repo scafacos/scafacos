@@ -1,0 +1,3 @@
+ * r506: Added support for the ARMCI profiling interface.
+
+ * r498: Fixed a few memory leaks.
