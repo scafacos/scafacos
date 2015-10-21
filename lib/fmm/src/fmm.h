@@ -8,7 +8,7 @@
 #define FMM_PARALLEL
 
 ! print output to console
-#undef FMM_INFO
+#define FMM_INFO
 
 ! enable debug mode
 #undef FMM_DEBUG
