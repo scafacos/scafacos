@@ -472,9 +472,9 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
     fprintf(stderr, "near_pot[%d, %d] = %.6e\n", j, t, sorted_dipole_potential[3*j+t]);
 
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
-      sorted_dipole_potential[3 * j + 0] += fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 0) );
-      sorted_dipole_potential[3 * j + 1] += fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 1) );
-      sorted_dipole_potential[3 * j + 2] += fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 2) );
+      sorted_dipole_potential[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 0) );
+      sorted_dipole_potential[3 * j + 1] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 1) );
+      sorted_dipole_potential[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 2) );
     }
 
 for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
@@ -554,9 +554,9 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
   if(compute_dipole_potential){
     fcs_float self = ifcs_p2nfft_compute_self_dipole_potential(rd);
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
-      sorted_dipole_potential[3 * j + 0] = - sorted_dipole_potential[3 * j + 0] + sorted_dipole_moments[3 * j + 0] * self; 
-      sorted_dipole_potential[3 * j + 1] = - sorted_dipole_potential[3 * j + 1] + sorted_dipole_moments[3 * j + 1] * self;
-      sorted_dipole_potential[3 * j + 2] = - sorted_dipole_potential[3 * j + 2] + sorted_dipole_moments[3 * j + 2] * self;
+      sorted_dipole_potential[3 * j + 0] +=  sorted_dipole_moments[3 * j + 0] * self; 
+      sorted_dipole_potential[3 * j + 1] +=  sorted_dipole_moments[3 * j + 1] * self;
+      sorted_dipole_potential[3 * j + 2] +=  sorted_dipole_moments[3 * j + 2] * self;
     }
 
 for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
