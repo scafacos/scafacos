@@ -160,6 +160,7 @@ FCSResult ifcs_p2nfft_init(
   d->short_range_flag = -1;
   d->reg_near = FCS_P2NFFT_REG_NEAR_DEFAULT;
   d->reg_far  = FCS_P2NFFT_REG_FAR_DEFAULT;
+  d->reg_kernel   = FCS_P2NFFT_REG_KERNEL_DEFAULT;
 
   /* init local data distribution of PNFFT:
    * local_N, local_N_start, lower_border, upper_border */
