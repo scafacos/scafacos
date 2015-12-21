@@ -237,6 +237,12 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     Charge assignment order. Can be automatically tuned. This parameter mostly corresponds to \verb!cao! of the P3M solver.
     However, note that this is only a wrapper that sets \verb!pnfft_m! to the value \verb!(p2nfft_cao+1)/2! (division rounded down).
     Therefore, \ptwonfft will always use an even charge assignment order.
+  \item \verb!p2nfft_reg_kernel! -
+    Choose between two regularization kernels. Feasible values are $0$ (Kernel derived from Ewald splitting)
+    and $1$ (Kernel $\frac{1}{\|\mathbf x\|}$, only possible for 0d-periodic boundary conditions). Default value is $0$.
+  \item \verb!p2nfft_reg_kernel_name! (alternative: \verb!p2nfft_reg_kernel!) -
+    Choose between two regularization kernels. Feasible values are \verb!ewald! (Kernel derived from Ewald splitting)
+    and \verb!one_over_abs_x! (Kernel $\frac{1}{\|\mathbf x\|}$, only possible for 0d-periodic boundary conditions). Default value is \verb!ewald!.
   \item \verb!p2nfft_reg_near! -
     Choose between the two near field regularization methods for non-periodic boundaries. Feasible values are $0$ (Fourier coefficients have been precomputed via CG iteration, only available for some sets of parameters)
     and $1$ (Regularization with two-point Taylor polynomials). Default value is $0$, if possible.

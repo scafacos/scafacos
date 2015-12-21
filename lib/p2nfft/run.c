@@ -584,7 +584,7 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
         d->virial[t] = 0.0;
       d->virial[0] = d->virial[4] = d->virial[8] = total_global/3.0;
     } 
-    else if ((d->num_periodic_dims == 0) && (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER)) {
+    else if ((d->num_periodic_dims == 0) && (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_ONE_OVER_ABS_X)) {
       fcs_float local_virial[9];
 
       for(fcs_int t=0; t<9; t++)
