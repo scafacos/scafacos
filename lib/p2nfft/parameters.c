@@ -424,7 +424,7 @@ FCSResult ifcs_p2nfft_set_reg_kernel(
 
   if( (reg_kern != FCS_P2NFFT_REG_KERNEL_DEFAULT)
       && (reg_kern != FCS_P2NFFT_REG_KERNEL_EWALD)
-      && (reg_kern != FCS_P2NFFT_REG_KERNEL_OTHER)
+      && (reg_kern != FCS_P2NFFT_REG_KERNEL_ONE_OVER_ABS_X)
     )
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown reg_kernel.");
   
@@ -445,8 +445,8 @@ FCSResult ifcs_p2nfft_set_reg_kernel_by_name(
     reg_kern_flag = FCS_P2NFFT_REG_KERNEL_DEFAULT;
   else if (strcmp(reg_kern_name,"ewald") == 0)
     reg_kern_flag = FCS_P2NFFT_REG_KERNEL_EWALD;
-  else if (strcmp(reg_kern_name,"other") == 0)
-    reg_kern_flag = FCS_P2NFFT_REG_KERNEL_OTHER;
+  else if (strcmp(reg_kern_name,"one_over_abs_x") == 0)
+    reg_kern_flag = FCS_P2NFFT_REG_KERNEL_ONE_OVER_ABS_X;
   else /* unknown regularization */
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown reg_kernel.");
 

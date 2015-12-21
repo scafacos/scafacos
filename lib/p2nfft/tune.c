@@ -469,17 +469,9 @@ FCSResult ifcs_p2nfft_tune(
   } else
     reg_far = d->reg_far;
 
-  //FIXME: I don't really like rewriting d->reg_kernel here, but I'm not sure how to do it better while still having a _DEFAULT
-  if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_DEFAULT){
-    if(d->num_periodic_dims == 0)
-      d->reg_kernel = FCS_P2NFFT_REG_KERNEL_OTHER;
-    else
-      d->reg_kernel = FCS_P2NFFT_REG_KERNEL_EWALD;
-  }
-
-  if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER)
+  if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_ONE_OVER_ABS_X)
     if(d->num_periodic_dims != 0)
-      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "FCS_P2NFFT_REG_KERNEL_OTHER is only available for 0d-periodicity.");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "FCS_P2NFFT_REG_KERNEL_ONBE_OVER_ABS_X is only available for 0d-periodicity.");
 
 
   /* Now, after the periodicity is clear, we can set the default tolerance type. */
@@ -1186,24 +1178,18 @@ FCSResult ifcs_p2nfft_tune(
     if (d->num_periodic_dims == 3)
       d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
           d->local_N, d->local_N_start, d->box_inv, d->alpha, d->k_cut);
-    if (d->num_periodic_dims == 2)
+    else if ( (d->num_periodic_dims == 2) || (d->num_periodic_dims == 1) )
       d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_and_1dp(
           d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->k_cut, d->periodicity, d->p, d->c, reg_far,
           d->interpolation_order, d->far_interpolation_num_nodes, d->far_interpolation_table_potential,
           d->cart_comm_pnfft);
-    if (d->num_periodic_dims == 1)
-      d->regkern_hat = malloc_and_precompute_regkern_hat_2dp_and_1dp(
-          d->N, d->epsB, d->box_a, d->box_b, d->box_c, d->box_inv, d->box_scales, d->alpha, d->k_cut, d->periodicity, d->p, d->c, reg_far,
-          d->interpolation_order, d->far_interpolation_num_nodes, d->far_interpolation_table_potential,
-          d->cart_comm_pnfft);
-      /* malloc_and_precompute_regkern_hat_1dp */
-    if (d->num_periodic_dims == 0) {
+    else if (d->num_periodic_dims == 0) {
       if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD) {
         d->regkern_hat = malloc_and_precompute_regkern_hat_0dp_ewald(
             d->N, d->epsB, d->box_scales, d->alpha, d->p, d->c, reg_far,
             d->interpolation_order, d->far_interpolation_num_nodes, d->far_interpolation_table_potential,
             d->cart_comm_pnfft, is_cubic(d->box_l));
-      } else if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER) {
+      } else if (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_ONE_OVER_ABS_X) {
         d->regkern_hat = malloc_and_precompute_regkern_hat_0dp(
             d->N, d->r_cut, d->epsI, d->epsB, d->p, d->c, d->box_scales, reg_near, reg_far,
             d->taylor2p_coeff, d->N_cg_cos, d->cg_cos_coeff,
@@ -1341,12 +1327,10 @@ static void print_command_line_arguments(
     }
     if(verbose || (d->reg_kernel != FCS_P2NFFT_REG_KERNEL_DEFAULT) ){
       printf("p2nfft_reg_kernel_name,");
-      if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_DEFAULT)
-        printf("default,");
-      else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)
+      if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)
         printf("ewald,");
-      else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER)
-        printf("other,");
+      else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_ONE_OVER_ABS_X)
+        printf("one_over_abs_x,");
     }
     if(verbose || !d->tune_p)
       printf("p2nfft_p,%" FCS_LMOD_INT "d,", d->p);
@@ -2084,7 +2068,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
 //               * Therefore, use xsnorm, scale the continuation value 'c', and rescale after evaluation.
 //               * Note that box_scales are the same in every direction for cubic boxes. */
 //              if(far_interpolation_num_nodes){
-//                regkern_hat[m] = ifcs_p2nfft_interpolation(
+//                regkern_hat[m] = ifcs_p2nfft_interpolation_far(
 //                    xsnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential) / box_scales[0];
 //              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_CG){
 //                regkern_hat[m] = evaluate_cos_polynomial_1d(xsnorm, N_cg_cos, cg_cos_coeff) / box_scales[0];
@@ -2361,9 +2345,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
               fcs_int ind = k[pdim] - local_Ni_start[pdim];
               fcs_int offset = far_interpolation_num_nodes + 3;
 
-              regkern_hat[m] = ifcs_p2nfft_interpolation(
+              regkern_hat[m] = ifcs_p2nfft_interpolation_far(
                   xs - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential + ind * offset);
-              FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_interpolation: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+              FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_interpolation_far: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, param, x2norm, p, epsB);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_reg_far_rad_sym_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
@@ -2458,11 +2442,11 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
                   fcs_int ind = k[pdim] + local_Ni_start[pdim];
                   fcs_int offset = far_interpolation_num_nodes + 3;
 
-                  regkern_hat[m] = ifcs_p2nfft_interpolation(
+                  regkern_hat[m] = ifcs_p2nfft_interpolation_far(
                       xs - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential + ind * offset);
                   FCS_P2NFFT_IFDBG(++count_far_interpolate);
                   FCS_P2NFFT_IFDBG(++count_interpolate);
-                  FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_interpolation: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+                  FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_interpolation_far: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else {
               /* The function evaluations 'in the middle' of the far field are much more expensive than the rest.
                * Here, we use symmetry to reduce the number of expensive function evaluations. 
@@ -2765,7 +2749,7 @@ static void default_tolerance_type(
     fcs_int *tolerance_type, fcs_float *tolerance
     )
 {
-  if(!periodicity[0] && !periodicity[1] && !periodicity[2] && reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER){
+  if(!periodicity[0] && !periodicity[1] && !periodicity[2] && reg_kernel == FCS_P2NFFT_REG_KERNEL_ONE_OVER_ABS_X){
     if(*tolerance < 0.0)
       *tolerance = FCS_P2NFFT_DEFAULT_TOLERANCE;
     if(*tolerance_type == FCS_TOLERANCE_TYPE_UNDEFINED)

@@ -102,10 +102,9 @@ typedef ptrdiff_t INT;
 #define FCS_P2NFFT_VERBOSE_TUNING            (1U << 3)
 
 /* p2nfft_reg_kernels */
-#define FCS_P2NFFT_REG_KERNEL_DEFAULT (-1)
-#define FCS_P2NFFT_REG_KERNEL_EWALD    0
-//TODO figure out a better name
-#define FCS_P2NFFT_REG_KERNEL_OTHER    1
+#define FCS_P2NFFT_REG_KERNEL_EWALD             0
+#define FCS_P2NFFT_REG_KERNEL_ONE_OVER_ABS_X    1
+#define FCS_P2NFFT_REG_KERNEL_DEFAULT           FCS_P2NFFT_REG_KERNEL_EWALD
 
 #define FCS_P2NFFT_DEFAULT_TOLERANCE         0.01
 
