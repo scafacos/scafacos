@@ -239,7 +239,7 @@ FCSResult ifcs_p2nfft_run(
         case 3: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_cub_loop); break;
         default: return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
       } 
-    } else if(d->num_periodic_dims > 0 &&  !compute_dipole_potential && !compute_dipole_field ){
+    } else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD &&  !compute_dipole_potential && !compute_dipole_field ){
       /* near field loop only works for charge-charge interactions */
       /* TODO: implement approx erfc interactions for dipoles */
       if(d->interpolation_order < -1 && !compute_dipole_potential && !compute_dipole_field )
@@ -280,7 +280,7 @@ FCSResult ifcs_p2nfft_run(
       near_params.one_over_r_cut = d->one_over_r_cut;
 
       fcs_near_compute(&near, d->r_cut, &near_params, d->cart_comm_3d);
-    } else
+    } else // in all other cases use p2nfft handle for transmission of parameters
       fcs_near_compute(&near, d->r_cut, rd, d->cart_comm_3d);
   
     fcs_near_destroy(&near);
@@ -569,7 +569,7 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
 
   /* Calculate virial if needed */
   if(d->virial != NULL){
-    if(d->num_periodic_dims == 3){
+    if ((d->num_periodic_dims == 3) && (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)) {
       fcs_float total_energy = 0.0;
       fcs_float total_global;
       if(compute_potential)
@@ -584,7 +584,7 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
         d->virial[t] = 0.0;
       d->virial[0] = d->virial[4] = d->virial[8] = total_global/3.0;
     } 
-    else if(d->num_periodic_dims == 0) {
+    else if ((d->num_periodic_dims == 0) && (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_OTHER)) {
       fcs_float local_virial[9];
 
       for(fcs_int t=0; t<9; t++)

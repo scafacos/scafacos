@@ -1450,8 +1450,8 @@ slint_t mpi_elements_alltoallv_ip_dash(elements_t *s, elements_t *sx, int *scoun
 
   } else if (elem_get_block(sx))
   {
-    sx = &_bx;
     elements_alloc_from_block(&_bx, elem_get_block(sx), elem_get_block_size(sx), 8, -1, SLCM_ALL);
+    sx = &_bx;
   }
 
   ds_exec_sl_create(&exec);
@@ -4614,7 +4614,7 @@ slint_t mpi_select_exact_generic_bulk(elements_t *s, slint_t nelements, slint_t 
 
   slint_t nothing, lc_min = -1, lc_max = -1;
 #ifdef elem_weight
-  slint_t lcw2gcw;
+  slint_t lcw2gcw = 0;
 #endif
 
 #if defined(elem_weight) && defined(sl_weight_intequiv)

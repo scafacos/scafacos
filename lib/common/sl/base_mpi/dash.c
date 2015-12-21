@@ -2189,6 +2189,8 @@ static void ds_sched_a2av_pre_symmetric(ds_sched_t *sched)
 
         match_group_end = sblk->begin - 1;
 
+        sblk_begin = sblk_end = -1; /* fix 'uninitialized ...' warnings (however, sblk_begin and sblk_end are always set when starting a new match-group!) */
+
         while (1)
         {
           Z_TRACE_IF(DS_TRACE_IF, "match_group_end: %" dsint_fmt ", sblk: %p", match_group_end, sblk);

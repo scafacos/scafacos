@@ -29,31 +29,31 @@
 #include "kernels.h"
 
 fcs_float ifcs_p2nfft_reg_far_rad_sym(
-    ifcs_p2nfft_kernel k, fcs_float xsnorm,
-    fcs_int p, const fcs_float *param,
+    ifcs_p2nfft_kernel k,  const fcs_float *param,
+    fcs_float xsnorm, fcs_int p,
     fcs_float epsI, fcs_float epsB);
-fcs_float ifcs_p2nfft_reg_far_rad_expl_cont(
-    ifcs_p2nfft_kernel k, fcs_float xsnorm,
-    fcs_int p, const fcs_float *param,
+fcs_float ifcs_p2nfft_reg_far_rad_ec(
+    ifcs_p2nfft_kernel k,  const fcs_float *param,
+    fcs_float xsnorm, fcs_int p,
     fcs_float epsI, fcs_float epsB, fcs_float c);
-fcs_float ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
-    ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_float xsnorm,
-    fcs_int p, const fcs_float *param,
-    fcs_float r_cut, fcs_float eps_B, fcs_float c);
-fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
-    ifcs_p2nfft_kernel k, fcs_float xsnorm,
-    fcs_int p, const fcs_float *param,
+fcs_float ifcs_p2nfft_reg_far_rad_ic(
+    ifcs_p2nfft_kernel k,  const fcs_float *param,
+    fcs_float xsnorm, fcs_int p,
     fcs_float epsI, fcs_float epsB);
+fcs_float ifcs_p2nfft_reg_far_rad_ec_noncubic(
+    ifcs_p2nfft_kernel k,  const fcs_float *param,
+    fcs_float x2norm, fcs_float xsnorm, fcs_int p,
+    fcs_float r_cut, fcs_float eps_B, fcs_float c);
 
 fcs_float ifcs_p2nfft_reg_far_rad_sym_no_singularity(
-    ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p,
-    const fcs_float *param, fcs_float epsB);
+    ifcs_p2nfft_kernel k, const fcs_float *param,
+    fcs_float x2norm, fcs_int p, fcs_float epsB);
 fcs_float ifcs_p2nfft_reg_far_rad_ec_no_singularity(
-    ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p,
-    const fcs_float *param, fcs_float epsB, fcs_float c);
+    ifcs_p2nfft_kernel k, const fcs_float *param,
+    fcs_float x2norm, fcs_int p, fcs_float epsB, fcs_float c);
 fcs_float ifcs_p2nfft_reg_far_rad_ic_no_singularity(
-    ifcs_p2nfft_kernel k, fcs_float xx, fcs_int p,
-    const fcs_float *param, fcs_float epsB);
+    ifcs_p2nfft_kernel k, const fcs_float *param,
+    fcs_float x2norm, fcs_int p, fcs_float epsB);
 
 #endif
 

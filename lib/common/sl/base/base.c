@@ -649,13 +649,13 @@ slint_t binning_radix_finalize(binning_t *bm, bin_t *bin, slint_t dc, slweight_t
 #endif
 
   r = 0;
+  lc = 0;
 
 #ifdef elem_weight
+  lw = 0.0;
+
   if (bm->doweights)
   {
-    lc = 0;
-    lw = 0.0;
-
     if (bin->s.size <= lc_min || (dw >= bin->weight && bin->s.size <= lc_max))
     {
       lc = bin->s.size;
@@ -1436,9 +1436,8 @@ slint_t elements_keys_init_from_file(elements_t *s, slint_t data, char *filename
   if (!inputfile) { return -1; }
 
 #ifdef key_integer
-  if (const_bytes_per_line)
+  if (const_bytes_per_line && fgets(buffer, LINE_LENGTH, inputfile))
   {
-    fgets(buffer, LINE_LENGTH, inputfile);
     bytes_per_line = ftell(inputfile);
     rewind(inputfile);
 
@@ -1452,7 +1451,7 @@ slint_t elements_keys_init_from_file(elements_t *s, slint_t data, char *filename
     if (!fgets(buffer, LINE_LENGTH, inputfile)) break;
   }
 
-  while((i < s->size) && (line <= to))
+  while ((i < s->size) && (line <= to))
   {
     if (!fgets(buffer, LINE_LENGTH, inputfile)) break;
 

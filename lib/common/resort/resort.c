@@ -422,10 +422,16 @@ static void unpack_bytes(fcs_int n, char *src, char *dst, fcs_int x)
 }
 
 
-static int resort_tproc(void *b, ZMPI_Count x, void *tproc_data)
+static int resort_tproc(void *b,
+#if MPI_VERSION >= 3
+  MPI_Count x,
+#else
+  ZMPI_Count x,
+#endif
+  void *tproc_data)
 {
   size_t type_size = *((fcs_int *) tproc_data);
-  
+
   fcs_resort_index_t idx = *((fcs_resort_index_t *) (((char *) b) + (x * type_size)));
 
   return FCS_RESORT_INDEX_GET_PROC(idx);

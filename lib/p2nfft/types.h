@@ -101,6 +101,12 @@ typedef ptrdiff_t INT;
 #define FCS_P2NFFT_IGNORE_FIELD              (1U << 2)
 #define FCS_P2NFFT_VERBOSE_TUNING            (1U << 3)
 
+/* p2nfft_reg_kernels */
+#define FCS_P2NFFT_REG_KERNEL_DEFAULT (-1)
+#define FCS_P2NFFT_REG_KERNEL_EWALD    0
+//TODO figure out a better name
+#define FCS_P2NFFT_REG_KERNEL_OTHER    1
+
 #define FCS_P2NFFT_DEFAULT_TOLERANCE         0.01
 
 #define FCS_P2NFFT_DEFAULT_PNFFT_WINDOW  1 /* Bspline */
@@ -209,6 +215,7 @@ typedef struct {
   fcs_int short_range_flag;
   fcs_int reg_near;
   fcs_int reg_far;
+  fcs_int reg_kernel;
 
   fcs_int periodicity[3];
 

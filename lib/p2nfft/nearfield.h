@@ -61,8 +61,7 @@ ifcs_p2nfft_compute_near_potential_periodic_erfc(
     )
 {
   ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
-  fcs_float alpha = d->alpha;
-  fcs_float adist = alpha * dist;
+  fcs_float adist = d->alpha * dist;
   return (1.0 - erf(adist)) / dist; /* use erf instead of erfc to fix ICC performance problems */
 }
 
@@ -117,8 +116,8 @@ ifcs_p2nfft_compute_near_potential_periodic_approx_erfc(
     const void *param, fcs_float dist
     )
 {
-  fcs_float alpha = *((fcs_float *) param);
-  fcs_float adist = alpha * dist;
+  ifcs_p2nfft_data_struct* d = (ifcs_p2nfft_data_struct*) param;
+  fcs_float adist = d->alpha * dist;
   return ifcs_p2nfft_approx_erfc(adist) / dist;
 }
 

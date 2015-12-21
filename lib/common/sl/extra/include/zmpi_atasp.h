@@ -1130,6 +1130,8 @@ typedef struct zmpi__spec_tproc_t *ZMPI_Tproc;
 
 #if MPI_VERSION < 3
 typedef long ZMPI_Count;
+#else
+typedef MPI_Count ZMPI_Count;
 #endif
 
 typedef int ZMPI_TPROC_FN(void *b, IF_ELSE_MPI_VERSION_3(MPI_Count, ZMPI_Count) x, void *tproc_data);
@@ -1221,6 +1223,10 @@ extern int ZMPI_Neighbor_alltoall_specific_type;
 typedef int ZMPI_Status;
 int ZMPI_Get_elements(const ZMPI_Status *status, MPI_Datatype datatype, int *count);
 # define ZMPI_STATUS_IGNORE  NULL
+#else
+typedef MPI_Status ZMPI_Status;
+# define ZMPI_Get_elements   MPI_Get_elements
+# define ZMPI_STATUS_IGNORE  MPI_STATUS_IGNORE
 #endif
 
 typedef int ZMPI_ALLTOALL_SPECIFIC_FN(void *sbuf, int scount, MPI_Datatype stype, void *rbuf, int rcount, MPI_Datatype rtype, ZMPI_Tproc tproc, void *tproc_data, MPI_Comm comm, IF_ELSE_MPI_VERSION_3(MPI_Status, ZMPI_Status) *status);
