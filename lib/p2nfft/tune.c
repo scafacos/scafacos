@@ -815,7 +815,7 @@ FCSResult ifcs_p2nfft_tune(
 
       if(d->far_interpolation_num_nodes > 0){
         if( (d->num_periodic_dims==0) ){
-          d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->far_interpolation_num_nodes+3));
+          d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->far_interpolation_num_nodes+4));
           FCS_P2NFFT_IFDBG(double timer=-MPI_Wtime());
           init_far_interpolation_table_potential_0dp_ewald(
               d->far_interpolation_num_nodes, reg_far,
@@ -841,7 +841,7 @@ FCSResult ifcs_p2nfft_tune(
             if(!d->periodicity[t]) local_Ni_total *= local_Ni[t];
           }
       
-          fcs_int offset = (d->far_interpolation_num_nodes+3);
+          fcs_int offset = (d->far_interpolation_num_nodes+4);
           fcs_int mem = offset * local_Ni_total;
           d->far_interpolation_table_potential = (mem>0) ? (fcs_float*) malloc(sizeof(fcs_float) * mem) : NULL;
       
@@ -1206,12 +1206,12 @@ FCSResult ifcs_p2nfft_tune(
   init_pnfft(&d->pnfft, 3, d->N, d->n, d->x_max, d->m, d->pnfft_flags, d->pnfft_interpolation_order, d->pnfft_window,
       d->pfft_flags, d->pfft_patience, d->cart_comm_pnfft);
 
-  if(d->tune_b)
+  if(d->tune_b){
     FCS_PNFFT(get_b)(d->pnfft, &d->b[0], &d->b[1], &d->b[2]);
-  else {
+  } else {
     /* skip retune if b is the same in P2NFFT and PNFFT plans
      * This is important, since we call fcs_tune as part of fcs_run. */
-    fcs_float b[3];
+    fcs_float b[3] = {0,0,0};
     FCS_PNFFT(get_b)(d->pnfft, &b[0], &b[1], &b[2]);
 
     fcs_int b_is_out_of_sync=0;
@@ -1222,7 +1222,6 @@ FCSResult ifcs_p2nfft_tune(
     if(b_is_out_of_sync)
       FCS_PNFFT(set_b)(d->b[0], d->b[1], d->b[2], d->pnfft);
   }
-
 
   /* Print the command line arguments that recreate this plan. */
   if(d->needs_retune){
