@@ -2080,7 +2080,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
 //               * Therefore, use xsnorm, scale the continuation value 'c', and rescale after evaluation.
 //               * Note that box_scales are the same in every direction for cubic boxes. */
 //              if(far_interpolation_num_nodes){
-//                regkern_hat[m] = ifcs_p2nfft_interpolation(
+//                regkern_hat[m] = ifcs_p2nfft_interpolation_far(
 //                    xsnorm - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential) / box_scales[0];
 //              } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_CG){
 //                regkern_hat[m] = evaluate_cos_polynomial_1d(xsnorm, N_cg_cos, cg_cos_coeff) / box_scales[0];
@@ -2357,9 +2357,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
               fcs_int ind = k[pdim] - local_Ni_start[pdim];
               fcs_int offset = far_interpolation_num_nodes + 3;
 
-              regkern_hat[m] = ifcs_p2nfft_interpolation(
+              regkern_hat[m] = ifcs_p2nfft_interpolation_far(
                   xs - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential + ind * offset);
-              FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_interpolation: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+              FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_interpolation_far: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else if (reg_far == FCS_P2NFFT_REG_FAR_RAD_T2P_SYM){
               regkern_hat[m] = -ifcs_p2nfft_reg_far_rad_sym_no_singularity(ifcs_p2nfft_ewald_1dp_keq0, param, x2norm, p, epsB);
               FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k==0, ifcs_p2nfft_reg_far_rad_sym_no_singularity: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
@@ -2454,11 +2454,11 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
                   fcs_int ind = k[pdim] + local_Ni_start[pdim];
                   fcs_int offset = far_interpolation_num_nodes + 3;
 
-                  regkern_hat[m] = ifcs_p2nfft_interpolation(
+                  regkern_hat[m] = ifcs_p2nfft_interpolation_far(
                       xs - 0.5 + epsB, 1.0/epsB, interpolation_order, far_interpolation_num_nodes, far_interpolation_table_potential + ind * offset);
                   FCS_P2NFFT_IFDBG(++count_far_interpolate);
                   FCS_P2NFFT_IFDBG(++count_interpolate);
-                  FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_interpolation: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
+                  FCS_P2NFFT_IFDBG_REGKERN(if(myrank==0) fprintf(stderr, "k!=0, ifcs_p2nfft_interpolation_far: regkern[%td] = %e + I * %e\n", m, creal(regkern_hat[m]), cimag(regkern_hat[m])));
             } else {
               /* The function evaluations 'in the middle' of the far field are much more expensive than the rest.
                * Here, we use symmetry to reduce the number of expensive function evaluations. 
