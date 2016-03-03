@@ -37,7 +37,6 @@ fmmkinds.h \
 mp_constants.f90 \
 memalloc.f90 \
 fmmwigner.f \
-memalloc.f90 \
 mp_wrapper.f90 \
 mp_wrapper.h \
 mp_info.f \

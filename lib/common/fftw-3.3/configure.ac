@@ -191,6 +191,7 @@ dnl Checks for programs.
 AX_PROG_CC_MPI(,,AC_MSG_FAILURE([FCS internal FFTW requires an MPI C compiler.]))
 MPICC=$CC
 AC_SUBST(MPICC)
+AC_SUBST(MPILIBS)
 #AC_PROG_CC
 AM_PROG_CC_C_O
 AX_COMPILER_VENDOR
