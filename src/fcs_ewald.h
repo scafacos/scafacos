@@ -22,11 +22,6 @@
 #ifndef _FCS_EWALD_H
 #define _FCS_EWALD_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <mpi.h>
 #include "fcs_ewald_p.h"
 #include "FCSResult.h"
 #include "FCSInterface.h"

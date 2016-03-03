@@ -413,6 +413,58 @@ FCSResult ifcs_p2nfft_get_reg_far(
   return NULL;
 }
 
+/* Getters and Setters for P2NFFT reg_kernel function flag */
+FCSResult ifcs_p2nfft_set_reg_kernel(
+    void *rd, const char* fnc_name, fcs_int reg_kern
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  if( (reg_kern != FCS_P2NFFT_REG_KERNEL_DEFAULT)
+      && (reg_kern != FCS_P2NFFT_REG_KERNEL_EWALD)
+      && (reg_kern != FCS_P2NFFT_REG_KERNEL_OTHER)
+    )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown reg_kernel.");
+  
+  if(reg_kern != d->reg_kernel)
+    d->needs_retune = 1;
+  d->reg_kernel = reg_kern;
+
+  return NULL;
+}
+
+FCSResult ifcs_p2nfft_set_reg_kernel_by_name(
+    void *rd, const char* fnc_name, char *reg_kern_name
+    )
+{
+  unsigned reg_kern_flag;
+
+  if (strcmp(reg_kern_name,"default") == 0)
+    reg_kern_flag = FCS_P2NFFT_REG_KERNEL_DEFAULT;
+  else if (strcmp(reg_kern_name,"ewald") == 0)
+    reg_kern_flag = FCS_P2NFFT_REG_KERNEL_EWALD;
+  else if (strcmp(reg_kern_name,"other") == 0)
+    reg_kern_flag = FCS_P2NFFT_REG_KERNEL_OTHER;
+  else /* unknown regularization */
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Unknown reg_kernel.");
+
+  return ifcs_p2nfft_set_reg_kernel(rd, fnc_name, reg_kern_flag);
+}
+
+FCSResult ifcs_p2nfft_get_reg_kernel(
+    void *rd, const char* fnc_name, fcs_int *reg_kern
+    )
+{
+  ifcs_p2nfft_data_struct *d = (ifcs_p2nfft_data_struct*)rd;
+  if( rd==NULL )
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Got NULL Pointer.");
+
+  *reg_kern = d->reg_kernel;
+  return NULL;
+}
+
 /* Getters and Setters for scaled far field regularization border */
 FCSResult ifcs_p2nfft_set_epsB(
     void *rd, const char* fnc_name, fcs_float epsB

@@ -304,6 +304,19 @@ if test "x$use_fcs_fftw3" = xyes -o "x$use_fcs_fftw3_mpi" = xyes ; then
     fi
     use_fcs_fftw3="yes (build as helper method)"
 
+    # Build shared libraries or not.
+    if test "x$enable_shared" = xyes ; then
+      case $ac_configure_args in
+        *--enable-shared*) ;;
+        *) ac_configure_args="$ac_configure_args --enable-shared" ;;
+      esac
+    else
+      case $ac_configure_args in
+        *--disable-shared*) ;;
+        *) ac_configure_args="$ac_configure_args --disable-shared" ;;
+      esac
+    fi
+
     # build FFTW without Fortran interface
     case $ac_configure_args in
       *--disable-fortran*) ;;
@@ -394,11 +407,18 @@ if test "x$use_fcs_pfft" = xyes ; then
 
     use_fcs_pfft="yes (build as helper method)"
 
-    # Do not build shared libraries, ScaFaCoS is not ready for it.
-    case $ac_configure_args in
-      *--disable-shared*) ;;
-      *) ac_configure_args="$ac_configure_args --disable-shared" ;;
-    esac
+    # Build shared libraries or not.
+    if test "x$enable_shared" = xyes ; then
+      case $ac_configure_args in
+        *--enable-shared*) ;;
+        *) ac_configure_args="$ac_configure_args --enable-shared" ;;
+      esac
+    else
+      case $ac_configure_args in
+        *--disable-shared*) ;;
+        *) ac_configure_args="$ac_configure_args --disable-shared" ;;
+      esac
+    fi
     # Disable install of headers.
     case $ac_configure_args in
       *--disable-header-install*) ;;
@@ -498,11 +518,18 @@ if test "x$use_fcs_pnfft" = xyes ; then
 
     use_fcs_pnfft="yes (build as helper method)"
 
-    # Do not build shared libraries, ScaFaCoS is not ready for it.
-    case $ac_configure_args in
-      *--disable-shared*) ;;
-      *) ac_configure_args="$ac_configure_args --disable-shared" ;;
-    esac
+    # Build shared libraries or not.
+    if test "x$enable_shared" = xyes ; then
+      case $ac_configure_args in
+        *--enable-shared*) ;;
+        *) ac_configure_args="$ac_configure_args --enable-shared" ;;
+      esac
+    else
+      case $ac_configure_args in
+        *--disable-shared*) ;;
+        *) ac_configure_args="$ac_configure_args --disable-shared" ;;
+      esac
+    fi
     # Disable install of headers.
     case $ac_configure_args in
       *--disable-header-install*) ;;

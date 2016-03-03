@@ -38,8 +38,8 @@
  *  and K_B symmetric to K(1/2) (used in 1D)
  */
 fcs_float ifcs_p2nfft_reg_far_rad_sym(
-    ifcs_p2nfft_kernel k, fcs_float xsnorm,
-    fcs_int p, const fcs_float *param,
+    ifcs_p2nfft_kernel k,  const fcs_float *param,
+    fcs_float xsnorm, fcs_int p,
     fcs_float epsI, fcs_float epsB
     )
 {
@@ -65,9 +65,9 @@ fcs_float ifcs_p2nfft_reg_far_rad_sym(
 /** regularized kernel for even kernels with K_I even
  *  and K_B mirrored smooth to K(1/2) (used in dD, d>1)
  */
-fcs_float ifcs_p2nfft_reg_far_rad_expl_cont(
-    ifcs_p2nfft_kernel k, fcs_float xsnorm,
-    fcs_int p, const fcs_float *param,
+fcs_float ifcs_p2nfft_reg_far_rad_ec(
+    ifcs_p2nfft_kernel k,  const fcs_float *param,
+    fcs_float xsnorm, fcs_int p,
     fcs_float epsI, fcs_float epsB, fcs_float c
     )
 {
@@ -106,9 +106,9 @@ fcs_float ifcs_p2nfft_reg_far_rad_expl_cont(
  * epsB: outer cutoff radius (with transformation),
  * c: constant continuation value for far field regularization,
  * */
-fcs_float ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
-    ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_float xsnorm,
-    fcs_int p, const fcs_float *param,
+fcs_float ifcs_p2nfft_reg_far_rad_ec_noncubic(
+    ifcs_p2nfft_kernel k,  const fcs_float *param,
+    fcs_float x2norm, fcs_float xsnorm, fcs_int p,
     fcs_float r_cut, fcs_float epsB, fcs_float c
     )
 {
@@ -133,9 +133,9 @@ fcs_float ifcs_p2nfft_reg_far_rad_expl_cont_noncubic(
 /** regularized kernel for even kernels with K_I even
  *  and K_B mirrored smooth into x=1/2 (used in dD, d>1)
  */
-fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
-    ifcs_p2nfft_kernel k, fcs_float xsnorm,
-    fcs_int p, const fcs_float *param,
+fcs_float ifcs_p2nfft_reg_far_rad_ic(
+    ifcs_p2nfft_kernel k,  const fcs_float *param,
+    fcs_float xsnorm, fcs_int p,
     fcs_float epsI, fcs_float epsB
     )
 {
@@ -161,7 +161,8 @@ fcs_float ifcs_p2nfft_reg_far_rad_impl_cont(
  *  and K_B in [1/2-epsB,1/2+epsB) (used in 1D)
  */
 fcs_float ifcs_p2nfft_reg_far_rad_sym_no_singularity(
-    ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB
+    ifcs_p2nfft_kernel k, const fcs_float *param,
+    fcs_float x2norm, fcs_int p, fcs_float epsB
     )
 {
   fcs_float h = param[2];
@@ -188,7 +189,8 @@ fcs_float ifcs_p2nfft_reg_far_rad_sym_no_singularity(
  *  and K_B mirrored smooth into x=1/2 with explicit continuation value 'c' at 1/2 (used in dD, d>1)
  */
 fcs_float ifcs_p2nfft_reg_far_rad_ec_no_singularity(
-    ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB, fcs_float c
+    ifcs_p2nfft_kernel k, const fcs_float *param,
+    fcs_float x2norm, fcs_int p, fcs_float epsB, fcs_float c
     )
 {
   fcs_float h = param[2];
@@ -215,7 +217,8 @@ fcs_float ifcs_p2nfft_reg_far_rad_ec_no_singularity(
  *  and K_B mirrored smooth into x=1/2 with implicit continuation value at 1/2 (used in dD, d>1)
  */
 fcs_float ifcs_p2nfft_reg_far_rad_ic_no_singularity(
-    ifcs_p2nfft_kernel k, fcs_float x2norm, fcs_int p, const fcs_float *param, fcs_float epsB
+    ifcs_p2nfft_kernel k, const fcs_float *param,
+    fcs_float x2norm, fcs_int p, fcs_float epsB
     )
 {
   fcs_float h = param[2];

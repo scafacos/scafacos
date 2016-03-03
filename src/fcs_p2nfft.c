@@ -310,6 +310,8 @@ FCSResult fcs_p2nfft_set_parameter(FCS handle, fcs_bool continue_on_errors, char
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_near_name",    p2nfft_set_reg_near_by_name,          FCS_PARSE_VAL(fcs_p_char_t));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_far",          p2nfft_set_reg_far,                   FCS_PARSE_VAL(fcs_int));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_far_name",     p2nfft_set_reg_far_by_name,           FCS_PARSE_VAL(fcs_p_char_t));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_kernel",       p2nfft_set_reg_kernel,                FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_reg_kernel_name",  p2nfft_set_reg_kernel_by_name,        FCS_PARSE_VAL(fcs_p_char_t));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_epsB",             p2nfft_set_epsB,                      FCS_PARSE_VAL(fcs_float));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_p",                p2nfft_set_p,                         FCS_PARSE_VAL(fcs_int));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("p2nfft_c",                p2nfft_set_c,                         FCS_PARSE_VAL(fcs_float));

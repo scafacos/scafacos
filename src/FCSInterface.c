@@ -877,7 +877,6 @@ FCSResult fcs_print_parameters(FCS handle)
     fcs_get_box_origin(handle)[0], fcs_get_box_origin(handle)[1], fcs_get_box_origin(handle)[2]);
   printf("periodicity: %c %c %c\n", ((fcs_get_periodicity(handle)[0] == 1)?'T':'F'), ((fcs_get_periodicity(handle)[1] == 1)?'T':'F'),((fcs_get_periodicity(handle)[2] == 1)?'T':'F'));
   printf("total particles: %" FCS_LMOD_INT "d\n", fcs_get_total_particles(handle));
-  printf("------------------------");
   printf("solver specific data:\n");
 
   if (handle->print_parameters)
