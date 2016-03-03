@@ -48,6 +48,16 @@
 #endif
 
 
+#if defined(FCS_ENABLE_TRACE_NEAR) || 0
+# define DO_TRACE
+# define TRACE_CMD(_cmd_)  Z_MOP(_cmd_)
+#else
+# define TRACE_CMD(_cmd_)  Z_NOP()
+#endif
+#define TRACE_PRINT_PREFIX  "NEAR_TRACE: "
+
+#define PRINT_PARTICLES  0
+
 #if defined(FCS_ENABLE_DEBUG_NEAR) || 0
 # define DO_DEBUG
 # define DEBUG_CMD(_cmd_)  Z_MOP(_cmd_)
@@ -72,7 +82,7 @@
 #endif
 #define TIMING_PRINT_PREFIX  "NEAR_TIMING: "
 
-#define PRINT_PARTICLES  0
+#define PRINT_STREAM     stderr
 
 /* Z-curve ordering of boxes disabled (leads to insane costs for neighbor box search) */
 /*#define BOX_SFC*/
@@ -435,54 +445,58 @@ static void fcs_print_local_particles(fcs_int nparticles, fcs_float *positions, 
   if (field && potentials)
   {
     for (i = 0; i < nparticles; ++i)
-      printf("%s%" FCS_LMOD_INT "d  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f]"
-             "\n", prefix, i
-             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
-             , charges[i]
-             , field[i * 3 + 0], field[i * 3 + 1], field[i * 3 + 2]
-             , potentials[i]
-             );
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX
+        "%s%" FCS_LMOD_INT "d  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f]"
+        "\n", prefix, i
+        , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+        , charges[i]
+        , field[i * 3 + 0], field[i * 3 + 1], field[i * 3 + 2]
+        , potentials[i]
+        );
 
   } else if (field && !potentials)
   {
     for (i = 0; i < nparticles; ++i)
-      printf("%s%" FCS_LMOD_INT "d  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "\n", prefix, i
-             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
-             , charges[i]
-             , field[i * 3 + 0], field[i * 3 + 1], field[i * 3 + 2]
-             );
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX
+        "%s%" FCS_LMOD_INT "d  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "\n", prefix, i
+        , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+        , charges[i]
+        , field[i * 3 + 0], field[i * 3 + 1], field[i * 3 + 2]
+        );
 
   } else if (!field && potentials)
   {
     for (i = 0; i < nparticles; ++i)
-      printf("%s%" FCS_LMOD_INT "d  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f]"
-             "\n", prefix, i
-             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
-             , charges[i]
-             , potentials[i]
-             );
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX
+        "%s%" FCS_LMOD_INT "d  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f]"
+        "\n", prefix, i
+        , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+        , charges[i]
+        , potentials[i]
+        );
 
   } else if (!field && !potentials)
   {
     for (i = 0; i < nparticles; ++i)
-      printf("%s%" FCS_LMOD_INT "d  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f]"
-             "\n", prefix, i
-             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
-             , charges[i]
-             );
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX
+        "%s%" FCS_LMOD_INT "d  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f]"
+        "\n", prefix, i
+        , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+        , charges[i]
+        );
   }
 }
 
@@ -542,54 +556,58 @@ static void fcs_print_local_dipole_particles(fcs_int nparticles, fcs_float *posi
   if (field && potentials)
   {
     for (i = 0; i < nparticles; ++i)
-      printf("%s%" FCS_LMOD_INT "d  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "\n", prefix, i
-             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
-             , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
-             , field[i * 6 + 0], field[i * 6 + 1], field[i * 6 + 2], field[i * 6 + 3], field[i * 6 + 4], field[i * 6 + 5]
-             , potentials[i * 3 + 0], potentials[i * 3 + 1], potentials[i * 3 + 2]
-             );
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX
+        "%s%" FCS_LMOD_INT "d  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "\n", prefix, i
+        , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+        , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
+        , field[i * 6 + 0], field[i * 6 + 1], field[i * 6 + 2], field[i * 6 + 3], field[i * 6 + 4], field[i * 6 + 5]
+        , potentials[i * 3 + 0], potentials[i * 3 + 1], potentials[i * 3 + 2]
+        );
 
   } else if (field && !potentials)
   {
     for (i = 0; i < nparticles; ++i)
-      printf("%s%" FCS_LMOD_INT "d  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "\n", prefix, i
-             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
-             , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
-             , field[i * 6 + 0], field[i * 6 + 1], field[i * 6 + 2], field[i * 6 + 3], field[i * 6 + 4], field[i * 6 + 5]
-             );
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX
+        "%s%" FCS_LMOD_INT "d  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "\n", prefix, i
+        , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+        , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
+        , field[i * 6 + 0], field[i * 6 + 1], field[i * 6 + 2], field[i * 6 + 3], field[i * 6 + 4], field[i * 6 + 5]
+        );
 
   } else if (!field && potentials)
   {
     for (i = 0; i < nparticles; ++i)
-      printf("%s%" FCS_LMOD_INT "d  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "\n", prefix, i
-             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
-             , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
-             , potentials[i * 3 + 0], potentials[i * 3 + 1], potentials[i * 3 + 2]
-             );
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX
+        "%s%" FCS_LMOD_INT "d  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "\n", prefix, i
+        , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+        , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
+        , potentials[i * 3 + 0], potentials[i * 3 + 1], potentials[i * 3 + 2]
+        );
 
   } else if (!field && !potentials)
   {
     for (i = 0; i < nparticles; ++i)
-      printf("%s%" FCS_LMOD_INT "d  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "[%" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f]  "
-             "\n", prefix, i
-             , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
-             , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
-             );
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX
+        "%s%" FCS_LMOD_INT "d  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "[%.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f, %.16" FCS_LMOD_FLOAT "f]  "
+        "\n", prefix, i
+        , positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]
+        , moments[i * 3 + 0], moments[i * 3 + 1], moments[i * 3 + 2]
+        );
   }
 }
 
@@ -821,11 +839,11 @@ static void print_boxes(fcs_int nlocal, box_t *boxes, const char *intro)
   fcs_int i;
 
 
-  if (intro) printf("%s\n", intro);
+  if (intro) fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "%s\n", intro);
 
   for (i = 0; i < nlocal; ++i)
   {
-    printf("%5" FCS_LMOD_INT "d: " box_fmt "\n", i, box_val(boxes[i]));
+    fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "%5" FCS_LMOD_INT "d: " box_fmt "\n", i, box_val(boxes[i]));
   }
 }
 
@@ -834,7 +852,9 @@ static void print_boxes(fcs_int nlocal, box_t *boxes, const char *intro)
 
 static void find_box(box_t *boxes, fcs_int max, box_t box, fcs_int low, fcs_int *start, fcs_int *size)
 {
-/*  printf("find_box: " box_fmt " @ %" FCS_LMOD_INT "d\n", box_val(box), low);*/
+  TRACE_CMD(
+    fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "find_box: " box_fmt " @ %" FCS_LMOD_INT "d\n", box_val(box), low);
+  );
 
 #ifdef BOX_SKIP_FORMAT
 # define BOX_NEXT(_b_, _l_)      (((_b_)[(_l_) + 1] >= 0)?((_l_) + 1):((_l_) - (_b_)[(_l_) + 1] + 1))
@@ -859,7 +879,9 @@ static void find_box(box_t *boxes, fcs_int max, box_t box, fcs_int low, fcs_int 
   
   *size = low - *start;
 
-/*  printf("  -> %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", *start, *size);*/
+  TRACE_CMD(
+    fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "  -> %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", *start, *size);
+  );
 }
 
 
@@ -869,13 +891,19 @@ static void find_neighbours(fcs_int nneighbours, fcs_int *neighbours, box_t *box
   box_t nbox;
 
 
+  TRACE_CMD(
+    fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "find_neighbours: " box_fmt "\n", box_val(box));
+  );
+
   for (i = 0; i < nneighbours; ++i)
   {
     nbox = BOX_ADD(box, neighbours[3 * i + 0], neighbours[3 * i + 1], neighbours[3 * i + 2]);
 
     find_box(boxes, max, nbox, lasts[i], &starts[i], &sizes[i]);
     
-/*    printf("  neighbour %" FCS_LMOD_INT "d: " box_fmt " -> %" FCS_LMOD_INT "d,%" FCS_LMOD_INT "d,%" FCS_LMOD_INT "d\n", i, box_val(nbox), lasts[i], starts[i], sizes[i]);*/
+    TRACE_CMD(
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "  neighbour %" FCS_LMOD_INT "d: " box_fmt " -> %" FCS_LMOD_INT "d,%" FCS_LMOD_INT "d,%" FCS_LMOD_INT "d\n", i, box_val(nbox), lasts[i], starts[i], sizes[i]);
+    );
   }
 }
 
@@ -892,7 +920,9 @@ static void compute_near(fcs_float *positions0, fcs_float *charges0, fcs_float *
     return;
   }
 
-/*  printf("compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", start0, size0, start1, size1);*/
+  TRACE_CMD(
+    fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", start0, size0, start1, size1);
+  );
 
   if (near->compute_field_potential)
   {
@@ -970,7 +1000,9 @@ void compute_charge_self(charges_t *charges, fcs_int charges_start, fcs_int char
   fcs_near_interaction_data_t iad;
 
 
-/*  printf("S compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges_start, charges_size, -1, -1);*/
+  TRACE_CMD(
+    fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "S compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges_start, charges_size, -1, -1);
+  );
 
   if (!near->compute_charge_charge)
   {
@@ -1020,7 +1052,9 @@ void compute_charge_from_charge(charges_t *charges, fcs_int charges_start, fcs_i
   fcs_near_interaction_data_t iad;
 
 
-/*  printf("F compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges_start, charges_size, from_charges_start, from_charges_size);*/
+  TRACE_CMD(
+    fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "F compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges_start, charges_size, from_charges_start, from_charges_size);
+  );
 
   if (!near->compute_charge_charge)
   {
@@ -1064,8 +1098,10 @@ void compute_charge_vs_charge(charges_t *charges0, fcs_int charges0_start, fcs_i
       charges0->field == charges1->field &&
       charges0->potentials == charges1->potentials)
   {
-/*    printf("F compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges0_start, charges0_size, charges1_start, charges1_size);
-    printf("F compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges1_start, charges1_size, charges0_start, charges0_size);*/
+    TRACE_CMD(
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "F compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges0_start, charges0_size, charges1_start, charges1_size);
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "F compute: %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d vs. %" FCS_LMOD_INT "d / %" FCS_LMOD_INT "d\n", charges1_start, charges1_size, charges0_start, charges0_size);
+    );
 
     compute_near(charges0->positions, charges0->charges, charges0->field, charges0->potentials, charges0_start, charges0_size,
       NULL, NULL, charges1_start, charges1_size, cutoff, near, near_param);
@@ -1222,6 +1258,16 @@ void compute_charge_from_dipole(charges_t *charges, fcs_int charges_start, fcs_i
 
     r = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
 
+    TRACE_CMD(
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX
+        "%" FCS_LMOD_INT "d [%.16" FCS_LMOD_FLOAT "f,%.16" FCS_LMOD_FLOAT "f,%.16" FCS_LMOD_FLOAT "f] vs. "
+        "%" FCS_LMOD_INT "d [%.16" FCS_LMOD_FLOAT "f,%.16" FCS_LMOD_FLOAT "f,%.16" FCS_LMOD_FLOAT "f]: "
+        "%.16" FCS_LMOD_FLOAT "f\n",
+        i, charges->positions[3 * i + 0], charges->positions[3 * i + 1], charges->positions[3 * i + 2],
+        j, charges->positions[3 * j + 0], charges->positions[3 * j + 1], charges->positions[3 * j + 2],
+        r);
+    );
+
     if (r > cutoff) continue;
 
     /* charges[i] <- dipoles[j] */
@@ -1262,6 +1308,16 @@ void compute_dipole_from_charge(dipoles_t *dipoles, fcs_int dipoles_start, fcs_i
     d[2] = charges->positions[3 * j + 2] - dipoles->positions[3 * i + 2];
 
     r = fcs_sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+
+    TRACE_CMD(
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX
+        "%" FCS_LMOD_INT "d [%.16" FCS_LMOD_FLOAT "f,%.16" FCS_LMOD_FLOAT "f,%.16" FCS_LMOD_FLOAT "f] vs. "
+        "%" FCS_LMOD_INT "d [%.16" FCS_LMOD_FLOAT "f,%.16" FCS_LMOD_FLOAT "f,%.16" FCS_LMOD_FLOAT "f]: "
+        "%.16" FCS_LMOD_FLOAT "f\n",
+        i, charges->positions[3 * i + 0], charges->positions[3 * i + 1], charges->positions[3 * i + 2],
+        j, charges->positions[3 * j + 0], charges->positions[3 * j + 1], charges->positions[3 * j + 2],
+        r);
+    );
 
     if (r > cutoff) continue;
 
@@ -1321,7 +1377,7 @@ fcs_int fcs_near_compute(fcs_near_t *near,
 
   charges_t real_charges, ghost_charges;
 
-  box_t *real_boxes, *ghost_boxes, current_box;
+  box_t *real_boxes, *ghost_boxes, current_box, neighbors_current_box;
   fcs_int real_lasts[max_nboxes], real_starts[max_nboxes], real_sizes[max_nboxes];
   fcs_int ghost_lasts[max_nboxes], ghost_starts[max_nboxes], ghost_sizes[max_nboxes];
   fcs_int current_last, current_start, current_size;
@@ -1330,7 +1386,7 @@ fcs_int fcs_near_compute(fcs_near_t *near,
 #if FCS_NEAR_WITH_DIPOLES
   dipoles_t real_dipoles, ghost_dipoles;
 
-  box_t *dipole_real_boxes, *dipole_ghost_boxes, dipole_current_box;
+  box_t *dipole_real_boxes, *dipole_ghost_boxes, dipole_current_box, dipole_neighbors_current_box;
   fcs_int dipole_real_lasts[max_nboxes], dipole_real_starts[max_nboxes], dipole_real_sizes[max_nboxes];
   fcs_int dipole_ghost_lasts[max_nboxes], dipole_ghost_starts[max_nboxes], dipole_ghost_sizes[max_nboxes];
   fcs_int dipole_current_last, dipole_current_start, dipole_current_size;
@@ -1375,20 +1431,24 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   INFO_CMD(
     if (comm_rank == 0)
     {
-      printf(INFO_PRINT_PREFIX "near settings:\n");
-      printf(INFO_PRINT_PREFIX "  box: [%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f]: [%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f] x [%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f] x [%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f]\n",
+      fprintf(PRINT_STREAM, INFO_PRINT_PREFIX "near settings:\n");
+      fprintf(PRINT_STREAM, INFO_PRINT_PREFIX "  box: "
+        "[%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f]: "
+        "[%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f] x "
+        "[%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f] x "
+        "[%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f,%" FCS_LMOD_FLOAT "f]\n",
         near->box_base[0], near->box_base[1], near->box_base[2],
         near->box_a[0], near->box_a[1], near->box_a[2],
         near->box_b[0], near->box_b[1], near->box_b[2],
         near->box_c[0], near->box_c[1], near->box_c[2]);
-      printf(INFO_PRINT_PREFIX "  periodicity: [%" FCS_LMOD_INT "d, %" FCS_LMOD_INT "d, %" FCS_LMOD_INT "d]\n", periodicity[0], periodicity[1], periodicity[2]);
-      printf(INFO_PRINT_PREFIX "  cutoff: %" FCS_LMOD_FLOAT "f\n", cutoff);
+      fprintf(PRINT_STREAM, INFO_PRINT_PREFIX "  periodicity: [%" FCS_LMOD_INT "d, %" FCS_LMOD_INT "d, %" FCS_LMOD_INT "d]\n", periodicity[0], periodicity[1], periodicity[2]);
+      fprintf(PRINT_STREAM, INFO_PRINT_PREFIX "  cutoff: %" FCS_LMOD_FLOAT "f\n", cutoff);
     }
   );
 
   DEBUG_CMD(
-    printf(DEBUG_PRINT_PREFIX "%d: nparticles: %" FCS_LMOD_INT "d\n", comm_rank, near->nparticles);
-    printf(DEBUG_PRINT_PREFIX "%d: nghosts: %" FCS_LMOD_INT "d\n", comm_rank, near->nghosts);
+    fprintf(PRINT_STREAM, DEBUG_PRINT_PREFIX "%d: nparticles: %" FCS_LMOD_INT "d\n", comm_rank, near->nparticles);
+    fprintf(PRINT_STREAM, DEBUG_PRINT_PREFIX "%d: nghosts: %" FCS_LMOD_INT "d\n", comm_rank, near->nghosts);
   );
 
   real_boxes = malloc((near->nparticles + 1) * sizeof(box_t)); /* + 1 for a sentinel */
@@ -1401,11 +1461,11 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 #if PRINT_PARTICLES
-  printf("real particles:\n");
+  fprintf(PRINT_STREAM, "real particles:\n");
   fcs_print_global_particles(near->nparticles, near->positions, near->charges, "  ", comm_size, comm_rank, comm);
   if (ghost_boxes)
   {
-    printf("ghost particles:\n");
+    fprintf(PRINT_STREAM, "ghost particles:\n");
     fcs_print_global_particles(near->nghosts, near->ghost_positions, near->ghost_charges, "  ", comm_size, comm_rank, comm);
   }
 #endif
@@ -1416,11 +1476,11 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
 #if PRINT_PARTICLES
-  printf("real particles sorted:\n");
+  fprintf(PRINT_STREAM, "real particles sorted:\n");
   fcs_print_global_particles(near->nparticles, near->positions, near->charges, "  ", comm_size, comm_rank, comm);
   if (ghost_boxes)
   {
-    printf("ghost particles sorted:\n");
+    fprintf(PRINT_STREAM, "ghost particles sorted:\n");
     fcs_print_global_particles(near->nghosts, near->ghost_positions, near->ghost_charges, "  ", comm_size, comm_rank, comm);
   }
 #endif
@@ -1441,8 +1501,8 @@ fcs_int fcs_near_compute(fcs_near_t *near,
 #if FCS_NEAR_WITH_DIPOLES
 
   DEBUG_CMD(
-    printf(DEBUG_PRINT_PREFIX "%d: dipole_nparticles: %" FCS_LMOD_INT "d\n", comm_rank, near->dipole_nparticles);
-    printf(DEBUG_PRINT_PREFIX "%d: dipole_nghosts: %" FCS_LMOD_INT "d\n", comm_rank, near->dipole_nghosts);
+    fprintf(PRINT_STREAM, DEBUG_PRINT_PREFIX "%d: dipole_nparticles: %" FCS_LMOD_INT "d\n", comm_rank, near->dipole_nparticles);
+    fprintf(PRINT_STREAM, DEBUG_PRINT_PREFIX "%d: dipole_nghosts: %" FCS_LMOD_INT "d\n", comm_rank, near->dipole_nghosts);
   );
 
   dipole_real_boxes = malloc((near->dipole_nparticles + 1) * sizeof(box_t)); /* + 1 for a sentinel */
@@ -1455,11 +1515,11 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   TIMING_SYNC(comm); TIMING_STOP(t[1]);
 
 #if PRINT_PARTICLES
-  printf("dipole real particles:\n");
+  fprintf(PRINT_STREAM, "dipole real particles:\n");
   fcs_print_global_dipole_particles(near->dipole_nparticles, near->dipole_positions, near->dipole_moments, "  ", comm_size, comm_rank, comm);
   if (dipole_ghost_boxes)
   {
-    printf("dipole ghost particles:\n");
+    fprintf(PRINT_STREAM, "dipole ghost particles:\n");
     fcs_print_global_dipole_particles(near->dipole_nghosts, near->dipole_ghost_positions, near->dipole_ghost_moments, "  ", comm_size, comm_rank, comm);
   }
 #endif
@@ -1470,11 +1530,11 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   TIMING_SYNC(comm); TIMING_STOP(t[2]);
 
 #if PRINT_PARTICLES
-  printf("dipole real particles sorted:\n");
+  fprintf(PRINT_STREAM, "dipole real particles sorted:\n");
   fcs_print_global_dipole_particles(near->dipole_nparticles, near->dipole_positions, near->dipole_moments, "  ", comm_size, comm_rank, comm);
   if (dipole_ghost_boxes)
   {
-    printf("dipole ghost particles sorted:\n");
+    fprintf(PRINT_STREAM, "dipole ghost particles sorted:\n");
     fcs_print_global_dipole_particles(near->dipole_nghosts, near->dipole_ghost_positions, near->dipole_ghost_moments, "  ", comm_size, comm_rank, comm);
   }
 #endif
@@ -1532,13 +1592,22 @@ fcs_int fcs_near_compute(fcs_near_t *near,
   do {
 
     current_box = real_boxes[current_last];
+    TRACE_CMD(
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "current_box: %5" FCS_LMOD_INT "d: " box_fmt "\n", current_last, box_val(current_box));
+    );
 #if FCS_NEAR_WITH_DIPOLES
     dipole_current_box = dipole_real_boxes[dipole_current_last];
+    TRACE_CMD(
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "dipole_current_box: %5" FCS_LMOD_INT "d: " box_fmt "\n", dipole_current_last, box_val(dipole_current_box));
+    );
 #endif /* FCS_NEAR_WITH_DIPOLES */
 
 #if FCS_NEAR_WITH_DIPOLES
     do_charges = (current_box <= dipole_current_box);
     do_dipoles = (current_box >= dipole_current_box);
+    TRACE_CMD(
+      fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "do_charges: %d, do_dipoles: %d\n", do_charges, do_dipoles);
+    );
 #else 
     do_charges = 1;
 #endif /* FCS_NEAR_WITH_DIPOLES */
@@ -1552,14 +1621,22 @@ fcs_int fcs_near_compute(fcs_near_t *near,
       find_box(real_boxes, near->nparticles, current_box, current_last, &current_start, &current_size);
       TIMING_STOP_ADD(_t, t[4]);
 
-/*      printf("box: " box_fmt ", start: %" FCS_LMOD_INT "d, size: %" FCS_LMOD_INT "d\n",
-        box_val(current_box), current_start, current_size);*/
+      TRACE_CMD(
+        fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "box: " box_fmt ", start: %" FCS_LMOD_INT "d, size: %" FCS_LMOD_INT "d\n",
+          box_val(current_box), current_start, current_size);
+      );
 
-      TIMING_START(_t);
-      find_neighbours(nreal_neighbours, real_neighbours, real_boxes, near->nparticles, current_box, real_lasts, real_starts, real_sizes);
-      if (ghost_boxes) find_neighbours(nghost_neighbours, ghost_neighbours, ghost_boxes, near->nghosts, current_box, ghost_lasts, ghost_starts, ghost_sizes);
-      TIMING_STOP_ADD(_t, t[5]);
+      neighbors_current_box = current_box;
     }
+#if FCS_NEAR_WITH_DIPOLES
+      else neighbors_current_box = dipole_current_box;
+#endif /* FCS_NEAR_WITH_DIPOLES */
+
+    /* search real and ghost neighbors of current (dipole) particle box */
+    TIMING_START(_t);
+    find_neighbours(nreal_neighbours, real_neighbours, real_boxes, near->nparticles, neighbors_current_box, real_lasts, real_starts, real_sizes);
+    if (ghost_boxes) find_neighbours(nghost_neighbours, ghost_neighbours, ghost_boxes, near->nghosts, neighbors_current_box, ghost_lasts, ghost_starts, ghost_sizes);
+    TIMING_STOP_ADD(_t, t[5]);
 
 #if FCS_NEAR_WITH_DIPOLES
 
@@ -1570,11 +1647,20 @@ fcs_int fcs_near_compute(fcs_near_t *near,
       find_box(dipole_real_boxes, near->dipole_nparticles, dipole_current_box, dipole_current_last, &dipole_current_start, &dipole_current_size);
       TIMING_STOP_ADD(_t, t[4]);
 
-      TIMING_START(_t);
-      find_neighbours(nreal_neighbours, real_neighbours, dipole_real_boxes, near->dipole_nparticles, dipole_current_box, dipole_real_lasts, dipole_real_starts, dipole_real_sizes);
-      if (dipole_ghost_boxes) find_neighbours(nghost_neighbours, ghost_neighbours, dipole_ghost_boxes, near->dipole_nghosts, dipole_current_box, dipole_ghost_lasts, dipole_ghost_starts, dipole_ghost_sizes);
-      TIMING_STOP_ADD(_t, t[5]);
-    }
+      TRACE_CMD(
+        fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "dipole box: " box_fmt ", start: %" FCS_LMOD_INT "d, size: %" FCS_LMOD_INT "d\n",
+          box_val(dipole_current_box), dipole_current_start, dipole_current_size);
+      );
+
+      dipole_neighbors_current_box = dipole_current_box;
+
+    } else dipole_neighbors_current_box = current_box;
+
+    /* search real and ghost dipole neighbors of current (dipole) particle box */
+    TIMING_START(_t);
+    find_neighbours(nreal_neighbours, real_neighbours, dipole_real_boxes, near->dipole_nparticles, dipole_neighbors_current_box, dipole_real_lasts, dipole_real_starts, dipole_real_sizes);
+    if (dipole_ghost_boxes) find_neighbours(nghost_neighbours, ghost_neighbours, dipole_ghost_boxes, near->dipole_nghosts, dipole_neighbors_current_box, dipole_ghost_lasts, dipole_ghost_starts, dipole_ghost_sizes);
+    TIMING_STOP_ADD(_t, t[5]);
 
 #endif /* FCS_NEAR_WITH_DIPOLES */
 
@@ -1633,24 +1719,44 @@ fcs_int fcs_near_compute(fcs_near_t *near,
     if (do_charges && do_dipoles)
     {
       /* charge vs. dipole */
+
+      /* between boxes */
       compute_charge_vs_dipole(&real_charges, current_start, current_size, &real_dipoles, dipole_current_start, dipole_current_size, cutoff, near, compute_param);
+    }
+
+    if (do_charges)
+    {
+      /* charge vs. dipole */
 
       /* neighbor boxes */
       for (i = 0; i < nreal_neighbours; ++i)
       {
         compute_charge_vs_dipole(&real_charges, current_start, current_size, &real_dipoles, dipole_real_starts[i], dipole_real_sizes[i], cutoff, near, compute_param);
+      }
 
+      /* ghost boxes */
+      if (dipole_ghost_boxes)
+      for (i = 0; i < nghost_neighbours; ++i)
+      {
+        compute_charge_from_dipole(&real_charges, current_start, current_size, &ghost_dipoles, dipole_ghost_starts[i], dipole_ghost_sizes[i], cutoff, near, compute_param);
+      }
+    }
+
+    if (do_dipoles)
+    {
+      /* charge vs. dipole */
+
+      /* neighbor boxes */
+      for (i = 0; i < nreal_neighbours; ++i)
+      {
         compute_charge_vs_dipole(&real_charges, real_starts[i], real_sizes[i], &real_dipoles, dipole_current_start, dipole_current_size, cutoff, near, compute_param);
       }
 
       /* ghost boxes */
+      if (ghost_boxes)
       for (i = 0; i < nghost_neighbours; ++i)
       {
-        if (dipole_ghost_boxes)
-          compute_charge_from_dipole(&real_charges, current_start, current_size, &ghost_dipoles, dipole_ghost_starts[i], dipole_ghost_sizes[i], cutoff, near, compute_param);
-
-        if (ghost_boxes)
-          compute_dipole_from_charge(&real_dipoles, dipole_current_start, dipole_current_size, &ghost_charges, ghost_starts[i], ghost_sizes[i], cutoff, near, compute_param);
+        compute_dipole_from_charge(&real_dipoles, dipole_current_start, dipole_current_size, &ghost_charges, ghost_starts[i], ghost_sizes[i], cutoff, near, compute_param);
       }
     }
 
@@ -1663,11 +1769,11 @@ fcs_int fcs_near_compute(fcs_near_t *near,
     );
 
 #if PRINT_PARTICLES
-  printf("particle results:\n");
+  fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "particle results:\n");
   fcs_print_local_particles(near->nparticles, near->positions, near->charges, near->field, near->potentials, "  ");
 # if FCS_NEAR_WITH_DIPOLES
-  printf("dipole particle results:\n");
-  fcs_print_local_particles(near->dipole_nparticles, near->dipole_positions, near->dipole_moments, near->dipole_field, near->dipole_potentials, "  ");
+  fprintf(PRINT_STREAM, TRACE_PRINT_PREFIX "dipole particle results:\n");
+  fcs_print_local_dipole_particles(near->dipole_nparticles, near->dipole_positions, near->dipole_moments, near->dipole_field, near->dipole_potentials, "  ");
 # endif /* FCS_NEAR_WITH_DIPOLES */
 #endif
 
@@ -1685,7 +1791,7 @@ exit:
 
   TIMING_CMD(
     if (comm_rank == 0)
-      printf(TIMING_PRINT_PREFIX "fcs_near_compute: %f  %f  %f  %f  %f  %f  %f\n", t[0], t[1], t[2], t[3], t[4], t[5], t[6]);
+      fprintf(PRINT_STREAM, TIMING_PRINT_PREFIX "fcs_near_compute: %f  %f  %f  %f  %f  %f  %f\n", t[0], t[1], t[2], t[3], t[4], t[5], t[6]);
   );
 
   return 0;
@@ -1806,10 +1912,10 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
 
   } else cart_comm = comm;
 
-/*  printf("%d: input = %" FCS_LMOD_INT "d\n", comm_rank, nlocal_particles);
+/*  fprintf(PRINT_STREAM, "%d: input = %" FCS_LMOD_INT "d\n", comm_rank, nlocal_particles);
   for (int i = 0; i < nlocal_particles; ++i)
   {
-    printf("  %d: %f,%f,%f  %lld\n", i, positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2]);
+    fprintf(PRINT_STREAM, "  %d: %f,%f,%f  %lld\n", i, positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2]);
   }*/
 
   fcs_gridsort_create(&gridsort);
@@ -1828,7 +1934,7 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
   upper_bounds[2] = near->box_base[2] + (fcs_float) (cart_coords[2] + 1.0) * near->box_c[2] / (fcs_float) cart_dims[2];
 
   DEBUG_CMD(
-    printf(DEBUG_PRINT_PREFIX "%d: bounds: %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f - %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f\n",
+    fprintf(PRINT_STREAM, DEBUG_PRINT_PREFIX "%d: bounds: %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f - %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f, %" FCS_LMOD_FLOAT "f\n",
       comm_rank, lower_bounds[0], lower_bounds[1], lower_bounds[2], upper_bounds[0], upper_bounds[1], upper_bounds[2]);
   );
 
@@ -1877,17 +1983,17 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
   fcs_gridsort_get_real_dipole_particles(&gridsort, &dipole_nlocal_s_real, &dipole_positions_s_real, &dipole_moments_s_real, &dipole_indices_s_real);
 #endif /* FCS_NEAR_WITH_DIPOLES */
 
-/*  printf("%d: sorted (real) = %" FCS_LMOD_INT "d\n", comm_rank, nlocal_s_real);
+/*  fprintf(PRINT_STREAM, "%d: sorted (real) = %" FCS_LMOD_INT "d\n", comm_rank, nlocal_s_real);
   for (int i = 0; i < nlocal_s_real; ++i)
   {
-    printf("  %d: %d: %f,%f,%f  %f  " idx_fmt "\n", comm_rank, i, positions_s[3 * i + 0], positions_s[3 * i + 1], positions_s[3 * i + 2], charges_s[i], idx_val(indices_s[i]));
+    fprintf(PRINT_STREAM, "  %d: %d: %f,%f,%f  %f  " idx_fmt "\n", comm_rank, i, positions_s[3 * i + 0], positions_s[3 * i + 1], positions_s[3 * i + 2], charges_s[i], idx_val(indices_s[i]));
   }*/
 
 #ifdef SEPARATE_GHOSTS
-/*  printf("%d: sorted (ghost) = %" FCS_LMOD_INT "d\n", comm_rank, nlocal_s_ghost);
+/*  fprintf(PRINT_STREAM, "%d: sorted (ghost) = %" FCS_LMOD_INT "d\n", comm_rank, nlocal_s_ghost);
   for (int i = 0; i < nlocal_s_ghost; ++i)
   {
-    printf("  %d: %f,%f,%f  " idx_fmt "\n", i, positions_s[3 * (nlocal_s_real + i) + 0], positions_s[3 * (nlocal_s_real + i) + 1], positions_s[3 * (nlocal_s_real + i) + 2], idx_val(indices_s[nlocal_s_real + i]));
+    fprintf(PRINT_STREAM, "  %d: %f,%f,%f  " idx_fmt "\n", i, positions_s[3 * (nlocal_s_real + i) + 0], positions_s[3 * (nlocal_s_real + i) + 1], positions_s[3 * (nlocal_s_real + i) + 2], idx_val(indices_s[nlocal_s_real + i]));
   }*/
 #endif
 
@@ -1972,10 +2078,10 @@ fcs_int fcs_near_field_solver(fcs_near_t *near,
 
   fcs_near_destroy(&near_s);
 
-/*  printf("%d: result = %" FCS_LMOD_INT "d\n", comm_rank, nlocal_s);
+/*  fprintf(PRINT_STREAM, "%d: result = %" FCS_LMOD_INT "d\n", comm_rank, nlocal_s);
   for (int i = 0; i < nlocal_s_real; ++i)
   {
-    printf("%d: %f,%f,%f  %f\n", i, field_s[3 * i + 0], field_s[3 * i + 1], field_s[3 * i + 2], potentials_s[i]);
+    fprintf(PRINT_STREAM, "%d: %f,%f,%f  %f\n", i, field_s[3 * i + 0], field_s[3 * i + 1], field_s[3 * i + 2], potentials_s[i]);
   }*/
 
   fcs_gridsort_set_sorted_results(&gridsort, nlocal_s_real, field_s, potentials_s);
@@ -2014,7 +2120,7 @@ exit:
 
   TIMING_CMD(
     if (comm_rank == 0)
-      printf(TIMING_PRINT_PREFIX "fcs_near_field_solver: %f  %f  %f  %f\n", t[0], t[1], t[2], t[3]);
+      fprintf(PRINT_STREAM, TIMING_PRINT_PREFIX "fcs_near_field_solver: %f  %f  %f  %f\n", t[0], t[1], t[2], t[3]);
   );
 
   return 0;
