@@ -35,7 +35,8 @@ endif
 
 if ENABLE_EWALD
 libfcs_la_SOURCES += \
-  fcs_ewald.h
+  fcs_ewald.h \
+  fcs_ewald.c
 include_HEADERS += \
   fcs_ewald_p.h
 endif

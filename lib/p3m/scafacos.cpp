@@ -150,7 +150,6 @@ void ifcs_p3m_get_near_params(void* rd, fcs_float *alpha, fcs_float *offset) {
         Solver *d = static_cast<Solver *> (rd);
         *alpha = d->alpha;
         *offset = d->shiftGaussians ? (1 - erf(d->r_cut * d->alpha)) / d->r_cut : 0.0;
-        printf("get offset %e", *offset);
     }
 
 void ifcs_p3m_set_grid(void *rd, fcs_int grid) {

@@ -69,4 +69,44 @@ else
 EOF
 fi
 
+# Fix broken space handling of libtool
+if grep 'test x-l = "x$p"' configure >/dev/null 2>&1
+then :
+else
+  patch -b -p0 2>/dev/null <<\EOF
+--- configure.orig	2016-03-03 10:25:22.360544857 +0100
++++ configure	2016-03-03 10:27:41.848727662 +0100
+@@ -17785,10 +17785,11 @@
+     case $prev$p in
+ 
+     -L* | -R* | -l*)
+-       # Some compilers place space between "-{L,R}" and the path.
++       # Some compilers place space between "-{L,R,l}" and the path.
+        # Remove the space.
+-       if test x-L = "$p" ||
+-          test x-R = "$p"; then
++       if test x-L = "x$p" ||
++          test x-R = "x$p" ||
++          test x-l = "x$p" ; then
+ 	 prev=$p
+ 	 continue
+        fi
+@@ -19766,10 +19767,11 @@
+     case $prev$p in
+ 
+     -L* | -R* | -l*)
+-       # Some compilers place space between "-{L,R}" and the path.
++       # Some compilers place space between "-{L,R,l}" and the path.
+        # Remove the space.
+-       if test x-L = "$p" ||
+-          test x-R = "$p"; then
++       if test x-L = "x$p" ||
++          test x-R = "x$p" ||
++          test x-l = "x$p"; then
+ 	 prev=$p
+ 	 continue
+        fi
+EOF
+fi
+
 :
