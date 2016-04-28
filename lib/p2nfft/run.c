@@ -378,9 +378,9 @@ FCSResult ifcs_p2nfft_run(
 //     dipoles_grad_f[j] = sorted_dipole_moments[j];
   
   for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
-    dipoles_grad_f[3 * j + 0] = XYZ2TRI(0, sorted_dipole_moments + 3*j, d->box_inv);
-    dipoles_grad_f[3 * j + 1] = XYZ2TRI(1, sorted_dipole_moments + 3*j, d->box_inv);
-    dipoles_grad_f[3 * j + 2] = XYZ2TRI(2, sorted_dipole_moments + 3*j, d->box_inv);
+    dipoles_grad_f[3 * j + 0] = XYZ2TRI(0, sorted_dipole_moments + 3*j, d->box_inv) / d->box_expand[0];
+    dipoles_grad_f[3 * j + 1] = XYZ2TRI(1, sorted_dipole_moments + 3*j, d->box_inv) / d->box_expand[1];
+    dipoles_grad_f[3 * j + 2] = XYZ2TRI(2, sorted_dipole_moments + 3*j, d->box_inv) / d->box_expand[2];
   }
 
   /* Reset pnfft timer (delete timings from fcs_init and fcs_tune) */  
