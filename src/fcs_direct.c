@@ -174,6 +174,7 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positio
   const fcs_float *box_base, *box_a, *box_b, *box_c;
   const fcs_int *periodicity;
   fcs_int max_local_particles;
+  fcs_float cutoff = 0;
 
 
   DEBUG_MOP(printf("fcs_direct_run\n"));
@@ -197,7 +198,9 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positio
 
   fcs_directc_run(&handle->direct_param->directc, ctx->comm);
 
-  if (handle->direct_param->metallic_boundary_conditions && (periodicity[0] || periodicity[1] || periodicity[2]))
+  fcs_directc_get_cutoff(&handle->direct_param->directc, &cutoff);
+
+  if (handle->direct_param->metallic_boundary_conditions && cutoff == 0 && (periodicity[0] || periodicity[1] || periodicity[2]))
   {
     fcs_compute_dipole_correction(handle, local_particles, positions, charges, 0.0, field_correction, NULL);
 
