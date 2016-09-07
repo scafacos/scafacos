@@ -1,6 +1,6 @@
 if COND_HAVE_BOOST_UNIT_TEST
 
-noinst_PROGRAMS += \
+check_PROGRAMS += \
 	boost_test
 
 boost_test_SOURCES = \
