@@ -84,6 +84,8 @@ FCSResult fcs_pepc_init(FCS handle)
   /*	char* fnc_name = "fcs_pepc_init"; */
   FCSResult result;
 
+  handle->shift_positions = 1;
+
   handle->destroy = fcs_pepc_destroy;
   handle->set_parameter = fcs_pepc_set_parameter;
   handle->print_parameters = fcs_pepc_print_parameters;

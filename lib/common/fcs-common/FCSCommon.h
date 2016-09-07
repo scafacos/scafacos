@@ -159,20 +159,20 @@ void fcs_wrap_positions(fcs_int nparticles, fcs_float *positions, const fcs_floa
 void fcs_expand_system_box(fcs_int nparticles, fcs_float *positions, fcs_float *box_a, fcs_float *box_b, fcs_float *box_c, fcs_float *offset, fcs_int *periodicity);
 
 /**
- * @brief transform the positions of particles to a [0:L][0:L][0:L] box
- * @param positions not transformed positions of values_changed
- * @param offset offset particles need to be moved
- * @param local_particles amount of local particles
+ * @brief shift particle positions (i.e. subtracting the offset value)
+ * @param nparticles fcs_int number of particles
+ * @param positions fcs_float* particle positions
+ * @param shift fcs_float* offset of the shift
  */
-void fcs_ftransform_positions(fcs_float *positions, fcs_float *offset, fcs_int local_particles);
+void fcs_shift_positions(fcs_int nparticles, fcs_float *positions, const fcs_float *offset);
 
 /**
- * @brief retransform the positions of particles to original box ([-L/2:L/2][-L/2:L/2][-L/2:L/2])
- * @param positions not transformed positions of values_changed
- * @param offset offset particles need to be moved
- * @param local_particles amount of local particles
+ * @brief undo shift of particle positions (i.e. adding the offset value)
+ * @param nparticles fcs_int number of particles
+ * @param positions fcs_float* particle positions
+ * @param shift fcs_float* offset of the shift
  */
-void fcs_btransform_positions(fcs_float *positions, fcs_float *offset, fcs_int local_particles);
+void fcs_unshift_positions(fcs_int nparticles, fcs_float *positions, const fcs_float *offset);
 
 
 #ifdef __cplusplus

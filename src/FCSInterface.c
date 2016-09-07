@@ -168,6 +168,8 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
 
   handle->values_changed = 0;
 
+  handle->shift_positions = 0;
+
   handle->destroy = NULL;
 
   handle->set_tolerance = NULL;
@@ -899,6 +901,7 @@ FCSResult fcs_tune(FCS handle, fcs_int local_particles,
   fcs_float *positions, fcs_float *charges)
 {
   const char *fnc_name = "fcs_tune";
+  FCSResult result;
 
   CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
 
@@ -915,7 +918,25 @@ FCSResult fcs_tune(FCS handle, fcs_int local_particles,
   if (handle->tune == NULL)
     return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Tuning solver method '%s' not implemented", fcs_get_method_name(handle));
 
-  return handle->tune(handle, local_particles, positions, charges);
+  fcs_float original_box_origin[3] = { handle->box_origin[0], handle->box_origin[1], handle->box_origin[2] };
+
+  if (handle->shift_positions)
+  {
+    fcs_shift_positions(local_particles, positions, original_box_origin);
+    handle->box_origin[0] = handle->box_origin[1] = handle->box_origin[2] = 0;
+  }
+
+  result = handle->tune(handle, local_particles, positions, charges);
+
+  if (handle->shift_positions)
+  {
+    fcs_unshift_positions(local_particles, positions, original_box_origin);
+    handle->box_origin[0] = original_box_origin[0];
+    handle->box_origin[1] = original_box_origin[1];
+    handle->box_origin[2] = original_box_origin[2];
+  }
+
+  return result;
 }
 
 
@@ -945,7 +966,25 @@ FCSResult fcs_run(FCS handle, fcs_int local_particles,
   if (handle->run == NULL)
     return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Running solver method '%s' not implemented", fcs_get_method_name(handle));
 
-  return handle->run(handle, local_particles, positions, charges, field, potentials);
+  fcs_float original_box_origin[3] = { handle->box_origin[0], handle->box_origin[1], handle->box_origin[2] };
+
+  if (handle->shift_positions)
+  {
+    fcs_shift_positions(local_particles, positions, original_box_origin);
+    handle->box_origin[0] = handle->box_origin[1] = handle->box_origin[2] = 0;
+  }
+
+  result = handle->run(handle, local_particles, positions, charges, field, potentials);
+
+  if (handle->shift_positions)
+  {
+    fcs_unshift_positions(local_particles, positions, original_box_origin);
+    handle->box_origin[0] = original_box_origin[0];
+    handle->box_origin[1] = original_box_origin[1];
+    handle->box_origin[2] = original_box_origin[2];
+  }
+
+  return result;
 }
 
 

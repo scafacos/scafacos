@@ -295,6 +295,8 @@ FCSResult fcs_fmm_init(FCS handle)
   fcs_fmm_set_resort(handle, 0);
   handle->fmm_param->fmm_resort = FCS_FMM_RESORT_NULL;
 
+  handle->shift_positions = 0;
+
   handle->destroy = fcs_fmm_destroy;
   handle->set_tolerance = fcs_fmm_set_tolerance;
 /*  handle->get_tolerance = fcs_fmm_get_tolerance;*/

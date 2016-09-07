@@ -56,6 +56,8 @@ FCSResult fcs_ewald_init(FCS handle) {
   result = fcs_ewald_check(handle, fnc_name);
   if (result != NULL) return result;
 
+  handle->shift_positions = 1;
+
   handle->destroy = fcs_ewald_destroy;
   handle->set_tolerance = fcs_ewald_set_tolerance;
   handle->get_tolerance = fcs_ewald_get_tolerance;

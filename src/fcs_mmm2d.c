@@ -39,6 +39,8 @@ FCSResult fcs_mmm2d_init(FCS handle)
   result = fcs_mmm2d_check(handle, fnc_name);
   if (result != NULL) return result;
   
+  handle->shift_positions = 1;
+
   handle->destroy = fcs_mmm2d_destroy;
   handle->set_parameter = fcs_mmm2d_set_parameter;
   handle->print_parameters = fcs_mmm2d_print_parameters;

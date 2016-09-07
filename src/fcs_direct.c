@@ -82,6 +82,8 @@ FCSResult fcs_direct_init(FCS handle)
 
   handle->direct_param->metallic_boundary_conditions = 1;
 
+  handle->shift_positions = 0;
+
   handle->destroy = fcs_direct_destroy;
   handle->set_parameter = fcs_direct_set_parameter;
   handle->print_parameters = fcs_direct_print_parameters;

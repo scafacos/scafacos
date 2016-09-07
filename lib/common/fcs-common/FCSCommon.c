@@ -266,29 +266,26 @@ void fcs_expand_system_box(fcs_int nparticles, fcs_float *positions, fcs_float *
 }
 
 
-/******************************/
-/* box transforming functions */
-/******************************/
-void fcs_ftransform_positions(fcs_float *positions, fcs_float *offset, fcs_int local_particles)
+void fcs_shift_positions(fcs_int nparticles, fcs_float *positions, const fcs_float *offset)
 {
   int i;
-  if (offset != NULL && !(fcs_float_is_zero(offset[0]) && fcs_float_is_zero(offset[1]) && fcs_float_is_zero(offset[2])) )
-    for (i = 0; i < local_particles; ++i)
-    {
-      positions[3*i]   -= offset[0];
-      positions[3*i+1] -= offset[1];
-      positions[3*i+2] -= offset[2];
-    }
+
+  if (offset == NULL || (fcs_float_is_zero(offset[0]) && fcs_float_is_zero(offset[1]) && fcs_float_is_zero(offset[2]))) return;
+
+  for (i = 0; i < nparticles; ++i)
+  {
+    positions[3 * i + 0] -= offset[0];
+    positions[3 * i + 1] -= offset[1];
+    positions[3 * i + 2] -= offset[2];
+  }
 }
 
-void fcs_btransform_positions(fcs_float *positions, fcs_float *offset, fcs_int local_particles)
+
+void fcs_unshift_positions(fcs_int nparticles, fcs_float *positions, const fcs_float *offset)
 {
-  int i;
-  if (offset != NULL && !(fcs_float_is_zero(offset[0]) && fcs_float_is_zero(offset[1]) && fcs_float_is_zero(offset[2])) )
-    for (i = 0; i < local_particles; ++i)
-    {
-      positions[3*i]   += offset[0];
-      positions[3*i+1] += offset[1];
-      positions[3*i+2] += offset[2];
-    }
+  if (offset == NULL || (fcs_float_is_zero(offset[0]) && fcs_float_is_zero(offset[1]) && fcs_float_is_zero(offset[2]))) return;
+
+  fcs_float noffset[3] = { -offset[0], -offset[1], -offset[2] };
+
+  fcs_shift_positions(nparticles, positions, noffset);
 }
