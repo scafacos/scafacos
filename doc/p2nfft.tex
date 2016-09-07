@@ -55,17 +55,17 @@ into a method very similar to our fastsum Algorithm~\ref{algo:fastsum}.
 
 
 In order to overcome this increase in time we apply the NFFT for the calculation of the
-reciprocal-space potential  $\phi^{\rm reci}$ and we obtain a method similar as our fast summation method.
+reciprocal-space potential  $\phi^{\text{reci}}$ and we obtain a method similar as our fast summation method.
 To this end, we compute the Fourier transformed charge density
 \begin{equation*}
- S(\mathbf k) = \sum_{l=1}^M q_l {\rm e}^{+2\pi {\rm i} \mathbf k \mathbf x_l/B}
+ S(\mathbf k) = \sum_{l=1}^M q_l \text{e}^{+2\pi \text{i} \mathbf k \mathbf x_l/B}
 \end{equation*}
 by NFFT$^\adj$ and after truncation of the sum \eqref{eq:ewald_reci} we obtain by NFFT
 \begin{equation*}
- \phi^{\rm reci}(\mathbf x_j) \approx
+ \phi^{\text{reci}}(\mathbf x_j) \approx
  \frac{1}{\pi B} \sum_{\mathbf k\in I_{\mathbf N}\setminus\{\mathbf 0\}}
- \frac{{\rm e}^{-\pi^2 \|\mathbf k\|_2^2/(\alpha B)^2}}{\|\mathbf k\|_2^2}
- S(\mathbf k){\rm e}^{-2\pi {\rm i} \mathbf k \mathbf x_j/B}\, .
+ \frac{\text{e}^{-\pi^2 \|\mathbf k\|_2^2/(\alpha B)^2}}{\|\mathbf k\|_2^2}
+ S(\mathbf k)\text{e}^{-2\pi \text{i} \mathbf k \mathbf x_j/B}\, .
 \end{equation*}
 
 
