@@ -65,7 +65,7 @@ void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float deltaE, fcs_int dip
 */
 
 /* combined setter function for all fmm parameters */
-FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_value, fcs_int dipole_correction, long long system, long long maxdepth, long long unroll_limit, long long load/*, fcs_int potential, fcs_float radius*/)
+FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_energy, fcs_int dipole_correction, long long system, long long maxdepth, long long unroll_limit, long long load/*, fcs_int potential, fcs_float radius*/)
 {
 /*  char* fnc_name = "fcs_fmm_setup"; */
   FCSResult result;
@@ -73,7 +73,7 @@ FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_value, f
   result = fcs_fmm_set_absrel(handle,absrel);
   if (result != NULL)
     return result;
-  result = fcs_fmm_set_tolerance_energy(handle,tolerance_value);
+  result = fcs_fmm_set_tolerance_energy(handle,tolerance_energy);
   if (result != NULL)
     return result;
   result = fcs_fmm_set_dipole_correction(handle, dipole_correction);
@@ -122,9 +122,9 @@ FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles)
   if (absrel == -1)
     return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "fmm: absrel not set");
 
-  fcs_float tolerance_value;
-  fcs_fmm_get_tolerance_energy(handle, &tolerance_value);
-  if (tolerance_value == -1.0)
+  fcs_float tolerance_energy;
+  fcs_fmm_get_tolerance_energy(handle, &tolerance_energy);
+  if (tolerance_energy == -1.0)
     return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "fmm: energy tolerance not set");
 
   comm = fcs_get_communicator(handle);
@@ -269,7 +269,7 @@ FCSResult fcs_fmm_init(FCS handle)
   handle->fmm_param = malloc(sizeof(*handle->fmm_param));
   /* setting fmm parameters to invalid values (or default values, if possible) */
   handle->fmm_param->absrel = FCS_FMM_STANDARD_ERROR;
-  handle->fmm_param->tolerance_value = -1.0;
+  handle->fmm_param->tolerance_energy = -1.0;
   handle->fmm_param->dipole_correction = -1;
   handle->fmm_param->potential = -1;
   handle->fmm_param->cusp_radius = -1.0;
@@ -333,7 +333,7 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions
   const fcs_int* periodicity;
   long long* ll_periodicity;
   int i;
-  fcs_float tolerance_value;
+  fcs_float tolerance_energy;
   fcs_float period_length;
   void* params;
   long long wignersize;
@@ -352,7 +352,7 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions
   fcs_int absrel;
   fcs_fmm_get_absrel(handle, &absrel);
   ll_absrel = absrel;
-  fcs_fmm_get_tolerance_energy(handle, &tolerance_value);
+  fcs_fmm_get_tolerance_energy(handle, &tolerance_energy);
   fcs_int dip_corr;
   fcs_fmm_get_dipole_correction(handle, &dip_corr);
   ll_dip_corr = dip_corr;
@@ -381,7 +381,7 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions
       fmm_csetload(params,val);
     }
 
-    fmm_ctune(ll_lp,positions,charges,ll_tp,ll_absrel,tolerance_value,ll_dip_corr,
+    fmm_ctune(ll_lp,positions,charges,ll_tp,ll_absrel,tolerance_energy,ll_dip_corr,
       ll_periodicity, period_length, ll_maxdepth, ll_unroll_limit, ll_balance_load,params, &wignersize, &r);
 
   } else if ( dotune == FCS_FMM_HOMOGENOUS_SYSTEM )
@@ -433,7 +433,7 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,
   const fcs_int* periodicity;
   long long* ll_periodicity;
   int i;
-  fcs_float tolerance_value;
+  fcs_float tolerance_energy;
   fcs_float period_length;
   void* params;
   long long dotune;
@@ -454,7 +454,7 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,
   fcs_fmm_get_absrel(handle, &absrel);
   ll_absrel = absrel;
 
-  fcs_fmm_get_tolerance_energy(handle, &tolerance_value);
+  fcs_fmm_get_tolerance_energy(handle, &tolerance_energy);
 
   fcs_int dip_corr;
   fcs_fmm_get_dipole_correction(handle, &dip_corr);
@@ -516,7 +516,7 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,
   fmm_cinitresort(params, handle->fmm_param->fmm_resort);
   fmm_csetresort(params, (long long) handle->fmm_param->resort);
 
-  fmm_crun(ll_lp,positions,charges,potentials,field,handle->fmm_param->virial,ll_tp,ll_absrel,tolerance_value,
+  fmm_crun(ll_lp,positions,charges,potentials,field,handle->fmm_param->virial,ll_tp,ll_absrel,tolerance_energy,
     ll_dip_corr, ll_periodicity, period_length, dotune, ll_maxdepth,ll_unroll_limit,ll_balance_load,params, &r);
 
   fcs_mpi_fmm_sort_front_part = old_fcs_mpi_fmm_sort_front_part;
@@ -624,7 +624,7 @@ FCSResult fcs_fmm_get_internal_tuning(FCS handle, long long *system)
 }
 
 /* setter function for fmm parameter energy tolerance (deltaE) */
-FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_value)
+FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_energy)
 {
   char* fnc_name = "fcs_fmm_set_tolerance_energy";
 
@@ -632,26 +632,26 @@ FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_value)
     return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
   if (fcs_get_method(handle) != FCS_METHOD_FMM)
         return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"fmm\")");
-  if (tolerance_value <= 0.0)
+  if (tolerance_energy <= 0.0)
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,fnc_name,"chosen error not valid, has to be larger than zero");
 
-  handle->fmm_param->tolerance_value = tolerance_value;
+  handle->fmm_param->tolerance_energy = tolerance_energy;
   return NULL;
 }
 
 
 
 /* getter function for fmm parameter energy tolerance (deltaE) */
-FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_value)
+FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_energy)
 {
   char* fnc_name = "fcs_fmm_get_tolerance_energy";
 
   if (!handle || !handle->fmm_param)
     return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (!tolerance_value)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for tolerance_value");
+  if (!tolerance_energy)
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for tolerance_energy");
 
-  *tolerance_value = handle->fmm_param->tolerance_value;
+  *tolerance_energy = handle->fmm_param->tolerance_energy;
   return NULL;
 }
 
@@ -943,21 +943,21 @@ next_param:
 FCSResult fcs_fmm_print_parameters(FCS handle)
 {
   fcs_int absrel;
-  fcs_float tolerance_value;
+  fcs_float tolerance_energy;
   fcs_int dipole_correction;
   long long tuning;
   long long maxdepth;
   long long limit;
   long long load;
   fcs_fmm_get_absrel(handle, &absrel);
-  fcs_fmm_get_tolerance_energy(handle, &tolerance_value);
+  fcs_fmm_get_tolerance_energy(handle, &tolerance_energy);
   fcs_fmm_get_dipole_correction(handle, &dipole_correction);
   fcs_fmm_get_internal_tuning(handle, &tuning);
   fcs_fmm_get_balanceload(handle, &load);
   fcs_fmm_get_maxdepth(handle, &maxdepth);
   fcs_fmm_get_unroll_limit(handle, &limit);
   printf("fmm absrel: %" FCS_LMOD_INT "d\n", absrel);
-  printf("fmm tolerance value: %e\n", tolerance_value);
+  printf("fmm tolerance value: %e\n", tolerance_energy);
   printf("fmm dipole correction: %" FCS_LMOD_INT "d\n", dipole_correction);
   printf("fmm internal tuning: %c\n", (tuning)?'T':'F');
   printf("fmm maxdepth: %lld\n", maxdepth);
