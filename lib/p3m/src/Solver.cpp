@@ -860,8 +860,8 @@ const double* Solver::measureTimings(p3m_int num_particles,
     /* restore require_timings */
     this->setRequireTimings(require_timings_before);
 
-    delete fields;
-    delete potentials;
+    delete[] fields;
+    delete[] potentials;
 
     return timings;
 }
