@@ -152,8 +152,8 @@ P3M::FarSolver::~FarSolver() {
     fft.free_data(rs_grid);
     fft.free_data(ks_grid);
     fft.free_data(buffer);
-    delete send_grid;
-    delete recv_grid;
+    delete[] send_grid;
+    delete[] recv_grid;
     delete caf;
     delete cafx;
     delete cafy;
@@ -162,11 +162,11 @@ P3M::FarSolver::~FarSolver() {
     delete cafx_d;
     delete cafy_d;
     delete cafz_d;
-    delete g_force;
-    delete g_energy;
-    delete d_op[0];
-    delete d_op[1];
-    delete d_op[2];
+    delete[] g_force;
+    delete[] g_energy;
+    delete[] d_op[0];
+    delete[] d_op[1];
+    delete[] d_op[2];
 }
 
 void P3M::FarSolver::runADI(p3m_int num_charges, p3m_float* positions,
@@ -724,9 +724,9 @@ void P3M::FarSolver::computeInfluenceFunctionIK() {
         }
     }
 
-    delete gridshift_x;
-    delete gridshift_y;
-    delete gridshift_z;
+    delete[] gridshift_x;
+    delete[] gridshift_y;
+    delete[] gridshift_z;
 
     P3M_DEBUG(printf("  FarSolver::computeInfluenceFunctionIK() finished.\n"));
 }
@@ -780,9 +780,9 @@ void P3M::FarSolver::computeInfluenceFunctionADI() {
       }
     }
 
-    delete gridshift_x;
-    delete gridshift_y;
-    delete gridshift_z;
+    delete[] gridshift_x;
+    delete[] gridshift_y;
+    delete[] gridshift_z;
 
     P3M_DEBUG(printf("  FarSolver::computeInfluenceFunctionADI() finished.\n"));
 }
@@ -843,9 +843,9 @@ void P3M::FarSolver::computeInfluenceFunctionIKI() {
       }
     }
 
-    delete gridshift_x;
-    delete gridshift_y;
-    delete gridshift_z;
+    delete[] gridshift_x;
+    delete[] gridshift_y;
+    delete[] gridshift_z;
     P3M_DEBUG(printf("  FarSolver::computeInfluenceFunctionIKI() finished.\n"));
 }
 
@@ -1522,8 +1522,8 @@ const double* P3M::FarSolver::measureTimings(p3m_int num_particles,
     /* restore require_timings */
     require_timings = require_timings_before;
 
-    delete fields;
-    delete potentials;
+    delete[] fields;
+    delete[] potentials;
 
     return timings;
 }
