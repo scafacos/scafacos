@@ -36,7 +36,11 @@
 #endif
 
 #include <boost/test/framework.hpp>
+#if BOOST_VERSION < 106100
 #include <boost/test/detail/unit_test_parameters.hpp>
+#else
+#include <boost/test/unit_test_parameters.hpp>
+#endif
 #include <boost/test/impl/unit_test_main.ipp>
 
 #ifdef BOOST_TEST_ALTERNATIVE_INIT_API

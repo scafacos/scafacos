@@ -155,6 +155,8 @@ typedef struct _FCS_t
 
   fcs_int values_changed;
 
+  fcs_int shift_positions;
+
   /* functions and parameters set by the solvers */
   FCSResult (*destroy)(FCS handle);
 

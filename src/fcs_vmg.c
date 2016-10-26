@@ -32,6 +32,8 @@
 
 FCSResult fcs_vmg_init(FCS handle)
 {
+  handle->shift_positions = 0;
+
   handle->destroy = fcs_vmg_destroy;
   handle->set_parameter = fcs_vmg_set_parameter;
   handle->print_parameters = fcs_vmg_print_parameters;

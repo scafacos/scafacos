@@ -79,6 +79,8 @@ FCSResult fcs_wolf_init(FCS handle)
 
 /*  handle->wolf_param->metallic_boundary_conditions = 1;*/
 
+  handle->shift_positions = 0;
+
   handle->destroy = fcs_wolf_destroy;
   handle->set_parameter = fcs_wolf_set_parameter;
   handle->print_parameters = fcs_wolf_print_parameters;

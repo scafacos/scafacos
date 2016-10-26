@@ -49,7 +49,7 @@ typedef struct fcs_fmm_parameters_t
   /* 2 -> absolute error <fmm_deltaE> */
   fcs_int absrel;
   /* size of chosen error [10^(-1) .. 10^(-14)] */
-  fcs_float tolerance_value;
+  fcs_float tolerance_energy;
   /* dipole correction */
   fcs_int dipole_correction;
   /* maximum tree depth [0 .. 19] */

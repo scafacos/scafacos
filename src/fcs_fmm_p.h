@@ -74,19 +74,19 @@ FCSResult fcs_fmm_get_absrel(FCS handle, fcs_int *absrel);
 /**
  * @brief function to set the optional fmm deltaE parameter, which gives the energy tolerance for the FMM
  * @param handle FCS-object that is modified
- * @param tolerance_value the error boundary to be used by fmm (only applicable
+ * @param tolerance_energy the error boundary to be used by fmm (only applicable
  *        if absrel is either 1 or 2)
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_value);
+FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_energy);
 
 /**
  * @brief function to get the optional fmm energy tolerance (deltaE) parameter
  * @param handle FCS-object that contains the parameter
- * @param tolerance_value pointer to a fcs_float variable (only applicable if absrel is either 1 or 2)
+ * @param tolerance_energy pointer to a fcs_float variable (only applicable if absrel is either 1 or 2)
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_value);
+FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_energy);
 
 /**
  * @brief function to set the optional fmm energy tolerance (deltaE) parameter
@@ -226,7 +226,7 @@ FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loadvector
  *        0 - relative error with 10^(-3)
  *        1 - relative error with energy tolerance (deltaE)
  *        2 - absolute error with energy tolerance (deltaE)
- * @param tolerance_value [deltaE] fcs_float error boundary to be used by fmm (only applicable
+ * @param tolerance_energy [deltaE] fcs_float error boundary to be used by fmm (only applicable
  *        if absrel is either 1 or 2)
  * @param dipole_correction fcs_int chooses which form of dipole correction fmm should use:
  *        -1 = no dipole correction
@@ -238,9 +238,9 @@ FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loadvector
  * @param radius fcs_float sets the radius for the cusp potential, if chosen
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_value, fcs_int dipole_correction, long long system, long long maxdepth, long long unroll_limit, long long load/*, fcs_int potential, fcs_float radius*/);
+FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_energy, fcs_int dipole_correction, long long system, long long maxdepth, long long unroll_limit, long long load/*, fcs_int potential, fcs_float radius*/);
 
-void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float tolerance_value, fcs_int dipole_correction, fcs_int *return_value);
+void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float tolerance_energy, fcs_int dipole_correction, fcs_int *return_value);
 
 #ifdef __cplusplus
 }
