@@ -25,6 +25,7 @@
 #include <sstream>
 #include <cstring>
 #include <cstdlib>
+#include <cstdio>
 #include <cmath>
 #include <cfloat>
 #include <mpi.h>
