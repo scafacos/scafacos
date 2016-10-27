@@ -31,15 +31,17 @@ namespace P3M {
   /****************************************************/
   Communication::Communication(MPI_Comm mpicomm) {
 	  /* store the original communicator */
-	  this->mpicomm = mpicomm;
-	  mpicomm_orig = mpicomm;
+	  this->mpicomm = MPI_COMM_NULL;
+	  MPI_Comm_dup(mpicomm, &mpicomm_orig);
 	  MPI_Comm_size(mpicomm, &size);
 	  MPI_Comm_rank(mpicomm, &rank);
   }
 
   Communication::~Communication() {
-	  if (mpicomm != mpicomm_orig)
-		  MPI_Comm_free(&mpicomm);
+    if(MPI_COMM_NULL != mpicomm)
+      MPI_Comm_free(&mpicomm);
+    if(MPI_COMM_NULL != mpicomm_orig)
+      MPI_Comm_free(&mpicomm_orig);
   }
 
   void Communication::prepare(p3m_float box_l[3]) {
@@ -61,7 +63,8 @@ namespace P3M {
                      periodicity, node_pos);
         if (periodicity[0] && periodicity[1] && periodicity[2]) {
           /* If periodicity is correct, we can just use this communicator */
-          mpicomm = mpicomm_orig;
+          if(MPI_COMM_NULL != mpicomm) MPI_Comm_free(&mpicomm);
+          MPI_Comm_dup(mpicomm_orig, &mpicomm);
           /* get the rank */
           MPI_Comm_rank(mpicomm, &rank);
           comm_is_cart = true;
@@ -86,6 +89,7 @@ namespace P3M {
 #endif
 
       /* create communicator */
+      if(MPI_COMM_NULL != mpicomm) MPI_Comm_free(&mpicomm);
       int periodicity[3] = {1, 1, 1};
       MPI_Cart_create(mpicomm_orig, 3, node_grid,
                       periodicity, 1, &mpicomm);
