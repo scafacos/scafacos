@@ -345,10 +345,11 @@ void Solver::run(
                 NUM_TIMINGS_NOTFAR, MPI_DOUBLE, MPI_MAX,
                 0, comm.mpicomm);
 
-    // copy the far field timings to the end of the timings
-    const double *farTimings = farSolver->getTimings();
-    /* FIXME: this memcpy creates a memory leak reported by valgrind */
-    memcpy(timings+NUM_TIMINGS_NOTFAR, farTimings, sizeof(double)*FarSolver::NUM_TIMINGS);
+    if (require_timings != NONE && require_timings != NOTFAR) {
+      // copy the far field timings to the end of the timings
+      const double *farTimings = farSolver->getTimings();
+      memcpy(timings+NUM_TIMINGS_NOTFAR, farTimings, sizeof(double)*FarSolver::NUM_TIMINGS);
+    }
 
 #ifdef P3M_PRINT_TIMINGS
 #define PRINT(s, ID) printf("%10s=%le (%lf)\n", s, \
