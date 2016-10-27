@@ -222,7 +222,7 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positio
 
 FCSResult fcs_direct_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
-  const char *fnc_name = "fcs_direct_set_parameter";
+//   const char *fnc_name = "fcs_direct_set_parameter";
 
   char *param = *current;
   char *cur = *next;
