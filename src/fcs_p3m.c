@@ -47,6 +47,8 @@ FCSResult fcs_p3m_init(FCS handle)
   result = fcs_p3m_check(handle, fnc_name);
   if (result != NULL) return result;
 
+  handle->shift_positions = 1;
+
   handle->destroy = fcs_p3m_destroy;
   handle->set_r_cut = fcs_p3m_set_r_cut;
   handle->unset_r_cut = fcs_p3m_set_r_cut_tune;

@@ -51,6 +51,8 @@ FCSResult fcs_memd_init(FCS handle)
     result = fcs_memd_check(handle, fnc_name);
     if (result != NULL) return result;
 
+    handle->shift_positions = 1;
+
     handle->destroy = fcs_memd_destroy;
     handle->set_parameter = fcs_memd_set_parameter;
     handle->print_parameters = fcs_memd_print_parameters;

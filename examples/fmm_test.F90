@@ -25,7 +25,6 @@ program test
     logical                                         ::  l_virial = .true.
     integer(kind = fcs_integer_kind_isoc)           ::  total_particles = -1
     integer(kind = fcs_integer_kind_isoc)           ::  local_particle_count = -1 
-    integer(kind = fcs_integer_kind_isoc)           ::  local_max_particles = -1
     real(kind = fcs_real_kind_isoc), dimension(8)   ::  local_charges
     real(kind = fcs_real_kind_isoc), dimension(24)  ::  local_particles
 
@@ -118,83 +117,81 @@ program test
         write(*,'(i7,a,i7,4es14.7)') my_rank, '---->', i, local_particles(3*i-2:3*i), local_charges(i) 
     end do
 
-    local_max_particles = 2*local_particle_count
-
     fields = 0.0d0
     potentials = 0.0d0
 
     if (my_rank == 0) write(*,*) "----------------------------call init---------------------------------"
     ret = fcs_init(handle, trim(adjustl(method)) // c_null_char, communicator)
-    if (my_rank == 0) write(*,*) "fcs_init returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_init returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_init returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    if (my_rank == 0) write(*,*) "fcs_init returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "fcs_init returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "fcs_init returns: ", trim(adjustl(fcs_result_get_function(ret)))
     
     call MPI_BARRIER(communicator,ierr)
 
     if (my_rank == 0) write(*,*) "----------------------------call common setter---------------------------------"
     ret =  fcs_set_common(handle, short_range_flag, box_a, box_b, box_c, offset, periodicity, total_particles)
-    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "fcs_set_common (parser) returns: ", trim(adjustl(fcs_result_get_function(ret)))
     
     call MPI_BARRIER(communicator,ierr)
 
     if (my_rank == 0) write(*,*) "-----------------------call print content (standard) ----------------------"
-    if (my_rank == 0) call fcs_printContent(handle)
+    if (my_rank == 0) call fcs_print_parameters(handle)
     if (my_rank == 0) write(*,*) "-----------------------call method-specific setter-----------------------------"
 
     ret = fcs_fmm_set_absrel(handle, fmm_absrel)
-    if (my_rank == 0) write(*,*) "setter (absrel) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "setter (absrel) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "setter (absrel) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
-    ret = fcs_fmm_set_deltaE(handle, fmm_deltaE)
-    if (my_rank == 0) write(*,*) "setter (deltaE) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "setter (deltaE) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "setter (deltaE) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    if (my_rank == 0) write(*,*) "setter (absrel) returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "setter (absrel) returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "setter (absrel) returns: ", trim(adjustl(fcs_result_get_function(ret)))
+    ret = fcs_fmm_set_tolerance_energy(handle, fmm_deltaE)
+    if (my_rank == 0) write(*,*) "setter (deltaE) returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "setter (deltaE) returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "setter (deltaE) returns: ", trim(adjustl(fcs_result_get_function(ret)))
     ret = fcs_fmm_set_dipole_correction(handle, fmm_dipole_correction)
-    if (my_rank == 0) write(*,*) "setter (dipole_correction) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "setter (dipole_correction) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "setter (dipole_correction) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    if (my_rank == 0) write(*,*) "setter (dipole_correction) returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "setter (dipole_correction) returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "setter (dipole_correction) returns: ", trim(adjustl(fcs_result_get_function(ret)))
     ret = fcs_fmm_set_maxdepth(handle, fmm_maxdepth)
-    if (my_rank == 0) write(*,*) "setter (maxdepth) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "setter (maxdepth) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "setter (maxdepth) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    if (my_rank == 0) write(*,*) "setter (maxdepth) returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "setter (maxdepth) returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "setter (maxdepth) returns: ", trim(adjustl(fcs_result_get_function(ret)))
     ret = fcs_fmm_set_unroll_limit(handle, fmm_unroll_limit)
-    if (my_rank == 0) write(*,*) "setter (unroll_limit) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "setter (unroll_limit) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "setter (unroll_limit) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    if (my_rank == 0) write(*,*) "setter (unroll_limit) returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "setter (unroll_limit) returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "setter (unroll_limit) returns: ", trim(adjustl(fcs_result_get_function(ret)))
     ret = fcs_fmm_set_balanceload(handle, fmm_balance)
-    if (my_rank == 0) write(*,*) "setter (balanceload) returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "setter (balanceload) returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "setter (balanceload) returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    if (my_rank == 0) write(*,*) "setter (balanceload) returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "setter (balanceload) returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "setter (balanceload) returns: ", trim(adjustl(fcs_result_get_function(ret)))
 
     if (my_rank == 0) write(*,*) "----------------------------call print content---------------------------------"
-    if (my_rank == 0) call fcs_printContent(handle)
+    if (my_rank == 0) call fcs_print_parameters(handle)
 
     call MPI_Barrier(communicator,ierr)
 
     if (my_rank == 0) write(*,*) "----------------------------call tune---------------------------------"
-    ret = fcs_tune(handle, local_particle_count, local_max_particles, local_particles, local_charges)
-    if (my_rank == 0) write(*,*) "fcs_tune returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_tune returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_tune returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    ret = fcs_tune(handle, local_particle_count, local_particles, local_charges)
+    if (my_rank == 0) write(*,*) "fcs_tune returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "fcs_tune returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "fcs_tune returns: ", trim(adjustl(fcs_result_get_function(ret)))
 
     call MPI_BARRIER(communicator,ierr)
 
     if (my_rank == 0) write(*,*) "----------------------------call require virial---------------------------------"
-    ret = fcs_require_virial(handle,l_virial)
-    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    ret = fcs_set_compute_virial(handle,l_virial)
+    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "fcs_require_virial returns: ", trim(adjustl(fcs_result_get_function(ret)))
 
     
     do i = 1, run_count
       if (my_rank == 0) write(*,*) "----------------------------call run---------------------------------"
-      ret = fcs_run(handle, local_particle_count, local_max_particles, local_particles, local_charges, fields, &
+      ret = fcs_run(handle, local_particle_count, local_particles, local_charges, fields, &
                     potentials)
-      if (my_rank == 0) write(*,*) "fcs_run returns: ", fcsResult_getReturnCode(ret)
-      if (my_rank == 0) write(*,*) "fcs_run returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-      if (my_rank == 0) write(*,*) "fcs_run returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+      if (my_rank == 0) write(*,*) "fcs_run returns: ", fcs_result_get_return_code(ret)
+      if (my_rank == 0) write(*,*) "fcs_run returns: ", trim(adjustl(fcs_result_get_message(ret)))
+      if (my_rank == 0) write(*,*) "fcs_run returns: ", trim(adjustl(fcs_result_get_function(ret)))
 
       e_local = 0.0d0
       do j = 1, local_particle_count
@@ -206,9 +203,9 @@ program test
       if (my_rank == 0) then
         write(*,*) "----------------------------call get virial---------------------------------"
         ret = fcs_get_virial(handle,virial)
-        write(*,*) "fcs_get_virial returns: ", fcsResult_getReturnCode(ret)
-        write(*,*) "fcs_get_virial returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-        write(*,*) "fcs_get_virial returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+        write(*,*) "fcs_get_virial returns: ", fcs_result_get_return_code(ret)
+        write(*,*) "fcs_get_virial returns: ", trim(adjustl(fcs_result_get_message(ret)))
+        write(*,*) "fcs_get_virial returns: ", trim(adjustl(fcs_result_get_function(ret)))
         
         write(*,'(a,i7)') "system virial in step ", i
         do j = 0,2
@@ -219,9 +216,9 @@ program test
 
     if (my_rank == 0) write(*,*) "----------------------------call destroy---------------------------------"
     ret = fcs_destroy(handle)
-    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", fcsResult_getReturnCode(ret)
-    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", trim(adjustl(fcsResult_getErrorMessage(ret)))
-    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", trim(adjustl(fcsResult_getErrorSource(ret)))
+    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", fcs_result_get_return_code(ret)
+    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", trim(adjustl(fcs_result_get_message(ret)))
+    if (my_rank == 0) write(*,*) "fcs_destroy returns: ", trim(adjustl(fcs_result_get_function(ret)))
     
 
     call MPI_FINALIZE(ierr)

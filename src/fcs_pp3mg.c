@@ -54,6 +54,8 @@ FCSResult fcs_pp3mg_init(FCS handle)
 
   DEBUG_MOP(printf("fcs_pp3mg_init\n"));
 
+  handle->shift_positions = 1;
+
   handle->destroy = fcs_pp3mg_destroy;
   handle->set_parameter = fcs_pp3mg_set_parameter;
   handle->print_parameters = fcs_pp3mg_print_parameters;
@@ -480,7 +482,7 @@ FCSResult fcs_pp3mg_get_virial(FCS handle, fcs_float *virial)
 
 FCSResult fcs_pp3mg_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
-  const char *fnc_name = "fcs_pp3mg_set_parameter";
+//   const char *fnc_name = "fcs_pp3mg_set_parameter";
 
   char *param = *current;
   char *cur = *next;

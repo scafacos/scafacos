@@ -8,10 +8,18 @@
 #define FMM_PARALLEL
 
 ! print output to console
+#if defined(FCS_ENABLE_INFO) || 0
+#define FMM_INFO
+#else
 #undef FMM_INFO
+#endif
 
 ! enable debug mode
+#if defined(FCS_ENABLE_DEBUG) || 0
+#define FMM_DEBUG
+#else
 #undef FMM_DEBUG
+#endif
 
 ! enable time measurement, walltime OR cputime
 #define FMM_CPUTIME

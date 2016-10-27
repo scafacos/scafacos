@@ -1,5 +1,13 @@
 /* fcs_config.h.in.  Public config header for ScaFaCoS FCS.  */
 
+/* Define to the scanf conversion that corresponds to the floating type to use
+   for FCS. */
+#undef FCS_CONV_FLOAT
+
+/* Define to the scanf conversion that corresponds to the integer type to use
+   for FCS. */
+#undef FCS_CONV_INT
+
 /* Whether solver method direct is enabled. */
 #undef FCS_ENABLE_DIRECT
 
