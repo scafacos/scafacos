@@ -91,21 +91,20 @@ Solver::~Solver() {
 void Solver::prepare() {
     if (farSolver != NULL) delete farSolver;
     if(!this->isTriclinic){
-    comm.prepare(box_l);
-    farSolver = new FarSolver(comm, box_l, r_cut, alpha, grid, cao, box_vectors, volume, isTriclinic);
-    }else{
+        comm.prepare(box_l);
+        farSolver = new FarSolver(comm, box_l, r_cut, alpha, grid, cao, box_vectors, volume, isTriclinic);
+    } else {
         p3m_float box_length[3]={1.0,1.0,1.0};
-    comm.prepare(box_length);
-    farSolver = new FarSolver(comm, box_length, r_cut, alpha, grid, cao, box_vectors, volume, isTriclinic);
-    }
-        
+        comm.prepare(box_length);
+        farSolver = new FarSolver(comm, box_length, r_cut, alpha, grid, cao, box_vectors, volume, isTriclinic);
+    }        
 }
 
 /* callback function for near field computations */
 inline void
 compute_near(const void *param, p3m_float dist, p3m_float *field, p3m_float *potential)
 {
-const near_params_t params = *(static_cast<const near_params_t*>(param));
+    const near_params_t params = *(static_cast<const near_params_t*>(param));
 //    const p3m_float alpha = *(static_cast<const p3m_float*>(param));
     const p3m_float adist = params.alpha * dist;
     
@@ -269,25 +268,26 @@ void Solver::run(
 
     if (require_timings != NOTFAR) {
 #if defined(P3M_INTERLACE) && defined(P3M_AD)
-    if(!isTriclinic){ //orthorhombic
-    farSolver->runADI(num_real_particles, positions, charges, fields, potentials);
-    } else {//triclinic
-      p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
-      this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
-      farSolver->runADI(num_real_particles, positions_triclinic, charges, fields, potentials);
-    }
-    
+        if(!isTriclinic){ //orthorhombic
+            farSolver->runADI(num_real_particles, positions, charges, fields, potentials);
+        } else {//triclinic
+            p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
+            this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
+            farSolver->runADI(num_real_particles, positions_triclinic, charges, fields, potentials);
+            delete[] positions_triclinic;
+        }
 #else
-    if(!isTriclinic){ //orthorhombic
-    farSolver->runIK(num_real_particles, positions, charges, fields, potentials);
-    } else {//triclinic
-      p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
-      this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
-      farSolver->runIK(num_real_particles, positions_triclinic, charges, fields, potentials);
-    }
-    
+        if(!isTriclinic){ //orthorhombic
+            farSolver->runIK(num_real_particles, positions, charges, fields, potentials);
+        } else {//triclinic
+            p3m_float *positions_triclinic= new p3m_float[num_real_particles*3];
+            this->calculateTriclinicPositions(positions, positions_triclinic,num_real_particles);
+            farSolver->runIK(num_real_particles, positions_triclinic, charges, fields, potentials);
+            delete[] positions_triclinic;
+        }
 #endif
-    
+    }
+
     if (near_field_flag) {
         /* start near timer */
         startTimer(NEAR);
@@ -345,9 +345,11 @@ void Solver::run(
                 NUM_TIMINGS_NOTFAR, MPI_DOUBLE, MPI_MAX,
                 0, comm.mpicomm);
 
-    // copy the far field timings to the end of the timings
-    const double *farTimings = farSolver->getTimings();
-    memcpy(timings+NUM_TIMINGS_NOTFAR, farTimings, sizeof(double)*FarSolver::NUM_TIMINGS);
+    if (require_timings != NONE && require_timings != NOTFAR) {
+      // copy the far field timings to the end of the timings
+      const double *farTimings = farSolver->getTimings();
+      memcpy(timings+NUM_TIMINGS_NOTFAR, farTimings, sizeof(double)*FarSolver::NUM_TIMINGS);
+    }
 
 #ifdef P3M_PRINT_TIMINGS
 #define PRINT(s, ID) printf("%10s=%le (%lf)\n", s, \
@@ -384,8 +386,7 @@ void Solver::run(
     sdelete(potentials);
 
     P3M_INFO(printf( "P3M::Solver::run() finished.\n"));
-        }
-    }
+}
 
 void
 Solver::cartesianizeFields(p3m_float *fields, p3m_int num_particles){

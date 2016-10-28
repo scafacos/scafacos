@@ -639,7 +639,7 @@ FCSResult fcs_ewald_run(FCS handle,
 
 FCSResult fcs_ewald_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
-  const char *fnc_name = "fcs_ewald_set_parameter";
+//   const char *fnc_name = "fcs_ewald_set_parameter";
 
   char *param = *current;
   char *cur = *next;

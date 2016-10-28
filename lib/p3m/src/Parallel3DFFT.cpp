@@ -113,6 +113,9 @@ Parallel3DFFT::Parallel3DFFT(Communication &comm) : comm(comm) {
     plan[i].send_size = NULL;
     plan[i].recv_block = NULL;
     plan[i].recv_size = NULL;
+    plan[i].plan = NULL;
+
+    back[i].plan = NULL;
   }
   
   is_prepared = false;
@@ -136,6 +139,11 @@ Parallel3DFFT::~Parallel3DFFT() {
     sfree(plan[i].send_size);
     sfree(plan[i].recv_block);
     sfree(plan[i].recv_size);
+
+    if(NULL != plan[i].plan)
+      fftw_destroy_plan(plan[i].plan);
+    if(NULL != back[i].plan)
+      fftw_destroy_plan(back[i].plan);
   }
   sfree(send_buf);
   sfree(recv_buf);

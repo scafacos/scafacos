@@ -259,17 +259,18 @@ FCSResult ifcs_p3m_get_timings(void *rd, double *timing,
 	return NULL;
 }
 
-FCSResult ifcs_p3m_tune(void* rd,
-fcs_int num_particles,
-fcs_int max_particles,
-fcs_float *positions,
-fcs_float *charges) {
+FCSResult ifcs_p3m_tune(
+    void* rd,
+    fcs_int num_particles,
+    fcs_int max_particles,
+    fcs_float *positions,
+    fcs_float *charges) {
 	Solver *d = static_cast<Solver *>(rd);
 
 	try {
 		d->tune(num_particles, positions, charges);
 	} catch (std::exception &e) {
-		return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, "ifcs_p3m_init",
+		return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, "ifcs_p3m_tune",
 				e.what());
 	}
 

@@ -88,27 +88,26 @@ FCSResult fcs_p3m_tune(FCS handle,
   const fcs_float *b = fcs_get_box_b(handle);
   const fcs_float *c = fcs_get_box_c(handle);
   if (!fcs_is_orthogonal(a, b, c)){
-        if (ifcs_p3m_check_triclinic_box(a[1],a[2],b[2])){
-            
-            if(ifcs_p3m_set_triclinic_flag(handle->method_context)!=NULL)
-           return ifcs_p3m_set_triclinic_flag(handle->method_context);           
-        }
-        else
-            return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
-                "p3m triclinic requires the box to be as follows: \n \
-                the first box vector is parallel to the x axis\n \
-                the second box vector is in the yz plane.");
-    } else {
-        if (!fcs_uses_principal_axes(a, b, c))
-            return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
-                "p3m requires the box vectors to be parallel to the principal axes.");
+    if (ifcs_p3m_check_triclinic_box(a[1],a[2],b[2])){
+      if(ifcs_p3m_set_triclinic_flag(handle->method_context)!=NULL)
+        return ifcs_p3m_set_triclinic_flag(handle->method_context);           
     }
+    else
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+          "p3m triclinic requires the box to be as follows: \n \
+          the first box vector is parallel to the x axis\n \
+          the second box vector is in the yz plane.");
+  } else {
+    if (!fcs_uses_principal_axes(a, b, c))
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+          "p3m requires the box vectors to be parallel to the principal axes.");
+  }
 
   ifcs_p3m_set_box_a(handle->method_context, a[0]);
   ifcs_p3m_set_box_b(handle->method_context, b[1]);
   ifcs_p3m_set_box_c(handle->method_context, c[2]);
 
-    ifcs_p3m_set_box_geometry(handle->method_context, a, b, c);
+  ifcs_p3m_set_box_geometry(handle->method_context, a, b, c);
 
   ifcs_p3m_set_near_field_flag(handle->method_context, 
 				 fcs_get_near_field_flag(handle));
@@ -360,7 +359,7 @@ FCSResult fcs_p3m_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *
 
 FCSResult fcs_p3m_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
-  const char *fnc_name = "fcs_p3m_set_parameter";
+//   const char *fnc_name = "fcs_p3m_set_parameter";
 
   char *param = *current;
   char *cur = *next;
