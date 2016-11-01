@@ -75,12 +75,12 @@ static void init_near_interpolation_table_potential_0dp(
     fcs_int num_nodes,
     fcs_float r_cut, fcs_float epsI, fcs_int p,
     const fcs_float *taylor2p_coeff,
-    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_int N_cos, const fcs_float *cos_coeff,
     fcs_float *table);
 static void init_far_interpolation_table_potential_0dp(
     fcs_int num_nodes, fcs_int reg_far,
     fcs_float epsB, fcs_int p, fcs_float c,
-    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_int N_cos, const fcs_float *cos_coeff,
     fcs_float *table);
 static void init_far_interpolation_table_potential_0dp_ewald(
     fcs_int num_nodes, fcs_int reg_far,
@@ -1432,7 +1432,7 @@ static void init_near_interpolation_table_potential_0dp(
     fcs_int num_nodes,
     fcs_float r_cut, fcs_float epsI, fcs_int p,
     const fcs_float *taylor2p_coeff,
-    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_int N_cos, const fcs_float *cos_coeff,
     fcs_float *table
     )
 {
@@ -1452,7 +1452,7 @@ static void init_near_interpolation_table_potential_0dp(
 static void init_far_interpolation_table_potential_0dp(
     fcs_int num_nodes, fcs_int reg_far,
     fcs_float epsB, fcs_int p, fcs_float c,
-    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_int N_cos, const fcs_float *cos_coeff,
     fcs_float *table 
     )
 {
