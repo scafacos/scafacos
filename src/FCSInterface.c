@@ -1410,8 +1410,7 @@ FCSResult fcs_get_resort_availability(FCS handle, fcs_int *availability)
 
   *availability = 0;
 
-  if (handle->get_resort_availability == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+  if (handle->get_resort_availability == NULL) return FCS_RESULT_SUCCESS;
 
   return handle->get_resort_availability(handle, availability);
 }
