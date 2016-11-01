@@ -417,7 +417,7 @@ FCSResult ifcs_p2nfft_tune(
   MPI_Allreduce(&local_particles, &num_particles, 1, FCS_MPI_INT, MPI_SUM, d->cart_comm_3d);
   if (num_particles != d->num_nodes) {
 #if FCS_P2NFFT_DEBUG_RETUNE
-    fprintf(stderr, "num_nodes retune, num_particles = %d, d->num_nodes = %d\n", num_particles, d->num_nodes);
+    fprintf(stderr, "Retune triggered due to changed num_nodes!, num_particles = %d, d->num_nodes = %d\n", num_particles, d->num_nodes);
 #endif
     d->num_nodes = num_particles;
     local_needs_retune = 1;
@@ -427,7 +427,7 @@ FCSResult ifcs_p2nfft_tune(
   for(int t=0; t<3; t++){
     if((periodicity[t] == 0) != (d->periodicity[t] == 0)){
 #if FCS_P2NFFT_DEBUG_RETUNE
-      fprintf(stderr, "periodicity[%d] = %d, d->periodicity[%d] = %d\n", periodicity[t], t, d->periodicity[t], t);
+      fprintf(stderr, "Retune triggered due to changed periodicity!, periodicity[%d] = %d, d->periodicity[%d] = %d\n", periodicity[t], t, d->periodicity[t], t);
 #endif
       local_needs_retune = 1;
     }
@@ -491,7 +491,7 @@ FCSResult ifcs_p2nfft_tune(
 //   if (!fcs_float_is_equal(sum_q, d->sum_q)) {
   if (fcs_fabs(sum_q - d->sum_q) > 1e-5) {
 #if FCS_P2NFFT_DEBUG_RETUNE
-    fprintf(stderr, "sum_q = %e, d->sum_q = %e\n", sum_q, d->sum_q);
+    fprintf(stderr, "Retune triggered due to changed charge sum!, sum_q = %e, d->sum_q = %e\n", sum_q, d->sum_q);
 #endif
     d->sum_q = sum_q;
     local_needs_retune = 1;
@@ -511,7 +511,7 @@ FCSResult ifcs_p2nfft_tune(
 //   if (!fcs_float_is_equal(sum_q2, d->sum_q2)) {
   if (fcs_fabs(sum_q2 - d->sum_q2 > 1e-5)) {
 #if FCS_P2NFFT_DEBUG_RETUNE
-    fprintf(stderr, "sum_q2 retune, sum_q2 = %e, d->sum_q2 = %e\n", sum_q2, d->sum_q2);
+    fprintf(stderr, "Retune triggered due to changed square charge sum!, sum_q2 = %e, d->sum_q2 = %e\n", sum_q2, d->sum_q2);
 #endif
     d->sum_q2 = sum_q2;
     local_needs_retune = 1;
@@ -536,7 +536,7 @@ FCSResult ifcs_p2nfft_tune(
   for(int t=0; t<3; t++){
     if (!fcs_float_is_equal(d->box_l[t], box_l[t])) {
 #if FCS_P2NFFT_DEBUG_RETUNE
-      fprintf(stderr, "Changed box size requires retune, box_l[%d] = %e, d->box_l[%d] = %e\n", t, box_l[t], t, d->box_l[t]);
+      fprintf(stderr, "Retune triggered due to changed box length!, box_l[%d] = %e, d->box_l[%d] = %e\n", t, box_l[t], t, d->box_l[t]);
 #endif
       d->box_l[t] = box_l[t];
       local_needs_retune = 1;
