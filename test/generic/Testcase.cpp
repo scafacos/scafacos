@@ -117,7 +117,6 @@ Configuration::Configuration()
 Configuration::~Configuration()
 {
   input_particles.particles.free();
-  input_particles.particles.free();
   
   free_decomp_particles(true);
 }
