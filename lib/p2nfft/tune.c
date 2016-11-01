@@ -537,16 +537,6 @@ FCSResult ifcs_p2nfft_tune(
 //     local_needs_retune = 1;
 //   }
 
-  for(int t=0; t<3; t++){
-    if (!fcs_float_is_equal(d->box_l[t], box_l[t])) {
-#if FCS_P2NFFT_DEBUG_RETUNE
-      fprintf(stderr, "Retune triggered due to changed box length!, box_l[%d] = %e, d->box_l[%d] = %e\n", t, box_l[t], t, d->box_l[t]);
-#endif
-      d->box_l[t] = box_l[t];
-      local_needs_retune = 1;
-    }
-  }
-
   /* FIXME: number of charged particles may be less than number of all particles */
   d->sum_qpart = num_particles;
 
