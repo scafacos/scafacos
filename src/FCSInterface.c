@@ -859,7 +859,7 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("total_dipole_particles",  set_total_dipole_particles, FCS_PARSE_VAL(fcs_int));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("r_cut",                   set_r_cut,                  FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("require_virial",          set_compute_virial,         FCS_PARSE_VAL(fcs_int));
-    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("",                        set_tolerance,              FCS_PARSE_VAL(fcs_int),                                     FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance",               set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_UNDEFINED),     FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy",        set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_ENERGY),        FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy_rel",    set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_ENERGY_REL),    FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential",     set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL),     FCS_PARSE_VAL(fcs_float));
