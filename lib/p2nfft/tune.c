@@ -906,13 +906,17 @@ FCSResult ifcs_p2nfft_tune(
         }
   
         /* initialize coefficients of 2-point Taylor polynomials */
-        if(d->taylor2p_coeff != NULL)
+        if(d->taylor2p_coeff != NULL){
           free(d->taylor2p_coeff);
+          d->taylor2p_coeff = NULL;
+        }
         d->taylor2p_coeff = (fcs_float*) malloc(sizeof(fcs_float)*(d->p));
         ifcs_p2nfft_load_taylor2p_coefficients(d->p, d->taylor2p_coeff);
   
-        if(d->taylor2p_derive_coeff != NULL)
+        if(d->taylor2p_derive_coeff != NULL){
           free(d->taylor2p_derive_coeff);
+          d->taylor2p_derive_coeff = NULL;
+        }
         d->taylor2p_derive_coeff = (fcs_float*) malloc(sizeof(fcs_float)*(d->p-1));
         ifcs_p2nfft_load_taylor2p_derive_coefficients(d->p, d->taylor2p_derive_coeff);
 
@@ -1000,8 +1004,10 @@ FCSResult ifcs_p2nfft_tune(
   
         /* initialize cg-regularization */
         d->N_cg_cos = d->N[mindim]/2;
-        if(d->cg_cos_coeff != NULL)
+        if(d->cg_cos_coeff != NULL){
           free(d->cg_cos_coeff);
+          d->cg_cos_coeff = NULL;
+        }
        
         fcs_int m, p; 
         d->cg_cos_coeff = (fcs_float*) malloc(sizeof(fcs_float)*d->N_cg_cos);
@@ -1016,8 +1022,10 @@ FCSResult ifcs_p2nfft_tune(
         if(missed_coeff)
           return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Did not find an appropriate CG approximation.");
 
-        if(d->cg_sin_coeff != NULL)
+        if(d->cg_sin_coeff != NULL){
           free(d->cg_sin_coeff);
+          d->cg_sin_coeff = NULL;
+        }
         d->cg_sin_coeff = (fcs_float*) malloc(sizeof(fcs_float)*d->N_cg_cos);
         for(fcs_int k=0; k<d->N_cg_cos; k++)
           d->cg_sin_coeff[k] = -2 * FCS_P2NFFT_PI * k * d->cg_cos_coeff[k];
@@ -1169,6 +1177,11 @@ FCSResult ifcs_p2nfft_tune(
   /* Start timing of precomputation */
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
   if (d->needs_retune) {
+    if(d->regkern_hat != NULL){
+      FCS_PFFT(free)(d->regkern_hat);
+      d->regkern_hat = NULL;
+    }
+
     /* precompute Fourier coefficients for convolution */
     if (d->num_periodic_dims == 3)
       d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
