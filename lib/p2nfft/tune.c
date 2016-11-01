@@ -394,8 +394,12 @@ FCSResult ifcs_p2nfft_tune(
   d->short_range_flag = short_range_flag;
 
   /* Retune if simulation box changed */
-  if(box_differs(d->box_a, d->box_b, d->box_c, box_a, box_b, box_c))
+  if(box_differs(d->box_a, d->box_b, d->box_c, box_a, box_b, box_c)){
+#if FCS_P2NFFT_DEBUG_RETUNE
+    fprintf(stderr, "Retune triggered due to changed box shape!\n");
+#endif
     local_needs_retune = 1;
+  }
   
   for(fcs_int t=0; t<3; t++){
     d->box_a[t] = box_a[t];
@@ -2689,7 +2693,7 @@ static int pnfft_is_up_to_date(
   unsigned plan_pnfft_flags, plan_pfft_flags;
 
 #if FCS_P2NFFT_DEBUG_RETUNE
-    fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date: ths==%p\n", ths);
+    fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date starts with: ths==%p\n", ths);
 #endif
 
   /* plan is uninitialized */

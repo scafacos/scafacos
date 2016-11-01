@@ -42,6 +42,12 @@
 #  define FCS_P2NFFT_IFDBG(code) 
 #endif
 
+#if FCS_P2NFFT_DEBUG_RETUNE
+#  define FCS_P2NFFT_IFDBG_RETUNE(code) code
+#else
+#  define FCS_P2NFFT_IFDBG_RETUNE(code)
+#endif
+
 
 #define CONCAT2(prefix, name)  prefix ## name
 #define CONCAT(prefix, name)  CONCAT2(prefix, name)
