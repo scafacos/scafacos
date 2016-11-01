@@ -723,6 +723,10 @@ PlainParticles::PlainParticles()
 {
 }
 
+PlainParticles::~PlainParticles()
+{
+  local_particles.free(); 
+}
 
 #define PRINT_PARTICLE  0
 

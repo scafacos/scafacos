@@ -1059,6 +1059,15 @@ Testcase::Testcase()
     configurations()
 {}
 
+Testcase::~Testcase()
+{
+  for (int i=0; i<configurations.size(); ++i)
+  {
+    delete (configurations[i]);
+  } 
+  configurations.clear();
+}
+
 void
 Testcase::read_file(const char* filename, fcs_int *periodic_duplications, fcs_int decomposition) {
   static const size_t READSIZE = 8192;

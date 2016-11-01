@@ -226,6 +226,7 @@ class PlainParticles: public ParticleSource
 {
 public:
   PlainParticles();
+  ~PlainParticles();
 
   virtual bool read_config(xml_node<> *config_node, const char *basename, int comm_size, int comm_rank, MPI_Comm comm);
   virtual void broadcast_config(int root, int comm_size, int comm_rank, MPI_Comm comm);
