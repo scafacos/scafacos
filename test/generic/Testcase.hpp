@@ -148,6 +148,7 @@ public:
   vector<Configuration*> configurations;
 
   Testcase();
+  ~Testcase();
 
   void read_file(const char* filename, fcs_int *periodic_duplications, fcs_int decomposition = -1);
   void write_file(const char* outfilename, const char* binfilename = NULL, const char* portable_filename = NULL, bool keep_dupgen = false);
