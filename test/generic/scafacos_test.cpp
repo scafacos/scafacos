@@ -1213,6 +1213,7 @@ int main(int argc, char* argv[])
 
   if (comm_rank == MASTER_RANK) config = testcase->configurations.begin();
 
+  FCS fcs = FCS_NULL;
   // Loop over configurations
   while (1) {
 
@@ -1239,7 +1240,6 @@ int main(int argc, char* argv[])
 
     MASTER(cout << "Processing configuration " << config_count << "..." << endl);
 
-    FCS fcs = FCS_NULL;
     FCSResult result;
     MPI_Comm fcs_comm = communicator;
 
@@ -1269,10 +1269,20 @@ int main(int argc, char* argv[])
 
     if (global_params.have_method)
     {
-      MASTER(cout << "  Initializing FCS, method " << global_params.method << "..." << endl);
-      result = fcs_init(&fcs, global_params.method, fcs_comm);
-      check_result(result, true);
+      if (fcs != FCS_NULL && !current_config->params.reuse_fcs)
+      {
+        MASTER(cout << "Destroying FCS ..." << endl);
+        result = fcs_destroy(fcs);
+        fcs = FCS_NULL;
+        check_result(result, true);
+      }
 
+      if (fcs == FCS_NULL)
+      {
+        MASTER(cout << "  Initializing FCS, method " << global_params.method << "..." << endl);
+        result = fcs_init(&fcs, global_params.method, fcs_comm);
+        check_result(result, true);
+      }
     } else MASTER(cout << " No method chosen!" << endl);
 
     MASTER(cout << "  Setting method configuration parameters..." << endl);
@@ -1327,18 +1337,17 @@ int main(int argc, char* argv[])
     // Free particles
     current_config->free_decomp_particles();
 
-    if (global_params.have_method)
-    {
-      MASTER(cout << "Destroying FCS ..." << endl);
-      result = fcs_destroy(fcs);
-      check_result(result, true);
-    }
-
     if (fcs_comm != communicator) MPI_Comm_free(&fcs_comm);
 
     // proceed to the next configuration
     config++;
     config_count++;
+  }
+
+  if(FCS_NULL != fcs){
+    MASTER(cout << "Destroying FCS ..." << endl);
+    FCSResult result = fcs_destroy(fcs);
+    check_result(result, true);
   }
 
   if (global_params.have_outfile) {
