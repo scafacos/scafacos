@@ -46,6 +46,7 @@ static const fcs_float EPSILON_METALLIC = -1.0;
 class Configuration {
 public:
   struct {
+    bool reuse_fcs;
     fcs_float box_origin[3];
     fcs_float box_a[3];
     fcs_float box_b[3];
@@ -56,7 +57,6 @@ public:
     fcs_int periodic_duplications[3];
 
     fcs_float result_density;
-
   } params;
 
   fcs_int total_duplications[3], total_duplication;
