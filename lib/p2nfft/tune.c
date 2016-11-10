@@ -423,7 +423,6 @@ FCSResult ifcs_p2nfft_tune(
   fcs_int local_needs_retune = d->needs_retune;
   fcs_int i, num_particles;
   fcs_float sum_q, sum_q2, sum_q4, sum_q_abs, avg_dist, error=0;
-  fcs_float box_l[3]; /* TODO: deprecated parameter  */
   FCSResult result;
 
 #if FCS_P2NFFT_DEBUG_RETUNE
@@ -477,9 +476,9 @@ FCSResult ifcs_p2nfft_tune(
   }
 
   /* Get box size for orthorombic boxes */ 
-  box_l[0] = fcs_norm(d->box_a);
-  box_l[1] = fcs_norm(d->box_b);
-  box_l[2] = fcs_norm(d->box_c);
+  d->box_l[0] = fcs_norm(d->box_a);
+  d->box_l[1] = fcs_norm(d->box_b);
+  d->box_l[2] = fcs_norm(d->box_c);
 
   /* compute dual lattice vectors */
   d->box_V = fcs_fabs(det_3x3(d->box_a, d->box_b, d->box_c));
@@ -625,8 +624,8 @@ FCSResult ifcs_p2nfft_tune(
     /* determine the dimensions with minimum and maximum box length */
     fcs_int maxdim=0, mindim=0;
     for(fcs_int t=1; t<2; t++){
-      if(box_l[t] < box_l[mindim]) mindim = t;
-      if(box_l[t] > box_l[maxdim]) maxdim = t;
+      if(d->box_l[t] < d->box_l[mindim]) mindim = t;
+      if(d->box_l[t] > d->box_l[maxdim]) maxdim = t;
     }
 
     /* check user defined epsI and epsB */
