@@ -641,8 +641,10 @@ FCSResult fcs_p2nfft_set_pnfft_m_tune(FCS handle);
     Set/retrieve/restore real space cutoff of window function.
   \item
 \begin{alltt}
-FCSResult fcs_p2nfft_set_pnfft_b(FCS handle, fcs_float b0, fcs_float b1, fcs_float b2);
-FCSResult fcs_p2nfft_get_pnfft_b(FCS handle, fcs_float* b0, fcs_float* b1, fcs_float* b2);
+FCSResult fcs_p2nfft_set_pnfft_b(FCS handle, fcs_float b0,
+    fcs_float b1, fcs_float b2);
+FCSResult fcs_p2nfft_get_pnfft_b(FCS handle, fcs_float* b0,
+    fcs_float* b1, fcs_float* b2);
 FCSResult fcs_p2nfft_set_pnfft_b_tune(FCS handle);
 \end{alltt}
     Set/retrieve/restore shape parameters of window function corresponding to each of the three dimensions.
