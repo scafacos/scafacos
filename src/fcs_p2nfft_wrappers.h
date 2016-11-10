@@ -26,6 +26,9 @@
 /* Getters and Setters for verbose tuning of P2NFFT */
 FCS_P2NFFT_SET_GET_WRAPPER_1(verbose_tuning, verbose_tuning, fcs_int, verbose_tuning)
 
+/* Getters and Setters for max_box_angles of P2NFFT */
+FCS_P2NFFT_SET_GET_WRAPPER_1(max_box_angles, max_box_angles, fcs_int, max_box_angles)
+
 /* setters/getters for tolerance */
 FCS_P2NFFT_SET_GET_TUNE_WRAPPER_2(tolerance, tolerance, fcs_int, tolerance_type, fcs_float, tolerance_value)
 

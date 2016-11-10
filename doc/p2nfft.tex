@@ -300,6 +300,9 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     This flag disables the check for accuracy and gives the possibility to run \ptwonfft
     with any set of parameters. It is intended for very experienced users that tune all parameters manually.
     Default value is $0$ (abort if tolerance check fails). Any other value disables the tolerance check.
+  \item \verb!p2nfft_ignore_potential! -
+    Disable the computation of the potential during \verb!fcs_run!.
+    Default value is $0$ (compute potential). Any other integer value disables the potential computation.
   \item \verb!p2nfft_ignore_field! -
     Disable the computation of the field during \verb!fcs_run!.
     Default value is $0$ (compute field). Any other integer value disables the field computation.
@@ -307,6 +310,10 @@ in order to run the test program with a near field cut off range of $4.5$ and a 
     Decide if a full list of \ptwonfft parameter settings is printed on stdout or not.
     Feasible values are $0$ (do not print), or any other integer (print the parameters).
     The default value is $1$ if \project was configured with the \verb+--enable-fcs-info+ flag, and $0$ otherwise.
+  \item \verb!p2nfft_max_box_angles! -
+    Enable shift of box vectors along periodic dimensions in order to maximize the angles between box vectors.
+    Larger angles yield better error estimates and should be preffered.
+    Default value is $0$ (do not change input box vectors). Any other integer value enables the box vector shifts.
 \end{itemize}
 
 \subsection{PNFFT-specific Parameters}
@@ -562,6 +569,14 @@ FCSResult fcs_p2nfft_get_ignore_tolerance(
     Set/retrieve flag for disabling the accuracy check (default = 0).
   \item
 \begin{alltt}
+FCSResult fcs_p2nfft_set_ignore_potenial(
+    FCS handle, fcs_int set_ignore_potenial);
+FCSResult fcs_p2nfft_get_ignore_potenial(
+    FCS handle, fcs_int* set_ignore_poteynial);
+\end{alltt}
+    Set/retrieve flag for disabling the field computation (default = 0).
+  \item
+\begin{alltt}
 FCSResult fcs_p2nfft_set_ignore_field(
     FCS handle, fcs_int set_ignore_field);
 FCSResult fcs_p2nfft_get_ignore_field(
@@ -576,6 +591,14 @@ FCSResult fcs_p2nfft_get_verbose_tuning(
     FCS handle, fcs_int* set_verbose_tuning);
 \end{alltt}
     Set/retrieve flag for verbose tuning. The default value will be 1 (library was configured with \verb!--enable-fcs-info!) or 0 (otherwise).
+  \item
+\begin{alltt}
+FCSResult fcs_p2nfft_set_max_box_anlges(
+    FCS handle, fcs_int set_max_box_anlges);
+FCSResult fcs_p2nfft_get_max_box_anlges(
+    FCS handle, fcs_int* set_max_box_anlges);
+\end{alltt}
+  Set/retrieve flag for enabling maximization of angles between box vectors (default = 0). 
 \end{itemize}
 
 \subsection{PNFFT-specific Functions}
