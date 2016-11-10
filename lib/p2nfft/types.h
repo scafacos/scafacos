@@ -33,7 +33,7 @@
 
 
 #define FCS_P2NFFT_DEBUG 0
-#define FCS_P2NFFT_DEBUG_RETUNE 0
+#define FCS_P2NFFT_DEBUG_RETUNE 1
 #define FCS_P2NFFT_TIMING 0
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
@@ -106,6 +106,7 @@ typedef ptrdiff_t INT;
 #define FCS_P2NFFT_IGNORE_POTENTIAL          (1U << 1)
 #define FCS_P2NFFT_IGNORE_FIELD              (1U << 2)
 #define FCS_P2NFFT_VERBOSE_TUNING            (1U << 3)
+#define FCS_P2NFFT_MAX_BOX_ANGLES            (1U << 4)
 
 /* p2nfft_reg_kernels */
 #define FCS_P2NFFT_REG_KERNEL_EWALD             0

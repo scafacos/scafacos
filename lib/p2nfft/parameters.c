@@ -730,6 +730,7 @@ IFCS_P2NFFT_SET_GET_FLAG(, ignore_tolerance,  FCS_P2NFFT_IGNORE_TOLERANCE)
 IFCS_P2NFFT_SET_GET_FLAG(, ignore_potential,  FCS_P2NFFT_IGNORE_POTENTIAL)
 IFCS_P2NFFT_SET_GET_FLAG(, ignore_field,      FCS_P2NFFT_IGNORE_FIELD)
 IFCS_P2NFFT_SET_GET_FLAG(, verbose_tuning,    FCS_P2NFFT_VERBOSE_TUNING)
+IFCS_P2NFFT_SET_GET_FLAG(, max_box_angles,    FCS_P2NFFT_MAX_BOX_ANGLES)
 
 
 /****************************************************

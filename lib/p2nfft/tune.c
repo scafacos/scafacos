@@ -446,7 +446,9 @@ FCSResult ifcs_p2nfft_tune(
   fcs_float box_b_ortho[3] = {box_b[0], box_b[1], box_b[2]};
   fcs_float box_c_ortho[3] = {box_c[0], box_c[1], box_c[2]};
 
-  orthogonalize_periodic_dims(periodicity, box_a_ortho, box_b_ortho, box_c_ortho);
+  if(d->flags & FCS_P2NFFT_MAX_BOX_ANGLES){
+    orthogonalize_periodic_dims(periodicity, box_a_ortho, box_b_ortho, box_c_ortho);
+  }
 
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG  || FCS_P2NFFT_DEBUG_TUNING || FCS_ENABLE_INFO
   printf("input box vectors:   [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f], [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f], [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f]\n",
@@ -1409,6 +1411,15 @@ static void print_command_line_arguments(
       printf("p2nfft_p,%" FCS_LMOD_INT "d,", d->p);
     if(verbose || (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) )
       printf("p2nfft_ignore_tolerance,%d,", (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) ? 1 : 0);
+    if(verbose || (d->flags & FCS_P2NFFT_IGNORE_POTENTIAL) )
+      printf("p2nfft_ignore_potential,%d,", (d->flags & FCS_P2NFFT_IGNORE_POTENTIAL) ? 1 : 0);
+    if(verbose || (d->flags & FCS_P2NFFT_IGNORE_FIELD) )
+      printf("p2nfft_ignore_field,%d,", (d->flags & FCS_P2NFFT_IGNORE_FIELD) ? 1 : 0);
+    if(verbose || (d->flags & FCS_P2NFFT_VERBOSE_TUNING) )
+      printf("p2nfft_verbose_tuning,%d,", (d->flags & FCS_P2NFFT_VERBOSE_TUNING) ? 1 : 0);
+    if(verbose || (d->flags & FCS_P2NFFT_MAX_BOX_ANGLES) )
+      printf("p2nfft_max_box_angles,%d,", (d->flags & FCS_P2NFFT_MAX_BOX_ANGLES) ? 1 : 0);
+    
     if(verbose || (d->virial != NULL) )
       printf("p2nfft_require_virial,%d,", (d->virial != NULL) ? 1 : 0);
 
