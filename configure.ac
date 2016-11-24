@@ -238,7 +238,7 @@ fi
 # Check prerequisites.
 
 # Common methods and solvers that use these methods.
-m4_define([all_common_methods], [fftw3 fftw3_mpi pfft pnfft near gridsort resort])
+m4_define([all_common_methods], [fftw3 fftw3_mpi pfft pnfft near gridsort resort mmm])
 requires_fftw3="p2nfft p3m"
 requires_fftw3_mpi="p2nfft"
 requires_pfft="p2nfft"
@@ -246,6 +246,7 @@ requires_pnfft="p2nfft"
 requires_near="direct ewald p2nfft p3m wolf"
 requires_gridsort="ewald memd mmm1d mmm2d p2nfft p3m near"
 requires_resort="gridsort"
+requires_mmm="mmm1d mmm2d"
 
 AC_FOREACH([prereq], all_common_methods,[
   if test "x$enable_fcs_[]prereq[]" = xyes ; then
@@ -618,6 +619,12 @@ if test "x$use_fcs_resort" = xyes ; then
 fi
 AM_CONDITIONAL([ENABLE_COMMON_RESORT],[test "x$use_fcs_resort" = xyes])
 
+# Set up mmm module.
+if test "x$use_fcs_mmm" = xyes ; then
+  AC_MSG_NOTICE([enabling helper method 'mmm'])
+fi
+AM_CONDITIONAL([ENABLE_COMMON_MMM],[test "x$use_fcs_mmm" = xyes])
+
 # Solver prerequisites.
 
 # direct prerequisites
@@ -719,7 +726,11 @@ if test "x$use_fcs_fftw3_mpi" = xyes ; then
   AX_FCS_PACKAGE_ADD([fftw3_mpi_USE],[yes])
   AX_FCS_PACKAGE_ADD([fftw3_mpi_LDADD],[${fftw3_LDFLAGS} ${fftw3_mpi_LIBS}])
 fi
-
+if test "x$use_fcs_mmm" = xyes ; then
+ AX_FCS_PACKAGE_ADD([mmm_USE],[yes])
+ AX_FCS_PACKAGE_ADD([mmm_LIBS],[-lfcs_mmm])
+ AX_FCS_PACKAGE_ADD([mmm_LIBS_A],[lib/common/mmm-common/libfcs_mmm.la])
+fi
 
 # specific solvers
 if test "x$use_fcs_direct" = xyes ; then
@@ -776,6 +787,9 @@ AC_CONFIG_FILES([lib/common/gridsort/Makefile])
 
 # Create resort module files.
 AC_CONFIG_FILES([lib/common/resort/Makefile])
+
+# Create mmm module files.
+AC_CONFIG_FILES([lib/common/mmm-common/Makefile])
 
 # Create test files.
 AC_CONFIG_FILES([
@@ -910,7 +924,7 @@ AC_MSG_NOTICE([ FCS C types                = $fcs_int / $fcs_float])
 AC_MSG_NOTICE([ FCS Fortan types           = $fcs_integer / $fcs_real])
 AC_MSG_NOTICE([ Fortan interface           = $use_fcs_fortran])
 AC_MSG_NOTICE([])
-AC_FOREACH([method], [fftw3 fftw3_mpi pfft pnfft near gridsort resort],
+AC_FOREACH([method], all_common_methods,
 [
 m=`printf %26s method`
 m="method${m%method}"

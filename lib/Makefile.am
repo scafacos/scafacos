@@ -19,6 +19,9 @@ endif
 if ENABLE_COMMON_PNFFT
 SUBDIRS += common/pnfft
 endif
+if ENABLE_COMMON_MMM
+SUBDIRS += common/mmm-common
+endif
 if ENABLE_DIRECT
 SUBDIRS += direct
 endif
