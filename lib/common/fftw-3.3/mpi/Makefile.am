@@ -29,7 +29,8 @@ SRC = any-true.c api.c block.c choose-radix.c conf.c dtensor.c fftw3-mpi.h ifftw
 libfcs_fftw3@PREC_SUFFIX@_mpi_la_SOURCES = $(SRC) $(TRANSPOSE_SRC) $(DFT_SRC) $(RDFT_SRC) $(RDFT2_SRC)
 
 libfcs_fftw3@PREC_SUFFIX@_mpi_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
-libfcs_fftw3@PREC_SUFFIX@_mpi_la_LIBADD = ../libfcs_fftw3@PREC_SUFFIX@.la @MPILIBS@
+#libfcs_fftw3@PREC_SUFFIX@_mpi_la_LIBADD = ../libfcs_fftw3@PREC_SUFFIX@.la @MPILIBS@
+libfcs_fftw3@PREC_SUFFIX@_mpi_la_LIBADD = @MPILIBS@ # adding libfftw3 explicitely is not necessary, because FFTW doc (6.2) says linking should be done with -lfftw3_mpi -lfftw3, otherwise with libfftw3, libtool includes the entire libfftw3 objects into libfftw3_mpi.a (which might lead to lots of multiple definition)
 
 if THREADS
 mpi_bench_CFLAGS = $(PTHREAD_CFLAGS)
