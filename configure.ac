@@ -238,7 +238,7 @@ fi
 # Check prerequisites.
 
 # Common methods and solvers that use these methods.
-m4_define([all_common_methods], [fftw3 fftw3_mpi pfft pnfft near gridsort resort mmm])
+m4_define([all_common_methods], [fftw3 fftw3_mpi pfft pnfft near gridsort resort sl mmm])
 requires_fftw3="p2nfft p3m"
 requires_fftw3_mpi="p2nfft"
 requires_pfft="p2nfft"
@@ -246,6 +246,7 @@ requires_pnfft="p2nfft"
 requires_near="direct ewald p2nfft p3m wolf"
 requires_gridsort="ewald memd mmm1d mmm2d p2nfft p3m near"
 requires_resort="gridsort"
+requires_sl="gridsort resort near"
 requires_mmm="mmm1d mmm2d"
 
 AC_FOREACH([prereq], all_common_methods,[
@@ -600,6 +601,13 @@ if test "x$use_fcs_pnfft" = xyes ; then
   fi
 fi
 AM_CONDITIONAL([ENABLE_COMMON_PNFFT],[test "x$use_fcs_pnfft_common" = xyes])
+
+# Set up sl module.
+if test "x$use_fcs_sl" = xyes ; then
+  AC_MSG_NOTICE([enabling helper method 'sl'])
+  AX_SORT_LIB
+fi
+AM_CONDITIONAL([ENABLE_COMMON_SL],[test "x$use_fcs_sl" = xyes])
 
 # Set up near field module.
 if test "x$use_fcs_near" = xyes ; then

@@ -12,6 +12,7 @@ AC_REQUIRE([AX_PROG_CC_MPI],[AX_PROG_CC_MPI(,,AC_MSG_FAILURE([The Sorting Librar
 AC_REQUIRE([AC_C_INLINE])
 
 # We need the math library.
+AC_CHECK_HEADERS([math.h])
 AC_SEARCH_LIBS([log], [m])
 
 # Blue Gene specific checks
