@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015, 2016 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -85,6 +85,7 @@
 #define z_fs_is_file  Z_FUNC(z_fs_is_file)
 #define z_fs_is_link  Z_FUNC(z_fs_is_link)
 #define z_fs_get_file_size  Z_FUNC(z_fs_get_file_size)
+#define z_fs_get_link_target  Z_FUNC(z_fs_get_link_target)
 #define z_fs_mkdir  Z_FUNC(z_fs_mkdir)
 #define z_fs_mkdir_p  Z_FUNC(z_fs_mkdir_p)
 #define z_fs_rm  Z_FUNC(z_fs_rm)

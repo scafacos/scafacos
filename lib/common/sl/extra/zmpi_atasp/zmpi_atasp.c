@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015, 2016 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -145,7 +145,7 @@ int ZMPI_Tproc_set_proclists(ZMPI_Tproc tproc, int ndstprocs, int *dstprocs, int
 
 #if MPI_VERSION < 3
 
-int ZMPI_Get_elements(const ZMPI_Status *status, MPI_Datatype datatype, int *count)
+int ZMPI_Get_elements(const ZMPI_Status *status, MPI_Datatype datatype, int *count) /* zmpi_func ZMPI_Get_elements */
 {
   if (status == ZMPI_STATUS_IGNORE) return MPI_ERR_ARG;
 
