@@ -77,6 +77,25 @@
 #define FCS_MAX_METHOD_NAME_LENGTH  32
 
 
+/* fallback definition, see "6.47 Function Names as Strings" in gcc-4.9 doc */
+#if __STDC_VERSION__ < 199901L
+# if __GNUC__ >= 2
+#  define __func__ __FUNCTION__
+# else
+#  define __func__ "<unknown>"
+# endif
+#endif
+
+#ifdef FCS_ENABLE_DEBUG
+# define FCS_DEBUG_MOP(_mop_)  do { _mop_; } while (0)
+#else
+# define FCS_DEBUG_MOP(_mop_)  do { } while (0)
+#endif
+
+#define FCS_DEBUG_FUNC_INTRO(_f_)       FCS_DEBUG_MOP(printf("%s\n", _f_))
+#define FCS_DEBUG_FUNC_OUTRO(_f_, _r_)  FCS_DEBUG_MOP(printf("%s: return: %s\n", _f_, ((_r_) == FCS_RESULT_SUCCESS)?"success":"failed"))
+
+
 /*
  * @brief data structure that is used for storing the parameters of an FCS solver
  */
