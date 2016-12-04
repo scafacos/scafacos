@@ -33,13 +33,6 @@
 #include "fcs_direct.h"
 
 
-#ifdef FCS_ENABLE_DEBUG
-# define DEBUG_MOP(_mop_)  do { _mop_; } while (0)
-#else
-# define DEBUG_MOP(_mop_)  do {  } while (0)
-#endif
-
-
 #define DIRECT_HANDLE_CHECK(_h_, _f_) do { \
   if ((_h_) == FCS_NULL) \
     return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, (_f_), "null pointer supplied as handle"); \
@@ -50,16 +43,13 @@
 
 FCSResult fcs_direct_init(FCS handle)
 {
-  static const char func_name[] = "fcs_direct_init";
-
   fcs_direct_context_t *ctx;
   fcs_float default_cutoff = 0.0;
   fcs_int default_periodic_images[3] = { 1, 1, 1 };
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_direct_init\n"));
-
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
   handle->direct_param = malloc(sizeof(*handle->direct_param));
 
@@ -101,7 +91,7 @@ FCSResult fcs_direct_init(FCS handle)
   handle->resort_floats = fcs_direct_resort_floats;
   handle->resort_bytes = fcs_direct_resort_bytes;
 
-  DEBUG_MOP(printf("fcs_direct_init: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -109,14 +99,11 @@ FCSResult fcs_direct_init(FCS handle)
 
 FCSResult fcs_direct_destroy(FCS handle)
 {
-  static const char func_name[] = "fcs_direct_destroy";
-
   fcs_direct_context_t *ctx;
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_direct_destroy\n"));
-
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
   fcs_directc_destroy(&handle->direct_param->directc);
 
@@ -129,7 +116,7 @@ FCSResult fcs_direct_destroy(FCS handle)
   free(handle->direct_param);
   handle->direct_param = NULL;
 
-  DEBUG_MOP(printf("fcs_direct_destroy: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -137,13 +124,11 @@ FCSResult fcs_direct_destroy(FCS handle)
 
 FCSResult fcs_direct_check(FCS handle)
 {
-  static const char func_name[] = "fcs_direct_check";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_direct_check\n"));
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
-
-  DEBUG_MOP(printf("fcs_direct_check: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
 	return FCS_RESULT_SUCCESS;
 }
@@ -151,13 +136,11 @@ FCSResult fcs_direct_check(FCS handle)
 
 FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges)
 {
-  static const char func_name[] = "fcs_direct_tune";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_direct_tune\n"));
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
-
-  DEBUG_MOP(printf("fcs_direct_tune: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -165,23 +148,17 @@ FCSResult fcs_direct_tune(FCS handle, fcs_int local_particles, fcs_float *positi
 
 FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
-  static const char func_name[] = "fcs_direct_run";
-
   fcs_direct_context_t *ctx;
-
   fcs_int i;
-
   fcs_float field_correction[3];
-
   const fcs_float *box_base, *box_a, *box_b, *box_c;
   const fcs_int *periodicity;
   fcs_int max_local_particles;
   fcs_float cutoff = 0;
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_direct_run\n"));
-
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
   ctx = fcs_get_method_context(handle);
 
@@ -214,7 +191,7 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positio
     }
   }
 
-  DEBUG_MOP(printf("fcs_direct_run: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -222,8 +199,6 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positio
 
 FCSResult fcs_direct_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
-//   const char *fnc_name = "fcs_direct_set_parameter";
-
   char *param = *current;
   char *cur = *next;
 
@@ -251,11 +226,14 @@ FCSResult fcs_direct_print_parameters(FCS handle)
   fcs_int images[3];
   FCSResult result;
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   result = fcs_direct_get_cutoff(handle, &cutoff);
   if (result != FCS_RESULT_SUCCESS)
   {
     printf("direct cutoff: FAILED!");
     fcs_result_print_result(result);
+    fcs_result_destroy(result);
   } else printf("direct cutoff: %" FCS_LMOD_FLOAT "e\n", cutoff);
 
   result = fcs_direct_get_periodic_images(handle, images);
@@ -263,7 +241,10 @@ FCSResult fcs_direct_print_parameters(FCS handle)
   {
     printf("direct cutoff: FAILED!");
     fcs_result_print_result(result);
+    fcs_result_destroy(result);
   } else printf("direct periodic images: %5" FCS_LMOD_INT "d %5" FCS_LMOD_INT "d %5" FCS_LMOD_INT "d\n", images[0], images[1], images[2]);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -271,9 +252,11 @@ FCSResult fcs_direct_print_parameters(FCS handle)
 
 FCSResult fcs_direct_require_virial(FCS handle, fcs_int compute_virial)
 {
-  static const char func_name[] = "fcs_direct_require_virial";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  DIRECT_HANDLE_CHECK(handle, __func__);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -281,13 +264,15 @@ FCSResult fcs_direct_require_virial(FCS handle, fcs_int compute_virial)
 
 FCSResult fcs_direct_get_virial(FCS handle, fcs_float *virial)
 {
-  static const char func_name[] = "fcs_direct_get_virial";
-
   fcs_int i;
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
   for (i = 0; i < 9; ++i) virial[i] = handle->direct_param->directc.virial[i];
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -295,11 +280,13 @@ FCSResult fcs_direct_get_virial(FCS handle, fcs_float *virial)
 
 FCSResult fcs_direct_set_cutoff(FCS handle, fcs_float cutoff)
 {
-  static const char func_name[] = "fcs_direct_set_cutoff";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
   fcs_directc_set_cutoff(&handle->direct_param->directc, cutoff);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
   
   return FCS_RESULT_SUCCESS;
 }
@@ -307,11 +294,13 @@ FCSResult fcs_direct_set_cutoff(FCS handle, fcs_float cutoff)
 
 FCSResult fcs_direct_get_cutoff(FCS handle, fcs_float *cutoff)
 {
-  static const char func_name[] = "fcs_direct_get_cutoff";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
   fcs_directc_get_cutoff(&handle->direct_param->directc, cutoff);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -319,11 +308,13 @@ FCSResult fcs_direct_get_cutoff(FCS handle, fcs_float *cutoff)
 
 FCSResult fcs_direct_set_cutoff_with_near(FCS handle, fcs_bool cutoff_with_near)
 {
-  static const char func_name[] = "fcs_direct_set_cutoff_with_near";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
   fcs_directc_set_cutoff_with_near(&handle->direct_param->directc, FCS_IS_TRUE(cutoff_with_near));
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -331,11 +322,16 @@ FCSResult fcs_direct_set_cutoff_with_near(FCS handle, fcs_bool cutoff_with_near)
 
 FCSResult fcs_direct_get_cutoff_with_near(FCS handle, fcs_bool *cutoff_with_near)
 {
-  static const char func_name[] = "fcs_direct_get_cutoff_with_near";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
-  *cutoff_with_near = handle->direct_param->directc.cutoff_with_near;
+  fcs_int i;
+  fcs_directc_get_cutoff_with_near(&handle->direct_param->directc, &i);
+
+  *cutoff_with_near = (i)?FCS_TRUE:FCS_FALSE;
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -343,11 +339,13 @@ FCSResult fcs_direct_get_cutoff_with_near(FCS handle, fcs_bool *cutoff_with_near
 
 FCSResult fcs_direct_set_periodic_images(FCS handle, fcs_int *periodic_images)
 {
-  static const char func_name[] = "fcs_direct_set_periodic_images";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
   fcs_directc_set_periodic_images(&handle->direct_param->directc, periodic_images);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -355,13 +353,13 @@ FCSResult fcs_direct_set_periodic_images(FCS handle, fcs_int *periodic_images)
 
 FCSResult fcs_direct_get_periodic_images(FCS handle, fcs_int *periodic_images)
 {
-  static const char func_name[] = "fcs_direct_get_periodic_images";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
-  periodic_images[0] = handle->direct_param->directc.periodic_images[0];
-  periodic_images[1] = handle->direct_param->directc.periodic_images[1];
-  periodic_images[2] = handle->direct_param->directc.periodic_images[2];
+  fcs_directc_get_periodic_images(&handle->direct_param->directc, periodic_images);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -369,11 +367,13 @@ FCSResult fcs_direct_get_periodic_images(FCS handle, fcs_int *periodic_images)
 
 FCSResult fcs_direct_set_in_particles(FCS handle, fcs_int nin_particles, fcs_float *in_positions, fcs_float *in_charges)
 {
-  static const char func_name[] = "fcs_directc_set_in_particles";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
   fcs_directc_set_in_particles(&handle->direct_param->directc, nin_particles, in_positions, in_charges);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -381,7 +381,13 @@ FCSResult fcs_direct_set_in_particles(FCS handle, fcs_int nin_particles, fcs_flo
 
 FCSResult fcs_direct_set_max_particle_move(FCS handle, fcs_float max_particle_move)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_HANDLE_CHECK(handle, __func__);
+
   fcs_directc_set_max_particle_move(&handle->direct_param->directc, max_particle_move);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -389,7 +395,13 @@ FCSResult fcs_direct_set_max_particle_move(FCS handle, fcs_float max_particle_mo
 
 FCSResult fcs_direct_set_resort(FCS handle, fcs_int resort)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_HANDLE_CHECK(handle, __func__);
+
   fcs_directc_set_resort(&handle->direct_param->directc, resort);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -397,7 +409,13 @@ FCSResult fcs_direct_set_resort(FCS handle, fcs_int resort)
 
 FCSResult fcs_direct_get_resort(FCS handle, fcs_int *resort)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_HANDLE_CHECK(handle, __func__);
+
   fcs_directc_get_resort(&handle->direct_param->directc, resort);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -405,7 +423,13 @@ FCSResult fcs_direct_get_resort(FCS handle, fcs_int *resort)
 
 FCSResult fcs_direct_get_resort_availability(FCS handle, fcs_int *availability)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_HANDLE_CHECK(handle, __func__);
+
   fcs_directc_get_resort_availability(&handle->direct_param->directc, availability);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -413,7 +437,13 @@ FCSResult fcs_direct_get_resort_availability(FCS handle, fcs_int *availability)
 
 FCSResult fcs_direct_get_resort_particles(FCS handle, fcs_int *resort_particles)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_HANDLE_CHECK(handle, __func__);
+
   fcs_directc_get_resort_particles(&handle->direct_param->directc, resort_particles);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -421,7 +451,13 @@ FCSResult fcs_direct_get_resort_particles(FCS handle, fcs_int *resort_particles)
 
 FCSResult fcs_direct_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_HANDLE_CHECK(handle, __func__);
+
   fcs_directc_resort_ints(&handle->direct_param->directc, src, dst, n, comm);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
   
   return FCS_RESULT_SUCCESS;
 }
@@ -429,7 +465,13 @@ FCSResult fcs_direct_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int
 
 FCSResult fcs_direct_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_HANDLE_CHECK(handle, __func__);
+
   fcs_directc_resort_floats(&handle->direct_param->directc, src, dst, n, comm);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
   
   return FCS_RESULT_SUCCESS;
 }
@@ -437,7 +479,13 @@ FCSResult fcs_direct_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, f
 
 FCSResult fcs_direct_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_HANDLE_CHECK(handle, __func__);
+
   fcs_directc_resort_bytes(&handle->direct_param->directc, src, dst, n, comm);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
   
   return FCS_RESULT_SUCCESS;
 }
@@ -445,14 +493,20 @@ FCSResult fcs_direct_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, M
 
 FCSResult fcs_direct_setup(FCS handle, fcs_float cutoff)
 {
-  static const char func_name[] = "fcs_direct_setup";
-
   FCSResult result;
 
-  DIRECT_HANDLE_CHECK(handle, func_name);
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_HANDLE_CHECK(handle, __func__);
 
   result = fcs_direct_set_cutoff(handle, cutoff);
-  if (result != FCS_RESULT_SUCCESS) return result;
+  if (result != FCS_RESULT_SUCCESS)
+  {
+    FCS_DEBUG_FUNC_OUTRO(__func__, result);
+    return result;
+  }
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -462,10 +516,16 @@ void fcs_direct_setup_f(void *handle, fcs_float cutoff, fcs_int *return_value)
 {
   FCSResult result;
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+/*  DIRECT_HANDLE_CHECK(handle, __func__);*/
+
   result = fcs_direct_setup((FCS)handle, cutoff);
 
   if (result == FCS_RESULT_SUCCESS)
     *return_value = 0;
   else
     *return_value = fcs_result_get_return_code(result);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, result);
 }
