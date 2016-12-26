@@ -49,7 +49,7 @@ typedef struct fcs_pepc_parameters_t
   /* MAC theta */
   fcs_float theta;
   /* flag if virial calculation is required */
-  fcs_int requirevirial;
+  fcs_int require_virial;
   /* number of walk threads per MPI rank */
   fcs_int num_walk_threads;
   /* switch for activating load balancing. may only be set >0 if the frontend does not reorder the particles */

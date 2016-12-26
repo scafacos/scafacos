@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011,2012,2013 Michael Hofmann
+  Copyright (C) 2011, 2012, 2013, 2016 Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -33,33 +33,26 @@
 #include "fcs_wolf.h"
 
 
-#ifdef FCS_ENABLE_DEBUG
-# define DEBUG_MOP(_mop_)  do { _mop_; } while (0)
-#else
-# define DEBUG_MOP(_mop_)  do {  } while (0)
-#endif
+#define WOLF_CHECK_RETURN_RESULT(_h_, _f_)  do { \
+  CHECK_HANDLE_RETURN_RESULT(_h_, _f_); \
+  CHECK_METHOD_RETURN_RESULT(_h_, _f_, FCS_METHOD_WOLF, "wolf"); \
+  } while (0)
 
-
-#define WOLF_HANDLE_CHECK(_h_, _f_) do { \
-  if ((_h_) == FCS_NULL) \
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, (_f_), "null pointer supplied as handle"); \
-  if ((_h_)->method != FCS_METHOD_WOLF) \
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, (_f_), "handle does not represent method \"wolf\""); \
-} while (0)
+#define WOLF_CHECK_RETURN_VAL(_h_, _f_, _v_)  do { \
+  CHECK_HANDLE_RETURN_VAL(_h_, _f_, _v_); \
+  CHECK_METHOD_RETURN_VAL(_h_, _f_, FCS_METHOD_WOLF, "wolf", _v_); \
+  } while (0)
 
 
 FCSResult fcs_wolf_init(FCS handle)
 {
-  static const char func_name[] = "fcs_wolf_init";
-
   fcs_wolf_context_t *ctx;
   const fcs_float default_cutoff = 0.0;
   const fcs_float default_alpha = 0.0;
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_wolf_init\n"));
-
-  WOLF_HANDLE_CHECK(handle, func_name);
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
 
   handle->wolf_param = malloc(sizeof(*handle->wolf_param));
 
@@ -86,8 +79,8 @@ FCSResult fcs_wolf_init(FCS handle)
   handle->print_parameters = fcs_wolf_print_parameters;
   handle->tune = fcs_wolf_tune;
   handle->run = fcs_wolf_run;
-  handle->set_compute_virial = fcs_wolf_require_virial;
-  handle->get_virial = fcs_wolf_get_virial;
+/*  handle->set_compute_virial = fcs_wolf_require_virial;
+  handle->get_virial = fcs_wolf_get_virial;*/
 
   handle->set_max_particle_move = fcs_wolf_set_max_particle_move;
   handle->set_resort = fcs_wolf_set_resort;
@@ -98,7 +91,7 @@ FCSResult fcs_wolf_init(FCS handle)
   handle->resort_floats = fcs_wolf_resort_floats;
   handle->resort_bytes = fcs_wolf_resort_bytes;
 
-  DEBUG_MOP(printf("fcs_wolf_init: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -106,14 +99,11 @@ FCSResult fcs_wolf_init(FCS handle)
 
 FCSResult fcs_wolf_destroy(FCS handle)
 {
-  static const char func_name[] = "fcs_wolf_destroy";
-
   fcs_wolf_context_t *ctx;
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_wolf_destroy\n"));
-
-  WOLF_HANDLE_CHECK(handle, func_name);
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
 
   ifcs_wolf_destroy(&handle->wolf_param->wolf);
 
@@ -125,7 +115,7 @@ FCSResult fcs_wolf_destroy(FCS handle)
 
   free(handle->wolf_param);
 
-  DEBUG_MOP(printf("fcs_wolf_destroy: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -133,13 +123,11 @@ FCSResult fcs_wolf_destroy(FCS handle)
 
 FCSResult fcs_wolf_check(FCS handle)
 {
-  static const char func_name[] = "fcs_wolf_check";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_wolf_check\n"));
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
 
-  WOLF_HANDLE_CHECK(handle, func_name);
-
-  DEBUG_MOP(printf("fcs_wolf_check: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
 	return FCS_RESULT_SUCCESS;
 }
@@ -147,13 +135,11 @@ FCSResult fcs_wolf_check(FCS handle)
 
 FCSResult fcs_wolf_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges)
 {
-  static const char func_name[] = "fcs_wolf_tune";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_wolf_tune\n"));
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
 
-  WOLF_HANDLE_CHECK(handle, func_name);
-
-  DEBUG_MOP(printf("fcs_wolf_tune: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -161,8 +147,6 @@ FCSResult fcs_wolf_tune(FCS handle, fcs_int local_particles, fcs_float *position
 
 FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
-  static const char func_name[] = "fcs_wolf_run";
-
   fcs_wolf_context_t *ctx;
 
 /*  fcs_int i;
@@ -172,10 +156,9 @@ FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_float *positions
   const fcs_int *periodicity;
   fcs_int max_local_particles;
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_wolf_run\n"));
-
-  WOLF_HANDLE_CHECK(handle, func_name);
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
 
   ctx = fcs_get_method_context(handle);
 
@@ -206,7 +189,7 @@ FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_float *positions
     }
   }*/
 
-  DEBUG_MOP(printf("fcs_wolf_run: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -214,9 +197,11 @@ FCSResult fcs_wolf_run(FCS handle, fcs_int local_particles, fcs_float *positions
 
 FCSResult fcs_wolf_require_virial(FCS handle, fcs_int compute_virial)
 {
-  static const char func_name[] = "fcs_wolf_require_virial";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  WOLF_HANDLE_CHECK(handle, func_name);
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -224,13 +209,15 @@ FCSResult fcs_wolf_require_virial(FCS handle, fcs_int compute_virial)
 
 FCSResult fcs_wolf_get_virial(FCS handle, fcs_float *virial)
 {
-/*  static const char func_name[] = "fcs_wolf_get_virial";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
   fcs_int i;
 
-  WOLF_HANDLE_CHECK(handle, func_name);
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
 
-  for (i = 0; i < 9; ++i) virial[i] = handle->wolf_param->wolf.virial[i];*/
+  for (i = 0; i < 9; ++i) virial[i] = handle->wolf_param->wolf.virial[i];
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -238,8 +225,6 @@ FCSResult fcs_wolf_get_virial(FCS handle, fcs_float *virial)
 
 FCSResult fcs_wolf_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
-  const char *fnc_name = "fcs_wolf_set_parameter";
-
   char *param = *current;
   char *cur = *next;
 
@@ -264,11 +249,15 @@ FCSResult fcs_wolf_print_parameters(FCS handle)
 {
   fcs_float cutoff, alpha;
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   fcs_wolf_get_cutoff(handle, &cutoff);
   fcs_wolf_get_alpha(handle, &alpha);
 
   printf("wolf cutoff: %" FCS_LMOD_FLOAT "f\n", cutoff);
   printf("wolf alpha: %" FCS_LMOD_FLOAT "f\n", alpha);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
   
   return FCS_RESULT_SUCCESS;
 }
@@ -276,11 +265,13 @@ FCSResult fcs_wolf_print_parameters(FCS handle)
 
 FCSResult fcs_wolf_set_cutoff(FCS handle, fcs_float cutoff)
 {
-  static const char func_name[] = "fcs_wolf_set_cutoff";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  WOLF_HANDLE_CHECK(handle, func_name);
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
 
   ifcs_wolf_set_cutoff(&handle->wolf_param->wolf, cutoff);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
   
   return FCS_RESULT_SUCCESS;
 }
@@ -288,11 +279,13 @@ FCSResult fcs_wolf_set_cutoff(FCS handle, fcs_float cutoff)
 
 FCSResult fcs_wolf_get_cutoff(FCS handle, fcs_float *cutoff)
 {
-  static const char func_name[] = "fcs_wolf_get_cutoff";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  WOLF_HANDLE_CHECK(handle, func_name);
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
 
   ifcs_wolf_get_cutoff(&handle->wolf_param->wolf, cutoff);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -300,11 +293,13 @@ FCSResult fcs_wolf_get_cutoff(FCS handle, fcs_float *cutoff)
 
 FCSResult fcs_wolf_set_alpha(FCS handle, fcs_float alpha)
 {
-  static const char func_name[] = "fcs_wolf_set_alpha";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  WOLF_HANDLE_CHECK(handle, func_name);
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
 
   ifcs_wolf_set_alpha(&handle->wolf_param->wolf, alpha);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
   
   return FCS_RESULT_SUCCESS;
 }
@@ -312,11 +307,13 @@ FCSResult fcs_wolf_set_alpha(FCS handle, fcs_float alpha)
 
 FCSResult fcs_wolf_get_alpha(FCS handle, fcs_float *alpha)
 {
-  static const char func_name[] = "fcs_wolf_get_alpha";
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  WOLF_HANDLE_CHECK(handle, func_name);
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
 
   ifcs_wolf_get_alpha(&handle->wolf_param->wolf, alpha);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -324,7 +321,13 @@ FCSResult fcs_wolf_get_alpha(FCS handle, fcs_float *alpha)
 
 FCSResult fcs_wolf_set_max_particle_move(FCS handle, fcs_float max_particle_move)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
+
   ifcs_wolf_set_max_particle_move(&handle->wolf_param->wolf, max_particle_move);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -332,7 +335,13 @@ FCSResult fcs_wolf_set_max_particle_move(FCS handle, fcs_float max_particle_move
 
 FCSResult fcs_wolf_set_resort(FCS handle, fcs_int resort)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
+
   ifcs_wolf_set_resort(&handle->wolf_param->wolf, resort);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -340,7 +349,13 @@ FCSResult fcs_wolf_set_resort(FCS handle, fcs_int resort)
 
 FCSResult fcs_wolf_get_resort(FCS handle, fcs_int *resort)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
+
   ifcs_wolf_get_resort(&handle->wolf_param->wolf, resort);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -348,7 +363,13 @@ FCSResult fcs_wolf_get_resort(FCS handle, fcs_int *resort)
 
 FCSResult fcs_wolf_get_resort_availability(FCS handle, fcs_int *availability)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
+
   ifcs_wolf_get_resort_availability(&handle->wolf_param->wolf, availability);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -356,7 +377,13 @@ FCSResult fcs_wolf_get_resort_availability(FCS handle, fcs_int *availability)
 
 FCSResult fcs_wolf_get_resort_particles(FCS handle, fcs_int *resort_particles)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
+
   ifcs_wolf_get_resort_particles(&handle->wolf_param->wolf, resort_particles);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -364,7 +391,13 @@ FCSResult fcs_wolf_get_resort_particles(FCS handle, fcs_int *resort_particles)
 
 FCSResult fcs_wolf_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
+
   ifcs_wolf_resort_ints(&handle->wolf_param->wolf, src, dst, n, comm);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
   
   return FCS_RESULT_SUCCESS;
 }
@@ -372,7 +405,13 @@ FCSResult fcs_wolf_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n
 
 FCSResult fcs_wolf_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
+
   ifcs_wolf_resort_floats(&handle->wolf_param->wolf, src, dst, n, comm);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
   
   return FCS_RESULT_SUCCESS;
 }
@@ -380,7 +419,13 @@ FCSResult fcs_wolf_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs
 
 FCSResult fcs_wolf_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
+
   ifcs_wolf_resort_bytes(&handle->wolf_param->wolf, src, dst, n, comm);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
   
   return FCS_RESULT_SUCCESS;
 }
@@ -388,17 +433,19 @@ FCSResult fcs_wolf_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI
 
 FCSResult fcs_wolf_setup(FCS handle, fcs_float cutoff, fcs_float alpha)
 {
-  static const char func_name[] = "fcs_wolf_setup";
-
   FCSResult result;
 
-  WOLF_HANDLE_CHECK(handle, func_name);
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  WOLF_CHECK_RETURN_RESULT(handle, __func__);
 
   result = fcs_wolf_set_cutoff(handle, cutoff);
   if (result != FCS_RESULT_SUCCESS) return result;
 
   result = fcs_wolf_set_alpha(handle, alpha);
   if (result != FCS_RESULT_SUCCESS) return result;
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }
@@ -408,10 +455,14 @@ void fcs_wolf_setup_f(void *handle, fcs_float cutoff, fcs_float alpha, fcs_int *
 {
   FCSResult result;
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   result = fcs_wolf_setup((FCS) handle, cutoff, alpha);
 
   if (result == FCS_RESULT_SUCCESS)
     *return_value = 0;
   else
     *return_value = fcs_result_get_return_code(result);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, result);
 }

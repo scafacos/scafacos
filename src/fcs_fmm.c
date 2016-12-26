@@ -1,5 +1,6 @@
 /*
   Copyright (C) 2011-2012 Rene Halver
+  Copyright (C) 2016 Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -30,6 +31,18 @@
 #include "../lib/fmm/src/fmm_cbindings.h"
 #include "../lib/fmm/sl_fmm/mpi_fmm_resort.h"
 
+
+#define FMM_CHECK_RETURN_RESULT(_h_, _f_)  do { \
+  CHECK_HANDLE_RETURN_RESULT(_h_, _f_); \
+  CHECK_METHOD_RETURN_RESULT(_h_, _f_, FCS_METHOD_FMM, "fmm"); \
+  } while (0)
+
+#define FMM_CHECK_RETURN_VAL(_h_, _f_, _v_)  do { \
+  CHECK_HANDLE_RETURN_VAL(_h_, _f_, _v_); \
+  CHECK_METHOD_RETURN_VAL(_h_, _f_, FCS_METHOD_FMM, "fmm", _v_); \
+  } while (0)
+
+
 /*
 typedef struct fmm_internal_parameters_t
 {
@@ -57,7 +70,7 @@ typedef struct fmm_internal_parameters_t
 void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float deltaE, fcs_int dipole_correction, fcs_int *return_value)
 {
   FCSResult result = fcs_fmm_setup((FCS)handle, absrel, deltaE, dipole_correction,0LL);
-  if (NULL == result)
+  if (result == FCS_RESULT_SUCCESS)
     *return_value = 0;
   else
     *return_value = fcs_result_get_return_code(result);
@@ -65,50 +78,46 @@ void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float deltaE, fcs_int dip
 */
 
 /* combined setter function for all fmm parameters */
-FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_energy, fcs_int dipole_correction, long long system, long long maxdepth, long long unroll_limit, long long load/*, fcs_int potential, fcs_float radius*/)
+FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_energy, fcs_int dipole_correction, fcs_int system, fcs_int maxdepth, fcs_int unroll_limit, fcs_int load/*, fcs_int potential, fcs_float radius*/)
 {
-/*  char* fnc_name = "fcs_fmm_setup"; */
   FCSResult result;
 
   result = fcs_fmm_set_absrel(handle,absrel);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   result = fcs_fmm_set_tolerance_energy(handle,tolerance_energy);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   result = fcs_fmm_set_dipole_correction(handle, dipole_correction);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   result = fcs_fmm_set_internal_tuning(handle, system);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   result = fcs_fmm_set_maxdepth(handle, maxdepth);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   result = fcs_fmm_set_unroll_limit(handle, unroll_limit);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   result = fcs_fmm_set_balanceload(handle, load);
-  if (result != NULL)
-    return result;
-  return (FCSResult)NULL;
-  
+  CHECK_RESULT_RETURN(result);
+
 /*
   result = fcs_fmm_set_potential(handle, potential);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   result = fcs_fmm_set_dipole_correction(handle, dipole_correction);
-  if (result != NULL)
-    return result;
-  return NULL;
+  CHECK_RESULT_RETURN(result);
 */
+
+  return FCS_RESULT_SUCCESS;
 }
 
 
 /* method to check if fmm parameters are consistent with requirements */
 FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles)
 {
-  char* fnc_name = "fcs_fmm_check";
   const fcs_float *a,*b,*c;
   fcs_float norm[3],period_length;
   const fcs_int *periodicity;
@@ -120,21 +129,21 @@ FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles)
   fcs_int absrel;
   fcs_fmm_get_absrel(handle, &absrel);
   if (absrel == -1)
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "fmm: absrel not set");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "fmm: absrel not set");
 
   fcs_float tolerance_energy;
   fcs_fmm_get_tolerance_energy(handle, &tolerance_energy);
   if (tolerance_energy == -1.0)
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "fmm: energy tolerance not set");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "fmm: energy tolerance not set");
 
   comm = fcs_get_communicator(handle);
   MPI_Comm_size(comm, &comm_size);
   total_particles = fcs_get_total_particles(handle);
   if (total_particles < comm_size)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "fmm: there have to be at least as much particles as processes");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "fmm: there have to be at least as much particles as processes");
   
   if (local_particles <= 0)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "fmm: each process has to receive at least one particle");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "fmm: each process has to receive at least one particle");
   
   a = fcs_get_box_a(handle); 
   norm[0] = fcs_norm(a);
@@ -156,11 +165,11 @@ FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles)
     }
 
   if (p && !(fcs_uses_principal_axes(a,b,c))) 
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, 
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, 
       "fmm: with periodic boundaries, box must be arranged along principle axes");
 
   if (p && !ok)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, 
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, 
       "fmm: all periodic directions must have equal length");
 
   if (p && (p<3)) 
@@ -170,102 +179,107 @@ FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles)
       if (!periodicity[i]) 
         ok = ok && (norm[i] <= period_length);
     if (!ok)
-      return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, 
+      return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, 
         "fmm: axes in non-periodic directions must not be longer than periodic ones");
   }
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
-// /* method to check if fmm parameters are entered into checked FCS */
-// FCSResult fcs_fmm_check(FCS handle)
-// {
-//   char* fnc_name = "fcs_fmm_check";
-//   fcs_float *a,*b,*c;
-//   fcs_int *periodicity;
-//   int i,p;
-// 
-//   fcs_int absrel;
-//   fcs_fmm_get_absrel(handle, &absrel);
-//   if (absrel == -1)
-//     return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "fmm: absrel not set");
-// 
-//   fcs_float deltaE;
-//   fcs_fmm_get_deltaE(handle, &deltaE);
-//   if (deltaE == -1.0)
-//     return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "fmm: deltaE not set");
-//   a = fcs_get_box_a(handle);
-//   b = fcs_get_box_b(handle);
-// 
-// 
-//   c = fcs_get_box_c(handle);
-//   periodicity = fcs_get_periodicity(handle);
-// 
-//   p = 0;
-//   for (i = 0; i < 3; ++i)
-//     if (periodicity[i]) p++;
-//   switch(p)
-//   {
-//     case 0:
-//       return NULL;
-//     case 1:
-//       for (i = 0; i < 3; ++i)
-//         if (periodicity[i]) break;
-//       switch(i)
-//       {
-//         case 0:
-//           if (!( (fcs_norm(a) >= fcs_norm(b)) && (fcs_norm(a) >= fcs_norm(c)) ))
-//             return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, 
-//               "fmm: longest box vector not in direction of 1D-periodicity direction");
-// 
-// 
-//           return NULL;
-//         case 1:
-//           if (!( (fcs_norm(b) >= fcs_norm(a)) && (fcs_norm(b) >= fcs_norm(a)) ))
-//             return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, 
-//               "fmm: longest box vector not in direction of 1D-periodicity direction");
-//           return NULL;
-//         case 2:
-//           if (!( (fcs_norm(c) >= fcs_norm(a)) && (fcs_norm(c) >= fcs_norm(b)) ))
-//             return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, 
-//               "fmm: longest box vector not in direction of 1D-periodicity direction");
-//           return NULL;
-//       }
-//     case 2:
-//       for (i = 0; i < 3; ++i)
-//         if (!periodicity[i]) break;
-//       switch(i)
-//       {
-//         case 0:
-//           if (!( (fcs_float_is_equal(fcs_norm(b),fcs_norm(c))) && (fcs_norm(b) >= fcs_norm(a)) ))
-// 
-// 
-//             return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, 
-//               "fmm: longest box vector not in direction of 2D-periodicity direction");
-//           return NULL;
-//         case 1:
-//           if (!( (fcs_float_is_equal(fcs_norm(a),fcs_norm(c))) && (fcs_norm(a) >= fcs_norm(b)) ))
-//             return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, 
-//               "fmm: longest box vector not in direction of 2D-periodicity direction");
-//           return NULL;
-//         case 2:
-//           if (!( (fcs_float_is_equal(fcs_norm(a),fcs_norm(b))) && (fcs_norm(a) >= fcs_norm(c)) ))
-//             return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, 
-//               "fmm: longest box vector not in direction of 2D-periodicity direction");
-//           return NULL;
-//       }
-//     case 3:
-//       if (!(fcs_uses_principal_axes(a,b,c))) 
-//         return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "fmm: cannot use a non-cubic system in 3D-periodicity");
-//       return NULL;
-//   }
-// 
-//   return NULL;
-// }
+
+#if 0
+
+FCSResult fcs_fmm_check(FCS handle)
+{
+  const fcs_float *a,*b,*c;
+  const fcs_int *periodicity;
+  int i,p;
+
+  fcs_int absrel;
+  fcs_fmm_get_absrel(handle, &absrel);
+  if (absrel == -1)
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "fmm: absrel not set");
+
+  fcs_float deltaE;
+  fcs_fmm_get_deltaE(handle, &deltaE);
+  if (deltaE == -1.0)
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "fmm: deltaE not set");
+
+  a = fcs_get_box_a(handle);
+  b = fcs_get_box_b(handle);
+  c = fcs_get_box_c(handle);
+  periodicity = fcs_get_periodicity(handle);
+
+  p = 0;
+  for (i = 0; i < 3; ++i)
+    if (periodicity[i]) p++;
+
+  switch(p)
+  {
+    case 0:
+      return FCS_RESULT_SUCCESS;
+    case 1:
+      for (i = 0; i < 3; ++i)
+        if (periodicity[i]) break;
+      switch(i)
+      {
+        case 0:
+          if (!( (fcs_norm(a) >= fcs_norm(b)) && (fcs_norm(a) >= fcs_norm(c)) ))
+            return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, 
+              "fmm: longest box vector not in direction of 1D-periodicity direction");
+
+
+          return FCS_RESULT_SUCCESS;
+        case 1:
+          if (!( (fcs_norm(b) >= fcs_norm(a)) && (fcs_norm(b) >= fcs_norm(a)) ))
+            return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, 
+              "fmm: longest box vector not in direction of 1D-periodicity direction");
+          return FCS_RESULT_SUCCESS;
+        case 2:
+          if (!( (fcs_norm(c) >= fcs_norm(a)) && (fcs_norm(c) >= fcs_norm(b)) ))
+            return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, 
+              "fmm: longest box vector not in direction of 1D-periodicity direction");
+          return FCS_RESULT_SUCCESS;
+      }
+    case 2:
+      for (i = 0; i < 3; ++i)
+        if (!periodicity[i]) break;
+      switch(i)
+      {
+        case 0:
+          if (!( (fcs_float_is_equal(fcs_norm(b),fcs_norm(c))) && (fcs_norm(b) >= fcs_norm(a)) ))
+
+
+            return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, 
+              "fmm: longest box vector not in direction of 2D-periodicity direction");
+          return FCS_RESULT_SUCCESS;
+        case 1:
+          if (!( (fcs_float_is_equal(fcs_norm(a),fcs_norm(c))) && (fcs_norm(a) >= fcs_norm(b)) ))
+            return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, 
+              "fmm: longest box vector not in direction of 2D-periodicity direction");
+          return FCS_RESULT_SUCCESS;
+        case 2:
+          if (!( (fcs_float_is_equal(fcs_norm(a),fcs_norm(b))) && (fcs_norm(a) >= fcs_norm(c)) ))
+            return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, 
+              "fmm: longest box vector not in direction of 2D-periodicity direction");
+          return FCS_RESULT_SUCCESS;
+      }
+    case 3:
+      if (!(fcs_uses_principal_axes(a,b,c))) 
+        return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "fmm: cannot use a non-cubic system in 3D-periodicity");
+      return FCS_RESULT_SUCCESS;
+  }
+
+  return FCS_RESULT_SUCCESS;
+}
+
+#endif
 
 /* initialization function for basic fmm parameters */
 FCSResult fcs_fmm_init(FCS handle)
 {
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   handle->fmm_param = malloc(sizeof(*handle->fmm_param));
   /* setting fmm parameters to invalid values (or default values, if possible) */
   handle->fmm_param->absrel = FCS_FMM_STANDARD_ERROR;
@@ -278,10 +292,10 @@ FCSResult fcs_fmm_init(FCS handle)
   fcs_fmm_set_tolerance_energy( handle, 1e-3 );
   fcs_fmm_set_dipole_correction( handle, FCS_FMM_ACTIVE_DIPOLE_CORRECTION );
   fcs_fmm_set_internal_tuning( handle, FCS_FMM_HOMOGENOUS_SYSTEM );
-  fcs_fmm_set_balanceload( handle, 1ll );
-  fcs_fmm_set_define_loadvector( handle, 1ll );
-  fcs_fmm_set_maxdepth( handle, 20ll );
-  fcs_fmm_set_unroll_limit( handle, 9ll );
+  fcs_fmm_set_balanceload( handle, 1 );
+  fcs_fmm_set_define_loadvector( handle, 1 );
+  fcs_fmm_set_maxdepth( handle, 20 );
+  fcs_fmm_set_unroll_limit( handle, 9 );
   /* FCSResult result; */
   void* ptr;
   ptr = malloc(4096);
@@ -316,16 +330,15 @@ FCSResult fcs_fmm_init(FCS handle)
   handle->resort_floats = fcs_fmm_resort_floats;
   handle->resort_bytes = fcs_fmm_resort_bytes;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /* internal fmm-specific tuning function */
 FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions, fcs_float *charges)
 {
-  char* fnc_name = "fcs_fmm_tune";
   FCSResult result;
 
-  long long dotune;
+  fcs_int dotune;
   long long ll_tp;
   long long ll_lp;
   long long ll_absrel;
@@ -341,9 +354,10 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions
   const fcs_float* box_vector;
   void* loadptr = NULL;
 
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   result = fcs_fmm_check(handle, local_particles);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
 
   ll_periodicity = (long long*)malloc(3*sizeof(long long));
 
@@ -390,7 +404,7 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions
 
   } else
   {
-    result = fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "wrong kind of internal tuning chosen");
+    result = fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "wrong kind of internal tuning chosen");
     return result;
   }
 
@@ -409,11 +423,11 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions
 
   if (r == 0)
   {
-    result = fcs_result_create(FCS_ERROR_FORTRAN_CALL, fnc_name, "error in fmm_ctune (FORTRAN)");
+    result = fcs_result_create(FCS_ERROR_FORTRAN_CALL, __func__, "error in fmm_ctune (FORTRAN)");
     return result;
   }
   
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 int fcs_mpi_fmm_sort_front_part, fcs_mpi_fmm_sort_back_part, fcs_mpi_fmm_sort_front_merge_presorted;
@@ -423,7 +437,6 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,
                       fcs_float *positions, fcs_float *charges, 
                       fcs_float *field, fcs_float *potentials)
 {
-  char* fnc_name = "fcs_fmm_run";
   FCSResult result;
 
   long long ll_tp;
@@ -436,14 +449,15 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,
   fcs_float tolerance_energy;
   fcs_float period_length;
   void* params;
-  long long dotune;
+  fcs_int dotune;
   long long r;
   const fcs_float* box_vector;
   void* loadptr = NULL;
 
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   result = fcs_fmm_check(handle, local_particles);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
 
   ll_periodicity = (long long*)malloc(3*sizeof(long long));
 
@@ -471,7 +485,7 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,
   fcs_fmm_get_internal_tuning( handle, &dotune );
   if (dotune != FCS_FMM_INHOMOGENOUS_SYSTEM && dotune != FCS_FMM_HOMOGENOUS_SYSTEM)
   {
-    result = fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "wrong kind of internal tuning chosen");
+    result = fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "wrong kind of internal tuning chosen");
     return result;
   }
 
@@ -526,20 +540,22 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,
 
   if (r == 0)
   {
-    result = fcs_result_create(FCS_ERROR_FORTRAN_CALL, fnc_name, "error in fmm_run (FORTRAN)");
+    result = fcs_result_create(FCS_ERROR_FORTRAN_CALL, __func__, "error in fmm_run (FORTRAN)");
     return result;
   }
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /* clean-up function for fmm */
 FCSResult fcs_fmm_destroy(FCS handle)
 {
-/*  char* fnc_name = "fcs_fmm_destroy"; */
-  long long dotune;
+  fcs_int dotune;
+
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
   fcs_fmm_get_internal_tuning( handle, &dotune);
+
   fmm_cfinalize(fcs_get_method_context(handle),dotune);
 
   if (handle->fmm_param->wignerptr) free(handle->fmm_param->wignerptr);
@@ -551,7 +567,7 @@ FCSResult fcs_fmm_destroy(FCS handle)
   free(handle->fmm_param);
   handle->fmm_param = NULL;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /******************************************************************************************************
@@ -564,79 +580,66 @@ FCSResult fcs_fmm_destroy(FCS handle)
 /* setter function for fmm parameter absrel */
 FCSResult fcs_fmm_set_absrel(FCS handle, fcs_int choice)
 {
-  char* fnc_name = "fcs_fmm_set_absrel";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_METHOD_FMM)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"fmm\")");
   if (choice < 0 || choice > 2)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,fnc_name,"error switch has to be between 0 and 2");
-  else
-  {
-    handle->fmm_param->absrel = choice;
-    return NULL;
-  }
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,__func__,"error switch has to be between 0 and 2");
+
+  handle->fmm_param->absrel = choice;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter function for fmm parameter absrel */
 FCSResult fcs_fmm_get_absrel(FCS handle, fcs_int *absrel)
 {
-  char* fnc_name = "fcs_fmm_get_absrel";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (!handle || !handle->fmm_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
   if (!absrel)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for absrel");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,__func__,"null pointer supplied for absrel");
 
   *absrel = handle->fmm_param->absrel;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter function for fmm parameter internal tuning */
-FCSResult fcs_fmm_set_internal_tuning(FCS handle, long long system)
+FCSResult fcs_fmm_set_internal_tuning(FCS handle, fcs_int system)
 {
-  char* fnc_name = "fcs_fmm_set_internal_tuning";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_METHOD_FMM)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"fmm\")");
   if (system != FCS_FMM_HOMOGENOUS_SYSTEM && system != FCS_FMM_INHOMOGENOUS_SYSTEM)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,fnc_name,"unknown system type chosen, use either: FCS_FMM_HOMOGENOUS_SYSTEM or FCS_FMM_INHOMOGENOUS_SYSTEM");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,__func__,"unknown system type chosen, use either: FCS_FMM_HOMOGENOUS_SYSTEM or FCS_FMM_INHOMOGENOUS_SYSTEM");
 
   handle->fmm_param->system = system;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter function for fmm parameter internal tuning */
-FCSResult fcs_fmm_get_internal_tuning(FCS handle, long long *system)
+FCSResult fcs_fmm_get_internal_tuning(FCS handle, fcs_int *system)
 {
-  char* fnc_name = "fcs_fmm_get_internal_tuning";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (!handle || !handle->fmm_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
   if (!system)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for internal tuning parameter");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,__func__,"null pointer supplied for internal tuning parameter");
 
   *system = handle->fmm_param->system;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter function for fmm parameter energy tolerance (deltaE) */
 FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_energy)
 {
-  char* fnc_name = "fcs_fmm_set_tolerance_energy";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_METHOD_FMM)
-        return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"fmm\")");
   if (tolerance_energy <= 0.0)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,fnc_name,"chosen error not valid, has to be larger than zero");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,__func__,"chosen error not valid, has to be larger than zero");
 
   handle->fmm_param->tolerance_energy = tolerance_energy;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -644,263 +647,236 @@ FCSResult fcs_fmm_set_tolerance_energy(FCS handle, fcs_float tolerance_energy)
 /* getter function for fmm parameter energy tolerance (deltaE) */
 FCSResult fcs_fmm_get_tolerance_energy(FCS handle, fcs_float *tolerance_energy)
 {
-  char* fnc_name = "fcs_fmm_get_tolerance_energy";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (!handle || !handle->fmm_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
   if (!tolerance_energy)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for tolerance_energy");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,__func__,"null pointer supplied for tolerance_energy");
 
   *tolerance_energy = handle->fmm_param->tolerance_energy;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 
 /* setter function for fmm parameter dipole correction */
 FCSResult fcs_fmm_set_dipole_correction(FCS handle, fcs_int dipole_correction)
 {
-  char* fnc_name = "fcs_fmm_set_dipole_correction";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_METHOD_FMM)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"fmm\")");
   if (!(dipole_correction == FCS_FMM_NO_DIPOLE_CORRECTION || dipole_correction == FCS_FMM_STANDARD_DIPOLE_CORRECTION || dipole_correction == FCS_FMM_ACTIVE_DIPOLE_CORRECTION))
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,fnc_name,"invalid dipole correction chosen");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,__func__,"invalid dipole correction chosen");
 
   handle->fmm_param->dipole_correction = dipole_correction;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter function for fmm parameter dipole correction */
 FCSResult fcs_fmm_get_dipole_correction(FCS handle, fcs_int *dipole_correction)
 {
-  char* fnc_name = "fcs_fmm_get_dipole_correction";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (!handle || !handle->fmm_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
   if (!dipole_correction)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for dipole_correction");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,__func__,"null pointer supplied for dipole_correction");
 
   *dipole_correction = handle->fmm_param->dipole_correction;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter function for fmm parameter potential */
 FCSResult fcs_fmm_set_potential(FCS handle, fcs_int potential)
 {
-  char* fnc_name = "fcs_fmm_set_potential";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_METHOD_FMM)
-        return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"fmm\")");
   if (!(potential == FCS_FMM_COULOMB || potential == FCS_FMM_CUSP))
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,fnc_name,"invalid (fmm) potential chosen");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,__func__,"invalid (fmm) potential chosen");
 
   handle->fmm_param->potential = potential;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter function for fmm parameter potential */
 FCSResult fcs_fmm_get_potential(FCS handle, fcs_int *potential)
 {
-  char* fnc_name = "fcs_fmm_get_potential";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (!handle || !handle->fmm_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
   if (!potential)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for potential");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,__func__,"null pointer supplied for potential");
 
   *potential = handle->fmm_param->potential;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter function for maximum fmm tree depth */
-FCSResult fcs_fmm_set_maxdepth(FCS handle, long long depth)
+FCSResult fcs_fmm_set_maxdepth(FCS handle, fcs_int depth)
 {
-  char* fnc_name = "fcs_fmm_set_maxdepth";
-  fcs_int int_depth = depth;
-  
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_METHOD_FMM)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"fmm\")");
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  handle->fmm_param->maxdepth = int_depth;
-  return NULL;
+  handle->fmm_param->maxdepth = depth;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter function for maximum fmm tree depth */
-FCSResult fcs_fmm_get_maxdepth(FCS handle, long long *depth)
+FCSResult fcs_fmm_get_maxdepth(FCS handle, fcs_int *depth)
 {
-  char* fnc_name = "fcs_fmm_get_maxdepth";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (!handle || !handle->fmm_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
   if (!depth)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for depth");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,__func__,"null pointer supplied for depth");
 
   *depth = handle->fmm_param->maxdepth;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter function for maximum fmm unroll limit */
-FCSResult fcs_fmm_set_unroll_limit(FCS handle, long long limit)
+FCSResult fcs_fmm_set_unroll_limit(FCS handle, fcs_int limit)
 {
-  char* fnc_name = "fcs_fmm_set_unroll_limit";
-  fcs_int int_limit = limit;
-  
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_METHOD_FMM)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"fmm\")");
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  int_limit = (0 > limit)?0:limit;
-  int_limit = (50 < limit)?50:limit;
-  handle->fmm_param->limit = int_limit;
-  return NULL;
+  if (limit < 0) limit = 0;
+  if (limit > 50) limit = 50;
+
+  handle->fmm_param->limit = limit;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter function for fmm unroll limit */
-FCSResult fcs_fmm_get_unroll_limit(FCS handle, long long *limit)
+FCSResult fcs_fmm_get_unroll_limit(FCS handle, fcs_int *limit)
 {
-  char* fnc_name = "fcs_fmm_get_unroll_limit";
-  
-  if (!handle || !handle->fmm_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   if (!limit)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for limit");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,__func__,"null pointer supplied for limit");
 
   *limit = handle->fmm_param->limit;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter function for status of fmm load balancing */
-FCSResult fcs_fmm_set_balanceload(FCS handle, long long load)
+FCSResult fcs_fmm_set_balanceload(FCS handle, fcs_int load)
 {
-  char* fnc_name = "fcs_fmm_set_balanceload";
-  fcs_int int_load = load;
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
   
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_METHOD_FMM)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"fmm\")");
+  handle->fmm_param->balance = (load != 0)?1:0;
 
-  int_load = (load != 0)?1:0;
-  handle->fmm_param->balance = int_load;
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter function for status of fmm loadvector definition */
-FCSResult fcs_fmm_set_define_loadvector(FCS handle, long long define_loadvector)
+FCSResult fcs_fmm_set_define_loadvector(FCS handle, fcs_int define_loadvector)
 {
-  char* fnc_name = "fcs_fmm_set_define_loadvector";
-  fcs_int int_define_loadvector = define_loadvector;
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_METHOD_FMM)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"fmm\")");
+  if (define_loadvector != 1)
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,__func__,"invalid (fmm) define_loadvector chosen (only value 1 is current supported)");
 
-  handle->fmm_param->define_loadvector = 1;//int_define_loadvector;
-  return NULL;
+  handle->fmm_param->define_loadvector = define_loadvector;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter function for status of fmm define loadvector */
-FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loadvector)
+FCSResult fcs_fmm_get_define_loadvector(FCS handle, fcs_int *define_loadvector)
 {
-  char* fnc_name = "fcs_fmm_get_define_loadvector";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (!handle || !handle->fmm_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
   if (!define_loadvector)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for define_loadvector");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,__func__,"null pointer supplied for define_loadvector");
 
-  *define_loadvector = (long long) handle->fmm_param->define_loadvector;
-  return NULL;
+  *define_loadvector = handle->fmm_param->define_loadvector;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 
 /* getter function for status of fmm load balancing */
-FCSResult fcs_fmm_get_balanceload(FCS handle, long long *load)
+FCSResult fcs_fmm_get_balanceload(FCS handle, fcs_int *load)
 {
-  char* fnc_name = "fcs_fmm_get_balanceload";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (!handle || !handle->fmm_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
   if (!load)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for load");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,__func__,"null pointer supplied for load");
 
   *load = handle->fmm_param->balance;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter function for fmm parameter cusp_radius */
 FCSResult fcs_fmm_set_cusp_radius(FCS handle, fcs_float radius)
 {
-  char* fnc_name = "fcs_fmm_set_radius";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
-  if (fcs_get_method(handle) != FCS_METHOD_FMM)
-        return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD,fnc_name,"wrong method chosen, please choose a method (method is not \"fmm\")");
   if (radius < 0.0)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,fnc_name,"cusp radius must be non-negative");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT,__func__,"cusp radius must be non-negative");
 
   handle->fmm_param->cusp_radius = radius;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter function for fmm parameter cusp radius */
 FCSResult fcs_fmm_get_cusp_radius(FCS handle, fcs_float *cusp_radius)
 {
-  char* fnc_name = "fcs_fmm_get_radius";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-  if (!handle || !handle->fmm_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
   if (!cusp_radius)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for cusp_radius");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,__func__,"null pointer supplied for cusp_radius");
 
   *cusp_radius = handle->fmm_param->cusp_radius;
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
-FCSResult fcs_fmm_require_virial(FCS handle, fcs_int flag) { return NULL; }
+FCSResult fcs_fmm_require_virial(FCS handle, fcs_int flag) {
+
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
+  return FCS_RESULT_SUCCESS;
+}
 
 FCSResult fcs_fmm_get_virial(FCS handle, fcs_float *virial) {
-  char* fnc_name = "fcs_fmm_get_virial";
 
-  if (!handle || !handle->fmm_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied as handle");
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   if (!virial)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name,"null pointer supplied for virial"); 
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,__func__,"null pointer supplied for virial"); 
 
   fcs_int i;
   for (i=0; i < 9; i++)
     virial[i] = handle->fmm_param->virial[i];
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_fmm_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolerance)
 {
-  const char *fnc_name = "fcs_fmm_set_tolerance";
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
 
   if (tolerance_type == FCS_TOLERANCE_TYPE_ENERGY)
   {
     fcs_fmm_set_absrel(handle, FCS_FMM_CUSTOM_ABSOLUTE);
     fcs_fmm_set_tolerance_energy(handle, tolerance);
-    return FCS_RESULT_SUCCESS;
 
   } else if (tolerance_type == FCS_TOLERANCE_TYPE_ENERGY_REL)
   {
     fcs_fmm_set_absrel(handle, FCS_FMM_CUSTOM_RELATIVE);
     fcs_fmm_set_tolerance_energy(handle, tolerance);
-    return FCS_RESULT_SUCCESS;
+
+  } else
+  {
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, __func__, "Unsupported tolerance type. FMM only supports FCS_TOLERANCE_TYPE_ENERGY and FCS_TOLERANCE_TYPE_ENERGY_REL.");
   }
   
-  return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "Unsupported tolerance type. FMM only supports FCS_TOLERANCE_TYPE_ENERGY and FCS_TOLERANCE_TYPE_ENERGY_REL.");
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -911,8 +887,6 @@ FCSResult fcs_fmm_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float to
 
 FCSResult fcs_fmm_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
-  const char *fnc_name = "fcs_fmm_set_parameter";
-
   char *param = *current;
   char *cur = *next;
 
@@ -923,10 +897,10 @@ FCSResult fcs_fmm_set_parameter(FCS handle, fcs_bool continue_on_errors, char **
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_dipole_correction", fmm_set_dipole_correction, FCS_PARSE_VAL(fcs_int));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_potential",         fmm_set_potential,         FCS_PARSE_VAL(fcs_int));
   FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_cusp_radius",       fmm_set_cusp_radius,       FCS_PARSE_VAL(fcs_float));
-  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_internal_tuning",   fmm_set_internal_tuning,   FCS_PARSE_VAL(fcs_long_long_t));
-  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_maxdepth",          fmm_set_maxdepth,          FCS_PARSE_VAL(fcs_long_long_t));
-  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_unroll_limit",      fmm_set_unroll_limit,      FCS_PARSE_VAL(fcs_long_long_t));
-  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_balanceload",       fmm_set_balanceload,       FCS_PARSE_VAL(fcs_long_long_t));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_internal_tuning",   fmm_set_internal_tuning,   FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_maxdepth",          fmm_set_maxdepth,          FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_unroll_limit",      fmm_set_unroll_limit,      FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("fmm_balanceload",       fmm_set_balanceload,       FCS_PARSE_VAL(fcs_int));
 
   return FCS_RESULT_SUCCESS;
 
@@ -945,10 +919,13 @@ FCSResult fcs_fmm_print_parameters(FCS handle)
   fcs_int absrel;
   fcs_float tolerance_energy;
   fcs_int dipole_correction;
-  long long tuning;
-  long long maxdepth;
-  long long limit;
-  long long load;
+  fcs_int tuning;
+  fcs_int maxdepth;
+  fcs_int limit;
+  fcs_int load;
+
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   fcs_fmm_get_absrel(handle, &absrel);
   fcs_fmm_get_tolerance_energy(handle, &tolerance_energy);
   fcs_fmm_get_dipole_correction(handle, &dipole_correction);
@@ -956,12 +933,13 @@ FCSResult fcs_fmm_print_parameters(FCS handle)
   fcs_fmm_get_balanceload(handle, &load);
   fcs_fmm_get_maxdepth(handle, &maxdepth);
   fcs_fmm_get_unroll_limit(handle, &limit);
+
   printf("fmm absrel: %" FCS_LMOD_INT "d\n", absrel);
   printf("fmm tolerance value: %e\n", tolerance_energy);
   printf("fmm dipole correction: %" FCS_LMOD_INT "d\n", dipole_correction);
   printf("fmm internal tuning: %c\n", (tuning)?'T':'F');
-  printf("fmm maxdepth: %lld\n", maxdepth);
-  printf("fmm unroll limit: %lld\n", limit);
+  printf("fmm maxdepth: %" FCS_LMOD_INT "d\n", maxdepth);
+  printf("fmm unroll limit: %" FCS_LMOD_INT "d\n", limit);
   printf("fmm internal balance load: %c\n", (load)?'T':'F');
   
   return FCS_RESULT_SUCCESS;
@@ -970,64 +948,80 @@ FCSResult fcs_fmm_print_parameters(FCS handle)
 
 FCSResult fcs_fmm_set_max_particle_move(FCS handle, fcs_float max_particle_move)
 {
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   handle->fmm_param->max_particle_move = max_particle_move;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_fmm_set_resort(FCS handle, fcs_int resort)
 {
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   handle->fmm_param->resort = resort;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_fmm_get_resort(FCS handle, fcs_int *resort)
 {
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   *resort = handle->fmm_param->resort;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_fmm_get_resort_availability(FCS handle, fcs_int *availability)
 {
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   if (handle->fmm_param->fmm_resort != FCS_FMM_RESORT_NULL) *availability = fcs_resort_is_available(handle->fmm_param->fmm_resort->resort);
   else *availability = 0;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_fmm_get_resort_particles(FCS handle, fcs_int *resort_particles)
 {
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   *resort_particles = fcs_resort_get_original_particles(handle->fmm_param->fmm_resort->resort);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_fmm_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
 {
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   fcs_resort_resort_ints(handle->fmm_param->fmm_resort->resort, src, dst, n, comm);
   
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_fmm_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
 {
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   fcs_resort_resort_floats(handle->fmm_param->fmm_resort->resort, src, dst, n, comm);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_fmm_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm)
 {
+  FMM_CHECK_RETURN_RESULT(handle, __func__);
+
   fcs_resort_resort_bytes(handle->fmm_param->fmm_resort->resort, src, dst, n, comm);
   
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }

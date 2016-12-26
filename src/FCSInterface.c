@@ -1,5 +1,6 @@
 /*
   Copyright (C) 2011, 2012, 2013, 2014 Rene Halver, Michael Hofmann
+  Copyright (C) 2016 Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -30,22 +31,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-
-
-#define CHECK_HANDLE_RETURN_RESULT(_h_, _f_) do { \
-  if (handle == FCS_NULL) \
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, _f_, "null handle supplied"); \
-  } while (0)
-
-#define CHECK_HANDLE_RETURN_VAL(_h_, _f_, _v_) do { \
-  if (handle == FCS_NULL) { \
-    fprintf(stderr, "%s: null handle supplied, returning " #_v_, _f_); \
-    return (_v_); \
-  } } while (0)
-
-#define CHECK_RESULT_RETURN(_r_) do { \
-    if ((_r_) != FCS_RESULT_SUCCESS) return (_r_); \
-  } while (0)
 
 
 /**
@@ -1154,7 +1139,7 @@ FCSResult fcs_set_max_particle_move(FCS handle, fcs_float max_particle_move)
 /*  if (handle->set_max_particle_move == NULL)
     return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "max. particle move not supported");*/
 
-  if (handle->set_max_particle_move == NULL) return FCS_SUCCESS;
+  if (handle->set_max_particle_move == NULL) return FCS_RESULT_SUCCESS;
 
   return handle->set_max_particle_move(handle, max_particle_move);
 }

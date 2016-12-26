@@ -128,27 +128,6 @@ FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_particles, fcs_float *position
  */
 FCSResult fcs_pp3mg_near_field_potential(FCS handle, fcs_float);
 
-
-/**
- * @brief function to enable the virial computation
- * @param handle FCS-object
- * @param compute_virial whether virial should be computed or not
- *        = 0 - no virial
- *        != 0 - compute virial
- * @return FCSResult-object containing the return state
- */
-FCSResult fcs_pp3mg_require_virial(FCS handle, fcs_int compute_virial);
-
-
-/**
- * @brief function to return the virial
- * @param handle FCS-object
- * @param virial array to store the virial
- * @return FCSResult-object containing the return state
- */
-FCSResult fcs_pp3mg_get_virial(FCS handle, fcs_float *virial);
-
-
 FCSResult fcs_pp3mg_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
 
 FCSResult fcs_pp3mg_print_parameters(FCS handle);

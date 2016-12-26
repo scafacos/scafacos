@@ -82,7 +82,7 @@ FCSResult fcs_result_create(fcs_int code, const char *function, const char *mess
  */
 void fcs_result_destroy(FCSResult result)
 {
-  if (result == NULL) return;
+  if (result == FCS_RESULT_SUCCESS) return;
 
   if (result != &fcs_result_create_error) free(result);
 }

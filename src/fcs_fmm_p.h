@@ -131,19 +131,19 @@ FCSResult fcs_fmm_get_potential(FCS handle, fcs_int *coulomb);
 /**
  * @brief function to set the fmm internal tuning parameter
  * @param handle FCS-object that is modified
- * @param system long long defining the kind of system to tune for
+ * @param system fcs_int defining the kind of system to tune for
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_set_internal_tuning(FCS handle, long long system);
+FCSResult fcs_fmm_set_internal_tuning(FCS handle, fcs_int system);
 
 /**
  * @brief function to get the fmm internal tuning parameter
  * @param handle FCS-object that contains the parameter 
- * @param system pointer to long long variable stating 
+ * @param system pointer to fcs_int variable stating 
  * which kind of system is used
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_get_internal_tuning(FCS handle, long long *system);
+FCSResult fcs_fmm_get_internal_tuning(FCS handle, fcs_int *system);
 
 /**
  * @brief function to set the fmm cusp radius parameter
@@ -168,7 +168,7 @@ FCSResult fcs_fmm_get_cusp_radius(FCS handle, fcs_float *cusp_radius);
  * @param depth fcs_int containing the maximum tree depth for the FMM (0 to 19)
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_set_maxdepth(FCS handle, long long depth);
+FCSResult fcs_fmm_set_maxdepth(FCS handle, fcs_int depth);
 
 /**
  * @brief function to get the optional fmm absrel parameter
@@ -176,7 +176,7 @@ FCSResult fcs_fmm_set_maxdepth(FCS handle, long long depth);
  * @param depth  fcs_int containing the set maximum tree depth 
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_get_maxdepth(FCS handle, long long *depth);
+FCSResult fcs_fmm_get_maxdepth(FCS handle, fcs_int *depth);
 
 /**
  * @brief function to set the optional fmm absrel parameter
@@ -184,7 +184,7 @@ FCSResult fcs_fmm_get_maxdepth(FCS handle, long long *depth);
  * @param limit fcs_int the limit for unrolled functions within the FMM (0 to 50)
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_set_unroll_limit(FCS handle, long long limit);
+FCSResult fcs_fmm_set_unroll_limit(FCS handle, fcs_int limit);
 
 /**
  * @brief function to get the optional fmm absrel parameter
@@ -192,7 +192,7 @@ FCSResult fcs_fmm_set_unroll_limit(FCS handle, long long limit);
  * @param limit  fcs_int containing the limit for the unrolled functions
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_get_unroll_limit(FCS handle, long long *limit);
+FCSResult fcs_fmm_get_unroll_limit(FCS handle, fcs_int *limit);
 
 /**
  * @brief function to set the optional fmm absrel parameter
@@ -200,7 +200,7 @@ FCSResult fcs_fmm_get_unroll_limit(FCS handle, long long *limit);
  * @param load fcs_int activates load balancing routines (0 (deactivated) or 1 (activated))
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_set_balanceload(FCS handle, long long load);
+FCSResult fcs_fmm_set_balanceload(FCS handle, fcs_int load);
 
 /**
  * @brief function to get the optional fmm absrel parameter
@@ -208,7 +208,7 @@ FCSResult fcs_fmm_set_balanceload(FCS handle, long long load);
  * @param load fcs_int containing the load balancing status
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_get_balanceload(FCS handle, long long *load);
+FCSResult fcs_fmm_get_balanceload(FCS handle, fcs_int *load);
 
 /**
  * @brief function to set the optional fmm loadvector parameter
@@ -216,8 +216,8 @@ FCSResult fcs_fmm_get_balanceload(FCS handle, long long *load);
  * @param define_loadvector  fcs_int containing the load balancing initialization status
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_set_define_loadvector(FCS handle, long long  define_loadvector);
-FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loadvector);
+FCSResult fcs_fmm_set_define_loadvector(FCS handle, fcs_int  define_loadvector);
+FCSResult fcs_fmm_get_define_loadvector(FCS handle, fcs_int *define_loadvector);
 
 /*
  * @brief combined setter function for all fmm related parameters
@@ -238,7 +238,7 @@ FCSResult fcs_fmm_get_define_loadvector(FCS handle, long long *define_loadvector
  * @param radius fcs_float sets the radius for the cusp potential, if chosen
  * @return FCSResult-object containing the return state
  */
-FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_energy, fcs_int dipole_correction, long long system, long long maxdepth, long long unroll_limit, long long load/*, fcs_int potential, fcs_float radius*/);
+FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_energy, fcs_int dipole_correction, fcs_int system, fcs_int maxdepth, fcs_int unroll_limit, fcs_int load/*, fcs_int potential, fcs_float radius*/);
 
 void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float tolerance_energy, fcs_int dipole_correction, fcs_int *return_value);
 

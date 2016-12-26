@@ -65,7 +65,7 @@ typedef struct fcs_fmm_parameters_t
   /* load balancing vector */
   fcs_int define_loadvector;
   /* internal fmm tuning for inhomogenous systems */
-  long long system;
+  fcs_int system;
 
   /* storage space for the virial */
   fcs_float virial[9];

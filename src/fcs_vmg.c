@@ -1,5 +1,6 @@
 /*
   Copyright (C) 2011-2012 Rene Halver
+  Copyright (C) 2016 Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -30,8 +31,22 @@
 #include "fcs_vmg.h"
 #include "FCSCommon.h"
 
+
+#define VMG_CHECK_RETURN_RESULT(_h_, _f_)  do { \
+  CHECK_HANDLE_RETURN_RESULT(_h_, _f_); \
+  CHECK_METHOD_RETURN_RESULT(_h_, _f_, FCS_METHOD_VMG, "vmg"); \
+  } while (0)
+
+#define VMG_CHECK_RETURN_VAL(_h_, _f_, _v_)  do { \
+  CHECK_HANDLE_RETURN_VAL(_h_, _f_, _v_); \
+  CHECK_METHOD_RETURN_VAL(_h_, _f_, FCS_METHOD_VMG, "vmg", _v_); \
+  } while (0)
+
+
 FCSResult fcs_vmg_init(FCS handle)
 {
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
+
   handle->shift_positions = 0;
 
   handle->destroy = fcs_vmg_destroy;
@@ -39,8 +54,6 @@ FCSResult fcs_vmg_init(FCS handle)
   handle->print_parameters = fcs_vmg_print_parameters;
   handle->tune = fcs_vmg_tune;
   handle->run = fcs_vmg_run;
-  handle->set_compute_virial = fcs_vmg_require_virial;
-  handle->get_virial = fcs_vmg_get_virial;
 
   handle->vmg_param = malloc(sizeof(*handle->vmg_param));
   handle->vmg_param->max_level = -1;
@@ -52,13 +65,16 @@ FCSResult fcs_vmg_init(FCS handle)
   handle->vmg_param->interpolation_order = -1;
   handle->vmg_param->discretization_order = -1;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 FCSResult fcs_vmg_tune(FCS handle, fcs_int local_particles,
 		       fcs_float* positions, fcs_float* charges)
 {
   FCSResult result;
+
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
+
   /*
    * Set default parameters if no parameters were specified
    */
@@ -133,23 +149,29 @@ FCSResult fcs_vmg_tune(FCS handle, fcs_int local_particles,
   if (result)
     return result;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 FCSResult fcs_vmg_run(FCS handle, fcs_int local_particles,
 		      fcs_float* positions, fcs_float* charges, fcs_float *field,
 		      fcs_float *potentials)
 {
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
+
   VMG_fcs_run(positions, charges, potentials, field, local_particles);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 FCSResult fcs_vmg_destroy(FCS handle)
 {
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
+
   VMG_fcs_destroy();
+
   free(handle->vmg_param);
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -174,47 +196,34 @@ FCSResult fcs_vmg_setup(FCS handle, fcs_int max_level,
                                fcs_int interpolation_order, fcs_int discretization_order)
 {
   FCSResult result;
-  char fnc_name[] = "fcs_vmg_setup";
 
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   result = fcs_vmg_set_max_level(handle, max_level);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_vmg_set_max_iterations(handle, max_iterations);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_vmg_set_smoothing_steps(handle, smoothing_steps);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_vmg_set_cycle_type(handle, cycle_type);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_vmg_set_precision(handle, precision);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_vmg_set_near_field_cells(handle, near_field_cells);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_vmg_set_interpolation_order(handle, interpolation_order);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_vmg_set_discretization_order(handle, discretization_order);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -227,16 +236,10 @@ FCSResult fcs_vmg_set_default(FCS handle)
   MPI_Comm comm;
   int rank;
 
-  const char fnc_name[] = "fcs_vmg_set_default";
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   comm = fcs_get_communicator(handle);
   MPI_Comm_rank(comm, &rank);
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
 
   fcs_int max_level;
   fcs_vmg_get_max_level(handle, &max_level);
@@ -244,7 +247,7 @@ FCSResult fcs_vmg_set_default(FCS handle)
     max_level = 6;
 #ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "max_level", max_level);
+      printf("%s: Parameter %s not set. Set default to %d.\n", __func__, "max_level", max_level);
 #endif
     fcs_vmg_set_max_level(handle, max_level);
   }
@@ -255,7 +258,7 @@ FCSResult fcs_vmg_set_default(FCS handle)
     max_iter = 15;
 #ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "max_iterations", max_iter);
+      printf("%s: Parameter %s not set. Set default to %d.\n", __func__, "max_iterations", max_iter);
 #endif
     fcs_vmg_set_max_iterations(handle, max_iter);
   }
@@ -266,7 +269,7 @@ FCSResult fcs_vmg_set_default(FCS handle)
     smoothing_steps = 3;
 #ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "smoothing_steps", smoothing_steps);
+      printf("%s: Parameter %s not set. Set default to %d.\n", __func__, "smoothing_steps", smoothing_steps);
 #endif
     fcs_vmg_set_smoothing_steps(handle, smoothing_steps);
   }
@@ -277,7 +280,7 @@ FCSResult fcs_vmg_set_default(FCS handle)
     cycle_type = 1;
 #ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "cycle_type", cycle_type);
+      printf("%s: Parameter %s not set. Set default to %d.\n", __func__, "cycle_type", cycle_type);
 #endif
     fcs_vmg_set_cycle_type(handle, cycle_type);
   }
@@ -288,7 +291,7 @@ FCSResult fcs_vmg_set_default(FCS handle)
     precision = 1.0e-8;
 #ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("%s: Parameter %s not set. Set default to %e.\n", fnc_name, "precision", precision);
+      printf("%s: Parameter %s not set. Set default to %e.\n", __func__, "precision", precision);
 #endif
     fcs_vmg_set_precision(handle, precision);
   }
@@ -299,7 +302,7 @@ FCSResult fcs_vmg_set_default(FCS handle)
     near_field_cells = 4;
 #ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "near_field_cells", near_field_cells);
+      printf("%s: Parameter %s not set. Set default to %d.\n", __func__, "near_field_cells", near_field_cells);
 #endif
     fcs_vmg_set_near_field_cells(handle, near_field_cells);
   }
@@ -310,7 +313,7 @@ FCSResult fcs_vmg_set_default(FCS handle)
     interpolation_order = 5;
 #ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "interpolation_order", interpolation_order);
+      printf("%s: Parameter %s not set. Set default to %d.\n", __func__, "interpolation_order", interpolation_order);
 #endif
     fcs_vmg_set_interpolation_order(handle, interpolation_order);
   }
@@ -321,12 +324,12 @@ FCSResult fcs_vmg_set_default(FCS handle)
     discretization_order = 4;
 #ifdef FCS_ENABLE_DEBUG
     if (rank == 0)
-      printf("%s: Parameter %s not set. Set default to %d.\n", fnc_name, "discretization_order", discretization_order);
+      printf("%s: Parameter %s not set. Set default to %d.\n", __func__, "discretization_order", discretization_order);
 #endif
     fcs_vmg_set_discretization_order(handle, discretization_order);
   }
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -341,20 +344,14 @@ FCSResult fcs_vmg_set_default(FCS handle)
  */
 FCSResult fcs_vmg_set_max_level(FCS handle, fcs_int max_level)
 {
-  char fnc_name[] = "fcs_vmg_set_max_level";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   if (max_level < 3)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "The finest level must be at least 3.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "The finest level must be at least 3.");
 
   handle->vmg_param->max_level = max_level;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -369,17 +366,11 @@ FCSResult fcs_vmg_set_max_level(FCS handle, fcs_int max_level)
  */
 FCSResult fcs_vmg_get_max_level(FCS handle, fcs_int *max_level)
 {
-  char fnc_name[] = "fcs_vmg_get_max_level";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   *max_level = handle->vmg_param->max_level;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -392,20 +383,14 @@ FCSResult fcs_vmg_get_max_level(FCS handle, fcs_int *max_level)
  */
 FCSResult fcs_vmg_set_max_iterations(FCS handle, fcs_int max_iterations)
 {
-  char fnc_name[] = "fcs_vmg_set_max_iterations";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   if (max_iterations < 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "The maximum number of iterations must be positive.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "The maximum number of iterations must be positive.");
 
   handle->vmg_param->max_iterations = max_iterations;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -418,17 +403,11 @@ FCSResult fcs_vmg_set_max_iterations(FCS handle, fcs_int max_iterations)
  */
 FCSResult fcs_vmg_get_max_iterations(FCS handle, fcs_int *max_iterations)
 {
-  char fnc_name[] = "fcs_vmg_get_max_iterations";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   *max_iterations = handle->vmg_param->max_iterations;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -441,20 +420,14 @@ FCSResult fcs_vmg_get_max_iterations(FCS handle, fcs_int *max_iterations)
  */
 FCSResult fcs_vmg_set_smoothing_steps(FCS handle, fcs_int smoothing_steps)
 {
-  char fnc_name[] = "fcs_vmg_set_smoothing_steps";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   if (smoothing_steps < 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "The number of smoothing steps must be at least one.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "The number of smoothing steps must be at least one.");
 
   handle->vmg_param->smoothing_steps = smoothing_steps;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -467,17 +440,11 @@ FCSResult fcs_vmg_set_smoothing_steps(FCS handle, fcs_int smoothing_steps)
  */
 FCSResult fcs_vmg_get_smoothing_steps(FCS handle, fcs_int *smoothing_steps)
 {
-  char fnc_name[] = "fcs_vmg_get_smoothing_steps";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   *smoothing_steps = handle->vmg_param->smoothing_steps;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -491,20 +458,14 @@ FCSResult fcs_vmg_get_smoothing_steps(FCS handle, fcs_int *smoothing_steps)
  */
 FCSResult fcs_vmg_set_cycle_type(FCS handle, fcs_int cycle_type)
 {
-  char fnc_name[] = "fcs_vmg_set_cycle_type";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   if (cycle_type < 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Gamma must be at least one.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "Gamma must be at least one.");
 
   handle->vmg_param->cycle_type = cycle_type;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -518,17 +479,11 @@ FCSResult fcs_vmg_set_cycle_type(FCS handle, fcs_int cycle_type)
  */
 FCSResult fcs_vmg_get_cycle_type(FCS handle, fcs_int* cycle_type)
 {
-  char fnc_name[] = "fcs_vmg_get_cycle_type";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   *cycle_type = handle->vmg_param->cycle_type;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -542,20 +497,14 @@ FCSResult fcs_vmg_get_cycle_type(FCS handle, fcs_int* cycle_type)
  */
 FCSResult fcs_vmg_set_precision(FCS handle, fcs_float precision)
 {
-  char fnc_name[] = "fcs_vmg_set_precision";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   if (precision < 0.0)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "The requested precision must be positive.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "The requested precision must be positive.");
 
   handle->vmg_param->precision = precision;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -569,17 +518,11 @@ FCSResult fcs_vmg_set_precision(FCS handle, fcs_float precision)
  */
 FCSResult fcs_vmg_get_precision(FCS handle, fcs_float* precision)
 {
-  char fnc_name[] = "fcs_vmg_get_precision";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   *precision = handle->vmg_param->precision;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -593,20 +536,14 @@ FCSResult fcs_vmg_get_precision(FCS handle, fcs_float* precision)
  */
 FCSResult fcs_vmg_set_near_field_cells(FCS handle, fcs_int near_field_cells)
 {
-  char fnc_name[] = "fcs_vmg_set_near_field_cells";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   if (near_field_cells < 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Number of near field cells  must be positive.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "Number of near field cells  must be positive.");
 
   handle->vmg_param->near_field_cells = near_field_cells;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -620,17 +557,11 @@ FCSResult fcs_vmg_set_near_field_cells(FCS handle, fcs_int near_field_cells)
  */
 FCSResult fcs_vmg_get_near_field_cells(FCS handle, fcs_int* near_field_cells)
 {
-  char fnc_name[] = "fcs_vmg_get_near_field_cells";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   *near_field_cells = handle->vmg_param->near_field_cells;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -644,20 +575,14 @@ FCSResult fcs_vmg_get_near_field_cells(FCS handle, fcs_int* near_field_cells)
  */
 FCSResult fcs_vmg_set_interpolation_order(FCS handle, fcs_int interpolation_order)
 {
-  char fnc_name[] = "fcs_vmg_set_interpolation_order";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   if (interpolation_order < 3)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Interpolation order must be greater or equal three.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "Interpolation order must be greater or equal three.");
 
   handle->vmg_param->interpolation_order = interpolation_order;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -671,17 +596,11 @@ FCSResult fcs_vmg_set_interpolation_order(FCS handle, fcs_int interpolation_orde
  */
 FCSResult fcs_vmg_get_interpolation_order(FCS handle, fcs_int* interpolation_order)
 {
-  char fnc_name[] = "fcs_vmg_get_interpolation_order";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   *interpolation_order = handle->vmg_param->interpolation_order;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -697,20 +616,14 @@ FCSResult fcs_vmg_get_interpolation_order(FCS handle, fcs_int* interpolation_ord
  */
 FCSResult fcs_vmg_set_discretization_order(FCS handle, fcs_int discretization_order)
 {
-  char fnc_name[] = "fcs_vmg_set_discretization_order";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   if (discretization_order != 2 && discretization_order != 4)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "discretization_order must be 2 or 4.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "discretization_order must be 2 or 4.");
 
   handle->vmg_param->discretization_order = discretization_order;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 /**
@@ -726,152 +639,122 @@ FCSResult fcs_vmg_set_discretization_order(FCS handle, fcs_int discretization_or
  */
 FCSResult fcs_vmg_get_discretization_order(FCS handle, fcs_int* discretization_order)
 {
-  char fnc_name[] = "fcs_vmg_get_discretization_order";
-
-  if (handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
-
-  if (fcs_get_method(handle) != FCS_METHOD_VMG)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. You should choose \"vmg\".");
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   *discretization_order = handle->vmg_param->discretization_order;
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 FCSResult fcs_vmg_check(FCS handle)
 {
-  char fnc_name[] = "fcs_vmg_check";
   FCSResult result;
+
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   fcs_int max_level;
   result = fcs_vmg_get_max_level(handle, &max_level);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   if (max_level == -1)
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "vmg finest level not set.");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "vmg finest level not set.");
   if (max_level < 3)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "vmg finest level must be greater than 2.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "vmg finest level must be greater than 2.");
 
   fcs_int max_iterations;
   result = fcs_vmg_get_max_iterations(handle, &max_iterations);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   if (max_iterations == -1)
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "vmg maximum number of iterations not set.");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "vmg maximum number of iterations not set.");
   if (max_iterations < 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "vmg maximum number of iterations must be positive.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "vmg maximum number of iterations must be positive.");
 
   fcs_int smoothing_steps;
   result = fcs_vmg_get_smoothing_steps(handle, &smoothing_steps);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   if (smoothing_steps == -1)
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "vmg number of smoothing steps not set.");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "vmg number of smoothing steps not set.");
   if (smoothing_steps < 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "vmg number of smoothing steps must be positive.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "vmg number of smoothing steps must be positive.");
 
   fcs_int cycle_type;
   result = fcs_vmg_get_cycle_type(handle, &cycle_type);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   if (cycle_type == -1)
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "vmg cycle number not set.");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "vmg cycle number not set.");
   if (cycle_type < 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "vmg cycle number must be positive.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "vmg cycle number must be positive.");
 
   fcs_float precision;
   result = fcs_vmg_get_precision(handle, &precision);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   if (precision == -1.)
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "vmg desired precision not set.");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "vmg desired precision not set.");
 
   fcs_int near_field_cells;
   result = fcs_vmg_get_near_field_cells(handle, &near_field_cells);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   if (near_field_cells == -1)
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "vmg number of near field cells not set.");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "vmg number of near field cells not set.");
   if (near_field_cells < 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "vmg number of near field cells must be positive.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "vmg number of near field cells must be positive.");
 
   fcs_int interpolation_order;
   result = fcs_vmg_get_interpolation_order(handle, &interpolation_order);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   if (interpolation_order == -1)
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "vmg interpolation order not set.");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "vmg interpolation order not set.");
   if (interpolation_order < 3)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "vmg interpolation order must be greater or equal three.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "vmg interpolation order must be greater or equal three.");
 
   fcs_int discretization_order;
   result = fcs_vmg_get_discretization_order(handle, &discretization_order);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
+
   if (discretization_order == -1)
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "vmg discretization order not set.");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "vmg discretization order not set.");
   if (discretization_order != 2 && discretization_order != 4)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "vmg discretization order must be 2 or 4.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "vmg discretization order must be 2 or 4.");
 
   const fcs_float* box_a = fcs_get_box_a(handle);
   const fcs_float* box_b = fcs_get_box_b(handle);
   const fcs_float* box_c = fcs_get_box_c(handle);
 
   if (!fcs_is_cubic(box_a, box_b, box_c))
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "vmg requires the box to be cubic.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "vmg requires the box to be cubic.");
 
   if (!fcs_uses_principal_axes(box_a, box_b, box_c))
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "vmg requires the box vectors to be parallel to the principal axes.");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "vmg requires the box vectors to be parallel to the principal axes.");
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 FCSResult fcs_vmg_library_check(FCS handle)
 {
   int rval = VMG_fcs_check();
-  char fnc_name[] = "fcs_vmg_library_check";
 
   switch (rval)
     {
     case 0:
-      return NULL;
+      return FCS_RESULT_SUCCESS;
       break;
     case 1:
-      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "vmg requires the number of grid points on each process in every direction to be greater than the number of near field cells.");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "vmg requires the number of grid points on each process in every direction to be greater than the number of near field cells.");
       break;
     default:
-      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "vmg unknown error code");
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "vmg unknown error code");
       break;
     }
 }
 
-FCSResult fcs_vmg_require_virial(FCS handle, fcs_int flag)
-{
-  return NULL;
-}
-
-FCSResult fcs_vmg_get_virial(FCS handle, fcs_float *virial)
-{
-  char fnc_name[] =  "fcs_vmg_get_virial";
-
-  if (!handle || !handle->vmg_param)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name, "null pointer supplied as handle");
-  if (!virial)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT,fnc_name, "null pointer supplied for virial");
-
-  fcs_int i;
-  for (i=0; i < 9; i++)
-    virial[i] = 0.0;
-
-  return NULL;
-}
-
-
 FCSResult fcs_vmg_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
-  const char *fnc_name = "fcs_vmg_set_parameter";
-
   char *param = *current;
   char *cur = *next;
 
@@ -908,6 +791,8 @@ FCSResult fcs_vmg_print_parameters(FCS handle)
   fcs_int near_field_cells;
   fcs_int interpolation_order;
   fcs_int discretization_order;
+
+  VMG_CHECK_RETURN_RESULT(handle, __func__);
 
   fcs_vmg_get_max_level(handle, &level);
   fcs_vmg_get_max_iterations(handle, &max_iter);

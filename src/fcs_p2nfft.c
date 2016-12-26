@@ -2,6 +2,7 @@
   Copyright (C) 2011-2013 Michael Pippig
   Copyright (C) 2011-2012 Rene Halver
   Copyright (C) 2011 Sebastian Banert
+  Copyright (C) 2016 Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -28,14 +29,15 @@
 #include "fcs_p2nfft.h"
 #include "../lib/p2nfft/p2nfft.h"
 
-static FCSResult ifcs_p2nfft_check(
-    FCS handle, const char* fnc_name);
+#define P2NFFT_CHECK_RETURN_RESULT(_h_, _f_)  do { \
+  CHECK_HANDLE_RETURN_RESULT(_h_, _f_); \
+  CHECK_METHOD_RETURN_RESULT(_h_, _f_, FCS_METHOD_P2NFFT, "p2nfft"); \
+  } while (0)
 
-/* define the checks that are executed at the beginning of each wrapper  */
-#define FCS_P2NFFT_INTERFACE_CHECK(FUNCNAME) \
-  char* fnc_name =  #FUNCNAME; \
-  FCSResult result = ifcs_p2nfft_check(handle, fnc_name); \
-  if (result != NULL) return result;
+#define P2NFFT_CHECK_RETURN_VAL(_h_, _f_, _v_)  do { \
+  CHECK_HANDLE_RETURN_VAL(_h_, _f_, _v_); \
+  CHECK_METHOD_RETURN_VAL(_h_, _f_, FCS_METHOD_P2NFFT, "p2nfft", _v_); \
+  } while (0)
 
 /* Enable definition of multiple wrappers which point to the same internal function.
  * We use this trick in order to get an P3M-compliant interface but also remain our own nomenclature. */
@@ -56,20 +58,20 @@ static FCSResult ifcs_p2nfft_check(
  * that is a redirection to ifcs_p2nnft_ ## INAME */
 #define FCS_P2NFFT_INTERFACE_WRAPPER_0(NAME, INAME) \
   FCSResult fcs_p2nfft_ ## NAME(FCS handle) { \
-    FCS_P2NFFT_INTERFACE_CHECK(fcs_p2nfft_ ## NAME) \
-    return ifcs_p2nfft_ ## INAME(handle->method_context, fnc_name); }
+    P2NFFT_CHECK_RETURN_RESULT(handle, __func__); \
+    return ifcs_p2nfft_ ## INAME(handle->method_context, __func__); }
 #define FCS_P2NFFT_INTERFACE_WRAPPER_1(NAME, INAME, TYPE1, ARG1) \
   FCSResult fcs_p2nfft_ ## NAME(FCS handle, TYPE1 ARG1) { \
-    FCS_P2NFFT_INTERFACE_CHECK(fcs_p2nfft_ ## NAME) \
-    return ifcs_p2nfft_ ## INAME(handle->method_context, fnc_name, ARG1); }
+    P2NFFT_CHECK_RETURN_RESULT(handle, __func__); \
+    return ifcs_p2nfft_ ## INAME(handle->method_context, __func__, ARG1); }
 #define FCS_P2NFFT_INTERFACE_WRAPPER_2(NAME, INAME, TYPE1, ARG1, TYPE2, ARG2)   \
   FCSResult fcs_p2nfft_ ## NAME(FCS handle, TYPE1 ARG1, TYPE2 ARG2) { \
-    FCS_P2NFFT_INTERFACE_CHECK(fcs_p2nfft_ ## NAME) \
-    return ifcs_p2nfft_ ## INAME(handle->method_context, fnc_name, ARG1, ARG2); }
+    P2NFFT_CHECK_RETURN_RESULT(handle, __func__); \
+    return ifcs_p2nfft_ ## INAME(handle->method_context, __func__, ARG1, ARG2); }
 #define FCS_P2NFFT_INTERFACE_WRAPPER_3(NAME, INAME, TYPE1, ARG1, TYPE2, ARG2, TYPE3, ARG3)   \
   FCSResult fcs_p2nfft_ ## NAME(FCS handle, TYPE1 ARG1, TYPE2 ARG2, TYPE3 ARG3) { \
-    FCS_P2NFFT_INTERFACE_CHECK(fcs_p2nfft_ ## NAME) \
-    return ifcs_p2nfft_ ## INAME(handle->method_context, fnc_name, ARG1, ARG2, ARG3); }
+    P2NFFT_CHECK_RETURN_RESULT(handle, __func__); \
+    return ifcs_p2nfft_ ## INAME(handle->method_context, __func__, ARG1, ARG2, ARG3); }
 
 /************************************************************
  *     Getter and Setter for P2NFFT, PNFFT, PFFT Parameters 
@@ -86,12 +88,7 @@ FCSResult fcs_p2nfft_init(
     FCS handle
     )
 {
-  char* fnc_name =  "fcs_p2nfft_init";
-  FCSResult result;
-
-  result = ifcs_p2nfft_check(handle, fnc_name);
-  if (result != NULL)
-    return result;
+  P2NFFT_CHECK_RETURN_RESULT(handle, __func__);
 
   handle->shift_positions = 0;
 
@@ -107,9 +104,6 @@ FCSResult fcs_p2nfft_init(
   handle->run = fcs_p2nfft_run;
   handle->set_compute_virial = fcs_p2nfft_require_virial;
   handle->get_virial = fcs_p2nfft_get_virial;
-
-  ifcs_p2nfft_init(&(handle->method_context), handle->communicator);
-
   handle->set_max_particle_move = fcs_p2nfft_set_max_particle_move;
   handle->set_resort = fcs_p2nfft_set_resort;
   handle->get_resort = fcs_p2nfft_get_resort;
@@ -119,7 +113,9 @@ FCSResult fcs_p2nfft_init(
   handle->resort_floats = fcs_p2nfft_resort_floats;
   handle->resort_bytes = fcs_p2nfft_resort_bytes;
 
-  return NULL;
+  ifcs_p2nfft_init(&(handle->method_context), handle->communicator);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 static fcs_int periodic_dims(
@@ -187,14 +183,9 @@ FCSResult fcs_p2nfft_tune(
     fcs_float *positions, fcs_float *charges
     )
 {
-  char* fnc_name = "fcs_p2nfft_tune";
   FCSResult result;
 
-  result = ifcs_p2nfft_check(handle, fnc_name);
-  if (result != NULL)
-    return result;
-
-//   fcs_wrap_positions(local_particles, positions, fcs_get_box_a(handle), fcs_get_box_b(handle), fcs_get_box_c(handle), fcs_get_offset(handle), fcs_get_periodicity(handle));
+  P2NFFT_CHECK_RETURN_RESULT(handle, __func__);
 
   /* Check for periodicity */
   const fcs_int *periodicity = fcs_get_periodicity(handle);
@@ -205,16 +196,16 @@ FCSResult fcs_p2nfft_tune(
   const fcs_float *c = fcs_get_box_c(handle);
 
   if( !nonperiodic_axes_are_principal(a, b, c, periodicity) )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__,
         "Principal box vectors are required for all nonperiodic dims.");
 
   if( !nonperiodic_axes_are_orthogonal_to_all_other_axes(a, b, c, periodicity) )
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__,
         "Nonperiodic dims require box vector that are orthognonal to all box vectors of periodic dims.");
 
   if(periodic_dims(periodicity) == 1)
     if(!nonperiodic_box_lengths_are_equal(fcs_norm(a), fcs_norm(b), fcs_norm(c), periodicity))
-      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__,
           "The p2nfft method currently depends on equal nonperiodic box lengths with 1d-periodic boundary conditions.");
 
   /* Call the p2nfft solver's tuning routine */
@@ -231,16 +222,12 @@ FCSResult fcs_p2nfft_run(
     fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials
     )
 {
-  char* fnc_name =  "fcs_p2nfft_run";
   FCSResult result;
 
-  result = ifcs_p2nfft_check(handle, fnc_name);
-  if (result != NULL)
-    return result;
+  P2NFFT_CHECK_RETURN_RESULT(handle, __func__);
 
   result = fcs_p2nfft_tune(handle, local_particles, positions, charges);
-  if (result != NULL)
-    return result;
+  CHECK_RESULT_RETURN(result);
   
   fcs_int max_local_particles = fcs_get_max_local_particles(handle);
   if (local_particles > max_local_particles) max_local_particles = local_particles;
@@ -258,7 +245,7 @@ FCSResult fcs_p2nfft_destroy(
 {
   ifcs_p2nfft_destroy(handle->method_context);
   fcs_set_method_context(handle, NULL);
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -269,21 +256,9 @@ FCSResult fcs_p2nfft_check(
     FCS handle
     )
 {
-  char* fnc_name = "fcs_p2nfft_check";
-  return ifcs_p2nfft_check(handle, fnc_name);
-}
+  P2NFFT_CHECK_RETURN_RESULT(handle, __func__);
 
-static FCSResult ifcs_p2nfft_check(
-    FCS handle, const char* fnc_name
-    )
-{
-  if (handle == NULL) 
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "Supplied handle must not be a null pointer.");
-
-  if (fcs_get_method(handle) != FCS_METHOD_P2NFFT)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Wrong method chosen. Please choose \"p2nfft\".");
-
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -292,10 +267,6 @@ static FCSResult ifcs_p2nfft_check(
  ************************************************************/
 FCSResult fcs_p2nfft_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
-#if FCS_ENABLE_DEBUG
-  const char *fnc_name = "fcs_p2nfft_set_parameter";
-#endif
-
   char *param = *current;
   char *cur = *next;
 
@@ -421,7 +392,7 @@ FCSResult fcs_p2nfft_set_max_particle_move(FCS handle, fcs_float max_particle_mo
 {
   ifcs_p2nfft_set_max_particle_move(handle->method_context, max_particle_move);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -429,7 +400,7 @@ FCSResult fcs_p2nfft_set_resort(FCS handle, fcs_int resort)
 {
   ifcs_p2nfft_set_resort(handle->method_context, resort);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -437,7 +408,7 @@ FCSResult fcs_p2nfft_get_resort(FCS handle, fcs_int *resort)
 {
   ifcs_p2nfft_get_resort(handle->method_context, resort);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -445,7 +416,7 @@ FCSResult fcs_p2nfft_get_resort_availability(FCS handle, fcs_int *availability)
 {
   ifcs_p2nfft_get_resort_availability(handle->method_context, availability);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -453,29 +424,29 @@ FCSResult fcs_p2nfft_get_resort_particles(FCS handle, fcs_int *resort_particles)
 {
   ifcs_p2nfft_get_resort_particles(handle->method_context, resort_particles);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_p2nfft_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm)
 {
   ifcs_p2nfft_resort_ints(handle->method_context, src, dst, n, comm);
-  
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_p2nfft_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm)
 {
   ifcs_p2nfft_resort_floats(handle->method_context, src, dst, n, comm);
-  
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_p2nfft_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm)
 {
   ifcs_p2nfft_resort_bytes(handle->method_context, src, dst, n, comm);
-  
-  return NULL;
+
+  return FCS_RESULT_SUCCESS;
 }

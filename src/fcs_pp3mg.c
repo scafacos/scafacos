@@ -1,5 +1,6 @@
 /*
   Copyright (C) 2011-2012 Rene Halver
+  Copyright (C) 2016 Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -30,20 +31,13 @@
 #include "fcs_pp3mg.h"
 
 
-#ifdef FCS_ENABLE_DEBUG
-# define DEBUG_MOP(_mop_)  do { _mop_; } while (0)
-#else
-# define DEBUG_MOP(_mop_)  do {  } while (0)
-#endif
-
-
 FCSResult fcs_pp3mg_check(FCS handle)
 {
-  DEBUG_MOP(printf("fcs_pp3mg_check\n"));
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_pp3mg_check: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
-	return NULL;
+	return FCS_RESULT_SUCCESS;
 }
 
 
@@ -52,7 +46,7 @@ FCSResult fcs_pp3mg_init(FCS handle)
   FCSResult result;
   fcs_pp3mg_context_t *ctx;
 
-  DEBUG_MOP(printf("fcs_pp3mg_init\n"));
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
   handle->shift_positions = 1;
 
@@ -61,8 +55,6 @@ FCSResult fcs_pp3mg_init(FCS handle)
   handle->print_parameters = fcs_pp3mg_print_parameters;
   handle->tune = fcs_pp3mg_tune;
   handle->run = fcs_pp3mg_run;
-  handle->set_compute_virial = fcs_pp3mg_require_virial;
-  handle->get_virial = fcs_pp3mg_get_virial;
 
   handle->pp3mg_param = malloc(sizeof(*handle->pp3mg_param));
   handle->pp3mg_param->m = -1;
@@ -87,13 +79,13 @@ FCSResult fcs_pp3mg_init(FCS handle)
    * pp3mg_cells_x = pp3mg_cells_y = pp3mg_cells_z = 128
    * h = 1/128 => h^4/(12*5*6)*max(f^(4)) = h^4/360*3840
    */
-     
+
   result = fcs_pp3mg_setup(handle, 128, 128, 128, 6, 3, 10000, 50, 3.9736e-8, 1, 1);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
-  DEBUG_MOP(printf("fcs_pp3mg_init: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -101,7 +93,7 @@ FCSResult fcs_pp3mg_destroy(FCS handle)
 {
   fcs_pp3mg_context_t *ctx;
 
-  DEBUG_MOP(printf("fcs_pp3mg_destroy\n"));
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
   ctx = fcs_get_method_context(handle);
 
@@ -115,9 +107,9 @@ FCSResult fcs_pp3mg_destroy(FCS handle)
 
   free(handle->pp3mg_param);
 
-  DEBUG_MOP(printf("fcs_pp3mg_destroy: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -129,7 +121,7 @@ FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_float *positio
   fcs_float x, y, z;
   FCSResult result;
 
-  DEBUG_MOP(printf("fcs_pp3mg_tune\n"));
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
   comm = fcs_get_communicator(handle);
 
@@ -145,7 +137,7 @@ FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_float *positio
   if (local_particles > max_local_particles) max_local_particles = local_particles;
 
   result = fcs_pp3mg_set_max_particles(handle, max_local_particles);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
   ctx = fcs_get_method_context(handle);
 
@@ -164,9 +156,9 @@ FCSResult fcs_pp3mg_tune(FCS handle, fcs_int local_particles, fcs_float *positio
 	     ctx->data,
 	     ctx->parameters);
 
-  DEBUG_MOP(printf("fcs_pp3mg_tune: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -174,12 +166,8 @@ FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_particles, fcs_float *position
 {
   fcs_pp3mg_context_t *ctx;
 
-//  fcs_float e = 0.0;
-//  fcs_float *p = NULL;
-//  fcs_float *f = NULL;
+  FCS_DEBUG_FUNC_INTRO(__func__);
 
-  DEBUG_MOP(printf("fcs_pp3mg_run\n"));
-  
   ctx = fcs_get_method_context(handle);
   
   ctx->last_runtime = MPI_Wtime();
@@ -255,9 +243,9 @@ FCSResult fcs_pp3mg_run(FCS handle, fcs_int local_particles, fcs_float *position
   }
   ctx->last_runtime = MPI_Wtime() - ctx->last_runtime;
 
-  DEBUG_MOP(printf("fcs_pp3mg_run: done\n"));
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
@@ -266,224 +254,286 @@ FCSResult fcs_pp3mg_setup(FCS handle, fcs_int cells_x, fcs_int cells_y, fcs_int 
 {
   FCSResult result;
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   result = fcs_pp3mg_set_cells_x(handle, cells_x);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_pp3mg_set_cells_y(handle, cells_y);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_pp3mg_set_cells_z(handle, cells_z);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_pp3mg_set_ghosts(handle, ghosts);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_pp3mg_set_degree(handle, degree);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_pp3mg_set_max_particles(handle, max_particles);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_pp3mg_set_max_iterations(handle, max_iterations);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_pp3mg_set_tol(handle, tol);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_pp3mg_set_distribution(handle, distribution);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
   result = fcs_pp3mg_set_discretization(handle, distribution);
-  if (result != NULL) return result;
+  CHECK_RESULT_RETURN(result);
 
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter for parameter cells_x */
 FCSResult fcs_pp3mg_set_cells_x(FCS handle, fcs_int cells_x)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   handle->pp3mg_param->m = cells_x;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter for parameter cells_x */
 FCSResult fcs_pp3mg_get_cells_x(FCS handle, fcs_int *cells_x)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   *cells_x = handle->pp3mg_param->m;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter for parameter cells_y */
 FCSResult fcs_pp3mg_set_cells_y(FCS handle, fcs_int cells_y)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   handle->pp3mg_param->n = cells_y;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter for parameter cells_y */
 FCSResult fcs_pp3mg_get_cells_y(FCS handle, fcs_int *cells_y)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   *cells_y = handle->pp3mg_param->n;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter for parameter cells_z */
 FCSResult fcs_pp3mg_set_cells_z(FCS handle, fcs_int cells_z)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   handle->pp3mg_param->o = cells_z;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter for parameter cells_z */
 FCSResult fcs_pp3mg_get_cells_z(FCS handle, fcs_int *cells_z)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   *cells_z = handle->pp3mg_param->o;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter for parameter ghosts */
 FCSResult fcs_pp3mg_set_ghosts(FCS handle, fcs_int ghosts)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   handle->pp3mg_param->ghosts = ghosts;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter for parameter ghosts */
 FCSResult fcs_pp3mg_get_ghosts(FCS handle, fcs_int *ghosts)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   *ghosts = handle->pp3mg_param->ghosts;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter for parameter degree */
 FCSResult fcs_pp3mg_set_degree(FCS handle, fcs_int degree)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   handle->pp3mg_param->degree = degree;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter for parameter degree */
 FCSResult fcs_pp3mg_get_degree(FCS handle, fcs_int *degree)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   *degree = handle->pp3mg_param->degree;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter for parameter max_particles */
 FCSResult fcs_pp3mg_set_max_particles(FCS handle, fcs_int max_particles)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   handle->pp3mg_param->max_particles = max_particles;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter for parameter max_particles */
 FCSResult fcs_pp3mg_get_max_particles(FCS handle, fcs_int *max_particles)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   *max_particles = handle->pp3mg_param->max_particles;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter for parameter maxiter */
 FCSResult fcs_pp3mg_set_max_iterations(FCS handle, fcs_int max_iterations)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   handle->pp3mg_param->maxiter = max_iterations;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter for parameter maxiter */
 FCSResult fcs_pp3mg_get_max_iterations(FCS handle, fcs_int *max_iterations)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   *max_iterations = handle->pp3mg_param->maxiter;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter for parameter tol */
 FCSResult fcs_pp3mg_set_tol(FCS handle, fcs_float tol)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   handle->pp3mg_param->tol = tol;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter for parameter tol */
 FCSResult fcs_pp3mg_get_tol(FCS handle, fcs_float *tol)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   *tol = handle->pp3mg_param->tol;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter for parameter distribution */
 FCSResult fcs_pp3mg_set_distribution(FCS handle, fcs_int distribution)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   handle->pp3mg_param->distribution = distribution;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter for parameter distribution */
 FCSResult fcs_pp3mg_get_distribution(FCS handle, fcs_int *distribution)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   *distribution = handle->pp3mg_param->distribution;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* setter for parameter discretization */
 FCSResult fcs_pp3mg_set_discretization(FCS handle, fcs_int discretization)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   handle->pp3mg_param->discretization = discretization;
   
-  return NULL;
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
 }
 
 /* getter for parameter discretization */
 FCSResult fcs_pp3mg_get_discretization(FCS handle, fcs_int *discretization)
 {
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   *discretization = handle->pp3mg_param->discretization;
   
-  return NULL;
-}
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
-/*
- *
- * Virial stuff
- *
- */
-FCSResult fcs_pp3mg_require_virial(FCS handle, fcs_int compute_virial)
-{
-  return NULL;
-}
-
-
-FCSResult fcs_pp3mg_get_virial(FCS handle, fcs_float *virial)
-{
-  fcs_int i;
-
-  for (i = 0; i < 9; ++i) virial[i] = 0.0;
-
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 }
 
 
 FCSResult fcs_pp3mg_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched)
 {
-//   const char *fnc_name = "fcs_pp3mg_set_parameter";
-
   char *param = *current;
   char *cur = *next;
 
@@ -523,6 +573,8 @@ FCSResult fcs_pp3mg_print_parameters(FCS handle)
   fcs_int distribution;
   fcs_int discretization;
 
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
   fcs_pp3mg_get_cells_x(handle, &cells_x);
   fcs_pp3mg_get_cells_y(handle, &cells_y);
   fcs_pp3mg_get_cells_z(handle, &cells_z);
@@ -544,6 +596,8 @@ FCSResult fcs_pp3mg_print_parameters(FCS handle)
   printf("pp3mg tol: %e\n",tol);
   printf("pp3mg distribution: %" FCS_LMOD_INT "d\n",distribution);
   printf("pp3mg discretization: %" FCS_LMOD_INT "d\n",discretization);
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
   return FCS_RESULT_SUCCESS;
 }

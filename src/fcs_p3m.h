@@ -76,23 +76,6 @@ FCSResult fcs_p3m_run(FCS handle,
  */
 FCSResult fcs_p3m_destroy(FCS handle);
 
-/**
- * @brief function to activate computation of the virial 
- * @param handle FCS-object that contains the parameter
- * @param flag whether or not to compute the virial in the next call
- * to fcs_run().
- * @return FCSResult-object containing the return state
- */
-FCSResult fcs_p3m_require_virial(FCS handle, fcs_int flag);
-
-/**
- * @brief function to fetch the virial
- * @param handle FCS-object that contains the parameter
- * @param virial pointer to the array where the virial is returned.
- * @return FCSResult-object containing the return state
- */
-FCSResult fcs_p3m_get_virial(FCS handle, fcs_float *virial);
-
 FCSResult fcs_p3m_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolerance);
 FCSResult fcs_p3m_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance);
 
