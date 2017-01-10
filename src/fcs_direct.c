@@ -227,7 +227,7 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positio
 
   fcs_directc_get_cutoff(&handle->direct_param->directc, &cutoff);
 
-  if (handle->direct_param->metallic_boundary_conditions && cutoff == 0 && (periodicity[0] || periodicity[1] || periodicity[2]))
+  if (handle->direct_param->metallic_boundary_conditions && cutoff == 0 && (periodicity[0] && periodicity[1] && periodicity[2]))
   {
     fcs_compute_dipole_correction(handle, local_particles, positions, charges, 0.0, field_correction, NULL);
 
