@@ -788,16 +788,27 @@ FCSResult ifcs_p2nfft_tune(
         if(d->epsB > 0.125)
           d->epsB = 0.125;
       }
+      
+      /* Compute diagonal of box in non periodic dims. Works for orthogonal box vectors, only. */
+      fcs_float diagonal = 0.0;
+      for(int t=0; t<3; t++){
+        if(!d->periodicity[t]) diagonal += d->box_l[t]*d->box_l[t];
+      }
+      diagonal = fcs_sqrt( diagonal ); /* for cubic boxes this is the same as sqrt(num_nonperiodic_dims)*L */
 
       for(int t=0; t<3; t++)
       {
         /* shift and scale coordinates into [-0.5,0.5) */
         if(d->periodicity[t]) d->box_expand[t] = 1.0;
         /* shift and scale coordinates into sphere with radius (0.5-epsB) */
-        else d->box_expand[t] = 1.0 / (0.5 - d->epsB) * ( reg_far_is_radial(reg_far) ? fcs_sqrt(d->num_nonperiodic_dims) : 1.0 );
+        else {
+//           d->box_expand[t] = 1.0 / (0.5 - d->epsB) * ( reg_far_is_radial(reg_far) ? fcs_sqrt(d->num_nonperiodic_dims) : 1.0 );
+          if(reg_far_is_radial(reg_far)) d->box_expand[t] = 1.0 / (0.5 - d->epsB) * diagonal / d->box_l[t] ;
+          else d->box_expand[t] = 1.0 / (0.5 - d->epsB) ;
+        }
 
         /* TODO: remove deprecated variable box_scales */
-        d->box_scales[t] = d->box_l[t] * d->box_expand[t];
+        d->box_scales[t] = d->box_l[t] * d->box_expand[t]; /* for radial regularization this is equal to 1.0 / (0.5 - d->epsB) * diagonal */
 
         /* use full torus for periodic boundary conditions, otherwise use appropriate scaling */
         d->x_max[t] = 0.5 / d->box_expand[t];
