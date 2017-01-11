@@ -74,7 +74,7 @@ FCSResult fcs_direct_init(FCS handle)
 
   fcs_direct_set_cutoff_with_near(handle, FCS_FALSE);
 
-  handle->direct_param->metallic_boundary_conditions = 1;
+  fcs_direct_set_metallic_boundary_conditions(handle, FCS_TRUE);
 
   handle->shift_positions = 0;
 
@@ -183,7 +183,7 @@ FCSResult fcs_direct_run(FCS handle, fcs_int local_particles, fcs_float *positio
 
   fcs_directc_get_cutoff(&handle->direct_param->directc, &cutoff);
 
-  if (handle->direct_param->metallic_boundary_conditions && cutoff == 0 && (periodicity[0] || periodicity[1] || periodicity[2]))
+  if (FCS_IS_TRUE(handle->direct_param->metallic_boundary_conditions) && cutoff == 0 && (periodicity[0] && periodicity[1] && periodicity[2]))
   {
     fcs_compute_dipole_correction(handle, local_particles, positions, charges, 0.0, field_correction, NULL);
 
@@ -208,9 +208,10 @@ FCSResult fcs_direct_set_parameter(FCS handle, fcs_bool continue_on_errors, char
 
   *matched = 0;
 
-  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_periodic_images",  direct_set_periodic_images,  FCS_PARSE_SEQ(fcs_int, 3));
-  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_cutoff",           direct_set_cutoff,           FCS_PARSE_VAL(fcs_float));
-  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_cutoff_with_near", direct_set_cutoff_with_near, FCS_PARSE_VAL(fcs_int));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_cutoff",                       direct_set_cutoff,                       FCS_PARSE_VAL(fcs_float));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_cutoff_with_near",             direct_set_cutoff_with_near,             FCS_PARSE_VAL(fcs_bool));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_metallic_boundary_conditions", direct_set_metallic_boundary_conditions, FCS_PARSE_VAL(fcs_bool));
+  FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("direct_periodic_images",              direct_set_periodic_images,              FCS_PARSE_SEQ(fcs_int, 3));
 
   return FCS_RESULT_SUCCESS;
 
@@ -227,6 +228,7 @@ next_param:
 FCSResult fcs_direct_print_parameters(FCS handle)
 {
   fcs_float cutoff;
+  fcs_bool cutoff_with_near, metallic_boundary_conditions;
   fcs_int images[3];
   FCSResult result;
 
@@ -240,13 +242,29 @@ FCSResult fcs_direct_print_parameters(FCS handle)
     fcs_result_destroy(result);
   } else printf("direct cutoff: %" FCS_LMOD_FLOAT "e\n", cutoff);
 
+  result = fcs_direct_get_cutoff_with_near(handle, &cutoff_with_near);
+  if (result != FCS_RESULT_SUCCESS)
+  {
+    printf("direct cutoff with near: FAILED!");
+    fcs_result_print_result(result);
+    fcs_result_destroy(result);
+  } else printf("direct cutoff with near: %s\n", FCS_IS_TRUE(cutoff_with_near)?"yes":"no");
+
+  result = fcs_direct_get_metallic_boundary_conditions(handle, &metallic_boundary_conditions);
+  if (result != FCS_RESULT_SUCCESS)
+  {
+    printf("direct metallic boundary conditions: FAILED!");
+    fcs_result_print_result(result);
+    fcs_result_destroy(result);
+  } else printf("direct metallic boundary conditions: %s\n", FCS_IS_TRUE(metallic_boundary_conditions)?"yes":"no");
+
   result = fcs_direct_get_periodic_images(handle, images);
   if (result != FCS_RESULT_SUCCESS)
   {
-    printf("direct cutoff: FAILED!");
+    printf("direct periodic images: FAILED!");
     fcs_result_print_result(result);
     fcs_result_destroy(result);
-  } else printf("direct periodic images: %5" FCS_LMOD_INT "d %5" FCS_LMOD_INT "d %5" FCS_LMOD_INT "d\n", images[0], images[1], images[2]);
+  } else printf("direct periodic images: %" FCS_LMOD_INT "d  %" FCS_LMOD_INT "d  %" FCS_LMOD_INT "d\n", images[0], images[1], images[2]);
 
   FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 
@@ -334,6 +352,34 @@ FCSResult fcs_direct_get_cutoff_with_near(FCS handle, fcs_bool *cutoff_with_near
   fcs_directc_get_cutoff_with_near(&handle->direct_param->directc, &i);
 
   *cutoff_with_near = (i)?FCS_TRUE:FCS_FALSE;
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+FCSResult fcs_direct_set_metallic_boundary_conditions(FCS handle, fcs_bool metallic_boundary_conditions)
+{
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_CHECK_RETURN_RESULT(handle, __func__);
+
+  handle->direct_param->metallic_boundary_conditions = metallic_boundary_conditions;
+
+  FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+FCSResult fcs_direct_get_metallic_boundary_conditions(FCS handle, fcs_bool *metallic_boundary_conditions)
+{
+  FCS_DEBUG_FUNC_INTRO(__func__);
+
+  DIRECT_CHECK_RETURN_RESULT(handle, __func__);
+
+  *metallic_boundary_conditions = handle->direct_param->metallic_boundary_conditions;
 
   FCS_DEBUG_FUNC_OUTRO(__func__, FCS_RESULT_SUCCESS);
 

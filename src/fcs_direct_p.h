@@ -59,21 +59,39 @@ FCSResult fcs_direct_get_cutoff(FCS handle, fcs_float *cutoff);
 
 
 /**
- * @brief function to set wether the ScaFaCoS near-field solver module should be used to computations with cutoff range
+ * @brief function to set whether the near-field solver module should be used for computations with cutoff range
  * @param handle FCS-object
- * @param cutoff_with_near fcs_bool if true, then near-field solver is used for computations with cutoff range
+ * @param cutoff_with_near fcs_bool if true, then the near-field solver is used for computations with cutoff range
  * @return FCSResult-object containing the return state
  */
 FCSResult fcs_direct_set_cutoff_with_near(FCS handle, fcs_bool cutoff_with_near);
 
 
 /**
- * @brief function to get wether the ScaFaCoS near-field solver module should be used to computations with cutoff range
+ * @brief function to get whether the near-field solver module should be used for computations with cutoff range
  * @param handle FCS-object
  * @param cutoff_with_near fcs_bool whether the near-field solver is used for computations with cutoff range
  * @return FCSResult-object containing the return state
  */
 FCSResult fcs_direct_get_cutoff_with_near(FCS handle, fcs_bool *cutoff_with_near);
+
+
+/**
+ * @brief function to set whether the direct solver should use metallic boundary conditions for periodic systems
+ * @param handle FCS-object
+ * @param metallic_boundary_conditions fcs_bool if true, then the direct solver uses metallic boundary conditions
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_direct_set_metallic_boundary_conditions(FCS handle, fcs_bool metallic_boundary_conditions);
+
+
+/**
+ * @brief function to get whether the direct solver should use metallic boundary conditions for periodic systems
+ * @param handle FCS-object
+ * @param metallic_boundary_conditions fcs_bool whether the direct solver uses metallic boundary conditions
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_direct_get_metallic_boundary_conditions(FCS handle, fcs_bool *metallic_boundary_conditions);
 
 
 /**
