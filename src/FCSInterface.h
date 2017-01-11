@@ -302,7 +302,7 @@ typedef char *fcs_p_char_t;
 static inline fcs_bool atob(const char *nptr)
 {
   const char false_str[] = "false";
-  if ((strlen(nptr) == 1 && strncmp(nptr, "0", 1) == 0) || (strlen(nptr) == strlen(false_str) && strncasecmp(nptr, false_str, strlen(false_str)))) return FCS_FALSE;
+  if ((strlen(nptr) == 1 && strncmp(nptr, "0", 1) == 0) || (strlen(nptr) == strlen(false_str) && strncasecmp(nptr, false_str, strlen(false_str)) == 0)) return FCS_FALSE;
   return FCS_TRUE;
 }
 
