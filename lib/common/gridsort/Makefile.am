@@ -174,6 +174,10 @@ sl_extra_include_SOURCE = \
 libfcs_gridsort_back__p_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_sort.h \
+  gridsort_back_sort_sl.h \
+  gridsort_back_tloc.h \
+  gridsort_back_tloc_sl.h \
   gridsort_back_tproc.h \
   gridsort_back_tproc_sl.h \
   gridsort_front_tproc_combinations.h \
@@ -193,6 +197,10 @@ libfcs_gridsort_back__p_la_SOURCES = \
 libfcs_gridsort_back_f__la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_sort.h \
+  gridsort_back_sort_sl.h \
+  gridsort_back_tloc.h \
+  gridsort_back_tloc_sl.h \
   gridsort_back_tproc.h \
   gridsort_back_tproc_sl.h \
   gridsort_front_tproc_combinations.h \
@@ -212,6 +220,10 @@ libfcs_gridsort_back_f__la_SOURCES = \
 libfcs_gridsort_back_fp_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_sort.h \
+  gridsort_back_sort_sl.h \
+  gridsort_back_tloc.h \
+  gridsort_back_tloc_sl.h \
   gridsort_back_tproc.h \
   gridsort_back_tproc_sl.h \
   gridsort_front_tproc_combinations.h \
@@ -231,6 +243,10 @@ libfcs_gridsort_back_fp_la_SOURCES = \
 libfcs_gridsort_dip_back__p_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_sort.h \
+  gridsort_back_sort_sl.h \
+  gridsort_back_tloc.h \
+  gridsort_back_tloc_sl.h \
   gridsort_back_tproc.h \
   gridsort_back_tproc_sl.h \
   gridsort_front_tproc_combinations.h \
@@ -250,6 +266,10 @@ libfcs_gridsort_dip_back__p_la_SOURCES = \
 libfcs_gridsort_dip_back_f__la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_sort.h \
+  gridsort_back_sort_sl.h \
+  gridsort_back_tloc.h \
+  gridsort_back_tloc_sl.h \
   gridsort_back_tproc.h \
   gridsort_back_tproc_sl.h \
   gridsort_front_tproc_combinations.h \
@@ -269,6 +289,10 @@ libfcs_gridsort_dip_back_f__la_SOURCES = \
 libfcs_gridsort_dip_back_fp_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_sort.h \
+  gridsort_back_sort_sl.h \
+  gridsort_back_tloc.h \
+  gridsort_back_tloc_sl.h \
   gridsort_back_tproc.h \
   gridsort_back_tproc_sl.h \
   gridsort_front_tproc_combinations.h \
@@ -288,6 +312,10 @@ libfcs_gridsort_dip_back_fp_la_SOURCES = \
 libfcs_gridsort_dip_forw_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_sort.h \
+  gridsort_back_sort_sl.h \
+  gridsort_back_tloc.h \
+  gridsort_back_tloc_sl.h \
   gridsort_back_tproc.h \
   gridsort_back_tproc_sl.h \
   gridsort_front_tproc_combinations.h \
@@ -307,6 +335,10 @@ libfcs_gridsort_dip_forw_la_SOURCES = \
 libfcs_gridsort_forw_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_sort.h \
+  gridsort_back_sort_sl.h \
+  gridsort_back_tloc.h \
+  gridsort_back_tloc_sl.h \
   gridsort_back_tproc.h \
   gridsort_back_tproc_sl.h \
   gridsort_front_tproc_combinations.h \
@@ -326,6 +358,10 @@ libfcs_gridsort_forw_la_SOURCES = \
 libfcs_gridsort_rsrt_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_sort.h \
+  gridsort_back_sort_sl.h \
+  gridsort_back_tloc.h \
+  gridsort_back_tloc_sl.h \
   gridsort_back_tproc.h \
   gridsort_back_tproc_sl.h \
   gridsort_front_tproc_combinations.h \
@@ -347,6 +383,10 @@ libfcs_gridsort_extra_la_SOURCES = $(sl_extra_SOURCE)
 libfcs_gridsort_mpiwrap_la_SOURCES = \
   bounds_xyz2coords.h \
   common.h \
+  gridsort_back_sort.h \
+  gridsort_back_sort_sl.h \
+  gridsort_back_tloc.h \
+  gridsort_back_tloc_sl.h \
   gridsort_back_tproc.h \
   gridsort_back_tproc_sl.h \
   gridsort.c \
