@@ -239,7 +239,7 @@ FCSResult ifcs_p2nfft_run(
         case 3: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_cub_loop); break;
         default: return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
       } 
-    } else if(d->num_periodic_dims > 0 &&  !compute_dipole_potential && !compute_dipole_field ){
+    } else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD &&  !compute_dipole_potential && !compute_dipole_field ){
       /* near field loop only works for charge-charge interactions */
       /* TODO: implement approx erfc interactions for dipoles */
       if(d->interpolation_order < -1 && !compute_dipole_potential && !compute_dipole_field )
@@ -280,7 +280,7 @@ FCSResult ifcs_p2nfft_run(
       near_params.one_over_r_cut = d->one_over_r_cut;
 
       fcs_near_compute(&near, d->r_cut, &near_params, d->cart_comm_3d);
-    } else
+    } else // in all other cases use p2nfft handle for transmission of parameters
       fcs_near_compute(&near, d->r_cut, rd, d->cart_comm_3d);
   
     fcs_near_destroy(&near);
