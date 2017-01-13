@@ -148,10 +148,12 @@ void ewald_compute_kspace(ewald_data_struct* d,
     displs3[i] = displs3[i-1] + node_particles3[i-1];
   }
 
-  fcs_float all_positions[total_particles*3];
-  fcs_float all_charges[total_particles];
-  fcs_float node_fields[total_particles*3];
-  fcs_float node_potentials[total_particles];
+  fcs_float *all_positions, *all_charges, *node_fields, *node_potentials;
+
+  all_positions = malloc(sizeof(fcs_float) * 3 * total_particles);
+  all_charges = malloc(sizeof(fcs_float) * total_particles);
+  node_fields = malloc(sizeof(fcs_float) * 3 * total_particles);
+  node_potentials = malloc(sizeof(fcs_float) * total_particles);
 
   /* gather all particle data at all nodes */
   MPI_Allgatherv(positions, num_particles*3, FCS_MPI_FLOAT, all_positions, node_particles3, displs3, FCS_MPI_FLOAT, d->comm);
@@ -287,6 +289,11 @@ void ewald_compute_kspace(ewald_data_struct* d,
       potentials[i] -= charges[i] * M_2_SQRTPI * d->alpha;
     }
   }
+
+  free(all_positions);
+  free(all_charges);
+  free(node_fields);
+  free(node_potentials);
 
   /* now each task should have its far field components */
   FCS_INFO(fprintf(stderr, "ewald_compute_kspace finished.\n"));
