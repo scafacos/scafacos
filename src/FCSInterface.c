@@ -1361,12 +1361,10 @@ FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n)
  */
 FCSResult fcs_get_resort_dipole_particles(FCS handle, fcs_int *resort_particles)
 {
-  const char *fnc_name = "fcs_get_resort_dipole_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->get_resort_dipole_particles == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->get_resort_dipole_particles(handle, resort_particles);
 }
@@ -1377,12 +1375,10 @@ FCSResult fcs_get_resort_dipole_particles(FCS handle, fcs_int *resort_particles)
  */
 FCSResult fcs_resort_dipole_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n)
 {
-  const char *fnc_name = "fcs_resort_dipole_ints";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->resort_dipole_ints == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->resort_dipole_ints(handle, src, dst, n, fcs_get_communicator(handle));
 }
@@ -1393,12 +1389,10 @@ FCSResult fcs_resort_dipole_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int
  */
 FCSResult fcs_resort_dipole_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n)
 {
-  const char* fnc_name = "fcs_resort_dipole_floats";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->resort_dipole_floats == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->resort_dipole_floats(handle, src, dst, n, fcs_get_communicator(handle));
 }
@@ -1409,12 +1403,10 @@ FCSResult fcs_resort_dipole_floats(FCS handle, fcs_float *src, fcs_float *dst, f
  */
 FCSResult fcs_resort_dipole_bytes(FCS handle, void *src, void *dst, fcs_int n)
 {
-  const char *fnc_name = "fcs_resort_dipole_bytes";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->resort_dipole_bytes == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->resort_dipole_bytes(handle, src, dst, n, fcs_get_communicator(handle));
 }
