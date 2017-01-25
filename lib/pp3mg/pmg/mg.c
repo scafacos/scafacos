@@ -416,7 +416,6 @@ void mg_init(double ***v, double ***f, mg_data *data )
     - f
 */
   int i, j, k;
-  int level;
 
   /* init initial guess and rhs */
   for (i=0;i<data[0].m_l-2*data[0].x_ghosts;i++) {
@@ -439,6 +438,7 @@ void mg_init(double ***v, double ***f, mg_data *data )
 /*     /\* Getting processes coordinates *\/ */
 /*     MPI_Cart_get(data[0].cart_comm,3,cart_dims,cart_periods,cart_coords); */
     
+/*     int level; */
 /*     for( level = 0; level < maxlevel-1; level++ ){ */
 /*       printf("[%3d,%3d,%3d]: level = %d, size = %3d\n", */
 /* 	     cart_coords[0],cart_coords[1],cart_coords[2],level,data[level].size); */

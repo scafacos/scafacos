@@ -96,7 +96,7 @@ fcs_int ifcs_memd_check_intersect_1D(fcs_float delta, fcs_float r_new, fcs_int d
         if(r_old < ZERO) candidateplane = ZERO;
 		
         /****** Update time step *********************/
-        *t_step = temp * fabs((candidateplane-r_new)/delta);
+        *t_step = temp * fcs_fabs((candidateplane-r_new)/delta);
     } /* end if crossing */
     else *t_step = temp;
     return f_crossing;
@@ -605,7 +605,7 @@ void fcs_memd_calc_forces(memd_struct* memd)
     memd_cell *cell;
     static fcs_int init = 1;
     memd_particle *p;
-    fcs_int i, c, np, d, index, Npart, ip; 
+    fcs_int i, c, np, d, index, ip; 
     fcs_float q;
     /* position of a particle in local lattice units */
     fcs_float pos[SPACE_DIM];
@@ -632,7 +632,7 @@ void fcs_memd_calc_forces(memd_struct* memd)
         np = cell->n;
         for(i=0; i<np; i++) { 
             q = p[i].q;
-            if( abs(q) > 1.0e-5 ) {
+            if( fcs_fabs(q) > 1.0e-5 ) {
                 FOR3D(d) {
                     pos[d]   = (p[i].r[d] - memd->lparams.left_down_position[d])* memd->parameters.inva;
                     first[d] = (fcs_int) pos[d];

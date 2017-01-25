@@ -148,7 +148,7 @@ public:
 
     std::list<KeyStorage>::const_iterator i1, i2;
     for (i1=this->keys.begin(), i2=other.keys.begin();
-	 i1!=this->keys.end(), i2!=other.keys.end();
+	 i1!=this->keys.end() && i2!=other.keys.end();
 	 ++i1, ++i2) {
       if (*i1 < *i2) return true;
       if (*i1 != *i2) return false;
@@ -208,7 +208,7 @@ public:
 
     std::list<KeyStorage>::const_iterator i1, i2;
     for (i1=this->keys.begin(), i2=other.keys.begin();
-	 i1!=this->keys.end(), i2!=other.keys.end();
+	 i1!=this->keys.end() && i2!=other.keys.end();
 	 ++i1, ++i2) {
       if (*i1 < *i2) return true;
       if (*i1 != *i2) return false;

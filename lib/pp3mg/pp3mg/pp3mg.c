@@ -349,7 +349,7 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
   double d_13 = d_11*d_2;
   double d_14 = d_12*d_2;
   double d_15 = d_13*d_2;
-  double d_16 = d_14*d_2;
+/*  double d_16 = d_14*d_2;*/
   double d_17 = d_15*d_2;
 
   for( p = 0; p < data->n_stored_particles; p++ ){
@@ -401,8 +401,8 @@ void pp3mg( double* x, double* y, double* z, double* q, double* e,
 		double dr = d_2 - 4.0*r_2;
 		double dr_2 = dr*dr;
 		double dr_4 = dr_2*dr_2;
-		double dr_8 = dr_4*dr_4;
-		double dr_16 = dr_8*dr_8;
+/*		double dr_8 = dr_4*dr_4;
+		double dr_16 = dr_8*dr_8;*/
 		data->f[i-params->m_start][j-params->n_start][k-params->o_start] +=
 		  data->particles[p].q * 109395.0 * dr * dr_2 * dr_4 / (1024.0 * d_17 * PP3MG_PI);
 	      }

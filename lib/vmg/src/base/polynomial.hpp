@@ -40,7 +40,7 @@ public:
   Polynomial()
   {}
 
-  Polynomial(const int& degree,...) :
+  Polynomial(const int degree,...) :
     coeff(degree+1)
   {
     va_list vl;

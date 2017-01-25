@@ -268,7 +268,7 @@ fcs_float mmm1d_coulomb_pair_energy(mmm1d_data_struct *d, fcs_float disp[3])
   
   if (rxy2 <= d->far_switch_radius_2) {
     //* near range formula *
-    fcs_float r2n, rt, shift_z, add;
+    fcs_float r2n, shift_z, add;
     fcs_int n;
 
     E = -2*MMM_COMMON_C_GAMMA;
@@ -317,7 +317,6 @@ fcs_float mmm1d_coulomb_pair_energy(mmm1d_data_struct *d, fcs_float disp[3])
 
 void mmm1d_coulomb_pair_force(mmm1d_data_struct *d, fcs_float disp[3], fcs_float force[3])
 {
-  fcs_int dim;
   fcs_float rxy2, rxy2_d, z_d;
   fcs_float pref;
   fcs_float Fx, Fy, Fz;
@@ -338,6 +337,7 @@ void mmm1d_coulomb_pair_force(mmm1d_data_struct *d, fcs_float disp[3], fcs_float
     sz = mmm_mod_psi_odd(d->polTaylor, 0, z_d);
 /*printf("rank %d, sz: %e\n", comm_rank, sz);
 for(n=0; n<d->polTaylor->n_modPsi; n++) {
+   fcs_int dim;
    for(dim=0; dim<d->polTaylor->modPsi[n].n; dim++) {
       printf("rank %d, taylor [%d][%d]: %e\n", comm_rank, n, dim, d->polTaylor->modPsi[n].e[dim]);
   }

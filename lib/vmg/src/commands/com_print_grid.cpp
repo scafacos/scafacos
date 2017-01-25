@@ -65,8 +65,11 @@ public:
 	buffer << "Global Coarsened ";
 	break;
       case EmptyGrid:
-	buffer << "Empty grid ";
+	buffer << "Empty Grid ";
 	break;
+      case BTUndefined:
+        buffer << "Boundary Type Undefined";
+        break;
       }
 
     buffer << arguments[0];
