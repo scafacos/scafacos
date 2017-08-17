@@ -448,12 +448,27 @@ FCSResult ifcs_p2nfft_run(
   /* Perform NFFT for charges and dipoles */
   {
     unsigned direct_flag = (d->pnfft_direct) ? PNFFT_COMPUTE_DIRECT : 0;
-    unsigned compute_flags_charges = 0;
+
+    /* do deconvolution and FFT in a separate step, since it is the same for charges and dipoles
+     * However, ik-diff is not the same! For ik-diff we need the correct setting of PNFFT_COMPUTE flags. 
+     * charges: fct. values and/or gradients are required
+     * dipoles: gradients   and/or Hessian are required */
+    unsigned compute_flags_fft = 0;
+    if(compute_potential)        compute_flags_fft |= PNFFT_COMPUTE_F;
+    if(compute_field)            compute_flags_fft |= PNFFT_COMPUTE_GRAD_F;
+    if(compute_dipole_potential) compute_flags_fft |= PNFFT_COMPUTE_GRAD_F;
+    if(compute_dipole_field)     compute_flags_fft |= PNFFT_COMPUTE_HESSIAN_F;
+
+    // Rational: at this point we want to compute FFT and no interpolation. I.e., nodes are not needed and passed as NULL pointer.
+    // Note: Direct computation will skip this step because of PNFFT_ONIT_CONV (this is intended behaviour). 
+    FCS_PNFFT(trafo)(d->pnfft, NULL, direct_flag | compute_flags_fft | PNFFT_OMIT_CONV);
+
+    unsigned compute_flags_charges = PNFFT_OMIT_DECONV | PNFFT_OMIT_FFT;
     if(compute_potential) compute_flags_charges |= PNFFT_COMPUTE_F;
     if(compute_field)     compute_flags_charges |= PNFFT_COMPUTE_GRAD_F;
     FCS_PNFFT(trafo)(d->pnfft, d->charges, direct_flag | compute_flags_charges);
 
-    unsigned compute_flags_dipoles = 0;
+    unsigned compute_flags_dipoles = PNFFT_OMIT_DECONV | PNFFT_OMIT_FFT;
     if(compute_dipole_potential) compute_flags_dipoles |= PNFFT_COMPUTE_GRAD_F;
     if(compute_dipole_field)     compute_flags_dipoles |= PNFFT_COMPUTE_HESSIAN_F;
     FCS_PNFFT(trafo)(d->pnfft, d->dipoles, direct_flag | compute_flags_dipoles);
