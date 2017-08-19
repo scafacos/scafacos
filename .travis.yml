@@ -20,7 +20,9 @@ before_install:
 script: ./bootstrap && ./configure --enable-fcs-solvers=p3m,ewald,p2nfft,direct MPICC=mpicc MPIFC=mpif90 && make && make check 
 
 ## Print config.log for debugging.
-after_failure: "cat config.log"
+after_failure:
+  - "cat config.log"
+  - "cat test/c/test-suite.log"
 
 ## Turn on email notifications.
 notifications:
