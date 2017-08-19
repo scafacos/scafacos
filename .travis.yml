@@ -17,7 +17,7 @@ before_install:
   # see https://docs.travis-ci.com/user/languages/c#MPI-projects
   - test -n $CC && unset CC
 
-script: ./bootstrap.sh && ./configure --enable-fcs-solvers=p3m,ewald,p2nfft,direct MPICC=mpicc MPIFC=mpif90 && make && make check 
+script: ./bootstrap && ./configure --enable-fcs-solvers=p3m,ewald,p2nfft,direct MPICC=mpicc MPIFC=mpif90 && make && make check 
 
 ## Print config.log for debugging.
 after_failure: "cat config.log"
