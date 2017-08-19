@@ -148,7 +148,7 @@ for(int t=0; t<6; t++)
   fcs_result = fcs_set_max_local_particles(fcs_handle, max_num_particles);
   assert_fcs(fcs_result);
 
-  fcs_set_tolerance(fcs_handle, FCS_TOLERANCE_TYPE_POTENTIAL, tolerance);
+  fcs_set_tolerance(fcs_handle, FCS_TOLERANCE_TYPE_FIELD, tolerance);
   fcs_result = fcs_tune(fcs_handle, num_particles, positions, charges);
   assert_fcs(fcs_result);
 
