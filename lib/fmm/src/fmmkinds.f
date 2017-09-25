@@ -5,6 +5,7 @@
 #ifdef FMM_ISO_C_BINDING
        use iso_c_binding
 #endif
+       use fmm_hooks_mod
        implicit none
        integer, parameter:: fmm_real=FMM_REAL
        integer, parameter:: fmm_real_extended=FMM_REAL_EXTENDED

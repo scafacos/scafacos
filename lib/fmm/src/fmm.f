@@ -1623,6 +1623,7 @@ c
 #endif
           k = icharge1
           l = icharge2
+          call fcs_fmm_hooks_near_start(fmm_hooks)
           call pass5(ncharges,depth,ws,nbits,ishx,ishy,maxint,mishx,
      .    mishy,maskxy,bitpos,mbitpos,q,xyz,ibox,iboxscr,iboxsrt,sqbf,
      .    sqbflen,enearfield,enfinbox,enfbibj,qs,qsam,gb,gbsh,int3x,
@@ -1630,6 +1631,7 @@ c
      .    pagemask,pageaddr,indsize,pagepossize,startbox,endbox,i,j,
      .    ibox,k,l,iboxscr,pages,pgd,.false.,periodic,indskpjump,nbofmb,
      .    sf,sh,linearpotential,ilinearpotential,lineardistance)
+          call fcs_fmm_hooks_near_stop(fmm_hooks)
 #endif
 #ifdef FMM_PARALLEL
 #ifdef FMM_COMPRESSION
@@ -5458,6 +5460,7 @@ c
                 if(jlevel.eq.ilevel) then
                  if(g6) then
                   call zpotgrad(ncharges,qsam,qs)
+                  call fcs_fmm_hooks_near_start(fmm_hooks)
                   call pass5(ncharges,depth,ws,nbits,ishx,ishy,
      .            maxint,mishx,mishy,maskxy,bitpos,mbitpos,q,xyz,
      .            ibox,iboxscr,iboxsrt,bfg,bfglen,enearfield,enfinbox,
@@ -5467,6 +5470,7 @@ c
      .            indscr,pageposstart,pageposend,pagepos,pages,pgd,g8,
      .            periodic,indskpjump,nbofmb,sf,sh,linearpotential,
      .            ilinearpotential,lineardistance)
+                  call fcs_fmm_hooks_near_stop(fmm_hooks)
                   g7 = .true.
                  else
                   call bummer('shcoord: error, g6 = ',0)
@@ -6228,6 +6232,7 @@ c
                     endif
                   endif
                   call zpotgrad(ncharges,qsam,qs)
+                  call fcs_fmm_hooks_near_start(fmm_hooks)
                   call pass5(ncharges,depth,ws,nbits,ishx,ishy,
      .            maxint,mishx,mishy,maskxy,bitpos,mbitpos,q,xyz,
      .            ibox,iboxscr,iboxsrt,bfg,bfglen,enearfield,enfinbox,
@@ -6237,6 +6242,7 @@ c
      .            indscr,pageposstart,pageposend,pagepos,pages,pgd,g6,
      .            periodic,indskpjump,nbofmb,sf,sh,linearpotential,
      .            ilinearpotential,lineardistance)
+                  call fcs_fmm_hooks_near_stop(fmm_hooks)
                   g7 = .true.
                 endif
 #endif
@@ -6347,6 +6353,7 @@ c
                   if(.not.g7) then
                     call skipeevector(ncharges,ibox)
                     call zpotgrad(ncharges,qsam,qs)
+                    call fcs_fmm_hooks_near_start(fmm_hooks)
                     call pass5(ncharges,depth,ws,nbits,ishx,ishy,
      .              maxint,mishx,mishy,maskxy,bitpos,mbitpos,q,xyz,
      .              ibox,iboxscr,iboxsrt,bfg,bfglen,enearfield,enfinbox,
@@ -6357,6 +6364,7 @@ c
      .              pagepos,g7,pgd,.false.,periodic,indskpjump,nbofmb,
      .              sf,sh,linearpotential,ilinearpotential,
      .              lineardistance)
+                    call fcs_fmm_hooks_near_stop(fmm_hooks)
                     i = ibox(1)
                     do 226 j = 2,ncharges
                       if(ibox(j).lt.0) then
@@ -6770,6 +6778,7 @@ c
             call zpotgrad(ncharges,qsam,qs)
             gjp = jmp
             jmp = .false.
+            call fcs_fmm_hooks_near_start(fmm_hooks)
             call pass5(ncharges,depth,ws,nbits,ishx,ishy,maxint,mishx,
      .      mishy,maskxy,bitpos,mbitpos,q,xyz,ibox,iboxscr,iboxsrt,bfg,
      .      bfglen,enearfield,enfinbox,enfbibj,qs,qsam,gb,gbsh,int3x,
@@ -6778,6 +6787,7 @@ c
      .      indstart,indend,indscr,pageposstart,pageposend,pagepos,
      .      pages,pgd,.false.,periodic,indskpjump,nbofmb,sf,sh,
      .      linearpotential,ilinearpotential,lineardistance)
+            call fcs_fmm_hooks_near_stop(fmm_hooks)
             jmp = gjp
 c
 #ifdef FMM_DAMPING
@@ -6993,6 +7003,7 @@ c
           call zpotgrad(ncharges,qsam,qs)
           gjp = jmp
           jmp = .false.
+          call fcs_fmm_hooks_near_start(fmm_hooks)
           call pass5(ncharges,depth,ws,nbits,ishx,ishy,maxint,mishx,
      .    mishy,maskxy,bitpos,mbitpos,q,xyz,ibox,iboxscr,iboxsrt,bfg,
      .    bfglen,enearfield,enfinbox,enfbibj,qs,qsam,gb,gbsh,int3x,
@@ -7001,6 +7012,7 @@ c
      .    indstart,indend,indscr,pageposstart,pageposend,pagepos,pages,
      .    pgd,.false.,periodic,indskpjump,nbofmb,sf,sh,linearpotential,
      .    ilinearpotential,lineardistance)
+          call fcs_fmm_hooks_near_stop(fmm_hooks)
           jmp = gjp
           i = ibox(1)
           do 228 j = 2,ncharges
@@ -105183,6 +105195,8 @@ c
       use mp_load
 #endif
 #endif
+c-mh
+      use fmm_hooks_mod
 c
       implicit none
 c
@@ -105419,6 +105433,9 @@ c-ik
       type(FMM_internal_params_t):: FMM_internal_params
       integer(kind=fmm_integer) :: balance_load
 c-ik
+c-mh
+      fmm_hooks = fcs_fmm_hooks_create()
+c-mh
 #ifdef FMM_PARALLEL
       call mp_rank(MP_ALLNODES,me)
       call mp_nnodes(MP_ALLNODES,nnodes)
@@ -106682,6 +106699,8 @@ c
       if(.not.compute) call cpydtod13(mnmultipoles,nmultipoles,d2,d3,
      .d2f,d3f,wignerd,1)
 c
+      call fcs_fmm_hooks_far_start(fmm_hooks)
+c-mh
       call pass1(ncharges,depth,ws,nbits,maxint,maxmint,bitpos,mbitpos,
      .maxnmultipoles,nmultipoles,mnmultipoles,nsqmultipoles,
      .nboxesinlevel,nboxeslevel,q,xyzt,ibox,piboxscr,ishx,ishy,mishx,
@@ -106912,6 +106931,8 @@ c
      .romegatree,iomegatree,efarfield,efarfieldpot,e1per,pfmmpot,
      .fmmgrad,dbl,sh3,withcop,compute)
 c
+      call fcs_fmm_hooks_far_stop(fmm_hooks)
+c-mh
       call fmmdeallocate(dbl,i)
       if(i.ne.0) call bummer('fmm: error, i = ',i)
 c
@@ -106950,6 +106971,7 @@ c
 #endif
          k = icharge1
          l = icharge2
+         call fcs_fmm_hooks_near_start(fmm_hooks)
          call pass5(ncharges,depth,ws,nbits,ishx,ishy,maxint,mishx,
      .   mishy,maskxy,bitpos,mbitpos,q,xyzt,ibox,piboxscr,iboxsrt,bfg,
      .   bfglen,enearfield,enfinbox,enfbibj,fmmgrad,pfmmpot,gb,gbsh,
@@ -106957,6 +106979,7 @@ c
      .   pagemask,pageaddr,indsize,pagepossize,startbox,endbox,i,j,ibox,
      .   k,l,piboxscr,pages,pgd,.false.,periodic,indskpjump,nbofmb,sf,
      .   sh,linearpotential,ilinearpotential,lineardistance)
+         call fcs_fmm_hooks_near_stop(fmm_hooks)
       else
          call bummer('fmm: error, homogen = ',homogen)
       endif
@@ -107435,6 +107458,10 @@ c
 #ifdef FMM_STATISTICS
       call fmmstatistics(ncharges,.false.)
 #endif
+c-mh
+      call fcs_fmm_hooks_print(fmm_hooks)
+      call fcs_fmm_hooks_destroy(fmm_hooks)
+c-mh
       return
       end subroutine cfmm
 

@@ -55,10 +55,11 @@ fmm_tune.f \
 cfmm_tune.f \
 fmm_cbindings.f90 \
 fmm_cbindings.h \
-fmm.h
+fmm.h \
+fmm_hooks_mod.f90
 
 libfmm_la_SOURCES = $(fortran_sources) \
-dummy_malloc.c
+dummy_malloc.c fmm_hooks.h fmm_hooks.c
 
 libfmm_la_SOURCES += $(addrarithm_files)
 
