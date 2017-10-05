@@ -1,8 +1,8 @@
       module fmm_hooks_mod
 
-      use iso_c_binding, only : c_ptr
+      use iso_c_binding, only : c_ptr, c_null_ptr
       implicit none
-      type(c_ptr) :: fmm_hooks
+      type(c_ptr) :: fmm_hooks = c_null_ptr
 
         
       interface

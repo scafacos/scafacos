@@ -26,9 +26,7 @@ void fcs_fmm_hooks_destroy(fcs_fmm_hooks_t *hooks)
 {
   printf("fcs_fmm_hooks_destroy: hooks: %p\n", hooks);
 
-  if (!hooks) return;
-
-  free(hooks);
+  if (hooks) free(hooks);
 
   printf("fcs_fmm_hooks_destroy: return\n");
 }
@@ -37,8 +35,6 @@ void fcs_fmm_hooks_destroy(fcs_fmm_hooks_t *hooks)
 void fcs_fmm_hooks_near_start(fcs_fmm_hooks_t *hooks)
 {
   printf("fcs_fmm_hooks_near_start: hooks: %p\n", hooks);
-
-  if (!hooks) return;
 
   ++hooks->demo_value;
 
@@ -51,8 +47,6 @@ void fcs_fmm_hooks_near_start(fcs_fmm_hooks_t *hooks)
 void fcs_fmm_hooks_near_stop(fcs_fmm_hooks_t *hooks)
 {
   printf("fcs_fmm_hooks_near_stop: hooks: %p\n", hooks);
-
-  if (!hooks) return;
 
   ++hooks->demo_value;
 
@@ -68,8 +62,6 @@ void fcs_fmm_hooks_far_start(fcs_fmm_hooks_t *hooks)
 {
   printf("fcs_fmm_hooks_far_start: hooks: %p\n", hooks);
 
-  if (!hooks) return;
-
   ++hooks->demo_value;
 
   hooks->t_far_d = MPI_Wtime();
@@ -81,8 +73,6 @@ void fcs_fmm_hooks_far_start(fcs_fmm_hooks_t *hooks)
 void fcs_fmm_hooks_far_stop(fcs_fmm_hooks_t *hooks)
 {
   printf("fcs_fmm_hooks_far_stop: hooks: %p\n", hooks);
-
-  if (!hooks) return;
 
   ++hooks->demo_value;
 
@@ -98,12 +88,13 @@ void fcs_fmm_hooks_print(fcs_fmm_hooks_t *hooks)
 {
   printf("fcs_fmm_hooks_print: hooks: %p\n", hooks);
 
-  if (!hooks) return;
+  if (hooks)
+  {
+    printf("fcs_fmm_hooks_print: demo_value: %d\n", hooks->demo_value);
 
-  printf("fcs_fmm_hooks_print: demo_value: %d\n", hooks->demo_value);
-
-  printf("fcs_fmm_hooks_print: t_near: %f\n", hooks->t_near);
-  printf("fcs_fmm_hooks_print: t_far: %f\n", hooks->t_far);
+    printf("fcs_fmm_hooks_print: t_near: %f\n", hooks->t_near);
+    printf("fcs_fmm_hooks_print: t_far: %f\n", hooks->t_far);
+  }
 
   printf("fcs_fmm_hooks_print: return\n");
 }
