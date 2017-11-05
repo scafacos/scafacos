@@ -469,7 +469,7 @@ FCSResult ifcs_p2nfft_run(
 
 for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
   for(int t=0; t<3; t++)
-    fprintf(stderr, "near_pot[%d, %d] = %.6e\n", j, t, sorted_dipole_potential[3*j+t]);
+    ;
 
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
       sorted_dipole_potential[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 0) );
@@ -479,7 +479,7 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
 
 for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
   for(int t=0; t<3; t++)
-    fprintf(stderr, "near_far_pot[%d, %d] = %.6e\n", j, t, sorted_dipole_potential[3*j+t]);
+    ;
   }
 
   if(compute_field){
@@ -561,7 +561,7 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
 
 for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
   for(int t=0; t<3; t++)
-    fprintf(stderr, "near_far_self_pot[%d, %d] = %.6e\n", j, t, sorted_dipole_potential[3*j+t]);
+    ;
   }
 
   /* Finish self interaction timing */
