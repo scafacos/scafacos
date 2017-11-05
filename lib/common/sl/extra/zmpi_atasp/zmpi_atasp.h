@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015, 2016 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -142,6 +142,7 @@ int ZMPI_Get_elements(const ZMPI_Status *status, MPI_Datatype datatype, int *cou
 # define ZMPI_STATUS_IGNORE  NULL
 #else
 typedef MPI_Status ZMPI_Status;
+# undef ZMPI_Get_elements  /* undefine renaming macro */
 # define ZMPI_Get_elements   MPI_Get_elements
 # define ZMPI_STATUS_IGNORE  MPI_STATUS_IGNORE
 #endif

@@ -75,12 +75,12 @@ static void init_near_interpolation_table_potential_0dp(
     fcs_int num_nodes,
     fcs_float r_cut, fcs_float epsI, fcs_int p,
     const fcs_float *taylor2p_coeff,
-    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_int N_cos, const fcs_float *cos_coeff,
     fcs_float *table);
 static void init_far_interpolation_table_potential_0dp(
     fcs_int num_nodes, fcs_int reg_far,
     fcs_float epsB, fcs_int p, fcs_float c,
-    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_int N_cos, const fcs_float *cos_coeff,
     fcs_float *table);
 static void init_far_interpolation_table_potential_0dp_ewald(
     fcs_int num_nodes, fcs_int reg_far,
@@ -359,6 +359,54 @@ static fcs_int box_differs(
 }
 
 
+static fcs_float sprod_3d(
+    const fcs_float *x, const fcs_float *y 
+    )
+{
+  return x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
+}
+
+static int project_vec2_on_vec1(
+    const fcs_float *vec1, const fcs_float* vec2
+    )
+{
+  return round(sprod_3d(vec1, vec2) / sprod_3d(vec1, vec1));
+}
+
+static void orthogonalize_two_vectors(
+    const fcs_float *vec1, fcs_float *vec2
+    )
+{
+  const int proj = project_vec2_on_vec1(vec1, vec2);
+  for(int t=0; t<3; ++t){
+    vec2[t] -= proj * vec1[t]; 
+  }
+}
+
+/* shift along periodic dims to maximize angles between box vectors */
+static void orthogonalize_periodic_dims(
+    const fcs_int *periodicity,
+    fcs_float *a, fcs_float *b, fcs_float *c
+    )
+{
+  /* make b and c orthogonal to periodic a */
+  if(periodicity[0] == 1){
+    orthogonalize_two_vectors(a, b);
+    orthogonalize_two_vectors(a, c);
+  }
+
+  /* make a and c orthogonal to periodic b */
+  if(periodicity[1] == 1){
+    orthogonalize_two_vectors(b, a);
+    orthogonalize_two_vectors(b, c);
+  }
+
+  /* make b and a orthogonal to periodic c */
+  if(periodicity[2] == 1){
+    orthogonalize_two_vectors(c, b);
+    orthogonalize_two_vectors(c, a);
+  }
+}
 
 FCSResult ifcs_p2nfft_tune(
     void *rd, const fcs_int *periodicity,
@@ -375,7 +423,6 @@ FCSResult ifcs_p2nfft_tune(
   fcs_int local_needs_retune = d->needs_retune;
   fcs_int i, num_particles;
   fcs_float sum_q, sum_q2, sum_q4, sum_q_abs, avg_dist, error=0;
-  fcs_float box_l[3]; /* TODO: deprecated parameter  */
   FCSResult result;
 
 #if FCS_P2NFFT_DEBUG_RETUNE
@@ -393,21 +440,45 @@ FCSResult ifcs_p2nfft_tune(
 
   d->short_range_flag = short_range_flag;
 
+  /* shift box vectors along periodic dims in order to make box as orthogonal as possible */
+  fcs_float box_a_ortho[3] = {box_a[0], box_a[1], box_a[2]};
+  fcs_float box_b_ortho[3] = {box_b[0], box_b[1], box_b[2]};
+  fcs_float box_c_ortho[3] = {box_c[0], box_c[1], box_c[2]};
+
+  if(d->flags & FCS_P2NFFT_MAX_BOX_ANGLES){
+    orthogonalize_periodic_dims(periodicity, box_a_ortho, box_b_ortho, box_c_ortho);
+  }
+
+#if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG  || FCS_P2NFFT_DEBUG_TUNING || FCS_ENABLE_INFO
+  printf("input box vectors:   [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f], [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f], [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f]\n",
+    box_a[0], box_a[1], box_a[2],
+    box_b[0], box_b[1], box_b[2],
+    box_c[0], box_c[1], box_c[2]);
+  printf("shifted box vectors: [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f], [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f], [%10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f %10.4" FCS_LMOD_FLOAT "f]\n",
+    box_a_ortho[0], box_a_ortho[1], box_a_ortho[2],
+    box_b_ortho[0], box_b_ortho[1], box_b_ortho[2],
+    box_c_ortho[0], box_c_ortho[1], box_c_ortho[2]);
+#endif
+
   /* Retune if simulation box changed */
-  if(box_differs(d->box_a, d->box_b, d->box_c, box_a, box_b, box_c))
+  if(box_differs(d->box_a, d->box_b, d->box_c, box_a_ortho, box_b_ortho, box_c_ortho)){
+#if FCS_P2NFFT_DEBUG_RETUNE
+    fprintf(stderr, "Retune triggered due to changed box shape!\n");
+#endif
     local_needs_retune = 1;
+  }
   
   for(fcs_int t=0; t<3; t++){
-    d->box_a[t] = box_a[t];
-    d->box_b[t] = box_b[t];
-    d->box_c[t] = box_c[t];
+    d->box_a[t] = box_a_ortho[t];
+    d->box_b[t] = box_b_ortho[t];
+    d->box_c[t] = box_c_ortho[t];
     d->box_base[t] = offset[t];
   }
 
   /* Get box size for orthorombic boxes */ 
-  box_l[0] = fcs_norm(box_a);
-  box_l[1] = fcs_norm(box_b);
-  box_l[2] = fcs_norm(box_c);
+  d->box_l[0] = fcs_norm(d->box_a);
+  d->box_l[1] = fcs_norm(d->box_b);
+  d->box_l[2] = fcs_norm(d->box_c);
 
   /* compute dual lattice vectors */
   d->box_V = fcs_fabs(det_3x3(d->box_a, d->box_b, d->box_c));
@@ -417,7 +488,7 @@ FCSResult ifcs_p2nfft_tune(
   MPI_Allreduce(&local_particles, &num_particles, 1, FCS_MPI_INT, MPI_SUM, d->cart_comm_3d);
   if (num_particles != d->num_nodes) {
 #if FCS_P2NFFT_DEBUG_RETUNE
-    fprintf(stderr, "num_nodes retune, num_particles = %d, d->num_nodes = %d\n", num_particles, d->num_nodes);
+    fprintf(stderr, "Retune triggered due to changed num_nodes!, num_particles = %d, d->num_nodes = %d\n", num_particles, d->num_nodes);
 #endif
     d->num_nodes = num_particles;
     local_needs_retune = 1;
@@ -427,7 +498,7 @@ FCSResult ifcs_p2nfft_tune(
   for(int t=0; t<3; t++){
     if((periodicity[t] == 0) != (d->periodicity[t] == 0)){
 #if FCS_P2NFFT_DEBUG_RETUNE
-      fprintf(stderr, "periodicity[%d] = %d, d->periodicity[%d] = %d\n", periodicity[t], t, d->periodicity[t], t);
+      fprintf(stderr, "Retune triggered due to changed periodicity!, periodicity[%d] = %d, d->periodicity[%d] = %d\n", periodicity[t], t, d->periodicity[t], t);
 #endif
       local_needs_retune = 1;
     }
@@ -491,7 +562,7 @@ FCSResult ifcs_p2nfft_tune(
 //   if (!fcs_float_is_equal(sum_q, d->sum_q)) {
   if (fcs_fabs(sum_q - d->sum_q) > 1e-5) {
 #if FCS_P2NFFT_DEBUG_RETUNE
-    fprintf(stderr, "sum_q = %e, d->sum_q = %e\n", sum_q, d->sum_q);
+    fprintf(stderr, "Retune triggered due to changed charge sum!, sum_q = %e, d->sum_q = %e\n", sum_q, d->sum_q);
 #endif
     d->sum_q = sum_q;
     local_needs_retune = 1;
@@ -511,7 +582,7 @@ FCSResult ifcs_p2nfft_tune(
 //   if (!fcs_float_is_equal(sum_q2, d->sum_q2)) {
   if (fcs_fabs(sum_q2 - d->sum_q2 > 1e-5)) {
 #if FCS_P2NFFT_DEBUG_RETUNE
-    fprintf(stderr, "sum_q2 retune, sum_q2 = %e, d->sum_q2 = %e\n", sum_q2, d->sum_q2);
+    fprintf(stderr, "Retune triggered due to changed square charge sum!, sum_q2 = %e, d->sum_q2 = %e\n", sum_q2, d->sum_q2);
 #endif
     d->sum_q2 = sum_q2;
     local_needs_retune = 1;
@@ -533,16 +604,6 @@ FCSResult ifcs_p2nfft_tune(
 //     local_needs_retune = 1;
 //   }
 
-  for(int t=0; t<3; t++){
-    if (!fcs_float_is_equal(d->box_l[t], box_l[t])) {
-#if FCS_P2NFFT_DEBUG_RETUNE
-      fprintf(stderr, "Changed box size requires retune, box_l[%d] = %e, d->box_l[%d] = %e\n", t, box_l[t], t, d->box_l[t]);
-#endif
-      d->box_l[t] = box_l[t];
-      local_needs_retune = 1;
-    }
-  }
-
   /* FIXME: number of charged particles may be less than number of all particles */
   d->sum_qpart = num_particles;
 
@@ -563,8 +624,8 @@ FCSResult ifcs_p2nfft_tune(
     /* determine the dimensions with minimum and maximum box length */
     fcs_int maxdim=0, mindim=0;
     for(fcs_int t=1; t<2; t++){
-      if(box_l[t] < box_l[mindim]) mindim = t;
-      if(box_l[t] > box_l[maxdim]) maxdim = t;
+      if(d->box_l[t] < d->box_l[mindim]) mindim = t;
+      if(d->box_l[t] > d->box_l[maxdim]) maxdim = t;
     }
 
     /* check user defined epsI and epsB */
@@ -727,16 +788,27 @@ FCSResult ifcs_p2nfft_tune(
         if(d->epsB > 0.125)
           d->epsB = 0.125;
       }
+      
+      /* Compute diagonal of box in non periodic dims. Works for orthogonal box vectors, only. */
+      fcs_float diagonal = 0.0;
+      for(int t=0; t<3; t++){
+        if(!d->periodicity[t]) diagonal += d->box_l[t]*d->box_l[t];
+      }
+      diagonal = fcs_sqrt( diagonal ); /* for cubic boxes this is the same as sqrt(num_nonperiodic_dims)*L */
 
       for(int t=0; t<3; t++)
       {
         /* shift and scale coordinates into [-0.5,0.5) */
         if(d->periodicity[t]) d->box_expand[t] = 1.0;
         /* shift and scale coordinates into sphere with radius (0.5-epsB) */
-        else d->box_expand[t] = 1.0 / (0.5 - d->epsB) * ( reg_far_is_radial(reg_far) ? fcs_sqrt(d->num_nonperiodic_dims) : 1.0 );
+        else {
+//           d->box_expand[t] = 1.0 / (0.5 - d->epsB) * ( reg_far_is_radial(reg_far) ? fcs_sqrt(d->num_nonperiodic_dims) : 1.0 );
+          if(reg_far_is_radial(reg_far)) d->box_expand[t] = 1.0 / (0.5 - d->epsB) * diagonal / d->box_l[t] ;
+          else d->box_expand[t] = 1.0 / (0.5 - d->epsB) ;
+        }
 
         /* TODO: remove deprecated variable box_scales */
-        d->box_scales[t] = d->box_l[t] * d->box_expand[t];
+        d->box_scales[t] = d->box_l[t] * d->box_expand[t]; /* for radial regularization this is equal to 1.0 / (0.5 - d->epsB) * diagonal */
 
         /* use full torus for periodic boundary conditions, otherwise use appropriate scaling */
         d->x_max[t] = 0.5 / d->box_expand[t];
@@ -912,13 +984,17 @@ FCSResult ifcs_p2nfft_tune(
         }
   
         /* initialize coefficients of 2-point Taylor polynomials */
-        if(d->taylor2p_coeff != NULL)
+        if(d->taylor2p_coeff != NULL){
           free(d->taylor2p_coeff);
+          d->taylor2p_coeff = NULL;
+        }
         d->taylor2p_coeff = (fcs_float*) malloc(sizeof(fcs_float)*(d->p));
         ifcs_p2nfft_load_taylor2p_coefficients(d->p, d->taylor2p_coeff);
   
-        if(d->taylor2p_derive_coeff != NULL)
+        if(d->taylor2p_derive_coeff != NULL){
           free(d->taylor2p_derive_coeff);
+          d->taylor2p_derive_coeff = NULL;
+        }
         d->taylor2p_derive_coeff = (fcs_float*) malloc(sizeof(fcs_float)*(d->p-1));
         ifcs_p2nfft_load_taylor2p_derive_coefficients(d->p, d->taylor2p_derive_coeff);
 
@@ -1006,8 +1082,10 @@ FCSResult ifcs_p2nfft_tune(
   
         /* initialize cg-regularization */
         d->N_cg_cos = d->N[mindim]/2;
-        if(d->cg_cos_coeff != NULL)
+        if(d->cg_cos_coeff != NULL){
           free(d->cg_cos_coeff);
+          d->cg_cos_coeff = NULL;
+        }
        
         fcs_int m, p; 
         d->cg_cos_coeff = (fcs_float*) malloc(sizeof(fcs_float)*d->N_cg_cos);
@@ -1022,8 +1100,10 @@ FCSResult ifcs_p2nfft_tune(
         if(missed_coeff)
           return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Did not find an appropriate CG approximation.");
 
-        if(d->cg_sin_coeff != NULL)
+        if(d->cg_sin_coeff != NULL){
           free(d->cg_sin_coeff);
+          d->cg_sin_coeff = NULL;
+        }
         d->cg_sin_coeff = (fcs_float*) malloc(sizeof(fcs_float)*d->N_cg_cos);
         for(fcs_int k=0; k<d->N_cg_cos; k++)
           d->cg_sin_coeff[k] = -2 * FCS_P2NFFT_PI * k * d->cg_cos_coeff[k];
@@ -1175,6 +1255,11 @@ FCSResult ifcs_p2nfft_tune(
   /* Start timing of precomputation */
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
   if (d->needs_retune) {
+    if(d->regkern_hat != NULL){
+      FCS_PFFT(free)(d->regkern_hat);
+      d->regkern_hat = NULL;
+    }
+
     /* precompute Fourier coefficients for convolution */
     if (d->num_periodic_dims == 3)
       d->regkern_hat = malloc_and_precompute_regkern_hat_3dp(
@@ -1336,6 +1421,15 @@ static void print_command_line_arguments(
       printf("p2nfft_p,%" FCS_LMOD_INT "d,", d->p);
     if(verbose || (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) )
       printf("p2nfft_ignore_tolerance,%d,", (d->flags & FCS_P2NFFT_IGNORE_TOLERANCE) ? 1 : 0);
+    if(verbose || (d->flags & FCS_P2NFFT_IGNORE_POTENTIAL) )
+      printf("p2nfft_ignore_potential,%d,", (d->flags & FCS_P2NFFT_IGNORE_POTENTIAL) ? 1 : 0);
+    if(verbose || (d->flags & FCS_P2NFFT_IGNORE_FIELD) )
+      printf("p2nfft_ignore_field,%d,", (d->flags & FCS_P2NFFT_IGNORE_FIELD) ? 1 : 0);
+    if(verbose || (d->flags & FCS_P2NFFT_VERBOSE_TUNING) )
+      printf("p2nfft_verbose_tuning,%d,", (d->flags & FCS_P2NFFT_VERBOSE_TUNING) ? 1 : 0);
+    if(verbose || (d->flags & FCS_P2NFFT_MAX_BOX_ANGLES) )
+      printf("p2nfft_max_box_angles,%d,", (d->flags & FCS_P2NFFT_MAX_BOX_ANGLES) ? 1 : 0);
+    
     if(verbose || (d->virial != NULL) )
       printf("p2nfft_require_virial,%d,", (d->virial != NULL) ? 1 : 0);
 
@@ -1428,7 +1522,7 @@ static void init_near_interpolation_table_potential_0dp(
     fcs_int num_nodes,
     fcs_float r_cut, fcs_float epsI, fcs_int p,
     const fcs_float *taylor2p_coeff,
-    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_int N_cos, const fcs_float *cos_coeff,
     fcs_float *table
     )
 {
@@ -1448,7 +1542,7 @@ static void init_near_interpolation_table_potential_0dp(
 static void init_far_interpolation_table_potential_0dp(
     fcs_int num_nodes, fcs_int reg_far,
     fcs_float epsB, fcs_int p, fcs_float c,
-    fcs_int N_cos, fcs_float *cos_coeff,
+    fcs_int N_cos, const fcs_float *cos_coeff,
     fcs_float *table 
     )
 {
@@ -2689,7 +2783,7 @@ static int pnfft_is_up_to_date(
   unsigned plan_pnfft_flags, plan_pfft_flags;
 
 #if FCS_P2NFFT_DEBUG_RETUNE
-    fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date: ths==%p\n", ths);
+    fprintf(stderr, "P2NFFT_DEBUG: pnfft_is_up_to_date starts with: ths==%p\n", ths);
 #endif
 
   /* plan is uninitialized */

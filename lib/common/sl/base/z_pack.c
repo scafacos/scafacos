@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011, 2012, 2013, 2014, 2015 Michael Hofmann
+ *  Copyright (C) 2011, 2012, 2013, 2014, 2015, 2016 Michael Hofmann
  *  
  *  This file is part of ScaFaCoS.
  *  
@@ -22,7 +22,7 @@
  */
 
 
-/* _XOPEN_SOURCE >= 500 required for nftw */
+/* _XOPEN_SOURCE >= 500 required for nftw, lstat */
 /* _XOPEN_SOURCE >= 600 required for vsscanf */
 #define _XOPEN_SOURCE 600
 
@@ -646,7 +646,7 @@ z_int_t z_fs_is_link(const char *pathname) /* z_proto, z_func z_fs_is_link */
   struct stat s;
 
 
-  if (stat(pathname, &s) != 0) return 0;
+  if (lstat(pathname, &s) != 0) return 0;
 
   return S_ISLNK(s.st_mode)?1:0;
 }
@@ -663,6 +663,41 @@ z_int_t z_fs_get_file_size(const char *pathname) /* z_proto, z_func z_fs_get_fil
 }
 
 
+#if HAVE_UNISTD_H
+
+#include <unistd.h>
+
+
+z_int_t z_fs_get_link_target(const char *pathname, char *target, z_int_t size) /* z_proto, z_func z_fs_get_link_target */
+{
+  ssize_t n = readlink(pathname, target, size);
+
+  if (n < 0) return -1;
+
+  if (n < size) target[n] = '\0';
+
+  return n;
+}
+
+#endif /* HAVE_UNISTD_H */
+
+
+z_int_t z_fs_stat(const char *pathname, z_fs_stat_t *stat)
+{
+  struct stat s;
+
+
+  if (lstat(pathname, &s) != 0) return 0;
+
+  stat->is_directory = S_ISDIR(s.st_mode)?1:0;
+  stat->is_file = S_ISREG(s.st_mode)?1:0;
+  stat->is_link = S_ISLNK(s.st_mode)?1:0;
+  stat->file_size = (z_int_t) s.st_size;
+
+  return 1;
+}
+
+
 z_int_t z_fs_mkdir(const char *pathname) /* z_proto, z_func z_fs_mkdir */
 {
   const mode_t mode = 0777;
@@ -676,7 +711,7 @@ z_int_t z_fs_mkdir(const char *pathname) /* z_proto, z_func z_fs_mkdir */
 #endif /* HAVE_SYS_STAT_H && HAVE_SYS_TYPES_H */
 
 
-#if HAVE_STDLIB_H && HAVE_STRING_H
+#if (HAVE_STDLIB_H && HAVE_STRING_H) || STDC_HEADERS
 
 #include <stdlib.h>
 #include <string.h>
@@ -716,7 +751,7 @@ z_int_t z_fs_mkdir_p(const char *pathname) /* z_proto, z_func z_fs_mkdir_p */
 #endif /* HAVE_STDLIB_H && HAVE_STRING_H */
 
 
-#if HAVE_STDIO_H
+#if HAVE_STDIO_H || STDC_HEADERS
 
 #include <stdio.h>
 
@@ -780,7 +815,7 @@ z_int_t z_fs_rm_r(const char *pathname) /* z_proto, z_func z_fs_rm_r */
 
 #ifdef Z_PACK_STDIO
 
-#if HAVE_STDIO_H && HAVE_STRING_H && HAVE_STDARG_H
+#if ((HAVE_STDIO_H && HAVE_STRING_H) || STDC_HEADERS) && HAVE_STDARG_H
 
 #include <stdio.h>
 #include <string.h>

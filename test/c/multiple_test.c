@@ -56,13 +56,13 @@ int main (int argc, char **argv)
   fcs_float *potentials;
   fcs_int periodicity[3];
 #if FCS_ENABLE_FMM
-  char FMM_parameters[] = "fmm_absrel,2,fmm_dipole_correction,0,fmm_tolerance_energy,1e-6,fmm_internal_tuning,0ll";
+//   char FMM_parameters[] = "fmm_absrel,2,fmm_dipole_correction,0,fmm_tolerance_energy,1e-6,fmm_internal_tuning,0ll";
 #endif
 #if FCS_ENABLE_PP3MG
-  char PP3MG_parameters[] = "pp3mg_cells_x,128,pp3mg_cells_y,128,pp3mg_cells_z,128,pp3mg_ghosts,4";
+//   char PP3MG_parameters[] = "pp3mg_cells_x,128,pp3mg_cells_y,128,pp3mg_cells_z,128,pp3mg_ghosts,4";
 #endif
 #if FCS_ENABLE_P2NFFT
-  char P2NFFT_parameters[] = "P2NFFT_required_accuracy,1e-6";
+//   char P2NFFT_parameters[] = "P2NFFT_required_accuracy,1e-6";
 #endif
   FILE *input_file;
   FILE *xyz_file;
@@ -99,11 +99,11 @@ int main (int argc, char **argv)
 #endif
   FCSResult result = NULL;
 
-  const fcs_float time_step = 1e-7;
-  const fcs_float charge_scale = 1.602e-19;
-  const fcs_float mass_scale = 1.6e-26; 
-  /* scaling factor for MD steps */
-  const fcs_float scaling_factor = time_step * charge_scale / mass_scale;
+//   const fcs_float time_step = 1e-7;
+//   const fcs_float charge_scale = 1.602e-19;
+//   const fcs_float mass_scale = 1.6e-26; 
+//   /* scaling factor for MD steps */
+//   const fcs_float scaling_factor = time_step * charge_scale / mass_scale;
   MPI_Comm cart_comm;
 
   char common_parameters[] = "box_a,1.0,0.0,0.0,box_b,0.0,1.0,0.0,box_c,0.0,0.0,1.0,periodicity,1,1,1,offset,0.0,0.0,0.0,near_field_flag,1";

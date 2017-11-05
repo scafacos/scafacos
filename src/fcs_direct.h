@@ -41,7 +41,7 @@ typedef struct fcs_direct_parameters_t
 {
   fcs_directc_t directc;
 
-  fcs_int metallic_boundary_conditions;
+  fcs_bool metallic_boundary_conditions;
 
 } fcs_direct_parameters_t;
 

@@ -57,6 +57,7 @@ static const char DUPLICATE_TAG[] = "duplicate";
 
 Configuration::Configuration()
 {
+  params.reuse_fcs = false;
   params.box_origin[0] = params.box_origin[1] = params.box_origin[2] = 0.0;
   params.box_a[0] = params.box_a[1] = params.box_a[2] = 0.0;
   params.box_b[0] = params.box_b[1] = params.box_b[2] = 0.0;
@@ -117,7 +118,6 @@ Configuration::Configuration()
 Configuration::~Configuration()
 {
   input_particles.particles.free();
-  input_particles.particles.free();
   
   free_decomp_particles(true);
 }
@@ -151,6 +151,9 @@ void Configuration::read_config(xml_node<> *config_node, const char *basename)
         params.decomposition = DECOMPOSE_RANDOM;
       else if (strcmp(attr->value(), "domain") == 0)
         params.decomposition = DECOMPOSE_DOMAIN;
+    } else if (aname == "reuse_fcs") {
+      if (strcmp(attr->value(), "true") == 0)
+        params.reuse_fcs = true;
     }
   }
 
@@ -1059,6 +1062,15 @@ Testcase::Testcase()
     error_potential(1.0), error_field(1.0),
     configurations()
 {}
+
+Testcase::~Testcase()
+{
+  for (int i=0; i<configurations.size(); ++i)
+  {
+    delete (configurations[i]);
+  } 
+  configurations.clear();
+}
 
 void
 Testcase::read_file(const char* filename, fcs_int *periodic_duplications, fcs_int decomposition) {

@@ -46,6 +46,7 @@ static const fcs_float EPSILON_METALLIC = -1.0;
 class Configuration {
 public:
   struct {
+    bool reuse_fcs;
     fcs_float box_origin[3];
     fcs_float box_a[3];
     fcs_float box_b[3];
@@ -56,7 +57,6 @@ public:
     fcs_int periodic_duplications[3];
 
     fcs_float result_density;
-
   } params;
 
   fcs_int total_duplications[3], total_duplication;
@@ -148,6 +148,7 @@ public:
   vector<Configuration*> configurations;
 
   Testcase();
+  ~Testcase();
 
   void read_file(const char* filename, fcs_int *periodic_duplications, fcs_int decomposition = -1);
   void write_file(const char* outfilename, const char* binfilename = NULL, const char* portable_filename = NULL, bool keep_dupgen = false);

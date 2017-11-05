@@ -36,6 +36,7 @@ c
       use mem_info
       use mplummer
       use mwigner
+      use mod_fullfmm
 #ifdef FMM_UNIFORMGRID
       use muniformgrid
 #endif

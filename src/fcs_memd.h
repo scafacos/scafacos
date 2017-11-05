@@ -87,9 +87,6 @@ FCSResult fcs_memd_run(FCS handle, fcs_int local_particles, fcs_float *positions
  */
 FCSResult fcs_memd_destroy(FCS handle);
 
-FCSResult fcs_memd_require_virial(FCS handle, fcs_int flagvalue);
-FCSResult fcs_memd_get_virial(FCS handle, fcs_float* virial);
-
 FCSResult fcs_memd_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
 FCSResult fcs_memd_print_parameters(FCS handle);
 

@@ -12,9 +12,4 @@ libfcs_mmm2d_la_SOURCES = \
 	communication.c communication.h \
 	run.c run.h \
 	types.h \
-	mmm2d.h \
-	../common/mmm-common/mmm-common.c \
-	../common/mmm-common/mmm-common.h \
-	../common/mmm-common/specfunc.c \
-	../common/mmm-common/specfunc.h
-
+	mmm2d.h

@@ -467,9 +467,9 @@ FCSResult ifcs_p2nfft_run(
   /* Rescale all gradients L^{-T} * grad_f */
   if(compute_dipole_potential){
 
-for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
-  for(int t=0; t<3; t++)
-    ;
+// for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
+//   for(int t=0; t<3; t++)
+//     fprintf(stderr, "near_pot[%d, %d] = %.6e\n", j, t, sorted_dipole_potential[3*j+t]);
 
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
       sorted_dipole_potential[3 * j + 0] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 0) );
@@ -477,9 +477,6 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
       sorted_dipole_potential[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 2) );
     }
 
-for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
-  for(int t=0; t<3; t++)
-    ;
   }
 
   if(compute_field){
@@ -559,9 +556,6 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
       sorted_dipole_potential[3 * j + 2] +=  sorted_dipole_moments[3 * j + 2] * self;
     }
 
-for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
-  for(int t=0; t<3; t++)
-    ;
   }
 
   /* Finish self interaction timing */
@@ -569,7 +563,7 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
 
   /* Calculate virial if needed */
   if(d->virial != NULL){
-    if ((d->num_periodic_dims == 3) && (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD)) {
+    if (d->num_periodic_dims == 3) {
       fcs_float total_energy = 0.0;
       fcs_float total_global;
       if(compute_potential)
@@ -584,7 +578,7 @@ for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
         d->virial[t] = 0.0;
       d->virial[0] = d->virial[4] = d->virial[8] = total_global/3.0;
     } 
-    else if ((d->num_periodic_dims == 0) && (d->reg_kernel == FCS_P2NFFT_REG_KERNEL_ONE_OVER_ABS_X)) {
+    else if (d->num_periodic_dims == 0) {
       fcs_float local_virial[9];
 
       for(fcs_int t=0; t<9; t++)

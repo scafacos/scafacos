@@ -70,10 +70,12 @@ EOF
 fi
 
 # Fix broken space handling of libtool
-if grep 'test x-l = "x$p"' configure >/dev/null 2>&1
+if grep 'test x-L = "x$p"' configure >/dev/null 2>&1
 then :
 else
-  patch -b -p0 2>/dev/null <<\EOF
+  if grep 'test x-L = "$p"' configure >/dev/null 2>&1
+  then
+    patch -b -p0 2>/dev/null <<\EOF
 --- configure.orig	2016-03-03 10:25:22.360544857 +0100
 +++ configure	2016-03-03 10:27:41.848727662 +0100
 @@ -17785,10 +17785,11 @@
@@ -107,6 +109,45 @@ else
  	 continue
         fi
 EOF
+  fi
 fi
 
-:
+if grep 'test $p = "-l"' configure >/dev/null 2>&1
+then :
+else
+  if grep 'test $p = "-L"' configure >/dev/null 2>&1
+  then
+    patch -b -p0 2>/dev/null <<\EOF
+--- configure.orig	2016-12-11 00:06:46.000000000 +0100
++++ configure	2016-12-11 00:09:58.376546677 +0100
+@@ -17287,10 +17287,11 @@
+     case ${prev}${p} in
+ 
+     -L* | -R* | -l*)
+-       # Some compilers place space between "-{L,R}" and the path.
++       # Some compilers place space between "-{L,R,l}" and the path.
+        # Remove the space.
+        if test $p = "-L" ||
+-          test $p = "-R"; then
++          test $p = "-R" ||
++          test $p = "-l"; then
+ 	 prev=$p
+ 	 continue
+        fi
+@@ -19205,10 +19206,11 @@
+     case ${prev}${p} in
+ 
+     -L* | -R* | -l*)
+-       # Some compilers place space between "-{L,R}" and the path.
++       # Some compilers place space between "-{L,R,l}" and the path.
+        # Remove the space.
+        if test $p = "-L" ||
+-          test $p = "-R"; then
++          test $p = "-R" ||
++          test $p = "-l"; then
+ 	 prev=$p
+ 	 continue
+        fi
+EOF
+  fi
+fi

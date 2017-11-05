@@ -1,5 +1,6 @@
 /*
   Copyright (C) 2011, 2012, 2013, 2014 Rene Halver, Michael Hofmann
+  Copyright (C) 2016 Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -75,6 +76,51 @@
 
 
 #define FCS_MAX_METHOD_NAME_LENGTH  32
+
+
+/* fallback definition, see "6.47 Function Names as Strings" in gcc-4.9 doc */
+#if __STDC_VERSION__ < 199901L
+# if __GNUC__ >= 2
+#  define __func__ __FUNCTION__
+# else
+#  define __func__ "<unknown>"
+# endif
+#endif
+
+#define CHECK_HANDLE_RETURN_RESULT(_h_, _f_) do { \
+  if ((_h_) == FCS_NULL) \
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, _f_, "null handle supplied"); \
+  } while (0)
+
+#define CHECK_HANDLE_RETURN_VAL(_h_, _f_, _v_) do { \
+  if ((_h_) == FCS_NULL) { \
+    fprintf(stderr, "%s: null handle supplied, returning " #_v_, _f_); \
+    return (_v_); \
+  } } while (0)
+
+#define CHECK_METHOD_RETURN_RESULT(_h_, _f_, _m_, _n_) do { \
+  if ((_h_)->method != (_m_)) \
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, (_f_), "handle does not represent method \"" _n_ "\""); \
+} while (0)
+
+#define CHECK_METHOD_RETURN_VAL(_h_, _f_, _m_, _n_, _v_) do { \
+  if ((_h_)->method != (_m_)) { \
+    fprintf(stderr, "%s: handle does not represent method '" _n_ "', returning "  #_v_, _f_); \
+    return (_v_); \
+  } } while (0)
+
+#define CHECK_RESULT_RETURN(_r_) do { \
+    if ((_r_) != FCS_RESULT_SUCCESS) return (_r_); \
+  } while (0)
+
+#ifdef FCS_ENABLE_DEBUG
+# define FCS_DEBUG_MOP(_mop_)  do { _mop_; } while (0)
+#else
+# define FCS_DEBUG_MOP(_mop_)  do { } while (0)
+#endif
+
+#define FCS_DEBUG_FUNC_INTRO(_f_)       FCS_DEBUG_MOP(printf("%s\n", _f_))
+#define FCS_DEBUG_FUNC_OUTRO(_f_, _r_)  FCS_DEBUG_MOP(printf("%s: return: %s\n", _f_, ((_r_) == FCS_RESULT_SUCCESS)?"success":"failed"))
 
 
 /*
@@ -239,7 +285,7 @@ FCSResult fcs_init_f(FCS *handle, const char *method_name, MPI_Fint communicator
  * tools for parameter parsing of fcs_set_parameters
  */
 #if defined(FCS_ENABLE_DEBUG)
-# define FCS_PARSE_PRINT_PARAM_BEGIN(_f_)     printf("%s: calling " #_f_ "(handle", fnc_name)
+# define FCS_PARSE_PRINT_PARAM_BEGIN(_f_)     printf("%s: calling " #_f_ "(handle", __func__)
 # define FCS_PARSE_PRINT_PARAM_VAL(_f_, _v_)  printf( _f_, _v_)
 # define FCS_PARSE_PRINT_PARAM_STR(_str_)     printf("%s", (_str_))
 # define FCS_PARSE_PRINT_PARAM_END(_r_)       printf(") -> %p\n", _r_)
@@ -272,7 +318,7 @@ typedef char *fcs_p_char_t;
 static inline fcs_bool atob(const char *nptr)
 {
   const char false_str[] = "false";
-  if ((strlen(nptr) == 1 && strncmp(nptr, "0", 1) == 0) || (strlen(nptr) == strlen(false_str) && strncasecmp(nptr, false_str, strlen(false_str)))) return FCS_FALSE;
+  if ((strlen(nptr) == 1 && strncmp(nptr, "0", 1) == 0) || (strlen(nptr) == strlen(false_str) && strncasecmp(nptr, false_str, strlen(false_str)) == 0)) return FCS_FALSE;
   return FCS_TRUE;
 }
 

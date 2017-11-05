@@ -140,7 +140,7 @@ positions[3*num_particles] = TEST_BOX_SIZE*(px % 2); //px + 0.5;
   fcs_result = fcs_set_max_local_particles(fcs_handle, max_num_particles);
   assert_fcs(fcs_result);
 
-  fcs_set_tolerance(fcs_handle, FCS_TOLERANCE_TYPE_POTENTIAL, tolerance);
+  fcs_set_tolerance(fcs_handle, FCS_TOLERANCE_TYPE_FIELD, tolerance);
   fcs_result = fcs_tune(fcs_handle, num_particles, positions, charges);
   assert_fcs(fcs_result);
 

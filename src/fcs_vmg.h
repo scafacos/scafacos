@@ -126,23 +126,6 @@ FCSResult fcs_vmg_near_field_potential (FCS handle, fcs_float);
  */
 FCSResult fcs_vmg_destroy(FCS handle);
 
-/**
- * @brief function to activate computation of the virial
- * @param handle FCS-object that contains the parameter
- * @param flag whether or not to compute the virial in the next call
- * to fcs_run().
- * @return FCSResult-object containing the return state
- */
-FCSResult fcs_vmg_require_virial(FCS handle, fcs_int flag);
-
-/**
- * @brief function to fetch the virial
- * @param handle FCS-object that contains the parameter
- * @param virial pointer to the array where the virial is returned.
- * @return FCSResult-object containing the return state
- */
-FCSResult fcs_vmg_get_virial(FCS handle, fcs_float *virial);
-
 FCSResult fcs_vmg_set_parameter(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
 FCSResult fcs_vmg_print_parameters(FCS handle);
 

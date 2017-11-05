@@ -1,0 +1,31 @@
+language: c
+compiler: gcc
+os: linux
+
+addons:
+  apt:
+    packages:
+    - gsl-bin
+    - libgsl0-dev
+    - gfortran
+    - openmpi-bin
+    - openmpi-common
+    - libopenmpi-dev
+
+before_install:
+  # unset $CC compiler variable since it is known to interfere with the MPI compiler
+  # see https://docs.travis-ci.com/user/languages/c#MPI-projects
+  - test -n $CC && unset CC
+
+script: ./bootstrap && ./configure --enable-fcs-solvers=p3m,ewald,p2nfft,direct MPICC=mpicc MPIFC=mpif90 && make && make check 
+
+## Print config.log for debugging.
+after_failure:
+  - "cat config.log"
+  - "cat test/c/test-suite.log"
+
+## Turn on email notifications.
+notifications:
+  email:
+    on_success: change # choose between: always, change, never
+    on_failure: always # choose between: always, change, never

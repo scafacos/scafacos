@@ -1,5 +1,6 @@
 /*
   Copyright (C) 2011, 2012, 2013, 2014 Rene Halver, Michael Hofmann
+  Copyright (C) 2016 Michael Hofmann
 
   This file is part of ScaFaCoS.
 
@@ -30,22 +31,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-
-
-#define CHECK_HANDLE_RETURN_RESULT(_h_, _f_) do { \
-  if (handle == FCS_NULL) \
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, _f_, "null handle supplied"); \
-  } while (0)
-
-#define CHECK_HANDLE_RETURN_VAL(_h_, _f_, _v_) do { \
-  if (handle == FCS_NULL) { \
-    fprintf(stderr, "%s: null handle supplied, returning " #_v_, fnc_name); \
-    return (_v_); \
-  } } while (0)
-
-#define CHECK_RESULT_RETURN(_r_) do { \
-    if ((_r_) != FCS_RESULT_SUCCESS) return (_r_); \
-  } while (0)
 
 
 /**
@@ -109,20 +94,18 @@ static fcs_int fcs_run_check(FCS handle)
  */
 FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicator)
 {
-  const char *fnc_name = "fcs_init";
-
   if (new_handle == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as handle");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, __func__, "null pointer supplied as handle");
 
   *new_handle = FCS_NULL;
 
   if (method_name == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as method name");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, __func__, "null pointer supplied as method name");
 
   FCS handle = malloc(sizeof(FCS_t));
 
   if (handle == NULL) 
-    return fcs_result_create(FCS_ERROR_ALLOC_FAILED, fnc_name, "memory allocation for FCS-object failed");
+    return fcs_result_create(FCS_ERROR_ALLOC_FAILED, __func__, "memory allocation for FCS-object failed");
 
   handle->communicator = communicator;
 
@@ -260,7 +243,7 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
 #endif
 
   /* none of the known methods was chosen */
-  return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "unknown method chosen");
+  return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "unknown method chosen");
 }
 
 
@@ -312,9 +295,7 @@ const char *fcs_get_method_name(FCS handle)
  */
 MPI_Comm fcs_get_communicator(FCS handle)
 {
-  const char *fnc_name = "fcs_get_communicator";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, MPI_COMM_NULL);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, MPI_COMM_NULL);
 
   return handle->communicator;
 }
@@ -325,10 +306,9 @@ MPI_Comm fcs_get_communicator(FCS handle)
  */
 FCSResult fcs_set_common(FCS handle, fcs_int near_field_flag, const fcs_float *box_a, const fcs_float *box_b, const fcs_float *box_c, const fcs_float *box_origin, const fcs_int *periodicity, fcs_int total_particles)
 {
-  const char *fnc_name = "fcs_set_common";
   FCSResult result;
 
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   result = fcs_set_near_field_flag(handle, near_field_flag);
   if (result != FCS_RESULT_SUCCESS) return result;
@@ -360,12 +340,10 @@ FCSResult fcs_set_common(FCS handle, fcs_int near_field_flag, const fcs_float *b
  */
 FCSResult fcs_set_dimensions(FCS handle, fcs_int dim)
 {
-  const char *fnc_name = "fcs_set_dimensions";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (dim > 3 || dim < 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "dimensions must be between 1 and 3");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "dimensions must be between 1 and 3");
 
   handle->dimensions = dim;
 
@@ -380,9 +358,7 @@ FCSResult fcs_set_dimensions(FCS handle, fcs_int dim)
  */
 fcs_int fcs_get_dimensions(FCS handle)
 {
-  const char *fnc_name = "fcs_get_dimensions";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, -1);
 
   return handle->dimensions;
 }
@@ -393,9 +369,7 @@ fcs_int fcs_get_dimensions(FCS handle)
  */
 FCSResult fcs_set_near_field_flag(FCS handle, fcs_int near_field_flag)
 {
-  const char *fnc_name = "fcs_set_near_field_flag";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   handle->near_field_flag = near_field_flag;
 
@@ -410,9 +384,7 @@ FCSResult fcs_set_near_field_flag(FCS handle, fcs_int near_field_flag)
  */
 fcs_int fcs_get_near_field_flag(FCS handle)
 {
-  const char *fnc_name = "fcs_get_near_field_flag";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, -1);
 
   return handle->near_field_flag;
 }
@@ -423,12 +395,10 @@ fcs_int fcs_get_near_field_flag(FCS handle)
  */
 FCSResult fcs_set_box_a(FCS handle, const fcs_float *box_a)
 {
-  const char *fnc_name = "fcs_set_box_a";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (box_a == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as argument");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, __func__, "null pointer supplied as argument");
 
   handle->box_a[0] = box_a[0];
   handle->box_a[1] = box_a[1];
@@ -445,9 +415,7 @@ FCSResult fcs_set_box_a(FCS handle, const fcs_float *box_a)
  */
 const fcs_float *fcs_get_box_a(FCS handle)
 {
-  const char *fnc_name = "fcs_get_box_a";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, NULL);
 
   return handle->box_a;
 }
@@ -458,12 +426,10 @@ const fcs_float *fcs_get_box_a(FCS handle)
  */
 FCSResult fcs_set_box_b(FCS handle, const fcs_float *box_b)
 {
-  const char *fnc_name = "fcs_set_box_b";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (box_b == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as argument");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, __func__, "null pointer supplied as argument");
 
   handle->box_b[0] = box_b[0];
   handle->box_b[1] = box_b[1];
@@ -480,9 +446,7 @@ FCSResult fcs_set_box_b(FCS handle, const fcs_float *box_b)
  */
 const fcs_float *fcs_get_box_b(FCS handle)
 {
-  const char *fnc_name = "fcs_get_box_b";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, NULL);
 
   return handle->box_b;
 }
@@ -493,12 +457,10 @@ const fcs_float *fcs_get_box_b(FCS handle)
  */
 FCSResult fcs_set_box_c(FCS handle, const fcs_float *box_c)
 {
-  const char *fnc_name = "fcs_set_box_c";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (box_c == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as argument");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, __func__, "null pointer supplied as argument");
 
   handle->box_c[0] = box_c[0];
   handle->box_c[1] = box_c[1];
@@ -515,9 +477,7 @@ FCSResult fcs_set_box_c(FCS handle, const fcs_float *box_c)
  */
 const fcs_float *fcs_get_box_c(FCS handle)
 {
-  const char *fnc_name = "fcs_get_box_c";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, NULL);
 
   return handle->box_c;
 }
@@ -528,12 +488,10 @@ const fcs_float *fcs_get_box_c(FCS handle)
  */
 FCSResult fcs_set_box_origin(FCS handle, const fcs_float *box_origin)
 {
-  const char *fnc_name = "fcs_set_box_origin";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (box_origin == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as argument");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, __func__, "null pointer supplied as argument");
 
   handle->box_origin[0] = box_origin[0];
   handle->box_origin[1] = box_origin[1];
@@ -550,9 +508,7 @@ FCSResult fcs_set_box_origin(FCS handle, const fcs_float *box_origin)
  */
 const fcs_float *fcs_get_box_origin(FCS handle)
 {
-  const char *fnc_name = "fcs_get_box_origin";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, NULL);
 
   return handle->box_origin;
 }
@@ -563,12 +519,10 @@ const fcs_float *fcs_get_box_origin(FCS handle)
  */
 FCSResult fcs_set_periodicity(FCS handle, const fcs_int *periodicity)
 {
-  const char *fnc_name = "fcs_set_periodicity";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (periodicity == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as argument");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, __func__, "null pointer supplied as argument");
 
   handle->periodicity[0] = periodicity[0];
   handle->periodicity[1] = periodicity[1];
@@ -585,9 +539,7 @@ FCSResult fcs_set_periodicity(FCS handle, const fcs_int *periodicity)
  */
 const fcs_int* fcs_get_periodicity(FCS handle)
 {
-  const char *fnc_name = "fcs_get_periodicity";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, NULL);
 
   return handle->periodicity;
 }
@@ -598,9 +550,7 @@ const fcs_int* fcs_get_periodicity(FCS handle)
  */
 FCSResult fcs_set_total_particles(FCS handle, fcs_int total_particles)
 {
-  const char *fnc_name = "fcs_set_total_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   handle->total_particles = total_particles;
 
@@ -615,9 +565,7 @@ FCSResult fcs_set_total_particles(FCS handle, fcs_int total_particles)
  */
 fcs_int fcs_get_total_particles(FCS handle)
 {
-  const char *fnc_name = "fcs_get_total_particles";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, -1);
 
   return handle->total_particles;
 }
@@ -628,9 +576,7 @@ fcs_int fcs_get_total_particles(FCS handle)
  */
 FCSResult fcs_set_max_local_particles(FCS handle, fcs_int max_local_particles)
 {
-  const char *fnc_name = "fcs_set_max_local_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   handle->max_local_particles = max_local_particles;
 
@@ -645,9 +591,7 @@ FCSResult fcs_set_max_local_particles(FCS handle, fcs_int max_local_particles)
  */
 fcs_int fcs_get_max_local_particles(FCS handle)
 {
-  const char *fnc_name = "fcs_get_max_local_particles";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, -1);
 
   return handle->max_local_particles;
 }
@@ -658,9 +602,7 @@ fcs_int fcs_get_max_local_particles(FCS handle)
  */
 FCSResult fcs_set_method_context(FCS handle, void *method_context)
 {
-  const char *fnc_name = "fcs_set_method_context";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   handle->method_context = method_context;
 
@@ -673,9 +615,7 @@ FCSResult fcs_set_method_context(FCS handle, void *method_context)
  */
 void *fcs_get_method_context(FCS handle)
 {
-  const char *fnc_name = "fcs_get_method_context";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, NULL);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, NULL);
 
   return handle->method_context;
 }
@@ -686,9 +626,7 @@ void *fcs_get_method_context(FCS handle)
  */
 FCSResult fcs_set_values_changed(FCS handle, fcs_int values_changed)
 {
-  const char *fnc_name = "fcs_set_values_changed";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   handle->values_changed = values_changed;
 
@@ -701,9 +639,7 @@ FCSResult fcs_set_values_changed(FCS handle, fcs_int values_changed)
  */
 fcs_int fcs_get_values_changed(FCS handle)
 {
-  const char *fnc_name = "fcs_get_box_values_changed";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, -1);
 
   return handle->values_changed;
 }
@@ -714,12 +650,10 @@ fcs_int fcs_get_values_changed(FCS handle)
  */
 FCSResult fcs_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolerance)
 {
-  const char *fnc_name = "fcs_set_tolerance";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->set_tolerance == NULL)
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Setting tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   return handle->set_tolerance(handle, tolerance_type, tolerance);
 }
@@ -730,15 +664,13 @@ FCSResult fcs_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolera
  */
 FCSResult fcs_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tolerance)
 {
-  const char *fnc_name = "fcs_get_tolerance";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   *tolerance_type = FCS_TOLERANCE_TYPE_UNDEFINED;
   *tolerance = -1.0; 
 
   if (handle->get_tolerance == NULL)
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Return tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Return tolerance not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   return handle->get_tolerance(handle, tolerance_type, tolerance);
 }
@@ -749,12 +681,10 @@ FCSResult fcs_get_tolerance(FCS handle, fcs_int *tolerance_type, fcs_float *tole
  */
 FCSResult fcs_set_r_cut(FCS handle, fcs_float r_cut)
 {
-  const char *fnc_name = "fcs_set_r_cut";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->set_r_cut == NULL)
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Setting a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   return handle->set_r_cut(handle, r_cut);
 }
@@ -765,12 +695,10 @@ FCSResult fcs_set_r_cut(FCS handle, fcs_float r_cut)
  */
 FCSResult fcs_unset_r_cut(FCS handle)
 {
-  const char *fnc_name = "fcs_unset_r_cut";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->unset_r_cut == NULL)
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Disabling a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Disabling a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   return handle->unset_r_cut(handle);
 }
@@ -781,12 +709,10 @@ FCSResult fcs_unset_r_cut(FCS handle)
  */
 FCSResult fcs_get_r_cut(FCS handle, fcs_float *r_cut)
 {
-  const char *fnc_name = "fcs_get_r_cut";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->get_r_cut == NULL)
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Returning a user-defined cutoff radius for the near-field not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   return handle->get_r_cut(handle, r_cut);
 }
@@ -797,12 +723,10 @@ FCSResult fcs_get_r_cut(FCS handle, fcs_float *r_cut)
  */
 FCSResult fcs_set_dipole_particles(FCS handle, fcs_int local_dipole_particles, fcs_float *dipole_positions, fcs_float *dipole_moments, fcs_float *dipole_field, fcs_float *dipole_potentials)
 {
-  const char *fnc_name = "fcs_set_dipole_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (FCS_IS_FALSE(handle->dipole_support))
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   handle->local_dipole_particles = local_dipole_particles;
   handle->dipole_positions = dipole_positions;
@@ -821,9 +745,7 @@ FCSResult fcs_set_dipole_particles(FCS handle, fcs_int local_dipole_particles, f
  */
 FCSResult fcs_get_dipole_particles(FCS handle, fcs_int *local_dipole_particles, fcs_float **dipole_positions, fcs_float **dipole_moments, fcs_float **dipole_field, fcs_float **dipole_potentials)
 {
-  const char *fnc_name = "fcs_get_dipole_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   *local_dipole_particles = handle->local_dipole_particles;
   *dipole_positions = handle->dipole_positions;
@@ -840,12 +762,10 @@ FCSResult fcs_get_dipole_particles(FCS handle, fcs_int *local_dipole_particles, 
  */
 FCSResult fcs_set_total_dipole_particles(FCS handle, fcs_int total_dipole_particles)
 {
-  const char *fnc_name = "fcs_set_total_dipole_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (FCS_IS_FALSE(handle->dipole_support))
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   handle->total_dipole_particles = total_dipole_particles;
 
@@ -860,9 +780,7 @@ FCSResult fcs_set_total_dipole_particles(FCS handle, fcs_int total_dipole_partic
  */
 fcs_int fcs_get_total_dipole_particles(FCS handle)
 {
-  const char *fnc_name = "fcs_get_total_dipole_particles";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, -1);
 
   return handle->total_dipole_particles;
 }
@@ -873,12 +791,10 @@ fcs_int fcs_get_total_dipole_particles(FCS handle)
  */
 FCSResult fcs_set_max_local_dipole_particles(FCS handle, fcs_int max_local_dipole_particles)
 {
-  const char *fnc_name = "fcs_set_max_local_dipole_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (FCS_IS_FALSE(handle->dipole_support))
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Dipole particles not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   handle->max_local_dipole_particles = max_local_dipole_particles;
 
@@ -893,9 +809,7 @@ FCSResult fcs_set_max_local_dipole_particles(FCS handle, fcs_int max_local_dipol
  */
 fcs_int fcs_get_max_local_dipole_particles(FCS handle)
 {
-  const char *fnc_name = "fcs_get_max_local_dipole_particles";
-
-  CHECK_HANDLE_RETURN_VAL(handle, fnc_name, -1);
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, -1);
 
   return handle->max_local_dipole_particles;
 }
@@ -906,9 +820,7 @@ fcs_int fcs_get_max_local_dipole_particles(FCS handle)
  */
 FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool continue_on_errors)
 {
-  const char *fnc_name = "fcs_set_parameters";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   FCSResult result = FCS_RESULT_SUCCESS;
 
@@ -947,7 +859,7 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("total_dipole_particles",  set_total_dipole_particles, FCS_PARSE_VAL(fcs_int));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("r_cut",                   set_r_cut,                  FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("require_virial",          set_compute_virial,         FCS_PARSE_VAL(fcs_int));
-    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("",                        set_tolerance,              FCS_PARSE_VAL(fcs_int),                                     FCS_PARSE_VAL(fcs_float));
+    FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance",               set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_UNDEFINED),     FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy",        set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_ENERGY),        FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_energy_rel",    set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_ENERGY_REL),    FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance_potential",     set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_POTENTIAL),     FCS_PARSE_VAL(fcs_float));
@@ -965,7 +877,7 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
     if (matched) goto next_param;
 
     if (result == FCS_RESULT_SUCCESS)
-      result = fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "interface (parser): error in parameter string at '%s'!", param); 
+      result = fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "interface (parser): error in parameter string at '%s'!", param); 
 
     if (FCS_IS_FALSE(continue_on_errors)) break;
 
@@ -984,10 +896,9 @@ next_param:
  */
 FCSResult fcs_print_parameters(FCS handle)
 {
-  const char *fnc_name = "fcs_print_parameters";
   FCSResult result;
 
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   printf("chosen method: %s\n", fcs_get_method_name(handle));
 
@@ -1023,23 +934,20 @@ FCSResult fcs_print_parameters(FCS handle)
 FCSResult fcs_tune(FCS handle, fcs_int local_particles,
   fcs_float *positions, fcs_float *charges)
 {
-  const char *fnc_name = "fcs_tune";
   FCSResult result;
 
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (local_particles < 0)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, 
-                             "number of local particles must be non negative");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "number of local particles must be non negative");
 
   if (!fcs_init_check(handle) || !fcs_tune_check(handle))
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, 
-                             "not all needed data has been inserted into the given handle");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "not all needed data has been inserted into the given handle");
 
   fcs_set_values_changed(handle, 0);
 
   if (handle->tune == NULL)
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Tuning solver method '%s' not implemented", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Tuning solver method '%s' not implemented", fcs_get_method_name(handle));
 
   fcs_float original_box_origin[3] = { handle->box_origin[0], handle->box_origin[1], handle->box_origin[2] };
 
@@ -1069,13 +977,12 @@ FCSResult fcs_tune(FCS handle, fcs_int local_particles,
 FCSResult fcs_run(FCS handle, fcs_int local_particles,
   fcs_float *positions, fcs_float *charges, fcs_float *field, fcs_float *potentials)
 {
-  const char *fnc_name = "fcs_run";
   FCSResult result;
 
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (local_particles < 0)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "number of local particles must be non negative");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "number of local particles must be non negative");
 
   if (fcs_get_values_changed(handle))
   {
@@ -1084,10 +991,10 @@ FCSResult fcs_run(FCS handle, fcs_int local_particles,
   }
 
   if (!fcs_init_check(handle) || !fcs_run_check(handle))
-    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, fnc_name, "not all needed data has been inserted into the given handle");
+    return fcs_result_create(FCS_ERROR_MISSING_ELEMENT, __func__, "not all needed data has been inserted into the given handle");
 
   if (handle->run == NULL)
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Running solver method '%s' not implemented", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Running solver method '%s' not implemented", fcs_get_method_name(handle));
 
   fcs_float original_box_origin[3] = { handle->box_origin[0], handle->box_origin[1], handle->box_origin[2] };
 
@@ -1118,9 +1025,7 @@ FCSResult fcs_compute_dipole_correction(FCS handle, fcs_int local_particles,
   fcs_float* positions, fcs_float *charges, fcs_float epsilon,
   fcs_float *field_correction, fcs_float *energy_correction)
 {
-  const char *fnc_name = "fcs_compute_dipole_correction";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   /* Local dipole moment */
   fcs_float local_dipole_moment[3] = {0.0, 0.0, 0.0};
@@ -1181,9 +1086,7 @@ FCSResult fcs_compute_dipole_correction(FCS handle, fcs_int local_particles,
  */
 FCSResult fcs_get_near_field_delegation(FCS handle, fcs_int *near_field_delegation)
 {
-  const char *fnc_name = "fcs_get_near_field_delegation";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   *near_field_delegation = 0;
 
@@ -1210,8 +1113,6 @@ FCSResult fcs_get_near_field_delegation(FCS handle, fcs_int *near_field_delegati
  */
 FCSResult fcs_compute_near(FCS handle, fcs_float dist, fcs_float *potential, fcs_float *field)
 {
-  const char *fnc_name = "fcs_compute_near";
-
   switch (fcs_get_method(handle))
   {
 #ifdef FCS_ENABLE_P2NFFT
@@ -1230,7 +1131,7 @@ FCSResult fcs_compute_near(FCS handle, fcs_float dist, fcs_float *potential, fcs
 #endif
   }
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Computing the near-field components of the potential and the field not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Computing the near-field components of the potential and the field not implemented for solver method '%s'", fcs_get_method_name(handle));
 }
 
 
@@ -1239,8 +1140,6 @@ FCSResult fcs_compute_near(FCS handle, fcs_float dist, fcs_float *potential, fcs
  */
 FCSResult fcs_compute_near_potential(FCS handle, fcs_float dist, fcs_float *potential)
 {
-  const char *fnc_name = "fcs_compute_near_potential";
-
   switch (fcs_get_method(handle))
   {
 #ifdef FCS_ENABLE_P2NFFT
@@ -1259,7 +1158,7 @@ FCSResult fcs_compute_near_potential(FCS handle, fcs_float dist, fcs_float *pote
 #endif
   }
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Computing the near-field component of the potential not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Computing the near-field component of the potential not implemented for solver method '%s'", fcs_get_method_name(handle));
 }
 
 
@@ -1268,8 +1167,6 @@ FCSResult fcs_compute_near_potential(FCS handle, fcs_float dist, fcs_float *pote
  */
 FCSResult fcs_compute_near_field(FCS handle, fcs_float dist, fcs_float *field)
 {
-  const char *fnc_name = "fcs_compute_near_field";
-
   switch (fcs_get_method(handle))
   {
 #ifdef FCS_ENABLE_P2NFFT
@@ -1288,7 +1185,7 @@ FCSResult fcs_compute_near_field(FCS handle, fcs_float dist, fcs_float *field)
 #endif
   }
 
-  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Computing the near-field component of the field not implemented for solver method '%s'", fcs_get_method_name(handle));
+  return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Computing the near-field component of the field not implemented for solver method '%s'", fcs_get_method_name(handle));
 }
 
 
@@ -1297,15 +1194,13 @@ FCSResult fcs_compute_near_field(FCS handle, fcs_float dist, fcs_float *field)
  */
 FCSResult fcs_set_compute_virial(FCS handle, fcs_int compute_virial)
 {
-  const char *fnc_name = "fcs_require_virial";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (compute_virial != 0 && compute_virial != 1)
-    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "parameter compute_virial must be 0 or 1");
+    return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, "parameter compute_virial must be 0 or 1");
 
   if (handle->set_compute_virial == NULL)
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Setting whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Setting whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   return handle->set_compute_virial(handle, compute_virial);
 }
@@ -1316,15 +1211,13 @@ FCSResult fcs_set_compute_virial(FCS handle, fcs_int compute_virial)
  */
 FCSResult fcs_get_compute_virial(FCS handle, fcs_int *compute_virial)
 {
-  const char *fnc_name = "fcs_get_compute_virial";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (compute_virial == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as argument");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, __func__, "null pointer supplied as argument");
 
   if (handle->get_compute_virial == NULL)
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Returning whether the virial should be computed not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   return handle->get_compute_virial(handle, compute_virial);
 }
@@ -1335,15 +1228,13 @@ FCSResult fcs_get_compute_virial(FCS handle, fcs_int *compute_virial)
  */
 FCSResult fcs_get_virial(FCS handle, fcs_float *virial)
 {
-  const char *fnc_name = "fcs_get_virial";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (virial == NULL)
-    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, fnc_name, "null pointer supplied as argument");
+    return fcs_result_create(FCS_ERROR_NULL_ARGUMENT, __func__, "null pointer supplied as argument");
 
   if (handle->get_virial == NULL)
-    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, fnc_name, "Returning the computed virial not implemented for solver method '%s'", fcs_get_method_name(handle));
+    return fcs_result_create(FCS_ERROR_NOT_IMPLEMENTED, __func__, "Returning the computed virial not implemented for solver method '%s'", fcs_get_method_name(handle));
 
   return handle->get_virial(handle, virial);
 }
@@ -1354,14 +1245,12 @@ FCSResult fcs_get_virial(FCS handle, fcs_float *virial)
  */
 FCSResult fcs_set_max_particle_move(FCS handle, fcs_float max_particle_move)
 {
-  const char *fnc_name = "fcs_set_max_particle_move";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
 /*  if (handle->set_max_particle_move == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "max. particle move not supported");*/
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "max. particle move not supported");*/
 
-  if (handle->set_max_particle_move == NULL) return FCS_SUCCESS;
+  if (handle->set_max_particle_move == NULL) return FCS_RESULT_SUCCESS;
 
   return handle->set_max_particle_move(handle, max_particle_move);
 }
@@ -1372,12 +1261,10 @@ FCSResult fcs_set_max_particle_move(FCS handle, fcs_float max_particle_move)
  */
 FCSResult fcs_set_resort(FCS handle, fcs_int resort)
 {
-  const char *fnc_name = "fcs_set_resort";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->set_resort == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->set_resort(handle, resort);
 }
@@ -1388,12 +1275,10 @@ FCSResult fcs_set_resort(FCS handle, fcs_int resort)
  */
 FCSResult fcs_get_resort(FCS handle, fcs_int *resort)
 {
-  const char* fnc_name = "fcs_get_resort";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->get_resort == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->get_resort(handle, resort);
 }
@@ -1404,14 +1289,12 @@ FCSResult fcs_get_resort(FCS handle, fcs_int *resort)
  */
 FCSResult fcs_get_resort_availability(FCS handle, fcs_int *availability)
 {
-  const char *fnc_name = "fcs_get_resort_availability";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   *availability = 0;
 
   if (handle->get_resort_availability == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->get_resort_availability(handle, availability);
 }
@@ -1422,12 +1305,10 @@ FCSResult fcs_get_resort_availability(FCS handle, fcs_int *availability)
  */
 FCSResult fcs_get_resort_particles(FCS handle, fcs_int *resort_particles)
 {
-  const char *fnc_name = "fcs_get_resort_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->get_resort_particles == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->get_resort_particles(handle, resort_particles);
 }
@@ -1438,12 +1319,10 @@ FCSResult fcs_get_resort_particles(FCS handle, fcs_int *resort_particles)
  */
 FCSResult fcs_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n)
 {
-  const char *fnc_name = "fcs_resort_ints";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->resort_ints == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->resort_ints(handle, src, dst, n, fcs_get_communicator(handle));
 }
@@ -1454,12 +1333,10 @@ FCSResult fcs_resort_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n)
  */
 FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n)
 {
-  const char* fnc_name = "fcs_resort_floats";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->resort_floats == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->resort_floats(handle, src, dst, n, fcs_get_communicator(handle));
 }
@@ -1470,12 +1347,10 @@ FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int 
  */
 FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n)
 {
-  const char *fnc_name = "fcs_resort_bytes";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->resort_bytes == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->resort_bytes(handle, src, dst, n, fcs_get_communicator(handle));
 }
@@ -1486,12 +1361,10 @@ FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n)
  */
 FCSResult fcs_get_resort_dipole_particles(FCS handle, fcs_int *resort_particles)
 {
-  const char *fnc_name = "fcs_get_resort_dipole_particles";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->get_resort_dipole_particles == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->get_resort_dipole_particles(handle, resort_particles);
 }
@@ -1502,12 +1375,10 @@ FCSResult fcs_get_resort_dipole_particles(FCS handle, fcs_int *resort_particles)
  */
 FCSResult fcs_resort_dipole_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n)
 {
-  const char *fnc_name = "fcs_resort_dipole_ints";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->resort_dipole_ints == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->resort_dipole_ints(handle, src, dst, n, fcs_get_communicator(handle));
 }
@@ -1518,12 +1389,10 @@ FCSResult fcs_resort_dipole_ints(FCS handle, fcs_int *src, fcs_int *dst, fcs_int
  */
 FCSResult fcs_resort_dipole_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n)
 {
-  const char* fnc_name = "fcs_resort_dipole_floats";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->resort_dipole_floats == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->resort_dipole_floats(handle, src, dst, n, fcs_get_communicator(handle));
 }
@@ -1534,12 +1403,10 @@ FCSResult fcs_resort_dipole_floats(FCS handle, fcs_float *src, fcs_float *dst, f
  */
 FCSResult fcs_resort_dipole_bytes(FCS handle, void *src, void *dst, fcs_int n)
 {
-  const char *fnc_name = "fcs_resort_dipole_bytes";
-
-  CHECK_HANDLE_RETURN_RESULT(handle, fnc_name);
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
 
   if (handle->resort_dipole_bytes == NULL)
-    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, fnc_name, "resorting not supported");
+    return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "resorting not supported");
 
   return handle->resort_dipole_bytes(handle, src, dst, n, fcs_get_communicator(handle));
 }
@@ -1551,5 +1418,6 @@ FCSResult fcs_resort_dipole_bytes(FCS handle, void *src, void *dst, fcs_int n)
 FCSResult fcs_init_f(FCS *handle, const char *method_name, MPI_Fint communicator)
 {
   MPI_Comm c_comm = MPI_Comm_f2c(communicator);
+
   return fcs_init(handle, method_name, c_comm);
 }

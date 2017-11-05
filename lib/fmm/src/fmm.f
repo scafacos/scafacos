@@ -26,7 +26,7 @@ c
        use fmmkinds
        implicit none
        integer(kind=fmm_integer) int3xyzd,int3xyzd1,int3xyz
-       integer(kind=fmm_integer), external:: int4x,int4y,int4z
+c-ik       integer(kind=fmm_integer), external:: int4x,int4y,int4z
       end module fmmint34
 c
       module fmmjmp
@@ -400,6 +400,7 @@ c
       end module mfbox2int
 #endif
 c
+
 #ifndef FMM_NOFUNCTIONPOINTER
       module mbox2int
        contains
@@ -1169,2316 +1170,10 @@ c
 #endif
       end subroutine bummer
 c
-      subroutine cfmm(ncharges,localcharges,q,xyzin,ierr,de,der,
-     .energy,
-     .fmmpot,
-     .fmmgrad,
-     .virial,
-     .periodic,
-     .periodica,
-     .periodlength,
-     .dipolecorrection,
-     .ilinearpotential,
-     .linearodistance,
-     .iplummerpotential,
-     .aoplummer,
-     .snewerroranalysis,
-     .homogen,
-     .maxdepth,
-     .unrolled2,
-     .balance_load,
-     .FMM_internal_params)
 c
-      use fmmkinds
-      use fmmint34
-      use fmmjmp
-      use fmmhybrid
-      use fmmnsqrndiv
-      use fmmalloc
-      use getneighbors_vars
-      use qinfo
-      use msort
-      use fmmicharge1icharge2
-      use fmmicharge5icharge6
-      use fmmjcharge1jcharge2
-      use mcoordinates
-      use mem_info
-      use mplummer
-      use mwigner
-#ifdef FMM_UNIFORMGRID
-      use muniformgrid
-#endif
-      use fmm_fcs_binding 
-#ifdef FMM_COMPRESSION
-      use compression
-#endif
-#ifdef FMM_TREETOGRAD
-      use mtreetograd
-#endif
-#ifdef FMM_DAMPING
-      use mdamping
-#endif
-#ifdef FMM_PARALLEL
-      use mp_info
-#ifdef FMM_LOADSORT
-      use mp_load
-#endif
-#endif
-c
+      module mod_fullfmm
       implicit none
-c
-      integer(kind=fmm_integer) maxnmultipoles
-      parameter(maxnmultipoles=FMM_MAXNMULTIPOLES)
-c
-      integer(kind=fmm_integer) maxws
-      parameter(maxws=1)
-c
-      integer(kind=fmm_integer) maxncsar
-      parameter(maxncsar=7*maxws*maxws*maxws+18*maxws*maxws+14*maxws+5)
-c
-      integer(kind=fmm_integer) maxncar
-      parameter(maxncar=16*maxws*maxws+24*maxws+8)
-c
-      integer(kind=fmm_integer) maxnrar
-      parameter(maxnrar=7*maxws*maxws*maxws+21*maxws*maxws+21*maxws+7)
-c
-      integer(kind=fmm_integer) maxn2multipoles
-      parameter(maxn2multipoles=maxnmultipoles+maxnmultipoles)
-c
-      integer(kind=fmm_integer) maxwsd
-      parameter(maxwsd=2*maxws+1)
-c
-      integer(kind=fmm_integer) mmaxwsd
-      parameter(mmaxwsd=-maxwsd)
-c
-      integer(kind=fmm_integer) maxwsd2
-      parameter(maxwsd2=2*maxwsd*maxwsd)
-c
-      integer(kind=fmm_integer) maxwsd3
-      parameter(maxwsd3=3*maxwsd*maxwsd)
-c
-      real(kind=fmm_real), allocatable:: dbl(:)
-c
-#ifdef FMM_COMPRESSION
-      integer(kind=1), allocatable:: iboxsrt(:,:)
-#else
-      integer(kind=fmm_integer), allocatable, target:: iboxsrt(:)
-#endif
-      integer(kind=fmm_integer), allocatable:: iboxjmp(:)
-#ifdef FMM_IBOXSCR
-      integer(kind=fmm_integer), allocatable, target:: iboxscr(:)
-#endif
-      integer(kind=fmm_integer), pointer:: piboxscr(:),piboxsrt(:)
-      integer(kind=fmm_integer), allocatable:: int3x(:),int3y(:),
-     .int3z(:),int3p(:),int3q(:),nbofmb(:)
-      integer(kind=fmm_integer) ipo(3),jpo(3),mask(3)
-c
-      real(kind=fmm_real) fmmdist(mmaxwsd:maxwsd,mmaxwsd:maxwsd,
-     .mmaxwsd:maxwsd)
-      integer(kind=fmm_integer) gb(2,maxwsd*maxwsd*maxwsd)
-      real(kind=fmm_real) gbsh(3,maxwsd*maxwsd*maxwsd)
-c
-      integer(kind=fmm_integer) ncsar,icsar(0:maxwsd,0:maxwsd2),
-     .jcsar(maxncsar)
-      integer(kind=fmm_integer) ncar,icar(mmaxwsd:maxwsd,mmaxwsd:maxwsd)
-      integer(kind=fmm_integer) isar(mmaxwsd:maxwsd,0:maxwsd)
-      integer(kind=fmm_integer) nrar
-      integer(kind=fmm_integer), allocatable:: irar(:,:)
-      real(kind=fmm_real), allocatable:: grar(:,:)
-      logical(kind=fmm_logical), allocatable:: sgrar(:)
-c
-      integer(kind=fmm_integer) nfmmcos(maxwsd3),fmmcos(2,maxncsar)
-c
-      integer(kind=fmm_integer) mi
-      parameter(mi=-1)
-c
-      integer(kind=fmm_integer) jcar(mi:1,mi:1)
-      real(kind=fmm_real) hcar(0:maxnmultipoles,4),
-     .hsar(0:maxnmultipoles,4)
-c
-      integer(kind=fmm_integer) ierr
-c
-      integer(kind=fmm_integer) ldf
-      parameter(ldf=200)
-      integer(kind=fmm_integer) inf
-      parameter(inf=ldf)
-      integer(kind=fmm_integer) ldff
-      parameter(ldff=ldf+ldf)
-      real(kind=fmm_real) fmmerr(0:maxnmultipoles,maxws),
-     .pfmmerr(0:maxnmultipoles),
-     .merr(0:maxnmultipoles,maxws)
-c
-      integer(kind=fmm_integer) ncharges,localcharges
-      real(kind=fmm_real), target:: xyzin(3,localcharges)
-      real(kind=fmm_real), allocatable, target:: xyz(:,:)
-      real(kind=fmm_real), pointer:: xyzt(:,:)
-      real(kind=fmm_real) q(*)
-      real(kind=fmm_real) coul,shx,shy,shz,sf,sh,fac(0:170),rfac(0:170)
-      real(kind=fmm_real) pow(0:maxnmultipoles),sg(0:maxn2multipoles)
-      real(kind=fmm_real) fr(0:maxn2multipoles)
-      real(kind=fmm_real), allocatable:: coeff1(:,:),coeff2(:,:),
-     .coeff3(:,:,:),
-     .coeff4(:,:),coeff5(:,:,:),coeff6(:,:)
-      real(kind=fmm_real) energy
-#ifdef FMM_NOPOT
-      real(kind=fmm_real), target:: fmmgrad(3*ncharges)
-      real(kind=fmm_real) fmmpot(*)
-#else
-#ifdef FMM_TREETOGRAD
-      real(kind=fmm_real), target:: fmmgrad(3*ncharges)
-#else
-      real(kind=fmm_real) fmmgrad(*)
-#endif
-      real(kind=fmm_real), target:: fmmpot(ncharges),virial(9)
-#endif
-      real(kind=fmm_real), pointer:: pfmmpot(:)
-      real(kind=fmm_real), allocatable:: d2(:,:,:),d3(:,:,:),d2f(:,:,:),
-     .d3f(:,:,:)
-      real(kind=fmm_real), allocatable:: bfgn(:)
-      real(kind=fmm_real) rl(0:maxn2multipoles),cmphi(0:maxn2multipoles)
-      real(kind=fmm_real) smphi(0:maxn2multipoles),
-     .cmphipi(0:maxn2multipoles)
-      real(kind=fmm_real) smphipi(0:maxn2multipoles)
-      real(kind=fmm_real), allocatable, target:: omegatree(:)
-      real(kind=fmm_real), allocatable, target:: mutree(:)
-      real(kind=fmm_real), pointer:: romegatree(:),iomegatree(:),
-     .rmutree(:),imutree(:)
-      integer(kind=fmm_integer), allocatable:: taylor(:)
-      real(kind=fmm_real) delta,de,der,dem,periodlength,
-     .linearodistance(*),aoplummer,lineardistance(0:3),efarfield,e1per,
-     .enearfield,enfinbox,enfbibj,virialtensor(3,3)
-      real(kind=fmm_real_extended) efarfieldpot
-      real(kind=fmm_real) ctheta,stheta
-      real(kind=fmm_real) calpha,salpha,cbeta,sbeta
-c
-      integer(kind=fmm_integer), allocatable:: indscr(:)
-c
-      integer(kind=fmm_integer) buflen
-      parameter(buflen=131072)
-      integer(kind=fmm_integer) bfglen
-      parameter(bfglen=4*buflen)
-      real(kind=fmm_real) bfg(buflen,4),csar(buflen),car(buflen),
-     .sar(buflen),
-     .rar(buflen)
-      integer(kind=fmm_integer) jibfglen
-      parameter(jibfglen=6*buflen)
-      integer(kind=fmm_integer) jibfg(buflen,6),isrt(buflen),
-     .kbxyzar(buflen),
-     .indar(buflen),kboxxyzar(buflen),kboxindar(buflen),kbar(buflen)
-      equivalence(bfg,csar)
-      equivalence(bfg(1,2),car)
-      equivalence(bfg(1,3),sar)
-      equivalence(bfg(1,4),rar)
-      equivalence(jibfg,isrt)
-      equivalence(jibfg(1,2),kbxyzar)
-      equivalence(jibfg(1,3),indar)
-      equivalence(jibfg(1,4),kboxxyzar)
-      equivalence(jibfg(1,5),kboxindar)
-      equivalence(jibfg(1,6),kbar)
-c
-      real(kind=fmm_real) fracdepth,shmonopole
-c
-      real(kind=fmm_real), allocatable:: flvlar(:),powsq(:)
-c
-      integer(kind=fmm_integer) parabola,ilevelmn,bfgnlen
-      real(kind=fmm_real) cx,cy,cz
-c
-#ifdef FMM_TREETOGRAD
-      integer(kind=fmm_integer) startbox,endbox,pagejump,pageshift,
-     .pageshiftg,pagemask,pageaddr,indsize,pagepossize,indskpjump
-c
-      logical(kind=fmm_logical) pages
-#endif
-c
-      integer(kind=fmm_integer) maxdepth,maxdepthp,mmaxdepth,nbytes,
-     .nbits,maxint,maxmint,i,depth,nmultipoles,mnmultipoles,
-     .n2multipoles,nsqmultipoles,j,jnbi,nbfg,ntree
-      integer(kind=fmm_integer), allocatable:: bitpos(:),mbitpos(:),
-     .nboxesinlevel(:),nboxeslevel(:)
-c
-#if defined(FMM_IBOXSCR) && !defined(FMM_COMPRESSION)
-      integer(kind=fmm_integer), allocatable:: ibox(:)
-#else
-      integer(kind=fmm_integer), allocatable, target:: ibox(:)
-#endif
-c
-      logical(kind=fmm_logical) dfmmmerr(maxws)
-c
-      integer(kind=fmm_integer) k,l,m,igtaylor,mgtaylor,ntaylor,ws
-      real(kind=fmm_real) enearfieldpot,energypot
-c
-      integer(kind=fmm_integer) ishx,maskx,ishy,masky,mishx,mishy,
-     .maskxy
-c
-      real(kind=fmm_real) qqq,corrsx,corrsy,corrsz,corrs,corrsh
-      real(kind=fmm_real) gp,gsq
-#ifdef FMM_DEBUG
-      real(kind=fmm_real) sgradx,sgrady,sgradz
-      real(kind=fmm_real) sagradx,sagrady,sagradz
-#endif
-c
-      integer(kind=fmm_integer) periodic,periodica,dipolecorrection,
-     .ilinearpotential,iplummerpotential,homogen
-      logical(kind=fmm_logical) compute
-      integer(kind=fmm_integer) negpos
-      logical(kind=fmm_logical) nothing,linearpotential,copyxyz,sh4,sh3,
-     .changepos,shmp,cachopt,g2db,precomputeallds,withaop,withbop,
-     .withcop,withtaylor,associatedwignerd,gtaylor,doit
-c
-      logical(kind=fmm_logical) hugep(0:100)
-      real(kind=fmm_real) hugef(100)
-c
-      real(kind=fmm_real) zero
-      parameter(zero=0.e0_fmm_real)
-      real(kind=fmm_real) one
-      parameter(one=1.e0_fmm_real)
-      real(kind=fmm_real) two
-      parameter(two=2.e0_fmm_real)
-      real(kind=fmm_real) three
-      parameter(three=3.e0_fmm_real)
-      real(kind=fmm_real) half
-      parameter(half=one/two)
-      real(kind=fmm_real_extended) zero_extended
-      parameter(zero_extended=0.e0_fmm_real_extended)
-c
-      integer(kind=fmm_integer) n
-      integer(kind=fmm_integer) unrolled2,pgd
-c
-      integer(kind=fmm_integer) snewerroranalysis
-      integer(kind=fmm_integer) serroranalysis,nerroranalysis
-c      logical(kind=fmm_logical), save:: firsterroranalysis = .true.
-      logical(kind=fmm_logical) firsterroranalysis
-      logical(kind=fmm_logical) erroranalysis
-c      save pgd,depth,fracdepth,nmultipoles,shmonopole,parabola
-      real(kind=fmm_real) linearodistancesv(3),aoplummersv
-      integer(kind=fmm_integer) ilinearpotentialsv,iplummerpotentialsv
-c
-      type(twignerd) wignerd
-c
-      integer(kind=fmm_integer) nallocst
-c-ik         
-      type(FMM_internal_params_t):: FMM_internal_params
-      integer(kind=fmm_integer) :: balance_load
-c-ik
-#ifdef FMM_PARALLEL
-      call mp_rank(MP_ALLNODES,me)
-      call mp_nnodes(MP_ALLNODES,nnodes)
-#ifdef FMM_INFO
-      if(me.eq.0) write(6,*) ' nnodes: ',nnodes
-#endif
-#endif
-c
-#ifdef FMM_LOADSORT 
-      if(balance_load.gt.0) then
-c-ik
-         doload = .false.
-      else
-         doload = .false.
-      endif
-#endif
-      serroranalysis = FMM_internal_params%serroranalysis
-      nerroranalysis = FMM_internal_params%nerroranalysis
-      pgd = FMM_internal_params%pgd
-      depth = FMM_internal_params%depth
-      nmultipoles = FMM_internal_params%nmultipoles
-      parabola = FMM_internal_params%parabola
-      ilinearpotentialsv = FMM_internal_params%ilinearpotentialsv
-      iplummerpotentialsv = FMM_internal_params%iplummerpotentialsv
-      firsterroranalysis = FMM_internal_params%firsterroranalysis
-      hugep = FMM_internal_params%hugep
-      fracdepth = FMM_internal_params%fracdepth
-      shmonopole = FMM_internal_params%shmonopole
-      linearodistancesv = FMM_internal_params%linearodistancesv
-      aoplummersv = FMM_internal_params%aoplummersv
-      hugef = FMM_internal_params%hugef
-      wignerd%wignerd => FMM_internal_params%wignerd%wignerd
-
-c-ik
-c      call seticharge1icharge2(maxncharges)
-      icharge1 = 1
-      icharge2 = localcharges
-      icharge5 = icharge1
-      icharge6 = icharge2
-      icharges = localcharges
-
-#ifdef FMM_PARALLEL
-#ifdef FMM_LOADSORT
-      if(doload) then 
-        ichargesout = icharges 
-        micharge1 = 1
-        micharge2 = FMM_internal_params%iboxloadlength
-        micharges = FMM_internal_params%iboxloadlength
-        percentageofimbalance = 0.00000001_fmm_c_real
-        minnofimbalance = 1
-        maxnofimbalance = micharges
-c
-        call c_f_pointer(FMM_internal_params%iboxloadcptr,iboxload,
-     .  [micharges])
-      else
-        ichargesout = icharges
-        micharge1 = icharge1
-        micharge2 = icharge2
-        micharges = icharges
-      endif
-#else
-      ichargesout = icharges 
-      micharge1 = icharge1
-      micharge2 = icharge2
-      micharges = icharges
-#endif
-#else
-      ichargesout = icharges
-      micharge1 = icharge1
-      micharge2 = icharge2 
-      micharges = icharges
-#endif
-c
-      call intbyt(nbytes,nbits,maxint,maxmint)
-c
-      call setmdmaxallocation(maxallocation)
-      call setmdcorememorysortmemory(corememory,sortmemory)
-      call chkmdmaxallocationcorememorysortmemory(maxallocation,
-     .corememory,sortmemory)
-c
-      call setmdfmmalloc(nbytes)
-c
-      call setnalloctomaxnalloc(nalloc,maxnalloc)
-c
-#ifdef FMM_STATISTICS
-      call fmmstatistics(ncharges,.true.)
-#endif
-c
-#ifdef FMM_PARALLEL
-#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
-      call c_cputime_walltime(.true.)
-#endif
-#endif
-c
-      call stmdfmmalloc(nalloc,nallocst)
-      call prtmdfmmalloc(nalloc,maxnalloc,'start of cfmm')
-c
-#ifdef FMM_PARALLEL
-      mp_setup = .false.
-#endif
-c
-c      call seticharge1icharge2(ncharges)
-c
-#ifdef FMM_PARALLEL
-      if(nnodes.gt.0) then
-         i = nnodes-1
-         call seticharge3(i)
-      else
-         call bummer('fmm: error, nnodes = ',nnodes)
-      endif
-#else
-      icharge3 = icharge1
-#endif
-c
-#ifdef FMM_NOPOT
-      pfmmpot => fmmgrad
-#else
-      pfmmpot => fmmpot
-#endif
-c
-      call setfmmi0(ierr,de)
-c
-      if(de.gt.zero) then
-       if(ldf.gt.maxnmultipoles) then
-        call calnegpos(periodic,q,energy,pfmmpot,fmmgrad,negpos,nothing)
-        if(nothing) then
-         pfmmpot => null()
-#ifdef FMM_PARALLEL
-#ifdef FMM_LOADSORT
-         if(doload) iboxload => null()
-#endif
-#endif
-         call edmdfmmalloc(nalloc,nallocst,'cfmm')
-         call prtmdfmmalloc(nalloc,maxnalloc,'  end of cfmm')
-#ifdef FMM_PARALLEL
-#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
-         call c_cputime_walltime(.false.)
-#endif
-#endif
-#ifdef FMM_STATISTICS
-         call fmmstatistics(ncharges,.false.)
-#endif
-         return
-        endif
-       else
-        call bummer('fmm: (ldf-maxnmultipoles) = ',(ldf-maxnmultipoles))
-       endif
-      else
-       call bummer('fmm: error, ierr = ',ierr)
-      endif
-c
-c      call intbyt(nbytes,nbits,maxint,maxmint)
-c
-c      call intmaxdepth(maxdepth,nbits)
-c
-      maxdepthp = maxdepth+1
-      mmaxdepth = -maxdepth
-c
-#ifdef FMM_PARALLEL
-      call calkind_integer_processes(nbits,maxmint,maxint)
-#endif
-c
-      if(firsterroranalysis) then
-         if(snewerroranalysis.gt.0) then
-            serroranalysis = snewerroranalysis
-            nerroranalysis = 1
-            erroranalysis = .true.
-            ilinearpotentialsv = ilinearpotential
-            linearodistancesv(1) = linearodistance(1)
-            linearodistancesv(2) = linearodistance(2)
-            linearodistancesv(3) = linearodistance(3)
-            iplummerpotentialsv = iplummerpotential
-            aoplummersv = aoplummer
-            firsterroranalysis = .false.
-         else
-            call bummer('fmm: error, snewerroranalysis = ',
-     .      snewerroranalysis)
-         endif
-      elseif(serroranalysis.gt.0) then
-         if(serroranalysis.gt.nerroranalysis) then
-            erroranalysis = .false.
-            nerroranalysis = nerroranalysis+1
-         elseif(serroranalysis.eq.nerroranalysis) then
-            nerroranalysis = 1
-            erroranalysis = .true.
-         else
-            call bummer('fmm: (serroranalysis-nerroranalysis) = ',
-     .      (serroranalysis-nerroranalysis))
-         endif
-      else
-         call bummer('fmm: error, serroranalysis = ',serroranalysis)
-      endif
-c
-#ifdef FMM_NOPOT
-      if(erroranalysis.and.(homogen.eq.0)) then
-         call bummer('fmm: not yet implemented, homogen = ',homogen)
-      endif
-#endif
-c
-      if(erroranalysis) then
-         if(maxdepth.ge.0) then
-c            call fmmallocate(hugep,0,maxdepthp,i)
-c            if(i.eq.0) then
-c               call fmmallocate(hugef,1,maxdepthp,i)
-c               if(i.eq.0) then
-c                  i = ltob*(maxdepthp+1)+rtob*(maxdepthp)
-c                  nallocr = i
-c                  nallocst = nallocst+i
-                  hugep(0) = .false.
-                  do 337 i = 1,maxdepthp
-                     hugep(i) = .false.
-                     hugef(i) = one
- 337              continue
-c               else
-c                  call bummer('fmm: error, i = ',i)
-c               endif
-c            else
-c               call bummer('fmm: error, i = ',i)
-c            endif
-         else
-            call bummer('fmm: error, maxdepth = ',maxdepth)
-         endif
-      endif
-c
-#ifdef FMM_UNIFORMGRID
-      if(periodic.eq.0) then
-       if(iplummerpotential.eq.0) then
-        if(ilinearpotential.eq.0) then
-         plummer_potential = .false.
-         linearpotential = .false.
-         if(uniformgridox.gt.zero) then
-          if(uniformgridoy.gt.zero) then
-           if(uniformgridoz.gt.zero) then
-            uniformgridm = max(uniformgridox,uniformgridoy,
-     .      uniformgridoz)
-            uniformgridx = uniformgridox
-            uniformgridy = uniformgridoy
-            uniformgridz = uniformgridoz
-            uniformgridalpha = uniformgridoalpha
-           else
-            call bummer('fmm: error, uniformgridoz <= ',0)
-           endif
-          else
-           call bummer('fmm: error, uniformgridoy <= ',0)
-          endif
-         else
-          call bummer('fmm: error, uniformgridox <= ',0)
-         endif
-        else
-         call bummer('fmm: error, ilinearpotential = ',ilinearpotential)
-        endif
-       else
-        call bummer('fmm: error, iplummerpotential =',iplummerpotential)
-       endif
-      else
-       call bummer(
-     . 'fmm: FMM_UNIFORMGRID & periodic not yet implemented, periodic=',
-     . periodic)
-      endif
-#else
-      if(iplummerpotential.eq.1) then
-       if(ilinearpotential.eq.0) then
-        if(aoplummer.gt.zero) then
-         plummer_potential = .true.
-         linearpotential = .false.
-         a_plummer = aoplummer
-        elseif(aoplummer.eq.zero) then
-         plummer_potential = .false.
-         linearpotential = .false.
-         a_plummer = aoplummer
-        else
-         call bummer('fmm: error, aoplummer < ',0)
-        endif
-       else
-        call bummer('fmm: error, ilinearpotential = ',ilinearpotential)
-       endif
-      elseif(iplummerpotential.eq.0) then
-       plummer_potential = .false.
-       if(ilinearpotential.eq.0) then
-        linearpotential = .false.
-       elseif((ilinearpotential.gt.0).and.(ilinearpotential.lt.8)) then
-        linearpotential = .true.
-c
-        if(ilinearpotential.eq.1) then
-         if(linearodistance(3).gt.zero) then
-          lineardistance(0) = linearodistance(3)
-          lineardistance(1) = zero
-          lineardistance(2) = zero
-          lineardistance(3) = linearodistance(3)
-         else
-          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
-         endif
-        elseif(ilinearpotential.eq.2) then
-         if(linearodistance(2).gt.zero) then
-          lineardistance(0) = linearodistance(2)
-          lineardistance(1) = zero
-          lineardistance(2) = linearodistance(2)
-          lineardistance(3) = zero
-         else
-          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
-         endif
-        elseif(ilinearpotential.eq.3) then
-         if(linearodistance(2).gt.zero) then
-          if(linearodistance(3).gt.zero) then
-           lineardistance(0)=max(linearodistance(2),linearodistance(3))
-           lineardistance(1) = zero
-           lineardistance(2) = linearodistance(2)
-           lineardistance(3) = linearodistance(3)
-          else
-           call bummer('fmm: error, ilinearpotential=',ilinearpotential)
-          endif
-         else
-          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
-         endif
-        elseif(ilinearpotential.eq.4) then
-         if(linearodistance(1).gt.zero) then
-          lineardistance(0) = linearodistance(1)
-          lineardistance(1) = linearodistance(1)
-          lineardistance(2) = zero
-          lineardistance(3) = zero
-         else
-          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
-         endif
-        elseif(ilinearpotential.eq.5) then
-         if(linearodistance(1).gt.zero) then
-          if(linearodistance(3).gt.zero) then
-           lineardistance(0)=max(linearodistance(1),linearodistance(3))
-           lineardistance(1) = linearodistance(1)
-           lineardistance(2) = zero
-           lineardistance(3) = linearodistance(3)
-          else
-           call bummer('fmm: error, ilinearpotential=',ilinearpotential)
-          endif
-         else
-          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
-         endif
-        elseif(ilinearpotential.eq.6) then
-         if(linearodistance(1).gt.zero) then
-          if(linearodistance(2).gt.zero) then
-           lineardistance(0)=max(linearodistance(1),linearodistance(2))
-           lineardistance(1) = linearodistance(1)
-           lineardistance(2) = linearodistance(2)
-           lineardistance(3) = zero
-          else
-           call bummer('fmm: error, ilinearpotential=',ilinearpotential)
-          endif
-         else
-          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
-         endif
-        elseif(linearodistance(1).gt.zero) then
-         if(linearodistance(2).gt.zero) then
-          if(linearodistance(3).gt.zero) then
-           lineardistance(0)=max(linearodistance(1),linearodistance(2),
-     .     linearodistance(3))
-           lineardistance(1) = linearodistance(1)
-           lineardistance(2) = linearodistance(2)
-           lineardistance(3) = linearodistance(3)
-          else
-           call bummer('fmm: error, ilinearpotential=',ilinearpotential)
-          endif
-         else
-          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
-         endif
-        else
-         call bummer('fmm: error, ilinearpotential = ',ilinearpotential)
-        endif
-       else
-        call bummer('fmm: error, ilinearpotential = ',ilinearpotential)
-       endif
-      else
-       call bummer('fmm: error, iplummerpotential = ',iplummerpotential)
-      endif
-#endif
-c
-      call factorial(170,fac)
-      call rfactorial(170,rfac)
-c
-      call fmmallocate(flvlar,1,maxdepthp,i)
-      if(i.eq.0) then
-         call fmmlvl(maxdepthp,flvlar)
-      else
-         call bummer('fmm: error, i = ',i)
-      endif
-c
-      call fmmallocate(powsq,mmaxdepth,maxdepthp,i)
-      if(i.eq.0) then
-         call calpowsq(maxdepth,mmaxdepth,powsq)
-      else
-         call bummer('fmm: error, i = ',i)
-      endif
-c
-      if(nbits.gt.0) then
-         i = nbits-1
-         call fmmallocate(bitpos,0,i,j)
-         if(j.eq.0) then
-            call fmmallocate(mbitpos,0,i,j)
-            if(j.eq.0) then
-               call calbitpmbp(i,maxmint,bitpos,mbitpos)
-            else
-               call bummer('fmm: error, j = ',j)
-            endif
-         else
-            call bummer('fmm: error, j = ',j)
-         endif
-      else
-         call bummer('fmm: error, nbits = ',nbits)
-      endif
-c
-      ws = 1
-c
-      if(ws.le.0) call bummer('fmm: error, ws = ',ws)
-      if(ws.gt.maxws) call bummer('fmm: (ws-maxws) = ',(ws-maxws))
-c
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-      if(me.eq.0) then
-#endif
-         write(6,'(''          ws = '',i13)') ws
-#ifdef FMM_PARALLEL
-      endif
-#endif
-#endif
-c
-      mem_s = 5
-      mmem_s = -mem_s
-      mem_l = bitpos(mem_s)-1
-      if(mem_s.gt.1) then
-         mem_m = bitpos(nbits+mmem_s)-1
-      else
-         mem_m = maxint
-      endif
-      mem_s2 = 4
-      mmem_s2 = -mem_s2
-      mem_l2 = bitpos(mem_s2)-1
-      if(mem_s.gt.1) then
-         mem_m2 = bitpos(nbits+mmem_s2)-1
-      else
-         mem_m2 = maxint
-      endif
-c
-      if (FMM_internal_params%resort.eq.1) then
-        copyxyz = .false.
-      else
-        copyxyz = .true.
-      endif
-      sh4 = .true.
-      sh3 = .false.
-      useqinsh = .true.
-      changepos = .true.
-      shmp = .false.
-      cachopt = .true.
-      g2db = .true.
-c setup from scafaocs interface
-c      unrolled2 = 0
-      precomputeallds = .false.
-#ifdef FMM_PARALLEL
-      withaop = .true.
-      withbop = .true.
-      withcop = .true.
-      withtaylor = .false.
-      jmp = .false.
-      hybrid = .false.
-#ifdef FMM_LOADSORT
-c-ik      doload = .false.
-#endif
-#else
-      withaop = .true.
-      withbop = .true.
-      withcop = .true.
-      withtaylor = .true.
-      jmp = .true.
-      hybrid = .true.
-#endif
-      nsqr = 19
-      ndiv = 7
-c      nsqr = 31
-c      ndiv = 4
-      int3xyzd = maxdepth
-      int3xyzd1 = int3xyzd+1
-      if(int3xyzd.ge.0) then
-         int3xyz = bitpos(int3xyzd)-1
-      else
-         int3xyz = int3xyzd
-      endif
-      if(erroranalysis) then
-         pgd = 9
-         call setpgd(bitpos,ws,maxdepth,pgd)
-      endif
-c
-#ifdef FMM_DAMPING
-      sh4 = .true.
-      useqinsh = .true.
-#else
-      if(sh4.or.(.not.qscratch)) useqinsh = .true.
-#endif
-      if(.not.changepos) shmp = .false.
-      if(.not.withbop) hybrid = .true.
-c
-      if(jmp) then
-         call caljmps(ncharges,nbits,erroranalysis,homogen,maxmint,
-     .   periodic,changepos,bitpos,mbitpos)
-      else
-         call caljmplj(jmpg,jmph,jmpp,jmpupd,jmpj,jmpn,jmpb,jmpjp)
-      endif
-c
-      sf = one
-      sh = one
-      gp = one
-      gsq = one
-      gsq = -gsq
-c
-      efarfield = zero
-      efarfieldpot = zero
-      e1per = zero
-      enearfield = zero
-      enearfieldpot = zero
-      enfinbox = zero
-      enfbibj = zero
-      coul = zero
-c
-      do 778 i = 1,maxws
-         dfmmmerr(i) = .true.
- 778  continue
-c
-c      call coulomb(ncharges,q,xyzin,coul)
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-      if(me.eq.0) then
-#endif
-c         write(6,'(1x,q50.40,1x,z32)') coul,coul
-#ifdef FMM_PARALLEL
-      endif
-#endif
-#endif
-c      call coulgrad(ncharges,q,xyzin)
-c      call coulpot(ncharges,q,xyzin)
-c
-      call calishmsk(nbits,ishx,maskx,ishy,masky,mishx,mishy,maskxy)
-c
-      ipo(1) = 0
-      ipo(2) = ishy
-      ipo(3) = ishx
-c
-      jpo(1) = 0
-      jpo(2) = mishy
-      jpo(3) = mishx
-c
-      mask(1) = maskxy
-      mask(2) = masky
-      mask(3) = maskx
-c
-      call fmmg(maxwsd,maxncsar,ws,ncsar,icsar,fmmcos,.false.)
-c
-      if(maxnmultipoles.gt.0) then
-         i = -maxnmultipoles
-      else
-         i = 0
-      endif
-c
-      if(ncsar.gt.0) then
-         j = ncsar+2
-      else
-         call bummer('fmm: error, ncsar = ',ncsar)
-      endif
-c
-      associatedwignerd = associated(wignerd%wignerd)
-c
-      if(precomputeallds) then
-         if(.not.associatedwignerd) then
-            call fmmallocatept(wignerd%wignerd,0,maxnmultipoles,i,
-     .      maxnmultipoles,0,maxnmultipoles,1,4,1,j,k)
-            if(k.ne.0) call bummer('fmm: error, k = ',k)
-         endif
-c
-         call calallds(ws,maxnmultipoles,ncsar,maxwsd,icsar,fmmcos,
-     .   wignerd)
-      endif
-c
-      call fmmh(maxnmultipoles,maxwsd,mmaxwsd,mi,maxncar,ws,ncar,icar,
-     .jcar,hcar,hsar,.false.)
-c
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-      if(me.eq.0) then
-#endif
-         write(6,'(''    ncharges = '',i13)') ncharges
-#ifdef FMM_PARALLEL
-      endif
-#endif
-#endif
-c
-#ifdef FMM_COMPRESSION
-#ifdef FMM_PARALLEL
-#ifdef FMM_LOADSORT
-      if(doload) call bummer('fmm: compression & loadsort, me = ',me)
-#endif
-#endif
-#ifdef FMM_EXTREMECOMPRESSION
-#ifdef FMM_EXTREMEEXTREMECOMPRESSION
-      if(nchcompression.lt.0) then
-         call bummer('fmm: error, nchcompression = ',nchcompression)
-      endif
-#endif
-#endif
-#endif
-c
-#ifdef FMM_COMPRESSION
-      if(homogen.eq.1) then
-       if(jmp) then
-        call bummer('fmm: compression and jmp requested, homogen = ',
-     .  homogen)
-       elseif(nbytes.gt.0) then
-        i = nbytes-1
-        call fmmallocate(int1m,0,i,j)
-        if(j.ne.0) call bummer('fmm: error, j = ',j)
-        call fmmallocate(mint1,0,i,j)
-        if(j.ne.0) call bummer('fmm: error, j = ',j)
-        call fmmallocate(int1scr,0,i,j)
-        if(j.ne.0) call bummer('fmm: error, j = ',j)
-#ifdef FMM_EXTREMECOMPRESSION
-        maxboxnumber = 0
-        maxnp = 0
-        call calmindp(ws,periodic,nbits,bitpos,mindp)
-        if(mindp.ge.0) then
-         if(mindp.le.maxdepth) then
-          i = nbits-1
-          j = 3*mindp
-          if(j.lt.i) then
-           mindpl = bitpos(j)
-           mindpm = mindpl-1
-           call fmmallocate(pinb,0,mindpm,i)
-           if(i.eq.0) then
-            do 776 i = 0,mindpm
-             pinb(i) = 0
- 776        continue
-           else
-            call bummer('fmm: error, i = ',i)
-           endif
-          else
-           call bummer('fmm: (j-i) = ',(j-i))
-          endif
-         else
-          call bummer('fmm: (mindp-maxdepth) = ',(mindp-maxdepth))
-         endif
-        else
-         call bummer('fmm: error, mindp = ',mindp)
-        endif
-#endif
-       else
-        call bummer('fmm: error, nbytes = ',nbytes)
-       endif
-      else
-       call bummer('fmm: compression requested, homogen = ',homogen)
-      endif
-#endif
-c
-#ifdef FMM_PARALLEL
-      if(icharges.gt.0) then
-#else
-      if(ncharges.gt.0) then
-#endif
-         if(copyxyz) then
-#ifdef FMM_PARALLEL
-            call fmmallocate(xyz,1,3,micharge1,micharge2,i)
-#else
-            call fmmallocate(xyz,1,3,1,ncharges,i)
-#endif
-            if(i.eq.0) then
-               xyzt => xyz
-            else
-               call bummer('fmm: error, i = ',i)
-            endif
-         else
-            xyzt => xyzin
-         endif
-      else
-#ifdef FMM_PARALLEL
-         call bummer('fmm: error, icharges = ',icharges)
-#else
-         call bummer('fmm: error, ncharges = ',ncharges)
-#endif
-      endif
-c
-#ifdef FMM_DAMPING
-      enfdba = .false.
-#endif
-c
-      if(homogen.eq.1) then
-       if(jmp) then
-        call bummer('fmm: compression and jmp requested, homogen = ',
-     .  homogen)
-       else
-#ifdef FMM_COMPRESSION
-        call sccoorda(ws,nbits,bitpos,xyzin,xyzt,sf,periodic,periodica,
-     .  periodlength,changepos)
-c
-        if(periodic.gt.0) then
-         if(nj.gt.0) then
-          i = nbits-1
-          call fmmallocate(bitposm1,0,i,j)
-          if(j.ne.0) call bummer('fmm: error, j = ',j)
-          call calbitposm1(nbits,maxint,bitpos)
-          call fmmallocate(mskj,1,nbytes,i)
-          if(i.ne.0) call bummer('fmm: error, i = ',i)
-          call calmskj(nbytes)
-          call calm4(nbytes,nbits,bitpos,periodic)
-          call fmmallocate(folder,1,nfolder,i)
-          if(i.ne.0) call bummer('fmm: error, i = ',i)
-         elseif(nj.lt.0) then
-          call bummer('fmm: error, nj = ',nj)
-         endif
-        elseif(periodic.ne.0) then
-         call bummer('fmm: error, periodic = ',periodic)
-        endif
-c
-        call sccoordb(ws,nbits,bitpos,mbitpos,bfg,bfglen,q,xyzt,sf,
-     .  periodic,linearpotential,lineardistance,changepos,negpos,
-     .  dipolecorrection,qqq,corrsx,corrsy,corrsz,corrs,corrsh)
-#endif
-        if(erroranalysis) then
-#ifdef FMM_COMPRESSION
-         doit = .true.
-#else
-         doit = .false.
-#endif
-         if(doit) then
-          call pass2dehomogen(maxdepth,ws,ncharges,maxnmultipoles,
-     .    nmultipoles,inf,ldf,ldff,dfmmmerr,maxwsd,ncsar,icsar,
-     .    nfmmcos,fmmcos,fmmerr,pfmmerr,merr,bitpos,nbits,maxint,
-     .    depth,fracdepth,parabola,withbop,hugep,hugef,negpos,
-     .    periodic,pgd,changepos,ierr,de,shmonopole,sf,
-     .    linearpotential,lineardistance)
-         endif
-        endif
-c
-#ifdef FMM_COMPRESSION
-#ifdef FMM_EXTREMECOMPRESSION
-        call sccoord2(periodic,nbits,depth,fracdepth,shmonopole,sh,xyzt,
-     .  linearpotential,lineardistance)
-#endif
-c
-#ifdef FMM_EXTREMECOMPRESSION
-        if(depth.ge.mindp) then
-         mindps = 3*(mindp-depth)
-        elseif(depth.ge.0) then
-         mindps = 0
-         mindp = depth
-         i = nbits-1
-         j = 3*mindp
-         if(j.lt.i) then
-          mindpl = bitpos(j)
-          mindpm = mindpl-1
-          do 777 i = 0,mindpm
-           pinb(i) = 0
- 777      continue
-         else
-          call bummer('fmm: (j-i) = ',(j-i))
-         endif
-        else
-         call bummer('fmm: error, depth = ',depth)
-        endif
-#endif
-#endif
-       endif
-#ifdef FMM_COMPRESSION
-      else
-       call bummer('fmm: compression requested, homogen = ',homogen)
-#else
-      elseif(homogen.ne.0) then
-       call bummer('fmm: error, homogen = ',homogen)
-#endif
-      endif
-c
-#ifdef FMM_PARALLEL
-      if(icharges.gt.0) then
-#else
-      if(ncharges.gt.0) then
-#endif
-#ifdef FMM_PARALLEL
-#ifdef FMM_IBOXSCR
-         call fmmallocate(iboxscr,micharge1,micharge2,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         piboxscr => iboxscr
-         call fmmallocate(ibox,micharge1,micharge2,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-#else
-         call fmmallocate(ibox,micharge1,micharge2,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         piboxscr => ibox
-#endif
-#else
-#ifdef FMM_IBOXSCR
-         call fmmallocate(iboxscr,1,ncharges,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         piboxscr => iboxscr
-         call fmmallocate(ibox,1,ncharges,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-#else
-         call fmmallocate(ibox,1,ncharges,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         piboxscr => ibox
-#endif
-#endif
-      else
-#ifdef FMM_PARALLEL
-         call bummer('fmm: error, icharges = ',icharges)
-#else
-         call bummer('fmm: error, ncharges = ',ncharges)
-#endif
-      endif
-c
-#ifdef FMM_COMPRESSION
-#ifdef FMM_EXTREMECOMPRESSION
-#ifdef FMM_IBOXSCR
-      call iboxscinfo(ishx,ishy,mmaxdepth,depth,bitpos,powsq,xyzt,ibox,
-     .iboxsrt,iboxscr)
-#else
-      call iboxinfo(mmaxdepth,depth,bitpos,powsq,xyzt,ibox,ibox)
-#endif
-c
-      if(depth.eq.0) then
-       maxboxnumber = 1
-       maxnp = ncharges
-      elseif(depth.lt.0) then
-       call bummer('fmm: error, depth = ',depth)
-      endif
-#endif
-c
-      call calnb(ncharges,nbytes,nbits,bitpos,mbitpos,depth,maxint,
-     .maxmint)
-c
-#ifdef FMM_EXTREMECOMPRESSION
-#ifdef FMM_EXTREMEEXTREMECOMPRESSION
-      call scompression(nbytes,nbits,maxint,bitpos,mbitpos)
-#endif
-#endif
-c
-      call calint1mmint1(nbytes)
-c
-      if(nint1.ge.-1) then
-       if(nint1.lt.nbytes) then
-        addr_desc(1) = nint1+1
-       else
-        call bummer('fmm: (nint1-nbytes) = ',(nint1-nbytes))
-       endif
-      else
-       call bummer('fmm: error, nint1 = ',nint1)
-      endif
-      if(nbib.gt.1) then
-       if(nbib.le.nbits) then
-        addr_desc(2) = nbits-nbib
-       else
-        call bummer('fmm: (nbib-nbits) = ',(nbib-nbits))
-       endif
-      else
-       call bummer('fmm: error, nbib = ',nbib)
-      endif
-#else
-      addr_desc(1) = nbytes
-      addr_desc(2) = 0
-#endif
-c
-#ifdef FMM_PARALLEL
-      if(nnodes.gt.0) then
-         i = nnodes-1
-#ifdef FMM_COMPRESSION
-         if(nintgb1.ge.0) then
-            if(nintgb1.lt.nbytes) then
-               call fmmallocate(gbinfo,0,nintgb1,5,6,0,i,j)
-               if(j.ne.0) call bummer('fmm: error, j = ',j)
-            else
-               call bummer('fmm: (nintgb1-nbytes) = ',(nintgb1-nbytes))
-            endif
-         else
-            call bummer('fmm: error, nintgb1 = ',nintgb1)
-         endif
-#else
-         call fmmallocate(gbinfo,5,6,0,i,j)
-         if(j.ne.0) call bummer('fmm: error, j = ',j)
-#endif
-      else
-         call bummer('fmm: error, nnodes = ',nnodes)
-      endif
-#endif
-c
-#ifdef FMM_PARALLEL
-      if(icharges.gt.0) then
-#else
-      if(ncharges.gt.0) then
-#endif
-#ifdef FMM_PARALLEL
-#ifdef FMM_COMPRESSION
-         if(twoint) then
-            if(nint1.ge.0) then
-               call fmmallocate(iboxsrt,0,nint1,icharge1,icharge2,i)
-               if(i.ne.0) call bummer('fmm: error, i = ',i)
-            else
-               call bummer('fmm: error, nint1 = ',nint1)
-            endif
-         elseif(nint1.ne.-1) then
-            call bummer('fmm: error, nint1 = ',nint1)
-         endif
-#else
-         call fmmallocate(iboxsrt,micharge1,micharge2,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-#endif
-#else
-#ifdef FMM_COMPRESSION
-         if(twoint) then
-            if(nint1.ge.0) then
-               call fmmallocate(iboxsrt,0,nint1,1,ncharges,i)
-               if(i.ne.0) call bummer('fmm: error, i = ',i)
-            else
-               call bummer('fmm: error, nint1 = ',nint1)
-            endif
-         elseif(nint1.ne.-1) then
-            call bummer('fmm: error, nint1 = ',nint1)
-         endif
-#else
-         call fmmallocate(iboxsrt,1,ncharges,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-#endif
-#endif
-      else
-#ifdef FMM_PARALLEL
-         call bummer('fmm: error, icharges = ',icharges)
-#else
-         call bummer('fmm: error, ncharges = ',ncharges)
-#endif
-      endif
-c
-#ifdef FMM_COMPRESSION
-#ifdef FMM_EXTREMECOMPRESSION
-#ifdef FMM_EXTREMEEXTREMECOMPRESSION
-#ifdef FMM_SIGNEXPONENT
-      call s6tocoordinates(xyzt)
-#else
-      call s3tocoordinates(xyzt)
-#endif
-#endif
-      call iboxsrttoibox(ibox,iboxsrt)
-#endif
-#else
-      call setiboxsrt(iboxsrt)
-#endif
-c
-      if(homogen.eq.1) then
-         int3xyzd = depth
-         int3xyzd1 = int3xyzd+1
-         if(int3xyzd.ge.0) then
-            int3xyz = bitpos(int3xyzd)-1
-         else
-            int3xyz = int3xyzd
-         endif
-      elseif(homogen.ne.0) then
-         call bummer('fmm: error, homogen = ',homogen)
-      endif
-c
-      if(int3xyzd.ge.0) then
-         call fmmallocate(int3x,0,int3xyz,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmallocate(int3y,0,int3xyz,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmallocate(int3z,0,int3xyz,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmallocate(int3p,0,int3xyz,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-      endif
-c
-      call getneighborsinit(nbits,bitpos,mbitpos)
-      call getcjpinit(i)
-      call fmmallocate(int3q,0,i,j)
-      if(j.eq.0) then
-         int3q(0) = i-1
-         call getcjp(int3q)
-      else
-         call bummer('fmm: error, j = ',j)
-      endif
-c
-      i = maxdepth+1
-      call fmmallocate(nbofmb,1,i,j)
-      if(j.eq.0) then
-         do 338 j = 1,i
-            nbofmb(j) = 0
- 338     continue
-      else
-         call bummer('fmm: error, j = ',j)
-      endif
-c
-      dem = de
-c
-      if(jmp) then
-        if(ncharges.gt.0) then
-          call fmmallocate(iboxjmp,1,ncharges,i)
-          if(i.eq.0) then
-            call iboxjmpz(ncharges,iboxjmp)
-          else
-            call caljmpl(jmp,jmpg,jmph,jmpp,jmpupd,jmpj,jmpn,jmpb,jmpjp)
-          endif
-        else
-          call bummer('fmm: error, ncharges = ',ncharges)
-        endif
-      endif
-c
-#ifndef FMM_COMPRESSION
-      call sccoorda(ws,nbits,bitpos,xyzin,xyzt,sf,periodic,periodica,
-     .periodlength,changepos)
-c
-      if(periodic.gt.0) then
-       if(nj.gt.0) then
-        i = nbits-1
-        call fmmallocate(bitposm1,0,i,j)
-        if(j.ne.0) call bummer('fmm: error, j = ',j)
-        call calbitposm1(nbits,maxint,bitpos)
-        call fmmallocate(mskj,1,nbytes,i)
-        if(i.ne.0) call bummer('fmm: error, i = ',i)
-        call calmskj(nbytes)
-        call calm4(nbytes,nbits,bitpos,periodic)
-        call fmmallocate(folder,1,nfolder,i)
-        if(i.ne.0) call bummer('fmm: error, i = ',i)
-       elseif(nj.lt.0) then
-        call bummer('fmm: error, nj = ',nj)
-       endif
-      elseif(periodic.ne.0) then
-       call bummer('fmm: error, periodic = ',periodic)
-      endif
-c
-      call sccoordb(ws,nbits,bitpos,mbitpos,bfg,bfglen,q,xyzt,sf,
-     .periodic,linearpotential,lineardistance,changepos,negpos,
-     .dipolecorrection,qqq,corrsx,corrsy,corrsz,corrs,corrsh)
-#endif
-c
-      call scalecoordinates(ncharges,ws,buflen,maxnmultipoles,
-     .nmultipoles,maxdepth,mmaxdepth,depth,nbytes,nbits,maxint,maxmint,
-     .bitpos,mbitpos,q,pfmmpot,fmmgrad,fmmgrad(icharges+1),
-     .fmmgrad(2*icharges+1),xyzt,ibox,iboxsrt,bfg,bfglen,ierr,de,inf,
-     .ldf,ldff,dfmmmerr,maxwsd,ncsar,icsar,nfmmcos,fmmcos,fmmerr,
-     .pfmmerr,merr,sf,fracdepth,sh,powsq,parabola,piboxscr,iboxjmp,
-     .mmaxwsd,fmmdist,ipo,jpo,mask,ishx,ishy,mishx,mishy,maskxy,
-     .shmonopole,enearfield,enfinbox,enfbibj,gb,gbsh,int3x,int3y,int3z,
-     .int3p,int3q,withbop,hugep,hugef,gp,gsq,negpos,dipolecorrection,
-     .qqq,corrsx,corrsy,corrsz,corrs,corrsh,periodic,periodica,
-     .periodlength,pgd,nbofmb,sh4,changepos,shmp,linearpotential,
-     .ilinearpotential,lineardistance,erroranalysis,homogen)
-c
-      if(nmultipoles.le.maxnmultipoles) then
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-         if(me.eq.0) then
-#endif
-            write(6,*) ' parabola = ',parabola
-            write(6,*) ' nmultipoles = ',nmultipoles
-#ifdef FMM_PARALLEL
-         endif
-#endif
-#endif
-      else
-         call bummer('fmm: (nmultipoles-maxnmultipoles) = ',
-     .   (nmultipoles-maxnmultipoles))
-      endif
-c
-      if(depth.ge.0) then
-         i = depth+1
-c
-         call fmmallocate(nboxesinlevel,1,i,j)
-         if(j.ne.0) call bummer('fmm: error, j = ',j)
-         call fmmallocate(nboxeslevel,1,i,j)
-         if(j.ne.0) call bummer('fmm: error, j = ',j)
-      else
-         call bummer('fmm: error, depth = ',depth)
-      endif
-c
-      call sortcharges(ncharges,mmaxdepth,depth,q,pfmmpot,fmmgrad,
-     .fmmgrad(icharges+1),fmmgrad(2*icharges+1),xyzt,sh,powsq,ibox,
-     .piboxscr,iboxsrt,iboxjmp,jibfg,jibfglen,nboxesinlevel,nboxeslevel,
-     .ws,maxnmultipoles,nmultipoles,maxint,maxmint,nbits,bitpos,mbitpos,
-     .ishx,ishy,mishx,mishy,maskxy,fracdepth,sf,parabola,ierr,dem,de,
-     .shmonopole,merr(0,ws),bfg,bfglen,enearfield,enfinbox,enfbibj,gb,
-     .gbsh,int3x,int3y,int3z,int3p,int3q,withbop,hugep,hugef,periodic,
-     .gp,gsq,negpos,corrsh,pgd,nbofmb,sh4,changepos,linearpotential,
-     .ilinearpotential,lineardistance,erroranalysis,homogen)
-c
-      if(jmp) then
-         call fmmdeallocate(iboxjmp,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-      endif
-c
-      if(depth.lt.0) call bummer('fmm: error, depth = ',depth)
-      if(depth.gt.maxdepth) call bummer('fmm: (depth-maxdepth) = ',
-     .(depth-maxdepth))
-c
-      if(nmultipoles.ge.0) then
-         if(nmultipoles.gt.0) then
-            mnmultipoles = -nmultipoles
-         else
-            mnmultipoles = 0
-         endif
-c
-         if(associatedwignerd.or.precomputeallds) then
-            compute = .false.
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-            if(me.eq.0) then
-#endif
-               write(6,*) ' rotation matrices are pre-computed.'
-               write(6,*) ' associatedwignerd = ',associatedwignerd
-               write(6,*) '   precomputeallds = ',precomputeallds
-               write(6,*) '           compute = ',compute
-#ifdef FMM_PARALLEL
-            endif
-#endif
-#endif
-         else
-            compute = .true.
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-            if(me.eq.0) then
-#endif
-               write(6,*) ' rotation matrices are not pre-computed.'
-               write(6,*) ' associatedwignerd = ',associatedwignerd
-               write(6,*) '   precomputeallds = ',precomputeallds
-               write(6,*) '           compute = ',compute
-#ifdef FMM_PARALLEL
-            endif
-#endif
-#endif
-         endif
-c
-         call fmmallocate(d2,0,nmultipoles,mnmultipoles,nmultipoles,0,
-     .   nmultipoles,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmallocate(d3,0,nmultipoles,mnmultipoles,nmultipoles,0,
-     .   nmultipoles,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmallocate(d2f,0,nmultipoles,mnmultipoles,nmultipoles,0,
-     .   nmultipoles,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmallocate(d3f,0,nmultipoles,mnmultipoles,nmultipoles,0,
-     .   nmultipoles,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-         if(compute) then
-            call fmmallocate(coeff1,0,nmultipoles,0,nmultipoles,i)
-            if(i.ne.0) call bummer('fmm: error, i = ',i)
-            call fmmallocate(coeff2,0,nmultipoles,0,nmultipoles,i)
-            if(i.ne.0) call bummer('fmm: error, i = ',i)
-            call fmmallocate(coeff3,mnmultipoles,nmultipoles,0,
-     .      nmultipoles,0,nmultipoles,i)
-            if(i.ne.0) call bummer('fmm: error, i = ',i)
-            call fmmallocate(coeff4,mnmultipoles,nmultipoles,0,
-     .      nmultipoles,i)
-            if(i.ne.0) call bummer('fmm: error, i = ',i)
-            call fmmallocate(coeff5,0,nmultipoles,0,nmultipoles,0,
-     .      nmultipoles,i)
-            if(i.ne.0) call bummer('fmm: error, i = ',i)
-            call fmmallocate(coeff6,0,nmultipoles,0,nmultipoles,i)
-            if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-            call coefficients(mnmultipoles,nmultipoles,coeff1,coeff2,
-     .      coeff3,coeff4,coeff5,coeff6)
-         endif
-c
-         if(depth.ge.0) then
-            i = nmultipoles+1
-            nsqmultipoles = iand(ishft((i*(i+1)),-1),maxint)
-            i = depth+1
-            i = nboxeslevel(i)+nboxesinlevel(i)
-            if(i.gt.0) then
-               j = nsqmultipoles*i
-#ifdef FMM_TREETOGRAD
-               if(homogen.eq.1) then
-                  if((3*icharges).ge.(j+j)) then
-                     allocomega = .false.
-                     romegatree => fmmgrad(1:j)
-                     iomegatree => fmmgrad((j+1):(j+j))
-                  elseif((3*icharges).ge.j) then
-                     call fmmallocate(omegatree,1,j,k)
-                     if(k.eq.0) then
-                        allocomega = .true.
-                        romegatree => fmmgrad(1:j)
-                        iomegatree => omegatree(1:j)
-                     else
-                        call bummer('fmm: error, k = ',k)
-                     endif
-                  else
-                     call fmmallocate(omegatree,1,(j+j),k)
-                     if(k.eq.0) then
-                        allocomega = .true.
-                        romegatree => omegatree(1:j)
-                        iomegatree => omegatree((j+1):(j+j))
-                     else
-                        call bummer('fmm: error, k = ',k)
-                     endif
-                  endif
-               else
-                  call bummer('fmm: treetograd requested, homogen = ',
-     .            homogen)
-               endif
-#else
-               call fmmallocate(omegatree,1,(j+j),k)
-               if(k.eq.0) then
-                  romegatree => omegatree(1:j)
-                  iomegatree => omegatree((j+1):(j+j))
-               else
-                  call bummer('fmm: error, k = ',k)
-               endif
-#endif
-            else
-               call bummer('fmm: error, i = ',i)
-            endif
-         else
-            call bummer('fmm: error, depth = ',depth)
-         endif
-      else
-         call bummer('fmm: error, nmultipoles = ',nmultipoles)
-      endif
-c
-c      call coulomb(ncharges,q,xyzt,coul)
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-      if(me.eq.0) then
-#endif
-c         write(6,'(1x,q50.40,1x,z32)') (sh*(coul/sf)),
-c     .   (sh*(coul/sf))
-#ifdef FMM_PARALLEL
-      endif
-#endif
-#endif
-c
-      if(nmultipoles.le.maxnmultipoles) then
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-         if(me.eq.0) then
-#endif
-            write(6,'('' nmultipoles = '',i13)') nmultipoles
-#ifdef FMM_PARALLEL
-         endif
-#endif
-#endif
-      else
-         call bummer('fmm: (nmultipoles-maxnmultipoles) = ',
-     .   (nmultipoles-maxnmultipoles))
-      endif
-c
-      n2multipoles = nmultipoles+nmultipoles
-c
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-      if(me.eq.0) then
-#endif
-c         write(6,*) sf,sh
-#ifdef FMM_PARALLEL
-      endif
-#endif
-#endif
-c
-      call calpow(nmultipoles,pow)
-c
-      call sgneg(n2multipoles,sg)
-c
-      if(.not.compute) call cpydtod13(mnmultipoles,nmultipoles,d2,d3,
-     .d2f,d3f,wignerd,1)
-c
-      call pass1(ncharges,depth,ws,nbits,maxint,maxmint,bitpos,mbitpos,
-     .maxnmultipoles,nmultipoles,mnmultipoles,nsqmultipoles,
-     .nboxesinlevel,nboxeslevel,q,xyzt,ibox,piboxscr,ishx,ishy,mishx,
-     .mishy,maskxy,buflen,rl,cmphi,smphi,fac,rfac,pow,sg,fr,coeff1,
-     .coeff2,coeff3,coeff4,coeff5,coeff6,d2,d3,d2f,d3f,romegatree,
-     .iomegatree,csar,car,sar,rar,isrt,kbxyzar,indar,kboxxyzar,
-     .kboxindar,mi,jcar,hcar,hsar,sf,periodic,withaop,compute)
-c
-      if(nmultipoles.ge.0) then
-        if(depth.ge.0) then
-          i = depth+1
-          i = nboxeslevel(i)+nboxesinlevel(i)
-          if(i.gt.0) then
-            jnbi = nboxesinlevel(depth+1)
-#ifdef FMM_IBOXSCR
-#ifdef FMM_TREETOGRAD
-            if(homogen.eq.0) then
-              doit = .true.
-            elseif(homogen.eq.1) then
-              doit = .false.
-            else
-              call bummer('fmm: error, homogen = ',homogen)
-            endif
-#else
-            doit = .true.
-#endif
-            if(doit) then
-              call fmmdeallocate(iboxscr,j)
-              if(j.ne.0) call bummer('fmm: error, j = ',j)
-              piboxscr => null()
-#ifdef FMM_PARALLEL
-              call fmmallocate(iboxscr,jcharge1,jcharge2,j)
-              if(j.ne.0) call bummer('fmm: error, j = ',j)
-#else
-              call fmmallocate(iboxscr,1,jnbi,j)
-              if(j.ne.0) call bummer('fmm: error, j = ',j)
-#endif
-              piboxscr => iboxscr
-            endif
-#endif
-            j = nsqmultipoles*i
-#ifdef FMM_TREETOGRAD
-#ifdef FMM_EXTREMETREETOGRAD
-            if(homogen.eq.1) then
-              if((3*icharges).ge.(4*j)) then
-                allocmu = .false.
-                doallocbftreetograd = .true.
-                ntreetograd = 2
-                starttreetograd = 3*icharges-2*j+1
-                itreetograd = 2*nsqmultipoles
-                rmutree => fmmgrad((3*icharges-2*j+1):(3*icharges-j))
-                imutree => fmmgrad((3*icharges-j+1):(3*icharges))
-              elseif((3*icharges).ge.(3*j)) then
-                call fmmallocate(mutree,1,j,k)
-                if(k.eq.0) then
-                  allocmu = .true.
-                  doallocbftreetograd = .true.
-                  ntreetograd = 1
-                  starttreetograd = 3*icharges-j+1
-                  itreetograd = nsqmultipoles
-                  rmutree => fmmgrad((3*icharges-j+1):(3*icharges))
-                  imutree => mutree(1:j)
-                else
-                  call bummer('fmm: error, k = ',k)
-                endif
-              else
-                call fmmallocate(mutree,1,(j+j),k)
-                if(k.eq.0) then
-                  allocmu = .true.
-                  ntreetograd = 0
-                  rmutree => mutree(1:j)
-                  imutree => mutree((j+1):(j+j))
-                else
-                  call bummer('fmm: error, k = ',k)
-                endif
-              endif
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-              if(me.eq.0) then
-#endif
-                 write(6,*) ' ntreetograd = ',ntreetograd
-#ifdef FMM_PARALLEL
-              endif
-#endif
-#endif
-            else
-              call bummer('fmm: treetograd requested, homogen=',homogen)
-            endif
-#else
-            call fmmallocate(mutree,1,(j+j),k)
-            if(k.eq.0) then
-              rmutree => mutree(1:j)
-              imutree => mutree((j+1):(j+j))
-            else
-               call bummer('fmm: error, k = ',k)
-            endif
-#endif
-#else
-            call fmmallocate(mutree,1,(j+j),k)
-            if(k.eq.0) then
-              rmutree => mutree(1:j)
-              imutree => mutree((j+1):(j+j))
-            else
-               call bummer('fmm: error, k = ',k)
-            endif
-#endif
-            if(withtaylor) then
-             call itaylor(gtaylor,bitpos,nbits,maxint,igtaylor,mgtaylor)
-             call jptaylor(i,gtaylor,nbits,igtaylor,mgtaylor,ntaylor,j)
-             if(ntaylor.gt.0) then
-               if(ntaylor.le.i) then
-                 if(j.ge.0) then
-                   if(j.lt.nbits) then
-                     j = nbits*(ntaylor-1)+(j+1)
-                     if(j.eq.i) then
-                       call fmmallocate(taylor,1,ntaylor,j)
-                       if(j.ne.0) call bummer('fmm: error, j = ',j)
-                     else
-                       call bummer('fmm: (j-i) = ',(j-i))
-                     endif
-                   else
-                     call bummer('fmm: (j-nbits) = ',(j-nbits))
-                   endif
-                 else
-                   call bummer('fmm: error, j = ',j)
-                 endif
-               else
-                 call bummer('fmm: (ntaylor-i) = ',(ntaylor-i))
-               endif
-             else
-               call bummer('fmm: error, ntaylor = ',ntaylor)
-             endif
-            endif
-          else
-            call bummer('fmm: error, i = ',i)
-          endif
-        else
-          call bummer('fmm: error, depth = ',depth)
-        endif
-      else
-        call bummer('fmm: error, nmultipoles = ',nmultipoles)
-      endif
-c
-      call fmmallocate(irar,1,maxwsd3,1,(depth+1),i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-      call fmmimn(ws,maxdepth,periodic,bitpos,ilevelmn)
-c
-      if((depth+1).ge.ilevelmn) then
-         call fmmi(maxwsd3,ilevelmn,(depth+1),ws,bitpos,nrar,irar,
-     .   periodic,.false.)
-c
-         i = maxdepth-ilevelmn+2
-c
-         if(i.gt.0) then
-            if(nrar.le.maxnrar) then
-               nrar = i*nrar
-            else
-               call bummer('fmm: (nrar-maxnrar) = ',(nrar-maxnrar))
-            endif
-         else
-            call bummer('fmm: error, i = ',i)
-         endif
-      else
-         nrar = 0
-      endif
-c
-      nbfg = bfglen/3
-      if(nbfg.le.0) call bummer('fmm: error, nbfg = ',nbfg)
-c
-      i = depth+1
-      ntree = nboxeslevel(i)+nboxesinlevel(i)
-      if(ntree.le.0) call bummer('fmm: error, ntree = ',ntree)
-c
-      call pass2(ncharges,jnbi,depth,ws,nbits,maxint,bitpos,mbitpos,
-     .nmultipoles,mnmultipoles,n2multipoles,nsqmultipoles,nboxesinlevel,
-     .nboxeslevel,q,xyzt,ibox,piboxscr,iboxsrt,nbfg,bfg,rl,cmphi,smphi,
-     .cmphipi,smphipi,fac,rfac,pow,sg,fr,coeff1,coeff2,coeff3,coeff4,
-     .coeff5,coeff6,ntree,romegatree,iomegatree,rmutree,imutree,
-     .withtaylor,gtaylor,igtaylor,mgtaylor,ntaylor,taylor,buflen,flvlar,
-     .csar,car,sar,rar,isrt,kbxyzar,indar,kboxxyzar,kboxindar,kbar,
-     .maxwsd,mmaxwsd,ncsar,icsar,jcsar,ncar,icar,isar,maxwsd3,nrar,irar,
-     .mmaxdepth,powsq,int3x,int3y,int3z,int3p,int3q,hugep,hugef,
-     .periodic,ishx,maskx,ishy,masky,mishx,mishy,maskxy,maxmint,cachopt,
-     .g2db,unrolled2,pgd,nbofmb,withbop,wignerd,compute)
-c
-      call fmmdeallocate(irar,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-      if(jmp) call caljmpi(ncharges,iboxsrt,sjmp)
-c
-#ifndef FMM_NOPOT
-      if(homogen.eq.0) then
-         call fmmenpot(nbits,bitpos,bfg,bfglen,q,pfmmpot,enearfieldpot)
-      elseif(homogen.ne.1) then
-         call bummer('fmm: error, homogen = ',homogen)
-      endif
-#endif
-c
-      i = max((2*nmultipoles),(nmultipoles*nmultipoles))
-c
-      call fmmallocate(dbl,1,i,j)
-c
-      if(j.eq.0) then
-         call caldbl(i,dbl)
-      else
-         call bummer('fmm: error, j = ',j)
-      endif
-c
-      if(.not.compute) then
-         if(ncsar.gt.0) then
-            i = ncsar+2
-            call cpydtod13(mnmultipoles,nmultipoles,d2,d3,d2f,d3f,
-     .      wignerd,i)
-         else
-            call bummer('fmm: error, ncsar = ',ncsar)
-         endif
-      endif
-c
-      call pass3(depth,ws,nbits,nboxesinlevel(depth+1),bitpos,mbitpos,
-     .maxnmultipoles,nmultipoles,mnmultipoles,nsqmultipoles,
-     .nboxesinlevel,nboxeslevel,q,xyzt,ibox,bfg,bfglen,mask,buflen,
-     .cmphipi,smphipi,rl,cmphi,smphi,fac,rfac,pow,sg,fr,coeff1,coeff2,
-     .coeff3,coeff4,coeff5,coeff6,d2,d3,d2f,d3f,rmutree,imutree,
-     .withtaylor,gtaylor,igtaylor,mgtaylor,taylor,csar,car,sar,rar,isrt,
-     .kbxyzar,indar,kboxxyzar,kboxindar,mi,jcar,hcar,hsar,mmaxdepth,
-     .mishx,mishy,maskxy,ipo,ishx,ishy,maxint,maxmint,powsq,periodic,
-     .romegatree,iomegatree,efarfield,efarfieldpot,e1per,pfmmpot,
-     .fmmgrad,dbl,sh3,withcop,compute)
-c
-      call fmmdeallocate(dbl,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-#ifdef FMM_TREETOGRAD
-      if(homogen.eq.1) then
-#ifdef FMM_IBOXSCR
-         call iboxscinfo5(ishx,ishy,mmaxdepth,depth,bitpos,powsq,xyzt,
-     .   ibox,piboxscr)
-#else
-         call iboxinfo5(mmaxdepth,depth,bitpos,powsq,xyzt,ibox)
-#endif
-#ifdef FMM_PARALLEL
-#ifdef FMM_COMPRESSION
-         startbox = iand(ibox(icharge1),ibm)-1
-         endbox = iand(ibox(icharge2),ibm)-1
-#else
-         startbox = ibox(icharge1)-1
-         endbox = ibox(icharge2)-1
-#endif
-#else
-#ifdef FMM_COMPRESSION
-         startbox = iand((iand(ibox(1),ibm)-1),-8)
-         endbox = ior((iand(ibox(ncharges),ibm)-1),7)
-#else
-         startbox = iand((ibox(1)-1),-8)
-         endbox = ior((ibox(ncharges)-1),7)
-#endif
-#endif
-         call skipeevector(icharges,ibox(icharge1))
-#ifdef FMM_PARALLEL
-         i = iand(startbox,-8)
-         j = ior(endbox,7)
-#else
-         i = startbox
-         j = endbox
-#endif
-         k = icharge1
-         l = icharge2
-         call pass5(ncharges,depth,ws,nbits,ishx,ishy,maxint,mishx,
-     .   mishy,maskxy,bitpos,mbitpos,q,xyzt,ibox,piboxscr,iboxsrt,bfg,
-     .   bfglen,enearfield,enfinbox,enfbibj,fmmgrad,pfmmpot,gb,gbsh,
-     .   int3x,int3y,int3z,int3p,int3q,pagejump,pageshift,pageshiftg,
-     .   pagemask,pageaddr,indsize,pagepossize,startbox,endbox,i,j,ibox,
-     .   k,l,piboxscr,pages,pgd,.false.,periodic,indskpjump,nbofmb,sf,
-     .   sh,linearpotential,ilinearpotential,lineardistance)
-      else
-         call bummer('fmm: error, homogen = ',homogen)
-      endif
-#endif
-c
-#ifdef FMM_IBOXSCR
-      call fmmdeallocate(iboxscr,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-      piboxscr => null()
-#endif
-      if(int3xyzd.ge.0) then
-         call fmmdeallocate(int3x,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmdeallocate(int3y,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmdeallocate(int3z,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmdeallocate(int3p,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-      endif
-      call fmmdeallocate(int3q,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-      call fmmdeallocate(nbofmb,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-      call fmmdeallocate(nboxesinlevel,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-      call fmmdeallocate(nboxeslevel,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-      call fmmdeallocate(d2,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-      call fmmdeallocate(d3,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-      call fmmdeallocate(d2f,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-      call fmmdeallocate(d3f,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-      if(compute) then
-         call fmmdeallocate(coeff1,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmdeallocate(coeff2,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmdeallocate(coeff3,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmdeallocate(coeff4,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmdeallocate(coeff5,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-         call fmmdeallocate(coeff6,i)
-         if(i.ne.0) call bummer('fmm: error, i = ',i)
-      endif
-#ifdef FMM_TREETOGRAD
-      if(allocomega) then
-        call fmmdeallocate(omegatree,i)
-        if(i.ne.0) call bummer('fmm: error, i = ',i)
-      endif
-#else
-      call fmmdeallocate(omegatree,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-#endif
-#ifdef FMM_TREETOGRAD
-#ifdef FMM_EXTREMETREETOGRAD
-      if(allocmu) then
-        call fmmdeallocate(mutree,i)
-        if(i.ne.0) call bummer('fmm: error, i = ',i)
-      endif
-#else
-      call fmmdeallocate(mutree,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-#endif
-#else
-      call fmmdeallocate(mutree,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-#endif
-      if(withtaylor) then
-        call fmmdeallocate(taylor,i)
-        if(i.ne.0) call bummer('fmm: error, i = ',i)
-      endif
-c
-#ifdef FMM_COMPRESSION
-      if(twoint) then
-        call getibsrt2(nbytes,ibox,iboxsrt)
-      else
-        call getibsrt1(ibox)
-      endif
-c
-      call fmmdeallocate(int1m,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-      call fmmdeallocate(mint1,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-      call fmmdeallocate(int1scr,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-#ifdef FMM_EXTREMECOMPRESSION
-      call fmmdeallocate(pinb,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-#endif
-c
-      if(twoint) then
-        if(nint1.ge.0) then
-          call fmmdeallocate(iboxsrt,i)
-          if(i.ne.0) call bummer('fmm: error, i = ',i)
-        else
-          call bummer('fmm: error, nint1 = ',nint1)
-        endif
-      elseif(nint1.ne.-1) then
-        call bummer('fmm: error, nint1 = ',nint1)
-      endif
-c
-      piboxsrt => ibox
-#else
-      call fmmdeallocate(ibox,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-      piboxsrt => iboxsrt
-#endif
-c
-#ifdef FMM_COMPRESSION
-#ifdef FMM_EXTREMECOMPRESSION
-#ifdef FMM_EXTREMEEXTREMECOMPRESSION
-      call setcoordinates(xyzt)
-#endif
-#endif
-#endif
-c
-      if(periodic.eq.3) then
-#ifdef FMM_CORRECTION_OF_FORCES
-       call calcxcycz(nbits,bitpos,bfg,bfglen,q,fmmgrad,cx,cy,cz)
-#else
-       cx = zero
-       cy = zero
-       cz = zero
-#endif
-      endif
-c
-      if(periodic.gt.0) then
-       if(sh.eq.one) then
-        if((dipolecorrection.ge.-1).and.(dipolecorrection.le.1)) then
-         if(((dipolecorrection.eq.0).and.(negpos.eq.0)).or.
-     .    (dipolecorrection.eq.1)) then
-          if(periodic.eq.3) then
-           call corrp(periodic,cx,cy,cz,q,xyzt,qqq,corrsx,corrsy,corrsz,
-     .     corrs,efarfield,efarfieldpot,e1per,pfmmpot,fmmgrad)
-          endif
-         endif
-        else
-         call bummer('fmm: error, dipolecorrection = ',dipolecorrection)
-        endif
-       else
-        call bummer('fmm: error, ncharges = ',ncharges)
-       endif
-      endif
-c
-      if(periodic.eq.3) then
-       if(.not.plummer_potential) then
-        if(.not.linearpotential) then
-         call calvirialtensor3p(efarfield,enearfield,gp,virialtensor)
-        endif
-       endif
-      elseif((.not.plummer_potential).and.(.not.linearpotential)) then
-       call setbfgn(9,bfglen,bfgnlen)
-c
-       if(bfglen.eq.bfgnlen) then
-        call calvirialtensor(nbits,bitpos,bfg,bfglen,q,xyzt,fmmgrad,cx,
-     .  cy,cz,periodic,efarfield,enearfield,gp,virialtensor)
-       elseif(bfglen.lt.bfgnlen) then
-        call fmmallocate(bfgn,1,bfgnlen,i)
-        if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-        call calvirialtensor(nbits,bitpos,bfgn,bfgnlen,q,xyzt,fmmgrad,
-     .  cx,cy,cz,periodic,efarfield,enearfield,gp,virialtensor)
-c
-        call fmmdeallocate(bfgn,i)
-        if(i.ne.0) call bummer('fmm: error, i = ',i)
-       else
-        call bummer('fmm: (bfglen-bfgnlen) = ',(bfglen-bfgnlen))
-       endif
-      else
-#ifdef FMM_CORRECTION_OF_FORCES
-       call calcxcycz(nbits,bitpos,bfg,bfglen,q,fmmgrad,cx,cy,cz)
-#else
-       cx = zero
-       cy = zero
-       cz = zero
-#endif
-      endif
-c
-      if (FMM_internal_params%resort.eq.1) then
-c        write(*,*) 'doing resort'
-        call mpi_fmm_resort_init(FMM_internal_params%resort_ptr,ncharges,ichargesout,piboxsrt)
-      else
-c        write(*,*) 'doing sortback'
-        call sortback(ncharges,copyxyz,xyzt,piboxsrt,q,fmmgrad,pfmmpot)
-      endif
-c
-#ifdef FMM_RESTORE_COORDINATES
-      if(.not.copyxyz) call restorecoordinates(periodic,periodica,nbits,
-     .mbitpos,xyzt)
-#endif
-c
-#ifdef FMM_COMPRESSION
-      call fmmdeallocate(ibox,i)
-      if(i.eq.0) then
-        piboxsrt => null()
-      else
-        call bummer('fmm: error, i = ',i)
-      endif
-#else
-      call fmmdeallocate(iboxsrt,i)
-      if(i.eq.0) then
-        piboxsrt => null()
-      else
-        call bummer('fmm: error, i = ',i)
-      endif
-#endif
-c
-      if(copyxyz) then
-        call fmmdeallocate(xyz,i)
-        if(i.ne.0) call bummer('fmm: error, i = ',i)
-      endif
-c
-      xyzt => null()
-c
-      if(periodic.gt.0) then
-        if(nj.gt.0) then
-          call fmmdeallocate(bitposm1,i)
-          if(i.ne.0) call bummer('fmm: error, i = ',i)
-          call fmmdeallocate(mskj,i)
-          if(i.ne.0) call bummer('fmm: error, i = ',i)
-          call fmmdeallocate(folder,i)
-          if(i.ne.0) call bummer('fmm: error, i = ',i)
-        elseif(nj.lt.0) then
-          call bummer('fmm: error, nj = ',nj)
-        endif
-      elseif(periodic.ne.0) then
-        call bummer('fmm: error, periodic = ',periodic)
-      endif
-c
-      call scalefmmgr(ncharges,periodic,periodica,dipolecorrection,
-     .negpos,cx,cy,cz,q,gsq,fmmgrad,gp,pfmmpot,virialtensor)
-c
-      if(.not.plummer_potential) then
-        if(.not.linearpotential) call prtvirialtensor(virialtensor)
-      endif
-c-ik copy virialtensor to virial output dummy argument
-      virial(1:3) = virialtensor(1:3,1)
-      virial(4:6) = virialtensor(1:3,2)
-      virial(7:9) = virialtensor(1:3,3)
-c
-#ifndef FMM_NOPOT
-      call fmmenpot(nbits,bitpos,bfg,bfglen,q,pfmmpot,energypot)
-#endif
-c
-#ifdef FMM_DEBUG
-      call fmmsgrad(nbits,bitpos,bfg,bfglen,fmmgrad,sgradx,sgrady,
-     .sgradz)
-c
-      call fmmsagrad(nbits,bitpos,bfg,bfglen,fmmgrad,sagradx,sagrady,
-     .sagradz)
-#endif
-c
-      call fmmdeallocate(flvlar,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-      call fmmdeallocate(powsq,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-      energy = (sh*((half*efarfield)/sf))+(sh*(enearfield/sf))
-c
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-      if(me.eq.0) then
-#endif
-         write(6,*) ' efarfield     = ',(sh*((half*efarfield)/sf))
-         write(6,*) ' efarfieldpot  = ',(sh*((half*efarfieldpot)/sf))
-         write(6,*) ' enearfield    = ',(sh*(enearfield/sf))
-#ifndef FMM_NOPOT
-         if(homogen.eq.0) then
-            write(6,*) ' enearfieldpot = ',(sh*(enearfieldpot/sf))
-         elseif(homogen.ne.1) then
-            call bummer('fmm: error, homogen = ',homogen)
-         endif
-#endif
-         write(6,*) ' energy        = ',energy
-#ifndef FMM_NOPOT
-         write(6,*) ' energypot     = ',energypot
-#endif
-#ifdef FMM_PARALLEL
-      endif
-#endif
-#endif
-c
-#ifndef FMM_UNIFORMGRID
-      call calder(ierr,dem,energy,energypot,der)
-#endif
-c
-      if(periodic.gt.0) then
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-         if(me.eq.0) then
-#endif
-            write(6,*) ' energy_lattice     = ',(sh*(e1per/sf))
-            write(6,*) ' energy_first_layer = ',(energy-(sh*(e1per/sf)))
-#ifdef FMM_PARALLEL
-         endif
-#endif
-#endif
-      endif
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-      if(me.eq.0) then
-#endif
-         write(6,*) ' efarfield          = ',(sh*((efarfield/two)/sf))
-         write(6,*) ' enearfield         = ',(sh*(enearfield/sf))
-         write(6,*) ' enfinbox           = ',(sh*(enfinbox/sf))
-         write(6,*) ' enfbibj            = ',(sh*(enfbibj/sf))
-         write(6,*) ' energy             = ',energy
-#ifdef FMM_PARALLEL
-      endif
-#endif
-#endif
-c
-      call fmmdeallocate(bitpos,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-      call fmmdeallocate(mbitpos,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-c
-      if(precomputeallds) then
-         if(.not.associatedwignerd) then
-            call fmmdeallocatept(wignerd%wignerd,i)
-            if(i.ne.0) call bummer('fmm: error, i = ',i)
-         endif
-      endif
-c
-      if(serroranalysis.lt.nerroranalysis) then
-        call bummer('fmm: (serroranalysis-nerroranalysis) = ',
-     .  (serroranalysis-nerroranalysis))
-      elseif(snewerroranalysis.le.0) then
-        call bummer('fmm: error, snewerroranalysis =',snewerroranalysis)
-      else
-        if(snewerroranalysis.le.nerroranalysis) then
-          doit = .true.
-        elseif(iplummerpotential.ne.iplummerpotentialsv) then
-          doit = .true.
-        elseif(aoplummer.ne.aoplummersv) then
-          doit = .true.
-        elseif(ilinearpotential.ne.ilinearpotentialsv) then
-          doit = .true.
-        elseif(ilinearpotential.eq.0) then
-          doit = .false.
-        elseif(ilinearpotential.eq.1) then
-          if(linearodistance(3).ne.linearodistancesv(3)) then
-            doit = .true.
-          else
-            doit = .false.
-          endif
-        elseif(ilinearpotential.eq.2) then
-          if(linearodistance(2).ne.linearodistancesv(2)) then
-            doit = .true.
-          else
-            doit = .false.
-          endif
-        elseif(ilinearpotential.eq.3) then
-          if(linearodistance(2).ne.linearodistancesv(2)) then
-            doit = .true.
-          elseif(linearodistance(3).ne.linearodistancesv(3)) then
-            doit = .true.
-          else
-            doit = .false.
-          endif
-        elseif(ilinearpotential.eq.4) then
-          if(linearodistance(1).ne.linearodistancesv(1)) then
-            doit = .true.
-          else
-            doit = .false.
-          endif
-        elseif(ilinearpotential.eq.5) then
-          if(linearodistance(1).ne.linearodistancesv(1)) then
-            doit = .true.
-          elseif(linearodistance(3).ne.linearodistancesv(3)) then
-            doit = .true.
-          else
-            doit = .false.
-          endif
-        elseif(ilinearpotential.eq.6) then
-          if(linearodistance(1).ne.linearodistancesv(1)) then
-            doit = .true.
-          elseif(linearodistance(2).ne.linearodistancesv(2)) then
-            doit = .true.
-          else
-            doit = .false.
-          endif
-        elseif(ilinearpotential.eq.7) then
-          if(linearodistance(1).ne.linearodistancesv(1)) then
-            doit = .true.
-          elseif(linearodistance(2).ne.linearodistancesv(2)) then
-            doit = .true.
-          elseif(linearodistance(3).ne.linearodistancesv(3)) then
-            doit = .true.
-          else
-            doit = .false.
-          endif
-        else
-          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
-        endif
-        if(doit) then
-          ilinearpotentialsv = ilinearpotential
-          linearodistancesv(1) = linearodistance(1)
-          linearodistancesv(2) = linearodistance(2)
-          linearodistancesv(3) = linearodistance(3)
-          iplummerpotentialsv = iplummerpotential
-          aoplummersv = aoplummer
-c          call fmmdeallocate(hugep,i)
-c          if(i.ne.0) call bummer('fmm: error, i = ',i)
-c          call fmmdeallocate(hugef,i)
-c          if(i.ne.0) call bummer('fmm: error, i = ',i)
-          i = ltob*(maxdepth+2)+rtob*(maxdepth+1)
-          if(nallocr.eq.i) then
-            nallocr = 0
-          else
-            call bummer('fmm: (nallocr-i) = ',(nallocr-i))
-          endif
-          nallocst = nallocst-i
-          serroranalysis = snewerroranalysis
-          nerroranalysis = serroranalysis
-        else
-          serroranalysis = snewerroranalysis
-        endif
-      endif
-c
-#ifdef FMM_INFO
-#ifdef FMM_PARALLEL
-      if(me.eq.0) then
-#endif
-         write(6,'(''   gradx = '',d26.18)') fmmgrad(1)
-         write(6,'(''   grady = '',d26.18)') fmmgrad(2)
-         write(6,'(''   gradz = '',d26.18)') fmmgrad(3)
-#ifndef FMM_NOPOT
-         write(6,'(''     pot = '',d26.18)') pfmmpot(1)
-#endif
-#ifdef FMM_DEBUG
-         write(6,'(''  sgradx = '',d26.18)') sgradx
-         write(6,'(''  sgrady = '',d26.18)') sgrady
-         write(6,'(''  sgradz = '',d26.18)') sgradz
-         write(6,'('' sagradx = '',d26.18)') sagradx
-         write(6,'('' sagrady = '',d26.18)') sagrady
-         write(6,'('' sagradz = '',d26.18)') sagradz
-#endif
-         write(6,'(''  energy = '',d26.18)') energy
-#ifdef FMM_PARALLEL
-      endif
-#endif
-#endif
-c
-#ifdef FMM_PARALLEL
-      call fmmdeallocate(gbinfo,i)
-      if(i.ne.0) call bummer('fmm: error, i = ',i)
-#endif
-      pfmmpot => null()
-#ifdef FMM_PARALLEL
-#ifdef FMM_LOADSORT
-      if(doload) iboxload => null()
-#endif
-#endif
-c
-      call edmdfmmalloc(nalloc,nallocst,'cfmm')
-      call prtmdfmmalloc(nalloc,maxnalloc,'  end of cfmm')
-c
-#ifdef FMM_PARALLEL
-#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
-      call c_cputime_walltime(.false.)
-#endif
-#endif
-c
-#ifdef FMM_STATISTICS
-      call fmmstatistics(ncharges,.false.)
-#endif
-      return
-      end subroutine cfmm
-c
+      contains
       subroutine coulomb(ncharges,q,xyz,coul)
 c
       use fmmkinds
@@ -6180,7 +3875,7 @@ c
      .indend,indsize,jnit,jshb,idxyz,ifmmd1,ifmmd2,nkb,njp,nposition,
      .im,bibjich,my,mz
 c
-      integer(kind=fmm_integer) inda,indb
+c-ik      integer(kind=fmm_integer) inda,indb
 c
       integer(kind=fmm_integer), allocatable:: indscr(:),pagepos(:)
       integer(kind=fmm_integer), allocatable:: inid(:,:,:),inig(:,:,:),
@@ -6202,7 +3897,7 @@ c
       logical(kind=fmm_logical), pointer:: insq(:)
       logical(kind=fmm_logical), allocatable:: jmm(:,:),sjp(:),nit(:)
 c
-      logical(kind=fmm_logical) sha,gnit,cmpnmn,cmpbmn,gind
+c-ik      logical(kind=fmm_logical) sha,gnit,cmpnmn,cmpbmn,gind
 c
       real(kind=fmm_real) zero
       parameter(zero=0.e0_fmm_real)
@@ -11808,347 +9503,6 @@ c
       return
       end subroutine calinid
 c
-      subroutine indsm(ncharges,mws,ws,ibox,iboxscr,indstart,indend,
-     .indscr,mishx,mishy,maskxy,maxint,int3x,int3y,int3z,int3p,int3q,
-     .bitpos,mbitpos,is,ia,pageshift,pagemask,pageposstart,pagepos,
-     .pageshiftg,pageaddr,pagejump,indskpjump,pages,ins,jsb,shb,jnit,
-     .nit,gs,periodic,nmboxes,get12)
-c
-      use fmmkinds
-      use fmmint34
-      use fmmalloc
-#ifdef FMM_COMPRESSION
-      use compression
-#endif
-#ifndef FMM_IBOXSCR
-#ifndef FMM_NOFUNCTIONPOINTER
-      use mfbox2int
-#endif
-#endif
-c
-      implicit none
-c
-      integer(kind=fmm_integer) indstart,pageposstart
-      integer(kind=fmm_integer) ncharges,mws,ws,ibox(*),iboxscr(*),
-     .indend,indscr(indstart:*),mishx,mishy,maskxy,maxint,int3x(0:*),
-     .int3y(0:*),int3z(0:*),int3p(0:*),int3q(0:*),bitpos(0:*),
-     .mbitpos(0:*),is,ia,pageshift,pagemask,pagepos(pageposstart:*),
-     .pageshiftg,pageaddr,pagejump,indskpjump,jsb,gs,periodic,nmboxes,
-     .get12,j5,i,jp,icharge,j,k,l,ibx,iby,ibz,m,jshb,jnit,idx,idxyz,iz,
-     .ibnz,jbnz,kbz,iy,ibny,jbny,kby,ix,ibnx,jbnx,kbx
-c
-      integer(kind=fmm_integer), target:: shb(jsb)
-      integer(kind=fmm_integer), pointer:: shba(:)
-c
-      logical(kind=fmm_logical) pages,ins(mws:*),jump,gx,gy,gz
-c
-      logical(kind=fmm_logical), target:: nit(0:jnit)
-      logical(kind=fmm_logical), pointer:: nita(:)
-c
-      logical(kind=fmm_logical) gnit,indshb,pass2dt
-c
-      integer(kind=fmm_integer) nallocst
-c
-      call stmdfmmalloc(nalloc,nallocst)
-c
-      if(gs.ge.0) then
-        call calj5(ws,j5)
-        call fmmallocatept(shba,1,j5,i)
-        if(i.eq.0) then
-          call fmmallocatept(nita,0,gs,i)
-          if(i.eq.0) then
-            call calnit(ws,gs,nita)
-          else
-            call bummer('indsm: error, i = ',i)
-          endif
-        else
-          call bummer('indsm: error, i = ',i)
-        endif
-        jp = 1
-        jump = .true.
-      else
-        shba => shb
-        nita => nit
-        jp = 2
-        jump = .false.
-      endif
-c
-      call setgxgygz(periodic,gx,gy,gz)
-c
-      i = 0
-c
-      icharge = 1
-c
- 777  if(icharge.le.ncharges) then
-#ifdef FMM_COMPRESSION
-        if(iand(ishft(ibox(icharge),ib01),1).eq.0) then
-          j = iand(ishft((iand(ibox(icharge),ibm)-1),is),ia)+1
-#else
-        if(ibox(icharge).gt.0) then
-          j = iand(ishft((ibox(icharge)-1),is),ia)+1
-#endif
-c
-          if(j.gt.i) then
-            i = j
-#ifdef FMM_IBOXSCR
-            j = iand(iboxscr(icharge),maskxy)
-            k = iand(ishft(iboxscr(icharge),mishy),maskxy)
-            l = iand(ishft(iboxscr(icharge),mishx),maskxy)
-#else
-#ifdef FMM_COMPRESSION
-            call box2int(iand(ibox(icharge),ibm),j,k,l)
-#else
-            call box2int(ibox(icharge),j,k,l)
-#endif
-#endif
-            ibx = iand(ishft(j,-1),maxint)
-            iby = iand(ishft(k,-1),maxint)
-            ibz = iand(ishft(l,-1),maxint)
-            if(pages) then
-             if(indstart.eq.-8) then
-              j = ibx+ibx
-              k = iby+iby
-              l = ibz+ibz
-              if(j.le.int3xyz) then
-                m = int3x(j)
-              else
-                m = int4x(j,bitpos,mbitpos)
-              endif
-              if(k.le.int3xyz) then
-                m = ior(m,int3y(k))
-              else
-                m = ior(m,int4y(k,bitpos,mbitpos))
-              endif
-              if(l.le.int3xyz) then
-                m = ior(m,int3z(l))
-              else
-                m = ior(m,int4z(l,bitpos,mbitpos))
-              endif
-              if(indskpjump.gt.0) then
-                call ind3a(m,pagepos(iand(ishft(m,pageshift),pagemask)),
-     .          pageshiftg,pageaddr,pagejump,indskpjump,indstart,indscr)
-              else
-                go to(1,2,3,4,5,6,7,8,9,10,11,12,13) pagejump
-                call ind2a(m,pagepos(iand(ishft(m,pageshift),pagemask)),
-     .          pageshiftg,pageaddr,pagejump,indstart,indscr)
-                icharge = icharge+1
-                go to 777
- 1              call indsmo1pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 2              call indsmo2pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 3              call indsmo3pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 4              call indsmo4pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 5              call indsmo5pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 6              call indsmo6pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 7              call indsmo7pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 8              call indsmo8pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 9              call indsmo9pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 10             call indsmo10pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 11             call indsmo11pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 12             call indsmo12pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-                icharge = icharge+1
-                go to 777
- 13             call indsmo13pg(m,indscr,pagemask,pageposstart,pagepos,
-     .          pageaddr)
-              endif
-             else
-              call bummer('indsm: error, indstart = ',indstart)
-             endif
-            elseif(gnit(ibx,iby,ibz,nita)) then
-              j = ibx+ibx
-              k = iby+iby
-              l = ibz+ibz
-              if(j.le.int3xyz) then
-                m = int3x(j)
-              else
-                m = int4x(j,bitpos,mbitpos)
-              endif
-              if(k.le.int3xyz) then
-                m = ior(m,int3y(k))
-              else
-                m = ior(m,int4y(k,bitpos,mbitpos))
-              endif
-              if(l.le.int3xyz) then
-                m = ior(m,int3z(l))
-              else
-                m = ior(m,int4z(l,bitpos,mbitpos))
-              endif
-              call getneighbors(int3x,int3y,int3z,int3p,int3q,m,ibx,
-     .        iby,ibz,j,k,l,1,jshb,shba,idxyz,jp,1,get12)
-              if(jump) then
-                go to(14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,
-     .          30,31,32,33,34,35,36,37,38,39,40) (jshb-1)
-              endif
- 14           if(indshb(indstart,indend,shba(1))) indscr(shba(1)) = -1
- 15           if(indshb(indstart,indend,shba(2))) indscr(shba(2)) = -1
- 16           if(indshb(indstart,indend,shba(3))) indscr(shba(3)) = -1
- 17           if(indshb(indstart,indend,shba(4))) indscr(shba(4)) = -1
- 18           if(indshb(indstart,indend,shba(5))) indscr(shba(5)) = -1
- 19           if(indshb(indstart,indend,shba(6))) indscr(shba(6)) = -1
- 20           if(indshb(indstart,indend,shba(7))) indscr(shba(7)) = -1
- 21           if(indshb(indstart,indend,shba(8))) indscr(shba(8)) = -1
- 22           if(indshb(indstart,indend,shba(9))) indscr(shba(9)) = -1
- 23           if(indshb(indstart,indend,shba(10))) indscr(shba(10)) = -1
- 24           if(indshb(indstart,indend,shba(11))) indscr(shba(11)) = -1
- 25           if(indshb(indstart,indend,shba(12))) indscr(shba(12)) = -1
- 26           if(indshb(indstart,indend,shba(13))) indscr(shba(13)) = -1
- 27           if(indshb(indstart,indend,shba(14))) indscr(shba(14)) = -1
- 28           if(indshb(indstart,indend,shba(15))) indscr(shba(15)) = -1
- 29           if(indshb(indstart,indend,shba(16))) indscr(shba(16)) = -1
- 30           if(indshb(indstart,indend,shba(17))) indscr(shba(17)) = -1
- 31           if(indshb(indstart,indend,shba(18))) indscr(shba(18)) = -1
- 32           if(indshb(indstart,indend,shba(19))) indscr(shba(19)) = -1
- 33           if(indshb(indstart,indend,shba(20))) indscr(shba(20)) = -1
- 34           if(indshb(indstart,indend,shba(21))) indscr(shba(21)) = -1
- 35           if(indshb(indstart,indend,shba(22))) indscr(shba(22)) = -1
- 36           if(indshb(indstart,indend,shba(23))) indscr(shba(23)) = -1
- 37           if(indshb(indstart,indend,shba(24))) indscr(shba(24)) = -1
- 38           if(indshb(indstart,indend,shba(25))) indscr(shba(25)) = -1
- 39           if(indshb(indstart,indend,shba(26))) indscr(shba(26)) = -1
- 40           if(indshb(indstart,indend,shba(27))) indscr(shba(27)) = -1
-            elseif(periodic.gt.0) then
-              do 66 iz = mws,ws
-                ibnz = ibz+iz
-c
-                if(pass2dt(jbnz,ibnz,nmboxes,gz)) then
-                  if(jbnz.le.int3xyz) then
-                    kbz = int3z(jbnz)
-                  else
-                    kbz = int4z(jbnz,bitpos,mbitpos)
-                  endif
-                  ibnz = ibnz+ibnz
-c
-                  do 67 iy = mws,ws
-                    ibny = iby+iy
-c
-                    if(pass2dt(jbny,ibny,nmboxes,gy)) then
-                      if(jbny.le.int3xyz) then
-                        kby = ior(kbz,int3y(jbny))
-                      else
-                        kby = ior(kbz,int4y(jbny,bitpos,mbitpos))
-                      endif
-                      ibny = ibny+ibny
-c
-                      do 68 ix = mws,ws
-                        ibnx = ibx+ix
-c
-                        if(pass2dt(jbnx,ibnx,nmboxes,gx)) then
-                          if(jbnx.le.int3xyz) then
-                            j = ior(kby,int3x(jbnx))
-                            if(indshb(indstart,indend,j)) indscr(j) = -1
-                          else
-                            j = ior(kby,int4x(jbnx,bitpos,mbitpos))
-                            if(indshb(indstart,indend,j)) indscr(j) = -1
-                          endif
-                        endif
- 68                   continue
-                    endif
- 67               continue
-                endif
- 66           continue
-            else
-              do 76 iz = mws,ws
-                ibnz = ibz+iz
-c
-                if(ins(ibnz)) then
-                  ibnz = ibnz+ibnz
-                  if(ibnz.le.int3xyz) then
-                    kbz = int3z(ibnz)
-                  else
-                    kbz = int4z(ibnz,bitpos,mbitpos)
-                  endif
-c
-                  do 77 iy = mws,ws
-                    ibny = iby+iy
-c
-                    if(ins(ibny)) then
-                      ibny = ibny+ibny
-                      if(ibny.le.int3xyz) then
-                        kby = ior(kbz,int3y(ibny))
-                      else
-                        kby = ior(kbz,int4y(ibny,bitpos,mbitpos))
-                      endif
-c
-                      do 78 ix = mws,ws
-                        ibnx = ibx+ix
-c
-                        if(ins(ibnx)) then
-                          ibnx = ibnx+ibnx
-                          if(ibnx.le.int3xyz) then
-                            j = ior(kby,int3x(ibnx))
-                            if(indshb(indstart,indend,j)) indscr(j) = -1
-                          else
-                            j = ior(kby,int4x(ibnx,bitpos,mbitpos))
-                            if(indshb(indstart,indend,j)) indscr(j) = -1
-                          endif
-                        endif
- 78                   continue
-                    endif
- 77               continue
-                endif
- 76           continue
-            endif
-          elseif(j.lt.i) then
-            call bummer('indsm: (j-i) = ',(j-i))
-          endif
-c
-          icharge = icharge+1
-          go to 777
-#ifdef FMM_COMPRESSION
-        elseif(iand(ishft(ibox(icharge),ib01),1).gt.0) then
-          icharge = icharge-ior(ibox(icharge),ibm011)
-#else
-        elseif(ibox(icharge).lt.0) then
-          icharge = icharge-ibox(icharge)
-#endif
-          go to 777
-        else
-          call bummer('indsm: error, icharge = ',icharge)
-        endif
-      endif
-c
-      if(gs.ge.0) then
-        call fmmdeallocatept(shba,i)
-        if(i.ne.0) call bummer('indsm: error, i = ',i)
-        call fmmdeallocatept(nita,i)
-        if(i.ne.0) call bummer('indsm: error, i = ',i)
-      endif
-      call edmdfmmalloc(nalloc,nallocst,'indsm')
-      return
-      end subroutine indsm
 c
       function indshb(indstart,indend,shb)
 c
@@ -13933,7 +11287,7 @@ c
 c
       logical(kind=fmm_logical), allocatable:: nit(:),ins(:)
 c
-      logical(kind=fmm_logical) gnit,indshb,pass2dt
+c-ik      logical(kind=fmm_logical) gnit,indshb,pass2dt
 c
       integer(kind=fmm_integer) nallocst
 c
@@ -14246,7 +11600,7 @@ c
 c
       logical(kind=fmm_logical), allocatable:: nit(:)
 c
-      logical(kind=fmm_logical) gnit,indshb,pass2dt
+c-ik      logical(kind=fmm_logical) gnit,indshb,pass2dt
 c
       integer(kind=fmm_integer) nallocst
 c
@@ -15259,7 +12613,7 @@ c
      .indscr(indstart:*),mishx,mishy,maskxy,pageshift,pagemask,
      .pagepos(pageposstart:*),pagejump,icharge,i,j,k
 c
-      integer(kind=fmm_integer) inda
+c-ik      integer(kind=fmm_integer) inda
 c
       logical(kind=fmm_logical) pages,g
 c
@@ -16684,7 +14038,7 @@ c
 #endif
 #ifdef FMM_CORRECTION_OF_FORCES
       real(kind=fmm_real) qch
-      real(kind=fmm_real) sgnq
+c-ik      real(kind=fmm_real) sgnq
 #endif
 c
       integer(kind=fmm_integer) periodic,i
@@ -17403,12 +14757,12 @@ c
       integer(kind=fmm_integer), target:: indscrtmp(0:7)
       integer(kind=fmm_integer), pointer:: indscra(:)
 c
-      integer(kind=fmm_integer) inda,indc
+c-ik      integer(kind=fmm_integer) inda,indc
 c
       logical(kind=fmm_logical) ins(mws:*),jmm(mws:ws,0:*),skip,pages,
      .gx,gy,gz,dipole,firstbox,sjp(*)
 c
-      logical(kind=fmm_logical) shqidt
+c-ik      logical(kind=fmm_logical) shqidt
 c
       real(kind=fmm_real) zero
       parameter(zero=0.e0_fmm_real)
@@ -19771,7 +17125,7 @@ c
       integer(kind=fmm_integer), target:: indscrtmp(0:7)
       integer(kind=fmm_integer), pointer:: indscra(:)
 c
-      integer(kind=fmm_integer) inda,indc
+c-ik      integer(kind=fmm_integer) inda,indc
 c
       logical(kind=fmm_logical) skip,pages,dipole,firstbox,sjp(*)
 c
@@ -21829,7 +19183,7 @@ c
       integer(kind=fmm_integer), target:: indscrtmp(0:7)
       integer(kind=fmm_integer), pointer:: indscra(:)
 c
-      integer(kind=fmm_integer) inda,indc
+c-ik      integer(kind=fmm_integer) inda,indc
 c
       logical(kind=fmm_logical) ins(mws:*),jmm(mws:ws,0:*),skip,pages
 c
@@ -24479,7 +21833,7 @@ c
       integer(kind=fmm_integer), allocatable:: indscra(:),pageposa(:),
      .nbofmbtmp(:)
 c
-      integer(kind=fmm_integer) inda,indb,indc
+c-ik      integer(kind=fmm_integer) inda,indb,indc
 c
       logical(kind=fmm_logical) skip,pages,jump,jumpf,increment,
      .jmm(mws:ws,0:*),gh,gini
@@ -28257,7 +25611,7 @@ c
 #endif
 #endif
 c
-      integer(kind=fmm_integer) inda,indb,indc
+c-ik      integer(kind=fmm_integer) inda,indb,indc
 c
       logical(kind=fmm_logical) withtaylor,gtaylor,hugep(0:*),cachopt,
      .g2db,withbop,compute,skip,pages,gx,gy,gz,per,hugep0,farfield,
@@ -28269,9 +25623,9 @@ c
       logical(kind=fmm_logical), allocatable:: cachoptd(:),
      .cald2d3ffmm(:),sgcar(:),sgrar(:),jacc(:),nit(:),ins(:)
 c
-      logical(kind=fmm_logical) pass2dt,pass2ind
+c-ik      logical(kind=fmm_logical) pass2dt,pass2ind
 c
-      logical(kind=fmm_logical) gnit,sha,gind
+c-ik      logical(kind=fmm_logical) gnit,sha,gind
 c
       type(twignerd) wignerd
 c
@@ -28421,16 +25775,16 @@ c
                     j = 1-i
                     do 292 k = 1,ncsar
                       j = j+i
-                      call cpydtod2(mnmultipoles,nmultipoles,d2fmm(j),
+                      call cpydtod2(mnmultipoles,nmultipoles,d2fmm(j:),
      .                ncsar,1,k,wignerd)
                       j = j+i
-                      call cpydtod2(mnmultipoles,nmultipoles,d2fmm(j),
+                      call cpydtod2(mnmultipoles,nmultipoles,d2fmm(j:),
      .                ncsar,2,k,wignerd)
                       j = j+i
-                      call cpydtod2(mnmultipoles,nmultipoles,d2fmm(j),
+                      call cpydtod2(mnmultipoles,nmultipoles,d2fmm(j:),
      .                ncsar,3,k,wignerd)
                       j = j+i
-                      call cpydtod2(mnmultipoles,nmultipoles,d2fmm(j),
+                      call cpydtod2(mnmultipoles,nmultipoles,d2fmm(j:),
      .                ncsar,4,k,wignerd)
  292                continue
 #ifdef FMM_ISO_C_BINDING
@@ -29907,7 +27261,7 @@ c
                               endif
                               if(edgestart.gt.0) then
                                call fmmind2(edgestart,edgeend,
-     .                         iboxedge(edgestart),mbx,maxint,j8,
+     .                         iboxedge(edgestart:),mbx,maxint,j8,
      .                         indscrtmp)
                                if(j8.gt.0) then
                                 j8 = 0
@@ -30569,7 +27923,7 @@ c
                         endif
                         if(edgestart.gt.0) then
                          call fmmind2(edgestart,edgeend,
-     .                   iboxedge(edgestart),shb(mm),maxint,j8,
+     .                   iboxedge(edgestart:),shb(mm),maxint,j8,
      .                   indscrtmp2)
                         else
                          go to 93
@@ -31133,7 +28487,7 @@ c
                                  endif
                                  if(edgestart.gt.0) then
                                   call fmmind2(edgestart,edgeend,
-     .                            iboxedge(edgestart),mbx,maxint,m,
+     .                            iboxedge(edgestart:),mbx,maxint,m,
      .                            indscrtmp2)
                                  else
                                   go to 83
@@ -32528,7 +29882,7 @@ c
                     if(rcvbufferlength.gt.0) then
                       i = localbufferlength+1
                       call iboxtoiboxscr(ilevel,rcvbufferlength,ishx,
-     .                ishy,maskx,masky,iboxedge(i),iboxscredge(i))
+     .                ishy,maskx,masky,iboxedge(i:),iboxscredge(i))
                     elseif(rcvbufferlength.lt.0) then
                       call bummer('pass2: error, rcvbufferlength = ',
      .                rcvbufferlength)
@@ -33042,7 +30396,7 @@ c
      .         gsar(0,jdm))
 c
                call cpycs(nmultipoles,gcar(0,jdm),gsar(0,jdm),
-     .         gcsar(1,jdm))
+     .         gcsar(1:,jdm:))
 c
                if(n.gt.0) then
                   x = real(mm,kind=fmm_real)
@@ -33054,7 +30408,7 @@ c
      .            gsar(0,jdmm))
 c
                   call cpycs(nmultipoles,gcar(0,jdmm),gsar(0,jdmm),
-     .            gcsar(1,jdmm))
+     .            gcsar(1:,jdmm:))
                endif
             endif
 c
@@ -33165,24 +30519,24 @@ c
      .          indkdbmm,indidbmm,indk,indi,jaddress,jposition,jacc)
                 call pass2trqdn(unrolled3,nmultipoles,mnmultipoles,
      .          nmultipoles,nsqmultipoles,cachopt,cachoptd(jd),gl,d3d3f,
-     .          promegatree_1_1(1,indkdb),piomegatree_1_1(1,indkdb),
-     .          promegatree_1_2(1,indidb),piomegatree_1_2(1,indidb),
-     .          promegatree_2_1(1,indkdbm),piomegatree_2_1(1,indkdbm),
-     .          promegatree_2_2(1,indidbm),piomegatree_2_2(1,indidbm),
-     .          promegatree_3_1(1,indkdbmm),piomegatree_3_1(1,indkdbmm),
-     .          promegatree_3_2(1,indidbmm),piomegatree_3_2(1,indidbmm),
-     .          promegatree_4_1(1,indk),piomegatree_4_1(1,indk),
-     .          promegatree_4_2(1,indi),piomegatree_4_2(1,indi),
-     .          prmutree_1_1(1,indkdb),pimutree_1_1(1,indkdb),
-     .          prmutree_1_2(1,indidb),pimutree_1_2(1,indidb),
-     .          prmutree_2_1(1,indkdbm),pimutree_2_1(1,indkdbm),
-     .          prmutree_2_2(1,indidbm),pimutree_2_2(1,indidbm),
-     .          prmutree_3_1(1,indkdbmm),pimutree_3_1(1,indkdbmm),
-     .          prmutree_3_2(1,indidbmm),pimutree_3_2(1,indidbmm),
-     .          prmutree_4_1(1,indk),pimutree_4_1(1,indk),
-     .          prmutree_4_2(1,indi),pimutree_4_2(1,indi),gcar(0,jdm),
-     .          gsar(0,jdm),gcar(0,jdmm),gsar(0,jdmm),gcsar(1,jdm),
-     .          gcsar(1,jdmm),sg,grar(0,mmm),grar(0,mmmm),grar(0,mmmmm),
+     .          promegatree_1_1(1:,indkdb:),piomegatree_1_1(1:,indkdb:),
+     .          promegatree_1_2(1:,indidb:),piomegatree_1_2(1:,indidb:),
+     .          promegatree_2_1(1:,indkdbm:),piomegatree_2_1(1:,indkdbm:),
+     .          promegatree_2_2(1:,indidbm:),piomegatree_2_2(1:,indidbm:),
+     .          promegatree_3_1(1:,indkdbmm:),piomegatree_3_1(1:,indkdbmm:),
+     .          promegatree_3_2(1:,indidbmm:),piomegatree_3_2(1:,indidbmm:),
+     .          promegatree_4_1(1:,indk:),piomegatree_4_1(1:,indk:),
+     .          promegatree_4_2(1:,indi:),piomegatree_4_2(1:,indi:),
+     .          prmutree_1_1(1:,indkdb:),pimutree_1_1(1:,indkdb:),
+     .          prmutree_1_2(1:,indidb:),pimutree_1_2(1:,indidb:),
+     .          prmutree_2_1(1:,indkdbm:),pimutree_2_1(1:,indkdbm:),
+     .          prmutree_2_2(1:,indidbm:),pimutree_2_2(1:,indidbm:),
+     .          prmutree_3_1(1:,indkdbmm:),pimutree_3_1(1:,indkdbmm:),
+     .          prmutree_3_2(1:,indidbmm:),pimutree_3_2(1:,indidbmm:),
+     .          prmutree_4_1(1:,indk:),pimutree_4_1(1:,indk:),
+     .          prmutree_4_2(1:,indi:),pimutree_4_2(1:,indi:),gcar(0,jdm),
+     .          gsar(0,jdm),gcar(0,jdmm),gsar(0,jdmm),gcsar(1:,jdm:),
+     .          gcsar(1:,jdmm:),sg,grar(0,mmm),grar(0,mmmm),grar(0,mmmmm),
      .          grar(0,jdr),d2(0,1,jd),d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),
      .          rscr1,iscr1,rscr2,iscr2,rscr3,iscr3,rscr4,iscr4,scr1,
      .          scr2,jaddress,jposition,jacc)
@@ -33214,11 +30568,11 @@ c
                 pimutree_4_2 => imutree
                endif
 #endif
-               call pass2trcth1(nmultipoles,promegatree_4_1(1,indk),
-     .         piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .         piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .         pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .         pimutree_4_2(1,indi),sg,grar(0,jdr),rscr1,iscr1,rscr2,
+               call pass2trcth1(nmultipoles,promegatree_4_1(1:,indk:),
+     .         piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .         piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .         pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .         pimutree_4_2(1:,indi:),sg,grar(0,jdr),rscr1,iscr1,rscr2,
      .         iscr2,rscr3,iscr3,rscr4,iscr4)
               elseif(k.lt.0) then
 #ifdef FMM_PARALLEL
@@ -33247,11 +30601,11 @@ c
                 pimutree_4_2 => imutree
                endif
 #endif
-               call pass2trcth1(nmultipoles,promegatree_4_2(1,indi),
-     .         piomegatree_4_2(1,indi),promegatree_4_1(1,indk),
-     .         piomegatree_4_1(1,indk),prmutree_4_2(1,indi),
-     .         pimutree_4_2(1,indi),prmutree_4_1(1,indk),
-     .         pimutree_4_1(1,indk),sg,grar(0,jdr),rscr1,iscr1,rscr2,
+               call pass2trcth1(nmultipoles,promegatree_4_2(1:,indi:),
+     .         piomegatree_4_2(1:,indi:),promegatree_4_1(1:,indk:),
+     .         piomegatree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .         pimutree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .         pimutree_4_1(1:,indk:),sg,grar(0,jdr),rscr1,iscr1,rscr2,
      .         iscr2,rscr3,iscr3,rscr4,iscr4)
               else
                call bummer('pass2bftr: error, k = ',k)
@@ -33286,180 +30640,180 @@ c
               selectcase(unrolled3)
                case(1)
                 if(d3d3f.gt.0) then
-                 call pass2tr1(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr1(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,1,jd),
      .           d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 else
-                 call pass2tr1(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr1(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,3,jd),
      .           d2(0,4,jd),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 endif
                case(2)
                 if(d3d3f.gt.0) then
-                 call pass2tr2(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr2(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,1,jd),
      .           d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 else
-                 call pass2tr2(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr2(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,3,jd),
      .           d2(0,4,jd),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 endif
                case(3)
                 if(d3d3f.gt.0) then
-                 call pass2tr3(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr3(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,1,jd),
      .           d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 else
-                 call pass2tr3(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr3(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,3,jd),
      .           d2(0,4,jd),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 endif
                case(4)
                 if(d3d3f.gt.0) then
-                 call pass2tr4(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr4(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,1,jd),
      .           d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 else
-                 call pass2tr4(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr4(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,3,jd),
      .           d2(0,4,jd),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 endif
                case(5)
                 if(d3d3f.gt.0) then
-                 call pass2tr5(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr5(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,1,jd),
      .           d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 else
-                 call pass2tr5(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr5(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,3,jd),
      .           d2(0,4,jd),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 endif
                case(6)
                 if(d3d3f.gt.0) then
-                 call pass2tr6(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr6(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,1,jd),
      .           d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 else
-                 call pass2tr6(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr6(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,3,jd),
      .           d2(0,4,jd),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 endif
                case(7)
                 if(d3d3f.gt.0) then
-                 call pass2tr7(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr7(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,1,jd),
      .           d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 else
-                 call pass2tr7(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr7(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,3,jd),
      .           d2(0,4,jd),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 endif
                case(8)
                 if(d3d3f.gt.0) then
-                 call pass2tr8(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr8(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,1,jd),
      .           d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 else
-                 call pass2tr8(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr8(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,3,jd),
      .           d2(0,4,jd),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 endif
                case(9)
                 if(d3d3f.gt.0) then
-                 call pass2tr9(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr9(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,1,jd),
      .           d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
                 else
-                 call pass2tr9(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),prmutree_4_2(1,indi),
-     .           pimutree_4_2(1,indi),gcar(0,jdm),gsar(0,jdm),
+                 call pass2tr9(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),prmutree_4_2(1:,indi:),
+     .           pimutree_4_2(1:,indi:),gcar(0,jdm),gsar(0,jdm),
      .           gcar(0,jdmm),gsar(0,jdmm),grar(0,jdr),d2(0,3,jd),
      .           d2(0,4,jd),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2,rscr3,iscr3,rscr4,iscr4)
@@ -33467,10 +30821,10 @@ c
                case default
                 call pass2trn(unrolled3,nmultipoles,mnmultipoles,
      .          nmultipoles,cachopt,cachoptd(jd),d3d3f,
-     .          promegatree_4_1(1,indk),piomegatree_4_1(1,indk),
-     .          promegatree_4_2(1,indi),piomegatree_4_2(1,indi),
-     .          prmutree_4_1(1,indk),pimutree_4_1(1,indk),
-     .          prmutree_4_2(1,indi),pimutree_4_2(1,indi),gcar(0,jdm),
+     .          promegatree_4_1(1:,indk:),piomegatree_4_1(1:,indk:),
+     .          promegatree_4_2(1:,indi:),piomegatree_4_2(1:,indi:),
+     .          prmutree_4_1(1:,indk:),pimutree_4_1(1:,indk:),
+     .          prmutree_4_2(1:,indi:),pimutree_4_2(1:,indi:),gcar(0,jdm),
      .          gsar(0,jdm),gcar(0,jdmm),gsar(0,jdmm),sg,grar(0,jdr),
      .          d2(0,1,jd),d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,
      .          iscr1,rscr2,iscr2,rscr3,iscr3,rscr4,iscr4)
@@ -33561,18 +30915,18 @@ c
      .          jaddress,jposition,jacc)
                 call pass2ptrqdn(unrolled3,nmultipoles,mnmultipoles,
      .          nmultipoles,nsqmultipoles,cachopt,cachoptd(jd),gl,d3d3f,
-     .          promegatree_1_1(1,indkdb),piomegatree_1_1(1,indkdb),
-     .          promegatree_1_2(1,indidb),piomegatree_1_2(1,indidb),
-     .          promegatree_2_1(1,indkdbm),piomegatree_2_1(1,indkdbm),
-     .          promegatree_2_2(1,indidbm),piomegatree_2_2(1,indidbm),
-     .          promegatree_3_1(1,indkdbmm),piomegatree_3_1(1,indkdbmm),
-     .          promegatree_3_2(1,indidbmm),piomegatree_3_2(1,indidbmm),
-     .          promegatree_4_1(1,indk),piomegatree_4_1(1,indk),
-     .          promegatree_4_2(1,indi),piomegatree_4_2(1,indi),
-     .          prmutree_1_1(1,indkdb),pimutree_1_1(1,indkdb),
-     .          prmutree_2_1(1,indkdbm),pimutree_2_1(1,indkdbm),
-     .          prmutree_3_1(1,indkdbmm),pimutree_3_1(1,indkdbmm),
-     .          prmutree_4_1(1,indk),pimutree_4_1(1,indk),gcar(0,jdm),
+     .          promegatree_1_1(1:,indkdb:),piomegatree_1_1(1:,indkdb:),
+     .          promegatree_1_2(1:,indidb:),piomegatree_1_2(1:,indidb:),
+     .          promegatree_2_1(1:,indkdbm:),piomegatree_2_1(1:,indkdbm:),
+     .          promegatree_2_2(1:,indidbm:),piomegatree_2_2(1:,indidbm:),
+     .          promegatree_3_1(1:,indkdbmm:),piomegatree_3_1(1:,indkdbmm:),
+     .          promegatree_3_2(1:,indidbmm:),piomegatree_3_2(1:,indidbmm:),
+     .          promegatree_4_1(1:,indk:),piomegatree_4_1(1:,indk:),
+     .          promegatree_4_2(1:,indi:),piomegatree_4_2(1:,indi:),
+     .          prmutree_1_1(1:,indkdb:),pimutree_1_1(1:,indkdb:),
+     .          prmutree_2_1(1:,indkdbm:),pimutree_2_1(1:,indkdbm:),
+     .          prmutree_3_1(1:,indkdbmm:),pimutree_3_1(1:,indkdbmm:),
+     .          prmutree_4_1(1:,indk:),pimutree_4_1(1:,indk:),gcar(0,jdm),
      .          gsar(0,jdm),gcar(0,jdmm),gsar(0,jdmm),sg,grar(0,mmm),
      .          grar(0,mmmm),grar(0,mmmmm),grar(0,jdr),d2(0,1,jd),
      .          d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
@@ -33612,10 +30966,10 @@ c
                 pimutree_4_2 => imutree
                endif
 #endif
-               call pass2ptrcth1(nmultipoles,promegatree_4_1(1,indk),
-     .         piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .         piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .         pimutree_4_1(1,indk),sg,grar(0,jdr),rscr1,iscr1,rscr2,
+               call pass2ptrcth1(nmultipoles,promegatree_4_1(1:,indk:),
+     .         piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .         piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .         pimutree_4_1(1:,indk:),sg,grar(0,jdr),rscr1,iscr1,rscr2,
      .         iscr2)
               elseif(k.lt.0) then
                if(indi.gt.0) then
@@ -33650,10 +31004,10 @@ c
                 pimutree_4_2 => imutree
                endif
 #endif
-               call pass2ptrcthm1(nmultipoles,promegatree_4_1(1,indk),
-     .         piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .         piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .         pimutree_4_1(1,indk),sg,grar(0,jdr),rscr1,iscr1,rscr2,
+               call pass2ptrcthm1(nmultipoles,promegatree_4_1(1:,indk:),
+     .         piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .         piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .         pimutree_4_1(1:,indk:),sg,grar(0,jdr),rscr1,iscr1,rscr2,
      .         iscr2)
               else
                call bummer('pass2bftr: error, k = ',k)
@@ -33694,154 +31048,154 @@ c
               selectcase(unrolled3)
                case(1)
                 if(d3d3f.gt.0) then
-                 call pass2ptr1(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr1(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 else
-                 call pass2ptr1(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr1(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 endif
                case(2)
                 if(d3d3f.gt.0) then
-                 call pass2ptr2(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr2(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 else
-                 call pass2ptr2(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr2(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 endif
                case(3)
                 if(d3d3f.gt.0) then
-                 call pass2ptr3(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr3(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 else
-                 call pass2ptr3(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr3(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 endif
                case(4)
                 if(d3d3f.gt.0) then
-                 call pass2ptr4(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr4(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 else
-                 call pass2ptr4(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr4(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 endif
                case(5)
                 if(d3d3f.gt.0) then
-                 call pass2ptr5(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr5(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 else
-                 call pass2ptr5(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr5(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 endif
                case(6)
                 if(d3d3f.gt.0) then
-                 call pass2ptr6(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr6(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 else
-                 call pass2ptr6(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr6(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 endif
                case(7)
                 if(d3d3f.gt.0) then
-                 call pass2ptr7(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr7(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 else
-                 call pass2ptr7(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr7(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 endif
                case(8)
                 if(d3d3f.gt.0) then
-                 call pass2ptr8(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr8(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 else
-                 call pass2ptr8(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr8(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 endif
                case(9)
                 if(d3d3f.gt.0) then
-                 call pass2ptr9(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr9(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,3,jd),d2(0,4,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 else
-                 call pass2ptr9(promegatree_4_1(1,indk),
-     .           piomegatree_4_1(1,indk),promegatree_4_2(1,indi),
-     .           piomegatree_4_2(1,indi),prmutree_4_1(1,indk),
-     .           pimutree_4_1(1,indk),gcar(0,jdmm),gsar(0,jdmm),
+                 call pass2ptr9(promegatree_4_1(1:,indk:),
+     .           piomegatree_4_1(1:,indk:),promegatree_4_2(1:,indi:),
+     .           piomegatree_4_2(1:,indi:),prmutree_4_1(1:,indk:),
+     .           pimutree_4_1(1:,indk:),gcar(0,jdmm),gsar(0,jdmm),
      .           grar(0,jdr),d2(0,1,jd),d2(0,2,jd),rscr1,iscr1,rscr2,
      .           iscr2)
                 endif
                case default
                 call pass2ptrn(unrolled3,nmultipoles,mnmultipoles,
      .          nmultipoles,cachopt,cachoptd(jd),d3d3f,
-     .          promegatree_4_1(1,indk),piomegatree_4_1(1,indk),
-     .          promegatree_4_2(1,indi),piomegatree_4_2(1,indi),
-     .          prmutree_4_1(1,indk),pimutree_4_1(1,indk),gcar(0,jdm),
+     .          promegatree_4_1(1:,indk:),piomegatree_4_1(1:,indk:),
+     .          promegatree_4_2(1:,indi:),piomegatree_4_2(1:,indi:),
+     .          prmutree_4_1(1:,indk:),pimutree_4_1(1:,indk:),gcar(0,jdm),
      .          gsar(0,jdm),gcar(0,jdmm),gsar(0,jdmm),sg,grar(0,jdr),
      .          d2(0,1,jd),d2(0,2,jd),d2(0,3,jd),d2(0,4,jd),rscr1,
      .          iscr1,rscr2,iscr2,rscr3,iscr3,rscr4,iscr4)
@@ -33916,10 +31270,10 @@ c
 #endif
                    call pass2trn(unrolled3,nmultipoles,mnmultipoles,
      .             nmultipoles,cachopt,cachoptd(jd),d3d3f,
-     .             promegatree_4_1(1,indk),piomegatree_4_1(1,indk),
-     .             promegatree_4_2(1,indi),piomegatree_4_2(1,indi),
-     .             prmutree_4_1(1,indk),pimutree_4_1(1,indk),
-     .             prmutree_4_2(1,indi),pimutree_4_2(1,indi),
+     .             promegatree_4_1(1:,indk:),piomegatree_4_1(1:,indk:),
+     .             promegatree_4_2(1:,indi:),piomegatree_4_2(1:,indi:),
+     .             prmutree_4_1(1:,indk:),pimutree_4_1(1:,indk:),
+     .             prmutree_4_2(1:,indi:),pimutree_4_2(1:,indi:),
      .             gcar(0,jdm),gsar(0,jdm),gcar(0,jdmm),gsar(0,jdmm),
      .             sg,grar(0,jdr),d2(0,1,jd),d2(0,2,jd),d2(0,3,jd),
      .             d2(0,4,jd),rscr1,iscr1,rscr2,iscr2,rscr3,iscr3,
@@ -34011,9 +31365,9 @@ c
 #endif
                     call pass2ptrn(unrolled3,nmultipoles,mnmultipoles,
      .              nmultipoles,cachopt,cachoptd(jd),d3d3f,
-     .              promegatree_4_1(1,indk),piomegatree_4_1(1,indk),
-     .              promegatree_4_2(1,indi),piomegatree_4_2(1,indi),
-     .              prmutree_4_1(1,indk),pimutree_4_1(1,indk),
+     .              promegatree_4_1(1:,indk:),piomegatree_4_1(1:,indk:),
+     .              promegatree_4_2(1:,indi:),piomegatree_4_2(1:,indi:),
+     .              prmutree_4_1(1:,indk:),pimutree_4_1(1:,indk:),
      .              gcar(0,jdm),gsar(0,jdm),gcar(0,jdmm),gsar(0,jdmm),
      .              sg,grar(0,jdr),d2(0,1,jd),d2(0,2,jd),d2(0,3,jd),
      .              d2(0,4,jd),rscr1,iscr1,rscr2,iscr2,rscr3,iscr3,
@@ -35847,61 +33201,61 @@ c
 c
       logical(kind=fmm_logical) cachopt,cachoptd,gl,jacc(*)
 c
-      interface
-       subroutine pass2trfrqdcach(nmultipoles,nsqmultipoles,jaddress,
-     . jacc,romega1,iomega1,romega2,iomega2,romega1a,iomega1a,romega2a,
-     . iomega2a,romega1b,iomega1b,romega2b,iomega2b,romega1c,iomega1c,
-     . romega2c,iomega2c,mu1,mu2,mu3,mu4,mu5,mu6,mu7,mu8,mu9,mu10,mu11,
-     . mu12,mu13,mu14,mu15,mu16,cmphi,smphi,cmphipi,smphipi,csmphi,
-     . csmphipi,sg,fr,d2,d3f,scr1,scr2)
+c      interface
+c       subroutine pass2trfrqdcach(nmultipoles,nsqmultipoles,jaddress,
+c     . jacc,romega1,iomega1,romega2,iomega2,romega1a,iomega1a,romega2a,
+c     . iomega2a,romega1b,iomega1b,romega2b,iomega2b,romega1c,iomega1c,
+c     . romega2c,iomega2c,mu1,mu2,mu3,mu4,mu5,mu6,mu7,mu8,mu9,mu10,mu11,
+c     . mu12,mu13,mu14,mu15,mu16,cmphi,smphi,cmphipi,smphipi,csmphi,
+c     . csmphipi,sg,fr,d2,d3f,scr1,scr2)
+cc
+c       use fmmkinds
+cc
+c       implicit none
+cc
+c       real(kind=fmm_real) romega1(*),iomega1(*),romega2(*),iomega2(*),
+c     . romega1a(*),iomega1a(*),romega2a(*),iomega2a(*),romega1b(*),
+c     . iomega1b(*),romega2b(*),iomega2b(*),romega1c(*),iomega1c(*),
+c     . romega2c(*),iomega2c(*),mu1(*),mu2(*),mu3(*),mu4(*),mu5(*),
+c     . mu6(*),mu7(*),mu8(*),mu9(*),mu10(*),mu11(*),mu12(*),mu13(*),
+c     . mu14(*),mu15(*),mu16(*),cmphi(0:*),smphi(0:*),cmphipi(0:*),
+c     . smphipi(0:*),csmphi(*),csmphipi(*),sg(0:*),fr(0:*),d2(*),d3f(*),
+c     . scr1(*),scr2(*)
+cc
+c       integer(kind=fmm_integer) nmultipoles,nsqmultipoles,jaddress(*)
+cc
+c       logical(kind=fmm_logical) jacc(*)
+cc
+c       end subroutine pass2trfrqdcach
+c      end interface
 c
-       use fmmkinds
-c
-       implicit none
-c
-       real(kind=fmm_real) romega1(*),iomega1(*),romega2(*),iomega2(*),
-     . romega1a(*),iomega1a(*),romega2a(*),iomega2a(*),romega1b(*),
-     . iomega1b(*),romega2b(*),iomega2b(*),romega1c(*),iomega1c(*),
-     . romega2c(*),iomega2c(*),mu1(*),mu2(*),mu3(*),mu4(*),mu5(*),
-     . mu6(*),mu7(*),mu8(*),mu9(*),mu10(*),mu11(*),mu12(*),mu13(*),
-     . mu14(*),mu15(*),mu16(*),cmphi(0:*),smphi(0:*),cmphipi(0:*),
-     . smphipi(0:*),csmphi(*),csmphipi(*),sg(0:*),fr(0:*),d2(*),d3f(*),
-     . scr1(*),scr2(*)
-c
-       integer(kind=fmm_integer) nmultipoles,nsqmultipoles,jaddress(*)
-c
-       logical(kind=fmm_logical) jacc(*)
-c
-       end subroutine pass2trfrqdcach
-      end interface
-c
-      interface
-       subroutine pass2trqdcach(nmultipoles,nsqmultipoles,jaddress,jacc,
-     . romega1,iomega1,romega2,iomega2,romega1a,iomega1a,romega2a,
-     . iomega2a,romega1b,iomega1b,romega2b,iomega2b,romega1c,iomega1c,
-     . romega2c,iomega2c,mu1,mu2,mu3,mu4,mu5,mu6,mu7,mu8,mu9,mu10,mu11,
-     . mu12,mu13,mu14,mu15,mu16,cmphi,smphi,cmphipi,smphipi,sg,fr,fra,
-     . frb,frc,d2,d3f,scr1,scr2)
-c
-       use fmmkinds
-c
-       implicit none
-c
-       real(kind=fmm_real) romega1(*),iomega1(*),romega2(*),iomega2(*),
-     . romega1a(*),iomega1a(*),romega2a(*),iomega2a(*),romega1b(*),
-     . iomega1b(*),romega2b(*),iomega2b(*),romega1c(*),iomega1c(*),
-     . romega2c(*),iomega2c(*),mu1(*),mu2(*),mu3(*),mu4(*),mu5(*),
-     . mu6(*),mu7(*),mu8(*),mu9(*),mu10(*),mu11(*),mu12(*),mu13(*),
-     . mu14(*),mu15(*),mu16(*),cmphi(0:*),smphi(0:*),cmphipi(0:*),
-     . smphipi(0:*),sg(0:*),fr(0:*),fra(0:*),frb(0:*),frc(0:*),d2(*),
-     . d3f(*),scr1(*),scr2(*)
-c
-       integer(kind=fmm_integer) nmultipoles,nsqmultipoles,jaddress(*)
-c
-       logical(kind=fmm_logical) jacc(*)
-c
-       end subroutine pass2trqdcach
-      end interface
+c      interface
+c       subroutine pass2trqdcach(nmultipoles,nsqmultipoles,jaddress,jacc,
+c     . romega1,iomega1,romega2,iomega2,romega1a,iomega1a,romega2a,
+c     . iomega2a,romega1b,iomega1b,romega2b,iomega2b,romega1c,iomega1c,
+c     . romega2c,iomega2c,mu1,mu2,mu3,mu4,mu5,mu6,mu7,mu8,mu9,mu10,mu11,
+c     . mu12,mu13,mu14,mu15,mu16,cmphi,smphi,cmphipi,smphipi,sg,fr,fra,
+c     . frb,frc,d2,d3f,scr1,scr2)
+cc
+c       use fmmkinds
+cc
+c       implicit none
+cc
+c       real(kind=fmm_real) romega1(*),iomega1(*),romega2(*),iomega2(*),
+c     . romega1a(*),iomega1a(*),romega2a(*),iomega2a(*),romega1b(*),
+c     . iomega1b(*),romega2b(*),iomega2b(*),romega1c(*),iomega1c(*),
+c     . romega2c(*),iomega2c(*),mu1(*),mu2(*),mu3(*),mu4(*),mu5(*),
+c     . mu6(*),mu7(*),mu8(*),mu9(*),mu10(*),mu11(*),mu12(*),mu13(*),
+c     . mu14(*),mu15(*),mu16(*),cmphi(0:*),smphi(0:*),cmphipi(0:*),
+c     . smphipi(0:*),sg(0:*),fr(0:*),fra(0:*),frb(0:*),frc(0:*),d2(*),
+c     . d3f(*),scr1(*),scr2(*)
+cc
+c       integer(kind=fmm_integer) nmultipoles,nsqmultipoles,jaddress(*)
+cc
+c       logical(kind=fmm_logical) jacc(*)
+cc
+c       end subroutine pass2trqdcach
+c      end interface
 c
       integer(kind=fmm_integer) nallocst
 c
@@ -36564,59 +33918,59 @@ c
 c
       logical(kind=fmm_logical) cachopt,cachoptd,gl,jacc(*)
 c
-      interface
-       subroutine pass2ptrfrqdcach(nmultipoles,nsqmultipoles,jaddress,
-     . jacc,romega1,iomega1,romega2,iomega2,romega1a,iomega1a,romega2a,
-     . iomega2a,romega1b,iomega1b,romega2b,iomega2b,romega1c,iomega1c,
-     . romega2c,iomega2c,mu1,mu2,mu3,mu4,mu5,mu6,mu7,mu8,cmphi,smphi,
-     . cmphipi,smphipi,sg,fr,d2f,d3f,scr1,scr2)
+c      interface
+c       subroutine pass2ptrfrqdcach(nmultipoles,nsqmultipoles,jaddress,
+c     . jacc,romega1,iomega1,romega2,iomega2,romega1a,iomega1a,romega2a,
+c     . iomega2a,romega1b,iomega1b,romega2b,iomega2b,romega1c,iomega1c,
+c     . romega2c,iomega2c,mu1,mu2,mu3,mu4,mu5,mu6,mu7,mu8,cmphi,smphi,
+c     . cmphipi,smphipi,sg,fr,d2f,d3f,scr1,scr2)
+cc
+c       use fmmkinds
+cc
+c       implicit none
+cc
+c       real(kind=fmm_real) romega1(*),iomega1(*),romega2(*),iomega2(*),
+c     . romega1a(*),iomega1a(*),romega2a(*),iomega2a(*),romega1b(*),
+c     . iomega1b(*),romega2b(*),iomega2b(*),romega1c(*),iomega1c(*),
+c     . romega2c(*),iomega2c(*),mu1(*),mu2(*),mu3(*),mu4(*),mu5(*),
+c     . mu6(*),mu7(*),mu8(*),cmphi(0:*),smphi(0:*),cmphipi(0:*),
+c     . smphipi(0:*),sg(0:*),fr(0:*),d2f(*),d3f(*),scr1(*),scr2(*),hugef,
+c     . hugefa,hugefb,hugefc
+cc
+c       integer(kind=fmm_integer) nmultipoles,nsqmultipoles,jaddress(*)
+cc
+c       logical(kind=fmm_logical) jacc(*),hugep,hugepa,hugepb,hugepc,
+c     . eper,epera,eperb,eperc
+cc
+c       end subroutine pass2ptrfrqdcach
+c      end interface
 c
-       use fmmkinds
-c
-       implicit none
-c
-       real(kind=fmm_real) romega1(*),iomega1(*),romega2(*),iomega2(*),
-     . romega1a(*),iomega1a(*),romega2a(*),iomega2a(*),romega1b(*),
-     . iomega1b(*),romega2b(*),iomega2b(*),romega1c(*),iomega1c(*),
-     . romega2c(*),iomega2c(*),mu1(*),mu2(*),mu3(*),mu4(*),mu5(*),
-     . mu6(*),mu7(*),mu8(*),cmphi(0:*),smphi(0:*),cmphipi(0:*),
-     . smphipi(0:*),sg(0:*),fr(0:*),d2f(*),d3f(*),scr1(*),scr2(*),hugef,
-     . hugefa,hugefb,hugefc
-c
-       integer(kind=fmm_integer) nmultipoles,nsqmultipoles,jaddress(*)
-c
-       logical(kind=fmm_logical) jacc(*),hugep,hugepa,hugepb,hugepc,
-     . eper,epera,eperb,eperc
-c
-       end subroutine pass2ptrfrqdcach
-      end interface
-c
-      interface
-       subroutine pass2ptrqdcach(nmultipoles,nsqmultipoles,jaddress,
-     . jacc,romega1,iomega1,romega2,iomega2,romega1a,iomega1a,romega2a,
-     . iomega2a,romega1b,iomega1b,romega2b,iomega2b,romega1c,iomega1c,
-     . romega2c,iomega2c,mu1,mu2,mu3,mu4,mu5,mu6,mu7,mu8,cmphi,smphi,
-     . cmphipi,smphipi,sg,fr,fra,frb,frc,d2f,d3f,scr1,scr2)
-c
-       use fmmkinds
-c
-       implicit none
-c
-       real(kind=fmm_real) romega1(*),iomega1(*),romega2(*),iomega2(*),
-     . romega1a(*),iomega1a(*),romega2a(*),iomega2a(*),romega1b(*),
-     . iomega1b(*),romega2b(*),iomega2b(*),romega1c(*),iomega1c(*),
-     . romega2c(*),iomega2c(*),mu1(*),mu2(*),mu3(*),mu4(*),mu5(*),
-     . mu6(*),mu7(*),mu8(*),cmphi(0:*),smphi(0:*),cmphipi(0:*),
-     . smphipi(0:*),sg(0:*),fr(0:*),fra(0:*),frb(0:*),frc(0:*),d2f(*),
-     . d3f(*),scr1(*),scr2(*),hugef,hugefa,hugefb,hugefc
-c
-       integer(kind=fmm_integer) nmultipoles,nsqmultipoles,jaddress(*)
-c
-       logical(kind=fmm_logical) jacc(*),hugep,hugepa,hugepb,hugepc,
-     . eper,epera,eperb,eperc
-c
-       end subroutine pass2ptrqdcach
-      end interface
+c      interface
+c       subroutine pass2ptrqdcach(nmultipoles,nsqmultipoles,jaddress,
+c     . jacc,romega1,iomega1,romega2,iomega2,romega1a,iomega1a,romega2a,
+c     . iomega2a,romega1b,iomega1b,romega2b,iomega2b,romega1c,iomega1c,
+c     . romega2c,iomega2c,mu1,mu2,mu3,mu4,mu5,mu6,mu7,mu8,cmphi,smphi,
+c     . cmphipi,smphipi,sg,fr,fra,frb,frc,d2f,d3f,scr1,scr2)
+cc
+c       use fmmkinds
+cc
+c       implicit none
+cc
+c       real(kind=fmm_real) romega1(*),iomega1(*),romega2(*),iomega2(*),
+c     . romega1a(*),iomega1a(*),romega2a(*),iomega2a(*),romega1b(*),
+c     . iomega1b(*),romega2b(*),iomega2b(*),romega1c(*),iomega1c(*),
+c     . romega2c(*),iomega2c(*),mu1(*),mu2(*),mu3(*),mu4(*),mu5(*),
+c     . mu6(*),mu7(*),mu8(*),cmphi(0:*),smphi(0:*),cmphipi(0:*),
+c     . smphipi(0:*),sg(0:*),fr(0:*),fra(0:*),frb(0:*),frc(0:*),d2f(*),
+c     . d3f(*),scr1(*),scr2(*),hugef,hugefa,hugefb,hugefc
+cc
+c      integer(kind=fmm_integer) nmultipoles,nsqmultipoles,jaddress(*)
+cc
+c       logical(kind=fmm_logical) jacc(*),hugep,hugepa,hugepb,hugepc,
+c     . eper,epera,eperb,eperc
+cc
+c       end subroutine pass2ptrqdcach
+c      end interface
 c
       integer(kind=fmm_integer) nallocst
 c
@@ -53602,7 +50956,8 @@ c
      .ierr,ipo(*),jpo(*),mask(*),pgdupd,iidd,jnit,mm,mmm,mmmm,mmmmm,m7,
      .nfmmdist3,j5,j3,jshb,idxyz,ishx,ishy,mishx,mishy,maskxy,shbdisx,
      .shbdisy,shbdisz
-      integer(kind=fmm_integer) inda,indc,pageposstart,pageposend,
+c-ik      integer(kind=fmm_integer) inda,indc,
+      integer(kind=fmm_integer) pageposstart,pageposend,
      .pagepossize,startbox,endbox,indstart,indend,indsize,pageshift,
      .pagemask,pageaddr,pageshiftg,pagejump
       integer(kind=fmm_integer) indskpjump
@@ -53633,8 +50988,8 @@ c
 c
       logical(kind=fmm_logical), allocatable:: jmm(:,:),nit(:)
 c
-      logical(kind=fmm_logical) pass2dt
-      logical(kind=fmm_logical) pass2deind,gnit
+c-ik      logical(kind=fmm_logical) pass2dt
+c-ik      logical(kind=fmm_logical) pass2deind,gnit
 c
       real(kind=fmm_real) zero
       parameter(zero=0.e0_fmm_real)
@@ -55627,8 +52982,8 @@ c
 c
       integer(kind=fmm_integer), allocatable:: ffid(:),nmmm(:)
 c
-      integer(kind=fmm_integer) nnf3,nnf3tonnf2,nnf2tonnf1,nffd,nff1,
-     .nff0,nnf0
+c-ik      integer(kind=fmm_integer) nnf3,nnf3tonnf2,nnf2tonnf1,nffd,nff1,
+c-ik     .nff0,nnf0
 c
       logical(kind=fmm_logical) dfmmmerr(*),withbop,hugep(0:*),
      .changepos,linearpotential,np,di,estimate
@@ -56449,7 +53804,7 @@ c
       integer(kind=fmm_integer) nff1,ws,periodic,bitpos(0:*),maxint,
      .nbits,nnf,n
 c
-      integer(kind=fmm_integer) nffs
+c-ik      integer(kind=fmm_integer) nffs
 c
       if(ws.gt.0) then
          if(periodic.eq.3) then
@@ -56476,7 +53831,7 @@ c
 c
       integer(kind=fmm_integer) nffd,bitpos(0:*),maxint,nbits,nnf1,nnf2
 c
-      integer(kind=fmm_integer) nffs
+c-ik      integer(kind=fmm_integer) nffs
 c
       nffd = nffs(bitpos,maxint,nbits,nnf1,nnf2)
       return
@@ -64472,7 +61827,7 @@ c
 c
       implicit none
 c
-      real(kind=fmm_real) sf,sh,lineardistance,linearm,linearn,g
+      real(kind=fmm_real) sf,sh,lineardistance,linearm(*),linearn(*),g
 c
       integer(kind=fmm_integer) n
 c
@@ -65682,7 +63037,7 @@ c
          endif
 c
          call pass5linbox(q,xyz,ibox,ilinearpotential,lineardistance,
-     .   linearm,linearn,bfnflen,bfnf,nbf,enfinbox,fmmgrad,fmmpot)
+     .   linearm(1:),linearn,bfnflen,bfnf,nbf,enfinbox,fmmgrad,fmmpot)
       else
          call pass5inbox(q,xyz,ibox,bfnflen,bfnf,nbf,enfinbox,fmmgrad,
      .   fmmpot)
@@ -65858,25 +63213,25 @@ c
 #ifdef FMM_NOPOT
            if(j.ge.i) then
             if(ccoull) then
-             call coullbibj(i,j,qremote(icharge),qremote(jcharge),
-     .       xyzremote(1,icharge),xyzremote(1,jcharge),bfnflen,bfnf,nbf,
-     .       enfinbox,fmmgradremote(1,icharge),fmmgradremote(1,jcharge),
-     .       fmmgradremote(1,icharge),fmmgradremote(1,jcharge),
+             call coullbibj(i,j,qremote(icharge:),qremote(jcharge:),
+     .       xyzremote(1:,icharge:),xyzremote(1:,jcharge:),bfnflen,bfnf,nbf,
+     .       enfinbox,fmmgradremote(1:,icharge:),fmmgradremote(1:,jcharge:),
+     .       fmmgradremote(1:,icharge:),fmmgradremote(1:,jcharge:),
      .       ilinearpotential,lineardistance,linearm,linearn)
             else
 #ifdef FMM_UNIFORMGRID
              uniformgridj = jcharge-1
 #endif
-             call coulbibj(i,j,qremote(icharge),qremote(jcharge),
-     .       xyzremote(1,icharge),xyzremote(1,jcharge),bfnflen,bfnf,nbf,
-     .       enfinbox,fmmgradremote(1,icharge),fmmgradremote(1,jcharge),
-     .       fmmgradremote(1,icharge),fmmgradremote(1,jcharge))
+             call coulbibj(i,j,qremote(icharge:),qremote(jcharge:),
+     .       xyzremote(1:,icharge:),xyzremote(1:,jcharge:),bfnflen,bfnf,nbf,
+     .       enfinbox,fmmgradremote(1:,icharge:),fmmgradremote(1:,jcharge:),
+     .       fmmgradremote(1:,icharge:),fmmgradremote(1:,jcharge:))
             endif
            elseif(ccoull) then
-            call coullbibj(j,i,qremote(jcharge),qremote(icharge),
-     .      xyzremote(1,jcharge),xyzremote(1,icharge),bfnflen,bfnf,nbf,
-     .      enfinbox,fmmgradremote(1,jcharge),fmmgradremote(1,icharge),
-     .      fmmgradremote(1,jcharge),fmmgradremote(1,icharge),
+            call coullbibj(j,i,qremote(jcharge:),qremote(icharge:),
+     .      xyzremote(1:,jcharge:),xyzremote(1:,icharge:),bfnflen,bfnf,nbf,
+     .      enfinbox,fmmgradremote(1:,jcharge:),fmmgradremote(1:,icharge:),
+     .      fmmgradremote(1:,jcharge:),fmmgradremote(1:,icharge:),
      .      ilinearpotential,lineardistance,linearm,linearn)
            else
 #ifdef FMM_UNIFORMGRID
@@ -65885,10 +63240,10 @@ c
             uniformgridqjislocal = uniformgridqiislocal
             uniformgridqiislocal = -1
 #endif
-            call coulbibj(j,i,qremote(jcharge),qremote(icharge),
-     .      xyzremote(1,jcharge),xyzremote(1,icharge),bfnflen,bfnf,nbf,
-     .      enfinbox,fmmgradremote(1,jcharge),fmmgradremote(1,icharge),
-     .      fmmgradremote(1,jcharge),fmmgradremote(1,icharge))
+            call coulbibj(j,i,qremote(jcharge:),qremote(icharge:),
+     .      xyzremote(1:,jcharge:),xyzremote(1:,icharge:),bfnflen,bfnf,nbf,
+     .      enfinbox,fmmgradremote(1:,jcharge:),fmmgradremote(1:,icharge:),
+     .      fmmgradremote(1:,jcharge:),fmmgradremote(1:,icharge:))
 #ifdef FMM_UNIFORMGRID
             uniformgridqiislocal = uniformgridqjislocal
             uniformgridqjislocal = -1
@@ -65897,24 +63252,24 @@ c
 #else
            if(j.ge.i) then
             if(ccoull) then
-             call coullbibj(i,j,qremote(icharge),qremote(jcharge),
-     .       xyzremote(1,icharge),xyzremote(1,jcharge),bfnflen,bfnf,nbf,
-     .       enfinbox,fmmgradremote(1,icharge),fmmgradremote(1,jcharge),
+             call coullbibj(i,j,qremote(icharge:),qremote(jcharge:),
+     .       xyzremote(1:,icharge:),xyzremote(1:,jcharge:),bfnflen,bfnf,nbf,
+     .       enfinbox,fmmgradremote(1:,icharge:),fmmgradremote(1:,jcharge:),
      .       fmmpotremote(icharge),fmmpotremote(jcharge),
      .       ilinearpotential,lineardistance,linearm,linearn)
             else
 #ifdef FMM_UNIFORMGRID
              uniformgridj = jcharge-1
 #endif
-             call coulbibj(i,j,qremote(icharge),qremote(jcharge),
-     .       xyzremote(1,icharge),xyzremote(1,jcharge),bfnflen,bfnf,nbf,
-     .       enfinbox,fmmgradremote(1,icharge),fmmgradremote(1,jcharge),
+             call coulbibj(i,j,qremote(icharge:),qremote(jcharge:),
+     .       xyzremote(1:,icharge:),xyzremote(1:,jcharge:),bfnflen,bfnf,nbf,
+     .       enfinbox,fmmgradremote(1:,icharge:),fmmgradremote(1:,jcharge:),
      .       fmmpotremote(icharge),fmmpotremote(jcharge))
             endif
            elseif(ccoull) then
-            call coullbibj(j,i,qremote(jcharge),qremote(icharge),
-     .      xyzremote(1,jcharge),xyzremote(1,icharge),bfnflen,bfnf,nbf,
-     .      enfinbox,fmmgradremote(1,jcharge),fmmgradremote(1,icharge),
+            call coullbibj(j,i,qremote(jcharge:),qremote(icharge:),
+     .      xyzremote(1:,jcharge:),xyzremote(1:,icharge:),bfnflen,bfnf,nbf,
+     .      enfinbox,fmmgradremote(1:,jcharge:),fmmgradremote(1:,icharge:),
      .      fmmpotremote(jcharge),fmmpotremote(icharge),
      .      ilinearpotential,lineardistance,linearm,linearn)
            else
@@ -65924,9 +63279,9 @@ c
             uniformgridqjislocal = uniformgridqiislocal
             uniformgridqiislocal = -1
 #endif
-            call coulbibj(j,i,qremote(jcharge),qremote(icharge),
-     .      xyzremote(1,jcharge),xyzremote(1,icharge),bfnflen,bfnf,nbf,
-     .      enfinbox,fmmgradremote(1,jcharge),fmmgradremote(1,icharge),
+            call coulbibj(j,i,qremote(jcharge:),qremote(icharge:),
+     .      xyzremote(1:,jcharge:),xyzremote(1:,icharge:),bfnflen,bfnf,nbf,
+     .      enfinbox,fmmgradremote(1:,jcharge:),fmmgradremote(1:,icharge:),
      .      fmmpotremote(jcharge),fmmpotremote(icharge))
 #ifdef FMM_UNIFORMGRID
             uniformgridqiislocal = uniformgridqjislocal
@@ -66976,7 +64331,7 @@ c
       implicit none
 c
       real(kind=fmm_real) bfnf(*),enfbibj,gbsh(3,*),lineardistance(0:*),
-     .linearm,linearn,shx,shy,shz,a
+     .linearm(*),linearn(*),shx,shy,shz,a
 c
       integer(kind=fmm_integer) ncharges
 #ifdef FMM_PARALLEL
@@ -67069,7 +64424,7 @@ c
      .sndrcvol(:,:)
 #endif
 c
-      integer(kind=fmm_integer) inda,indc
+c-ik      integer(kind=fmm_integer) inda,indc
 c
       logical(kind=fmm_logical) pages,g6,linearpotential,ccoull,skip,g,
      .gx,gy,gz,bibj
@@ -67080,7 +64435,7 @@ c
 c
       logical(kind=fmm_logical), allocatable:: ins(:),nit(:)
 c
-      logical(kind=fmm_logical) gnit
+c-ik      logical(kind=fmm_logical) gnit
 c
       real(kind=fmm_real) zero
       parameter(zero=0.e0_fmm_real)
@@ -68013,7 +65368,7 @@ c
                    go to 22
                   else
                    call fmmskpind(edgeend,edgestart,edgeend,
-     .             iboxedge(edgestart),(shb(i)+1),maxint,jcharge)
+     .             iboxedge(edgestart:),(shb(i)+1),maxint,jcharge)
                    if(jcharge.le.0) go to 22
                   endif
                  else
@@ -68366,10 +65721,10 @@ c
 #ifdef FMM_NOPOT
                 if(j.ge.i) then
                  if(ccoull) then
-                  call coullbibj(i,j,pq(icharge),pq(jcharge),
+                  call coullbibj(i,j,pq(icharge:),pq(jcharge:),
      .            ppxyz,xyzp,bfnflen,bfnf,nbf,
-     .            enfbibj,pfmmgrad(1,icharge),pfmmgrad(1,jcharge),
-     .            pfmmgrad(1,icharge),pfmmgrad(1,jcharge),
+     .            enfbibj,pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:),
+     .            pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:),
      .            ilinearpotential,lineardistance,linearm,linearn)
                  else
 #ifdef FMM_UNIFORMGRID
@@ -68390,16 +65745,16 @@ c
                   uniformgridj = jcharge-1
 #endif
 #endif
-                  call coulbibj(i,j,pq(icharge),pq(jcharge),
+                  call coulbibj(i,j,pq(icharge:),pq(jcharge:),
      .            ppxyz,xyzp,bfnflen,bfnf,nbf,
-     .            enfbibj,pfmmgrad(1,icharge),pfmmgrad(1,jcharge),
-     .            pfmmgrad(1,icharge),pfmmgrad(1,jcharge))
+     .            enfbibj,pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:),
+     .            pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:))
                  endif
                 elseif(ccoull) then
-                 call coullbibj(j,i,pq(jcharge),pq(icharge),
+                 call coullbibj(j,i,pq(jcharge:),pq(icharge:),
      .           xyzp,ppxyz,bfnflen,bfnf,nbf,
-     .           enfbibj,pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .           pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
+     .           enfbibj,pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .           pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
      .           ilinearpotential,lineardistance,linearm,linearn)
                 else
 #ifdef FMM_UNIFORMGRID
@@ -68420,18 +65775,18 @@ c
                   uniformgridj = icharge-1
 #endif
 #endif
-                 call coulbibj(j,i,pq(jcharge),pq(icharge),
+                 call coulbibj(j,i,pq(jcharge:),pq(icharge:),
      .           xyzp,ppxyz,bfnflen,bfnf,nbf,
-     .           enfbibj,pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .           pfmmgrad(1,jcharge),pfmmgrad(1,icharge))
+     .           enfbibj,pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .           pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:))
                 endif
 #else
                 if(j.ge.i) then
                  if(ccoull) then
-                  call coullbibj(i,j,pq(icharge),pq(jcharge),
+                  call coullbibj(i,j,pq(icharge:),pq(jcharge:),
      .            ppxyz,xyzp,bfnflen,bfnf,nbf,
-     .            enfbibj,pfmmgrad(1,icharge),pfmmgrad(1,jcharge),
-     .            pfmmpot(icharge),pfmmpot(jcharge),ilinearpotential,
+     .            enfbibj,pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:),
+     .            pfmmpot(icharge:),pfmmpot(jcharge:),ilinearpotential,
      .            lineardistance,linearm,linearn)
                  else
 #ifdef FMM_UNIFORMGRID
@@ -68452,16 +65807,16 @@ c
                   uniformgridj = jcharge-1
 #endif
 #endif
-                  call coulbibj(i,j,pq(icharge),pq(jcharge),
+                  call coulbibj(i,j,pq(icharge:),pq(jcharge:),
      .            ppxyz,xyzp,bfnflen,bfnf,nbf,
-     .            enfbibj,pfmmgrad(1,icharge),pfmmgrad(1,jcharge),
-     .            pfmmpot(icharge),pfmmpot(jcharge))
+     .            enfbibj,pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:),
+     .            pfmmpot(icharge:),pfmmpot(jcharge:))
                  endif
                 elseif(ccoull) then
-                 call coullbibj(j,i,pq(jcharge),pq(icharge),
+                 call coullbibj(j,i,pq(jcharge:),pq(icharge:),
      .           xyzp,ppxyz,bfnflen,bfnf,nbf,
-     .           enfbibj,pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .           pfmmpot(jcharge),pfmmpot(icharge),ilinearpotential,
+     .           enfbibj,pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .           pfmmpot(jcharge:),pfmmpot(icharge:),ilinearpotential,
      .           lineardistance,linearm,linearn)
                 else
 #ifdef FMM_UNIFORMGRID
@@ -68482,10 +65837,10 @@ c
                  uniformgridj = icharge-1
 #endif
 #endif
-                 call coulbibj(j,i,pq(jcharge),pq(icharge),
+                 call coulbibj(j,i,pq(jcharge:),pq(icharge:),
      .           xyzp,ppxyz,bfnflen,bfnf,nbf,
-     .           enfbibj,pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .           pfmmpot(jcharge),pfmmpot(icharge))
+     .           enfbibj,pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .           pfmmpot(jcharge:),pfmmpot(icharge:))
                 endif
 #endif
 c
@@ -68671,7 +66026,7 @@ c
                             go to 10
                            else
                             call fmmskpind(edgeend,edgestart,edgeend,
-     .                      iboxedge(edgestart),(mbx+1),maxint,jcharge)
+     .                      iboxedge(edgestart:),(mbx+1),maxint,jcharge)
                             if(jcharge.le.0) go to 10
                            endif
                           else
@@ -69028,10 +66383,10 @@ c
 #ifdef FMM_NOPOT
                 if(j.ge.i) then
                  if(ccoull) then
-                  call coullbibj(i,j,pq(icharge),pq(jcharge),
+                  call coullbibj(i,j,pq(icharge:),pq(jcharge:),
      .            ppxyz,xyzp,bfnflen,bfnf,nbf,
-     .            enfbibj,pfmmgrad(1,icharge),pfmmgrad(1,jcharge),
-     .            pfmmgrad(1,icharge),pfmmgrad(1,jcharge),
+     .            enfbibj,pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:),
+     .            pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:),
      .            ilinearpotential,lineardistance,linearm,linearn)
                  else
 #ifdef FMM_UNIFORMGRID
@@ -69052,16 +66407,16 @@ c
                   uniformgridj = jcharge-1
 #endif
 #endif
-                  call coulbibj(i,j,pq(icharge),pq(jcharge),
+                  call coulbibj(i,j,pq(icharge:),pq(jcharge:),
      .            ppxyz,xyzp,bfnflen,bfnf,nbf,
-     .            enfbibj,pfmmgrad(1,icharge),pfmmgrad(1,jcharge),
-     .            pfmmgrad(1,icharge),pfmmgrad(1,jcharge))
+     .            enfbibj,pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:),
+     .            pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:))
                  endif
                 elseif(ccoull) then
-                 call coullbibj(j,i,pq(jcharge),pq(icharge),
+                 call coullbibj(j,i,pq(jcharge:),pq(icharge:),
      .           xyzp,ppxyz,bfnflen,bfnf,nbf,
-     .           enfbibj,pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .           pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
+     .           enfbibj,pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .           pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
      .           ilinearpotential,lineardistance,linearm,linearn)
                 else
 #ifdef FMM_UNIFORMGRID
@@ -69082,18 +66437,18 @@ c
                   uniformgridj = icharge-1
 #endif
 #endif
-                 call coulbibj(j,i,pq(jcharge),pq(icharge),
+                 call coulbibj(j,i,pq(jcharge:),pq(icharge:),
      .           xyzp,ppxyz,bfnflen,bfnf,nbf,
-     .           enfbibj,pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .           pfmmgrad(1,jcharge),pfmmgrad(1,icharge))
+     .           enfbibj,pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .           pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:))
                 endif
 #else
                 if(j.ge.i) then
                  if(ccoull) then
-                  call coullbibj(i,j,pq(icharge),pq(jcharge),
+                  call coullbibj(i,j,pq(icharge:),pq(jcharge:),
      .            ppxyz,xyzp,bfnflen,bfnf,nbf,
-     .            enfbibj,pfmmgrad(1,icharge),pfmmgrad(1,jcharge),
-     .            pfmmpot(icharge),pfmmpot(jcharge),ilinearpotential,
+     .            enfbibj,pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:),
+     .            pfmmpot(icharge:),pfmmpot(jcharge:),ilinearpotential,
      .            lineardistance,linearm,linearn)
                  else
 #ifdef FMM_UNIFORMGRID
@@ -69114,16 +66469,16 @@ c
                   uniformgridj = jcharge-1
 #endif
 #endif
-                  call coulbibj(i,j,pq(icharge),pq(jcharge),
+                  call coulbibj(i,j,pq(icharge:),pq(jcharge:),
      .            ppxyz,xyzp,bfnflen,bfnf,nbf,
-     .            enfbibj,pfmmgrad(1,icharge),pfmmgrad(1,jcharge),
-     .            pfmmpot(icharge),pfmmpot(jcharge))
+     .            enfbibj,pfmmgrad(1:,icharge:),pfmmgrad(1:,jcharge:),
+     .            pfmmpot(icharge:),pfmmpot(jcharge:))
                  endif
                 elseif(ccoull) then
-                 call coullbibj(j,i,pq(jcharge),pq(icharge),
+                 call coullbibj(j,i,pq(jcharge:),pq(icharge:),
      .           xyzp,ppxyz,bfnflen,bfnf,nbf,
-     .           enfbibj,pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .           pfmmpot(jcharge),pfmmpot(icharge),ilinearpotential,
+     .           enfbibj,pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .           pfmmpot(jcharge:),pfmmpot(icharge:),ilinearpotential,
      .           lineardistance,linearm,linearn)
                 else
 #ifdef FMM_UNIFORMGRID
@@ -69144,10 +66499,10 @@ c
                   uniformgridj = icharge-1
 #endif
 #endif
-                 call coulbibj(j,i,pq(jcharge),pq(icharge),
+                 call coulbibj(j,i,pq(jcharge:),pq(icharge:),
      .           xyzp,ppxyz,bfnflen,bfnf,nbf,
-     .           enfbibj,pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .           pfmmpot(jcharge),pfmmpot(icharge))
+     .           enfbibj,pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .           pfmmpot(jcharge:),pfmmpot(icharge:))
                 endif
 #endif
 c
@@ -69443,7 +66798,7 @@ c
                            endif
                            if(go) then
                             call fmmskpind(edgeend,edgestart,edgeend,
-     .                      iboxedge(edgestart),(mbx+1),maxint,jcharge)
+     .                      iboxedge(edgestart:),(mbx+1),maxint,jcharge)
                             if(jcharge.le.0) go to 222
                            else
                             go to 222
@@ -69847,14 +67202,14 @@ c
                   if(icharge.eq.jcharge) then
                    if(i.eq.j) then
                     if(ccoull) then
-                     call coul1lbibjp(i,pq(icharge),ppxyz,bfnflen,
-     .               bfnf,nbf,enfbibj,pfmmgrad(1,icharge),
-     .               pfmmgrad(1,icharge),shx,shy,shz,ilinearpotential,
-     .               lineardistance,linearm,linearn)
+                     call coul1lbibjp(i,pq(icharge:),ppxyz,bfnflen,
+     .               bfnf,nbf,enfbibj,pfmmgrad(1:,icharge:),
+     .               pfmmgrad(1:,icharge:),shx,shy,shz,ilinearpotential,
+     .               lineardistance,linearm(1:),linearn)
                     else
-                     call coul1bibjp(i,pq(icharge),ppxyz,
-     .               bfnflen,bfnf,nbf,enfbibj,pfmmgrad(1,icharge),
-     .               pfmmgrad(1,icharge),shx,shy,shz)
+                     call coul1bibjp(i,pq(icharge:),ppxyz,
+     .               bfnflen,bfnf,nbf,enfbibj,pfmmgrad(1:,icharge:),
+     .               pfmmgrad(1:,icharge:),shx,shy,shz)
                     endif
 #ifdef FMM_DAMPING
                     if(enfdba) then
@@ -69875,11 +67230,11 @@ c
                     call bummer('pass5bibj: (i-j) = ',(i-j))
                    endif
                   elseif(ccoull) then
-                   call coullbibjp(j,i,pq(jcharge),pq(icharge),
+                   call coullbibjp(j,i,pq(jcharge:),pq(icharge:),
      .             xyzp,ppxyz,bfnflen,bfnf,nbf,enfbibj,
-     .             pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .             pfmmgrad(1,jcharge),pfmmgrad(1,icharge),shx,shy,shz,
-     .             ilinearpotential,lineardistance,linearm,linearn)
+     .             pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .             pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),shx,shy,shz,
+     .             ilinearpotential,lineardistance,linearm(1:),linearn)
 #ifdef FMM_DAMPING
                    if(enfdba) then
                     if(enfd1.gt.zod) then
@@ -69899,10 +67254,10 @@ c
                    endif
 #endif
                   else
-                   call coulbibjp(j,i,pq(jcharge),pq(icharge),
+                   call coulbibjp(j,i,pq(jcharge:),pq(icharge:),
      .             xyzp,ppxyz,bfnflen,bfnf,nbf,enfbibj,
-     .             pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .             pfmmgrad(1,jcharge),pfmmgrad(1,icharge),shx,shy,shz)
+     .             pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .             pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),shx,shy,shz)
 #ifdef FMM_DAMPING
                    if(enfdba) then
                     if(enfd1.gt.zod) then
@@ -69926,13 +67281,13 @@ c
                   if(icharge.eq.jcharge) then
                    if(i.eq.j) then
                     if(ccoull) then
-                     call coul1lbibjp(i,pq(icharge),ppxyz,bfnflen,bfnf,
-     .               nbf,enfbibj,pfmmgrad(1,icharge),pfmmpot(icharge),
+                     call coul1lbibjp(i,pq(icharge:),ppxyz,bfnflen,bfnf,
+     .               nbf,enfbibj,pfmmgrad(1:,icharge:),pfmmpot(icharge:),
      .               shx,shy,shz,ilinearpotential,lineardistance,
      .               linearm,linearn)
                     else
-                     call coul1bibjp(i,pq(icharge),ppxyz,bfnflen,bfnf,
-     .               nbf,enfbibj,pfmmgrad(1,icharge),pfmmpot(icharge),
+                     call coul1bibjp(i,pq(icharge:),ppxyz,bfnflen,bfnf,
+     .               nbf,enfbibj,pfmmgrad(1:,icharge:),pfmmpot(icharge:),
      .               shx,shy,shz)
                     endif
 #ifdef FMM_DAMPING
@@ -69954,10 +67309,10 @@ c
                     call bummer('pass5bibj: (i-j) = ',(i-j))
                    endif
                   elseif(ccoull) then
-                   call coullbibjp(j,i,pq(jcharge),pq(icharge),
+                   call coullbibjp(j,i,pq(jcharge:),pq(icharge:),
      .             xyzp,ppxyz,bfnflen,bfnf,nbf,enfbibj,
-     .             pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .             pfmmpot(jcharge),pfmmpot(icharge),shx,shy,shz,
+     .             pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .             pfmmpot(jcharge:),pfmmpot(icharge:),shx,shy,shz,
      .             ilinearpotential,lineardistance,linearm,linearn)
 #ifdef FMM_DAMPING
                    if(enfdba) then
@@ -69978,10 +67333,10 @@ c
                    endif
 #endif
                   else
-                   call coulbibjp(j,i,pq(jcharge),pq(icharge),
+                   call coulbibjp(j,i,pq(jcharge:),pq(icharge:),
      .             xyzp,ppxyz,bfnflen,bfnf,nbf,enfbibj,
-     .             pfmmgrad(1,jcharge),pfmmgrad(1,icharge),
-     .             pfmmpot(jcharge),pfmmpot(icharge),shx,shy,shz)
+     .             pfmmgrad(1:,jcharge:),pfmmgrad(1:,icharge:),
+     .             pfmmpot(jcharge:),pfmmpot(icharge:),shx,shy,shz)
 #ifdef FMM_DAMPING
                    if(enfdba) then
                     if(enfd1.gt.zod) then
@@ -77886,7 +75241,7 @@ c
       real(kind=fmm_real) q(*),fmmgrad(3,*),fmmpot(*)
 #endif
 #ifdef FMM_CORRECTION_OF_FORCES
-      real(kind=fmm_real) sgnq
+c-k      real(kind=fmm_real) sgnq
 #endif
 c
       integer(kind=fmm_integer) ncharges,periodic,periodica,
@@ -78220,10 +75575,10 @@ c
 c
             call d2cal(mnmultipoles,nmultipoles,ctheta,stheta,alp,sg,
      .      coeff1,coeff2,coeff3,coeff4,coeff5,coeff6,
-     .      wignerd%wignerd(0,mnmultipoles,0,1,1),
-     .      wignerd%wignerd(0,mnmultipoles,0,2,1),
-     .      wignerd%wignerd(0,mnmultipoles,0,3,1),
-     .      wignerd%wignerd(0,mnmultipoles,0,4,1),-1)
+     .      wignerd%wignerd(0:,mnmultipoles:,0:,1:,1:),
+     .      wignerd%wignerd(0:,mnmultipoles:,0:,2:,1:),
+     .      wignerd%wignerd(0:,mnmultipoles:,0:,3:,1:),
+     .      wignerd%wignerd(0:,mnmultipoles:,0:,4:,1:),-1)
 c
             if(ncsar.gt.0) then
                i = 2*ws+1
@@ -78269,10 +75624,10 @@ c
                               call d2cal(mnmultipoles,nmultipoles,
      .                        ctheta,stheta,alp,sg,coeff1,coeff2,
      .                        coeff3,coeff4,coeff5,coeff6,
-     .                        wignerd%wignerd(0,mnmultipoles,0,1,j),
-     .                        wignerd%wignerd(0,mnmultipoles,0,2,j),
-     .                        wignerd%wignerd(0,mnmultipoles,0,3,j),
-     .                        wignerd%wignerd(0,mnmultipoles,0,4,j),0)
+     .                        wignerd%wignerd(0:,mnmultipoles:,0:,1:,j:),
+     .                        wignerd%wignerd(0:,mnmultipoles:,0:,2:,j:),
+     .                        wignerd%wignerd(0:,mnmultipoles:,0:,3:,j:),
+     .                        wignerd%wignerd(0:,mnmultipoles:,0:,4:,j:),0)
                            else
                               call bummer('calallds: (j-n) = ',(j-n))
                            endif
@@ -78304,10 +75659,10 @@ c
 c
             call d2cal(mnmultipoles,nmultipoles,ctheta,stheta,alp,sg,
      .      coeff1,coeff2,coeff3,coeff4,coeff5,coeff6,
-     .      wignerd%wignerd(0,mnmultipoles,0,1,i),
-     .      wignerd%wignerd(0,mnmultipoles,0,2,i),
-     .      wignerd%wignerd(0,mnmultipoles,0,3,i),
-     .      wignerd%wignerd(0,mnmultipoles,0,4,i),1)
+     .      wignerd%wignerd(0:,mnmultipoles:,0:,1:,i:),
+     .      wignerd%wignerd(0:,mnmultipoles:,0:,2:,i:),
+     .      wignerd%wignerd(0:,mnmultipoles:,0:,3:,i:),
+     .      wignerd%wignerd(0:,mnmultipoles:,0:,4:,i:),1)
 c
             call fmmdeallocate(coeff1,i)
             if(i.ne.0) call bummer('calallds: error, i = ',i)
@@ -81055,836 +78410,6 @@ c
       endif
       return
       end subroutine sgd
-c
-      subroutine fmmsort(n,depth,a,iboxsrt,q,xyz,fmmgrad,nbits,mm,
-     .iboxscr)
-c
-      use fmmkinds
-      use fmmalloc
-#ifndef FMM_SORTHD
-      use fmmicharge1icharge2
-#elif defined(FMM_PARALLEL)
-#ifdef FMM_LOADSORT
-      use fmmicharge1icharge2
-#endif
-#endif
-#ifndef FMM_SORTHD
-      use msort
-#endif
-#ifdef FMM_COMPRESSION
-      use compression
-#endif
-#ifdef FMM_PARALLEL
-      use mp_info, only: MP_ALLNODES,MP_COMM,nnodes
-#ifdef FMM_LOADSORT
-      use mp_load
-#endif
-#endif
-c
-      implicit none
-c
-      integer(kind=fmm_integer) n
-      real(kind=fmm_real), target:: q(n),xyz(3,n),fmmgrad(3,n)
-c
-#ifdef FMM_PARALLEL
-      real(kind=fmm_real) spercentageofimbalance
-#endif
-c
-#ifdef FMM_SORTHD
-      real(kind=fmm_real) buffer
-#endif
-c
-#ifndef FMM_SORTHD
-#ifdef FMM_PARALLEL
-      real(kind=fmm_real), pointer:: pscr
-#endif
-#endif
-c
-      integer(kind=fmm_integer) depth,nbits,mm
-c
-      integer(kind=fmm_integer), target:: a(n),iboxscr(n)
-c
-#ifdef FMM_COMPRESSION
-      integer(kind=1), target:: iboxsrt(0:nint1,n)
-#else
-      integer(kind=fmm_integer), target:: iboxsrt(n)
-#endif
-c
-#ifndef FMM_SORTHD
-#ifdef FMM_PARALLEL
-      integer(kind=fmm_integer) front_type0,front_type1,
-     .sminnofimbalance,smaxnofimbalance
-#endif
-#endif
-c
-#ifdef FMM_SORTHD
-      integer(kind=fmm_integer) i,j,k,l,m,left,maska,maskb,j2,jk,m2
-#else
-      integer(kind=fmm_integer) mem_size,i
-#endif
-c
-#ifndef FMM_SORTHD
-      logical(kind=fmm_logical) mem_use
-#endif
-c
-#ifndef FMM_SORTHD
-      integer(kind=1), allocatable, target:: mem(:)
-#endif
-c
-      integer(kind=fmm_integer) nallocst
-#ifdef FMM_PARALLEL
-      integer(kind=MP_COMM) :: comm
-#endif
-c
-#ifndef FMM_SORTHD
-#ifdef FMM_ISO_C_BINDING
-      interface
-#ifdef FMM_PARALLEL
-       subroutine mpi_fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,i,n,
-     .  a,xyz,q,addr_desc,iboxsrt,b,j,pscr,spercentageofimbalance,
-     .  sminnofimbalance,smaxnofimbalance,comm) bind(c,
-     .  name = 'mpi_fmm_sort_front_3bit_mem')
-        use fmmkinds
-        use mp_info, only: MP_COMM
-        implicit none
-        real(kind=fmm_c_real) spercentageofimbalance
-        integer(kind=fmm_c_integer) i,n,j,sminnofimbalance,
-     .  smaxnofimbalance
-        integer(kind=MP_COMM) comm
-        type(c_ptr), value:: fmmgrad,mem,mem_sizes,a,xyz,q,addr_desc,
-     .  iboxsrt,b,pscr
-       end subroutine mpi_fmm_sort_front_3bit_mem
-c
-       subroutine mpi_fmm_sort_front_3bit(i,n,a,xyz,q,addr_desc,iboxsrt,
-     .  b,j,pscr,spercentageofimbalance,sminnofimbalance,
-     .  smaxnofimbalance,comm) bind(c,name = 'mpi_fmm_sort_front_3bit')
-        use fmmkinds
-        use mp_info, only: MP_COMM
-        implicit none
-        real(kind=fmm_c_real) spercentageofimbalance
-        integer(kind=fmm_c_integer) i,n,j,sminnofimbalance,
-     .  smaxnofimbalance
-        integer(kind=MP_COMM) comm
-        type(c_ptr), value:: a,xyz,q,addr_desc,iboxsrt,b,pscr
-       end subroutine mpi_fmm_sort_front_3bit
-c
-       subroutine mpi_fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,i,
-     .  n,a,xyz,q,addr_desc,iboxsrt,b,j,pscr,spercentageofimbalance,
-     .  sminnofimbalance,smaxnofimbalance,comm) bind(c,
-     .  name = 'mpi_fmm_sort_front_mem')
-        use fmmkinds
-        use mp_info, only: MP_COMM
-        implicit none
-        real(kind=fmm_c_real) spercentageofimbalance
-        integer(kind=fmm_c_integer) depth,i,n,j,sminnofimbalance,
-     .  smaxnofimbalance
-        integer(kind=MP_COMM) comm
-        type(c_ptr), value:: fmmgrad,mem,mem_sizes,a,xyz,q,addr_desc,
-     .  iboxsrt,b,pscr
-       end subroutine mpi_fmm_sort_front_mem
-c
-       subroutine mpi_fmm_sort_front(depth,i,n,a,xyz,q,addr_desc,
-     .  iboxsrt,b,j,pscr,spercentageofimbalance,sminnofimbalance,
-     .  smaxnofimbalance,comm) bind(c,name = 'mpi_fmm_sort_front')
-        use fmmkinds
-        use mp_info, only: MP_COMM
-        implicit none
-        real(kind=fmm_c_real) spercentageofimbalance
-        integer(kind=fmm_c_integer) depth,i,n,j,sminnofimbalance,
-     .  smaxnofimbalance
-        integer(kind=MP_COMM) comm
-        type(c_ptr), value:: a,xyz,q,addr_desc,iboxsrt,b,pscr
-       end subroutine mpi_fmm_sort_front
-#endif
-       subroutine fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,i,n,a,
-     .  xyz,q,addr_desc,iboxsrt,b,j) bind(c,
-     .  name = 'fmm_sort_front_3bit_mem')
-        use fmmkinds
-        implicit none
-        integer(kind=fmm_c_integer) i,n,j
-        type(c_ptr), value:: fmmgrad,mem,mem_sizes,a,xyz,q,addr_desc,
-     .  iboxsrt,b
-       end subroutine fmm_sort_front_3bit_mem
-c
-       subroutine fmm_sort_front_3bit(i,n,a,xyz,q,addr_desc,iboxsrt,b,j)
-     .  bind(c,name = 'fmm_sort_front_3bit')
-        use fmmkinds
-        implicit none
-        integer(kind=fmm_c_integer) i,n,j
-        type(c_ptr), value:: a,xyz,q,addr_desc,iboxsrt,b
-       end subroutine fmm_sort_front_3bit
-c
-       subroutine fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,i,n,a,
-     .  xyz,q,addr_desc,iboxsrt,b,j) bind(c,name = 'fmm_sort_front_mem')
-        use fmmkinds
-        implicit none
-        integer(kind=fmm_c_integer) depth,i,n,j
-        type(c_ptr), value:: fmmgrad,mem,mem_sizes,a,xyz,q,addr_desc,
-     .  iboxsrt,b
-       end subroutine fmm_sort_front_mem
-c
-       subroutine fmm_sort_front(depth,i,n,a,xyz,q,addr_desc,iboxsrt,
-     .  b,j) bind(c,name = 'fmm_sort_front')
-        use fmmkinds
-        implicit none
-        integer(kind=fmm_c_integer) depth,i,n,j
-        type(c_ptr), value:: a,xyz,q,addr_desc,iboxsrt,b
-       end subroutine fmm_sort_front
-      end interface
-#endif
-#endif
-c
-#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
-      call fmm_cpu_time_st(10)
-#endif
-c
-      call stmdfmmalloc(nalloc,nallocst)
-#ifdef FMM_PARALLEL
-      comm = MP_ALLNODES
-#endif
-c
-#ifndef FMM_SORTHD
-#ifdef FMM_PARALLEL
-#ifdef FMM_LOADSORT
-      if(doload) then
-         front_type0 = 2
-         front_type1 = 3
-         pscr => iboxload(icharge1)
-         spercentageofimbalance = percentageofimbalance
-         sminnofimbalance = minnofimbalance
-         smaxnofimbalance = maxnofimbalance
-      else
-         front_type0 = 0
-         front_type1 = 1
-         pscr => q(1)
-      endif
-#else
-      front_type0 = 0
-      front_type1 = 1
-      pscr => q(1)
-#endif
-#endif
-      if(mm.eq.1) then
-#ifdef FMM_SORTMEMORY
-         call memuse(mem_size,mem_use)
-c
-         if(mem_use) then
-            if(mem_size.le.0) then
-               call bummer('fmmsort: error, mem_size = ',mem_size)
-            endif
-         else
-            mem_size = 0
-         endif
-         call srtallocate(mem,1,mem_size,i)
-         if(i.eq.0) then
-            mem_sizes(1) = 3*rtob*icharges
-            mem_sizes(2) = mem_size
-            call memprt(mem_sizes)
-#ifdef FMM_PARALLEL
-#ifdef FMM_ISO_C_BINDING
-            call mpi_fmm_sort_front_3bit_mem(c_loc(fmmgrad),c_loc(mem),
-     .      c_loc(mem_sizes),1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),front_type0,
-     .      c_loc(pscr),spercentageofimbalance,sminnofimbalance,
-     .      smaxnofimbalance,comm)
-#else
-            call mpi_fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,1,n,
-     .      a,xyz,q,addr_desc,iboxsrt,a,front_type0,pscr,
-     .      spercentageofimbalance,sminnofimbalance,smaxnofimbalance,
-     .      comm)
-#endif
-#else
-#ifdef FMM_ISO_C_BINDING
-            call fmm_sort_front_3bit_mem(c_loc(fmmgrad),c_loc(mem),
-     .      c_loc(mem_sizes),1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),0)
-#else
-            call fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,1,n,a,
-     .      xyz,q,addr_desc,iboxsrt,a,0)
-#endif
-#endif
-            call srtdeallocate(mem,i)
-            if(i.ne.0) call bummer('fmmsort: error, i = ',i)
-         else
-            call bummer('fmmsort: error, i = ',i)
-         endif
-#else
-#ifdef FMM_PARALLEL
-#ifdef FMM_ISO_C_BINDING
-         call mpi_fmm_sort_front_3bit(1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),front_type0,
-     .   c_loc(pscr),spercentageofimbalance,sminnofimbalance,
-     .   smaxnofimbalance,comm)
-#else
-         call mpi_fmm_sort_front_3bit(1,n,a,xyz,q,addr_desc,iboxsrt,a,
-     .   front_type0,pscr,spercentageofimbalance,sminnofimbalance,
-     .   smaxnofimbalance,comm)
-#endif
-#else
-#ifdef FMM_ISO_C_BINDING
-         call fmm_sort_front_3bit(1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),0)
-#else
-         call fmm_sort_front_3bit(1,n,a,xyz,q,addr_desc,iboxsrt,a,0)
-#endif
-#endif
-#endif
-      elseif(mm.eq.2) then
-#ifdef FMM_SORTMEMORY
-         call memuse(mem_size,mem_use)
-c
-         if(mem_use) then
-            if(mem_size.le.0) then
-               call bummer('fmmsort: error, mem_size = ',mem_size)
-            endif
-         else
-            mem_size = 0
-         endif
-         call srtallocate(mem,1,mem_size,i)
-         if(i.eq.0) then
-            mem_sizes(1) = 3*rtob*icharges
-            mem_sizes(2) = mem_size
-            call memprt(mem_sizes)
-#ifdef FMM_PARALLEL
-#ifdef FMM_ISO_C_BINDING
-            call mpi_fmm_sort_front_mem(c_loc(fmmgrad),c_loc(mem),
-     .      c_loc(mem_sizes),depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),front_type0,
-     .      c_loc(pscr),spercentageofimbalance,sminnofimbalance,
-     .      smaxnofimbalance,comm)
-#else
-            call mpi_fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,1,
-     .      n,a,xyz,q,addr_desc,iboxsrt,a,front_type0,pscr,
-     .      spercentageofimbalance,sminnofimbalance,smaxnofimbalance,
-     .      comm)
-#endif
-#else
-#ifdef FMM_ISO_C_BINDING
-            call fmm_sort_front_mem(c_loc(fmmgrad),c_loc(mem),
-     .      c_loc(mem_sizes),depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),0)
-#else
-            call fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,1,n,a,
-     .      xyz,q,addr_desc,iboxsrt,a,0)
-#endif
-#endif
-            call srtdeallocate(mem,i)
-            if(i.ne.0) call bummer('fmmsort: error, i = ',i)
-         else
-            call bummer('fmmsort: error, i = ',i)
-         endif
-#else
-#ifdef FMM_PARALLEL
-#ifdef FMM_ISO_C_BINDING
-         call mpi_fmm_sort_front(depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),front_type0,
-     .   c_loc(pscr),spercentageofimbalance,sminnofimbalance,
-     .   smaxnofimbalance,comm)
-#else
-         call mpi_fmm_sort_front(depth,1,n,a,xyz,q,addr_desc,iboxsrt,a,
-     .   front_type0,pscr,spercentageofimbalance,sminnofimbalance,
-     .   smaxnofimbalance,comm)
-#endif
-#else
-#ifdef FMM_ISO_C_BINDING
-         call fmm_sort_front(depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),0)
-#else
-         call fmm_sort_front(depth,1,n,a,xyz,q,addr_desc,iboxsrt,a,0)
-#endif
-#endif
-#endif
-      elseif(mm.eq.3) then
-#ifdef FMM_SORTMEMORY
-         call memuse(mem_size,mem_use)
-c
-         if(mem_use) then
-            if(mem_size.le.0) then
-               call bummer('fmmsort: error, mem_size = ',mem_size)
-            endif
-         else
-            mem_size = 0
-         endif
-         call srtallocate(mem,1,mem_size,i)
-         if(i.eq.0) then
-            mem_sizes(1) = 3*rtob*icharges
-            mem_sizes(2) = mem_size
-            call memprt(mem_sizes)
-#ifdef FMM_PARALLEL
-#ifdef FMM_ISO_C_BINDING
-            call mpi_fmm_sort_front_3bit_mem(c_loc(fmmgrad),c_loc(mem),
-     .      c_loc(mem_sizes),1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),front_type1,
-     .      c_loc(pscr),spercentageofimbalance,sminnofimbalance,
-     .      smaxnofimbalance,comm)
-#else
-            call mpi_fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,1,n,
-     .      a,xyz,q,addr_desc,iboxsrt,iboxscr,front_type1,pscr,
-     .      spercentageofimbalance,sminnofimbalance,smaxnofimbalance,
-     .      comm)
-#endif
-#else
-#ifdef FMM_ISO_C_BINDING
-            call fmm_sort_front_3bit_mem(c_loc(fmmgrad),c_loc(mem),
-     .      c_loc(mem_sizes),1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),1)
-#else
-            call fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,1,n,a,
-     .      xyz,q,addr_desc,iboxsrt,iboxscr,1)
-#endif
-#endif
-            call srtdeallocate(mem,i)
-            if(i.ne.0) call bummer('fmmsort: error, i = ',i)
-         else
-            call bummer('fmmsort: error, i = ',i)
-         endif
-#else
-#ifdef FMM_PARALLEL
-#ifdef FMM_ISO_C_BINDING
-         call mpi_fmm_sort_front_3bit(1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),front_type1,
-     .   c_loc(pscr),spercentageofimbalance,sminnofimbalance,
-     .   smaxnofimbalance,comm)
-#else
-         call mpi_fmm_sort_front_3bit(1,n,a,xyz,q,addr_desc,iboxsrt,
-     .   iboxscr,front_type1,pscr,spercentageofimbalance,
-     .   sminnofimbalance,smaxnofimbalance,comm)
-#endif
-#else
-#ifdef FMM_ISO_C_BINDING
-         call fmm_sort_front_3bit(1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),1)
-#else
-         call fmm_sort_front_3bit(1,n,a,xyz,q,addr_desc,iboxsrt,
-     .   iboxscr,1)
-#endif
-#endif
-#endif
-      elseif(mm.eq.4) then
-#ifdef FMM_SORTMEMORY
-         call memuse(mem_size,mem_use)
-c
-         if(mem_use) then
-            if(mem_size.le.0) then
-               call bummer('fmmsort: error, mem_size = ',mem_size)
-            endif
-         else
-            mem_size = 0
-         endif
-         call srtallocate(mem,1,mem_size,i)
-         if(i.eq.0) then
-            mem_sizes(1) = 3*rtob*icharges
-            mem_sizes(2) = mem_size
-            call memprt(mem_sizes)
-#ifdef FMM_PARALLEL
-#ifdef FMM_ISO_C_BINDING
-            call mpi_fmm_sort_front_mem(c_loc(fmmgrad),c_loc(mem),
-     .      c_loc(mem_sizes),depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),front_type1,
-     .      c_loc(pscr),spercentageofimbalance,sminnofimbalance,
-     .      smaxnofimbalance,comm)
-#else
-            call mpi_fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,1,
-     .      n,a,xyz,q,addr_desc,iboxsrt,iboxscr,front_type1,pscr,
-     .      spercentageofimbalance,sminnofimbalance,smaxnofimbalance,
-     .      comm)
-#endif
-#else
-#ifdef FMM_ISO_C_BINDING
-            call fmm_sort_front_mem(c_loc(fmmgrad),c_loc(mem),
-     .      c_loc(mem_sizes),depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),1)
-#else
-            call fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,1,n,a,
-     .      xyz,q,addr_desc,iboxsrt,iboxscr,1)
-#endif
-#endif
-            call srtdeallocate(mem,i)
-            if(i.ne.0) call bummer('fmmsort: error, i = ',i)
-         else
-            call bummer('fmmsort: error, i = ',i)
-         endif
-#else
-#ifdef FMM_PARALLEL
-#ifdef FMM_ISO_C_BINDING
-         call mpi_fmm_sort_front(depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),front_type1,
-     .   c_loc(pscr),spercentageofimbalance,sminnofimbalance,
-     .   smaxnofimbalance,comm)
-#else
-         call mpi_fmm_sort_front(depth,1,n,a,xyz,q,addr_desc,iboxsrt,
-     .   iboxscr,front_type1,pscr,spercentageofimbalance,
-     .   sminnofimbalance,smaxnofimbalance,comm)
-#endif
-#else
-#ifdef FMM_ISO_C_BINDING
-         call fmm_sort_front(depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
-     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),1)
-#else
-         call fmm_sort_front(depth,1,n,a,xyz,q,addr_desc,iboxsrt,
-     .   iboxscr,1)
-#endif
-#endif
-#endif
-      else
-         call bummer('fmmsort: error, mm = ',mm)
-      endif
-c
-#ifdef FMM_PARALLEL
-#ifdef FMM_LOADSORT
-      if(doload) then
-         if(icharge1.eq.1) then
-            if(sminnofimbalance.gt.0) then
-               ichargesout = icharges
-               icharge2 = sminnofimbalance
-               icharges = sminnofimbalance
-            else
-               call bummer('fmmsort: error, sminnofimbalance = ',
-     .         sminnofimbalance)
-            endif
-         else
-            call bummer('fmmsort: error, icharge1 = ',icharge1)
-         endif
-      endif
-#endif
-#endif
-#else
-#ifdef FMM_PARALLEL
-      if(nnodes.gt.1) call bummer('fmmsort: error, nnodes = ',nnodes)
-#endif
-c
-      if(n.ge.2) then
-         if(nbits.ge.8) then
-            if(mm.eq.-2) then
-               do 13 i = 1,n
-#ifdef FMM_COMPRESSION
-                  a(i) = ior(iand(a(i),ibd),(iand(a(i),ibm)-1))
-#else
-                  a(i) = a(i)-1
-#endif
- 13            continue
-c
-               i = 0
-c
-               do 14 j = 0,6
-                  if(n.gt.i) then
-                     k = i+1
-                     do 15 l = k,n
-#ifdef FMM_COMPRESSION
-                        if(iand(a(l),ibm7).eq.j) then
-#else
-                        if(iand(a(l),7).eq.j) then
-#endif
-                           i = i+1
-                           m = a(i)
-                           a(i) = a(l)
-                           a(l) = m
-#ifdef FMM_COMPRESSION
-                           int1scr(0:nint1) = iboxsrt(0:nint1,i)
-                           iboxsrt(0:nint1,i) = iboxsrt(0:nint1,l)
-                           iboxsrt(0:nint1,l) = int1scr(0:nint1)
-#else
-                           m = iboxsrt(i)
-                           iboxsrt(i) = iboxsrt(l)
-                           iboxsrt(l) = m
-#endif
-                           m = iboxscr(i)
-                           iboxscr(i) = iboxscr(l)
-                           iboxscr(l) = m
-                           buffer = q(i)
-                           q(i) = q(l)
-                           q(l) = buffer
-                           buffer = xyz(1,i)
-                           xyz(1,i) = xyz(1,l)
-                           xyz(1,l) = buffer
-                           buffer = xyz(2,i)
-                           xyz(2,i) = xyz(2,l)
-                           xyz(2,l) = buffer
-                           buffer = xyz(3,i)
-                           xyz(3,i) = xyz(3,l)
-                           xyz(3,l) = buffer
-#ifdef FMM_PARALLEL
-#ifdef FMM_LOADSORT
-                           if(doload) then
-                              buffer = iboxload(i)
-                              iboxload(i) = iboxload(l)
-                              iboxload(l) = buffer
-                           endif
-#endif
-#endif
-                        endif
- 15                  continue
-                  else
-                     go to 16
-                  endif
- 14            continue
-c
- 16            do 17 i = 1,n
-#ifdef FMM_COMPRESSION
-                  a(i) = ior(iand(a(i),ibd),(iand(a(i),ibm)+1))
-#else
-                  a(i) = a(i)+1
-#endif
- 17            continue
-            else
-               i = 0
-c
-               do 1 j = 1,n
-#ifdef FMM_COMPRESSION
-                  if(iand(ishft(a(j),ib01),1).eq.0) then
-                     a(j) = ior(iand(a(j),ibd),(iand(a(j),ibm)-1))
-                     if(iand(a(j),ibm).gt.i) i = iand(a(j),ibm)
-#else
-                  if(a(j).gt.0) then
-                     a(j) = a(j)-1
-                     if(a(j).gt.i) i = a(j)
-#endif
-                  else
-                     call bummer('fmmsort: error, j = ',j)
-                  endif
- 1             continue
-c
-               if(i.gt.0) then
-                  j = 1-nbits
-                  if(iand(ishft(i,j),1).eq.0) then
-                     j = j+1
-                     if(j.le.0) then
-                        if(mm.gt.0) then
-                           do 2 k = j,0
-                              if(iand(ishft(i,k),1).eq.1) then
-                                 left = k
-                                 go to 3
-                              endif
- 2                         continue
-                           call bummer('fmmsort: error, j = ',j)
-                        else
-                           left = mm
-                        endif
- 3                      if(j.lt.0) j = -j
-                        k = -2
-                        maska = 1
-                        l = 0
- 4                      l = l+1
-                        if(l.le.j) then
-                           maska = ior(iand(ishft(maska,1),k),1)
-                           go to 4
-                        endif
-                        j = j+1
-                        maskb = 1
-                        l = 0
- 5                      l = l+1
-                        if(l.le.j) then
-                           maskb = iand(ishft(maskb,1),k)
-                           go to 5
-                        endif
-#ifdef FMM_COMPRESSION
-                        maska = iand(ishft(maska,ibsrts),ibsrtm)
-                        maskb = iand(ishft(maskb,ibsrts),ibsrtm)
-#endif
-                     else
-                        call bummer('fmmsort: error, j = ',j)
-                     endif
-                  else
-                     call bummer('fmmsort: error, i = ',i)
-                  endif
-               else
-                  do 18 i = 1,n
-#ifdef FMM_COMPRESSION
-                     a(i) = ior(iand(a(i),ibd),ibm1)
-#else
-                     a(i) = 1
-#endif
- 18               continue
-                  call edmdfmmalloc(nalloc,nallocst,'fmmsort')
-#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
-                  call fmm_cpu_time_ed(10,'fmmsort')
-#endif
-                  return
-               endif
-c
-#ifdef FMM_COMPRESSION
-               a(1) = ior(iand(a(1),ibd),iand(ior(a(1),maskb),ibm))
-#else
-               a(1) = ior(a(1),maskb)
-#endif
-c
-               do 6 i = left,0
-                  k = 0
-c
- 7                if(k.lt.n) then
-                     j = k+1
-                     k = j
-c
-                     j2 = 0
-c
- 8                   if(k.lt.n) then
-#ifdef FMM_COMPRESSION
-                        if(iand(iand(a(k+1),ibm),maskb).eq.0) then
-#else
-                        if(iand(a(k+1),maskb).eq.0) then
-#endif
-                           k = k+1
-                           go to 8
-                        endif
-                     endif
-c
-                     if(k.gt.j) then
-                        jk = k-j
-c
-                        l = j-1
-                        m = k
-c
- 9                      l = l+1
-c
-                        if(l.lt.m) then
-#ifdef FMM_COMPRESSION
-                           if(iand(ishft(iand(a(l),ibm),i),1).eq.1) then
-#else
-                           if(iand(ishft(a(l),i),1).eq.1) then
-#endif
-#ifdef FMM_COMPRESSION
- 10                           if(iand(ishft(iand(a(m),
-     .                           ibm),i),1).eq.0) then
-#else
- 10                           if(iand(ishft(a(m),i),1).eq.0) then
-#endif
-                                 j2 = j2+1
-                                 m2 = a(l)
-                                 a(l) = a(m)
-                                 a(m) = m2
-                                 if(j.eq.l) then
-#ifdef FMM_COMPRESSION
-                                    m2 = iand(iand(a(l),ibm),maskb)
-                                    a(l) = ior(iand(a(l),ibd),
-     .                              iand(ior(iand(a(m),maskb),
-     .                              iand(a(l),maska)),ibm))
-                                    a(m) = ior(iand(a(m),ibd),
-     .                              iand(ior(m2,iand(a(m),maska)),ibm))
-#else
-                                    m2 = iand(a(l),maskb)
-                                    a(l) = ior(iand(a(m),maskb),
-     .                              iand(a(l),maska))
-                                    a(m) = ior(m2,iand(a(m),maska))
-#endif
-                                 endif
-#ifdef FMM_COMPRESSION
-                                 int1scr(0:nint1) = iboxsrt(0:nint1,l)
-                                 iboxsrt(0:nint1,l) = iboxsrt(0:nint1,m)
-                                 iboxsrt(0:nint1,m) = int1scr(0:nint1)
-#else
-                                 m2 = iboxsrt(l)
-                                 iboxsrt(l) = iboxsrt(m)
-                                 iboxsrt(m) = m2
-#endif
-                                 if(mm.ge.3) then
-                                    m2 = iboxscr(l)
-                                    iboxscr(l) = iboxscr(m)
-                                    iboxscr(m) = m2
-                                 endif
-                                 buffer = q(l)
-                                 q(l) = q(m)
-                                 q(m) = buffer
-                                 buffer = xyz(1,l)
-                                 xyz(1,l) = xyz(1,m)
-                                 xyz(1,m) = buffer
-                                 buffer = xyz(2,l)
-                                 xyz(2,l) = xyz(2,m)
-                                 xyz(2,m) = buffer
-                                 buffer = xyz(3,l)
-                                 xyz(3,l) = xyz(3,m)
-                                 xyz(3,m) = buffer
-#ifdef FMM_PARALLEL
-#ifdef FMM_LOADSORT
-                                 if(doload) then
-                                    buffer = iboxload(l)
-                                    iboxload(l) = iboxload(m)
-                                    iboxload(m) = buffer
-                                 endif
-#endif
-#endif
-                                 m = m-1
-                                 go to 9
-                              else
-                                 m = m-1
-                                 if(l.lt.m) then
-                                    go to 10
-                                 else
-                                    if(j2.gt.0) then
-                                       if(j2.le.jk) then
-#ifdef FMM_COMPRESSION
-                                          a(j+j2)=ior(iand(a(j+j2),ibd),
-     .                                    iand(ior(a(j+j2),maskb),ibm))
-#else
-                                          a(j+j2) = ior(a(j+j2),maskb)
-#endif
-                                       endif
-                                    endif
-                                    go to 7
-                                 endif
-                              endif
-                           else
-                              j2 = j2+1
-                              go to 9
-                           endif
-                        elseif(l.eq.m) then
-#ifdef FMM_COMPRESSION
-                           if(iand(ishft(a(l),i),ibm1).eq.0) j2 = j2+1
-#else
-                           if(iand(ishft(a(l),i),1).eq.0) j2 = j2+1
-#endif
-                           go to 9
-                        else
-                           if(j2.gt.0) then
-                              if(j2.le.jk) then
-#ifdef FMM_COMPRESSION
-                                 a(j+j2) = ior(iand(a(j+j2),ibd),
-     .                           iand(ior(a(j+j2),maskb),ibm))
-#else
-                                 a(j+j2) = ior(a(j+j2),maskb)
-#endif
-                              endif
-                           endif
-                           go to 7
-                        endif
-                     else
-                        go to 7
-                     endif
-                  endif
- 6             continue
-c
-               do 11 i = 1,n
-#ifdef FMM_COMPRESSION
-                  a(i) = ior(iand(a(i),ibd),iand((iand(a(i),maska)+1),
-     .            ibm))
-#else
-                  a(i) = iand(a(i),maska)+1
-#endif
- 11            continue
-c
-#ifdef FMM_DEBUG
-               do 12 i = 2,n
-#ifdef FMM_COMPRESSION
-                  if(iand(a(i-1),ibm).gt.iand(a(i),ibm))
-     .            call bummer('fmmsort: error, i = ',i)
-#else
-                  if(a(i-1).gt.a(i)) call bummer('fmmsort: error,i=',i)
-#endif
- 12            continue
-#endif
-            endif
-         else
-            call bummer('fmmsort: error, nbits = ',nbits)
-         endif
-      elseif(n.le.0) then
-         call bummer('fmmsort: error, n = ',n)
-      endif
-#endif
-      call edmdfmmalloc(nalloc,nallocst,'fmmsort')
-#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
-      call fmm_cpu_time_ed(10,'fmmsort')
-#endif
-      return
-      end subroutine fmmsort
 c
       subroutine memprt(mem_sizes)
 c
@@ -95994,7 +92519,7 @@ c
      .pagepos(pageposstart:*),pagejump,indskpjump,negpos,icharge,m,n,i,
      .j,k,l,mmmmmm,ibx,iby,ibz,mmmm,mmm,mmmmm
 c
-      integer(kind=fmm_integer) indc
+c-ik      integer(kind=fmm_integer),external :: indc
 c
       logical(kind=fmm_logical) csh,pages,negposa,dipole
 c
@@ -107428,3 +103953,3488 @@ c        if(iand(m,1).eq.0) q(m) = -q(m)
       return
       end subroutine sphere2
 #endif
+      subroutine fmmsort(n,depth,a,iboxsrt,q,xyz,fmmgrad,nbits,mm,
+     .iboxscr)
+c
+      use fmmkinds
+      use fmmalloc
+#ifndef FMM_SORTHD
+      use fmmicharge1icharge2
+#elif defined(FMM_PARALLEL)
+#ifdef FMM_LOADSORT
+      use fmmicharge1icharge2
+#endif
+#endif
+#ifndef FMM_SORTHD
+      use msort
+#endif
+#ifdef FMM_COMPRESSION
+      use compression
+#endif
+#ifdef FMM_PARALLEL
+      use mp_info, only: MP_ALLNODES,MP_COMM,nnodes
+#ifdef FMM_LOADSORT
+      use mp_load
+#endif
+#endif
+c
+      implicit none
+c
+      integer(kind=fmm_integer) n
+      real(kind=fmm_real), target:: q(n),xyz(3,n),fmmgrad(3,n)
+c
+#ifdef FMM_PARALLEL
+      real(kind=fmm_real) spercentageofimbalance
+#endif
+c
+#ifdef FMM_SORTHD
+      real(kind=fmm_real) buffer
+#endif
+c
+#ifndef FMM_SORTHD
+#ifdef FMM_PARALLEL
+      real(kind=fmm_real), pointer:: pscr
+#endif
+#endif
+c
+      integer(kind=fmm_integer) depth,nbits,mm
+c
+      integer(kind=fmm_integer), target:: a(n),iboxscr(n)
+c
+#ifdef FMM_COMPRESSION
+      integer(kind=1), target:: iboxsrt(0:nint1,n)
+#else
+      integer(kind=fmm_integer), target:: iboxsrt(n)
+#endif
+c
+#ifndef FMM_SORTHD
+#ifdef FMM_PARALLEL
+      integer(kind=fmm_integer) front_type0,front_type1,
+     .sminnofimbalance,smaxnofimbalance
+#endif
+#endif
+c
+#ifdef FMM_SORTHD
+      integer(kind=fmm_integer) i,j,k,l,m,left,maska,maskb,j2,jk,m2
+#else
+      integer(kind=fmm_integer) mem_size,i
+#endif
+c
+#ifndef FMM_SORTHD
+      logical(kind=fmm_logical) mem_use
+#endif
+c
+#ifndef FMM_SORTHD
+      integer(kind=1), allocatable, target:: mem(:)
+#endif
+c
+      integer(kind=fmm_integer) nallocst
+#ifdef FMM_PARALLEL
+      integer(kind=MP_COMM) :: comm
+#endif
+c
+#ifndef FMM_SORTHD
+#ifdef FMM_ISO_C_BINDING
+      interface
+#ifdef FMM_PARALLEL
+       subroutine mpi_fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,i,n,
+     .  a,xyz,q,addr_desc,iboxsrt,b,j,pscr,spercentageofimbalance,
+     .  sminnofimbalance,smaxnofimbalance,comm) bind(c,
+     .  name = 'mpi_fmm_sort_front_3bit_mem')
+        use fmmkinds
+        use mp_info, only: MP_COMM
+        implicit none
+        real(kind=fmm_c_real) spercentageofimbalance
+        integer(kind=fmm_c_integer) i,n,j,sminnofimbalance,
+     .  smaxnofimbalance
+        integer(kind=MP_COMM) comm
+        type(c_ptr), value:: fmmgrad,mem,mem_sizes,a,xyz,q,addr_desc,
+     .  iboxsrt,b,pscr
+       end subroutine mpi_fmm_sort_front_3bit_mem
+c
+       subroutine mpi_fmm_sort_front_3bit(i,n,a,xyz,q,addr_desc,iboxsrt,
+     .  b,j,pscr,spercentageofimbalance,sminnofimbalance,
+     .  smaxnofimbalance,comm) bind(c,name = 'mpi_fmm_sort_front_3bit')
+        use fmmkinds
+        use mp_info, only: MP_COMM
+        implicit none
+        real(kind=fmm_c_real) spercentageofimbalance
+        integer(kind=fmm_c_integer) i,n,j,sminnofimbalance,
+     .  smaxnofimbalance
+        integer(kind=MP_COMM) comm
+        type(c_ptr), value:: a,xyz,q,addr_desc,iboxsrt,b,pscr
+       end subroutine mpi_fmm_sort_front_3bit
+c
+       subroutine mpi_fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,i,
+     .  n,a,xyz,q,addr_desc,iboxsrt,b,j,pscr,spercentageofimbalance,
+     .  sminnofimbalance,smaxnofimbalance,comm) bind(c,
+     .  name = 'mpi_fmm_sort_front_mem')
+        use fmmkinds
+        use mp_info, only: MP_COMM
+        implicit none
+        real(kind=fmm_c_real) spercentageofimbalance
+        integer(kind=fmm_c_integer) depth,i,n,j,sminnofimbalance,
+     .  smaxnofimbalance
+        integer(kind=MP_COMM) comm
+        type(c_ptr), value:: fmmgrad,mem,mem_sizes,a,xyz,q,addr_desc,
+     .  iboxsrt,b,pscr
+       end subroutine mpi_fmm_sort_front_mem
+c
+       subroutine mpi_fmm_sort_front(depth,i,n,a,xyz,q,addr_desc,
+     .  iboxsrt,b,j,pscr,spercentageofimbalance,sminnofimbalance,
+     .  smaxnofimbalance,comm) bind(c,name = 'mpi_fmm_sort_front')
+        use fmmkinds
+        use mp_info, only: MP_COMM
+        implicit none
+        real(kind=fmm_c_real) spercentageofimbalance
+        integer(kind=fmm_c_integer) depth,i,n,j,sminnofimbalance,
+     .  smaxnofimbalance
+        integer(kind=MP_COMM) comm
+        type(c_ptr), value:: a,xyz,q,addr_desc,iboxsrt,b,pscr
+       end subroutine mpi_fmm_sort_front
+#endif
+       subroutine fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,i,n,a,
+     .  xyz,q,addr_desc,iboxsrt,b,j) bind(c,
+     .  name = 'fmm_sort_front_3bit_mem')
+        use fmmkinds
+        implicit none
+        integer(kind=fmm_c_integer) i,n,j
+        type(c_ptr), value:: fmmgrad,mem,mem_sizes,a,xyz,q,addr_desc,
+     .  iboxsrt,b
+       end subroutine fmm_sort_front_3bit_mem
+c
+       subroutine fmm_sort_front_3bit(i,n,a,xyz,q,addr_desc,iboxsrt,b,j)
+     .  bind(c,name = 'fmm_sort_front_3bit')
+        use fmmkinds
+        implicit none
+        integer(kind=fmm_c_integer) i,n,j
+        type(c_ptr), value:: a,xyz,q,addr_desc,iboxsrt,b
+       end subroutine fmm_sort_front_3bit
+c
+       subroutine fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,i,n,a,
+     .  xyz,q,addr_desc,iboxsrt,b,j) bind(c,name = 'fmm_sort_front_mem')
+        use fmmkinds
+        implicit none
+        integer(kind=fmm_c_integer) depth,i,n,j
+        type(c_ptr), value:: fmmgrad,mem,mem_sizes,a,xyz,q,addr_desc,
+     .  iboxsrt,b
+       end subroutine fmm_sort_front_mem
+c
+       subroutine fmm_sort_front(depth,i,n,a,xyz,q,addr_desc,iboxsrt,
+     .  b,j) bind(c,name = 'fmm_sort_front')
+        use fmmkinds
+        implicit none
+        integer(kind=fmm_c_integer) depth,i,n,j
+        type(c_ptr), value:: a,xyz,q,addr_desc,iboxsrt,b
+       end subroutine fmm_sort_front
+      end interface
+#endif
+#endif
+c
+#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
+      call fmm_cpu_time_st(10)
+#endif
+c
+      call stmdfmmalloc(nalloc,nallocst)
+#ifdef FMM_PARALLEL
+      comm = MP_ALLNODES
+#endif
+c
+#ifndef FMM_SORTHD
+#ifdef FMM_PARALLEL
+#ifdef FMM_LOADSORT
+      if(doload) then
+         front_type0 = 2
+         front_type1 = 3
+         pscr => iboxload(icharge1)
+         spercentageofimbalance = percentageofimbalance
+         sminnofimbalance = minnofimbalance
+         smaxnofimbalance = maxnofimbalance
+      else
+         front_type0 = 0
+         front_type1 = 1
+         pscr => q(1)
+      endif
+#else
+      front_type0 = 0
+      front_type1 = 1
+      pscr => q(1)
+#endif
+#endif
+      if(mm.eq.1) then
+#ifdef FMM_SORTMEMORY
+         call memuse(mem_size,mem_use)
+c
+         if(mem_use) then
+            if(mem_size.le.0) then
+               call bummer('fmmsort: error, mem_size = ',mem_size)
+            endif
+         else
+            mem_size = 0
+         endif
+         call srtallocate(mem,1,mem_size,i)
+         if(i.eq.0) then
+            mem_sizes(1) = 3*rtob*icharges
+            mem_sizes(2) = mem_size
+            call memprt(mem_sizes)
+#ifdef FMM_PARALLEL
+#ifdef FMM_ISO_C_BINDING
+            call mpi_fmm_sort_front_3bit_mem(c_loc(fmmgrad),c_loc(mem),
+     .      c_loc(mem_sizes),1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),front_type0,
+     .      c_loc(pscr),spercentageofimbalance,sminnofimbalance,
+     .      smaxnofimbalance,comm)
+#else
+            call mpi_fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,1,n,
+     .      a,xyz,q,addr_desc,iboxsrt,a,front_type0,pscr,
+     .      spercentageofimbalance,sminnofimbalance,smaxnofimbalance,
+     .      comm)
+#endif
+#else
+#ifdef FMM_ISO_C_BINDING
+            call fmm_sort_front_3bit_mem(c_loc(fmmgrad),c_loc(mem),
+     .      c_loc(mem_sizes),1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),0)
+#else
+            call fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,1,n,a,
+     .      xyz,q,addr_desc,iboxsrt,a,0)
+#endif
+#endif
+            call srtdeallocate(mem,i)
+            if(i.ne.0) call bummer('fmmsort: error, i = ',i)
+         else
+            call bummer('fmmsort: error, i = ',i)
+         endif
+#else
+#ifdef FMM_PARALLEL
+#ifdef FMM_ISO_C_BINDING
+         call mpi_fmm_sort_front_3bit(1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),front_type0,
+     .   c_loc(pscr),spercentageofimbalance,sminnofimbalance,
+     .   smaxnofimbalance,comm)
+#else
+         call mpi_fmm_sort_front_3bit(1,n,a,xyz,q,addr_desc,iboxsrt,a,
+     .   front_type0,pscr,spercentageofimbalance,sminnofimbalance,
+     .   smaxnofimbalance,comm)
+#endif
+#else
+#ifdef FMM_ISO_C_BINDING
+         call fmm_sort_front_3bit(1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),0)
+#else
+         call fmm_sort_front_3bit(1,n,a,xyz,q,addr_desc,iboxsrt,a,0)
+#endif
+#endif
+#endif
+      elseif(mm.eq.2) then
+#ifdef FMM_SORTMEMORY
+         call memuse(mem_size,mem_use)
+c
+         if(mem_use) then
+            if(mem_size.le.0) then
+               call bummer('fmmsort: error, mem_size = ',mem_size)
+            endif
+         else
+            mem_size = 0
+         endif
+         call srtallocate(mem,1,mem_size,i)
+         if(i.eq.0) then
+            mem_sizes(1) = 3*rtob*icharges
+            mem_sizes(2) = mem_size
+            call memprt(mem_sizes)
+#ifdef FMM_PARALLEL
+#ifdef FMM_ISO_C_BINDING
+            call mpi_fmm_sort_front_mem(c_loc(fmmgrad),c_loc(mem),
+     .      c_loc(mem_sizes),depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),front_type0,
+     .      c_loc(pscr),spercentageofimbalance,sminnofimbalance,
+     .      smaxnofimbalance,comm)
+#else
+            call mpi_fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,1,
+     .      n,a,xyz,q,addr_desc,iboxsrt,a,front_type0,pscr,
+     .      spercentageofimbalance,sminnofimbalance,smaxnofimbalance,
+     .      comm)
+#endif
+#else
+#ifdef FMM_ISO_C_BINDING
+            call fmm_sort_front_mem(c_loc(fmmgrad),c_loc(mem),
+     .      c_loc(mem_sizes),depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),0)
+#else
+            call fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,1,n,a,
+     .      xyz,q,addr_desc,iboxsrt,a,0)
+#endif
+#endif
+            call srtdeallocate(mem,i)
+            if(i.ne.0) call bummer('fmmsort: error, i = ',i)
+         else
+            call bummer('fmmsort: error, i = ',i)
+         endif
+#else
+#ifdef FMM_PARALLEL
+#ifdef FMM_ISO_C_BINDING
+         call mpi_fmm_sort_front(depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),front_type0,
+     .   c_loc(pscr),spercentageofimbalance,sminnofimbalance,
+     .   smaxnofimbalance,comm)
+#else
+         call mpi_fmm_sort_front(depth,1,n,a,xyz,q,addr_desc,iboxsrt,a,
+     .   front_type0,pscr,spercentageofimbalance,sminnofimbalance,
+     .   smaxnofimbalance,comm)
+#endif
+#else
+#ifdef FMM_ISO_C_BINDING
+         call fmm_sort_front(depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(a),0)
+#else
+         call fmm_sort_front(depth,1,n,a,xyz,q,addr_desc,iboxsrt,a,0)
+#endif
+#endif
+#endif
+      elseif(mm.eq.3) then
+#ifdef FMM_SORTMEMORY
+         call memuse(mem_size,mem_use)
+c
+         if(mem_use) then
+            if(mem_size.le.0) then
+               call bummer('fmmsort: error, mem_size = ',mem_size)
+            endif
+         else
+            mem_size = 0
+         endif
+         call srtallocate(mem,1,mem_size,i)
+         if(i.eq.0) then
+            mem_sizes(1) = 3*rtob*icharges
+            mem_sizes(2) = mem_size
+            call memprt(mem_sizes)
+#ifdef FMM_PARALLEL
+#ifdef FMM_ISO_C_BINDING
+            call mpi_fmm_sort_front_3bit_mem(c_loc(fmmgrad),c_loc(mem),
+     .      c_loc(mem_sizes),1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),front_type1,
+     .      c_loc(pscr),spercentageofimbalance,sminnofimbalance,
+     .      smaxnofimbalance,comm)
+#else
+            call mpi_fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,1,n,
+     .      a,xyz,q,addr_desc,iboxsrt,iboxscr,front_type1,pscr,
+     .      spercentageofimbalance,sminnofimbalance,smaxnofimbalance,
+     .      comm)
+#endif
+#else
+#ifdef FMM_ISO_C_BINDING
+            call fmm_sort_front_3bit_mem(c_loc(fmmgrad),c_loc(mem),
+     .      c_loc(mem_sizes),1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),1)
+#else
+            call fmm_sort_front_3bit_mem(fmmgrad,mem,mem_sizes,1,n,a,
+     .      xyz,q,addr_desc,iboxsrt,iboxscr,1)
+#endif
+#endif
+            call srtdeallocate(mem,i)
+            if(i.ne.0) call bummer('fmmsort: error, i = ',i)
+         else
+            call bummer('fmmsort: error, i = ',i)
+         endif
+#else
+#ifdef FMM_PARALLEL
+#ifdef FMM_ISO_C_BINDING
+         call mpi_fmm_sort_front_3bit(1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),front_type1,
+     .   c_loc(pscr),spercentageofimbalance,sminnofimbalance,
+     .   smaxnofimbalance,comm)
+#else
+         call mpi_fmm_sort_front_3bit(1,n,a,xyz,q,addr_desc,iboxsrt,
+     .   iboxscr,front_type1,pscr,spercentageofimbalance,
+     .   sminnofimbalance,smaxnofimbalance,comm)
+#endif
+#else
+#ifdef FMM_ISO_C_BINDING
+         call fmm_sort_front_3bit(1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),1)
+#else
+         call fmm_sort_front_3bit(1,n,a,xyz,q,addr_desc,iboxsrt,
+     .   iboxscr,1)
+#endif
+#endif
+#endif
+      elseif(mm.eq.4) then
+#ifdef FMM_SORTMEMORY
+         call memuse(mem_size,mem_use)
+c
+         if(mem_use) then
+            if(mem_size.le.0) then
+               call bummer('fmmsort: error, mem_size = ',mem_size)
+            endif
+         else
+            mem_size = 0
+         endif
+         call srtallocate(mem,1,mem_size,i)
+         if(i.eq.0) then
+            mem_sizes(1) = 3*rtob*icharges
+            mem_sizes(2) = mem_size
+            call memprt(mem_sizes)
+#ifdef FMM_PARALLEL
+#ifdef FMM_ISO_C_BINDING
+            call mpi_fmm_sort_front_mem(c_loc(fmmgrad),c_loc(mem),
+     .      c_loc(mem_sizes),depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),front_type1,
+     .      c_loc(pscr),spercentageofimbalance,sminnofimbalance,
+     .      smaxnofimbalance,comm)
+#else
+            call mpi_fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,1,
+     .      n,a,xyz,q,addr_desc,iboxsrt,iboxscr,front_type1,pscr,
+     .      spercentageofimbalance,sminnofimbalance,smaxnofimbalance,
+     .      comm)
+#endif
+#else
+#ifdef FMM_ISO_C_BINDING
+            call fmm_sort_front_mem(c_loc(fmmgrad),c_loc(mem),
+     .      c_loc(mem_sizes),depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .      c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),1)
+#else
+            call fmm_sort_front_mem(fmmgrad,mem,mem_sizes,depth,1,n,a,
+     .      xyz,q,addr_desc,iboxsrt,iboxscr,1)
+#endif
+#endif
+            call srtdeallocate(mem,i)
+            if(i.ne.0) call bummer('fmmsort: error, i = ',i)
+         else
+            call bummer('fmmsort: error, i = ',i)
+         endif
+#else
+#ifdef FMM_PARALLEL
+#ifdef FMM_ISO_C_BINDING
+         call mpi_fmm_sort_front(depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),front_type1,
+     .   c_loc(pscr),spercentageofimbalance,sminnofimbalance,
+     .   smaxnofimbalance,comm)
+#else
+         call mpi_fmm_sort_front(depth,1,n,a,xyz,q,addr_desc,iboxsrt,
+     .   iboxscr,front_type1,pscr,spercentageofimbalance,
+     .   sminnofimbalance,smaxnofimbalance,comm)
+#endif
+#else
+#ifdef FMM_ISO_C_BINDING
+         call fmm_sort_front(depth,1,n,c_loc(a),c_loc(xyz),c_loc(q),
+     .   c_loc(addr_desc),c_loc(iboxsrt),c_loc(iboxscr),1)
+#else
+         call fmm_sort_front(depth,1,n,a,xyz,q,addr_desc,iboxsrt,
+     .   iboxscr,1)
+#endif
+#endif
+#endif
+      else
+         call bummer('fmmsort: error, mm = ',mm)
+      endif
+c
+#ifdef FMM_PARALLEL
+#ifdef FMM_LOADSORT
+      if(doload) then
+         if(icharge1.eq.1) then
+            if(sminnofimbalance.gt.0) then
+               ichargesout = icharges
+               icharge2 = sminnofimbalance
+               icharges = sminnofimbalance
+            else
+               call bummer('fmmsort: error, sminnofimbalance = ',
+     .         sminnofimbalance)
+            endif
+         else
+            call bummer('fmmsort: error, icharge1 = ',icharge1)
+         endif
+      endif
+#endif
+#endif
+#else
+#ifdef FMM_PARALLEL
+      if(nnodes.gt.1) call bummer('fmmsort: error, nnodes = ',nnodes)
+#endif
+c
+      if(n.ge.2) then
+         if(nbits.ge.8) then
+            if(mm.eq.-2) then
+               do 13 i = 1,n
+#ifdef FMM_COMPRESSION
+                  a(i) = ior(iand(a(i),ibd),(iand(a(i),ibm)-1))
+#else
+                  a(i) = a(i)-1
+#endif
+ 13            continue
+c
+               i = 0
+c
+               do 14 j = 0,6
+                  if(n.gt.i) then
+                     k = i+1
+                     do 15 l = k,n
+#ifdef FMM_COMPRESSION
+                        if(iand(a(l),ibm7).eq.j) then
+#else
+                        if(iand(a(l),7).eq.j) then
+#endif
+                           i = i+1
+                           m = a(i)
+                           a(i) = a(l)
+                           a(l) = m
+#ifdef FMM_COMPRESSION
+                           int1scr(0:nint1) = iboxsrt(0:nint1,i)
+                           iboxsrt(0:nint1,i) = iboxsrt(0:nint1,l)
+                           iboxsrt(0:nint1,l) = int1scr(0:nint1)
+#else
+                           m = iboxsrt(i)
+                           iboxsrt(i) = iboxsrt(l)
+                           iboxsrt(l) = m
+#endif
+                           m = iboxscr(i)
+                           iboxscr(i) = iboxscr(l)
+                           iboxscr(l) = m
+                           buffer = q(i)
+                           q(i) = q(l)
+                           q(l) = buffer
+                           buffer = xyz(1,i)
+                           xyz(1,i) = xyz(1,l)
+                           xyz(1,l) = buffer
+                           buffer = xyz(2,i)
+                           xyz(2,i) = xyz(2,l)
+                           xyz(2,l) = buffer
+                           buffer = xyz(3,i)
+                           xyz(3,i) = xyz(3,l)
+                           xyz(3,l) = buffer
+#ifdef FMM_PARALLEL
+#ifdef FMM_LOADSORT
+                           if(doload) then
+                              buffer = iboxload(i)
+                              iboxload(i) = iboxload(l)
+                              iboxload(l) = buffer
+                           endif
+#endif
+#endif
+                        endif
+ 15                  continue
+                  else
+                     go to 16
+                  endif
+ 14            continue
+c
+ 16            do 17 i = 1,n
+#ifdef FMM_COMPRESSION
+                  a(i) = ior(iand(a(i),ibd),(iand(a(i),ibm)+1))
+#else
+                  a(i) = a(i)+1
+#endif
+ 17            continue
+            else
+               i = 0
+c
+               do 1 j = 1,n
+#ifdef FMM_COMPRESSION
+                  if(iand(ishft(a(j),ib01),1).eq.0) then
+                     a(j) = ior(iand(a(j),ibd),(iand(a(j),ibm)-1))
+                     if(iand(a(j),ibm).gt.i) i = iand(a(j),ibm)
+#else
+                  if(a(j).gt.0) then
+                     a(j) = a(j)-1
+                     if(a(j).gt.i) i = a(j)
+#endif
+                  else
+                     call bummer('fmmsort: error, j = ',j)
+                  endif
+ 1             continue
+c
+               if(i.gt.0) then
+                  j = 1-nbits
+                  if(iand(ishft(i,j),1).eq.0) then
+                     j = j+1
+                     if(j.le.0) then
+                        if(mm.gt.0) then
+                           do 2 k = j,0
+                              if(iand(ishft(i,k),1).eq.1) then
+                                 left = k
+                                 go to 3
+                              endif
+ 2                         continue
+                           call bummer('fmmsort: error, j = ',j)
+                        else
+                           left = mm
+                        endif
+ 3                      if(j.lt.0) j = -j
+                        k = -2
+                        maska = 1
+                        l = 0
+ 4                      l = l+1
+                        if(l.le.j) then
+                           maska = ior(iand(ishft(maska,1),k),1)
+                           go to 4
+                        endif
+                        j = j+1
+                        maskb = 1
+                        l = 0
+ 5                      l = l+1
+                        if(l.le.j) then
+                           maskb = iand(ishft(maskb,1),k)
+                           go to 5
+                        endif
+#ifdef FMM_COMPRESSION
+                        maska = iand(ishft(maska,ibsrts),ibsrtm)
+                        maskb = iand(ishft(maskb,ibsrts),ibsrtm)
+#endif
+                     else
+                        call bummer('fmmsort: error, j = ',j)
+                     endif
+                  else
+                     call bummer('fmmsort: error, i = ',i)
+                  endif
+               else
+                  do 18 i = 1,n
+#ifdef FMM_COMPRESSION
+                     a(i) = ior(iand(a(i),ibd),ibm1)
+#else
+                     a(i) = 1
+#endif
+ 18               continue
+                  call edmdfmmalloc(nalloc,nallocst,'fmmsort')
+#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
+                  call fmm_cpu_time_ed(10,'fmmsort')
+#endif
+                  return
+               endif
+c
+#ifdef FMM_COMPRESSION
+               a(1) = ior(iand(a(1),ibd),iand(ior(a(1),maskb),ibm))
+#else
+               a(1) = ior(a(1),maskb)
+#endif
+c
+               do 6 i = left,0
+                  k = 0
+c
+ 7                if(k.lt.n) then
+                     j = k+1
+                     k = j
+c
+                     j2 = 0
+c
+ 8                   if(k.lt.n) then
+#ifdef FMM_COMPRESSION
+                        if(iand(iand(a(k+1),ibm),maskb).eq.0) then
+#else
+                        if(iand(a(k+1),maskb).eq.0) then
+#endif
+                           k = k+1
+                           go to 8
+                        endif
+                     endif
+c
+                     if(k.gt.j) then
+                        jk = k-j
+c
+                        l = j-1
+                        m = k
+c
+ 9                      l = l+1
+c
+                        if(l.lt.m) then
+#ifdef FMM_COMPRESSION
+                           if(iand(ishft(iand(a(l),ibm),i),1).eq.1) then
+#else
+                           if(iand(ishft(a(l),i),1).eq.1) then
+#endif
+#ifdef FMM_COMPRESSION
+ 10                           if(iand(ishft(iand(a(m),
+     .                           ibm),i),1).eq.0) then
+#else
+ 10                           if(iand(ishft(a(m),i),1).eq.0) then
+#endif
+                                 j2 = j2+1
+                                 m2 = a(l)
+                                 a(l) = a(m)
+                                 a(m) = m2
+                                 if(j.eq.l) then
+#ifdef FMM_COMPRESSION
+                                    m2 = iand(iand(a(l),ibm),maskb)
+                                    a(l) = ior(iand(a(l),ibd),
+     .                              iand(ior(iand(a(m),maskb),
+     .                              iand(a(l),maska)),ibm))
+                                    a(m) = ior(iand(a(m),ibd),
+     .                              iand(ior(m2,iand(a(m),maska)),ibm))
+#else
+                                    m2 = iand(a(l),maskb)
+                                    a(l) = ior(iand(a(m),maskb),
+     .                              iand(a(l),maska))
+                                    a(m) = ior(m2,iand(a(m),maska))
+#endif
+                                 endif
+#ifdef FMM_COMPRESSION
+                                 int1scr(0:nint1) = iboxsrt(0:nint1,l)
+                                 iboxsrt(0:nint1,l) = iboxsrt(0:nint1,m)
+                                 iboxsrt(0:nint1,m) = int1scr(0:nint1)
+#else
+                                 m2 = iboxsrt(l)
+                                 iboxsrt(l) = iboxsrt(m)
+                                 iboxsrt(m) = m2
+#endif
+                                 if(mm.ge.3) then
+                                    m2 = iboxscr(l)
+                                    iboxscr(l) = iboxscr(m)
+                                    iboxscr(m) = m2
+                                 endif
+                                 buffer = q(l)
+                                 q(l) = q(m)
+                                 q(m) = buffer
+                                 buffer = xyz(1,l)
+                                 xyz(1,l) = xyz(1,m)
+                                 xyz(1,m) = buffer
+                                 buffer = xyz(2,l)
+                                 xyz(2,l) = xyz(2,m)
+                                 xyz(2,m) = buffer
+                                 buffer = xyz(3,l)
+                                 xyz(3,l) = xyz(3,m)
+                                 xyz(3,m) = buffer
+#ifdef FMM_PARALLEL
+#ifdef FMM_LOADSORT
+                                 if(doload) then
+                                    buffer = iboxload(l)
+                                    iboxload(l) = iboxload(m)
+                                    iboxload(m) = buffer
+                                 endif
+#endif
+#endif
+                                 m = m-1
+                                 go to 9
+                              else
+                                 m = m-1
+                                 if(l.lt.m) then
+                                    go to 10
+                                 else
+                                    if(j2.gt.0) then
+                                       if(j2.le.jk) then
+#ifdef FMM_COMPRESSION
+                                          a(j+j2)=ior(iand(a(j+j2),ibd),
+     .                                    iand(ior(a(j+j2),maskb),ibm))
+#else
+                                          a(j+j2) = ior(a(j+j2),maskb)
+#endif
+                                       endif
+                                    endif
+                                    go to 7
+                                 endif
+                              endif
+                           else
+                              j2 = j2+1
+                              go to 9
+                           endif
+                        elseif(l.eq.m) then
+#ifdef FMM_COMPRESSION
+                           if(iand(ishft(a(l),i),ibm1).eq.0) j2 = j2+1
+#else
+                           if(iand(ishft(a(l),i),1).eq.0) j2 = j2+1
+#endif
+                           go to 9
+                        else
+                           if(j2.gt.0) then
+                              if(j2.le.jk) then
+#ifdef FMM_COMPRESSION
+                                 a(j+j2) = ior(iand(a(j+j2),ibd),
+     .                           iand(ior(a(j+j2),maskb),ibm))
+#else
+                                 a(j+j2) = ior(a(j+j2),maskb)
+#endif
+                              endif
+                           endif
+                           go to 7
+                        endif
+                     else
+                        go to 7
+                     endif
+                  endif
+ 6             continue
+c
+               do 11 i = 1,n
+#ifdef FMM_COMPRESSION
+                  a(i) = ior(iand(a(i),ibd),iand((iand(a(i),maska)+1),
+     .            ibm))
+#else
+                  a(i) = iand(a(i),maska)+1
+#endif
+ 11            continue
+c
+#ifdef FMM_DEBUG
+               do 12 i = 2,n
+#ifdef FMM_COMPRESSION
+                  if(iand(a(i-1),ibm).gt.iand(a(i),ibm))
+     .            call bummer('fmmsort: error, i = ',i)
+#else
+                  if(a(i-1).gt.a(i)) call bummer('fmmsort: error,i=',i)
+#endif
+ 12            continue
+#endif
+            endif
+         else
+            call bummer('fmmsort: error, nbits = ',nbits)
+         endif
+      elseif(n.le.0) then
+         call bummer('fmmsort: error, n = ',n)
+      endif
+#endif
+      call edmdfmmalloc(nalloc,nallocst,'fmmsort')
+#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
+      call fmm_cpu_time_ed(10,'fmmsort')
+#endif
+      return
+      end subroutine fmmsort
+
+      subroutine indsm(ncharges,mws,ws,ibox,iboxscr,indstart,indend,
+     .indscr,mishx,mishy,maskxy,maxint,int3x,int3y,int3z,int3p,int3q,
+     .bitpos,mbitpos,is,ia,pageshift,pagemask,pageposstart,pagepos,
+     .pageshiftg,pageaddr,pagejump,indskpjump,pages,ins,jsb,shb,jnit,
+     .nit,gs,periodic,nmboxes,get12)
+c
+      use fmmkinds
+      use fmmint34
+      use fmmalloc
+#ifdef FMM_COMPRESSION
+      use compression
+#endif
+#ifndef FMM_IBOXSCR
+#ifndef FMM_NOFUNCTIONPOINTER
+      use mfbox2int
+#endif
+#endif
+c
+      implicit none
+c
+      integer(kind=fmm_integer) indstart,pageposstart
+      integer(kind=fmm_integer) ncharges,mws,ws,ibox(*),iboxscr(*),
+     .indend,indscr(indstart:*),mishx,mishy,maskxy,maxint,int3x(0:*),
+     .int3y(0:*),int3z(0:*),int3p(0:*),int3q(0:*),bitpos(0:*),
+     .mbitpos(0:*),is,ia,pageshift,pagemask,pagepos(pageposstart:*),
+     .pageshiftg,pageaddr,pagejump,indskpjump,jsb,gs,periodic,nmboxes,
+     .get12,j5,i,jp,icharge,j,k,l,ibx,iby,ibz,m,jshb,jnit,idx,idxyz,iz,
+     .ibnz,jbnz,kbz,iy,ibny,jbny,kby,ix,ibnx,jbnx,kbx
+c
+      integer(kind=fmm_integer), target:: shb(jsb)
+      integer(kind=fmm_integer), pointer:: shba(:)
+c
+      logical(kind=fmm_logical) pages,ins(mws:*),jump,gx,gy,gz
+c
+      logical(kind=fmm_logical), target:: nit(0:jnit)
+      logical(kind=fmm_logical), pointer:: nita(:)
+c
+c-ik      logical(kind=fmm_logical) gnit,indshb,pass2dt
+c
+      integer(kind=fmm_integer) nallocst
+c
+      call stmdfmmalloc(nalloc,nallocst)
+c
+      if(gs.ge.0) then
+        call calj5(ws,j5)
+        call fmmallocatept(shba,1,j5,i)
+        if(i.eq.0) then
+          call fmmallocatept(nita,0,gs,i)
+          if(i.eq.0) then
+            call calnit(ws,gs,nita)
+          else
+            call bummer('indsm: error, i = ',i)
+          endif
+        else
+          call bummer('indsm: error, i = ',i)
+        endif
+        jp = 1
+        jump = .true.
+      else
+        shba => shb
+        nita => nit
+        jp = 2
+        jump = .false.
+      endif
+c
+      call setgxgygz(periodic,gx,gy,gz)
+c
+      i = 0
+c
+      icharge = 1
+c
+ 777  if(icharge.le.ncharges) then
+#ifdef FMM_COMPRESSION
+        if(iand(ishft(ibox(icharge),ib01),1).eq.0) then
+          j = iand(ishft((iand(ibox(icharge),ibm)-1),is),ia)+1
+#else
+        if(ibox(icharge).gt.0) then
+          j = iand(ishft((ibox(icharge)-1),is),ia)+1
+#endif
+c
+          if(j.gt.i) then
+            i = j
+#ifdef FMM_IBOXSCR
+            j = iand(iboxscr(icharge),maskxy)
+            k = iand(ishft(iboxscr(icharge),mishy),maskxy)
+            l = iand(ishft(iboxscr(icharge),mishx),maskxy)
+#else
+#ifdef FMM_COMPRESSION
+            call box2int(iand(ibox(icharge),ibm),j,k,l)
+#else
+            call box2int(ibox(icharge),j,k,l)
+#endif
+#endif
+            ibx = iand(ishft(j,-1),maxint)
+            iby = iand(ishft(k,-1),maxint)
+            ibz = iand(ishft(l,-1),maxint)
+            if(pages) then
+             if(indstart.eq.-8) then
+              j = ibx+ibx
+              k = iby+iby
+              l = ibz+ibz
+              if(j.le.int3xyz) then
+                m = int3x(j)
+              else
+                m = int4x(j,bitpos,mbitpos)
+              endif
+              if(k.le.int3xyz) then
+                m = ior(m,int3y(k))
+              else
+                m = ior(m,int4y(k,bitpos,mbitpos))
+              endif
+              if(l.le.int3xyz) then
+                m = ior(m,int3z(l))
+              else
+                m = ior(m,int4z(l,bitpos,mbitpos))
+              endif
+              if(indskpjump.gt.0) then
+                call ind3a(m,pagepos(iand(ishft(m,pageshift),pagemask)),
+     .          pageshiftg,pageaddr,pagejump,indskpjump,indstart,indscr)
+              else
+                go to(1,2,3,4,5,6,7,8,9,10,11,12,13) pagejump
+                call ind2a(m,pagepos(iand(ishft(m,pageshift),pagemask)),
+     .          pageshiftg,pageaddr,pagejump,indstart,indscr)
+                icharge = icharge+1
+                go to 777
+ 1              call indsmo1pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 2              call indsmo2pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 3              call indsmo3pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 4              call indsmo4pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 5              call indsmo5pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 6              call indsmo6pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 7              call indsmo7pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 8              call indsmo8pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 9              call indsmo9pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 10             call indsmo10pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 11             call indsmo11pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 12             call indsmo12pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+                icharge = icharge+1
+                go to 777
+ 13             call indsmo13pg(m,indscr,pagemask,pageposstart,pagepos,
+     .          pageaddr)
+              endif
+             else
+              call bummer('indsm: error, indstart = ',indstart)
+             endif
+            elseif(gnit(ibx,iby,ibz,nita)) then
+              j = ibx+ibx
+              k = iby+iby
+              l = ibz+ibz
+              if(j.le.int3xyz) then
+                m = int3x(j)
+              else
+                m = int4x(j,bitpos,mbitpos)
+              endif
+              if(k.le.int3xyz) then
+                m = ior(m,int3y(k))
+              else
+                m = ior(m,int4y(k,bitpos,mbitpos))
+              endif
+              if(l.le.int3xyz) then
+                m = ior(m,int3z(l))
+              else
+                m = ior(m,int4z(l,bitpos,mbitpos))
+              endif
+              call getneighbors(int3x,int3y,int3z,int3p,int3q,m,ibx,
+     .        iby,ibz,j,k,l,1,jshb,shba,idxyz,jp,1,get12)
+              if(jump) then
+                go to(14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,
+     .          30,31,32,33,34,35,36,37,38,39,40) (jshb-1)
+              endif
+ 14           if(indshb(indstart,indend,shba(1))) indscr(shba(1)) = -1
+ 15           if(indshb(indstart,indend,shba(2))) indscr(shba(2)) = -1
+ 16           if(indshb(indstart,indend,shba(3))) indscr(shba(3)) = -1
+ 17           if(indshb(indstart,indend,shba(4))) indscr(shba(4)) = -1
+ 18           if(indshb(indstart,indend,shba(5))) indscr(shba(5)) = -1
+ 19           if(indshb(indstart,indend,shba(6))) indscr(shba(6)) = -1
+ 20           if(indshb(indstart,indend,shba(7))) indscr(shba(7)) = -1
+ 21           if(indshb(indstart,indend,shba(8))) indscr(shba(8)) = -1
+ 22           if(indshb(indstart,indend,shba(9))) indscr(shba(9)) = -1
+ 23           if(indshb(indstart,indend,shba(10))) indscr(shba(10)) = -1
+ 24           if(indshb(indstart,indend,shba(11))) indscr(shba(11)) = -1
+ 25           if(indshb(indstart,indend,shba(12))) indscr(shba(12)) = -1
+ 26           if(indshb(indstart,indend,shba(13))) indscr(shba(13)) = -1
+ 27           if(indshb(indstart,indend,shba(14))) indscr(shba(14)) = -1
+ 28           if(indshb(indstart,indend,shba(15))) indscr(shba(15)) = -1
+ 29           if(indshb(indstart,indend,shba(16))) indscr(shba(16)) = -1
+ 30           if(indshb(indstart,indend,shba(17))) indscr(shba(17)) = -1
+ 31           if(indshb(indstart,indend,shba(18))) indscr(shba(18)) = -1
+ 32           if(indshb(indstart,indend,shba(19))) indscr(shba(19)) = -1
+ 33           if(indshb(indstart,indend,shba(20))) indscr(shba(20)) = -1
+ 34           if(indshb(indstart,indend,shba(21))) indscr(shba(21)) = -1
+ 35           if(indshb(indstart,indend,shba(22))) indscr(shba(22)) = -1
+ 36           if(indshb(indstart,indend,shba(23))) indscr(shba(23)) = -1
+ 37           if(indshb(indstart,indend,shba(24))) indscr(shba(24)) = -1
+ 38           if(indshb(indstart,indend,shba(25))) indscr(shba(25)) = -1
+ 39           if(indshb(indstart,indend,shba(26))) indscr(shba(26)) = -1
+ 40           if(indshb(indstart,indend,shba(27))) indscr(shba(27)) = -1
+            elseif(periodic.gt.0) then
+              do 66 iz = mws,ws
+                ibnz = ibz+iz
+c
+                if(pass2dt(jbnz,ibnz,nmboxes,gz)) then
+                  if(jbnz.le.int3xyz) then
+                    kbz = int3z(jbnz)
+                  else
+                    kbz = int4z(jbnz,bitpos,mbitpos)
+                  endif
+                  ibnz = ibnz+ibnz
+c
+                  do 67 iy = mws,ws
+                    ibny = iby+iy
+c
+                    if(pass2dt(jbny,ibny,nmboxes,gy)) then
+                      if(jbny.le.int3xyz) then
+                        kby = ior(kbz,int3y(jbny))
+                      else
+                        kby = ior(kbz,int4y(jbny,bitpos,mbitpos))
+                      endif
+                      ibny = ibny+ibny
+c
+                      do 68 ix = mws,ws
+                        ibnx = ibx+ix
+c
+                        if(pass2dt(jbnx,ibnx,nmboxes,gx)) then
+                          if(jbnx.le.int3xyz) then
+                            j = ior(kby,int3x(jbnx))
+                            if(indshb(indstart,indend,j)) indscr(j) = -1
+                          else
+                            j = ior(kby,int4x(jbnx,bitpos,mbitpos))
+                            if(indshb(indstart,indend,j)) indscr(j) = -1
+                          endif
+                        endif
+ 68                   continue
+                    endif
+ 67               continue
+                endif
+ 66           continue
+            else
+              do 76 iz = mws,ws
+                ibnz = ibz+iz
+c
+                if(ins(ibnz)) then
+                  ibnz = ibnz+ibnz
+                  if(ibnz.le.int3xyz) then
+                    kbz = int3z(ibnz)
+                  else
+                    kbz = int4z(ibnz,bitpos,mbitpos)
+                  endif
+c
+                  do 77 iy = mws,ws
+                    ibny = iby+iy
+c
+                    if(ins(ibny)) then
+                      ibny = ibny+ibny
+                      if(ibny.le.int3xyz) then
+                        kby = ior(kbz,int3y(ibny))
+                      else
+                        kby = ior(kbz,int4y(ibny,bitpos,mbitpos))
+                      endif
+c
+                      do 78 ix = mws,ws
+                        ibnx = ibx+ix
+c
+                        if(ins(ibnx)) then
+                          ibnx = ibnx+ibnx
+                          if(ibnx.le.int3xyz) then
+                            j = ior(kby,int3x(ibnx))
+                            if(indshb(indstart,indend,j)) indscr(j) = -1
+                          else
+                            j = ior(kby,int4x(ibnx,bitpos,mbitpos))
+                            if(indshb(indstart,indend,j)) indscr(j) = -1
+                          endif
+                        endif
+ 78                   continue
+                    endif
+ 77               continue
+                endif
+ 76           continue
+            endif
+          elseif(j.lt.i) then
+            call bummer('indsm: (j-i) = ',(j-i))
+          endif
+c
+          icharge = icharge+1
+          go to 777
+#ifdef FMM_COMPRESSION
+        elseif(iand(ishft(ibox(icharge),ib01),1).gt.0) then
+          icharge = icharge-ior(ibox(icharge),ibm011)
+#else
+        elseif(ibox(icharge).lt.0) then
+          icharge = icharge-ibox(icharge)
+#endif
+          go to 777
+        else
+          call bummer('indsm: error, icharge = ',icharge)
+        endif
+      endif
+c
+      if(gs.ge.0) then
+        call fmmdeallocatept(shba,i)
+        if(i.ne.0) call bummer('indsm: error, i = ',i)
+        call fmmdeallocatept(nita,i)
+        if(i.ne.0) call bummer('indsm: error, i = ',i)
+      endif
+      call edmdfmmalloc(nalloc,nallocst,'indsm')
+      return
+      end subroutine indsm
+
+       end module mod_fullfmm
+
+      subroutine cfmm(ncharges,localcharges,q,xyzin,ierr,de,der,
+     .energy,
+     .fmmpot,
+     .fmmgrad,
+     .virial,
+     .periodic,
+     .periodica,
+     .periodlength,
+     .dipolecorrection,
+     .ilinearpotential,
+     .linearodistance,
+     .iplummerpotential,
+     .aoplummer,
+     .snewerroranalysis,
+     .homogen,
+     .maxdepth,
+     .unrolled2,
+     .balance_load,
+     .FMM_internal_params)
+c
+      use fmmkinds
+      use fmmint34
+      use fmmjmp
+      use fmmhybrid
+      use fmmnsqrndiv
+      use fmmalloc
+      use getneighbors_vars
+      use qinfo
+      use msort
+      use fmmicharge1icharge2
+      use fmmicharge5icharge6
+      use fmmjcharge1jcharge2
+      use mcoordinates
+      use mem_info
+      use mplummer
+      use mwigner
+      use mod_fullfmm
+#ifdef FMM_UNIFORMGRID
+      use muniformgrid
+#endif
+      use fmm_fcs_binding 
+#ifdef FMM_COMPRESSION
+      use compression
+#endif
+#ifdef FMM_TREETOGRAD
+      use mtreetograd
+#endif
+#ifdef FMM_DAMPING
+      use mdamping
+#endif
+#ifdef FMM_PARALLEL
+      use mp_info
+#ifdef FMM_LOADSORT
+      use mp_load
+#endif
+#endif
+c
+      implicit none
+c
+      integer(kind=fmm_integer) maxnmultipoles
+      parameter(maxnmultipoles=FMM_MAXNMULTIPOLES)
+c
+      integer(kind=fmm_integer) maxws
+      parameter(maxws=1)
+c
+      integer(kind=fmm_integer) maxncsar
+      parameter(maxncsar=7*maxws*maxws*maxws+18*maxws*maxws+14*maxws+5)
+c
+      integer(kind=fmm_integer) maxncar
+      parameter(maxncar=16*maxws*maxws+24*maxws+8)
+c
+      integer(kind=fmm_integer) maxnrar
+      parameter(maxnrar=7*maxws*maxws*maxws+21*maxws*maxws+21*maxws+7)
+c
+      integer(kind=fmm_integer) maxn2multipoles
+      parameter(maxn2multipoles=maxnmultipoles+maxnmultipoles)
+c
+      integer(kind=fmm_integer) maxwsd
+      parameter(maxwsd=2*maxws+1)
+c
+      integer(kind=fmm_integer) mmaxwsd
+      parameter(mmaxwsd=-maxwsd)
+c
+      integer(kind=fmm_integer) maxwsd2
+      parameter(maxwsd2=2*maxwsd*maxwsd)
+c
+      integer(kind=fmm_integer) maxwsd3
+      parameter(maxwsd3=3*maxwsd*maxwsd)
+c
+      real(kind=fmm_real), allocatable:: dbl(:)
+c
+#ifdef FMM_COMPRESSION
+      integer(kind=1), allocatable:: iboxsrt(:,:)
+#else
+      integer(kind=fmm_integer), allocatable, target:: iboxsrt(:)
+#endif
+      integer(kind=fmm_integer), allocatable:: iboxjmp(:)
+#ifdef FMM_IBOXSCR
+      integer(kind=fmm_integer), allocatable, target:: iboxscr(:)
+#endif
+      integer(kind=fmm_integer), pointer:: piboxscr(:),piboxsrt(:)
+      integer(kind=fmm_integer), allocatable:: int3x(:),int3y(:),
+     .int3z(:),int3p(:),int3q(:),nbofmb(:)
+      integer(kind=fmm_integer) ipo(3),jpo(3),mask(3)
+c
+      real(kind=fmm_real) fmmdist(mmaxwsd:maxwsd,mmaxwsd:maxwsd,
+     .mmaxwsd:maxwsd)
+      integer(kind=fmm_integer) gb(2,maxwsd*maxwsd*maxwsd)
+      real(kind=fmm_real) gbsh(3,maxwsd*maxwsd*maxwsd)
+c
+      integer(kind=fmm_integer) ncsar,icsar(0:maxwsd,0:maxwsd2),
+     .jcsar(maxncsar)
+      integer(kind=fmm_integer) ncar,icar(mmaxwsd:maxwsd,mmaxwsd:maxwsd)
+      integer(kind=fmm_integer) isar(mmaxwsd:maxwsd,0:maxwsd)
+      integer(kind=fmm_integer) nrar
+      integer(kind=fmm_integer), allocatable:: irar(:,:)
+      real(kind=fmm_real), allocatable:: grar(:,:)
+      logical(kind=fmm_logical), allocatable:: sgrar(:)
+c
+      integer(kind=fmm_integer) nfmmcos(maxwsd3),fmmcos(2,maxncsar)
+c
+      integer(kind=fmm_integer) mi
+      parameter(mi=-1)
+c
+      integer(kind=fmm_integer) jcar(mi:1,mi:1)
+      real(kind=fmm_real) hcar(0:maxnmultipoles,4),
+     .hsar(0:maxnmultipoles,4)
+c
+      integer(kind=fmm_integer) ierr
+c
+      integer(kind=fmm_integer) ldf
+      parameter(ldf=200)
+      integer(kind=fmm_integer) inf
+      parameter(inf=ldf)
+      integer(kind=fmm_integer) ldff
+      parameter(ldff=ldf+ldf)
+      real(kind=fmm_real) fmmerr(0:maxnmultipoles,maxws),
+     .pfmmerr(0:maxnmultipoles),
+     .merr(0:maxnmultipoles,maxws)
+c
+      integer(kind=fmm_integer) ncharges,localcharges
+      real(kind=fmm_real), target:: xyzin(3,localcharges)
+      real(kind=fmm_real), allocatable, target:: xyz(:,:)
+      real(kind=fmm_real), pointer:: xyzt(:,:)
+      real(kind=fmm_real) q(*)
+      real(kind=fmm_real) coul,shx,shy,shz,sf,sh,fac(0:170),rfac(0:170)
+      real(kind=fmm_real) pow(0:maxnmultipoles),sg(0:maxn2multipoles)
+      real(kind=fmm_real) fr(0:maxn2multipoles)
+      real(kind=fmm_real), allocatable:: coeff1(:,:),coeff2(:,:),
+     .coeff3(:,:,:),
+     .coeff4(:,:),coeff5(:,:,:),coeff6(:,:)
+      real(kind=fmm_real) energy
+#ifdef FMM_NOPOT
+      real(kind=fmm_real), target:: fmmgrad(3*ncharges)
+      real(kind=fmm_real) fmmpot(*)
+#else
+#ifdef FMM_TREETOGRAD
+      real(kind=fmm_real), target:: fmmgrad(3*ncharges)
+#else
+      real(kind=fmm_real) fmmgrad(*)
+#endif
+      real(kind=fmm_real), target:: fmmpot(ncharges),virial(9)
+#endif
+      real(kind=fmm_real), pointer:: pfmmpot(:)
+      real(kind=fmm_real), allocatable:: d2(:,:,:),d3(:,:,:),d2f(:,:,:),
+     .d3f(:,:,:)
+      real(kind=fmm_real), allocatable:: bfgn(:)
+      real(kind=fmm_real) rl(0:maxn2multipoles),cmphi(0:maxn2multipoles)
+      real(kind=fmm_real) smphi(0:maxn2multipoles),
+     .cmphipi(0:maxn2multipoles)
+      real(kind=fmm_real) smphipi(0:maxn2multipoles)
+      real(kind=fmm_real), allocatable, target:: omegatree(:)
+      real(kind=fmm_real), allocatable, target:: mutree(:)
+      real(kind=fmm_real), pointer:: romegatree(:),iomegatree(:),
+     .rmutree(:),imutree(:)
+      integer(kind=fmm_integer), allocatable:: taylor(:)
+      real(kind=fmm_real) delta,de,der,dem,periodlength,
+     .linearodistance(*),aoplummer,lineardistance(0:3),efarfield,e1per,
+     .enearfield,enfinbox,enfbibj,virialtensor(3,3)
+      real(kind=fmm_real_extended) efarfieldpot
+      real(kind=fmm_real) ctheta,stheta
+      real(kind=fmm_real) calpha,salpha,cbeta,sbeta
+c
+      integer(kind=fmm_integer), allocatable:: indscr(:)
+c
+      integer(kind=fmm_integer) buflen
+      parameter(buflen=131072)
+      integer(kind=fmm_integer) bfglen
+      parameter(bfglen=4*buflen)
+      real(kind=fmm_real) bfg(buflen,4),csar(buflen),car(buflen),
+     .sar(buflen),
+     .rar(buflen)
+      integer(kind=fmm_integer) jibfglen
+      parameter(jibfglen=6*buflen)
+      integer(kind=fmm_integer) jibfg(buflen,6),isrt(buflen),
+     .kbxyzar(buflen),
+     .indar(buflen),kboxxyzar(buflen),kboxindar(buflen),kbar(buflen)
+      equivalence(bfg,csar)
+      equivalence(bfg(1,2),car)
+      equivalence(bfg(1,3),sar)
+      equivalence(bfg(1,4),rar)
+      equivalence(jibfg,isrt)
+      equivalence(jibfg(1,2),kbxyzar)
+      equivalence(jibfg(1,3),indar)
+      equivalence(jibfg(1,4),kboxxyzar)
+      equivalence(jibfg(1,5),kboxindar)
+      equivalence(jibfg(1,6),kbar)
+c
+      real(kind=fmm_real) fracdepth,shmonopole
+c
+      real(kind=fmm_real), allocatable:: flvlar(:),powsq(:)
+c
+      integer(kind=fmm_integer) parabola,ilevelmn,bfgnlen
+      real(kind=fmm_real) cx,cy,cz
+c
+#ifdef FMM_TREETOGRAD
+      integer(kind=fmm_integer) startbox,endbox,pagejump,pageshift,
+     .pageshiftg,pagemask,pageaddr,indsize,pagepossize,indskpjump
+c
+      logical(kind=fmm_logical) pages
+#endif
+c
+      integer(kind=fmm_integer) maxdepth,maxdepthp,mmaxdepth,nbytes,
+     .nbits,maxint,maxmint,i,depth,nmultipoles,mnmultipoles,
+     .n2multipoles,nsqmultipoles,j,jnbi,nbfg,ntree
+      integer(kind=fmm_integer), allocatable:: bitpos(:),mbitpos(:),
+     .nboxesinlevel(:),nboxeslevel(:)
+c
+#if defined(FMM_IBOXSCR) && !defined(FMM_COMPRESSION)
+      integer(kind=fmm_integer), allocatable:: ibox(:)
+#else
+      integer(kind=fmm_integer), allocatable, target:: ibox(:)
+#endif
+c
+      logical(kind=fmm_logical) dfmmmerr(maxws)
+c
+      integer(kind=fmm_integer) k,l,m,igtaylor,mgtaylor,ntaylor,ws
+      real(kind=fmm_real) enearfieldpot,energypot
+c
+      integer(kind=fmm_integer) ishx,maskx,ishy,masky,mishx,mishy,
+     .maskxy
+c
+      real(kind=fmm_real) qqq,corrsx,corrsy,corrsz,corrs,corrsh
+      real(kind=fmm_real) gp,gsq
+#ifdef FMM_DEBUG
+      real(kind=fmm_real) sgradx,sgrady,sgradz
+      real(kind=fmm_real) sagradx,sagrady,sagradz
+#endif
+c
+      integer(kind=fmm_integer) periodic,periodica,dipolecorrection,
+     .ilinearpotential,iplummerpotential,homogen
+      logical(kind=fmm_logical) compute
+      integer(kind=fmm_integer) negpos
+      logical(kind=fmm_logical) nothing,linearpotential,copyxyz,sh4,sh3,
+     .changepos,shmp,cachopt,g2db,precomputeallds,withaop,withbop,
+     .withcop,withtaylor,associatedwignerd,gtaylor,doit
+c
+      logical(kind=fmm_logical) hugep(0:100)
+      real(kind=fmm_real) hugef(100)
+c
+      real(kind=fmm_real) zero
+      parameter(zero=0.e0_fmm_real)
+      real(kind=fmm_real) one
+      parameter(one=1.e0_fmm_real)
+      real(kind=fmm_real) two
+      parameter(two=2.e0_fmm_real)
+      real(kind=fmm_real) three
+      parameter(three=3.e0_fmm_real)
+      real(kind=fmm_real) half
+      parameter(half=one/two)
+      real(kind=fmm_real_extended) zero_extended
+      parameter(zero_extended=0.e0_fmm_real_extended)
+c
+      integer(kind=fmm_integer) n
+      integer(kind=fmm_integer) unrolled2,pgd
+c
+      integer(kind=fmm_integer) snewerroranalysis
+      integer(kind=fmm_integer) serroranalysis,nerroranalysis
+c      logical(kind=fmm_logical), save:: firsterroranalysis = .true.
+      logical(kind=fmm_logical) firsterroranalysis
+      logical(kind=fmm_logical) erroranalysis
+c      save pgd,depth,fracdepth,nmultipoles,shmonopole,parabola
+      real(kind=fmm_real) linearodistancesv(3),aoplummersv
+      integer(kind=fmm_integer) ilinearpotentialsv,iplummerpotentialsv
+c
+      type(twignerd) wignerd
+c
+      integer(kind=fmm_integer) nallocst
+c-ik         
+      type(FMM_internal_params_t):: FMM_internal_params
+      integer(kind=fmm_integer) :: balance_load
+c-ik
+#ifdef FMM_PARALLEL
+      call mp_rank(MP_ALLNODES,me)
+      call mp_nnodes(MP_ALLNODES,nnodes)
+#ifdef FMM_INFO
+      if(me.eq.0) write(6,*) ' nnodes: ',nnodes
+#endif
+#endif
+c
+#ifdef FMM_LOADSORT 
+      if(balance_load.gt.0) then
+c-ik
+         doload = .false.
+      else
+         doload = .false.
+      endif
+#endif
+      serroranalysis = FMM_internal_params%serroranalysis
+      nerroranalysis = FMM_internal_params%nerroranalysis
+      pgd = FMM_internal_params%pgd
+      depth = FMM_internal_params%depth
+      nmultipoles = FMM_internal_params%nmultipoles
+      parabola = FMM_internal_params%parabola
+      ilinearpotentialsv = FMM_internal_params%ilinearpotentialsv
+      iplummerpotentialsv = FMM_internal_params%iplummerpotentialsv
+      firsterroranalysis = FMM_internal_params%firsterroranalysis
+      hugep = FMM_internal_params%hugep
+      fracdepth = FMM_internal_params%fracdepth
+      shmonopole = FMM_internal_params%shmonopole
+      linearodistancesv = FMM_internal_params%linearodistancesv
+      aoplummersv = FMM_internal_params%aoplummersv
+      hugef = FMM_internal_params%hugef
+      wignerd%wignerd => FMM_internal_params%wignerd%wignerd
+
+c-ik
+c      call seticharge1icharge2(maxncharges)
+      icharge1 = 1
+      icharge2 = localcharges
+      icharge5 = icharge1
+      icharge6 = icharge2
+      icharges = localcharges
+
+#ifdef FMM_PARALLEL
+#ifdef FMM_LOADSORT
+      if(doload) then 
+        ichargesout = icharges 
+        micharge1 = 1
+        micharge2 = FMM_internal_params%iboxloadlength
+        micharges = FMM_internal_params%iboxloadlength
+        percentageofimbalance = 0.00000001_fmm_c_real
+        minnofimbalance = 1
+        maxnofimbalance = micharges
+c
+        call c_f_pointer(FMM_internal_params%iboxloadcptr,iboxload,
+     .  [micharges])
+      else
+        ichargesout = icharges
+        micharge1 = icharge1
+        micharge2 = icharge2
+        micharges = icharges
+      endif
+#else
+      ichargesout = icharges 
+      micharge1 = icharge1
+      micharge2 = icharge2
+      micharges = icharges
+#endif
+#else
+      ichargesout = icharges
+      micharge1 = icharge1
+      micharge2 = icharge2 
+      micharges = icharges
+#endif
+c
+      call intbyt(nbytes,nbits,maxint,maxmint)
+c
+      call setmdmaxallocation(maxallocation)
+      call setmdcorememorysortmemory(corememory,sortmemory)
+      call chkmdmaxallocationcorememorysortmemory(maxallocation,
+     .corememory,sortmemory)
+c
+      call setmdfmmalloc(nbytes)
+c
+      call setnalloctomaxnalloc(nalloc,maxnalloc)
+c
+#ifdef FMM_STATISTICS
+      call fmmstatistics(ncharges,.true.)
+#endif
+c
+#ifdef FMM_PARALLEL
+#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
+      call c_cputime_walltime(.true.)
+#endif
+#endif
+c
+      call stmdfmmalloc(nalloc,nallocst)
+      call prtmdfmmalloc(nalloc,maxnalloc,'start of cfmm')
+c
+#ifdef FMM_PARALLEL
+      mp_setup = .false.
+#endif
+c
+c      call seticharge1icharge2(ncharges)
+c
+#ifdef FMM_PARALLEL
+      if(nnodes.gt.0) then
+         i = nnodes-1
+         call seticharge3(i)
+      else
+         call bummer('fmm: error, nnodes = ',nnodes)
+      endif
+#else
+      icharge3 = icharge1
+#endif
+c
+#ifdef FMM_NOPOT
+      pfmmpot => fmmgrad
+#else
+      pfmmpot => fmmpot
+#endif
+c
+      call setfmmi0(ierr,de)
+c
+      if(de.gt.zero) then
+       if(ldf.gt.maxnmultipoles) then
+        call calnegpos(periodic,q,energy,pfmmpot,fmmgrad,negpos,nothing)
+        if(nothing) then
+         pfmmpot => null()
+#ifdef FMM_PARALLEL
+#ifdef FMM_LOADSORT
+         if(doload) iboxload => null()
+#endif
+#endif
+         call edmdfmmalloc(nalloc,nallocst,'cfmm')
+         call prtmdfmmalloc(nalloc,maxnalloc,'  end of cfmm')
+#ifdef FMM_PARALLEL
+#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
+         call c_cputime_walltime(.false.)
+#endif
+#endif
+#ifdef FMM_STATISTICS
+         call fmmstatistics(ncharges,.false.)
+#endif
+         return
+        endif
+       else
+        call bummer('fmm: (ldf-maxnmultipoles) = ',(ldf-maxnmultipoles))
+       endif
+      else
+       call bummer('fmm: error, ierr = ',ierr)
+      endif
+c
+c      call intbyt(nbytes,nbits,maxint,maxmint)
+c
+c      call intmaxdepth(maxdepth,nbits)
+c
+      maxdepthp = maxdepth+1
+      mmaxdepth = -maxdepth
+c
+#ifdef FMM_PARALLEL
+      call calkind_integer_processes(nbits,maxmint,maxint)
+#endif
+c
+      if(firsterroranalysis) then
+         if(snewerroranalysis.gt.0) then
+            serroranalysis = snewerroranalysis
+            nerroranalysis = 1
+            erroranalysis = .true.
+            ilinearpotentialsv = ilinearpotential
+            linearodistancesv(1) = linearodistance(1)
+            linearodistancesv(2) = linearodistance(2)
+            linearodistancesv(3) = linearodistance(3)
+            iplummerpotentialsv = iplummerpotential
+            aoplummersv = aoplummer
+            firsterroranalysis = .false.
+         else
+            call bummer('fmm: error, snewerroranalysis = ',
+     .      snewerroranalysis)
+         endif
+      elseif(serroranalysis.gt.0) then
+         if(serroranalysis.gt.nerroranalysis) then
+            erroranalysis = .false.
+            nerroranalysis = nerroranalysis+1
+         elseif(serroranalysis.eq.nerroranalysis) then
+            nerroranalysis = 1
+            erroranalysis = .true.
+         else
+            call bummer('fmm: (serroranalysis-nerroranalysis) = ',
+     .      (serroranalysis-nerroranalysis))
+         endif
+      else
+         call bummer('fmm: error, serroranalysis = ',serroranalysis)
+      endif
+c
+#ifdef FMM_NOPOT
+      if(erroranalysis.and.(homogen.eq.0)) then
+         call bummer('fmm: not yet implemented, homogen = ',homogen)
+      endif
+#endif
+c
+      if(erroranalysis) then
+         if(maxdepth.ge.0) then
+c            call fmmallocate(hugep,0,maxdepthp,i)
+c            if(i.eq.0) then
+c               call fmmallocate(hugef,1,maxdepthp,i)
+c               if(i.eq.0) then
+c                  i = ltob*(maxdepthp+1)+rtob*(maxdepthp)
+c                  nallocr = i
+c                  nallocst = nallocst+i
+                  hugep(0) = .false.
+                  do 337 i = 1,maxdepthp
+                     hugep(i) = .false.
+                     hugef(i) = one
+ 337              continue
+c               else
+c                  call bummer('fmm: error, i = ',i)
+c               endif
+c            else
+c               call bummer('fmm: error, i = ',i)
+c            endif
+         else
+            call bummer('fmm: error, maxdepth = ',maxdepth)
+         endif
+      endif
+c
+#ifdef FMM_UNIFORMGRID
+      if(periodic.eq.0) then
+       if(iplummerpotential.eq.0) then
+        if(ilinearpotential.eq.0) then
+         plummer_potential = .false.
+         linearpotential = .false.
+         if(uniformgridox.gt.zero) then
+          if(uniformgridoy.gt.zero) then
+           if(uniformgridoz.gt.zero) then
+            uniformgridm = max(uniformgridox,uniformgridoy,
+     .      uniformgridoz)
+            uniformgridx = uniformgridox
+            uniformgridy = uniformgridoy
+            uniformgridz = uniformgridoz
+            uniformgridalpha = uniformgridoalpha
+           else
+            call bummer('fmm: error, uniformgridoz <= ',0)
+           endif
+          else
+           call bummer('fmm: error, uniformgridoy <= ',0)
+          endif
+         else
+          call bummer('fmm: error, uniformgridox <= ',0)
+         endif
+        else
+         call bummer('fmm: error, ilinearpotential = ',ilinearpotential)
+        endif
+       else
+        call bummer('fmm: error, iplummerpotential =',iplummerpotential)
+       endif
+      else
+       call bummer(
+     . 'fmm: FMM_UNIFORMGRID & periodic not yet implemented, periodic=',
+     . periodic)
+      endif
+#else
+      if(iplummerpotential.eq.1) then
+       if(ilinearpotential.eq.0) then
+        if(aoplummer.gt.zero) then
+         plummer_potential = .true.
+         linearpotential = .false.
+         a_plummer = aoplummer
+        elseif(aoplummer.eq.zero) then
+         plummer_potential = .false.
+         linearpotential = .false.
+         a_plummer = aoplummer
+        else
+         call bummer('fmm: error, aoplummer < ',0)
+        endif
+       else
+        call bummer('fmm: error, ilinearpotential = ',ilinearpotential)
+       endif
+      elseif(iplummerpotential.eq.0) then
+       plummer_potential = .false.
+       if(ilinearpotential.eq.0) then
+        linearpotential = .false.
+       elseif((ilinearpotential.gt.0).and.(ilinearpotential.lt.8)) then
+        linearpotential = .true.
+c
+        if(ilinearpotential.eq.1) then
+         if(linearodistance(3).gt.zero) then
+          lineardistance(0) = linearodistance(3)
+          lineardistance(1) = zero
+          lineardistance(2) = zero
+          lineardistance(3) = linearodistance(3)
+         else
+          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
+         endif
+        elseif(ilinearpotential.eq.2) then
+         if(linearodistance(2).gt.zero) then
+          lineardistance(0) = linearodistance(2)
+          lineardistance(1) = zero
+          lineardistance(2) = linearodistance(2)
+          lineardistance(3) = zero
+         else
+          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
+         endif
+        elseif(ilinearpotential.eq.3) then
+         if(linearodistance(2).gt.zero) then
+          if(linearodistance(3).gt.zero) then
+           lineardistance(0)=max(linearodistance(2),linearodistance(3))
+           lineardistance(1) = zero
+           lineardistance(2) = linearodistance(2)
+           lineardistance(3) = linearodistance(3)
+          else
+           call bummer('fmm: error, ilinearpotential=',ilinearpotential)
+          endif
+         else
+          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
+         endif
+        elseif(ilinearpotential.eq.4) then
+         if(linearodistance(1).gt.zero) then
+          lineardistance(0) = linearodistance(1)
+          lineardistance(1) = linearodistance(1)
+          lineardistance(2) = zero
+          lineardistance(3) = zero
+         else
+          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
+         endif
+        elseif(ilinearpotential.eq.5) then
+         if(linearodistance(1).gt.zero) then
+          if(linearodistance(3).gt.zero) then
+           lineardistance(0)=max(linearodistance(1),linearodistance(3))
+           lineardistance(1) = linearodistance(1)
+           lineardistance(2) = zero
+           lineardistance(3) = linearodistance(3)
+          else
+           call bummer('fmm: error, ilinearpotential=',ilinearpotential)
+          endif
+         else
+          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
+         endif
+        elseif(ilinearpotential.eq.6) then
+         if(linearodistance(1).gt.zero) then
+          if(linearodistance(2).gt.zero) then
+           lineardistance(0)=max(linearodistance(1),linearodistance(2))
+           lineardistance(1) = linearodistance(1)
+           lineardistance(2) = linearodistance(2)
+           lineardistance(3) = zero
+          else
+           call bummer('fmm: error, ilinearpotential=',ilinearpotential)
+          endif
+         else
+          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
+         endif
+        elseif(linearodistance(1).gt.zero) then
+         if(linearodistance(2).gt.zero) then
+          if(linearodistance(3).gt.zero) then
+           lineardistance(0)=max(linearodistance(1),linearodistance(2),
+     .     linearodistance(3))
+           lineardistance(1) = linearodistance(1)
+           lineardistance(2) = linearodistance(2)
+           lineardistance(3) = linearodistance(3)
+          else
+           call bummer('fmm: error, ilinearpotential=',ilinearpotential)
+          endif
+         else
+          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
+         endif
+        else
+         call bummer('fmm: error, ilinearpotential = ',ilinearpotential)
+        endif
+       else
+        call bummer('fmm: error, ilinearpotential = ',ilinearpotential)
+       endif
+      else
+       call bummer('fmm: error, iplummerpotential = ',iplummerpotential)
+      endif
+#endif
+c
+      call factorial(170,fac)
+      call rfactorial(170,rfac)
+c
+      call fmmallocate(flvlar,1,maxdepthp,i)
+      if(i.eq.0) then
+         call fmmlvl(maxdepthp,flvlar)
+      else
+         call bummer('fmm: error, i = ',i)
+      endif
+c
+      call fmmallocate(powsq,mmaxdepth,maxdepthp,i)
+      if(i.eq.0) then
+         call calpowsq(maxdepth,mmaxdepth,powsq)
+      else
+         call bummer('fmm: error, i = ',i)
+      endif
+c
+      if(nbits.gt.0) then
+         i = nbits-1
+         call fmmallocate(bitpos,0,i,j)
+         if(j.eq.0) then
+            call fmmallocate(mbitpos,0,i,j)
+            if(j.eq.0) then
+               call calbitpmbp(i,maxmint,bitpos,mbitpos)
+            else
+               call bummer('fmm: error, j = ',j)
+            endif
+         else
+            call bummer('fmm: error, j = ',j)
+         endif
+      else
+         call bummer('fmm: error, nbits = ',nbits)
+      endif
+c
+      ws = 1
+c
+      if(ws.le.0) call bummer('fmm: error, ws = ',ws)
+      if(ws.gt.maxws) call bummer('fmm: (ws-maxws) = ',(ws-maxws))
+c
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+      if(me.eq.0) then
+#endif
+         write(6,'(''          ws = '',i13)') ws
+#ifdef FMM_PARALLEL
+      endif
+#endif
+#endif
+c
+      mem_s = 5
+      mmem_s = -mem_s
+      mem_l = bitpos(mem_s)-1
+      if(mem_s.gt.1) then
+         mem_m = bitpos(nbits+mmem_s)-1
+      else
+         mem_m = maxint
+      endif
+      mem_s2 = 4
+      mmem_s2 = -mem_s2
+      mem_l2 = bitpos(mem_s2)-1
+      if(mem_s.gt.1) then
+         mem_m2 = bitpos(nbits+mmem_s2)-1
+      else
+         mem_m2 = maxint
+      endif
+c
+      if (FMM_internal_params%resort.eq.1) then
+        copyxyz = .false.
+      else
+        copyxyz = .true.
+      endif
+      sh4 = .true.
+      sh3 = .false.
+      useqinsh = .true.
+      changepos = .true.
+      shmp = .false.
+      cachopt = .true.
+      g2db = .true.
+c setup from scafaocs interface
+c      unrolled2 = 0
+      precomputeallds = .false.
+#ifdef FMM_PARALLEL
+      withaop = .true.
+      withbop = .true.
+      withcop = .true.
+      withtaylor = .false.
+      jmp = .false.
+      hybrid = .false.
+#ifdef FMM_LOADSORT
+c-ik      doload = .false.
+#endif
+#else
+      withaop = .true.
+      withbop = .true.
+      withcop = .true.
+      withtaylor = .true.
+      jmp = .true.
+      hybrid = .true.
+#endif
+      nsqr = 19
+      ndiv = 7
+c      nsqr = 31
+c      ndiv = 4
+      int3xyzd = maxdepth
+      int3xyzd1 = int3xyzd+1
+      if(int3xyzd.ge.0) then
+         int3xyz = bitpos(int3xyzd)-1
+      else
+         int3xyz = int3xyzd
+      endif
+      if(erroranalysis) then
+         pgd = 9
+         call setpgd(bitpos,ws,maxdepth,pgd)
+      endif
+c
+#ifdef FMM_DAMPING
+      sh4 = .true.
+      useqinsh = .true.
+#else
+      if(sh4.or.(.not.qscratch)) useqinsh = .true.
+#endif
+      if(.not.changepos) shmp = .false.
+      if(.not.withbop) hybrid = .true.
+c
+      if(jmp) then
+         call caljmps(ncharges,nbits,erroranalysis,homogen,maxmint,
+     .   periodic,changepos,bitpos,mbitpos)
+      else
+         call caljmplj(jmpg,jmph,jmpp,jmpupd,jmpj,jmpn,jmpb,jmpjp)
+      endif
+c
+      sf = one
+      sh = one
+      gp = one
+      gsq = one
+      gsq = -gsq
+c
+      efarfield = zero
+      efarfieldpot = zero
+      e1per = zero
+      enearfield = zero
+      enearfieldpot = zero
+      enfinbox = zero
+      enfbibj = zero
+      coul = zero
+c
+      do 778 i = 1,maxws
+         dfmmmerr(i) = .true.
+ 778  continue
+c
+c      call coulomb(ncharges,q,xyzin,coul)
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+      if(me.eq.0) then
+#endif
+c         write(6,'(1x,q50.40,1x,z32)') coul,coul
+#ifdef FMM_PARALLEL
+      endif
+#endif
+#endif
+c      call coulgrad(ncharges,q,xyzin)
+c      call coulpot(ncharges,q,xyzin)
+c
+      call calishmsk(nbits,ishx,maskx,ishy,masky,mishx,mishy,maskxy)
+c
+      ipo(1) = 0
+      ipo(2) = ishy
+      ipo(3) = ishx
+c
+      jpo(1) = 0
+      jpo(2) = mishy
+      jpo(3) = mishx
+c
+      mask(1) = maskxy
+      mask(2) = masky
+      mask(3) = maskx
+c
+      call fmmg(maxwsd,maxncsar,ws,ncsar,icsar,fmmcos,.false.)
+c
+      if(maxnmultipoles.gt.0) then
+         i = -maxnmultipoles
+      else
+         i = 0
+      endif
+c
+      if(ncsar.gt.0) then
+         j = ncsar+2
+      else
+         call bummer('fmm: error, ncsar = ',ncsar)
+      endif
+c
+      associatedwignerd = associated(wignerd%wignerd)
+c
+      if(precomputeallds) then
+         if(.not.associatedwignerd) then
+            call fmmallocatept(wignerd%wignerd,0,maxnmultipoles,i,
+     .      maxnmultipoles,0,maxnmultipoles,1,4,1,j,k)
+            if(k.ne.0) call bummer('fmm: error, k = ',k)
+         endif
+c
+         call calallds(ws,maxnmultipoles,ncsar,maxwsd,icsar,fmmcos,
+     .   wignerd)
+      endif
+c
+      call fmmh(maxnmultipoles,maxwsd,mmaxwsd,mi,maxncar,ws,ncar,icar,
+     .jcar,hcar,hsar,.false.)
+c
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+      if(me.eq.0) then
+#endif
+         write(6,'(''    ncharges = '',i13)') ncharges
+#ifdef FMM_PARALLEL
+      endif
+#endif
+#endif
+c
+#ifdef FMM_COMPRESSION
+#ifdef FMM_PARALLEL
+#ifdef FMM_LOADSORT
+      if(doload) call bummer('fmm: compression & loadsort, me = ',me)
+#endif
+#endif
+#ifdef FMM_EXTREMECOMPRESSION
+#ifdef FMM_EXTREMEEXTREMECOMPRESSION
+      if(nchcompression.lt.0) then
+         call bummer('fmm: error, nchcompression = ',nchcompression)
+      endif
+#endif
+#endif
+#endif
+c
+#ifdef FMM_COMPRESSION
+      if(homogen.eq.1) then
+       if(jmp) then
+        call bummer('fmm: compression and jmp requested, homogen = ',
+     .  homogen)
+       elseif(nbytes.gt.0) then
+        i = nbytes-1
+        call fmmallocate(int1m,0,i,j)
+        if(j.ne.0) call bummer('fmm: error, j = ',j)
+        call fmmallocate(mint1,0,i,j)
+        if(j.ne.0) call bummer('fmm: error, j = ',j)
+        call fmmallocate(int1scr,0,i,j)
+        if(j.ne.0) call bummer('fmm: error, j = ',j)
+#ifdef FMM_EXTREMECOMPRESSION
+        maxboxnumber = 0
+        maxnp = 0
+        call calmindp(ws,periodic,nbits,bitpos,mindp)
+        if(mindp.ge.0) then
+         if(mindp.le.maxdepth) then
+          i = nbits-1
+          j = 3*mindp
+          if(j.lt.i) then
+           mindpl = bitpos(j)
+           mindpm = mindpl-1
+           call fmmallocate(pinb,0,mindpm,i)
+           if(i.eq.0) then
+            do 776 i = 0,mindpm
+             pinb(i) = 0
+ 776        continue
+           else
+            call bummer('fmm: error, i = ',i)
+           endif
+          else
+           call bummer('fmm: (j-i) = ',(j-i))
+          endif
+         else
+          call bummer('fmm: (mindp-maxdepth) = ',(mindp-maxdepth))
+         endif
+        else
+         call bummer('fmm: error, mindp = ',mindp)
+        endif
+#endif
+       else
+        call bummer('fmm: error, nbytes = ',nbytes)
+       endif
+      else
+       call bummer('fmm: compression requested, homogen = ',homogen)
+      endif
+#endif
+c
+#ifdef FMM_PARALLEL
+      if(icharges.gt.0) then
+#else
+      if(ncharges.gt.0) then
+#endif
+         if(copyxyz) then
+#ifdef FMM_PARALLEL
+            call fmmallocate(xyz,1,3,micharge1,micharge2,i)
+#else
+            call fmmallocate(xyz,1,3,1,ncharges,i)
+#endif
+            if(i.eq.0) then
+               xyzt => xyz
+            else
+               call bummer('fmm: error, i = ',i)
+            endif
+         else
+            xyzt => xyzin
+         endif
+      else
+#ifdef FMM_PARALLEL
+         call bummer('fmm: error, icharges = ',icharges)
+#else
+         call bummer('fmm: error, ncharges = ',ncharges)
+#endif
+      endif
+c
+#ifdef FMM_DAMPING
+      enfdba = .false.
+#endif
+c
+      if(homogen.eq.1) then
+       if(jmp) then
+        call bummer('fmm: compression and jmp requested, homogen = ',
+     .  homogen)
+       else
+#ifdef FMM_COMPRESSION
+        call sccoorda(ws,nbits,bitpos,xyzin,xyzt,sf,periodic,periodica,
+     .  periodlength,changepos)
+c
+        if(periodic.gt.0) then
+         if(nj.gt.0) then
+          i = nbits-1
+          call fmmallocate(bitposm1,0,i,j)
+          if(j.ne.0) call bummer('fmm: error, j = ',j)
+          call calbitposm1(nbits,maxint,bitpos)
+          call fmmallocate(mskj,1,nbytes,i)
+          if(i.ne.0) call bummer('fmm: error, i = ',i)
+          call calmskj(nbytes)
+          call calm4(nbytes,nbits,bitpos,periodic)
+          call fmmallocate(folder,1,nfolder,i)
+          if(i.ne.0) call bummer('fmm: error, i = ',i)
+         elseif(nj.lt.0) then
+          call bummer('fmm: error, nj = ',nj)
+         endif
+        elseif(periodic.ne.0) then
+         call bummer('fmm: error, periodic = ',periodic)
+        endif
+c
+        call sccoordb(ws,nbits,bitpos,mbitpos,bfg,bfglen,q,xyzt,sf,
+     .  periodic,linearpotential,lineardistance,changepos,negpos,
+     .  dipolecorrection,qqq,corrsx,corrsy,corrsz,corrs,corrsh)
+#endif
+        if(erroranalysis) then
+#ifdef FMM_COMPRESSION
+         doit = .true.
+#else
+         doit = .false.
+#endif
+         if(doit) then
+          call pass2dehomogen(maxdepth,ws,ncharges,maxnmultipoles,
+     .    nmultipoles,inf,ldf,ldff,dfmmmerr,maxwsd,ncsar,icsar,
+     .    nfmmcos,fmmcos,fmmerr,pfmmerr,merr,bitpos,nbits,maxint,
+     .    depth,fracdepth,parabola,withbop,hugep,hugef,negpos,
+     .    periodic,pgd,changepos,ierr,de,shmonopole,sf,
+     .    linearpotential,lineardistance)
+         endif
+        endif
+c
+#ifdef FMM_COMPRESSION
+#ifdef FMM_EXTREMECOMPRESSION
+        call sccoord2(periodic,nbits,depth,fracdepth,shmonopole,sh,xyzt,
+     .  linearpotential,lineardistance)
+#endif
+c
+#ifdef FMM_EXTREMECOMPRESSION
+        if(depth.ge.mindp) then
+         mindps = 3*(mindp-depth)
+        elseif(depth.ge.0) then
+         mindps = 0
+         mindp = depth
+         i = nbits-1
+         j = 3*mindp
+         if(j.lt.i) then
+          mindpl = bitpos(j)
+          mindpm = mindpl-1
+          do 777 i = 0,mindpm
+           pinb(i) = 0
+ 777      continue
+         else
+          call bummer('fmm: (j-i) = ',(j-i))
+         endif
+        else
+         call bummer('fmm: error, depth = ',depth)
+        endif
+#endif
+#endif
+       endif
+#ifdef FMM_COMPRESSION
+      else
+       call bummer('fmm: compression requested, homogen = ',homogen)
+#else
+      elseif(homogen.ne.0) then
+       call bummer('fmm: error, homogen = ',homogen)
+#endif
+      endif
+c
+#ifdef FMM_PARALLEL
+      if(icharges.gt.0) then
+#else
+      if(ncharges.gt.0) then
+#endif
+#ifdef FMM_PARALLEL
+#ifdef FMM_IBOXSCR
+         call fmmallocate(iboxscr,micharge1,micharge2,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         piboxscr => iboxscr
+         call fmmallocate(ibox,micharge1,micharge2,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+#else
+         call fmmallocate(ibox,micharge1,micharge2,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         piboxscr => ibox
+#endif
+#else
+#ifdef FMM_IBOXSCR
+         call fmmallocate(iboxscr,1,ncharges,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         piboxscr => iboxscr
+         call fmmallocate(ibox,1,ncharges,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+#else
+         call fmmallocate(ibox,1,ncharges,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         piboxscr => ibox
+#endif
+#endif
+      else
+#ifdef FMM_PARALLEL
+         call bummer('fmm: error, icharges = ',icharges)
+#else
+         call bummer('fmm: error, ncharges = ',ncharges)
+#endif
+      endif
+c
+#ifdef FMM_COMPRESSION
+#ifdef FMM_EXTREMECOMPRESSION
+#ifdef FMM_IBOXSCR
+      call iboxscinfo(ishx,ishy,mmaxdepth,depth,bitpos,powsq,xyzt,ibox,
+     .iboxsrt,iboxscr)
+#else
+      call iboxinfo(mmaxdepth,depth,bitpos,powsq,xyzt,ibox,ibox)
+#endif
+c
+      if(depth.eq.0) then
+       maxboxnumber = 1
+       maxnp = ncharges
+      elseif(depth.lt.0) then
+       call bummer('fmm: error, depth = ',depth)
+      endif
+#endif
+c
+      call calnb(ncharges,nbytes,nbits,bitpos,mbitpos,depth,maxint,
+     .maxmint)
+c
+#ifdef FMM_EXTREMECOMPRESSION
+#ifdef FMM_EXTREMEEXTREMECOMPRESSION
+      call scompression(nbytes,nbits,maxint,bitpos,mbitpos)
+#endif
+#endif
+c
+      call calint1mmint1(nbytes)
+c
+      if(nint1.ge.-1) then
+       if(nint1.lt.nbytes) then
+        addr_desc(1) = nint1+1
+       else
+        call bummer('fmm: (nint1-nbytes) = ',(nint1-nbytes))
+       endif
+      else
+       call bummer('fmm: error, nint1 = ',nint1)
+      endif
+      if(nbib.gt.1) then
+       if(nbib.le.nbits) then
+        addr_desc(2) = nbits-nbib
+       else
+        call bummer('fmm: (nbib-nbits) = ',(nbib-nbits))
+       endif
+      else
+       call bummer('fmm: error, nbib = ',nbib)
+      endif
+#else
+      addr_desc(1) = nbytes
+      addr_desc(2) = 0
+#endif
+c
+#ifdef FMM_PARALLEL
+      if(nnodes.gt.0) then
+         i = nnodes-1
+#ifdef FMM_COMPRESSION
+         if(nintgb1.ge.0) then
+            if(nintgb1.lt.nbytes) then
+               call fmmallocate(gbinfo,0,nintgb1,5,6,0,i,j)
+               if(j.ne.0) call bummer('fmm: error, j = ',j)
+            else
+               call bummer('fmm: (nintgb1-nbytes) = ',(nintgb1-nbytes))
+            endif
+         else
+            call bummer('fmm: error, nintgb1 = ',nintgb1)
+         endif
+#else
+         call fmmallocate(gbinfo,5,6,0,i,j)
+         if(j.ne.0) call bummer('fmm: error, j = ',j)
+#endif
+      else
+         call bummer('fmm: error, nnodes = ',nnodes)
+      endif
+#endif
+c
+#ifdef FMM_PARALLEL
+      if(icharges.gt.0) then
+#else
+      if(ncharges.gt.0) then
+#endif
+#ifdef FMM_PARALLEL
+#ifdef FMM_COMPRESSION
+         if(twoint) then
+            if(nint1.ge.0) then
+               call fmmallocate(iboxsrt,0,nint1,icharge1,icharge2,i)
+               if(i.ne.0) call bummer('fmm: error, i = ',i)
+            else
+               call bummer('fmm: error, nint1 = ',nint1)
+            endif
+         elseif(nint1.ne.-1) then
+            call bummer('fmm: error, nint1 = ',nint1)
+         endif
+#else
+         call fmmallocate(iboxsrt,micharge1,micharge2,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+#endif
+#else
+#ifdef FMM_COMPRESSION
+         if(twoint) then
+            if(nint1.ge.0) then
+               call fmmallocate(iboxsrt,0,nint1,1,ncharges,i)
+               if(i.ne.0) call bummer('fmm: error, i = ',i)
+            else
+               call bummer('fmm: error, nint1 = ',nint1)
+            endif
+         elseif(nint1.ne.-1) then
+            call bummer('fmm: error, nint1 = ',nint1)
+         endif
+#else
+         call fmmallocate(iboxsrt,1,ncharges,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+#endif
+#endif
+      else
+#ifdef FMM_PARALLEL
+         call bummer('fmm: error, icharges = ',icharges)
+#else
+         call bummer('fmm: error, ncharges = ',ncharges)
+#endif
+      endif
+c
+#ifdef FMM_COMPRESSION
+#ifdef FMM_EXTREMECOMPRESSION
+#ifdef FMM_EXTREMEEXTREMECOMPRESSION
+#ifdef FMM_SIGNEXPONENT
+      call s6tocoordinates(xyzt)
+#else
+      call s3tocoordinates(xyzt)
+#endif
+#endif
+      call iboxsrttoibox(ibox,iboxsrt)
+#endif
+#else
+      call setiboxsrt(iboxsrt)
+#endif
+c
+      if(homogen.eq.1) then
+         int3xyzd = depth
+         int3xyzd1 = int3xyzd+1
+         if(int3xyzd.ge.0) then
+            int3xyz = bitpos(int3xyzd)-1
+         else
+            int3xyz = int3xyzd
+         endif
+      elseif(homogen.ne.0) then
+         call bummer('fmm: error, homogen = ',homogen)
+      endif
+c
+      if(int3xyzd.ge.0) then
+         call fmmallocate(int3x,0,int3xyz,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmallocate(int3y,0,int3xyz,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmallocate(int3z,0,int3xyz,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmallocate(int3p,0,int3xyz,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+      endif
+c
+      call getneighborsinit(nbits,bitpos,mbitpos)
+      call getcjpinit(i)
+      call fmmallocate(int3q,0,i,j)
+      if(j.eq.0) then
+         int3q(0) = i-1
+         call getcjp(int3q)
+      else
+         call bummer('fmm: error, j = ',j)
+      endif
+c
+      i = maxdepth+1
+      call fmmallocate(nbofmb,1,i,j)
+      if(j.eq.0) then
+         do 338 j = 1,i
+            nbofmb(j) = 0
+ 338     continue
+      else
+         call bummer('fmm: error, j = ',j)
+      endif
+c
+      dem = de
+c
+      if(jmp) then
+        if(ncharges.gt.0) then
+          call fmmallocate(iboxjmp,1,ncharges,i)
+          if(i.eq.0) then
+            call iboxjmpz(ncharges,iboxjmp)
+          else
+            call caljmpl(jmp,jmpg,jmph,jmpp,jmpupd,jmpj,jmpn,jmpb,jmpjp)
+          endif
+        else
+          call bummer('fmm: error, ncharges = ',ncharges)
+        endif
+      endif
+c
+#ifndef FMM_COMPRESSION
+      call sccoorda(ws,nbits,bitpos,xyzin,xyzt,sf,periodic,periodica,
+     .periodlength,changepos)
+c
+      if(periodic.gt.0) then
+       if(nj.gt.0) then
+        i = nbits-1
+        call fmmallocate(bitposm1,0,i,j)
+        if(j.ne.0) call bummer('fmm: error, j = ',j)
+        call calbitposm1(nbits,maxint,bitpos)
+        call fmmallocate(mskj,1,nbytes,i)
+        if(i.ne.0) call bummer('fmm: error, i = ',i)
+        call calmskj(nbytes)
+        call calm4(nbytes,nbits,bitpos,periodic)
+        call fmmallocate(folder,1,nfolder,i)
+        if(i.ne.0) call bummer('fmm: error, i = ',i)
+       elseif(nj.lt.0) then
+        call bummer('fmm: error, nj = ',nj)
+       endif
+      elseif(periodic.ne.0) then
+       call bummer('fmm: error, periodic = ',periodic)
+      endif
+c
+      call sccoordb(ws,nbits,bitpos,mbitpos,bfg,bfglen,q,xyzt,sf,
+     .periodic,linearpotential,lineardistance,changepos,negpos,
+     .dipolecorrection,qqq,corrsx,corrsy,corrsz,corrs,corrsh)
+#endif
+c
+      call scalecoordinates(ncharges,ws,buflen,maxnmultipoles,
+     .nmultipoles,maxdepth,mmaxdepth,depth,nbytes,nbits,maxint,maxmint,
+     .bitpos,mbitpos,q,pfmmpot,fmmgrad,fmmgrad(icharges+1),
+     .fmmgrad(2*icharges+1),xyzt,ibox,iboxsrt,bfg,bfglen,ierr,de,inf,
+     .ldf,ldff,dfmmmerr,maxwsd,ncsar,icsar,nfmmcos,fmmcos,fmmerr,
+     .pfmmerr,merr,sf,fracdepth,sh,powsq,parabola,piboxscr,iboxjmp,
+     .mmaxwsd,fmmdist,ipo,jpo,mask,ishx,ishy,mishx,mishy,maskxy,
+     .shmonopole,enearfield,enfinbox,enfbibj,gb,gbsh,int3x,int3y,int3z,
+     .int3p,int3q,withbop,hugep,hugef,gp,gsq,negpos,dipolecorrection,
+     .qqq,corrsx,corrsy,corrsz,corrs,corrsh,periodic,periodica,
+     .periodlength,pgd,nbofmb,sh4,changepos,shmp,linearpotential,
+     .ilinearpotential,lineardistance,erroranalysis,homogen)
+c
+      if(nmultipoles.le.maxnmultipoles) then
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+         if(me.eq.0) then
+#endif
+            write(6,*) ' parabola = ',parabola
+            write(6,*) ' nmultipoles = ',nmultipoles
+#ifdef FMM_PARALLEL
+         endif
+#endif
+#endif
+      else
+         call bummer('fmm: (nmultipoles-maxnmultipoles) = ',
+     .   (nmultipoles-maxnmultipoles))
+      endif
+c
+      if(depth.ge.0) then
+         i = depth+1
+c
+         call fmmallocate(nboxesinlevel,1,i,j)
+         if(j.ne.0) call bummer('fmm: error, j = ',j)
+         call fmmallocate(nboxeslevel,1,i,j)
+         if(j.ne.0) call bummer('fmm: error, j = ',j)
+      else
+         call bummer('fmm: error, depth = ',depth)
+      endif
+c
+      call sortcharges(ncharges,mmaxdepth,depth,q,pfmmpot,fmmgrad,
+     .fmmgrad(icharges+1),fmmgrad(2*icharges+1),xyzt,sh,powsq,ibox,
+     .piboxscr,iboxsrt,iboxjmp,jibfg,jibfglen,nboxesinlevel,nboxeslevel,
+     .ws,maxnmultipoles,nmultipoles,maxint,maxmint,nbits,bitpos,mbitpos,
+     .ishx,ishy,mishx,mishy,maskxy,fracdepth,sf,parabola,ierr,dem,de,
+     .shmonopole,merr(0,ws),bfg,bfglen,enearfield,enfinbox,enfbibj,gb,
+     .gbsh,int3x,int3y,int3z,int3p,int3q,withbop,hugep,hugef,periodic,
+     .gp,gsq,negpos,corrsh,pgd,nbofmb,sh4,changepos,linearpotential,
+     .ilinearpotential,lineardistance,erroranalysis,homogen)
+c
+      if(jmp) then
+         call fmmdeallocate(iboxjmp,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+      endif
+c
+      if(depth.lt.0) call bummer('fmm: error, depth = ',depth)
+      if(depth.gt.maxdepth) call bummer('fmm: (depth-maxdepth) = ',
+     .(depth-maxdepth))
+c
+      if(nmultipoles.ge.0) then
+         if(nmultipoles.gt.0) then
+            mnmultipoles = -nmultipoles
+         else
+            mnmultipoles = 0
+         endif
+c
+         if(associatedwignerd.or.precomputeallds) then
+            compute = .false.
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+            if(me.eq.0) then
+#endif
+               write(6,*) ' rotation matrices are pre-computed.'
+               write(6,*) ' associatedwignerd = ',associatedwignerd
+               write(6,*) '   precomputeallds = ',precomputeallds
+               write(6,*) '           compute = ',compute
+#ifdef FMM_PARALLEL
+            endif
+#endif
+#endif
+         else
+            compute = .true.
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+            if(me.eq.0) then
+#endif
+               write(6,*) ' rotation matrices are not pre-computed.'
+               write(6,*) ' associatedwignerd = ',associatedwignerd
+               write(6,*) '   precomputeallds = ',precomputeallds
+               write(6,*) '           compute = ',compute
+#ifdef FMM_PARALLEL
+            endif
+#endif
+#endif
+         endif
+c
+         call fmmallocate(d2,0,nmultipoles,mnmultipoles,nmultipoles,0,
+     .   nmultipoles,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmallocate(d3,0,nmultipoles,mnmultipoles,nmultipoles,0,
+     .   nmultipoles,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmallocate(d2f,0,nmultipoles,mnmultipoles,nmultipoles,0,
+     .   nmultipoles,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmallocate(d3f,0,nmultipoles,mnmultipoles,nmultipoles,0,
+     .   nmultipoles,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+         if(compute) then
+            call fmmallocate(coeff1,0,nmultipoles,0,nmultipoles,i)
+            if(i.ne.0) call bummer('fmm: error, i = ',i)
+            call fmmallocate(coeff2,0,nmultipoles,0,nmultipoles,i)
+            if(i.ne.0) call bummer('fmm: error, i = ',i)
+            call fmmallocate(coeff3,mnmultipoles,nmultipoles,0,
+     .      nmultipoles,0,nmultipoles,i)
+            if(i.ne.0) call bummer('fmm: error, i = ',i)
+            call fmmallocate(coeff4,mnmultipoles,nmultipoles,0,
+     .      nmultipoles,i)
+            if(i.ne.0) call bummer('fmm: error, i = ',i)
+            call fmmallocate(coeff5,0,nmultipoles,0,nmultipoles,0,
+     .      nmultipoles,i)
+            if(i.ne.0) call bummer('fmm: error, i = ',i)
+            call fmmallocate(coeff6,0,nmultipoles,0,nmultipoles,i)
+            if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+            call coefficients(mnmultipoles,nmultipoles,coeff1,coeff2,
+     .      coeff3,coeff4,coeff5,coeff6)
+         endif
+c
+         if(depth.ge.0) then
+            i = nmultipoles+1
+            nsqmultipoles = iand(ishft((i*(i+1)),-1),maxint)
+            i = depth+1
+            i = nboxeslevel(i)+nboxesinlevel(i)
+            if(i.gt.0) then
+               j = nsqmultipoles*i
+#ifdef FMM_TREETOGRAD
+               if(homogen.eq.1) then
+                  if((3*icharges).ge.(j+j)) then
+                     allocomega = .false.
+                     romegatree => fmmgrad(1:j)
+                     iomegatree => fmmgrad((j+1):(j+j))
+                  elseif((3*icharges).ge.j) then
+                     call fmmallocate(omegatree,1,j,k)
+                     if(k.eq.0) then
+                        allocomega = .true.
+                        romegatree => fmmgrad(1:j)
+                        iomegatree => omegatree(1:j)
+                     else
+                        call bummer('fmm: error, k = ',k)
+                     endif
+                  else
+                     call fmmallocate(omegatree,1,(j+j),k)
+                     if(k.eq.0) then
+                        allocomega = .true.
+                        romegatree => omegatree(1:j)
+                        iomegatree => omegatree((j+1):(j+j))
+                     else
+                        call bummer('fmm: error, k = ',k)
+                     endif
+                  endif
+               else
+                  call bummer('fmm: treetograd requested, homogen = ',
+     .            homogen)
+               endif
+#else
+               call fmmallocate(omegatree,1,(j+j),k)
+               if(k.eq.0) then
+                  romegatree => omegatree(1:j)
+                  iomegatree => omegatree((j+1):(j+j))
+               else
+                  call bummer('fmm: error, k = ',k)
+               endif
+#endif
+            else
+               call bummer('fmm: error, i = ',i)
+            endif
+         else
+            call bummer('fmm: error, depth = ',depth)
+         endif
+      else
+         call bummer('fmm: error, nmultipoles = ',nmultipoles)
+      endif
+c
+c      call coulomb(ncharges,q,xyzt,coul)
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+      if(me.eq.0) then
+#endif
+c         write(6,'(1x,q50.40,1x,z32)') (sh*(coul/sf)),
+c     .   (sh*(coul/sf))
+#ifdef FMM_PARALLEL
+      endif
+#endif
+#endif
+c
+      if(nmultipoles.le.maxnmultipoles) then
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+         if(me.eq.0) then
+#endif
+            write(6,'('' nmultipoles = '',i13)') nmultipoles
+#ifdef FMM_PARALLEL
+         endif
+#endif
+#endif
+      else
+         call bummer('fmm: (nmultipoles-maxnmultipoles) = ',
+     .   (nmultipoles-maxnmultipoles))
+      endif
+c
+      n2multipoles = nmultipoles+nmultipoles
+c
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+      if(me.eq.0) then
+#endif
+c         write(6,*) sf,sh
+#ifdef FMM_PARALLEL
+      endif
+#endif
+#endif
+c
+      call calpow(nmultipoles,pow)
+c
+      call sgneg(n2multipoles,sg)
+c
+      if(.not.compute) call cpydtod13(mnmultipoles,nmultipoles,d2,d3,
+     .d2f,d3f,wignerd,1)
+c
+      call pass1(ncharges,depth,ws,nbits,maxint,maxmint,bitpos,mbitpos,
+     .maxnmultipoles,nmultipoles,mnmultipoles,nsqmultipoles,
+     .nboxesinlevel,nboxeslevel,q,xyzt,ibox,piboxscr,ishx,ishy,mishx,
+     .mishy,maskxy,buflen,rl,cmphi,smphi,fac,rfac,pow,sg,fr,coeff1,
+     .coeff2,coeff3,coeff4,coeff5,coeff6,d2,d3,d2f,d3f,romegatree,
+     .iomegatree,csar,car,sar,rar,isrt,kbxyzar,indar,kboxxyzar,
+     .kboxindar,mi,jcar,hcar,hsar,sf,periodic,withaop,compute)
+c
+      if(nmultipoles.ge.0) then
+        if(depth.ge.0) then
+          i = depth+1
+          i = nboxeslevel(i)+nboxesinlevel(i)
+          if(i.gt.0) then
+            jnbi = nboxesinlevel(depth+1)
+#ifdef FMM_IBOXSCR
+#ifdef FMM_TREETOGRAD
+            if(homogen.eq.0) then
+              doit = .true.
+            elseif(homogen.eq.1) then
+              doit = .false.
+            else
+              call bummer('fmm: error, homogen = ',homogen)
+            endif
+#else
+            doit = .true.
+#endif
+            if(doit) then
+              call fmmdeallocate(iboxscr,j)
+              if(j.ne.0) call bummer('fmm: error, j = ',j)
+              piboxscr => null()
+#ifdef FMM_PARALLEL
+              call fmmallocate(iboxscr,jcharge1,jcharge2,j)
+              if(j.ne.0) call bummer('fmm: error, j = ',j)
+#else
+              call fmmallocate(iboxscr,1,jnbi,j)
+              if(j.ne.0) call bummer('fmm: error, j = ',j)
+#endif
+              piboxscr => iboxscr
+            endif
+#endif
+            j = nsqmultipoles*i
+#ifdef FMM_TREETOGRAD
+#ifdef FMM_EXTREMETREETOGRAD
+            if(homogen.eq.1) then
+              if((3*icharges).ge.(4*j)) then
+                allocmu = .false.
+                doallocbftreetograd = .true.
+                ntreetograd = 2
+                starttreetograd = 3*icharges-2*j+1
+                itreetograd = 2*nsqmultipoles
+                rmutree => fmmgrad((3*icharges-2*j+1):(3*icharges-j))
+                imutree => fmmgrad((3*icharges-j+1):(3*icharges))
+              elseif((3*icharges).ge.(3*j)) then
+                call fmmallocate(mutree,1,j,k)
+                if(k.eq.0) then
+                  allocmu = .true.
+                  doallocbftreetograd = .true.
+                  ntreetograd = 1
+                  starttreetograd = 3*icharges-j+1
+                  itreetograd = nsqmultipoles
+                  rmutree => fmmgrad((3*icharges-j+1):(3*icharges))
+                  imutree => mutree(1:j)
+                else
+                  call bummer('fmm: error, k = ',k)
+                endif
+              else
+                call fmmallocate(mutree,1,(j+j),k)
+                if(k.eq.0) then
+                  allocmu = .true.
+                  ntreetograd = 0
+                  rmutree => mutree(1:j)
+                  imutree => mutree((j+1):(j+j))
+                else
+                  call bummer('fmm: error, k = ',k)
+                endif
+              endif
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+              if(me.eq.0) then
+#endif
+                 write(6,*) ' ntreetograd = ',ntreetograd
+#ifdef FMM_PARALLEL
+              endif
+#endif
+#endif
+            else
+              call bummer('fmm: treetograd requested, homogen=',homogen)
+            endif
+#else
+            call fmmallocate(mutree,1,(j+j),k)
+            if(k.eq.0) then
+              rmutree => mutree(1:j)
+              imutree => mutree((j+1):(j+j))
+            else
+               call bummer('fmm: error, k = ',k)
+            endif
+#endif
+#else
+            call fmmallocate(mutree,1,(j+j),k)
+            if(k.eq.0) then
+              rmutree => mutree(1:j)
+              imutree => mutree((j+1):(j+j))
+            else
+               call bummer('fmm: error, k = ',k)
+            endif
+#endif
+            if(withtaylor) then
+             call itaylor(gtaylor,bitpos,nbits,maxint,igtaylor,mgtaylor)
+             call jptaylor(i,gtaylor,nbits,igtaylor,mgtaylor,ntaylor,j)
+             if(ntaylor.gt.0) then
+               if(ntaylor.le.i) then
+                 if(j.ge.0) then
+                   if(j.lt.nbits) then
+                     j = nbits*(ntaylor-1)+(j+1)
+                     if(j.eq.i) then
+                       call fmmallocate(taylor,1,ntaylor,j)
+                       if(j.ne.0) call bummer('fmm: error, j = ',j)
+                     else
+                       call bummer('fmm: (j-i) = ',(j-i))
+                     endif
+                   else
+                     call bummer('fmm: (j-nbits) = ',(j-nbits))
+                   endif
+                 else
+                   call bummer('fmm: error, j = ',j)
+                 endif
+               else
+                 call bummer('fmm: (ntaylor-i) = ',(ntaylor-i))
+               endif
+             else
+               call bummer('fmm: error, ntaylor = ',ntaylor)
+             endif
+            endif
+          else
+            call bummer('fmm: error, i = ',i)
+          endif
+        else
+          call bummer('fmm: error, depth = ',depth)
+        endif
+      else
+        call bummer('fmm: error, nmultipoles = ',nmultipoles)
+      endif
+c
+      call fmmallocate(irar,1,maxwsd3,1,(depth+1),i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+      call fmmimn(ws,maxdepth,periodic,bitpos,ilevelmn)
+c
+      if((depth+1).ge.ilevelmn) then
+         call fmmi(maxwsd3,ilevelmn,(depth+1),ws,bitpos,nrar,irar,
+     .   periodic,.false.)
+c
+         i = maxdepth-ilevelmn+2
+c
+         if(i.gt.0) then
+            if(nrar.le.maxnrar) then
+               nrar = i*nrar
+            else
+               call bummer('fmm: (nrar-maxnrar) = ',(nrar-maxnrar))
+            endif
+         else
+            call bummer('fmm: error, i = ',i)
+         endif
+      else
+         nrar = 0
+      endif
+c
+      nbfg = bfglen/3
+      if(nbfg.le.0) call bummer('fmm: error, nbfg = ',nbfg)
+c
+      i = depth+1
+      ntree = nboxeslevel(i)+nboxesinlevel(i)
+      if(ntree.le.0) call bummer('fmm: error, ntree = ',ntree)
+c
+      call pass2(ncharges,jnbi,depth,ws,nbits,maxint,bitpos,mbitpos,
+     .nmultipoles,mnmultipoles,n2multipoles,nsqmultipoles,nboxesinlevel,
+     .nboxeslevel,q,xyzt,ibox,piboxscr,iboxsrt,nbfg,bfg,rl,cmphi,smphi,
+     .cmphipi,smphipi,fac,rfac,pow,sg,fr,coeff1,coeff2,coeff3,coeff4,
+     .coeff5,coeff6,ntree,romegatree,iomegatree,rmutree,imutree,
+     .withtaylor,gtaylor,igtaylor,mgtaylor,ntaylor,taylor,buflen,flvlar,
+     .csar,car,sar,rar,isrt,kbxyzar,indar,kboxxyzar,kboxindar,kbar,
+     .maxwsd,mmaxwsd,ncsar,icsar,jcsar,ncar,icar,isar,maxwsd3,nrar,irar,
+     .mmaxdepth,powsq,int3x,int3y,int3z,int3p,int3q,hugep,hugef,
+     .periodic,ishx,maskx,ishy,masky,mishx,mishy,maskxy,maxmint,cachopt,
+     .g2db,unrolled2,pgd,nbofmb,withbop,wignerd,compute)
+c
+      call fmmdeallocate(irar,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+      if(jmp) call caljmpi(ncharges,iboxsrt,sjmp)
+c
+#ifndef FMM_NOPOT
+      if(homogen.eq.0) then
+         call fmmenpot(nbits,bitpos,bfg,bfglen,q,pfmmpot,enearfieldpot)
+      elseif(homogen.ne.1) then
+         call bummer('fmm: error, homogen = ',homogen)
+      endif
+#endif
+c
+      i = max((2*nmultipoles),(nmultipoles*nmultipoles))
+c
+      call fmmallocate(dbl,1,i,j)
+c
+      if(j.eq.0) then
+         call caldbl(i,dbl)
+      else
+         call bummer('fmm: error, j = ',j)
+      endif
+c
+      if(.not.compute) then
+         if(ncsar.gt.0) then
+            i = ncsar+2
+            call cpydtod13(mnmultipoles,nmultipoles,d2,d3,d2f,d3f,
+     .      wignerd,i)
+         else
+            call bummer('fmm: error, ncsar = ',ncsar)
+         endif
+      endif
+c
+      call pass3(depth,ws,nbits,nboxesinlevel(depth+1),bitpos,mbitpos,
+     .maxnmultipoles,nmultipoles,mnmultipoles,nsqmultipoles,
+     .nboxesinlevel,nboxeslevel,q,xyzt,ibox,bfg,bfglen,mask,buflen,
+     .cmphipi,smphipi,rl,cmphi,smphi,fac,rfac,pow,sg,fr,coeff1,coeff2,
+     .coeff3,coeff4,coeff5,coeff6,d2,d3,d2f,d3f,rmutree,imutree,
+     .withtaylor,gtaylor,igtaylor,mgtaylor,taylor,csar,car,sar,rar,isrt,
+     .kbxyzar,indar,kboxxyzar,kboxindar,mi,jcar,hcar,hsar,mmaxdepth,
+     .mishx,mishy,maskxy,ipo,ishx,ishy,maxint,maxmint,powsq,periodic,
+     .romegatree,iomegatree,efarfield,efarfieldpot,e1per,pfmmpot,
+     .fmmgrad,dbl,sh3,withcop,compute)
+c
+      call fmmdeallocate(dbl,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+#ifdef FMM_TREETOGRAD
+      if(homogen.eq.1) then
+#ifdef FMM_IBOXSCR
+         call iboxscinfo5(ishx,ishy,mmaxdepth,depth,bitpos,powsq,xyzt,
+     .   ibox,piboxscr)
+#else
+         call iboxinfo5(mmaxdepth,depth,bitpos,powsq,xyzt,ibox)
+#endif
+#ifdef FMM_PARALLEL
+#ifdef FMM_COMPRESSION
+         startbox = iand(ibox(icharge1),ibm)-1
+         endbox = iand(ibox(icharge2),ibm)-1
+#else
+         startbox = ibox(icharge1)-1
+         endbox = ibox(icharge2)-1
+#endif
+#else
+#ifdef FMM_COMPRESSION
+         startbox = iand((iand(ibox(1),ibm)-1),-8)
+         endbox = ior((iand(ibox(ncharges),ibm)-1),7)
+#else
+         startbox = iand((ibox(1)-1),-8)
+         endbox = ior((ibox(ncharges)-1),7)
+#endif
+#endif
+         call skipeevector(icharges,ibox(icharge1))
+#ifdef FMM_PARALLEL
+         i = iand(startbox,-8)
+         j = ior(endbox,7)
+#else
+         i = startbox
+         j = endbox
+#endif
+         k = icharge1
+         l = icharge2
+         call pass5(ncharges,depth,ws,nbits,ishx,ishy,maxint,mishx,
+     .   mishy,maskxy,bitpos,mbitpos,q,xyzt,ibox,piboxscr,iboxsrt,bfg,
+     .   bfglen,enearfield,enfinbox,enfbibj,fmmgrad,pfmmpot,gb,gbsh,
+     .   int3x,int3y,int3z,int3p,int3q,pagejump,pageshift,pageshiftg,
+     .   pagemask,pageaddr,indsize,pagepossize,startbox,endbox,i,j,ibox,
+     .   k,l,piboxscr,pages,pgd,.false.,periodic,indskpjump,nbofmb,sf,
+     .   sh,linearpotential,ilinearpotential,lineardistance)
+      else
+         call bummer('fmm: error, homogen = ',homogen)
+      endif
+#endif
+c
+#ifdef FMM_IBOXSCR
+      call fmmdeallocate(iboxscr,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+      piboxscr => null()
+#endif
+      if(int3xyzd.ge.0) then
+         call fmmdeallocate(int3x,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmdeallocate(int3y,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmdeallocate(int3z,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmdeallocate(int3p,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+      endif
+      call fmmdeallocate(int3q,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+      call fmmdeallocate(nbofmb,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+      call fmmdeallocate(nboxesinlevel,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+      call fmmdeallocate(nboxeslevel,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+      call fmmdeallocate(d2,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+      call fmmdeallocate(d3,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+      call fmmdeallocate(d2f,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+      call fmmdeallocate(d3f,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+      if(compute) then
+         call fmmdeallocate(coeff1,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmdeallocate(coeff2,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmdeallocate(coeff3,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmdeallocate(coeff4,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmdeallocate(coeff5,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+         call fmmdeallocate(coeff6,i)
+         if(i.ne.0) call bummer('fmm: error, i = ',i)
+      endif
+#ifdef FMM_TREETOGRAD
+      if(allocomega) then
+        call fmmdeallocate(omegatree,i)
+        if(i.ne.0) call bummer('fmm: error, i = ',i)
+      endif
+#else
+      call fmmdeallocate(omegatree,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+#endif
+#ifdef FMM_TREETOGRAD
+#ifdef FMM_EXTREMETREETOGRAD
+      if(allocmu) then
+        call fmmdeallocate(mutree,i)
+        if(i.ne.0) call bummer('fmm: error, i = ',i)
+      endif
+#else
+      call fmmdeallocate(mutree,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+#endif
+#else
+      call fmmdeallocate(mutree,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+#endif
+      if(withtaylor) then
+        call fmmdeallocate(taylor,i)
+        if(i.ne.0) call bummer('fmm: error, i = ',i)
+      endif
+c
+#ifdef FMM_COMPRESSION
+      if(twoint) then
+        call getibsrt2(nbytes,ibox,iboxsrt)
+      else
+        call getibsrt1(ibox)
+      endif
+c
+      call fmmdeallocate(int1m,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+      call fmmdeallocate(mint1,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+      call fmmdeallocate(int1scr,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+#ifdef FMM_EXTREMECOMPRESSION
+      call fmmdeallocate(pinb,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+#endif
+c
+      if(twoint) then
+        if(nint1.ge.0) then
+          call fmmdeallocate(iboxsrt,i)
+          if(i.ne.0) call bummer('fmm: error, i = ',i)
+        else
+          call bummer('fmm: error, nint1 = ',nint1)
+        endif
+      elseif(nint1.ne.-1) then
+        call bummer('fmm: error, nint1 = ',nint1)
+      endif
+c
+      piboxsrt => ibox
+#else
+      call fmmdeallocate(ibox,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+      piboxsrt => iboxsrt
+#endif
+c
+#ifdef FMM_COMPRESSION
+#ifdef FMM_EXTREMECOMPRESSION
+#ifdef FMM_EXTREMEEXTREMECOMPRESSION
+      call setcoordinates(xyzt)
+#endif
+#endif
+#endif
+c
+      if(periodic.eq.3) then
+#ifdef FMM_CORRECTION_OF_FORCES
+       call calcxcycz(nbits,bitpos,bfg,bfglen,q,fmmgrad,cx,cy,cz)
+#else
+       cx = zero
+       cy = zero
+       cz = zero
+#endif
+      endif
+c
+      if(periodic.gt.0) then
+       if(sh.eq.one) then
+        if((dipolecorrection.ge.-1).and.(dipolecorrection.le.1)) then
+         if(((dipolecorrection.eq.0).and.(negpos.eq.0)).or.
+     .    (dipolecorrection.eq.1)) then
+          if(periodic.eq.3) then
+           call corrp(periodic,cx,cy,cz,q,xyzt,qqq,corrsx,corrsy,corrsz,
+     .     corrs,efarfield,efarfieldpot,e1per,pfmmpot,fmmgrad)
+          endif
+         endif
+        else
+         call bummer('fmm: error, dipolecorrection = ',dipolecorrection)
+        endif
+       else
+        call bummer('fmm: error, ncharges = ',ncharges)
+       endif
+      endif
+c
+      if(periodic.eq.3) then
+       if(.not.plummer_potential) then
+        if(.not.linearpotential) then
+         call calvirialtensor3p(efarfield,enearfield,gp,virialtensor)
+        endif
+       endif
+      elseif((.not.plummer_potential).and.(.not.linearpotential)) then
+       call setbfgn(9,bfglen,bfgnlen)
+c
+       if(bfglen.eq.bfgnlen) then
+        call calvirialtensor(nbits,bitpos,bfg,bfglen,q,xyzt,fmmgrad,cx,
+     .  cy,cz,periodic,efarfield,enearfield,gp,virialtensor)
+       elseif(bfglen.lt.bfgnlen) then
+        call fmmallocate(bfgn,1,bfgnlen,i)
+        if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+        call calvirialtensor(nbits,bitpos,bfgn,bfgnlen,q,xyzt,fmmgrad,
+     .  cx,cy,cz,periodic,efarfield,enearfield,gp,virialtensor)
+c
+        call fmmdeallocate(bfgn,i)
+        if(i.ne.0) call bummer('fmm: error, i = ',i)
+       else
+        call bummer('fmm: (bfglen-bfgnlen) = ',(bfglen-bfgnlen))
+       endif
+      else
+#ifdef FMM_CORRECTION_OF_FORCES
+       call calcxcycz(nbits,bitpos,bfg,bfglen,q,fmmgrad,cx,cy,cz)
+#else
+       cx = zero
+       cy = zero
+       cz = zero
+#endif
+      endif
+c
+      if (FMM_internal_params%resort.eq.1) then
+c        write(*,*) 'doing resort'
+        call mpi_fmm_resort_init(FMM_internal_params%resort_ptr,ncharges,ichargesout,piboxsrt)
+      else
+c        write(*,*) 'doing sortback'
+        call sortback(ncharges,copyxyz,xyzt,piboxsrt,q,fmmgrad,pfmmpot)
+      endif
+c
+#ifdef FMM_RESTORE_COORDINATES
+      if(.not.copyxyz) call restorecoordinates(periodic,periodica,nbits,
+     .mbitpos,xyzt)
+#endif
+c
+#ifdef FMM_COMPRESSION
+      call fmmdeallocate(ibox,i)
+      if(i.eq.0) then
+        piboxsrt => null()
+      else
+        call bummer('fmm: error, i = ',i)
+      endif
+#else
+      call fmmdeallocate(iboxsrt,i)
+      if(i.eq.0) then
+        piboxsrt => null()
+      else
+        call bummer('fmm: error, i = ',i)
+      endif
+#endif
+c
+      if(copyxyz) then
+        call fmmdeallocate(xyz,i)
+        if(i.ne.0) call bummer('fmm: error, i = ',i)
+      endif
+c
+      xyzt => null()
+c
+      if(periodic.gt.0) then
+        if(nj.gt.0) then
+          call fmmdeallocate(bitposm1,i)
+          if(i.ne.0) call bummer('fmm: error, i = ',i)
+          call fmmdeallocate(mskj,i)
+          if(i.ne.0) call bummer('fmm: error, i = ',i)
+          call fmmdeallocate(folder,i)
+          if(i.ne.0) call bummer('fmm: error, i = ',i)
+        elseif(nj.lt.0) then
+          call bummer('fmm: error, nj = ',nj)
+        endif
+      elseif(periodic.ne.0) then
+        call bummer('fmm: error, periodic = ',periodic)
+      endif
+c
+      call scalefmmgr(ncharges,periodic,periodica,dipolecorrection,
+     .negpos,cx,cy,cz,q,gsq,fmmgrad,gp,pfmmpot,virialtensor)
+c
+      if(.not.plummer_potential) then
+        if(.not.linearpotential) call prtvirialtensor(virialtensor)
+      endif
+c-ik copy virialtensor to virial output dummy argument
+      virial(1:3) = virialtensor(1:3,1)
+      virial(4:6) = virialtensor(1:3,2)
+      virial(7:9) = virialtensor(1:3,3)
+c
+#ifndef FMM_NOPOT
+      call fmmenpot(nbits,bitpos,bfg,bfglen,q,pfmmpot,energypot)
+#endif
+c
+#ifdef FMM_DEBUG
+      call fmmsgrad(nbits,bitpos,bfg,bfglen,fmmgrad,sgradx,sgrady,
+     .sgradz)
+c
+      call fmmsagrad(nbits,bitpos,bfg,bfglen,fmmgrad,sagradx,sagrady,
+     .sagradz)
+#endif
+c
+      call fmmdeallocate(flvlar,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+      call fmmdeallocate(powsq,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+      energy = (sh*((half*efarfield)/sf))+(sh*(enearfield/sf))
+c
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+      if(me.eq.0) then
+#endif
+         write(6,*) ' efarfield     = ',(sh*((half*efarfield)/sf))
+         write(6,*) ' efarfieldpot  = ',(sh*((half*efarfieldpot)/sf))
+         write(6,*) ' enearfield    = ',(sh*(enearfield/sf))
+#ifndef FMM_NOPOT
+         if(homogen.eq.0) then
+            write(6,*) ' enearfieldpot = ',(sh*(enearfieldpot/sf))
+         elseif(homogen.ne.1) then
+            call bummer('fmm: error, homogen = ',homogen)
+         endif
+#endif
+         write(6,*) ' energy        = ',energy
+#ifndef FMM_NOPOT
+         write(6,*) ' energypot     = ',energypot
+#endif
+#ifdef FMM_PARALLEL
+      endif
+#endif
+#endif
+c
+#ifndef FMM_UNIFORMGRID
+      call calder(ierr,dem,energy,energypot,der)
+#endif
+c
+      if(periodic.gt.0) then
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+         if(me.eq.0) then
+#endif
+            write(6,*) ' energy_lattice     = ',(sh*(e1per/sf))
+            write(6,*) ' energy_first_layer = ',(energy-(sh*(e1per/sf)))
+#ifdef FMM_PARALLEL
+         endif
+#endif
+#endif
+      endif
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+      if(me.eq.0) then
+#endif
+         write(6,*) ' efarfield          = ',(sh*((efarfield/two)/sf))
+         write(6,*) ' enearfield         = ',(sh*(enearfield/sf))
+         write(6,*) ' enfinbox           = ',(sh*(enfinbox/sf))
+         write(6,*) ' enfbibj            = ',(sh*(enfbibj/sf))
+         write(6,*) ' energy             = ',energy
+#ifdef FMM_PARALLEL
+      endif
+#endif
+#endif
+c
+      call fmmdeallocate(bitpos,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+      call fmmdeallocate(mbitpos,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+c
+      if(precomputeallds) then
+         if(.not.associatedwignerd) then
+            call fmmdeallocatept(wignerd%wignerd,i)
+            if(i.ne.0) call bummer('fmm: error, i = ',i)
+         endif
+      endif
+c
+      if(serroranalysis.lt.nerroranalysis) then
+        call bummer('fmm: (serroranalysis-nerroranalysis) = ',
+     .  (serroranalysis-nerroranalysis))
+      elseif(snewerroranalysis.le.0) then
+        call bummer('fmm: error, snewerroranalysis =',snewerroranalysis)
+      else
+        if(snewerroranalysis.le.nerroranalysis) then
+          doit = .true.
+        elseif(iplummerpotential.ne.iplummerpotentialsv) then
+          doit = .true.
+        elseif(aoplummer.ne.aoplummersv) then
+          doit = .true.
+        elseif(ilinearpotential.ne.ilinearpotentialsv) then
+          doit = .true.
+        elseif(ilinearpotential.eq.0) then
+          doit = .false.
+        elseif(ilinearpotential.eq.1) then
+          if(linearodistance(3).ne.linearodistancesv(3)) then
+            doit = .true.
+          else
+            doit = .false.
+          endif
+        elseif(ilinearpotential.eq.2) then
+          if(linearodistance(2).ne.linearodistancesv(2)) then
+            doit = .true.
+          else
+            doit = .false.
+          endif
+        elseif(ilinearpotential.eq.3) then
+          if(linearodistance(2).ne.linearodistancesv(2)) then
+            doit = .true.
+          elseif(linearodistance(3).ne.linearodistancesv(3)) then
+            doit = .true.
+          else
+            doit = .false.
+          endif
+        elseif(ilinearpotential.eq.4) then
+          if(linearodistance(1).ne.linearodistancesv(1)) then
+            doit = .true.
+          else
+            doit = .false.
+          endif
+        elseif(ilinearpotential.eq.5) then
+          if(linearodistance(1).ne.linearodistancesv(1)) then
+            doit = .true.
+          elseif(linearodistance(3).ne.linearodistancesv(3)) then
+            doit = .true.
+          else
+            doit = .false.
+          endif
+        elseif(ilinearpotential.eq.6) then
+          if(linearodistance(1).ne.linearodistancesv(1)) then
+            doit = .true.
+          elseif(linearodistance(2).ne.linearodistancesv(2)) then
+            doit = .true.
+          else
+            doit = .false.
+          endif
+        elseif(ilinearpotential.eq.7) then
+          if(linearodistance(1).ne.linearodistancesv(1)) then
+            doit = .true.
+          elseif(linearodistance(2).ne.linearodistancesv(2)) then
+            doit = .true.
+          elseif(linearodistance(3).ne.linearodistancesv(3)) then
+            doit = .true.
+          else
+            doit = .false.
+          endif
+        else
+          call bummer('fmm: error, ilinearpotential =',ilinearpotential)
+        endif
+        if(doit) then
+          ilinearpotentialsv = ilinearpotential
+          linearodistancesv(1) = linearodistance(1)
+          linearodistancesv(2) = linearodistance(2)
+          linearodistancesv(3) = linearodistance(3)
+          iplummerpotentialsv = iplummerpotential
+          aoplummersv = aoplummer
+c          call fmmdeallocate(hugep,i)
+c          if(i.ne.0) call bummer('fmm: error, i = ',i)
+c          call fmmdeallocate(hugef,i)
+c          if(i.ne.0) call bummer('fmm: error, i = ',i)
+          i = ltob*(maxdepth+2)+rtob*(maxdepth+1)
+          if(nallocr.eq.i) then
+            nallocr = 0
+          else
+            call bummer('fmm: (nallocr-i) = ',(nallocr-i))
+          endif
+          nallocst = nallocst-i
+          serroranalysis = snewerroranalysis
+          nerroranalysis = serroranalysis
+        else
+          serroranalysis = snewerroranalysis
+        endif
+      endif
+c
+#ifdef FMM_INFO
+#ifdef FMM_PARALLEL
+      if(me.eq.0) then
+#endif
+         write(6,'(''   gradx = '',d26.18)') fmmgrad(1)
+         write(6,'(''   grady = '',d26.18)') fmmgrad(2)
+         write(6,'(''   gradz = '',d26.18)') fmmgrad(3)
+#ifndef FMM_NOPOT
+         write(6,'(''     pot = '',d26.18)') pfmmpot(1)
+#endif
+#ifdef FMM_DEBUG
+         write(6,'(''  sgradx = '',d26.18)') sgradx
+         write(6,'(''  sgrady = '',d26.18)') sgrady
+         write(6,'(''  sgradz = '',d26.18)') sgradz
+         write(6,'('' sagradx = '',d26.18)') sagradx
+         write(6,'('' sagrady = '',d26.18)') sagrady
+         write(6,'('' sagradz = '',d26.18)') sagradz
+#endif
+         write(6,'(''  energy = '',d26.18)') energy
+#ifdef FMM_PARALLEL
+      endif
+#endif
+#endif
+c
+#ifdef FMM_PARALLEL
+      call fmmdeallocate(gbinfo,i)
+      if(i.ne.0) call bummer('fmm: error, i = ',i)
+#endif
+      pfmmpot => null()
+#ifdef FMM_PARALLEL
+#ifdef FMM_LOADSORT
+      if(doload) iboxload => null()
+#endif
+#endif
+c
+      call edmdfmmalloc(nalloc,nallocst,'cfmm')
+      call prtmdfmmalloc(nalloc,maxnalloc,'  end of cfmm')
+c
+#ifdef FMM_PARALLEL
+#if defined(FMM_CPUTIME) || defined(FMM_WALLTIME)
+      call c_cputime_walltime(.false.)
+#endif
+#endif
+c
+#ifdef FMM_STATISTICS
+      call fmmstatistics(ncharges,.false.)
+#endif
+      return
+      end subroutine cfmm
+

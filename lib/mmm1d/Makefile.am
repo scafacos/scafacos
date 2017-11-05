@@ -11,8 +11,4 @@ libfcs_mmm1d_la_SOURCES = \
 	tune.c tune.h \
 	run.c run.h \
 	mmm1d.h \
-	types.h \
-	../common/mmm-common/mmm-common.c \
-	../common/mmm-common/mmm-common.h \
-	../common/mmm-common/specfunc.c \
-	../common/mmm-common/specfunc.h
+	types.h
