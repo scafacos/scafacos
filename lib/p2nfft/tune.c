@@ -2127,7 +2127,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_0dp_ewald(
   csum = 0.0;
 #endif
  
-  fprintf(stderr, "box_scales: %f %f %f\n", box_scales[0], box_scales[1], box_scales[2]);
+//  fprintf(stderr, "box_scales: %f %f %f\n", box_scales[0], box_scales[1], box_scales[2]);
   /* shift FFT output via twiddle factors on the input */ 
   m=0;
   for(ptrdiff_t k0 = local_Ni_start[0]; k0 < local_Ni_start[0] + local_Ni[0]; k0++){
