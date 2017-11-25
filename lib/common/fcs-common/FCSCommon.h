@@ -27,6 +27,16 @@ extern "C" {
 #endif
 
 
+/* fallback definition, see "6.47 Function Names as Strings" in gcc-4.9 doc */
+#if __STDC_VERSION__ < 199901L && !defined(__func__)
+# if __GNUC__ >= 2
+#  define __func__ __FUNCTION__
+# else
+#  define __func__ "<unknown>"
+# endif
+#endif
+
+
 /**
  * @brief macros for mathematical functions corresponding to the FCS float data type
  */
@@ -60,6 +70,8 @@ extern "C" {
 
 #define fcs_isnan(_x_)     isnan(_x_)
 #define fcs_isinf(_x_)     isinf(_x_)
+
+#define fcs_xabs(_x_)      (((_x_) >= 0)?(_x_):(_x_))
 
 /**
  * @brief function to determine if two float values are equal

@@ -179,9 +179,8 @@ void ifcs_memd_update_plaquette(fcs_int mue, fcs_int nue, fcs_int* Neighbor, fcs
  */
 FCSResult ifcs_memd_sanity_checks(memd_struct* memd)
 {
-    FCSResult result = NULL;
-    const char* fnc_name = "ifcs_memd_sanity_checks";
-//    fcs_result_create(FCS_LOGICAL_ERROR, fnc_name, "You can only set 2 of the parameters bjerrum, temperature and epsilon.");
+    FCSResult result = FCS_RESULT_SUCCESS;
+/*    fcs_result_create(FCS_LOGICAL_ERROR, __func__, "You can only set 2 of the parameters bjerrum, temperature and epsilon.");*/
     
     /*
     char *errtxt;
@@ -239,7 +238,6 @@ FCSResult ifcs_memd_sanity_checks(memd_struct* memd)
 /** Calculate number of charged particles, the sum of the squared
  charges and the squared sum of the charges. */
 fcs_int ifcs_memd_count_total_charges(memd_struct *memd, fcs_int num_particles) {
-    int i;
     
     fcs_int node_sum, total_sum;
 

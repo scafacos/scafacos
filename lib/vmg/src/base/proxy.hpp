@@ -38,6 +38,7 @@ class CommandProxyBase
 {
 public:
   CommandProxyBase();
+  virtual ~CommandProxyBase();
   virtual Command* CreateCommand() const = 0;
 
   virtual const char* Name() const = 0;

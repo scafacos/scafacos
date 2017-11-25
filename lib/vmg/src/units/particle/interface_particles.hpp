@@ -27,7 +27,7 @@
  */
 
 #ifndef INTERFACE_PARTICLES_HPP
-#define INTERFACE_PARTIVLES_HPP
+#define INTERFACE_PARTICLES_HPP
 
 #include <list>
 

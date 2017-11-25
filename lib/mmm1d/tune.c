@@ -32,8 +32,8 @@ static fcs_float mmm1d_far_error(mmm1d_data_struct *d, fcs_int P, fcs_float minr
 static fcs_int mmm1d_determine_minrad(mmm1d_data_struct *d, fcs_int P);
 static void mmm1d_determine_bessel_radii(mmm1d_data_struct *d);
 static void mmm1d_prepare_polygamma_series(mmm1d_data_struct *d);
-static FCSResult mmm1d_check_system_charges(mmm1d_data_struct *d,
-                       fcs_int num_particles, fcs_float *charges);
+/*static FCSResult mmm1d_check_system_charges(mmm1d_data_struct *d,
+                       fcs_int num_particles, fcs_float *charges);*/
 
 /***************************************************/
 /* IMPLEMENTATION */
@@ -73,7 +73,7 @@ FCSResult mmm1d_tune(void* rd,
     return fcs_result_create(FCS_ERROR_LOGICAL_ERROR, fnc_name, "could not tune far formula to require accuracy. Increase far switching radius.");
   }
   
-  return NULL;
+  return FCS_RESULT_SUCCESS;
 
 }
 

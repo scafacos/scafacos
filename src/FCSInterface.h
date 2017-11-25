@@ -79,7 +79,7 @@
 
 
 /* fallback definition, see "6.47 Function Names as Strings" in gcc-4.9 doc */
-#if __STDC_VERSION__ < 199901L
+#if __STDC_VERSION__ < 199901L && !defined(__func__)
 # if __GNUC__ >= 2
 #  define __func__ __FUNCTION__
 # else

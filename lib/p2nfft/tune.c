@@ -580,7 +580,7 @@ FCSResult ifcs_p2nfft_tune(
     local_sum_q2 += FCS_P2NFFT_SQR(charges[i] - d->bg_charge);
   MPI_Allreduce(&local_sum_q2, &sum_q2, 1, FCS_MPI_FLOAT, MPI_SUM, d->cart_comm_3d);
 //   if (!fcs_float_is_equal(sum_q2, d->sum_q2)) {
-  if (fcs_fabs(sum_q2 - d->sum_q2 > 1e-5)) {
+  if (fcs_fabs(sum_q2 - d->sum_q2) > 1e-5) {
 #if FCS_P2NFFT_DEBUG_RETUNE
     fprintf(stderr, "Retune triggered due to changed square charge sum!, sum_q2 = %e, d->sum_q2 = %e\n", sum_q2, d->sum_q2);
 #endif
@@ -886,7 +886,7 @@ FCSResult ifcs_p2nfft_tune(
       }
 
       if(d->far_interpolation_num_nodes > 0){
-        if( (d->num_periodic_dims==0) ){
+        if (d->num_periodic_dims==0) {
           d->far_interpolation_table_potential = (fcs_float*) malloc(sizeof(fcs_float) * (d->far_interpolation_num_nodes+4));
           FCS_P2NFFT_IFDBG(double timer=-MPI_Wtime());
           init_far_interpolation_table_potential_0dp_ewald(
@@ -2552,9 +2552,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
               fcs_int found_symmetric_value = 0;
               
               if( (l0>0 || l1>0 || l2>0) ){
-                ptrdiff_t k0 = -abs(l0) - local_Ni_start[0];
-                ptrdiff_t k1 = -abs(l1) - local_Ni_start[1];
-                ptrdiff_t k2 = -abs(l2) - local_Ni_start[2];
+                ptrdiff_t k0 = -fcs_xabs(l0) - local_Ni_start[0];
+                ptrdiff_t k1 = -fcs_xabs(l1) - local_Ni_start[1];
+                ptrdiff_t k2 = -fcs_xabs(l2) - local_Ni_start[2];
 
                 if(0 <= k0 && k0 < local_Ni[0]){
                   if(0 <= k1 && k1 < local_Ni[1]){

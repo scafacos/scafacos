@@ -921,9 +921,10 @@ static const int CMD_FAILED = 1;
 static const int CMD_NO_TUNE = 2;
 static const int CMD_TUNE_FAR = 3;
 static const int CMD_TIMING = 4;
+#ifdef P3M_ENABLE_DEBUG
 static const char* CMD_NAMES[5] =
 { "FINISHED", "FAILED", "NO_TUNE", "TUNE_FAR", "TIMING" };
-
+#endif
 
 static void tuneBroadcastCommand(Communication &comm, p3m_int command) {
     /* Send the command */
