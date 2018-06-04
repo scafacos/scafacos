@@ -2389,6 +2389,9 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
         xs[2] = (periodicity[2]) ? 0.0 : (fcs_float) l2 / N[2];
         k[2] = (periodicity[2]) ? l2 : 0;  
 
+        /* safe guard against uninitialized data */
+        regkern_hat[m] = 0.0;
+
         /* New regularization for mixed boundary conditions */
         fcs_float lknorm = 0.0, x2norm = 0.0, xsnorm = 0.0;
 	fcs_float kxsqnorm = 0.0;
@@ -2466,7 +2469,7 @@ static fcs_pnfft_complex* malloc_and_precompute_regkern_hat_2dp_and_1dp(
           FCS_P2NFFT_IFDBG(tmp += MPI_Wtime(); timer_keq0 += tmp);
         }
         else if (kc > 0.0 && ksqnorm > kc*kc){
-          regkern_hat[m] = 0; /* Apply spherical cutoff for kc > 0 */
+          regkern_hat[m] = 0.0; /* Apply spherical cutoff for kc > 0 */
           FCS_P2NFFT_IFDBG(++count_set_to_zero);
 	}
         else { /* k != 0 */
