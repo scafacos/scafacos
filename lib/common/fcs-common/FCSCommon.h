@@ -71,7 +71,7 @@ extern "C" {
 #define fcs_isnan(_x_)     isnan(_x_)
 #define fcs_isinf(_x_)     isinf(_x_)
 
-#define fcs_xabs(_x_)      (((_x_) >= 0)?(_x_):(_x_))
+#define fcs_xabs(_x_)      (((_x_) >= 0)?(_x_):(-_x_))
 
 /**
  * @brief function to determine if two float values are equal
