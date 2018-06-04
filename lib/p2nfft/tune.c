@@ -498,7 +498,7 @@ FCSResult ifcs_p2nfft_tune(
   for(int t=0; t<3; t++){
     if((periodicity[t] == 0) != (d->periodicity[t] == 0)){
 #if FCS_P2NFFT_DEBUG_RETUNE
-      fprintf(stderr, "Retune triggered due to changed periodicity!, periodicity[%d] = %d, d->periodicity[%d] = %d\n", periodicity[t], t, d->periodicity[t], t);
+      fprintf(stderr, "Retune triggered due to changed periodicity!, periodicity[%d] = %d, d->periodicity[%d] = %d\n", t, periodicity[t], t, d->periodicity[t]);
 #endif
       local_needs_retune = 1;
     }
