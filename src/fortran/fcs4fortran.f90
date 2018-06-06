@@ -178,7 +178,12 @@ module fcs_module
       end function
 
 ! Missing: fcs_get_method_name
-! Missing: fcs_get_communicator
+      function fcs_get_communicator(handle) BIND(C,name="fcs_get_communicator")
+          use iso_c_binding
+          implicit none
+          type(c_ptr), value                        ::  handle
+          integer                                   ::  fcs_get_communicator
+      end function
 
       function fcs_set_common_f(handle, near_field_flag, box_a, box_b, box_c, &
            box_origin, periodicity, total_parts) BIND(C,name="fcs_set_common")
@@ -195,8 +200,22 @@ module fcs_module
           type(c_ptr)                                       ::  fcs_set_common_f
       end function
 
-! Missing: fcs_set_dimensions
-! Missing: fcs_get_dimensions
+      function fcs_set_dimensions(handle, dim_) &
+            BIND(C,name="fcs_set_dimensions")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          integer(kind = fcs_integer_kind_isoc), value      ::  dim_
+          type(c_ptr)                                       ::  fcs_set_dimensions
+      end function
+      
+      function fcs_get_dimensions(handle) &
+                BIND(C,name="fcs_get_dimensions")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          integer(kind = fcs_integer_kind_isoc)             ::  fcs_get_dimensions
+      end function
 
       function fcs_set_near_field_flag(handle, near_field_flag) &
            BIND(C,name="fcs_set_near_field_flag")
@@ -207,8 +226,14 @@ module fcs_module
           type(c_ptr)                                       ::  fcs_set_near_field_flag
       end function
 
-! Missing: fcs_get_near_field_flag
-      
+      function fcs_get_near_field_flag(handle) &
+              BIND(C,name="fcs_get_near_field_flag")
+          use iso_c_binding
+          implicit none
+          type(c_ptr), value                                ::  handle
+          integer(kind = fcs_integer_kind_isoc)             ::  fcs_get_near_field_flag
+      end function
+
       function fcs_set_box_a(handle, box_a) BIND(C,name="fcs_set_box_a")
           use iso_c_binding
           implicit none
@@ -217,7 +242,14 @@ module fcs_module
           type(c_ptr)                                       ::  fcs_set_box_a
       end function
 
-! Missing: fcs_get_box_a
+      ! requires helper function to transform C pointer to Fortran pointer to
+      ! real(3)
+!      function fcs_get_box_a(handle) BIND(C,name="fcs_get_box_a")
+!          use iso_c_binding
+!          implicit none
+!          type(c_ptr),value                                 ::  handle
+!          real(kind = fcs_real_kind_isoc), dimension(3)     ::  fcs_get_box_a
+!      end function
 
       function fcs_set_box_b(handle, box_b) BIND(C,name="fcs_set_box_b")
           use iso_c_binding
@@ -269,7 +301,13 @@ module fcs_module
           type(c_ptr)                                       ::  fcs_set_total_particles
       end function
 
-! Missing: fcs_get_total_particles
+      function fcs_get_total_particles(handle) &
+                BIND(C,name="fcs_get_total_particles")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          integer(kind = fcs_integer_kind_isoc)             :: fcs_get_total_particles
+      end function
 
       function fcs_set_max_local_particles(handle, max_local_particles) &
                  BIND(C,name="fcs_set_max_local_particles")
@@ -280,12 +318,57 @@ module fcs_module
           type(c_ptr)                                       ::  fcs_set_max_local_particles
       end function
 
-! Missing: fcs_get_max_local_particles
-! Missing: fcs_set_tolerance
-! Missing: fcs_get_tolerance
-! Missing: fcs_set_r_cut
-! Missing: fcs_unset_r_cut
-! Missing: fcs_get_r_cut
+      function fcs_get_max_local_particles(handle) &
+                BIND(C,name="fcs_get_max_local_particles")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          integer(kind = fcs_integer_kind_isoc)             :: fcs_get_max_local_particles
+      end function
+
+      function fcs_set_tolerance(handle, tolerance_type, tolerance) &
+                BIND(C,name="fcs_set_tolerance")
+          use iso_c_binding
+          implicit none
+          type(c_ptr),value                                 ::  handle
+          integer(kind = fcs_integer_kind_isoc),value       ::  tolerance_type
+          real(kind = fcs_real_kind_isoc), value            ::  tolerance
+          type(c_ptr)                                       ::  fcs_set_tolerance
+      end function
+
+
+      function fcs_get_tolerance(handle,tolerance_type,tolerance) &
+                BIND(C,name="fcs_get_tolerance")
+          use iso_c_binding
+          implicit none
+          type(c_ptr), value                                ::  handle
+          integer(kind = fcs_integer_kind_isoc)             ::  tolerance_type
+          real(kind = fcs_real_kind_isoc), value            ::  tolerance
+          type(c_ptr)                                       ::  fcs_get_tolerance
+      end function
+
+      function fcs_set_r_cut(handle, r_cut) BIND(C,name="fcs_set_r_cut")
+            use iso_c_binding
+            implicit none
+            type(c_ptr), value                              ::  handle
+            real(kind = fcs_real_kind_isoc), value          ::  r_cut
+            type(c_ptr)                                     ::  fcs_set_r_cut
+      end function
+
+      function fcs_unset_r_cut(handle) BIND(C,name="fcs_unset_r_cut")
+            use iso_c_binding
+            implicit none
+            type(c_ptr), value                              ::  handle
+            type(c_ptr)                                     ::  fcs_unset_r_cut
+      end function
+
+      function fcs_get_r_cut(handle, r_cut) BIND(C,name="fcs_get_r_cut")
+            use iso_c_binding
+            implicit none
+            type(c_ptr), value                              ::  handle
+            real(kind = fcs_real_kind_isoc)                 ::  r_cut
+            type(c_ptr)                                     ::  fcs_get_r_cut
+      end function
 
       function fcs_set_parameters(handle,parameters,continue_on_errors) BIND(C,name="fcs_set_parameters")
           use iso_c_binding
@@ -306,7 +389,21 @@ module fcs_module
 !                                    misc functions
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-! Missing: fcs_compute_dipole_correction
+      function fcs_compute_dipole_correction(handle, local_particles, positions, &
+                                             charges, epsilon, field_correction, & 
+                                             energy_correction) &
+            BIND(C,name="fcs_compute_dipole_correction")
+            use iso_c_binding
+            implicit none
+            type(c_ptr), value                                                      ::  handle
+            integer(kind = fcs_integer_kind_isoc), value                            ::  local_particles
+            real(kind = fcs_real_kind_isoc), dimension(3*local_particles)           ::  positions
+            real(kind = fcs_real_kind_isoc), dimension(local_particles)             ::  charges
+            real(kind = fcs_real_kind_isoc), value                                  ::  epsilon
+            real(kind = fcs_real_kind_isoc), dimension(3)                           ::  field_correction
+            real(kind = fcs_real_kind_isoc)                                         ::  energy_correction
+            type(c_ptr)                                                             ::  fcs_compute_dipole_correction
+      end function
 
       function fcs_get_near_field_delegation_f(handle, has_near) BIND(C,name="fcs_get_near_field_delegation")
           use iso_c_binding
