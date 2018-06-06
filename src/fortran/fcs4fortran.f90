@@ -86,6 +86,15 @@ module fcs_module
   integer, parameter                               :: MAX_FUNCTION_LENGTH = 64
   integer, parameter                               :: MAX_MESSAGE_LENGTH = 512
 
+  ! definitions of tolerance type flags
+  integer(kind = fcs_integer_kind_isoc), parameter  :: FCS_TOLERANCE_TYPE_UNDEFINED     = 0
+  integer(kind = fcs_integer_kind_isoc), parameter  :: FCS_TOLERANCE_TYPE_ENERGY        = 1
+  integer(kind = fcs_integer_kind_isoc), parameter  :: FCS_TOLERANCE_TYPE_ENERGY_REL    = 2
+  integer(kind = fcs_integer_kind_isoc), parameter  :: FCS_TOLERANCE_TYPE_POTENTIAL     = 3
+  integer(kind = fcs_integer_kind_isoc), parameter  :: FCS_TOLERANCE_TYPE_POTENTIAL_REL = 4
+  integer(kind = fcs_integer_kind_isoc), parameter  :: FCS_TOLERANCE_TYPE_FIELD         = 5
+  integer(kind = fcs_integer_kind_isoc), parameter  :: FCS_TOLERANCE_TYPE_FIELD_REL     = 6
+
   ! interface containing the calls to the wrapper functions in C
 
   interface
