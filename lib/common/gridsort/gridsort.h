@@ -30,7 +30,9 @@ extern "C" {
 #include <mpi.h>
 
 
-#define FCS_GRIDSORT_WITH_DIPOLES  1
+#if FCS_ENABLE_DIPOLES
+# define FCS_GRIDSORT_WITH_DIPOLES  1
+#endif
 
 
 /**

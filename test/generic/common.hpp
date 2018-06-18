@@ -35,7 +35,9 @@
 using namespace std;
 
 
-#define SCAFACOS_TEST_WITH_DIPOLES  1
+#if FCS_ENABLE_DIPOLES
+# define SCAFACOS_TEST_WITH_DIPOLES  1
+#endif
 
 
 #define z_max(_a_, _b_)           (((_a_)>(_b_))?(_a_):(_b_))

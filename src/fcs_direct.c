@@ -80,6 +80,7 @@ FCSResult fcs_direct_init(FCS handle)
 
   handle->destroy = fcs_direct_destroy;
 
+#if FCS_ENABLE_DIPOLES
   handle->dipole_support =
 #if FCS_DIRECT_WITH_DIPOLES
     FCS_TRUE
@@ -87,6 +88,7 @@ FCSResult fcs_direct_init(FCS handle)
     FCS_FALSE
 #endif
     ;
+#endif
 
   handle->set_parameter = fcs_direct_set_parameter;
   handle->print_parameters = fcs_direct_print_parameters;

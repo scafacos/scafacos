@@ -29,7 +29,9 @@ extern "C" {
 #include "common/near/near.h"
 
 
-#define FCS_DIRECT_WITH_DIPOLES  1
+#if FCS_ENABLE_DIPOLES
+# define FCS_DIRECT_WITH_DIPOLES  1
+#endif
 
 
 typedef struct _fcs_directc_t

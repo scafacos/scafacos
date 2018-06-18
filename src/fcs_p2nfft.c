@@ -92,7 +92,9 @@ FCSResult fcs_p2nfft_init(
 
   handle->shift_positions = 0;
 
+#if FCS_ENABLE_DIPOLES
   handle->dipole_support = FCS_TRUE;
+#endif
   handle->destroy = fcs_p2nfft_destroy;
   handle->set_r_cut = fcs_p2nfft_set_r_cut;
   handle->unset_r_cut = fcs_p2nfft_set_r_cut_tune;
@@ -236,8 +238,14 @@ FCSResult fcs_p2nfft_run(
   result = ifcs_p2nfft_run(handle->method_context,
       local_particles, max_local_particles,
       positions, charges, potentials, field,
+#if FCS_ENABLE_DIPOLES
       handle->local_dipole_particles, handle->max_local_dipole_particles,
-      handle->dipole_positions, handle->dipole_moments, handle->dipole_potentials, handle->dipole_field);
+      handle->dipole_positions, handle->dipole_moments, handle->dipole_potentials, handle->dipole_field
+#else
+      0, 0,
+      NULL, NULL, NULL, NULL
+#endif
+      );
 
   return result;
 }

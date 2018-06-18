@@ -118,8 +118,10 @@ FCSResult ifcs_p2nfft_run(
   if(box_not_large_enough(local_num_particles, positions, d->box_base, d->box_inv, d->periodicity))
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some particles left the box.");
 
+#if FCS_ENABLE_DIPOLES
   if(box_not_large_enough(local_num_dipole_particles, dipole_positions, d->box_base, d->box_inv, d->periodicity))
     return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name, "Box size does not fit. Some dipole particles left the box.");
+#endif
 
   /* TODO: implement additional scaling of particles to ensure x \in [0,L)
    * Idea: use allreduce to get min and max coordinates, adapt scaling of particles for every time step */
@@ -134,10 +136,12 @@ FCSResult ifcs_p2nfft_run(
   fcs_float *sorted_positions, *ghost_positions;
   fcs_float *sorted_charges, *ghost_charges;
   fcs_gridsort_index_t *sorted_indices, *ghost_indices;
+#if FCS_ENABLE_DIPOLES
   fcs_int sorted_num_dipole_particles, ghost_num_dipole_particles;
   fcs_float *sorted_dipole_positions, *ghost_dipole_positions;
   fcs_float *sorted_dipole_moments, *ghost_dipole_moments;
   fcs_gridsort_index_t *sorted_dipole_indices, *ghost_dipole_indices;
+#endif
   fcs_gridsort_t gridsort;
 
   fcs_gridsort_create(&gridsort);
@@ -148,7 +152,9 @@ FCSResult ifcs_p2nfft_run(
 
   fcs_gridsort_set_particles(&gridsort, local_num_particles, max_local_num_particles, positions, charges);
 
+#if FCS_ENABLE_DIPOLES
   fcs_gridsort_set_dipole_particles(&gridsort, local_num_dipole_particles, max_local_num_dipole_particles, dipole_positions, dipole_moments);
+#endif
 
   fcs_gridsort_set_max_particle_move(&gridsort, d->max_particle_move);
 
@@ -168,10 +174,14 @@ FCSResult ifcs_p2nfft_run(
   fcs_gridsort_separate_ghosts(&gridsort);
 
   fcs_gridsort_get_real_particles(&gridsort, &sorted_num_particles, &sorted_positions, &sorted_charges, &sorted_indices);
+#if FCS_ENABLE_DIPOLES
   fcs_gridsort_get_real_dipole_particles(&gridsort, &sorted_num_dipole_particles, &sorted_dipole_positions, &sorted_dipole_moments, &sorted_dipole_indices);
+#endif
 
   fcs_gridsort_get_ghost_particles(&gridsort, &ghost_num_particles, &ghost_positions, &ghost_charges, &ghost_indices);
+#if FCS_ENABLE_DIPOLES
   fcs_gridsort_get_ghost_dipole_particles(&gridsort, &ghost_num_dipole_particles, &ghost_dipole_positions, &ghost_dipole_moments, &ghost_dipole_indices);
+#endif
 
   /* Finish forw sort timing */
 #if CREATE_GHOSTS_SEPARATE
@@ -184,7 +194,9 @@ FCSResult ifcs_p2nfft_run(
   /* For periodic boundary conditions: just fold them back.
    * We change sorted_positions (and not positions), since we are allowed to overwrite them. */
   fcs_wrap_positions(sorted_num_particles, sorted_positions, d->box_a, d->box_b, d->box_c, d->box_base, d->periodicity);
+#if FCS_ENABLE_DIPOLES
   fcs_wrap_positions(sorted_num_dipole_particles, sorted_dipole_positions, d->box_a, d->box_b, d->box_c, d->box_base, d->periodicity);
+#endif
 
   /* Start near field timing */
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
@@ -195,41 +207,55 @@ FCSResult ifcs_p2nfft_run(
   /* additional switchs to turn off computation of field / potential */
   if(d->flags & FCS_P2NFFT_IGNORE_FIELD)     field     = NULL;
   if(d->flags & FCS_P2NFFT_IGNORE_POTENTIAL) potential = NULL;
+#if FCS_ENABLE_DIPOLES
   if(d->flags & FCS_P2NFFT_IGNORE_FIELD)     dipole_field     = NULL;
   if(d->flags & FCS_P2NFFT_IGNORE_POTENTIAL) dipole_potential = NULL;
+#endif
 
   fcs_int compute_field     = (field != NULL);
   fcs_int compute_potential = (potential != NULL);
+#if FCS_ENABLE_DIPOLES
   fcs_int compute_dipole_field     = (dipole_field != NULL);
   fcs_int compute_dipole_potential = (dipole_potential != NULL);
+#endif
 
   fcs_float *sorted_field     = (compute_field)     ? malloc(sizeof(fcs_float)*3*sorted_num_particles) : NULL;
   fcs_float *sorted_potential = (compute_potential) ? malloc(sizeof(fcs_float)*sorted_num_particles) : NULL;
+#if FCS_ENABLE_DIPOLES
   fcs_float *sorted_dipole_field     = (compute_dipole_field)     ? malloc(sizeof(fcs_float)*6*sorted_num_dipole_particles) : NULL;
   fcs_float *sorted_dipole_potential = (compute_dipole_potential) ? malloc(sizeof(fcs_float)*3*sorted_num_dipole_particles) : NULL;
+#endif
 
   /* Initialize all the potential */
   if(compute_potential)
     for (fcs_int j = 0; j < sorted_num_particles; ++j)
       sorted_potential[j] = 0;
 
+#if FCS_ENABLE_DIPOLES
   if(compute_dipole_potential)
     for (fcs_int j = 0; j < 3 * sorted_num_dipole_particles; ++j)
       sorted_dipole_potential[j] = 0;
+#endif
   
   /* Initialize all the forces */
   if(compute_field)
     for (fcs_int j = 0; j < 3 * sorted_num_particles; ++j)
       sorted_field[j] = 0;
 
+#if FCS_ENABLE_DIPOLES
   if(compute_dipole_field)
     for (fcs_int j = 0; j < 6 * sorted_num_dipole_particles; ++j)
       sorted_dipole_field[j] = 0;
+#endif
 
   if(d->short_range_flag){
     fcs_near_create(&near);
 
-    if(d->interpolation_order >= 0 && !compute_dipole_potential && !compute_dipole_field ){
+    if(d->interpolation_order >= 0
+#if FCS_ENABLE_DIPOLES
+      && !compute_dipole_potential && !compute_dipole_field
+#endif
+      ){
       /* interpolation loop only works for charge-charge interactions */
       /* TODO: implement interpolation and loops for dipoles */
       switch(d->interpolation_order){
@@ -239,18 +265,28 @@ FCSResult ifcs_p2nfft_run(
         case 3: fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_interpolation_cub_loop); break;
         default: return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, fnc_name,"P2NFFT interpolation order is too large.");
       } 
-    } else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD &&  !compute_dipole_potential && !compute_dipole_field ){
+    } else if(d->reg_kernel == FCS_P2NFFT_REG_KERNEL_EWALD
+#if FCS_ENABLE_DIPOLES
+      && !compute_dipole_potential && !compute_dipole_field
+#endif
+      ){
       /* near field loop only works for charge-charge interactions */
       /* TODO: implement approx erfc interactions for dipoles */
-      if(d->interpolation_order < -1 && !compute_dipole_potential && !compute_dipole_field )
+      if(d->interpolation_order < -1
+#if FCS_ENABLE_DIPOLES
+        && !compute_dipole_potential && !compute_dipole_field
+#endif
+        )
         fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_periodic_approx_erfc_loop);
       else /* d->interpolation_order = -1 */
         fcs_near_set_loop(&near, ifcs_p2nfft_compute_near_periodic_erfc_loop);
     } else {
       /* set scalar functions for dipole interactions */
       fcs_near_set_charge_charge(&near, ifcs_p2nfft_compute_near_charge_charge);
+#if FCS_ENABLE_DIPOLES
       fcs_near_set_charge_dipole(&near, ifcs_p2nfft_compute_near_charge_dipole);
       fcs_near_set_dipole_dipole(&near, ifcs_p2nfft_compute_near_dipole_dipole);
+#endif
 
 //       fcs_near_set_field(&near, ifcs_p2nfft_compute_near_field);
 //       fcs_near_set_potential(&near, ifcs_p2nfft_compute_near_potential);
@@ -262,13 +298,21 @@ FCSResult ifcs_p2nfft_run(
   
     fcs_near_set_particles(&near, sorted_num_particles, sorted_num_particles, sorted_positions, sorted_charges, sorted_indices,
         (compute_field)?sorted_field:NULL, (compute_potential)?sorted_potential:NULL);
+#if FCS_ENABLE_DIPOLES
     fcs_near_set_dipole_particles(&near, sorted_num_dipole_particles, sorted_num_dipole_particles, sorted_dipole_positions, sorted_dipole_moments, sorted_dipole_indices,
         (compute_dipole_field)?sorted_dipole_field:NULL, (compute_dipole_potential)?sorted_dipole_potential:NULL);
+#endif
   
     fcs_near_set_ghosts(&near, ghost_num_particles, ghost_positions, ghost_charges, ghost_indices);
+#if FCS_ENABLE_DIPOLES
     fcs_near_set_dipole_ghosts(&near, ghost_num_dipole_particles, ghost_dipole_positions, ghost_dipole_moments, ghost_dipole_indices);
+#endif
   
-    if(d->interpolation_order >= 0 && !compute_dipole_potential && !compute_dipole_field ){
+    if(d->interpolation_order >= 0
+#if FCS_ENABLE_DIPOLES
+      && !compute_dipole_potential && !compute_dipole_field
+#endif
+      ){
       /* interpolation loop only works for charge-charge interactions */
       /* TODO: implement interpolation for dipole interactions */
 
@@ -325,6 +369,7 @@ FCSResult ifcs_p2nfft_run(
   }
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Reinit charges");
 
+#if FCS_ENABLE_DIPOLES
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
   {
     unsigned pnfft_malloc_flags = PNFFT_MALLOC_X | PNFFT_MALLOC_GRAD_F;
@@ -333,6 +378,7 @@ FCSResult ifcs_p2nfft_run(
     d->dipoles = FCS_PNFFT(init_nodes)(sorted_num_dipole_particles, pnfft_malloc_flags);
   }
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "Reinit dipoles");
+#endif
 
   /* catch data pointers from PNFFT opaque plans */
   fcs_pnfft_complex *f_hat             = FCS_PNFFT(get_f_hat)(d->pnfft);
@@ -340,9 +386,11 @@ FCSResult ifcs_p2nfft_run(
   fcs_pnfft_complex *charges_f         = FCS_PNFFT(get_f)(d->charges);
   fcs_pnfft_complex *charges_grad_f    = FCS_PNFFT(get_grad_f)(d->charges);
   fcs_float         *charges_x         = FCS_PNFFT(get_x)(d->charges);
+#if FCS_ENABLE_DIPOLES
   fcs_pnfft_complex *dipoles_grad_f    = FCS_PNFFT(get_grad_f)(d->dipoles);
   fcs_pnfft_complex *dipoles_hessian_f = FCS_PNFFT(get_hessian_f)(d->dipoles);
   fcs_float         *dipoles_x         = FCS_PNFFT(get_x)(d->dipoles);
+#endif
 
   /* Set NFFT nodes within [-0.5,0.5]^3 */
   for (fcs_int j = 0; j < sorted_num_particles; ++j)
@@ -357,6 +405,7 @@ FCSResult ifcs_p2nfft_run(
     charges_x[3 * j + 1] = ( XYZ2TRI(1, pos, d->box_inv) - 0.5 ) / d->box_expand[1];
     charges_x[3 * j + 2] = ( XYZ2TRI(2, pos, d->box_inv) - 0.5 ) / d->box_expand[2];
   }
+#if FCS_ENABLE_DIPOLES
   for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j)
   {
     fcs_float pos[3];
@@ -369,6 +418,7 @@ FCSResult ifcs_p2nfft_run(
     dipoles_x[3 * j + 1] = ( XYZ2TRI(1, pos, d->box_inv) - 0.5 ) / d->box_expand[1];
     dipoles_x[3 * j + 2] = ( XYZ2TRI(2, pos, d->box_inv) - 0.5 ) / d->box_expand[2];
   }
+#endif
     
   /* Set NFFT values */
   for (fcs_int j = 0; j < sorted_num_particles; ++j)
@@ -377,11 +427,13 @@ FCSResult ifcs_p2nfft_run(
 //   for (fcs_int j = 0; j < 3*sorted_num_dipole_particles; ++j)
 //     dipoles_grad_f[j] = sorted_dipole_moments[j];
   
+#if FCS_ENABLE_DIPOLES
   for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
     dipoles_grad_f[3 * j + 0] = XYZ2TRI(0, sorted_dipole_moments + 3*j, d->box_inv) / d->box_expand[0];
     dipoles_grad_f[3 * j + 1] = XYZ2TRI(1, sorted_dipole_moments + 3*j, d->box_inv) / d->box_expand[1];
     dipoles_grad_f[3 * j + 2] = XYZ2TRI(2, sorted_dipole_moments + 3*j, d->box_inv) / d->box_expand[2];
   }
+#endif
 
   /* Reset pnfft timer (delete timings from fcs_init and fcs_tune) */  
 #if FCS_ENABLE_INFO && !FCS_P2NFFT_DISABLE_PNFFT_INFO
@@ -411,7 +463,9 @@ FCSResult ifcs_p2nfft_run(
     unsigned direct_flag = (d->pnfft_direct) ? PNFFT_COMPUTE_DIRECT : 0;
     FCS_PNFFT(zero_f_hat)(d->pnfft);
     FCS_PNFFT(adj)(d->pnfft, d->charges, direct_flag | PNFFT_COMPUTE_ACCUMULATED | PNFFT_COMPUTE_F);
+#if FCS_ENABLE_DIPOLES
     FCS_PNFFT(adj)(d->pnfft, d->dipoles, direct_flag | PNFFT_COMPUTE_ACCUMULATED | PNFFT_COMPUTE_GRAD_F);
+#endif
   }
 
   /* Checksum: Output of adjoint NFFT */  
@@ -453,10 +507,12 @@ FCSResult ifcs_p2nfft_run(
     if(compute_field)     compute_flags_charges |= PNFFT_COMPUTE_GRAD_F;
     FCS_PNFFT(trafo)(d->pnfft, d->charges, direct_flag | compute_flags_charges);
 
+#if FCS_ENABLE_DIPOLES
     unsigned compute_flags_dipoles = 0;
     if(compute_dipole_potential) compute_flags_dipoles |= PNFFT_COMPUTE_GRAD_F;
     if(compute_dipole_field)     compute_flags_dipoles |= PNFFT_COMPUTE_HESSIAN_F;
     FCS_PNFFT(trafo)(d->pnfft, d->dipoles, direct_flag | compute_flags_dipoles);
+#endif
   }
 
   /* Copy the results to the output vector and rescale with L^{-T} */
@@ -464,6 +520,7 @@ FCSResult ifcs_p2nfft_run(
     for (fcs_int j = 0; j < sorted_num_particles; ++j)
       sorted_potential[j] += creal(charges_f[j]);
 
+#if FCS_ENABLE_DIPOLES
   /* Rescale all gradients L^{-T} * grad_f */
   if(compute_dipole_potential){
 
@@ -476,8 +533,8 @@ FCSResult ifcs_p2nfft_run(
       sorted_dipole_potential[3 * j + 1] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 1) );
       sorted_dipole_potential[3 * j + 2] -= fcs_creal( At_TIMES_VEC(d->ebox_inv, dipoles_grad_f + 3*j, 2) );
     }
-
   }
+#endif
 
   if(compute_field){
     for (fcs_int j = 0; j < sorted_num_particles; ++j){
@@ -487,6 +544,7 @@ FCSResult ifcs_p2nfft_run(
     }
   }
 
+#if FCS_ENABLE_DIPOLES
   /* Rescale all (symmetric) Hessian via L^{-T} * Hf * L^{-1} */
   if(compute_dipole_field){
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
@@ -498,6 +556,7 @@ FCSResult ifcs_p2nfft_run(
       sorted_dipole_field[6 * j + 5] -= fcs_creal( At_TIMES_SYMMAT_TIMES_A(d->ebox_inv, dipoles_hessian_f + 6*j, 2, 2) );
     }
   }
+#endif
 
   /* Checksum: fields resulting from farfield interactions */
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
@@ -548,6 +607,7 @@ FCSResult ifcs_p2nfft_run(
       sorted_potential[j] -= sorted_charges[j] * self;
   }
 
+#if FCS_ENABLE_DIPOLES
   if(compute_dipole_potential){
     fcs_float self = ifcs_p2nfft_compute_self_dipole_potential(rd);
     for (fcs_int j = 0; j < sorted_num_dipole_particles; ++j){
@@ -555,8 +615,8 @@ FCSResult ifcs_p2nfft_run(
       sorted_dipole_potential[3 * j + 1] +=  sorted_dipole_moments[3 * j + 1] * self;
       sorted_dipole_potential[3 * j + 2] +=  sorted_dipole_moments[3 * j + 2] * self;
     }
-
   }
+#endif
 
   /* Finish self interaction timing */
   FCS_P2NFFT_FINISH_TIMING(d->cart_comm_3d, "self interaction calculation");
@@ -621,6 +681,7 @@ FCSResult ifcs_p2nfft_run(
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: total energy: %" FCS_LMOD_FLOAT "f\n", total_global);
 #endif
 
+#if FCS_ENABLE_DIPOLES
   /* Try: calculate total dipol moment */
 #if FCS_ENABLE_DEBUG || FCS_P2NFFT_DEBUG
   fcs_float total_dipol_local[3] = {0.0, 0.0, 0.0};
@@ -640,6 +701,7 @@ FCSResult ifcs_p2nfft_run(
 //     total_dipol_global[t] *= 2.0*PNFFT_PI / (d->box_l[0]*d->box_l[1]*d->box_l[2]);
   if (myrank == 0) fprintf(stderr, "P2NFFT_DEBUG: scaled total dipol: (%" FCS_LMOD_FLOAT "e, %" FCS_LMOD_FLOAT "e, %" FCS_LMOD_FLOAT "e)\n", total_dipol_global[0], total_dipol_global[1], total_dipol_global[2]);
 #endif
+#endif
       
   /* Start back sort timing */
   FCS_P2NFFT_START_TIMING(d->cart_comm_3d);
@@ -647,8 +709,10 @@ FCSResult ifcs_p2nfft_run(
   fcs_gridsort_set_sorted_results(&gridsort, sorted_num_particles, sorted_field, sorted_potential);
   fcs_gridsort_set_results(&gridsort, max_local_num_particles, field, potential);
 
+#if FCS_ENABLE_DIPOLES
   fcs_gridsort_set_sorted_dipole_results(&gridsort, sorted_num_dipole_particles, sorted_dipole_field, sorted_dipole_potential);
   fcs_gridsort_set_dipole_results(&gridsort, max_local_num_dipole_particles, dipole_field, dipole_potential);
+#endif
 
   fcs_int resort;
 
@@ -668,8 +732,10 @@ FCSResult ifcs_p2nfft_run(
   if (sorted_field) free(sorted_field);
   if (sorted_potential) free(sorted_potential);
 
+#if FCS_ENABLE_DIPOLES
   if (sorted_dipole_field) free(sorted_dipole_field);
   if (sorted_dipole_potential) free(sorted_dipole_potential);
+#endif
 
   fcs_gridsort_free(&gridsort);
 

@@ -8,7 +8,11 @@ else
 lib_LTLIBRARIES += libfcs_near.la
 endif
 
-sl_sub_libs = libfcs_near_dip_near___.la libfcs_near_dip_near__p.la libfcs_near_dip_near_f_.la libfcs_near_dip_near_fp.la libfcs_near_near___.la libfcs_near_near__p.la libfcs_near_near_f_.la libfcs_near_near_fp.la libfcs_near_extra.la libfcs_near_mpiwrap.la
+sl_sub_libs = libfcs_near_near___.la libfcs_near_near__p.la libfcs_near_near_f_.la libfcs_near_near_fp.la libfcs_near_extra.la libfcs_near_mpiwrap.la
+if ENABLE_DIPOLES
+sl_sub_libs += libfcs_near_dip_near___.la libfcs_near_dip_near__p.la libfcs_near_dip_near_f_.la libfcs_near_dip_near_fp.la
+endif
+
 
 noinst_LTLIBRARIES += $(sl_sub_libs)
 

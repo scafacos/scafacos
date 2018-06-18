@@ -32,7 +32,9 @@ extern "C" {
 #include "common/gridsort/gridsort.h"
 
 
-#define FCS_NEAR_WITH_DIPOLES  1
+#if FCS_ENABLE_DIPOLES
+# define FCS_NEAR_WITH_DIPOLES  1
+#endif
 
 
 typedef fcs_float (*fcs_near_field_f)(const void *param, fcs_float dist);

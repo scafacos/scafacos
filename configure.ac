@@ -212,6 +212,19 @@ fi
 
 #echo "enable_gpl: $enable_gpl"
 
+# add option to enable/disable dipoles
+AC_ARG_ENABLE([fcs-dipoles],
+ [AS_HELP_STRING([--disable-fcs-dipoles],[disable support of dipoles])],,
+ [enable_fcs_dipoles=yes])
+if test "x$enable_fcs_dipoles" = "xyes" ; then
+  AC_MSG_NOTICE([enabling support of dipoles])
+  AC_DEFINE([FCS_ENABLE_DIPOLES], [1], [Whether support of dipoles is enabled.])
+fi
+AM_CONDITIONAL([ENABLE_DIPOLES],[test "x$enable_fcs_dipoles" = xyes])
+
+#echo "enable_fcs_dipoles: $enable_fcs_dipoles"
+
+
 # add option to disable each solver individually
 AC_ARG_ENABLE([fcs-SOLVER],
  [AS_HELP_STRING([--disable-fcs-SOLVER],[disable build of SOLVER (]all_solver_methods[)])])
@@ -931,6 +944,7 @@ AC_MSG_NOTICE([-----------------])
 AC_MSG_NOTICE([ FCS C types                = $fcs_int / $fcs_float])
 AC_MSG_NOTICE([ FCS Fortan types           = $fcs_integer / $fcs_real])
 AC_MSG_NOTICE([ Fortan interface           = $use_fcs_fortran])
+AC_MSG_NOTICE([ Dipoles                    = $enable_fcs_dipoles])
 AC_MSG_NOTICE([])
 AC_FOREACH([method], all_common_methods,
 [

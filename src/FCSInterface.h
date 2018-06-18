@@ -157,6 +157,7 @@ typedef struct _FCS_t
      1 = done by library routine*/
   fcs_int near_field_flag;
 
+#if FCS_ENABLE_DIPOLES
   /* local number of dipole particles */
   fcs_int local_dipole_particles;
   /* local input and output arrays of dipole particles */
@@ -166,6 +167,7 @@ typedef struct _FCS_t
   fcs_int total_dipole_particles;
   /* maximum number of dipole particles that can be stored in the local arrays provided to fcs_set_dipole_particles */
   fcs_int max_local_dipole_particles;
+#endif
 
   /* structures containing the method-specific parameters */
 #ifdef FCS_ENABLE_DIRECT
@@ -213,7 +215,9 @@ typedef struct _FCS_t
   FCSResult (*unset_r_cut)(FCS handle);
   FCSResult (*get_r_cut)(FCS handle, fcs_float *r_cut);
 
+#if FCS_ENABLE_DIPOLES
   fcs_bool dipole_support;
+#endif
 
   FCSResult (*set_parameter)(FCS handle, fcs_bool continue_on_errors, char **current, char **next, fcs_int *matched);
   FCSResult (*print_parameters)(FCS handle);
@@ -233,10 +237,12 @@ typedef struct _FCS_t
   FCSResult (*resort_ints)(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
   FCSResult (*resort_floats)(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
   FCSResult (*resort_bytes)(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm);
+#if FCS_ENABLE_DIPOLES
   FCSResult (*get_resort_dipole_particles)(FCS handle, fcs_int *resort_particles);
   FCSResult (*resort_dipole_ints)(FCS handle, fcs_int *src, fcs_int *dst, fcs_int n, MPI_Comm comm);
   FCSResult (*resort_dipole_floats)(FCS handle, fcs_float *src, fcs_float *dst, fcs_int n, MPI_Comm comm);
   FCSResult (*resort_dipole_bytes)(FCS handle, void *src, void *dst, fcs_int n, MPI_Comm comm);
+#endif
 
 } FCS_t;
 

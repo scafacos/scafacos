@@ -8,7 +8,11 @@ else
 lib_LTLIBRARIES += libfcs_gridsort.la
 endif
 
-sl_sub_libs = libfcs_gridsort_back__p.la libfcs_gridsort_back_f_.la libfcs_gridsort_back_fp.la libfcs_gridsort_dip_back__p.la libfcs_gridsort_dip_back_f_.la libfcs_gridsort_dip_back_fp.la libfcs_gridsort_dip_forw.la libfcs_gridsort_forw.la libfcs_gridsort_rsrt.la libfcs_gridsort_extra.la libfcs_gridsort_mpiwrap.la
+sl_sub_libs = libfcs_gridsort_back__p.la libfcs_gridsort_back_f_.la libfcs_gridsort_back_fp.la libfcs_gridsort_forw.la libfcs_gridsort_rsrt.la libfcs_gridsort_extra.la libfcs_gridsort_mpiwrap.la
+if ENABLE_DIPOLES
+sl_sub_libs += libfcs_gridsort_dip_back__p.la libfcs_gridsort_dip_back_f_.la libfcs_gridsort_dip_back_fp.la libfcs_gridsort_dip_forw.la
+endif
+
 
 noinst_LTLIBRARIES += $(sl_sub_libs)
 

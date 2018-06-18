@@ -286,6 +286,8 @@ FCSResult fcs_unset_r_cut(FCS handle);
  */
 FCSResult fcs_get_r_cut(FCS handle, fcs_float *r_cut);
 
+#ifdef FCS_ENABLE_DIPOLES
+
 /**
  * @brief function to set dipole particles for the computations of the FCS solver (if supported)
  * @param handle FCS handle representing an FCS solver object
@@ -339,6 +341,8 @@ FCSResult fcs_set_max_local_dipole_particles(FCS handle, fcs_int max_local_dipol
  * @return maximum number of dipole particles that can be stored locally
  */
 fcs_int fcs_get_max_local_dipole_particles(FCS handle);
+
+#endif
 
 /**
  * @brief function to set the parameters of the FCS solver based on a parameter string
@@ -555,6 +559,8 @@ FCSResult fcs_resort_floats(FCS handle, fcs_float *src, fcs_float *dst, fcs_int 
  */
 FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n);
 
+#ifdef FCS_ENABLE_DIPOLES
+
 /**
  * @brief function to return the new local number of dipole particles
  * @param handle FCS-object representing an FCS solver
@@ -593,6 +599,7 @@ FCSResult fcs_resort_dipole_floats(FCS handle, fcs_float *src, fcs_float *dst, f
  */
 FCSResult fcs_resort_dipole_bytes(FCS handle, void *src, void *dst, fcs_int n);
 
+#endif
 
 #ifdef FCS_ENABLE_DEPRECATED
 #define fcs_set_dimension    fcs_set_dimensions

@@ -8,6 +8,9 @@
    for FCS. */
 #undef FCS_CONV_INT
 
+/* Whether support of dipoles is enabled. */
+#undef FCS_ENABLE_DIPOLES
+
 /* Whether solver method direct is enabled. */
 #undef FCS_ENABLE_DIRECT
 

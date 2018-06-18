@@ -122,6 +122,7 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
 
   handle->near_field_flag = 1;
 
+#if FCS_ENABLE_DIPOLES
   handle->local_dipole_particles = 0;
   handle->dipole_positions = NULL;
   handle->dipole_moments = NULL;
@@ -129,6 +130,7 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
   handle->dipole_potentials = NULL;
 
   handle->total_dipole_particles = handle->max_local_dipole_particles = -1;
+#endif
 
 #ifdef FCS_ENABLE_FMM
   handle->fmm_param = NULL;
@@ -170,7 +172,9 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
   handle->unset_r_cut = NULL;
   handle->get_r_cut = NULL;
 
+#if FCS_ENABLE_DIPOLES
   handle->dipole_support = FCS_FALSE;
+#endif
 
   handle->set_parameter = NULL;
   handle->print_parameters = NULL;
@@ -190,10 +194,12 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
   handle->resort_ints = NULL;
   handle->resort_floats = NULL;
   handle->resort_bytes = NULL;
+#if FCS_ENABLE_DIPOLES
   handle->get_resort_dipole_particles = NULL;
   handle->resort_dipole_ints = NULL;
   handle->resort_dipole_floats = NULL;
   handle->resort_dipole_bytes = NULL;
+#endif
 
   *new_handle = handle;
 
@@ -718,6 +724,8 @@ FCSResult fcs_get_r_cut(FCS handle, fcs_float *r_cut)
 }
 
 
+#if FCS_ENABLE_DIPOLES
+
 /**
  * set dipole particles for the computations of the FCS solver
  */
@@ -814,6 +822,8 @@ fcs_int fcs_get_max_local_dipole_particles(FCS handle)
   return handle->max_local_dipole_particles;
 }
 
+#endif
+
 
 /**
  * set the parameters of the FCS solver based on a parameter string
@@ -856,7 +866,9 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("periodicity",             set_periodicity,            FCS_PARSE_SEQ(fcs_int, 3));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("near_field_flag",         set_near_field_flag,        FCS_PARSE_VAL(fcs_int));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("total_particles",         set_total_particles,        FCS_PARSE_VAL(fcs_int));
+#if FCS_ENABLE_DIPOLES
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("total_dipole_particles",  set_total_dipole_particles, FCS_PARSE_VAL(fcs_int));
+#endif
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("r_cut",                   set_r_cut,                  FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("require_virial",          set_compute_virial,         FCS_PARSE_VAL(fcs_int));
     FCS_PARSE_IF_PARAM_THEN_FUNC2_GOTO_NEXT("tolerance",               set_tolerance,              FCS_PARSE_CONST(fcs_int, FCS_TOLERANCE_TYPE_UNDEFINED),     FCS_PARSE_VAL(fcs_float));
@@ -911,7 +923,9 @@ FCSResult fcs_print_parameters(FCS handle)
     fcs_get_box_origin(handle)[0], fcs_get_box_origin(handle)[1], fcs_get_box_origin(handle)[2]);
   printf("periodicity: %c %c %c\n", ((fcs_get_periodicity(handle)[0] == 1)?'T':'F'), ((fcs_get_periodicity(handle)[1] == 1)?'T':'F'),((fcs_get_periodicity(handle)[2] == 1)?'T':'F'));
   printf("total particles: %" FCS_LMOD_INT "d\n", fcs_get_total_particles(handle));
+#if FCS_ENABLE_DIPOLES
   printf("total dipole particles: %" FCS_LMOD_INT "d\n", fcs_get_total_dipole_particles(handle));
+#endif
   printf("------------------------");
   printf("solver specific data:\n");
 
@@ -1356,6 +1370,8 @@ FCSResult fcs_resort_bytes(FCS handle, void *src, void *dst, fcs_int n)
 }
 
 
+#if FCS_ENABLE_DIPOLES
+
 /**
  * return the new local number of dipole particles
  */
@@ -1410,6 +1426,8 @@ FCSResult fcs_resort_dipole_bytes(FCS handle, void *src, void *dst, fcs_int n)
 
   return handle->resort_dipole_bytes(handle, src, dst, n, fcs_get_communicator(handle));
 }
+
+#endif
 
 
 /**
