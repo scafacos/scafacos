@@ -131,6 +131,10 @@ AM_CONDITIONAL(ENABLE_FMM_A1,[test "x${FMM_MP}" = xFMM_MP_A1 -o "x${enable_dist}
 AM_CONDITIONAL(ENABLE_FMM_MPI,[test "x${FMM_MP}" = xFMM_MP_MPI])
 AM_CONDITIONAL(ENABLE_FMM_SIMPLE_ARMCI,[test "x${FMM_MP}" = xFMM_MP_SIMPLE_ARMCI -o "x${enable_dist}" = xyes])
 if test "x${FMM_MP}" = xFMM_MP_ARMCI -o "x${enable_dist}" = xyes ; then
+  case $ac_configure_args in
+    *--without-openib*) ;;
+    *) ac_configure_args="$ac_configure_args --without-openib" ;;
+  esac
   AC_CONFIG_SUBDIRS([armci])
 fi
 if test "x${FMM_MP}" = xFMM_MP_A1 -o "x${enable_dist}" = xyes ; then
