@@ -6,6 +6,9 @@ endif
 if ENABLE_COMMON_GRIDSORT
 SUBDIRS += common/gridsort
 endif
+if ENABLE_COMMON_REDIST
+SUBDIRS += common/redist
+endif
 if ENABLE_COMMON_RESORT
 SUBDIRS += common/resort
 endif

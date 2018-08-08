@@ -26,6 +26,7 @@
 #include "FCSCommon.h"
 #include "FCSInterface.h"
 #include "fcs_common.h"
+#include "common/redist/redist.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -121,6 +122,8 @@ FCSResult fcs_init(FCS *new_handle, const char* method_name, MPI_Comm communicat
   handle->total_particles = handle->max_local_particles = -1;
 
   handle->near_field_flag = 1;
+
+  handle->redistribute = 0;
 
 #ifdef FCS_ENABLE_FMM
   handle->fmm_param = NULL;
@@ -373,6 +376,30 @@ fcs_int fcs_get_near_field_flag(FCS handle)
   CHECK_HANDLE_RETURN_VAL(handle, __func__, -1);
 
   return handle->near_field_flag;
+}
+
+
+/**
+ * set the particle redistribution
+ */
+FCSResult fcs_set_redistribute(FCS handle, fcs_int redistribute)
+{
+  CHECK_HANDLE_RETURN_RESULT(handle, __func__);
+
+  handle->redistribute = redistribute;
+
+  return FCS_RESULT_SUCCESS;
+}
+
+
+/**
+ * return the particle redistribution
+ */
+fcs_int fcs_get_redistribute(FCS handle)
+{
+  CHECK_HANDLE_RETURN_VAL(handle, __func__, -1);
+
+  return handle->redistribute;
 }
 
 
@@ -747,6 +774,7 @@ FCSResult fcs_set_parameters(FCS handle, const char *parameters, fcs_bool contin
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("offset",                  set_box_origin,      FCS_PARSE_SEQ(fcs_float, 3));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("periodicity",             set_periodicity,     FCS_PARSE_SEQ(fcs_int, 3));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("near_field_flag",         set_near_field_flag, FCS_PARSE_VAL(fcs_int));
+    FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("redistribute",            set_redistribute,    FCS_PARSE_VAL(fcs_int));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("total_particles",         set_total_particles, FCS_PARSE_VAL(fcs_int));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("r_cut",                   set_r_cut,           FCS_PARSE_VAL(fcs_float));
     FCS_PARSE_IF_PARAM_THEN_FUNC1_GOTO_NEXT("require_virial",          set_compute_virial,  FCS_PARSE_VAL(fcs_int));
@@ -846,7 +874,23 @@ FCSResult fcs_tune(FCS handle, fcs_int local_particles,
     handle->box_origin[0] = handle->box_origin[1] = handle->box_origin[2] = 0;
   }
 
+  fcs_redist_t redist;
+  if (handle->redistribute == 1)
+  {
+    fcs_int max_local_particles = handle->max_local_particles;
+    fcs_redist_create(&redist, handle->communicator);
+    fcs_redist_set_original_particles(redist, local_particles, max_local_particles, positions, charges, NULL, NULL);
+    fcs_redist_redistribute_forward_equal(redist);
+    fcs_redist_get_redistributed_particles(redist, &local_particles, &max_local_particles, &positions, &charges, NULL, NULL);
+/*    fcs_redist_print(handle->direct_param->redist);*/
+  }
+
   result = handle->tune(handle, local_particles, positions, charges);
+
+  if (handle->redistribute == 1)
+  {
+    fcs_redist_destroy(&redist);
+  }
 
   if (handle->shift_positions)
   {
@@ -893,7 +937,24 @@ FCSResult fcs_run(FCS handle, fcs_int local_particles,
     handle->box_origin[0] = handle->box_origin[1] = handle->box_origin[2] = 0;
   }
 
+  fcs_redist_t redist;
+  if (handle->redistribute == 1)
+  {
+    fcs_int max_local_particles = handle->max_local_particles;
+    fcs_redist_create(&redist, handle->communicator);
+    fcs_redist_set_original_particles(redist, local_particles, max_local_particles, positions, charges, field, potentials);
+    fcs_redist_redistribute_forward_equal(redist);
+    fcs_redist_get_redistributed_particles(redist, &local_particles, &max_local_particles, &positions, &charges, &field, &potentials);
+/*    fcs_redist_print(handle->direct_param->redist);*/
+  }
+
   result = handle->run(handle, local_particles, positions, charges, field, potentials);
+
+  if (handle->redistribute == 1)
+  {
+    fcs_redist_redistribute_backward(redist);
+    fcs_redist_destroy(&redist);
+  }
 
   if (handle->shift_positions)
   {

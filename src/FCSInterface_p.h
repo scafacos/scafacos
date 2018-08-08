@@ -134,6 +134,20 @@ FCSResult fcs_set_near_field_flag(FCS handle, fcs_int near_field_flag);
  * @return value of near-field flag (see ::fcs_set_near_field_flag)
  */
 fcs_int fcs_get_near_field_flag(FCS handle);
+/**
+ * @brief function to set the redistribution of particles before the computations (and back after the computations)
+ * @param handle FCS-object representing an FCS solver
+ * @param redistribute whether the particles should remain where they are (value 0) or be equally distributed among all processes (value 1)
+ * @return FCSResult-object containing the return state
+ */
+FCSResult fcs_set_redistribute(FCS handle, fcs_int redistribute);
+
+/**
+ * @brief function to return the particle redistribution setting
+ * @param handle FCS-object representing an FCS solver
+ * @return value of the particle redistribution setting (see ::fcs_set_redistribute)
+ */
+fcs_int fcs_get_redistribute(FCS handle);
 
 /**
  * @brief function to set the first base vector of the system box

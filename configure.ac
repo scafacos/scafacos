@@ -229,16 +229,18 @@ AC_FOREACH([solver], all_solver_methods,[
 #])
 
 enable_fcs_gridsort=yes # always enabled, because scafacos_test uses gridsort
+enable_fcs_redist=yes # always enabled, because the library interface uses redist
 
 if test "x$enable_dist" = xyes ; then
   enable_fcs_near=yes
+  enable_fcs_redist=yes
   enable_fcs_resort=yes
 fi
 
 # Check prerequisites.
 
 # Common methods and solvers that use these methods.
-m4_define([all_common_methods], [fftw3 fftw3_mpi pfft pnfft near gridsort resort sl mmm])
+m4_define([all_common_methods], [fftw3 fftw3_mpi pfft pnfft near gridsort redist resort sl mmm])
 requires_fftw3="p2nfft p3m"
 requires_fftw3_mpi="p2nfft"
 requires_pfft="p2nfft"
@@ -246,7 +248,7 @@ requires_pnfft="p2nfft"
 requires_near="direct ewald p2nfft p3m wolf"
 requires_gridsort="ewald memd mmm1d mmm2d p2nfft p3m near"
 requires_resort="gridsort"
-requires_sl="gridsort resort near"
+requires_sl="gridsort redist resort near"
 requires_mmm="mmm1d mmm2d"
 
 AC_FOREACH([prereq], all_common_methods,[
@@ -621,6 +623,12 @@ if test "x$use_fcs_gridsort" = xyes ; then
 fi
 AM_CONDITIONAL([ENABLE_COMMON_GRIDSORT],[test "x$use_fcs_gridsort" = xyes])
 
+# Set up redist module.
+if test "x$use_fcs_redist" = xyes ; then
+  AC_MSG_NOTICE([enabling helper method 'redist'])
+fi
+AM_CONDITIONAL([ENABLE_COMMON_REDIST],[test "x$use_fcs_redist" = xyes])
+
 # Set up resort module.
 if test "x$use_fcs_resort" = xyes ; then
   AC_MSG_NOTICE([enabling helper method 'resort'])
@@ -689,6 +697,11 @@ if test "x$use_fcs_gridsort" = xyes ; then
   AX_FCS_PACKAGE_ADD([gridsort_USE],[yes])
   AX_FCS_PACKAGE_ADD([gridsort_LIBS],[-lfcs_gridsort])
   AX_FCS_PACKAGE_ADD([gridsort_LIBS_A],[lib/common/gridsort/libfcs_gridsort.la])
+fi
+if test "x$use_fcs_redist" = xyes ; then
+  AX_FCS_PACKAGE_ADD([redist_USE],[yes])
+  AX_FCS_PACKAGE_ADD([redist_LIBS],[-lfcs_redist])
+  AX_FCS_PACKAGE_ADD([redist_LIBS_A],[lib/common/redist/libfcs_redist.la])
 fi
 if test "x$use_fcs_resort" = xyes ; then
   AX_FCS_PACKAGE_ADD([resort_USE],[yes])
@@ -792,6 +805,9 @@ AC_CONFIG_FILES([lib/common/near/Makefile])
 
 # Create gridsort module files.
 AC_CONFIG_FILES([lib/common/gridsort/Makefile])
+
+# Create redist module files.
+AC_CONFIG_FILES([lib/common/redist/Makefile])
 
 # Create resort module files.
 AC_CONFIG_FILES([lib/common/resort/Makefile])

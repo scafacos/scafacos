@@ -154,8 +154,13 @@ typedef struct _FCS_t
 
   /* whether near-field computations should be performed
      0 = done by calling routine
-     1 = done by library routine*/
+     1 = done by library routine */
   fcs_int near_field_flag;
+
+  /* whether the particles should redistributed before the computations (and back after the computations)
+     0 = no
+     1 = redistribute equal */
+  fcs_int redistribute;
 
   /* structures containing the method-specific parameters */
 #ifdef FCS_ENABLE_DIRECT

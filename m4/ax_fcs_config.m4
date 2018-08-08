@@ -47,7 +47,7 @@ AM_CONDITIONAL([ENABLE_LIBRARY_INSTALL],[test "x$ax_disable_library_install" != 
 
 # List of all switches and modules.
 m4_define([fcs_switches], [info debug timing])
-m4_define([fcs_modules], [near gridsort resort sl_fmm pnfft])
+m4_define([fcs_modules], [near gridsort redist resort sl_fmm pnfft])
 
 # add configure options --enable-fcs-info, --enable-fcs-debug, and --enable-fcs-timing
 AC_DEFUN_ONCE([AX_FCS_ENABLE_INFODEBUG_ARG],[
@@ -60,8 +60,6 @@ AC_FOREACH([switch], fcs_switches,[
 ])
 
 AC_DEFUN_ONCE([AX_FCS_ENABLE_INFODEBUG],[
-# Let debug enable info automatically.
-test "x$enable_fcs_debug" != xno && enable_fcs_info="$enable_fcs_debug"
 AC_FOREACH([switch], fcs_switches,[
 if test "x$enable_fcs_[]switch[]" != xno ; then
   AC_DEFINE([FCS_ENABLE_]m4_toupper(switch), [1], [Define if ]switch[ output is enabled.])
