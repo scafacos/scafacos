@@ -77,12 +77,6 @@ void fcs_fmm_setup_f(void *handle, fcs_int absrel, fcs_float deltaE, fcs_int dip
 }
 */
 
-// RH: routine to resort particles if necessary (empty processes)
-// equalize xyz and q (needed in fcs_fmm_tune and fcs_fmm_run)
-void fcs_fmm_sort_particles(fcs_float*, fcs_float*, fcs_float**, fcs_float**, long long, long long*, int**, int**, long long, int, MPI_Comm);
-// send field and potential values back to original processes
-void fcs_fmm_resort_particles(fcs_float*, fcs_float*, fcs_float*, fcs_float*, int, int*, int*, MPI_Comm);
-
 /* combined setter function for all fmm parameters */
 FCSResult fcs_fmm_setup(FCS handle, fcs_int absrel, fcs_float tolerance_energy, fcs_int dipole_correction, fcs_int system, fcs_int maxdepth, fcs_int unroll_limit, fcs_int load/*, fcs_int potential, fcs_float radius*/)
 {
@@ -145,15 +139,12 @@ FCSResult fcs_fmm_check(FCS handle, fcs_int local_particles)
   comm = fcs_get_communicator(handle);
   MPI_Comm_size(comm, &comm_size);
   total_particles = fcs_get_total_particles(handle);
-
-  
   if (total_particles < comm_size)
     return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "fmm: there have to be at least as much particles as processes");
- /*  
+  
   if (local_particles <= 0)
     return fcs_result_create(FCS_ERROR_INCOMPATIBLE_METHOD, __func__, "fmm: each process has to receive at least one particle");
- */    
-
+  
   a = fcs_get_box_a(handle); 
   norm[0] = fcs_norm(a);
   b = fcs_get_box_b(handle);
@@ -365,8 +356,8 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions
 
   FMM_CHECK_RETURN_RESULT(handle, __func__);
 
-//  result = fcs_fmm_check(handle, local_particles);
-//  CHECK_RESULT_RETURN(result);
+  result = fcs_fmm_check(handle, local_particles);
+  CHECK_RESULT_RETURN(result);
 
   ll_periodicity = (long long*)malloc(3*sizeof(long long));
 
@@ -391,48 +382,21 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions
   long long ll_balance_load = handle->fmm_param->balance;
   long long define_loadvector = handle->fmm_param->define_loadvector;
 
-  
-  fcs_float* internal_positions;
-  fcs_float* internal_charges;
-  long long internal_particles;
-
-  MPI_Comm comm = fcs_get_communicator(handle);
-  int rank, size;
-  MPI_Comm_size(comm,&size);
-  MPI_Comm_rank(comm,&rank);
-
-#ifdef FMM_INFO
-  printf("fmm %d: n_particles = %lld\n",rank,ll_lp);
-#endif
-  
-  fcs_fmm_sort_particles(positions, charges, &internal_positions, &internal_charges, ll_lp, &internal_particles, NULL, NULL, ll_tp, 0, fcs_get_communicator(handle));
-
-#ifdef FMM_INFO
-  printf("fmm %d: n_particles = %lld\n",rank,internal_particles);
-#endif  
-
-  result = fcs_fmm_check(handle, internal_particles);
-  CHECK_RESULT_RETURN(result);
-
-
   fcs_fmm_get_internal_tuning( handle, &dotune );
   if (dotune == FCS_FMM_INHOMOGENOUS_SYSTEM)
   {
     if (define_loadvector == 1)
     {
       handle->fmm_param->define_loadvector = 0;
-      long long ll_loadvectorsize = 4*internal_particles;
-//      long long ll_loadvectorsize = 4*local_particles;
+      long long ll_loadvectorsize = 4*local_particles;
       fcs_float val = 1e0;
       loadptr = malloc(sizeof(ll_loadvectorsize)*ll_loadvectorsize);
       fmm_cinitload(params,loadptr,ll_loadvectorsize);
       fmm_csetload(params,val);
     }
 
-    fmm_ctune(internal_particles,internal_positions,internal_charges,ll_tp,ll_absrel,tolerance_energy,ll_dip_corr,
+    fmm_ctune(ll_lp,positions,charges,ll_tp,ll_absrel,tolerance_energy,ll_dip_corr,
       ll_periodicity, period_length, ll_maxdepth, ll_unroll_limit, ll_balance_load,params, &wignersize, &r);
-//    fmm_ctune(ll_lp,positions,charges,ll_tp,ll_absrel,tolerance_energy,ll_dip_corr,
-//      ll_periodicity, period_length, ll_maxdepth, ll_unroll_limit, ll_balance_load,params, &wignersize, &r);
 
   } else if ( dotune == FCS_FMM_HOMOGENOUS_SYSTEM )
   {
@@ -463,11 +427,6 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions
     return result;
   }
   
-  if (internal_positions != positions)
-    free(internal_positions);
-  if (internal_charges != charges)
-    free(internal_charges);
-
   return FCS_RESULT_SUCCESS;
 }
 
@@ -530,41 +489,6 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,
     return result;
   }
 
-  fcs_float* internal_positions = NULL;
-  fcs_float* internal_charges = NULL;
-  fcs_float* internal_fields = NULL;
-  fcs_float* internal_potentials = NULL;
-  int* resort_list_send = NULL;
-  int* resort_list_recv = NULL;
-  long long internal_particles = -1;
-
-  MPI_Comm comm = fcs_get_communicator(handle);
-  int rank, size;
-  MPI_Comm_size(comm,&size);
-  MPI_Comm_rank(comm,&rank);
-
-#ifdef FMM_INFO
-  printf("fmm %d: n_particles = %lld\n",rank,ll_lp);
-#endif
-  
-  fcs_fmm_sort_particles(positions, charges, &internal_positions, &internal_charges, ll_lp, &internal_particles, &resort_list_send, &resort_list_recv, ll_tp, 1, fcs_get_communicator(handle));
-
-#ifdef FMM_INFO
-  printf("fmm %d: n_particles = %lld\n",rank,internal_particles);
-#endif
-
-  if (resort_list_send && resort_list_recv)
-  {
-    internal_fields     = (fcs_float*)malloc(3 * internal_particles * sizeof(fcs_float));
-    internal_potentials = (fcs_float*)malloc(    internal_particles * sizeof(fcs_float));
-  }
-  else
-  {
-    internal_fields = field;
-    internal_potentials = potentials;
-  }
-
-
   long long ll_unroll_limit = handle->fmm_param->limit;
   long long ll_maxdepth = handle->fmm_param->maxdepth;
   long long ll_balance_load = handle->fmm_param->balance;
@@ -603,25 +527,11 @@ FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,
 
   fcs_fmm_resort_destroy(&handle->fmm_param->fmm_resort);
   if (handle->fmm_param->resort) fcs_fmm_resort_create(&handle->fmm_param->fmm_resort, local_particles, fcs_get_communicator(handle));
-
   fmm_cinitresort(params, handle->fmm_param->fmm_resort);
   fmm_csetresort(params, (long long) handle->fmm_param->resort);
 
-//  fmm_crun(ll_lp,positions,charges,potentials,field,handle->fmm_param->virial,ll_tp,ll_absrel,tolerance_energy,
-//    ll_dip_corr, ll_periodicity, period_length, dotune, ll_maxdepth,ll_unroll_limit,ll_balance_load,params, &r);
-  fmm_crun(internal_particles,internal_positions,internal_charges,internal_potentials,internal_fields,handle->fmm_param->virial,ll_tp,ll_absrel,tolerance_energy,
+  fmm_crun(ll_lp,positions,charges,potentials,field,handle->fmm_param->virial,ll_tp,ll_absrel,tolerance_energy,
     ll_dip_corr, ll_periodicity, period_length, dotune, ll_maxdepth,ll_unroll_limit,ll_balance_load,params, &r);
-
-  
-  if (resort_list_send && resort_list_recv)
-  {
-    fcs_fmm_resort_particles( internal_fields, internal_potentials, field, potentials, internal_particles, resort_list_send, resort_list_recv, fcs_get_communicator(handle));
-    free(internal_potentials);
-    free(internal_fields);    
-    free(internal_charges);
-    free(internal_positions);
-  }
-
 
   fcs_mpi_fmm_sort_front_part = old_fcs_mpi_fmm_sort_front_part;
 
@@ -1114,339 +1024,4 @@ FCSResult fcs_fmm_resort_bytes(FCS handle, void *src, void *dst, fcs_int n, MPI_
   fcs_resort_resort_bytes(handle->fmm_param->fmm_resort->resort, src, dst, n, comm);
   
   return FCS_RESULT_SUCCESS;
-}
-
-// equalize xyz and q (needed in fcs_fmm_tune and fcs_fmm_run)
-void fcs_fmm_sort_particles(fcs_float* xyz, fcs_float* q, fcs_float** xyz_s, fcs_float** q_s, long long n, long long *n_s, int** resort_list_send, int** resort_list_recv, long long n_total, int l_resort_list, MPI_Comm comm)
-{
-    // get MPI environment
-    int rank, size;
-    MPI_Comm_size(comm,&size);
-    MPI_Comm_rank(comm,&rank);
-
-    // find out if any resort is required
-    int is_empty = (n==0)?1:0;
-    int n_empty_proc = 0;
-    MPI_Allreduce(&is_empty, &n_empty_proc, 1, MPI_INT, MPI_BOR, comm);
-
-    // if no resorting is required, use original buffers
-    if (n_empty_proc == 0)
-    {
-        *xyz_s = xyz;
-        *q_s = q;
-        *n_s = n;
-        if (l_resort_list)
-        {
-            *resort_list_send = NULL;
-            *resort_list_recv = NULL;
-        }
-        return;
-    }    
-    // if resorting is required
-    else
-    {
-        //TODO: no complete resort, if only few processes contain no particles
-        // if(rank == 0) printf("fmm: resorting particles\n");
-        //calculate avg. number of particles per process
-        long long avg_part = n_total / (long long)size;
-        long long n_chunks = n_total % (long long)size;
-
-        *n_s = avg_part + (((long long)rank < (n_total % (long long)size))?1ll:0ll);
-
-        // allocate new particle arrays
-        *(xyz_s) = (fcs_float*)malloc( 3 * (*n_s) * sizeof(fcs_float));
-        *(q_s) = (fcs_float*)malloc( (*n_s) * sizeof(fcs_float));
-
-        int* resort_list_send_int;
-        int* resort_list_recv_int;
-        
-        // if a resort list should be created allocate it
-        if(l_resort_list)
-        {
-            resort_list_send_int = (int*)malloc(2*(*n_s)*sizeof(int));
-            resort_list_recv_int = (int*)malloc(size*sizeof(int));
-            *resort_list_send = resort_list_send_int;
-            *resort_list_recv = resort_list_recv_int;
-        }
-
-        // get particle offset for local particles
-        long long offset;
-        // using exclusive sum for offsets
-        MPI_Exscan(&n, &offset, 1, MPI_LONG_LONG, MPI_SUM, comm);
-        if (rank == 0) offset = 0ll;
-
-        // allocate send/recv buffers for MPI_Alltoallv
-        fcs_float* send_buffer = (fcs_float*)malloc(6 * n * sizeof(fcs_float));
-        fcs_float* recv_buffer = (fcs_float*)malloc(6 * (*n_s) * sizeof(fcs_float));
-
-        // allocate n_send/n_recv buffers for MPI_Alltoallv
-        int* n_send = (int*)malloc(size * sizeof(int));
-        int* n_recv = (int*)malloc(size * sizeof(int));
-
-        // allocate displacement buffers for MPI_Alltoallv
-        int* displ_send = (int*)malloc(size * sizeof(int));
-        int* displ_recv = (int*)malloc(size * sizeof(int));
-
-        // initialize the arrays
-        for (int i = 0; i < size; ++i)
-        {
-            n_send[i] = 0;
-            n_recv[i] = 0;
-            displ_send[i] = 0;
-        }
-
-        if (l_resort_list)
-        {
-            for (int i = 0; i < size; ++i)
-            {
-                resort_list_recv_int[i] = 0;
-            }
-        }
-
-        int old_target_proc = -1;
-        int target_proc = 0;
-
-        // determine where to send local particles
-        for (long long i = 0ll; i < n; ++i)
-        {
-            long long global_idx = offset+i;
-            // particles are distributed in chunks, the first processes
-            // receive larger chunks, if there is a modulo between
-            // total number of particles and number of processes
-            if (global_idx < n_chunks * (avg_part+1))
-            {
-                target_proc = (int)(global_idx / (avg_part+1));
-            }
-            else
-            {
-                target_proc = (int)(n_chunks + (global_idx - n_chunks * (avg_part+1))/avg_part);
-            }
-            // filling send buffer
-            send_buffer[6*i]   = xyz[3*i];
-            send_buffer[6*i+1] = xyz[3*i+1];
-            send_buffer[6*i+2] = xyz[3*i+2];
-            send_buffer[6*i+3] = q[i];
-            // information required for resending
-            send_buffer[6*i+4] = (fcs_float)rank;
-            send_buffer[6*i+5] = (fcs_float)i;
-            n_send[target_proc]+=6;
-            if (l_resort_list)
-            {
-//                printf("%d: target_proc = %d\n", rank, target_proc);
-//                printf("%d: -target_proc = %d\n", rank, resort_list_recv_int[target_proc]);
-                resort_list_recv_int[target_proc]++;
-/*
-                printf("%d: send_buffer [%d] = %lf [%lf] %lf [%lf] %lf [%lf]  %lf [%lf] %lf %lf => %d [%d] | %d\n",
-                    rank,
-                    i,
-                    send_buffer[6*i],
-                    xyz[3*i],
-                    send_buffer[6*i+1],
-                    xyz[3*i+1],
-                    send_buffer[6*i+2],
-                    xyz[3*i+2],
-                    send_buffer[6*i+3],
-                    q[i],
-                    send_buffer[6*i+4],
-                    send_buffer[6*i+5],
-                    target_proc,
-                    old_target_proc,
-                    resort_list_recv_int[target_proc]);
-*/
-            }
-            // set the displacement in the send buffer
-            if (target_proc != old_target_proc)
-            {
-                displ_send[target_proc] = 6*i;
-                old_target_proc = target_proc;
-            }
-        }
-
-        for (int i = target_proc+1; i < size; ++i)
-            displ_send[i] = n;
-
-        // exchange the number of particles to be received from each process
-        MPI_Alltoall(n_send,1,MPI_INT,n_recv,1,MPI_INT,comm);
-
-        // determine the displacement in the receiving buffer
-        int displ = 0;
-        for (int i = 0; i < size; ++i)
-        {
-            displ_recv[i] = displ;
-            displ += n_recv[i];
-        }
-
-//        printf("%d: n_send = %d %d, displ_send = %d %d, n_recv = %d %d, displ_recv = %d %d\n",rank, n_send[0], n_send[1], displ_send[0], displ_send[1], n_recv[0], n_recv[1], displ_recv[0], displ_recv[1]);
-
-        // send particles to their new destination
-        MPI_Alltoallv(send_buffer, n_send, displ_send, FCS_MPI_FLOAT,
-                      recv_buffer, n_recv, displ_recv, FCS_MPI_FLOAT, 
-                      comm);
-                       
-        // store particle information
-
-        int index = 0;
-        if (l_resort_list)
-        {
-            for (int i = 0; i < size; ++i)
-            {
-                if (displ_recv[i] >= *n_s) break;
-                for (int j = 0; j < n_recv[i]/6; ++j)
-                {
-                    // position
-                    *(*xyz_s+3*index)               = recv_buffer[displ_recv[i]+6*j];
-                    *(*xyz_s+3*index+1)             = recv_buffer[displ_recv[i]+6*j+1];
-                    *(*xyz_s+3*index+2)             = recv_buffer[displ_recv[i]+6*j+2];
-                    // charge
-                    *(*q_s+index)                   = recv_buffer[displ_recv[i]+6*j+3];
-                    // source information
-                    resort_list_send_int[2*index]   = (int)recv_buffer[displ_recv[i]+6*j+4];
-                    resort_list_send_int[2*index+1] = (int)recv_buffer[displ_recv[i]+6*j+5];
-/*
-                    printf("%d [%d ((%d+6*%d) = %d) %d / %d]: recv = %lf %lf %lf %lf %lf %lf\n",
-                            rank,
-                            index,
-                            displ_recv[i],
-                            j,
-                            6*displ_recv[i]+6*j,
-                            j,
-                            n_recv[i],
-                            recv_buffer[displ_recv[i]+6*j],
-                            recv_buffer[displ_recv[i]+6*j+1],
-                            recv_buffer[displ_recv[i]+6*j+2],
-                            recv_buffer[displ_recv[i]+6*j+3],
-                            recv_buffer[displ_recv[i]+6*j+4],
-                            recv_buffer[displ_recv[i]+6*j+5]
-                            );
-*/
-                    ++index;
-                }
-            }
-        }
-        else
-        {
-            for (int i = 0; i < size; ++i)
-            {
-                for (int j = 0; j < n_recv[i]/6; ++j)
-                {
-                    // position
-                    *(*xyz_s+3*index)   = recv_buffer[displ_recv[i]+6*j];
-                    *(*xyz_s+3*index+1) = recv_buffer[displ_recv[i]+6*j+1];
-                    *(*xyz_s+3*index+2) = recv_buffer[displ_recv[i]+6*j+2];
-                    // charge
-                    *(*q_s+index)       = recv_buffer[displ_recv[i]+6*j+3];
-/*
-                    printf("%d [%d ((%d+6*%d) = %d) %d / %d]: recv = %lf %lf %lf %lf %lf %lf\n",
-                            rank,
-                            index,
-                            displ_recv[i],
-                            j,
-                            displ_recv[i]+6*j,
-                            j,
-                            n_recv[i],
-                            recv_buffer[displ_recv[i]+6*j],
-                            recv_buffer[displ_recv[i]+6*j+1],
-                            recv_buffer[displ_recv[i]+6*j+2],
-                            recv_buffer[displ_recv[i]+6*j+3],
-                            recv_buffer[displ_recv[i]+6*j+4],
-                            recv_buffer[displ_recv[i]+6*j+5]
-                            );
-                    ++index;
-*/
-                }
-            }
-        }
-
-        // deallocate buffers
-        free(displ_recv);
-        free(displ_send);
-        free(n_recv);
-        free(n_send);
-        free(recv_buffer);
-        free(send_buffer);
-    }
-}
-// send field and potential values back to original processes
-void fcs_fmm_resort_particles(fcs_float* f_s, fcs_float* p_s, fcs_float* f, fcs_float* p, int n_s, int* resort_list_send, int* resort_list_recv, MPI_Comm comm)
-{
-
-    // get MPI environment
-    int rank, size;
-    MPI_Comm_size(comm,&size);
-    MPI_Comm_rank(comm,&rank);
-
-    // allocate send buffer
-    // 5: (f_x, f_y, f_z, p, idx)
-    fcs_float* send_buffer = (fcs_float*)malloc(5 * n_s * sizeof(fcs_float));
-
-    // allocate buffers for send and receive counts
-    int* n_send = (int*)malloc(size * sizeof(fcs_float));
-    int* n_recv = (int*)malloc(size * sizeof(fcs_float));
-
-    // allocate buffers for send and receive displacements 
-    int* displ_send = (int*)malloc(size * sizeof(fcs_float));
-    int* displ_recv = (int*)malloc(size * sizeof(fcs_float));
-    
-    int n_recv_total = 0;
-    // count number of particles that will be received
-    // use loop to already fill received displacement and n_recv arrays
-    for (int i = 0; i < size; ++i)
-    {
-        n_send[i] = 0;
-        n_recv[i] = 5 * resort_list_recv[i];
-        displ_recv[i] = 5 * n_recv_total;
-        n_recv_total += resort_list_recv[i];
-    }
-    
-    // allocate receive buffer
-    fcs_float* recv_buffer = (fcs_float*)malloc(5 * n_recv_total * sizeof(fcs_float));
-
-    int old_target = -1;
-    int target = 0;
-    // fill send buffer and n_send    
-    for (int i = 0; i < n_s; ++i)
-    {
-        target = resort_list_send[2*i];
-        send_buffer[5*i]   = f_s[3*i];
-        send_buffer[5*i+1] = f_s[3*i+1];
-        send_buffer[5*i+2] = f_s[3*i+2];
-        send_buffer[5*i+3] = p_s[i];
-        send_buffer[5*i+4] = (fcs_float)resort_list_send[2*i+1];
-        n_send[target]+=5;
-        if (target != old_target)
-        {
-            displ_send[target] = i;
-            old_target = target;
-        }
-    }
-
-    // send particles to their original processes
-    MPI_Alltoallv(send_buffer, n_send, displ_send, FCS_MPI_FLOAT,
-                  recv_buffer, n_recv, displ_recv, FCS_MPI_FLOAT, 
-                  comm);
-
-    // sort the particles into the original arrays
-    for (int i = 0; i < size; ++i)
-    {
-        for (int j = 0; j < n_recv[i]/5; ++j)
-        {
-            int offset = displ_recv[i] + 5 * j;
-            int index = (int)recv_buffer[offset + 4];
-            f[3*index]   = recv_buffer[offset];
-            f[3*index+1] = recv_buffer[offset+1];
-            f[3*index+2] = recv_buffer[offset+2];
-            p[index]     = recv_buffer[offset+3];
-        }
-    }
-
-    // deallocate all used buffers
-    free(recv_buffer);
-    free(displ_recv);
-    free(displ_send);
-    free(n_recv);
-    free(n_send);
-    free(send_buffer);
-
-    free(resort_list_recv);
-    free(resort_list_send);
 }
