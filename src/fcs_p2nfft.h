@@ -30,8 +30,8 @@
 #include <mpi.h>
 
 #include "fcs_p2nfft_p.h"
-#include "FCSResult.h"
-#include "FCSInterface.h"
+#include "fcs_result.h"
+#include "fcs_interface.h"
 
 
 

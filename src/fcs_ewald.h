@@ -23,8 +23,8 @@
 #define _FCS_EWALD_H
 
 #include "fcs_ewald_p.h"
-#include "FCSResult.h"
-#include "FCSInterface.h"
+#include "fcs_result.h"
+#include "fcs_interface.h"
 
 FCSResult fcs_ewald_init(FCS handle);
 

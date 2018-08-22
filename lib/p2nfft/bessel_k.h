@@ -25,7 +25,7 @@
 #endif
 
 #include "FCSCommon.h"
-#include "FCSDefinitions.h"
+#include "fcs_definitions.h"
 
 fcs_float ifcs_p2nfft_bessel_k(
     fcs_float nu, fcs_float x);

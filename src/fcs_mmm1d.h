@@ -24,8 +24,8 @@
 
 #include <mpi.h>
 #include "fcs_mmm1d_p.h"
-#include "FCSResult.h"
-#include "FCSInterface.h"
+#include "fcs_result.h"
+#include "fcs_interface.h"
 
 /** MMM1D parameters. That just keeps the shuffling information. */
 typedef struct fcs_mmm1d_parameters_t

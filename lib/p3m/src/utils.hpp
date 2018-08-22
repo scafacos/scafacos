@@ -52,7 +52,7 @@
 
 /* Mathematical constants, from gcc's math.h */
 /* These should be defined here and not be included from
-   FCSDefinitions.h to reduce the dependencies of this code from the
+   fcs_definitions.h to reduce the dependencies of this code from the
    ScaFaCoS-Code. */
 #ifndef M_PI
 #define M_E             2.7182818284590452353602874713526625L  /* e */

@@ -24,8 +24,8 @@
 #include <mpi.h>
 
 #include "fcs_wolf_p.h"
-#include "FCSResult.h"
-#include "FCSInterface.h"
+#include "fcs_result.h"
+#include "fcs_interface.h"
 #include "wolf/wolf.h"
 
 

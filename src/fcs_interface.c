@@ -24,7 +24,7 @@
 #endif
 
 #include "FCSCommon.h"
-#include "FCSInterface.h"
+#include "fcs_interface.h"
 #include "fcs_common.h"
 #include "common/redist/redist.h"
 

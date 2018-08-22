@@ -25,7 +25,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "FCSResult.h"
+#include "fcs_result.h"
 
 void mmm2d_set_far_cutoff(void *rd, fcs_float cutoff);
 void mmm2d_get_far_cutoff(void *rd, fcs_float *cutoff);

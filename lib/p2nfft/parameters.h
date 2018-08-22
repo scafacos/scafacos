@@ -26,7 +26,7 @@
 #endif
 
 #include "FCSCommon.h"
-#include "FCSResult.h"
+#include "fcs_result.h"
 
 /* clear macro definitions of headers (redefine as wrappers later) */
 #undef FCS_P2NFFT_INTERFACE_WRAPPER_0

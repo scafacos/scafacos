@@ -36,8 +36,8 @@
 #endif
 
 #include "fcs_memd_p.h"
-#include "FCSResult.h"
-#include "FCSInterface.h"
+#include "fcs_result.h"
+#include "fcs_interface.h"
 
 typedef struct fcs_memd_parameters_t
 {

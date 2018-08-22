@@ -25,7 +25,7 @@
 #endif
 
 #include "FCSCommon.h"
-#include "FCSDefinitions.h"
+#include "fcs_definitions.h"
 #include "kernels.h"
 
 fcs_float ifcs_p2nfft_interpolate_symmetric(

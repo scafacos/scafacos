@@ -21,7 +21,7 @@
 
 #include <config.h>
 #include <mpi.h>
-#include "FCSResult.h"
+#include "fcs_result.h"
 
 #ifdef __cplusplus
 extern "C" {

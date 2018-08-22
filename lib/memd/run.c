@@ -23,7 +23,7 @@
 #include "run.h"
 #include "data_types.h"
 #include <math.h>
-#include "FCSResult.h"
+#include "fcs_result.h"
 #include "forces.h"
 #include "getter_setter.h"
 #include "initial_solution.h"

@@ -11,17 +11,17 @@ endif
 # Headers that will be installed.
 include_HEADERS = \
   fcs.h \
-  FCSDefinitions.h \
-  FCSResult_p.h \
-  FCSInterface_p.h
+  fcs_definitions.h \
+  fcs_result_p.h \
+  fcs_interface_p.h
 
 libfcs_la_CPPFLAGS = -I$(top_srcdir)/lib/common/fcs-common -I$(top_srcdir)/lib
 
 libfcs_la_SOURCES = \
-  FCSInterface.h \
-  FCSInterface.c \
-  FCSResult.h \
-  FCSResult.c
+  fcs_interface.h \
+  fcs_interface.c \
+  fcs_result.h \
+  fcs_result.c
 
 libfcs_la_SOURCES += fcs_common.h fcs_common.c
 

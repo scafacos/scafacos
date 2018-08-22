@@ -24,8 +24,8 @@
 
 #include <mpi.h>
 #include "fcs_p3m_p.h"
-#include "FCSResult.h"
-#include "FCSInterface.h"
+#include "fcs_result.h"
+#include "fcs_interface.h"
 
 /**
  * @brief initialization routine for the basic parameters needed by p3m

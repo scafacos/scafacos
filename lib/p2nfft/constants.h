@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "FCSDefinitions.h"
+#include "fcs_definitions.h"
 
 #define FCS_P2NFFT_SQRT2     FCS_CONST(1.4142135623730950488016887242096981)  /* sqrt(2) */
 #define FCS_P2NFFT_PI        FCS_CONST(3.1415926535897932384626433832795029)  /* pi */

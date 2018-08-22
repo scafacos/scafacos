@@ -24,7 +24,7 @@
 #include <config.h>
 #endif
 
-#include "FCSResult.h"
+#include "fcs_result.h"
 
 /** @brief
  *  @param rd

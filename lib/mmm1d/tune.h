@@ -23,7 +23,7 @@
 #include <config.h>
 #endif
 
-#include "FCSResult.h"
+#include "fcs_result.h"
 
 FCSResult mmm1d_tune(void* rd,
        fcs_int num_particles,

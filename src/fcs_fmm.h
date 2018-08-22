@@ -28,8 +28,8 @@
 #include <mpi.h>
 
 #include "fcs_fmm_p.h"
-#include "FCSResult.h"
-#include "FCSInterface.h"
+#include "fcs_result.h"
+#include "fcs_interface.h"
 #include "fmm/sl_fmm/mpi_fmm_resort.h"
 
 

@@ -24,7 +24,7 @@
 #include <config.h>
 #endif
 
-#include "FCSResult.h"
+#include "fcs_result.h"
 
 FCSResult ifcs_p2nfft_tune(
     void *rd, const fcs_int *periodicity,

@@ -32,8 +32,8 @@
 #define FCS_VMG_INCLUDED
 
 #include "fcs_vmg_p.h"
-#include "FCSResult.h"
-#include "FCSInterface.h"
+#include "fcs_result.h"
+#include "fcs_interface.h"
 
 typedef struct fcs_vmg_parameters_t
 {

@@ -24,7 +24,7 @@
 #include <config.h>
 #endif
 
-#include "FCSResult.h"
+#include "fcs_result.h"
 
 FCSResult fcs_memd_set_init_flag(void* rawdata, fcs_int flagvalue);
 

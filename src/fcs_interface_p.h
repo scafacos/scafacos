@@ -24,12 +24,12 @@
 
 #include <mpi.h>
 
-#include "FCSDefinitions.h"
-#include "FCSResult_p.h"
+#include "fcs_definitions.h"
+#include "fcs_result_p.h"
 
 
 /**
- * @file FCSInterface_p.h
+ * @file fcs_interface_p.h
  * @brief public interface definitions for the main solver-independent
  * functionality of the ScaFaCoS library 
  * @author Rene Halver, Olaf Lenz, Michael Hofmann
@@ -258,7 +258,7 @@ fcs_int fcs_get_max_local_particles(FCS handle);
  * @brief function to set the error tolerance of the FCS solver
  * @param handle FCS-object representing an FCS solver
  * @param tolerance_type constant to select the type of the error tolerance
- * value (see FCSDefinitions.h)
+ * value (see fcs_definitions.h)
  * @param tolerance error tolerance value
  * @return FCSResult-object containing the return state
  */
@@ -268,7 +268,7 @@ FCSResult fcs_set_tolerance(FCS handle, fcs_int tolerance_type, fcs_float tolera
  * @brief function to return the error tolerance of the FCS solver
  * @param handle FCS-object representing an FCS solver
  * @param tolerance_type constant to select the type of the error tolerance
- * value (see FCSDefinitions.h)
+ * value (see fcs_definitions.h)
  * @param tolerance error tolerance value
  * @return FCSResult-object containing the return state
  */

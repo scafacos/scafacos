@@ -20,7 +20,7 @@
 #ifndef _MEMD_INIT_H
 #define _MEMD_INIT_H
 
-#include "FCSResult.h"
+#include "fcs_result.h"
 #include <mpi.h>
 
 FCSResult ifcs_memd_init(void** rawdata, MPI_Comm communicator);

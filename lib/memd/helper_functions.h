@@ -24,7 +24,7 @@
 #include <config.h>
 #endif
 
-#include "FCSResult.h"
+#include "fcs_result.h"
 #include "data_types.h"
 
 /** Turns the 3D index into a linear index.

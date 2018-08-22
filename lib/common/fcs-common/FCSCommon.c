@@ -27,7 +27,7 @@
 #include <math.h>
 #include <float.h>
 
-/*#include "FCSDefinitions.h"*/
+/*#include "fcs_definitions.h"*/
 #include "FCSCommon.h"
 
 

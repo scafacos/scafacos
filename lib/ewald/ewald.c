@@ -31,8 +31,8 @@
 #include <string.h>
 #include <math.h>
 
-#include "FCSResult.h"
-#include "FCSInterface.h"
+#include "fcs_result.h"
+#include "fcs_interface.h"
 #include "FCSCommon.h"
 #include "common/near/near.h"
 #include "ewald.h"

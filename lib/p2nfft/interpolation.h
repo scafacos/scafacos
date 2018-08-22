@@ -25,7 +25,7 @@
 #endif
 
 #include "FCSCommon.h"
-#include "FCSDefinitions.h"
+#include "fcs_definitions.h"
 
 /** constant spline interpolation in near field with even kernels */
 static inline fcs_float ifcs_p2nfft_intpol_even_const(

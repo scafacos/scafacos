@@ -22,9 +22,9 @@
 #ifndef _FCS_EWALD_P_H
 #define _FCS_EWALD_P_H
 
-#include "FCSDefinitions.h"
-#include "FCSResult_p.h"
-#include "FCSInterface_p.h"
+#include "fcs_definitions.h"
+#include "fcs_result_p.h"
+#include "fcs_interface_p.h"
 
 #ifdef __cplusplus
 extern "C" {

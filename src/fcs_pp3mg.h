@@ -32,8 +32,8 @@
 #include <mpi.h>
 
 #include "fcs_pp3mg_p.h"
-#include "FCSResult.h"
-#include "FCSInterface.h"
+#include "fcs_result.h"
+#include "fcs_interface.h"
 
 #include "pp3mg/pp3mg/pp3mg.h"
 

@@ -20,7 +20,7 @@
 
 
 /**
- * @file FCSInterface.h
+ * @file fcs_interface.h
  * @brief supplying the C-interface routine for the ScaFaCoS library
  * @author Rene Halver, Olaf Lenz
  */
@@ -34,8 +34,8 @@
 #include <stdio.h>
 #include <mpi.h>
 
-#include "FCSInterface_p.h"
-#include "FCSResult.h"
+#include "fcs_interface_p.h"
+#include "fcs_result.h"
 
 #ifdef FCS_ENABLE_DIRECT
 #include "fcs_direct.h"

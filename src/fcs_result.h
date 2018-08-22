@@ -19,7 +19,7 @@
 
 
 /**
- * @file FCSResult.h
+ * @file fcs_result.h
  * @brief internal interface definitions for the FCSResult-object that is used
  * for handling the return state of the ScaFaCoS library functions
  * @author Lidia Westphal, Rene Halver, Michael Hofmann
@@ -29,7 +29,7 @@
 #ifndef _FCSRESULT_H
 #define _FCSRESULT_H
 
-#include "FCSResult_p.h"
+#include "fcs_result_p.h"
 
 #ifdef __cplusplus
 extern "C" {

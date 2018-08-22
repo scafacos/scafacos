@@ -23,7 +23,7 @@
 
 
 !
-! @file FCSInterface.h
+! @file fcs4fortran_definitions.h
 ! @brief public definitions of the ScaFaCoS library interface
 ! @author Rene Halver, Michael Hofmann
 !

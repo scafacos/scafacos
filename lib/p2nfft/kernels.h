@@ -29,7 +29,7 @@
 #endif
 
 #include "FCSCommon.h"
-#include "FCSDefinitions.h"
+#include "fcs_definitions.h"
 
 //#ifdef HAVE_COMPLEX_H
 #include <complex.h>

@@ -23,7 +23,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "FCSResult.h"
+#include "fcs_result.h"
 
 
 /** parameters for MMM1D. Most of the parameters can also be tuned automatically. Unlike

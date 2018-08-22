@@ -28,8 +28,8 @@
 #include "mpi.h"
 #include <stdio.h>
 
-#include "FCSDefinitions.h"
-#include "FCSResult_p.h"
+#include "fcs_definitions.h"
+#include "fcs_result_p.h"
 
 #include "fcs_memd.h"
 #include "memd/memd.h"

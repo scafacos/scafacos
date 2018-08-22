@@ -25,7 +25,7 @@
 #include <config.h>
 #endif
 #include <mpi.h>
-#include <FCSResult.h>
+#include <fcs_result.h>
 
 /** @brief Initialize all structures, parameters and arrays needed for
  *         the P2NFFT algorithm and set their default values.
