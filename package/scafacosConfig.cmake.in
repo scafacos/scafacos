@@ -1,0 +1,38 @@
+# scafacosConfig.cmake
+# --------------------
+#
+# Set ScaFaCoS includes and libraries.
+#
+# This module will set the following variables in your project:
+#
+#  SCAFACOS_FOUND          - True if ScaFaCoS found on the local system
+#  SCAFACOS_VERSION        - The version of the discovered ScaFaCoS install.
+#  SCAFACOS_INCLUDE_DIRS   - Location of ScaFaCoS header files.
+#  SCAFACOS_LIBRARIES      - The ScaFaCoS libraries.
+#
+
+set(SCAFACOS_ROOT_DIR "@prefix@")
+set(SCAFACOS_VERSION "@VERSION@" )
+set(SCAFACOS_INCLUDE_DIRS "${SCAFACOS_ROOT_DIR}/include")
+set(SCAFACOS_LIBRARIES "-L${SCAFACOS_ROOT_DIR}/lib @SCAFACOS_PC_LIBS@")
+
+#=============================================================================
+# handle the QUIETLY and REQUIRED arguments and set SCAFACOS_FOUND to TRUE if all
+# listed variables are TRUE
+find_package_handle_standard_args( SCAFACOS
+  FOUND_VAR
+    SCAFACOS_FOUND
+  REQUIRED_VARS
+    SCAFACOS_INCLUDE_DIRS
+    SCAFACOS_LIBRARIES
+  VERSION_VAR
+    SCAFACOS_VERSION
+    )
+
+mark_as_advanced( SCAFACOS_ROOT_DIR SCAFACOS_FOUND SCAFACOS_VERSION SCAFACOS_INCLUDE_DIRS SCAFACOS_LIBRARIES )
+
+# message("SCAFACOS_ROOT_DIR: ${SCAFACOS_ROOT_DIR}")
+# message("SCAFACOS_FOUND: ${SCAFACOS_FOUND}")
+# message("SCAFACOS_VERSION: ${SCAFACOS_VERSION}")
+# message("SCAFACOS_INCLUDE_DIRS: ${SCAFACOS_INCLUDE_DIRS}")
+# message("SCAFACOS_LIBRARIES: ${SCAFACOS_LIBRARIES}")

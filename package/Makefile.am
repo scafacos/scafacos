@@ -5,6 +5,10 @@ ACLOCAL_AMFLAGS = -I m4
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = scafacos.pc
 
+# Install cmake package file.
+datadir = $(datarootdir)/cmake/scafacos
+data_DATA = scafacosConfig.cmake
+
 if ENABLE_SINGLE_LIB
 
 fcslibs = $(SCAFACOS_MK_LIBS_A)

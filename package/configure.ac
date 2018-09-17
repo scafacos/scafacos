@@ -185,6 +185,7 @@ AC_SUBST([SCAFACOS_MK_LIBS_A])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([scafacos.pc])
 AC_CONFIG_FILES([scafacos.mk])
+AC_CONFIG_FILES([scafacosConfig.cmake])
 
 AC_OUTPUT
 
