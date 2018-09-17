@@ -17,8 +17,7 @@
 #
 # Initialize Autoconf.  We require version 2.59 or newer.
 AC_PREREQ([2.59])
-define([version_suffix],[.1])
-AC_INIT([ScaFaCoS], [1.0version_suffix], [scafacos@googlegroups.com], [scafacos],
+AC_INIT([ScaFaCoS], [m4_esyscmd_s([cat VERSION])], [scafacos@googlegroups.com], [scafacos],
 	[http://www.scafacos.de])
 m4_ifndef([AC_PACKAGE_URL],
 	  [AC_SUBST([PACKAGE_URL], [http://www.scafacos.de])])

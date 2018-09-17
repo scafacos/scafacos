@@ -19,7 +19,7 @@ ACLOCAL_AMFLAGS = -I m4
 nodist_include_HEADERS = fcs_config.h fcs_fconfig.h
 
 # These files are not automatically distributed.
-EXTRA_DIST = COPYING.GPL COPYING.LGPL
+EXTRA_DIST = COPYING.GPL COPYING.LGPL VERSION
 EXTRA_DIST += build-aux/fortran-depcomp build-aux/comments_c2fortran
 
 EXTRA_DIST += examples/Makefile examples/fmm_test.F90

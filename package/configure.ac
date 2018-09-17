@@ -1,5 +1,5 @@
 AC_PREREQ([2.59])
-AC_INIT([ScaFaCoS], [0.9], [scafacos-dvlp@fz-juelich.de], [scafacos],
+AC_INIT([ScaFaCoS], [m4_esyscmd_s([cat ../VERSION])], [scafacos@googlegroups.com], [scafacos],
   [http://www.scafacos.de])
 m4_ifndef([AC_PACKAGE_URL],
 	  [AC_SUBST([PACKAGE_URL], [http://www.scafacos.de])])
