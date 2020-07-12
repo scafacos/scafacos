@@ -430,7 +430,7 @@ FCSResult fcs_fmm_tune(FCS handle, fcs_int local_particles, fcs_float *positions
   return FCS_RESULT_SUCCESS;
 }
 
-int fcs_mpi_fmm_sort_front_part, fcs_mpi_fmm_sort_back_part, fcs_mpi_fmm_sort_front_merge_presorted;
+extern int fcs_mpi_fmm_sort_front_part, fcs_mpi_fmm_sort_back_part, fcs_mpi_fmm_sort_front_merge_presorted;
 
 /* internal fmm-specific run function */
 FCSResult fcs_fmm_run(FCS handle, fcs_int local_particles,

@@ -491,7 +491,12 @@ implicit none
 	integer(MyMPI_Comm) 		:: comm
 	integer(MyMPI_Errorcode)	:: ierr,ierr2
 	integer(MyMPI_Entries)		:: elem_tmp
-	
+	interface
+	  subroutine mpi_allreduce(send,recv,num,rtype,rop,rcomm,rerr)
+	    integer(kind=8)		:: recv
+	    integer(kind=4)		:: send, num, rop, rtype, rcomm, rerr
+	  end subroutine mpi_allreduce
+	end interface
 		elem_tmp = 1
 		
 		call mpi_allreduce(MPI_IN_PLACE,dst,elem_tmp,MPI_INTEGER8,op,comm,ierr)
@@ -510,6 +515,12 @@ implicit none
 	integer(MyMPI_Comm) 		:: comm
 	integer(MyMPI_Errorcode)	:: ierr,ierr2
 	integer(MyMPI_Entries)		:: elem_tmp
+	interface
+	  subroutine mpi_allreduce(send,recv,num,rtype,rop,rcomm,rerr)
+	    integer(kind=8), dimension(*) :: recv
+	    integer(kind=4)		:: send, num, rop, rtype, rcomm, rerr
+	  end subroutine mpi_allreduce
+	end interface
 	
 		elem_tmp = elem
 		
@@ -528,6 +539,12 @@ implicit none
 	integer(MyMPI_Comm) 	:: comm
 	integer(MyMPI_Errorcode):: ierr,ierr2
 	integer(MyMPI_Entries)	:: elem_tmp
+	interface
+	  subroutine mpi_allreduce(send,recv,num,rtype,rop,rcomm,rerr)
+	    real(kind=4)		:: recv
+	    integer(kind=4)		:: send, num, rop, rtype, rcomm, rerr
+	  end subroutine mpi_allreduce
+	end interface
 	
 		elem_tmp = 1
 		
@@ -547,6 +564,12 @@ implicit none
 	integer(MyMPI_Comm) 		:: comm
 	integer(MyMPI_Errorcode)	:: ierr,ierr2
 	integer(MyMPI_Entries)		:: elem_tmp
+	interface
+	  subroutine mpi_allreduce(send,recv,num,rtype,rop,rcomm,rerr)
+	    real(kind=4), dimension(*)	:: recv
+	    integer(kind=4)		:: send, num, rop, rtype, rcomm, rerr
+	  end subroutine mpi_allreduce
+	end interface
 	
 		elem_tmp = elem
 		
@@ -566,6 +589,12 @@ implicit none
         integer(MyMPI_Comm)             :: comm
         integer(MyMPI_Errorcode)        :: ierr,ierr2
         integer(MyMPI_Entries)          :: elem_tmp
+	interface
+	  subroutine mpi_allreduce(send,recv,num,rtype,rop,rcomm,rerr)
+	    real(kind=4), dimension(*)	:: recv
+	    integer(kind=4)		:: send, num, rop, rtype, rcomm, rerr
+	  end subroutine mpi_allreduce
+	end interface
         
                 lo = lbound(dst,1)
                 hi = ubound(dst,1)
@@ -586,6 +615,12 @@ implicit none
 	integer(MyMPI_Comm) 	:: comm
 	integer(MyMPI_Errorcode):: ierr,ierr2
 	integer(MyMPI_Entries)	:: elem_tmp
+	interface
+	  subroutine mpi_allreduce(send,recv,num,rtype,rop,rcomm,rerr)
+	    real(kind=8)		:: recv
+	    integer(kind=4)		:: send, num, rop, rtype, rcomm, rerr
+	  end subroutine mpi_allreduce
+	end interface
 	
 		elem_tmp = 1
 		
@@ -605,6 +640,12 @@ implicit none
 	integer(MyMPI_Comm) 		:: comm
 	integer(MyMPI_Errorcode)	:: ierr,ierr2
 	integer(MyMPI_Entries)		:: elem_tmp
+	interface
+	  subroutine mpi_allreduce(send,recv,num,rtype,rop,rcomm,rerr)
+	    real(kind=8), dimension(*)	:: recv
+	    integer(kind=4)		:: send, num, rop, rtype, rcomm, rerr
+	  end subroutine mpi_allreduce
+	end interface
 	
 		elem_tmp = elem
 		
@@ -624,6 +665,12 @@ implicit none
 	integer(MyMPI_Comm) 		:: comm
 	integer(MyMPI_Errorcode)	:: ierr,ierr2
 	integer(MyMPI_Entries)		:: elem_tmp
+	interface
+	  subroutine mpi_allreduce(send,recv,num,rtype,rop,rcomm,rerr)
+	    real(kind=8), dimension(*)	:: recv
+	    integer(kind=4)		:: send, num, rop, rtype, rcomm, rerr
+	  end subroutine mpi_allreduce
+	end interface
 	
 		lo = lbound(dst,1)
 		hi = ubound(dst,1)
@@ -648,6 +695,12 @@ implicit none
 	integer(MyMPI_Comm) 	:: comm
 	integer(MyMPI_Errorcode):: ierr,ierr2
 	integer(MyMPI_Entries)	:: elem_tmp
+	interface
+	  subroutine mpi_allgather(send,snum,stype,recv,rnum,rtype,gcomm,gerr)
+	    byte, dimension(*)	:: recv
+	    integer(kind=4)		:: send, snum, rnum, stype, rtype, gcomm, gerr
+	  end subroutine mpi_allgather
+	end interface
 	
 		lo = lbound(dst,1)
 		hi = ubound(dst,1)	
@@ -668,6 +721,12 @@ implicit none
 	integer(MyMPI_Comm) 	:: comm
 	integer(MyMPI_Errorcode):: ierr,ierr2
 	integer(MyMPI_Entries)	:: elem_tmp
+	interface
+	  subroutine mpi_allgather(send,snum,stype,recv,rnum,rtype,gcomm,gerr)
+	    byte, dimension(*)	:: recv
+	    integer(kind=4)		:: send, snum, rnum, stype, rtype, gcomm, gerr
+	  end subroutine mpi_allgather
+	end interface
 	
 		lo1 = lbound(dst,1)
 		hi1 = ubound(dst,1)
@@ -690,6 +749,12 @@ implicit none
 	integer(MyMPI_Comm) 		:: comm
 	integer(MyMPI_Errorcode)	:: ierr,ierr2
 	integer(MyMPI_Entries)		:: elem_tmp
+	interface
+	  subroutine mpi_allgather(send,snum,stype,recv,rnum,rtype,gcomm,gerr)
+	    real(kind=4), dimension(*)	:: recv
+	    integer(kind=4)		:: send, snum, rnum, stype, rtype, gcomm, gerr
+	  end subroutine mpi_allgather
+	end interface
 	
 		elem_tmp = elem
 		
@@ -708,6 +773,12 @@ implicit none
 	integer(MyMPI_Comm) 		:: comm
 	integer(MyMPI_Errorcode)	:: ierr,ierr2
 	integer(MyMPI_Entries)		:: elem_tmp
+	interface
+	  subroutine mpi_allgather(send,snum,stype,recv,rnum,rtype,gcomm,gerr)
+	    integer(kind=8), dimension(*)	:: recv
+	    integer(kind=4)		:: send, snum, rnum, stype, rtype, gcomm, gerr
+	  end subroutine mpi_allgather
+	end interface
 	
 		elem_tmp = elem
 		
@@ -726,6 +797,12 @@ implicit none
 	integer(MyMPI_Comm) 		:: comm
 	integer(MyMPI_Errorcode)	:: ierr,ierr2
 	integer(MyMPI_Entries)		:: elem_tmp
+	interface
+	  subroutine mpi_allgather(send,snum,stype,recv,rnum,rtype,gcomm,gerr)
+	    integer(kind=8), dimension(*)	:: recv
+	    integer(kind=4)		:: send, snum, rnum, stype, rtype, gcomm, gerr
+	  end subroutine mpi_allgather
+	end interface
 	
 		lo = lbound(dst,1)
 		hi = ubound(dst,1)	
