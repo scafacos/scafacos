@@ -312,7 +312,7 @@ void mmm2d_run(void* rd,
           dj=3*cj;
           layered_displacement_vector(d, local_positions[di], local_positions[di+1], local_positions[di+2], local_positions[dj], local_positions[dj+1], local_positions[dj+2], disp);
           displ=disp[0]*disp[0] + disp[1]*disp[1] + disp[2]*disp[2];
-          d->total_energy+=mmm2d_pair_energy_near(d, local_charges[ci]*local_charges[cj], disp, displ);
+          d->total_energy+=mmm2d_pair_energy_near(d, local_charges[ci]*local_charges[cj], disp, sqrt(displ));
         }
       }
       /// bottom neighbor
@@ -326,7 +326,7 @@ void mmm2d_run(void* rd,
             dj=3*cj;
             layered_displacement_vector(d, local_positions[di], local_positions[di+1], local_positions[di+2], local_positions[dj], local_positions[dj+1], local_positions[dj+2], disp);
             displ=disp[0]*disp[0] + disp[1]*disp[1] + disp[2]*disp[2];
-            d->total_energy+=mmm2d_pair_energy_near(d, local_charges[ci]*local_charges[cj], disp, displ);
+            d->total_energy+=mmm2d_pair_energy_near(d, local_charges[ci]*local_charges[cj], disp, sqrt(displ));
           }
         }
         offsetb=offset;
@@ -340,7 +340,7 @@ void mmm2d_run(void* rd,
             dj=3*j;
             layered_displacement_vector(d, local_positions[di], local_positions[di+1], local_positions[di+2], local_ghost_positions[dj], local_ghost_positions[dj+1], local_ghost_positions[dj+2], disp);
             displ=disp[0]*disp[0] + disp[1]*disp[1] + disp[2]*disp[2];
-            d->total_energy+=mmm2d_pair_energy_near(d, local_charges[ci]*local_ghost_charges[j], disp, displ);
+            d->total_energy+=mmm2d_pair_energy_near(d, local_charges[ci]*local_ghost_charges[j], disp, sqrt(displ));
           }
         }
       }
@@ -356,7 +356,7 @@ void mmm2d_run(void* rd,
             dj=3*cj;
             layered_displacement_vector(d, local_positions[di], local_positions[di+1], local_positions[di+2], local_ghost_positions[dj], local_ghost_positions[dj+1], local_ghost_positions[dj+2], disp);
             displ=disp[0]*disp[0] + disp[1]*disp[1] + disp[2]*disp[2];
-            energy=mmm2d_pair_energy_near(d, local_charges[ci]*local_ghost_charges[cj], disp, displ);
+            energy=mmm2d_pair_energy_near(d, local_charges[ci]*local_ghost_charges[cj], disp, sqrt(displ));
             local_potentials[ci]+=energy;
           //
           }
@@ -1547,6 +1547,8 @@ static void setup_PQ(mmm2d_data_struct *d, fcs_int p, fcs_int q, fcs_float omega
       add_vec(llclcblk, llclcblk, block(d->partblk, ic, size), size);
       ic++;
     }
+    offset+=i;
+    
     scale_vec(pref, blwentry(d->lclcblk, c, e_size), e_size);
     scale_vec(pref, abventry(d->lclcblk, c, e_size), e_size);
     
@@ -1648,7 +1650,7 @@ static fcs_float dielectric_layers_energy_contribution(mmm2d_data_struct *d)
     npl = d->zslices_nparticles[0];
     for(i = 0; i < npl; i++) {
       c=3*i;
-      a[0]=d->local_positions[c]; a[1]=d->local_positions[c+1]; a[2]=-d->local_positions[c+2];
+      a[0]=d->local_positions[c]; a[1]=d->local_positions[c+1]; a[2]=d->local_positions[c+2];
       for(j = 0; j < npl; j++) {
         c=3*j;
         b[0]=d->local_positions[c]; b[1]=d->local_positions[c+1]; b[2]=-d->local_positions[c+2];
@@ -1665,10 +1667,10 @@ static fcs_float dielectric_layers_energy_contribution(mmm2d_data_struct *d)
     c=d->n_localpart-npl;
     for(i = 0; i < npl; i++) {
       ci=3*(c+i);
-      a[0]=d->local_positions[ci]; a[1]=d->local_positions[ci+1]; a[2]=-d->local_positions[ci+2];
+      a[0]=d->local_positions[ci]; a[1]=d->local_positions[ci+1]; a[2]=d->local_positions[ci+2];
       for(j = 0; j < npl; j++) {
         cj=3*(c+j);
-        b[0]=d->local_positions[cj]; b[1]=d->local_positions[cj+1]; b[2]=-d->local_positions[cj+2];
+        b[0]=d->local_positions[cj]; b[1]=d->local_positions[cj+1]; b[2]=d->box_l[2]*2.0-d->local_positions[cj+2];
         layered_displacement_vector(d, a[0], a[1], a[2], b[0], b[1], b[2], dv);
         dist2=dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2];
         charge_factor=d->delta_mid_top*d->local_charges[c+i]*d->local_charges[c+j];
@@ -1697,7 +1699,7 @@ static void dielectric_layers_force_contribution(mmm2d_data_struct *d, fcs_float
     
     for(i = 0; i < npl; i++) {
       ci=3*i;
-      a[0]=d->local_positions[ci]; a[1]=d->local_positions[ci+1]; a[2]=-d->local_positions[ci+2];
+      a[0]=d->local_positions[ci]; a[1]=d->local_positions[ci+1]; a[2]=d->local_positions[ci+2];
       for(j = 0; j < npl; j++) {
         cj=3*j;
         b[0]=d->local_positions[cj]; b[1]=d->local_positions[cj+1]; b[2]=-d->local_positions[cj+2];
@@ -1717,10 +1719,10 @@ static void dielectric_layers_force_contribution(mmm2d_data_struct *d, fcs_float
     c=d->n_localpart-npl;
     for(i = 0; i < npl; i++) {
       ci=3*(c+i);
-      a[0]=d->local_positions[ci]; a[1]=d->local_positions[ci+1]; a[2]=-d->local_positions[ci+2];
+      a[0]=d->local_positions[ci]; a[1]=d->local_positions[ci+1]; a[2]=d->local_positions[ci+2];
       for(j = 0; j < npl; j++) {
         cj=3*(c+j);
-        b[0]=d->local_positions[cj]; b[1]=d->local_positions[cj+1]; b[2]=-d->local_positions[cj+2];
+        b[0]=d->local_positions[cj]; b[1]=d->local_positions[cj+1]; b[2]=d->box_l[2]*2.0-d->local_positions[cj+2];
         layered_displacement_vector(d, a[0], a[1], a[2], b[0], b[1], b[2], dv);
         dist2=dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2];
         charge_factor=d->local_charges[j]*d->delta_mid_top;
