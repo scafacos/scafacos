@@ -100,7 +100,7 @@ void update_particle_ghosts( int** ll_addr, int*** hoc, pp3mg_particle** particl
   mpi_blockcounts[0] = 8;
   mpi_offsets[0] = 0;
   mpi_oldtypes[0] = MPI_DOUBLE;
-  MPI_Type_struct( 1, mpi_blockcounts, mpi_offsets, mpi_oldtypes, &mpi_type_particle );
+  MPI_Type_create_struct( 1, mpi_blockcounts, mpi_offsets, mpi_oldtypes, &mpi_type_particle );
   MPI_Type_commit( &mpi_type_particle );
   
   particles = *particles_addr;
