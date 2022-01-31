@@ -45,8 +45,8 @@ module module_tree_grow
     use module_box, only: box_create
     use treevars, only: MPI_COMM_lpepc
     use module_spacefilling, only: compute_particle_keys
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_tree), intent(inout) :: t !< the tree
     type(t_particle), allocatable, intent(inout) :: p(:) !< input particle data, initializes %x, %data, %work appropriately (and optionally set %label) before calling this function
@@ -151,8 +151,8 @@ module module_tree_grow
     use module_debug, only : pepc_status
     use module_timings
     use module_debug
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_tree), intent(inout) :: t !< the tree
     integer(kind_node), intent(in) :: num_local_branch_nodes !< number of local branch nodes (valid entries in local_branch_nodes(1:num_local_branch_nodes), everything beyond is garbage

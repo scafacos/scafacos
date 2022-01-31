@@ -41,18 +41,18 @@ module module_debug
       !             db_level = 5      --> debug_level = 128
       !             db_level = 6      --> debug_level = 1 + 2 + 32 + 64 + 8 + 2048 + 4 + 16 + 128 + 256 + 512 = 3071
       !
-      integer, parameter, public :: DBG_STATUS      = B'0000000000000001'    ! 1
-      integer, parameter, public :: DBG_TREE        = B'0000000000000010'    ! 2
-      integer, parameter, public :: DBG_BUILD       = B'0000000000000100'    ! 4
-      integer, parameter, public :: DBG_DOMAIN      = B'0000000000001000'    ! 8
-      integer, parameter, public :: DBG_BRANCH      = B'0000000000010000'    ! 16
-      integer, parameter, public :: DBG_STATS       = B'0000000000100000'    ! 32
-      integer, parameter, public :: DBG_WALKSUMMARY = B'0000000001000000'    ! 64
-      integer, parameter, public :: DBG_DUMPTREE    = B'0000000010000000'    ! 128
-      integer, parameter, public :: DBG_TIMINGFILE  = B'0000000100000000'    ! 256
-      ! deprecated: integer, parameter, public :: DBG_LOADFILE    = B'0000001000000000'    ! 512
-      integer, parameter, public :: DBG_WALK        = B'0000010000000000'    ! 1024
-      integer, parameter, public :: DBG_PERIODIC    = B'0000100000000000'    ! 2048
+      integer, parameter, public :: DBG_STATUS      = int(B'0000000000000001')    ! 1
+      integer, parameter, public :: DBG_TREE        = int(B'0000000000000010')    ! 2
+      integer, parameter, public :: DBG_BUILD       = int(B'0000000000000100')    ! 4
+      integer, parameter, public :: DBG_DOMAIN      = int(B'0000000000001000')    ! 8
+      integer, parameter, public :: DBG_BRANCH      = int(B'0000000000010000')    ! 16
+      integer, parameter, public :: DBG_STATS       = int(B'0000000000100000')    ! 32
+      integer, parameter, public :: DBG_WALKSUMMARY = int(B'0000000001000000')    ! 64
+      integer, parameter, public :: DBG_DUMPTREE    = int(B'0000000010000000')    ! 128
+      integer, parameter, public :: DBG_TIMINGFILE  = int(B'0000000100000000')    ! 256
+      ! deprecated: integer, parameter, public :: DBG_LOADFILE    = int(B'0000001000000000')    ! 512
+      integer, parameter, public :: DBG_WALK        = int(B'0000010000000000')    ! 1024
+      integer, parameter, public :: DBG_PERIODIC    = int(B'0000100000000000')    ! 2048
 
       logical, private       :: debug_initialized = .false.
       character(30), private :: debug_ipefile_name
@@ -98,8 +98,8 @@ module module_debug
      subroutine debug_initialize()
        use treevars
        use module_utils, only: create_directory
+       use mpi
        implicit none
-       include 'mpif.h'
 
        character(MPI_MAX_PROCESSOR_NAME) :: procname
        integer(kind_default) :: resultlen, ierr
@@ -180,11 +180,11 @@ module module_debug
      !>
      subroutine debug_mpi_abort()
        use treevars, only : MPI_COMM_lpepc
+       use mpi
        #if defined(__ICC) || defined(__INTEL_COMPILER)
          use ifcore
        #endif
        implicit none
-       include 'mpif.h'
        integer(kind_default) :: ierr
 
        ! starting from GCC version 4.8, a backtrace() subroutine is provided by gfortran
@@ -213,8 +213,8 @@ module module_debug
      !>
      subroutine debug_barrier()
        use treevars, only : MPI_COMM_lpepc
+       use mpi
        implicit none
-       include 'mpif.h'
        integer(kind_default) :: ierr
 
        call MPI_BARRIER(MPI_COMM_lpepc, ierr)

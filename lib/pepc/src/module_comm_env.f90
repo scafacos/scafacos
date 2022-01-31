@@ -61,8 +61,8 @@ module module_comm_env
   !> process.
   !>
   subroutine comm_env_mirror_from_mpi(comm, c)
+    use mpi
     implicit none
-    include 'mpif.h'
 
     integer, intent(in) :: comm !< the MPI communicator used for communication
     type(t_comm_env), intent(out) :: c !< the communication environment to initialize
@@ -128,8 +128,8 @@ module module_comm_env
   !> Calls `mpi_comm_free` on the MPI communicator contained in `c`.
   !>
   subroutine comm_env_destroy(c)
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_comm_env), intent(inout) :: c !< environment to destroy
     integer(kind_default) :: ierr

@@ -93,8 +93,8 @@ module module_tree_communicator
   subroutine tree_communicator_prepare()
     use treevars, only: mpi_comm_lpepc
     use module_pepc_types, only: mpi_type_tree_node_package
+    use mpi
     implicit none
-    include 'mpif.h'
 
     integer(kind_default) :: msg_size_request, msg_size_data, buffsize, ierr
 
@@ -119,8 +119,8 @@ module module_tree_communicator
   !> Deallocate MPI communication buffers in pepc_finalize.
   !>
   subroutine tree_communicator_finalize()
+    use mpi
     implicit none
-    include 'mpif.h'
 
     integer(kind_default) :: dummy, buffsize, ierr
 
@@ -192,8 +192,8 @@ module module_tree_communicator
     use module_atomic_ops, only: atomic_load_int, atomic_store_int
     use module_debug
     use module_timings
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_tree), intent(inout) :: t
 
@@ -239,8 +239,8 @@ module module_tree_communicator
       atomic_write_barrier, atomic_load_int
     use module_tree_node
     use module_debug
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_tree), intent(inout) :: t
     type(t_tree_node), target, intent(inout) :: n
@@ -300,8 +300,8 @@ module module_tree_communicator
   subroutine broadcast_comm_finished(t)
     use module_tree, only: t_tree
     use module_debug
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_tree), intent(in) :: t
     integer(kind_pe) :: i
@@ -327,8 +327,8 @@ module module_tree_communicator
   subroutine broadcast_dump_tree_and_abort(t)
     use module_tree, only: t_tree
     use module_debug
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_tree), intent(in) :: t
     integer(kind_pe) :: i
@@ -375,8 +375,8 @@ module module_tree_communicator
   subroutine send_data(t, nodes, numnodes, adressee)
     use module_tree, only: t_tree
     use module_pepc_types, only: t_tree_node, t_tree_node_package, MPI_TYPE_tree_node_package, t_request_eager
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_tree), intent(inout) :: t
     type(t_tree_node_package), contiguous, intent(in) :: nodes(:)
@@ -543,8 +543,8 @@ module module_tree_communicator
     use module_spacefilling, only: parent_key_from_key
     use module_atomic_ops, only: atomic_write_barrier
     use module_debug
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_tree), intent(inout) :: t
     type(t_tree_node_package) :: child_data(num_children) !< child data that has been received
@@ -644,8 +644,8 @@ module module_tree_communicator
     use module_comm_env, only: t_comm_env
     use module_atomic_ops, only: t_atomic_int, atomic_load_int, atomic_store_int, atomic_read_barrier
     use module_debug
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_request_queue_entry), volatile, intent(inout) :: q(TREE_COMM_REQUEST_QUEUE_LENGTH) !< request queue
     type(t_atomic_int), intent(inout) :: b !< queue bottom
@@ -689,8 +689,8 @@ module module_tree_communicator
     function send_request(req, comm_env)
       use module_tree_node
       use module_pepc_types, only : MPI_TYPE_request_eager
+      use mpi
       implicit none
-      include 'mpif.h'
 
       logical :: send_request
       type(t_request_queue_entry), volatile, intent(inout) :: req
@@ -737,8 +737,8 @@ module module_tree_communicator
     use pthreads_stuff, only: pthreads_sched_yield, get_my_core, pthreads_exitthread
     use module_atomic_ops, only: atomic_load_int, atomic_store_int, atomic_write_barrier
     use module_debug
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(c_ptr) :: run_communication_loop
     type(c_ptr), value :: arg
@@ -827,9 +827,9 @@ module module_tree_communicator
     use module_tree, only: t_tree
     use module_pepc_types, only: t_tree_node_package, MPI_TYPE_tree_node_package, t_request_eager, MPI_TYPE_request_eager
     use module_atomic_ops, only: atomic_store_int
+    use mpi
     use module_debug
     implicit none
-    include 'mpif.h'
 
     type(t_tree), intent(inout) :: t
     logical, intent(inout) :: comm_finished(:)

@@ -27,8 +27,8 @@ module module_fmm_framework
       use module_debug
       use module_mirror_boxes
       use module_interaction_specific_types, only : t_tree_node_interaction_data
+      use mpi
       implicit none
-      include 'mpif.h'
       private
 
       ! TODO: set dipole- and low-order stuff in MLattice to zero

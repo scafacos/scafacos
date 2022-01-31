@@ -94,8 +94,8 @@ module module_interaction_specific_types
       !> is automatically called from register_libpepc_mpi_types()
       !>
       subroutine register_interaction_specific_mpi_types(mpi_type_particle_data, MPI_TYPE_tree_node_interaction_data, mpi_type_particle_results)
+        use mpi
         implicit none
-        include 'mpif.h'
         integer, intent(out) :: mpi_type_particle_data, MPI_TYPE_tree_node_interaction_data, mpi_type_particle_results
 
         integer, parameter :: max_props = nprops_particle_data + nprops_particle_results + nprops_tree_node_interaction_data ! maxval([..]) would be enough, but ifort does notlike that

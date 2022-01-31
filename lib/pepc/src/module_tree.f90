@@ -660,8 +660,8 @@ module module_tree
     subroutine tree_stats(t, u)
       use treevars, only: np_mult
       use module_debug
+      use mpi
       implicit none
-      include 'mpif.h'
 
       type(t_tree), intent(in) :: t
       integer, intent(in) :: u

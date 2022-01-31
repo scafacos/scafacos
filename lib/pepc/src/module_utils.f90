@@ -60,8 +60,8 @@ module module_utils
 
   !> checks if MPI_IN_PLACE might be damaged and aborts the application if necessary
   subroutine MPI_IN_PLACE_test(comm)
+    use mpi
     implicit none
-    include 'mpif.h'
 
     integer, intent(inout) :: comm
 

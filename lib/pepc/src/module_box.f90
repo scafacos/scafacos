@@ -48,8 +48,8 @@ module module_box
     use module_comm_env, only: t_comm_env
     use module_pepc_types
     use module_debug
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_box), intent(out) :: b !< the bounding box that contains all `p`
     type(t_particle), intent(in) :: p(:) !< particles to embed in the bounding box

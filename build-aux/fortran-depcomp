@@ -2,7 +2,7 @@
 
 FILES=$*
 
-IGNORE="${IGNORE} iso_c_binding"
+IGNORE="${IGNORE} iso_c_binding mpi"
 FORTEXT="f F f90 F90 f95 F95 f03 F03 f08 F08"
 
 UNIQSTR="QWERTZ"

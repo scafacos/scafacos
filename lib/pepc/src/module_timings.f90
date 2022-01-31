@@ -216,8 +216,8 @@ module module_timings
     !>      tim(id) = - MPI_WTIME()
     !>
     subroutine timer_start(id)
+      use mpi
       implicit none
-      include 'mpif.h'
       integer, intent(in) :: id !< the affected timer address
 
       tim(id) = - MPI_WTIME()
@@ -230,8 +230,8 @@ module module_timings
     !>      tim(id) = tim(id) + MPI_WTIME()
     !>
     subroutine timer_stop(id)
+      use mpi
       implicit none
-      include 'mpif.h'
       integer, intent(in) :: id !< the affected timer address
 
       tim(id) = tim(id) + MPI_WTIME()
@@ -259,8 +259,8 @@ module module_timings
     !>      accumulated_time = timer_read(t_example)
     !>
     subroutine timer_resume(id)
+      use mpi
       implicit none
-      include 'mpif.h'
       integer, intent(in) :: id !< the affected timer address
 
       tim(id) = tim(id) - MPI_WTIME()
@@ -352,8 +352,8 @@ module module_timings
       use treevars
       use module_utils, only: create_directory
       use module_pepc_types
+      use mpi
       implicit none
-      include 'mpif.h'
       integer, intent(in) :: itime !< current timestep
       integer, optional, intent(in) :: iuserflag !< frontend-defined flag that is passed through and output to the second column
       logical, optional, intent(in) :: printheader

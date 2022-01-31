@@ -117,8 +117,8 @@ module module_domains
     use module_timings
     use module_spacefilling, only: key_to_coord
     use module_debug
+    use mpi
     implicit none
-    include 'mpif.h'
 
     type(t_decomposition), intent(inout) :: d
     type(t_box), intent(in) :: b
@@ -333,8 +333,8 @@ module module_domains
     !>   bp(2) = particles[me + 1](1)
     !>
     subroutine exchange_boundary_particles()
+      use mpi
       implicit none
-      include 'mpif.h'
 
       integer :: state(MPI_STATUS_SIZE)
       integer(kind_particle) :: npp
@@ -377,8 +377,8 @@ module module_domains
   subroutine domain_restore(d, p)
       use module_pepc_types, only: t_particle, mpi_type_particle
       use module_debug, only : pepc_status
+      use mpi
       implicit none
-      include 'mpif.h'
 
       type(t_decomposition), intent(inout) :: d
       type(t_particle), intent(inout), allocatable :: p(:)

@@ -23,11 +23,10 @@
 !>
 module module_pepc_types
   use module_interaction_specific_types
+  use mpi
   implicit none
   
   private
-
-  include 'mpif.h'
 
   public :: t_particle_data
   public :: t_particle_results
@@ -119,9 +118,9 @@ module module_pepc_types
       !> Creates and registers lpepc-MPI types
       !>
       subroutine register_lpepc_mpi_types()
+        use mpi
         use module_interaction_specific_types
         implicit none
-        include 'mpif.h'
 
         integer, parameter :: max_props = nprops_particle + nprops_tree_node_package + nprops_request_eager
 
@@ -190,8 +189,8 @@ module module_pepc_types
       !> Deregisters lpepc- and interaction-specific MPI types
       !>
       subroutine free_lpepc_mpi_types()
+        use mpi
         implicit none
-        include 'mpif.h'
         integer(kind_default) :: ierr
 
         call MPI_TYPE_FREE( MPI_TYPE_tree_node_package,            ierr)

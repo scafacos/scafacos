@@ -169,8 +169,8 @@ module module_vtk
 
       subroutine vtkfile_create_parallel(vtk, filename_, step_, my_rank_, num_pe_, simtime_, vtk_step_, comm_)
         use module_utils
+        use mpi
         implicit none
-        include 'mpif.h'
         class(vtkfile) :: vtk
         character(*) :: filename_
         character(50) :: fn
@@ -960,8 +960,8 @@ module module_vtk
 
 
      subroutine vtkfile_rectilinear_grid_write_final(vtk)
+        use mpi
         implicit none
-        include 'mpif.h'
         class(vtkfile_rectilinear_grid) :: vtk
         integer :: i
         character(6) :: tmp
