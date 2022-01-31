@@ -395,11 +395,11 @@ void fcs_memd_exchange_surface_patch(memd_struct* memd, fcs_float *field, fcs_in
         MPI_Type_commit(&yzPlane2D);
 		
         /* create data type for xz plaquette */
-        MPI_Type_hvector(2,1*sizeof(fcs_float),2*sizeof(fcs_float), MPI_BYTE, &xz_plaq);
+        MPI_Type_create_hvector(2,1*sizeof(fcs_float),2*sizeof(fcs_float), MPI_BYTE, &xz_plaq);
         /* create data type for a 1D section */
         MPI_Type_contiguous(surface_patch[2].stride, xz_plaq, &oneslice); 
         /* create data type for a 2D xz plane */
-        MPI_Type_hvector(surface_patch[2].nblocks, 1, dim*surface_patch[2].skip*sizeof(fcs_float), oneslice, &xzPlane2D);
+        MPI_Type_create_hvector(surface_patch[2].nblocks, 1, dim*surface_patch[2].skip*sizeof(fcs_float), oneslice, &xzPlane2D);
         MPI_Type_commit(&xzPlane2D);    
         /* create data type for a 2D xy plane */
         MPI_Type_vector(surface_patch[4].nblocks, 2, dim*surface_patch[4].skip, FCS_MPI_FLOAT, &xyPlane2D);
