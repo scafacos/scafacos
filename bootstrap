@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/sh -e
 # Setup autotools infrastructure 
 # This file is not distributed and is only needed by developers.
 
