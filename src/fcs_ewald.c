@@ -504,6 +504,8 @@ FCSResult fcs_ewald_tune(FCS handle,
   MPI_Reduce(&local_q2, &q2, 1, FCS_MPI_FLOAT,
          MPI_SUM, 0, d->comm);
   
+  fcs_int failure_flag = 0;
+  static char msg[255];
   if (d->comm_rank == 0) {
     /* Tune r_cut */
     if (d->tune_r_cut) {
@@ -528,8 +530,10 @@ FCSResult fcs_ewald_tune(FCS handle,
       while (estimated_accuracy > d->tolerance_field) {
         d->kmax++;
         if (d->kmax > d->maxkmax) {
-          static char msg[255];
           sprintf(msg, "EWALD cannot achieve required accuracy with given r_cut=%" FCS_LMOD_FLOAT "f with a kmax<=%" FCS_LMOD_INT "d", d->r_cut, d->maxkmax);
+          failure_flag = 1;
+          MPI_Bcast(&failure_flag, 1, FCS_MPI_FLOAT, 0, d->comm);
+          MPI_Bcast(msg, 255, MPI_CHAR, 0, d->comm);
           return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, msg);
         }
 
@@ -546,13 +550,22 @@ FCSResult fcs_ewald_tune(FCS handle,
       FCS_INFO(fprintf(stderr, "    tuned alpha to %" FCS_LMOD_FLOAT "f\n", d->alpha));
       FCS_INFO(fprintf(stderr, "    estimated_accuracy=%" FCS_LMOD_FLOAT "e\n", estimated_accuracy));
       if (estimated_accuracy > d->tolerance_field) {
-        char msg[255];
         if (d->tune_alpha)
           sprintf(msg, "EWALD cannot achieve required accuracy with given kmax=%" FCS_LMOD_INT "d and r_cut=%" FCS_LMOD_FLOAT "f", d->kmax, d->r_cut);
         else
           sprintf(msg, "EWALD cannot achieve required accuracy with given kmax=%" FCS_LMOD_INT "d, r_cut=%" FCS_LMOD_FLOAT "f and alpha=%" FCS_LMOD_FLOAT "f", d->kmax, d->r_cut, d->alpha);
+        failure_flag = 1;
+        MPI_Bcast(&failure_flag, 1, FCS_MPI_FLOAT, 0, d->comm);
+        MPI_Bcast(msg, 255, MPI_CHAR, 0, d->comm);
         return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, msg);
       }
+    }
+    MPI_Bcast(&failure_flag, 1, FCS_MPI_FLOAT, 0, d->comm);
+  } else {
+    MPI_Bcast(&failure_flag, 1, FCS_MPI_FLOAT, 0, d->comm);
+    if (failure_flag) {
+      MPI_Bcast(msg, 255, MPI_CHAR, 0, d->comm);
+      return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, msg);
     }
   }
 
