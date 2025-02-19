@@ -532,7 +532,7 @@ FCSResult fcs_ewald_tune(FCS handle,
         if (d->kmax > d->maxkmax) {
           sprintf(msg, "EWALD cannot achieve required accuracy with given r_cut=%" FCS_LMOD_FLOAT "f with a kmax<=%" FCS_LMOD_INT "d", d->r_cut, d->maxkmax);
           failure_flag = 1;
-          MPI_Bcast(&failure_flag, 1, FCS_MPI_FLOAT, 0, d->comm);
+          MPI_Bcast(&failure_flag, 1, FCS_MPI_INT, 0, d->comm);
           MPI_Bcast(msg, 255, MPI_CHAR, 0, d->comm);
           return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, msg);
         }
@@ -555,14 +555,14 @@ FCSResult fcs_ewald_tune(FCS handle,
         else
           sprintf(msg, "EWALD cannot achieve required accuracy with given kmax=%" FCS_LMOD_INT "d, r_cut=%" FCS_LMOD_FLOAT "f and alpha=%" FCS_LMOD_FLOAT "f", d->kmax, d->r_cut, d->alpha);
         failure_flag = 1;
-        MPI_Bcast(&failure_flag, 1, FCS_MPI_FLOAT, 0, d->comm);
+        MPI_Bcast(&failure_flag, 1, FCS_MPI_INT, 0, d->comm);
         MPI_Bcast(msg, 255, MPI_CHAR, 0, d->comm);
         return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, msg);
       }
     }
-    MPI_Bcast(&failure_flag, 1, FCS_MPI_FLOAT, 0, d->comm);
+    MPI_Bcast(&failure_flag, 1, FCS_MPI_INT, 0, d->comm);
   } else {
-    MPI_Bcast(&failure_flag, 1, FCS_MPI_FLOAT, 0, d->comm);
+    MPI_Bcast(&failure_flag, 1, FCS_MPI_INT, 0, d->comm);
     if (failure_flag) {
       MPI_Bcast(msg, 255, MPI_CHAR, 0, d->comm);
       return fcs_result_create(FCS_ERROR_WRONG_ARGUMENT, __func__, msg);
