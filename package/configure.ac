@@ -166,6 +166,20 @@ if test "x${ax_fcs_package_CXXLIBS_USE}" != x ; then
   fi
 fi
 
+# Some compiler-wrapper library-flag probes (AX_CXX_LIBRARY_LDFLAGS /
+# AC_FC_LIBRARY_LDFLAGS parsing verbose link output, in use_fcs_full_
+# ldflags mode above) can pick up a raw colon-joined path list (e.g.
+# from an -rpath-style argument) and append it into SCAFACOS_PC_LIBS
+# unmodified. A stray ":" glued onto a flag (e.g. "-lmpi:") corrupts
+# the generated scafacos.pc: it lands on the same physical line as the
+# template's following "Libs.private:" line (or leaves a dangling
+# trailing colon on "Libs:"), which pkg-config consumers then choke
+# on. Colons never appear legitimately inside a well-formed -l/-L
+# linker flag, so replacing them with spaces here is safe and only
+# affects SCAFACOS_PC_LIBS (the value that actually ends up in
+# scafacos.pc's Libs: line).
+SCAFACOS_PC_LIBS=`echo " ${SCAFACOS_PC_LIBS} " | sed 's/:/ /g'`
+
 # Remove leading, trailing and multiple white spaces.
 z= ; for x in ${SCAFACOS_PC_LIBS} ; do z="${z} ${x}" ; done ; SCAFACOS_PC_LIBS="${z# }"
 z= ; for x in ${SCAFACOS_MK_LDADD} ; do z="${z} ${x}" ; done ; SCAFACOS_MK_LDADD="${z# }"
